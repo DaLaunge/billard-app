@@ -1,0 +1,987 @@
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "./supabase";
+import {
+  Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
+  Mail, ArrowRight, Swords, Flame, Search, LogOut, RefreshCw, Clock,
+} from "lucide-react";
+
+/* ============================================================
+   HELFER
+   ============================================================ */
+
+const BALL_PALETTE = ["#E8B321", "#2B5DA8", "#C0392B", "#6C4AB0", "#E07B2F", "#2E7D4F", "#8B3A2E", "#B0578D"];
+const colorFor = (name = "") => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return BALL_PALETTE[h % BALL_PALETTE.length];
+};
+const initials = (name = "?") => {
+  const parts = String(name).trim().split(/\s+/);
+  return (parts.length > 1 ? parts[0][0] + parts[1][0] : String(name).slice(0, 2)).toUpperCase();
+};
+/* Fargo: 100 Punkte Differenz = 2:1 Gewinnverhältnis pro Spiel */
+const winProb = (ra, rb) => 1 / (1 + Math.pow(2, (rb - ra) / 100));
+const fmtDate = (d) => {
+  if (!d) return "–";
+  const x = new Date(d);
+  return `${String(x.getDate()).padStart(2, "0")}.${String(x.getMonth() + 1).padStart(2, "0")}.${x.getFullYear()}`;
+};
+const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
+
+function Ball({ color, label, size = 44, gold = false }) {
+  const c = gold ? "#D6A425" : color;
+  return (
+    <div className="ball" style={{ width: size, height: size, background: c }}>
+      <div className="ball-shine" />
+      <div className="ball-num" style={{ width: size * 0.52, height: size * 0.52, fontSize: size * 0.28 }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   LOGIN & REGISTRIERUNG
+   ============================================================ */
+
+function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const sendLink = async () => {
+    setBusy(true); setError("");
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { emailRedirectTo: window.location.origin },
+    });
+    setBusy(false);
+    if (error) setError(error.message);
+    else setSent(true);
+  };
+
+  return (
+    <div className="screen login-screen">
+      <div className="login-hero">
+        <div className="login-balls">
+          <Ball color="#E8B321" label="1" size={54} />
+          <Ball color="#2B5DA8" label="2" size={54} />
+          <Ball color="#C0392B" label="3" size={54} />
+        </div>
+        <h1 className="app-title">Break &amp; Rank</h1>
+        <p className="app-sub">Das Ranking eures Vereins.<br />Fargo-Style, fair, immer aktuell.</p>
+      </div>
+
+      {!sent ? (
+        <div className="login-card">
+          <label className="field-label" htmlFor="mail">E-Mail-Adresse</label>
+          <div className="mail-row">
+            <Mail size={18} className="mail-ico" />
+            <input id="mail" type="email" placeholder="du@beispiel.at" value={email}
+              autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && email.includes("@") && sendLink()} />
+          </div>
+          {error && <p className="nick-status err"><X size={14} /> {error}</p>}
+          <button className="btn primary" disabled={busy || !email.includes("@")} onClick={sendLink}>
+            {busy ? "Sende …" : <>Login-Link senden <ArrowRight size={18} /></>}
+          </button>
+          <p className="hint">Kein Passwort nötig – du bekommst einen Link per Mail und bist drin.</p>
+        </div>
+      ) : (
+        <div className="login-card">
+          <div className="sent-check"><Check size={28} /></div>
+          <p className="sent-text">Link gesendet an<br /><b>{email}</b></p>
+          <p className="hint" style={{ textAlign: "center" }}>
+            Öffne die Mail auf DIESEM Gerät und tippe auf den Link.
+            Nichts bekommen? Schau in den Spam-Ordner.
+          </p>
+          <button className="btn ghost" onClick={() => setSent(false)}>Andere Adresse verwenden</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NicknameScreen({ onRegistered, existingPlayers }) {
+  const [nick, setNick] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const clean = nick.trim();
+
+  const legacyMatch = existingPlayers.find(
+    (p) => p.nickname.toLowerCase() === clean.toLowerCase() && !p.auth_user_id
+  );
+  const taken = existingPlayers.find(
+    (p) => p.nickname.toLowerCase() === clean.toLowerCase() && p.auth_user_id
+  );
+  const tooShort = clean.length > 0 && clean.length < 2;
+  const valid = clean.length >= 2 && clean.length <= 30 && !taken;
+
+  const register = async () => {
+    setBusy(true); setError("");
+    const { data, error } = await supabase.rpc("register_player", { p_nickname: clean });
+    setBusy(false);
+    if (error) setError(error.message);
+    else onRegistered(data);
+  };
+
+  return (
+    <div className="screen login-screen">
+      <div className="login-hero">
+        <div className="login-balls"><Ball color="#6C4AB0" label="?" size={54} /></div>
+        <h1 className="app-title" style={{ fontSize: 28 }}>Wie sollen wir dich nennen?</h1>
+        <p className="app-sub">Dein Nickname erscheint in Rangliste und Statistiken.<br />Er muss im Verein eindeutig sein.</p>
+      </div>
+      <div className="login-card">
+        <label className="field-label" htmlFor="nick">Nickname</label>
+        <div className="mail-row">
+          <User size={18} className="mail-ico" />
+          <input id="nick" value={nick} maxLength={30} placeholder="z. B. Kleiner Stefan"
+            autoComplete="off" onChange={(e) => setNick(e.target.value)} />
+        </div>
+        {clean.length === 0 && <p className="nick-status dim">2 bis 30 Zeichen.</p>}
+        {tooShort && <p className="nick-status warn">Noch zu kurz – mindestens 2 Zeichen.</p>}
+        {taken && <p className="nick-status err"><X size={14} /> „{taken.nickname}“ ist schon vergeben.</p>}
+        {legacyMatch && (
+          <p className="nick-status ok"><Check size={14} /> „{legacyMatch.nickname}“ gefunden! Deine bisherige Match-Historie wird übernommen.</p>
+        )}
+        {valid && !legacyMatch && <p className="nick-status ok"><Check size={14} /> „{clean}“ ist frei!</p>}
+        {error && <p className="nick-status err"><X size={14} /> {error}</p>}
+        <button className="btn primary" disabled={!valid || busy} onClick={register}>
+          {busy ? "Speichere …" : <>Los geht&rsquo;s <ArrowRight size={18} /></>}
+        </button>
+        <p className="hint">Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.</p>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   RANGLISTE
+   ============================================================ */
+
+function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports }) {
+  const [disc, setDisc] = useState("Gesamt");
+  const [showAll, setShowAll] = useState(false);
+
+  const rows = rangliste
+    .filter((r) => r.discipline === disc)
+    .filter((r) => showAll || (r.aktiv && !r.vorlaeufig));
+  const hidden = rangliste.filter((r) => r.discipline === disc).length - rows.length;
+
+  return (
+    <div className="screen">
+      <header className="screen-head">
+        <h2>Rangliste</h2>
+        <span className="head-note">Fargo-Skala · 100 Punkte = 2:1</span>
+      </header>
+
+      {pending.map((m) => {
+        const other = m.player1_id === me.id ? m.p2.nickname : m.p1.nickname;
+        const myScore = m.player1_id === me.id ? m.score1 : m.score2;
+        const otherScore = m.player1_id === me.id ? m.score2 : m.score1;
+        return (
+          <div className="confirm-banner" key={m.id}>
+            <div><b>Match bestätigen:</b> {other} meldet ein {otherScore}:{myScore} gegen dich ({m.discipline}, {fmtDate(m.played_at)}).</div>
+            <div className="confirm-actions">
+              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> Passt</button>
+              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> Falsch</button>
+            </div>
+          </div>
+        );
+      })}
+
+      {myOpenReports.length > 0 && (
+        <p className="open-note"><Clock size={14} /> {myOpenReports.length === 1
+          ? `1 gemeldetes Match wartet noch auf Bestätigung durch ${myOpenReports[0].p2.nickname}.`
+          : `${myOpenReports.length} gemeldete Matches warten noch auf Bestätigung.`}</p>
+      )}
+
+      <div className="chips">
+        {["Gesamt", ...disciplines].map((d) => (
+          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => setDisc(d)}>{d}</button>
+        ))}
+      </div>
+
+      <ol className="ranking">
+        {rows.map((r, i) => (
+          <li key={r.nickname + r.discipline}>
+            <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
+              <span className={"rank-pos" + (i < 3 && !r.vorlaeufig ? " top" : "")}>{i + 1}</span>
+              <Ball color={colorFor(r.nickname)} label={initials(r.nickname)} gold={i === 0 && !r.vorlaeufig && r.aktiv} />
+              <span className="rank-name">
+                {r.nickname}
+                <span className="rank-meta">
+                  {r.spiele} Spiele · zuletzt {fmtDate(r.letzte_partie)}
+                  {r.vorlaeufig && <em className="prov"> · vorläufig</em>}
+                  {!r.aktiv && <em className="inactive"> · inaktiv</em>}
+                </span>
+              </span>
+              <span className="rank-rating">{r.rating}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+      {rows.length === 0 && <p className="hint center">Noch keine Ratings in dieser Disziplin.</p>}
+      {hidden > 0 && !showAll && (
+        <button className="btn ghost" onClick={() => setShowAll(true)}>
+          {hidden} inaktive / vorläufige Spieler einblenden
+        </button>
+      )}
+      {showAll && (
+        <button className="btn ghost" onClick={() => setShowAll(false)}>Nur aktive Rangliste zeigen</button>
+      )}
+      <p className="footnote">
+        Ratings werden nach jedem bestätigten Match über die gesamte Historie neu berechnet.
+        Jüngere Matches zählen stärker. Unter 10 Spielen gilt ein Rating als vorläufig,
+        ohne Match seit 180 Tagen als inaktiv.
+      </p>
+    </div>
+  );
+}
+
+/* ============================================================
+   MATCH MELDEN
+   ============================================================ */
+
+function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toast }) {
+  const [step, setStep] = useState(0);
+  const [opp, setOpp] = useState(null);
+  const [s1, setS1] = useState(0);
+  const [s2, setS2] = useState(0);
+  const [disc, setDisc] = useState(null);
+  const [oppQuery, setOppQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const opponents = players
+    .filter((p) => p.id !== me.id)
+    .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
+    .sort((a, b) => a.nickname.localeCompare(b.nickname));
+
+  const myRating = ratingOf(me.nickname);
+  const oppRating = opp ? ratingOf(opp.nickname) : 500;
+  const prob = winProb(myRating, oppRating);
+  const total = s1 + s2;
+  const steps = ["Gegner", "Ergebnis", "Disziplin", "Prüfen"];
+
+  const save = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc("report_match", {
+      p_opponent_id: opp.id, p_my_score: s1, p_opp_score: s2, p_discipline: disc,
+    });
+    setBusy(false);
+    if (error) { toast("Fehler: " + error.message); return; }
+    setStep(4);
+  };
+
+  return (
+    <div className="screen">
+      <header className="screen-head with-back">
+        <button className="back-btn" onClick={step === 0 || step === 4 ? onCancel : () => setStep(step - 1)} aria-label="Zurück">
+          <ChevronLeft size={22} />
+        </button>
+        <h2>Neues Match</h2>
+      </header>
+
+      {step < 4 && (
+        <div className="steps">
+          {steps.map((s, i) => (
+            <div key={s} className={"step-dot" + (i === step ? " cur" : i < step ? " done" : "")}>
+              <span>{i < step ? <Check size={12} /> : i + 1}</span>{s}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {step === 0 && (
+        <>
+          <p className="q">Gegen wen hast du gespielt?</p>
+          <div className="search-row">
+            <Search size={16} className="mail-ico" />
+            <input placeholder="Spieler suchen …" value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
+            {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label="Suche löschen"><X size={15} /></button>}
+          </div>
+          {opponents.length === 0 && <p className="hint">Kein Spieler namens „{oppQuery}“ gefunden.</p>}
+          <div className="opp-grid">
+            {opponents.map((p) => (
+              <button key={p.id} className={"opp-card" + (opp?.id === p.id ? " sel" : "")}
+                onClick={() => { setOpp(p); setStep(1); }}>
+                <Ball color={colorFor(p.nickname)} label={initials(p.nickname)} size={48} />
+                <span>{p.nickname}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 1 && opp && (
+        <>
+          <p className="q">Wie ging&rsquo;s aus? <span className="q-sub">(gewonnene Spiele bzw. Punkte bei 14/1)</span></p>
+          <div className="score-row">
+            {[{ p: me.nickname, v: s1, set: setS1 }, { p: opp.nickname, v: s2, set: setS2 }].map(({ p, v, set }) => (
+              <div key={p} className="score-col">
+                <Ball color={colorFor(p)} label={initials(p)} size={46} />
+                <span className="score-name">{p}</span>
+                <div className="score-num">{v}</div>
+                <div className="score-btns">
+                  <button className="round-btn" onClick={() => set(Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
+                  <button className="round-btn plus" onClick={() => set(v + 1)} aria-label="plus"><Plus size={20} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(2)}>
+            Weiter <ArrowRight size={18} />
+          </button>
+          {s1 === s2 && total > 0 && <p className="hint center">Unentschieden gibt&rsquo;s beim Billard nicht 😉</p>}
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <p className="q">Welche Disziplin?</p>
+          <div className="disc-grid">
+            {disciplines.map((d) => (
+              <button key={d} className={"disc-card" + (disc === d ? " sel" : "")}
+                onClick={() => { setDisc(d); setStep(3); }}>{d}</button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 3 && opp && (
+        <>
+          <div className="summary">
+            <div className="sum-vs">
+              <div className="sum-side">
+                <Ball color={colorFor(me.nickname)} label={initials(me.nickname)} size={52} />
+                <span>{me.nickname}</span>
+              </div>
+              <div className="sum-score">{s1}<i>:</i>{s2}</div>
+              <div className="sum-side">
+                <Ball color={colorFor(opp.nickname)} label={initials(opp.nickname)} size={52} />
+                <span>{opp.nickname}</span>
+              </div>
+            </div>
+            <div className="sum-disc">{disc}</div>
+            <div className="prob-wrap">
+              <div className="prob-label">
+                <span>Erwartung laut Rating ({myRating} : {oppRating})</span>
+                <span>{Math.round(prob * 100)} % : {Math.round((1 - prob) * 100)} %</span>
+              </div>
+              <div className="prob-bar"><div style={{ width: `${prob * 100}%` }} /></div>
+            </div>
+          </div>
+          <button className="btn primary" disabled={busy} onClick={save}>
+            {busy ? "Speichere …" : <>Match speichern <Check size={18} /></>}
+          </button>
+          <p className="hint center">Das Match fließt erst ins Rating ein, wenn {opp.nickname} es bestätigt.</p>
+        </>
+      )}
+
+      {step === 4 && opp && (
+        <div className="saved">
+          <div className="sent-check big"><Check size={34} /></div>
+          <h3>Gespeichert!</h3>
+          <p>Wartet auf Bestätigung von <b>{opp.nickname}</b>.<br />
+            Sobald {opp.nickname} die App öffnet und auf „Passt“ tippt, wird das Ranking neu berechnet.</p>
+          <button className="btn primary" onClick={onDone}>Zur Rangliste</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   STATISTIK
+   ============================================================ */
+
+function computeStats(matches) {
+  const s = {};
+  const get = (n) => (s[n] ||= { name: n, spiele: 0, siege: 0, racksW: 0, racksT: 0, results: [] });
+  const sorted = [...matches].sort((a, b) => new Date(a.played_at) - new Date(b.played_at));
+  sorted.forEach((m) => {
+    const a = get(m.p1.nickname), b = get(m.p2.nickname);
+    a.spiele++; b.spiele++;
+    a.racksW += m.score1; a.racksT += m.score1 + m.score2;
+    b.racksW += m.score2; b.racksT += m.score1 + m.score2;
+    const aWon = m.score1 > m.score2;
+    if (aWon) a.siege++; else b.siege++;
+    a.results.push(aWon); b.results.push(!aWon);
+  });
+  Object.values(s).forEach((p) => {
+    p.quote = p.spiele ? Math.round((100 * p.siege) / p.spiele) : 0;
+    let st = 0;
+    for (let i = p.results.length - 1; i >= 0; i--) {
+      if (st === 0) st = p.results[i] ? 1 : -1;
+      else if (p.results[i] === (st > 0)) st += st > 0 ? 1 : -1;
+      else break;
+    }
+    p.streak = st;
+  });
+  return s;
+}
+
+function StatistikScreen({ matches, onOpenProfile }) {
+  const stats = useMemo(() => computeStats(matches), [matches]);
+  const list = Object.values(stats);
+  const medals = ["🥇", "🥈", "🥉"];
+  const topWins = [...list].sort((a, b) => b.siege - a.siege).slice(0, 3);
+  const topQuote = [...list].filter((p) => p.spiele >= 10).sort((a, b) => b.quote - a.quote).slice(0, 3);
+  const topStreak = [...list].filter((p) => p.streak > 0).sort((a, b) => b.streak - a.streak).slice(0, 3);
+  const lastMatches = [...matches].sort((a, b) => new Date(b.played_at) - new Date(a.played_at)).slice(0, 10);
+
+  const Block = ({ icon, title, rows, fmt }) => (
+    <section className="stat-block">
+      <h3>{icon} {title}</h3>
+      {rows.length === 0 && <p className="hint">Noch keine Daten.</p>}
+      {rows.map((p, i) => (
+        <button key={p.name} className="stat-row as-btn" onClick={() => onOpenProfile(p.name)}>
+          <span className="medal">{medals[i]}</span>
+          <Ball color={colorFor(p.name)} label={initials(p.name)} size={34} />
+          <span className="stat-name">{p.name}</span>
+          <span className="stat-val">{fmt(p)}</span>
+        </button>
+      ))}
+    </section>
+  );
+
+  return (
+    <div className="screen">
+      <header className="screen-head"><h2>Statistik</h2><span className="head-note">Bestenlisten (bestätigte Matches)</span></header>
+      <Block icon={<Trophy size={17} />} title="Meiste Siege" rows={topWins} fmt={(p) => `${p.siege} Siege`} />
+      <Block icon={<BarChart3 size={17} />} title="Beste Siegquote (ab 10 Spielen)" rows={topQuote} fmt={(p) => `${p.quote} %`} />
+      <Block icon={<Flame size={17} />} title="Aktuelle Serien" rows={topStreak} fmt={(p) => `${p.streak} in Folge`} />
+      <section className="stat-block">
+        <h3><Swords size={17} /> Letzte Matches</h3>
+        {lastMatches.map((m) => (
+          <div key={m.id} className="match-row">
+            <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
+            <span className="m-txt">{m.p1.nickname} <b>{m.score1}:{m.score2}</b> {m.p2.nickname}</span>
+            <span className="m-disc">{m.discipline}</span>
+          </div>
+        ))}
+        {lastMatches.length === 0 && <p className="hint">Noch keine bestätigten Matches.</p>}
+      </section>
+    </div>
+  );
+}
+
+/* ============================================================
+   PROFIL
+   ============================================================ */
+
+function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout }) {
+  const stats = useMemo(() => computeStats(matches)[nickname], [matches, nickname]);
+  const myRows = rangliste.filter((r) => r.nickname === nickname);
+  const gesamt = myRows.find((r) => r.discipline === "Gesamt");
+
+  const h2h = useMemo(() => {
+    const map = {};
+    matches.forEach((m) => {
+      let opp = null, w = 0, l = 0;
+      if (m.p1.nickname === nickname) { opp = m.p2.nickname; w = m.score1 > m.score2 ? 1 : 0; l = 1 - w; }
+      if (m.p2.nickname === nickname) { opp = m.p1.nickname; w = m.score2 > m.score1 ? 1 : 0; l = 1 - w; }
+      if (!opp) return;
+      map[opp] ||= { opp, w: 0, l: 0 };
+      map[opp].w += w; map[opp].l += l;
+    });
+    return Object.values(map).sort((a, b) => b.w + b.l - (a.w + a.l)).slice(0, 6);
+  }, [matches, nickname]);
+
+  return (
+    <div className="screen">
+      <header className="screen-head with-back">
+        {onBack && <button className="back-btn" onClick={onBack} aria-label="Zurück"><ChevronLeft size={22} /></button>}
+        <h2>{isMe ? "Mein Profil" : "Spielerprofil"}</h2>
+      </header>
+
+      <div className="profile-hero">
+        <Ball color={colorFor(nickname)} label={initials(nickname)} size={72} />
+        <div>
+          <h3 className="p-name">{nickname}</h3>
+          <div className="p-rating">
+            {gesamt ? gesamt.rating : "–"}
+            {gesamt?.vorlaeufig && <span className="prov-badge">vorläufig</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="kpis">
+        <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>Spiele</span></div>
+        <div className="kpi"><b>{stats?.siege ?? 0}</b><span>Siege</span></div>
+        <div className="kpi"><b>{stats?.quote ?? 0} %</b><span>Quote</span></div>
+        <div className="kpi"><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>Serie</span></div>
+      </div>
+
+      <section className="stat-block">
+        <h3><Trophy size={17} /> Ratings nach Disziplin</h3>
+        {myRows.map((r) => (
+          <div key={r.discipline} className="stat-row">
+            <span className="stat-name">{r.discipline}</span>
+            <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} Spiele</span>
+            <span className="stat-val">{r.rating}</span>
+          </div>
+        ))}
+        {myRows.length === 0 && <p className="hint">Noch kein Rating – erst ein Match spielen!</p>}
+      </section>
+
+      <section className="stat-block">
+        <h3><Swords size={17} /> Head-to-Head (Match-Siege)</h3>
+        {h2h.map(({ opp, w, l }) => (
+          <div key={opp} className="h2h-row">
+            <Ball color={colorFor(opp)} label={initials(opp)} size={34} />
+            <span className="stat-name">{opp}</span>
+            <div className="h2h-bar"><div className="h2h-w" style={{ width: `${(100 * w) / Math.max(1, w + l)}%` }} /></div>
+            <span className="h2h-score">{w}:{l}</span>
+          </div>
+        ))}
+        {h2h.length === 0 && <p className="hint">Noch keine Matches.</p>}
+      </section>
+
+      {isMe && (
+        <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> Abmelden</button>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   ADMIN
+   ============================================================ */
+
+function AdminScreen({ allPending, players, onConfirm, me }) {
+  return (
+    <div className="screen">
+      <header className="screen-head"><h2>Verwaltung</h2><span className="head-note">Nur für Admins</span></header>
+
+      <section className="stat-block">
+        <h3><Check size={17} /> Offene Matches ({allPending.length})</h3>
+        {allPending.length === 0 && <p className="hint">Alles erledigt – keine offenen Matches.</p>}
+        {allPending.map((m) => (
+          <div key={m.id} className="pending-row">
+            <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
+            <span className="m-txt">{m.p1.nickname} <b>{m.score1}:{m.score2}</b> {m.p2.nickname} · {m.discipline}</span>
+            <div className="confirm-actions">
+              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)} aria-label="freigeben"><Check size={15} /></button>
+              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)} aria-label="verwerfen"><X size={15} /></button>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="stat-block">
+        <h3><User size={17} /> Mitglieder ({players.length})</h3>
+        {players.map((p) => (
+          <div key={p.id} className="user-row">
+            <Ball color={colorFor(p.nickname)} label={initials(p.nickname)} size={34} />
+            <span className="stat-name">{p.nickname}{p.id === me.id ? " (du)" : ""}</span>
+            {!p.auth_user_id && <span className="role-chip">ohne Login</span>}
+            {p.role === "admin" && <span className="role-chip admin">admin</span>}
+          </div>
+        ))}
+        <p className="hint">Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.
+          Rollen und Korrekturen verwaltest du vorerst im Supabase Table Editor.</p>
+      </section>
+    </div>
+  );
+}
+
+/* ============================================================
+   APP
+   ============================================================ */
+
+export default function App() {
+  const [session, setSession] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [player, setPlayer] = useState(null);       // mein players-Datensatz
+  const [playerChecked, setPlayerChecked] = useState(false);
+  const [players, setPlayers] = useState([]);
+  const [rangliste, setRangliste] = useState([]);
+  const [matches, setMatches] = useState([]);       // bestätigte
+  const [unconfirmed, setUnconfirmed] = useState([]);
+  const [tab, setTab] = useState("rang");
+  const [profileName, setProfileName] = useState(null);
+  const [toastMsg, setToastMsg] = useState(null);
+  const [loadingData, setLoadingData] = useState(false);
+
+  const toast = useCallback((msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3200);
+  }, []);
+
+  /* --- Auth --- */
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  /* --- Mein Spielerprofil laden --- */
+  useEffect(() => {
+    if (!session) { setPlayer(null); setPlayerChecked(false); return; }
+    (async () => {
+      const { data } = await supabase.from("players").select("*")
+        .eq("auth_user_id", session.user.id).maybeSingle();
+      setPlayer(data ?? null);
+      setPlayerChecked(true);
+      const { data: all } = await supabase.from("players").select("id, nickname, role, auth_user_id");
+      setPlayers(all ?? []);
+    })();
+  }, [session]);
+
+  /* --- Daten laden --- */
+  const loadData = useCallback(async () => {
+    setLoadingData(true);
+    const [rang, m, pl] = await Promise.all([
+      supabase.from("rangliste").select("*"),
+      supabase.from("matches")
+        .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
+        .order("played_at", { ascending: false }),
+      supabase.from("players").select("id, nickname, role, auth_user_id"),
+    ]);
+    if (rang.error || m.error || pl.error) {
+      toast("Fehler beim Laden: " + (rang.error || m.error || pl.error).message);
+    }
+    setRangliste(rang.data ?? []);
+    setMatches((m.data ?? []).filter((x) => x.confirmed));
+    setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
+    setPlayers(pl.data ?? []);
+    setLoadingData(false);
+  }, [toast]);
+
+  useEffect(() => { if (player) loadData(); }, [player, loadData]);
+
+  const disciplines = useMemo(() => {
+    const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt"));
+    DEFAULT_DISCIPLINES.forEach((d) => found.add(d));
+    return [...found].sort();
+  }, [rangliste]);
+
+  const ratingOf = useCallback((nick, disc = "Gesamt") => {
+    const r = rangliste.find((x) => x.nickname === nick && x.discipline === disc);
+    return r ? r.rating : 500;
+  }, [rangliste]);
+
+  const pendingForMe = player
+    ? unconfirmed.filter((m) => (m.player1_id === player.id || m.player2_id === player.id) && m.reported_by !== player.id)
+    : [];
+  const myOpenReports = player
+    ? unconfirmed.filter((m) => m.reported_by === player.id)
+    : [];
+
+  const confirmMatch = async (id, ok) => {
+    const { error } = await supabase.rpc("confirm_match", { p_match_id: id, p_ok: ok });
+    if (error) toast("Fehler: " + error.message);
+    else toast(ok ? "Match bestätigt – Ranking wird neu berechnet." : "Match zurückgewiesen.");
+    loadData();
+  };
+
+  const openProfile = (nick) => { setProfileName(nick); setTab("fremdprofil"); };
+  const logout = async () => { await supabase.auth.signOut(); setTab("rang"); };
+
+  /* --- Render --- */
+  if (!authReady) {
+    return (<div className="stage"><style>{CSS}</style><div className="phone"><div className="center-load">Lade …</div></div></div>);
+  }
+
+  return (
+    <div className="stage">
+      <style>{CSS}</style>
+      <div className="phone">
+        {!session && <LoginScreen />}
+
+        {session && !playerChecked && <div className="center-load">Lade Profil …</div>}
+
+        {session && playerChecked && !player && (
+          <NicknameScreen existingPlayers={players}
+            onRegistered={(p) => { setPlayer(p); toast(`Willkommen, ${p.nickname}!`); }} />
+        )}
+
+        {session && player && (
+          <>
+            <main className="content">
+              {tab === "rang" && (
+                <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
+                  pending={pendingForMe} me={player} onConfirm={confirmMatch}
+                  onOpenProfile={openProfile} myOpenReports={myOpenReports} />
+              )}
+              {tab === "match" && (
+                <MatchScreen me={player} players={players} disciplines={disciplines}
+                  ratingOf={ratingOf} toast={toast}
+                  onDone={() => { setTab("rang"); loadData(); }}
+                  onCancel={() => setTab("rang")} />
+              )}
+              {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile} />}
+              {tab === "profil" && (
+                <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
+                  onBack={null} isMe onLogout={logout} />
+              )}
+              {tab === "fremdprofil" && profileName && (
+                <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
+                  onBack={() => setTab("rang")} isMe={profileName === player.nickname} onLogout={logout} />
+              )}
+              {tab === "admin" && player.role === "admin" && (
+                <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch} me={player} />
+              )}
+              <button className="refresh-btn" onClick={loadData} aria-label="Aktualisieren">
+                <RefreshCw size={16} className={loadingData ? "spin" : ""} />
+              </button>
+            </main>
+
+            <nav className="tabbar">
+              <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => setTab("rang")}>
+                <Trophy size={21} /><span>Rangliste</span>
+                {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
+              </button>
+              <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
+                <BarChart3 size={21} /><span>Statistik</span>
+              </button>
+              <button className="tab fab" onClick={() => setTab("match")} aria-label="Neues Match">
+                <Plus size={26} />
+              </button>
+              <button className={"tab" + (tab === "profil" ? " on" : "")} onClick={() => setTab("profil")}>
+                <User size={21} /><span>Profil</span>
+              </button>
+              {player.role === "admin" && (
+                <button className={"tab" + (tab === "admin" ? " on" : "")} onClick={() => setTab("admin")}>
+                  <Shield size={21} /><span>Admin</span>
+                </button>
+              )}
+            </nav>
+          </>
+        )}
+        {toastMsg && <div className="toast">{toastMsg}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   STYLES – Filztuch-Grün, Kreide-Blau, Elfenbein
+   ============================================================ */
+
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Archivo:wght@400;500;600;700&display=swap');
+
+:root {
+  --felt: #0A2B21; --felt-2: #10382C; --felt-3: #17493A;
+  --line: #24564660; --chalk: #7CC1E8; --chalk-deep: #3E82B4;
+  --ivory: #F2EDE0; --ivory-dim: #9DBAAE; --gold: #D6A425;
+  --win: #4CAF6E; --loss: #D9614C;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { background: #071E17; }
+.stage {
+  min-height: 100vh; display: flex; justify-content: center;
+  background: radial-gradient(120% 90% at 50% 0%, #123829 0%, #071E17 70%);
+  font-family: 'Archivo', system-ui, sans-serif; color: var(--ivory);
+}
+.phone {
+  width: 100%; max-width: 430px; min-height: 100vh; position: relative;
+  background: radial-gradient(140% 100% at 50% -10%, var(--felt-2) 0%, var(--felt) 60%);
+  display: flex; flex-direction: column; box-shadow: 0 0 60px #00000070;
+}
+.content { flex: 1; overflow-y: auto; padding-bottom: 92px; }
+.screen { padding: 22px 18px 28px; }
+.center-load { flex: 1; display: grid; place-items: center; color: var(--ivory-dim); min-height: 60vh; }
+
+h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
+.screen-head { margin-bottom: 16px; }
+.screen-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+.screen-head.with-back { display: flex; align-items: center; gap: 10px; }
+.head-note { font-size: 12.5px; color: var(--ivory-dim); }
+.back-btn { background: var(--felt-3); border: none; color: var(--ivory); border-radius: 12px;
+  width: 38px; height: 38px; display: grid; place-items: center; cursor: pointer; }
+
+.ball { position: relative; border-radius: 50%; flex-shrink: 0;
+  box-shadow: inset -4px -6px 10px #00000055, 0 2px 5px #00000060; }
+.ball-shine { position: absolute; top: 12%; left: 16%; width: 34%; height: 26%;
+  background: radial-gradient(closest-side, #FFFFFFCC, transparent); border-radius: 50%; }
+.ball-num { position: absolute; inset: 0; margin: auto; background: var(--ivory);
+  border-radius: 50%; display: grid; place-items: center; color: #1E1E1E;
+  font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
+  box-shadow: inset 0 -2px 4px #00000025; }
+
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
+.chip { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
+  border-radius: 999px; padding: 7px 14px; font-size: 13.5px; cursor: pointer;
+  white-space: nowrap; font-family: inherit; }
+.chip.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); font-weight: 600; }
+
+.ranking { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rank-row { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--felt-2); border: 1px solid var(--line); border-radius: 16px;
+  padding: 11px 14px; color: inherit; cursor: pointer; font-family: inherit; }
+.rank-row:active { background: var(--felt-3); }
+.rank-pos { width: 22px; font-weight: 700; color: var(--ivory-dim); font-size: 15px; }
+.rank-pos.top { color: var(--gold); }
+.rank-name { flex: 1; font-weight: 600; font-size: 15.5px; display: flex; flex-direction: column; min-width: 0; }
+.rank-meta { font-weight: 400; font-size: 12px; color: var(--ivory-dim); }
+.prov { color: var(--gold); font-style: normal; }
+.inactive { color: var(--loss); font-style: normal; }
+.rank-rating { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 21px;
+  min-width: 46px; text-align: right; }
+.footnote { margin-top: 14px; font-size: 12px; color: var(--ivory-dim); line-height: 1.5; }
+.open-note { display: flex; align-items: center; gap: 6px; font-size: 12.5px;
+  color: var(--ivory-dim); margin-bottom: 12px; }
+
+.confirm-banner { background: #3E82B422; border: 1px solid var(--chalk-deep);
+  border-radius: 14px; padding: 12px 14px; font-size: 13.5px; margin-bottom: 14px;
+  display: flex; flex-direction: column; gap: 10px; line-height: 1.45; }
+.confirm-actions { display: flex; gap: 8px; }
+.chip-btn { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px;
+  padding: 6px 13px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+.chip-btn.ok { background: var(--win); color: #06231A; }
+.chip-btn.no { background: transparent; border: 1px solid var(--loss); color: var(--loss); }
+
+.steps { display: flex; gap: 6px; margin-bottom: 20px; }
+.step-dot { flex: 1; text-align: center; font-size: 11px; color: var(--ivory-dim);
+  display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.step-dot span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--felt-3); font-weight: 700; font-size: 12px; }
+.step-dot.cur span { background: var(--chalk); color: #08251C; }
+.step-dot.done span { background: var(--win); color: #06231A; }
+.q { font-size: 17px; font-weight: 600; margin-bottom: 14px; }
+.q-sub { font-weight: 400; font-size: 13px; color: var(--ivory-dim); }
+.opp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.opp-card { background: var(--felt-2); border: 1px solid var(--line); border-radius: 16px;
+  padding: 14px 6px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--ivory); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  word-break: break-word; }
+.opp-card.sel, .opp-card:active { border-color: var(--chalk); background: var(--felt-3); }
+.score-row { display: flex; gap: 12px; margin-bottom: 20px; }
+.score-col { flex: 1; background: var(--felt-2); border: 1px solid var(--line); border-radius: 18px;
+  padding: 16px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.score-name { font-size: 13px; font-weight: 600; text-align: center; }
+.score-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 52px; font-weight: 800; line-height: 1; }
+.score-btns { display: flex; gap: 10px; }
+.round-btn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--felt-3); color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
+.round-btn.plus { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.disc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.disc-card { background: var(--felt-2); border: 1px solid var(--line); border-radius: 16px;
+  padding: 22px 10px; color: var(--ivory); font-size: 16px; font-weight: 700; cursor: pointer;
+  font-family: 'Bricolage Grotesque', sans-serif; }
+.disc-card.sel, .disc-card:active { border-color: var(--chalk); background: var(--felt-3); }
+
+.summary { background: var(--felt-2); border: 1px solid var(--line); border-radius: 20px;
+  padding: 20px 16px; margin-bottom: 16px; }
+.sum-vs { display: flex; align-items: center; justify-content: space-between; }
+.sum-side { display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; width: 100px; text-align: center; }
+.sum-score { font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; font-weight: 800; }
+.sum-score i { font-style: normal; color: var(--ivory-dim); padding: 0 4px; }
+.sum-disc { text-align: center; margin: 10px 0 16px; color: var(--chalk); font-weight: 600; font-size: 14px; }
+.prob-wrap { margin-bottom: 4px; }
+.prob-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--ivory-dim); margin-bottom: 6px; gap: 10px; }
+.prob-bar { height: 8px; border-radius: 99px; background: var(--felt-3); overflow: hidden; }
+.prob-bar div { height: 100%; background: var(--chalk); border-radius: 99px; }
+
+.saved { text-align: center; padding-top: 34px; }
+.saved h3 { font-size: 24px; margin: 14px 0 8px; }
+.saved p { color: var(--ivory-dim); font-size: 14px; line-height: 1.55; margin-bottom: 22px; }
+
+.stat-block { background: var(--felt-2); border: 1px solid var(--line); border-radius: 18px;
+  padding: 16px 14px; margin-bottom: 14px; }
+.stat-block h3 { font-size: 15px; display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--chalk); }
+.stat-row, .h2h-row, .user-row, .match-row, .pending-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 14px; }
+.stat-row.as-btn { width: 100%; background: none; border: none; color: inherit; cursor: pointer;
+  font-family: inherit; text-align: left; }
+.medal { width: 24px; }
+.stat-name { flex: 1; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.stat-val { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; white-space: nowrap; }
+.m-date { color: var(--ivory-dim); font-size: 12.5px; width: 44px; flex-shrink: 0; }
+.m-txt { flex: 1; min-width: 0; } .m-disc { color: var(--ivory-dim); font-size: 12.5px; }
+.h2h-bar { flex: 1; height: 8px; border-radius: 99px; background: #D9614C55; overflow: hidden; }
+.h2h-w { height: 100%; background: var(--win); }
+.h2h-score { font-weight: 700; width: 42px; text-align: right; font-family: 'Bricolage Grotesque', sans-serif; }
+.profile-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.p-name { font-size: 22px; overflow-wrap: anywhere; }
+.p-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; font-weight: 800;
+  display: flex; align-items: center; gap: 10px; }
+.prov-badge { font-family: 'Archivo', sans-serif; font-size: 11px; font-weight: 600; color: var(--gold);
+  border: 1px solid var(--gold); border-radius: 999px; padding: 3px 9px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.kpi { background: var(--felt-2); border: 1px solid var(--line); border-radius: 14px;
+  padding: 10px 4px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.kpi b { font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; }
+.kpi span { font-size: 11px; color: var(--ivory-dim); }
+
+.role-chip { border-radius: 999px; border: 1px solid var(--line); background: transparent;
+  color: var(--ivory-dim); font-size: 12px; padding: 4px 12px; }
+.role-chip.admin { border-color: var(--gold); color: var(--gold); font-weight: 700; }
+
+.btn { width: 100%; border: none; border-radius: 16px; padding: 15px; font-size: 16px;
+  font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer; font-family: 'Bricolage Grotesque', sans-serif; }
+.btn.primary { background: var(--chalk); color: #08251C; }
+.btn.primary:disabled { opacity: 0.4; cursor: default; }
+.btn.ghost { background: transparent; border: 1px dashed var(--line); color: var(--ivory-dim);
+  font-size: 14px; margin-top: 8px; padding: 12px; }
+.hint { font-size: 12.5px; color: var(--ivory-dim); margin-top: 10px; line-height: 1.5; }
+.hint.center { text-align: center; }
+
+.search-row { display: flex; align-items: center; gap: 10px; background: var(--felt);
+  border: 1px solid var(--line); border-radius: 14px; padding: 0 12px; margin-bottom: 12px; }
+.search-row input { flex: 1; background: transparent; border: none; outline: none;
+  color: var(--ivory); font-size: 14px; padding: 11px 0; font-family: inherit; }
+.clear-btn { background: none; border: none; color: var(--ivory-dim); cursor: pointer;
+  display: grid; place-items: center; padding: 4px; }
+.nick-status { font-size: 13px; display: flex; align-items: flex-start; gap: 6px; margin: -4px 0 14px; line-height: 1.4; }
+.nick-status.dim { color: var(--ivory-dim); }
+.nick-status.warn { color: var(--gold); }
+.nick-status.err { color: var(--loss); }
+.nick-status.ok { color: var(--win); }
+
+.login-screen { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
+.login-hero { text-align: center; margin-bottom: 34px; }
+.login-balls { display: flex; justify-content: center; gap: 10px; margin-bottom: 22px; }
+.app-title { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; }
+.app-sub { color: var(--ivory-dim); margin-top: 8px; line-height: 1.5; font-size: 15px; }
+.login-card { background: var(--felt-2); border: 1px solid var(--line); border-radius: 22px; padding: 22px 18px; }
+.field-label { font-size: 13px; color: var(--ivory-dim); display: block; margin-bottom: 8px; }
+.mail-row { display: flex; align-items: center; gap: 10px; background: var(--felt);
+  border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; margin-bottom: 14px; }
+.mail-ico { color: var(--ivory-dim); flex-shrink: 0; }
+.mail-row input { flex: 1; background: transparent; border: none; outline: none;
+  color: var(--ivory); font-size: 15px; padding: 14px 0; font-family: inherit; min-width: 0; }
+.sent-check { width: 56px; height: 56px; border-radius: 50%; background: var(--win);
+  color: #06231A; display: grid; place-items: center; margin: 0 auto 14px; }
+.sent-check.big { width: 68px; height: 68px; }
+.sent-text { text-align: center; margin-bottom: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+
+.tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px; display: flex; align-items: center;
+  background: #082017F2; border-top: 1px solid var(--line);
+  padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(8px); z-index: 30; }
+.tab { flex: 1; background: none; border: none; color: var(--ivory-dim);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 10.5px; cursor: pointer; font-family: inherit; padding: 4px 0; position: relative; }
+.tab.on { color: var(--chalk); font-weight: 700; }
+.tab.fab { flex: 0 0 62px; background: var(--chalk); color: #08251C; width: 54px; height: 54px;
+  border-radius: 50%; margin-top: -22px; box-shadow: 0 6px 16px #00000060; justify-content: center; }
+.badge { position: absolute; top: -2px; right: 22%; background: var(--loss); color: #fff;
+  font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 16px; height: 16px;
+  display: grid; place-items: center; padding: 0 4px; }
+
+.refresh-btn { position: fixed; top: 14px; right: calc(50% - 215px + 14px);
+  background: var(--felt-3); border: 1px solid var(--line); color: var(--ivory-dim);
+  border-radius: 12px; width: 36px; height: 36px; display: grid; place-items: center;
+  cursor: pointer; z-index: 20; }
+@media (max-width: 430px) { .refresh-btn { right: 14px; } }
+.spin { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+  background: var(--ivory); color: #08251C; font-weight: 600; font-size: 14px;
+  border-radius: 999px; padding: 10px 20px; box-shadow: 0 8px 24px #00000070;
+  white-space: nowrap; z-index: 50; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+
+button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .rank-row, .opp-card, .btn, .tab, .chip-btn { transition: background .15s, border-color .15s, opacity .15s; }
+}
+`;
