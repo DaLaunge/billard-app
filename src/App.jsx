@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import {
   Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
   Mail, ArrowRight, Swords, Flame, Search, LogOut, RefreshCw, Clock,
+  Radio, MapPin, Pencil,
 } from "lucide-react";
 
 /* ============================================================
@@ -10,7 +11,7 @@ import {
    ============================================================ */
 
 const BALL_PALETTE = ["#E8B321", "#2B5DA8", "#C0392B", "#6C4AB0", "#E07B2F", "#2E7D4F", "#8B3A2E", "#B0578D"];
-const colorFor = (name = "") => {
+const hashColor = (name = "") => {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   return BALL_PALETTE[h % BALL_PALETTE.length];
@@ -19,12 +20,22 @@ const initials = (name = "?") => {
   const parts = String(name).trim().split(/\s+/);
   return (parts.length > 1 ? parts[0][0] + parts[1][0] : String(name).slice(0, 2)).toUpperCase();
 };
-/* Fargo: 100 Punkte Differenz = 2:1 Gewinnverhältnis pro Spiel */
 const winProb = (ra, rb) => 1 / (1 + Math.pow(2, (rb - ra) / 100));
 const fmtDate = (d) => {
-  if (!d) return "–";
+  if (!d) return "-";
   const x = new Date(d);
   return `${String(x.getDate()).padStart(2, "0")}.${String(x.getMonth() + 1).padStart(2, "0")}.${x.getFullYear()}`;
+};
+const timeAgo = (d) => {
+  const m = Math.round((Date.now() - new Date(d)) / 60000);
+  if (m < 1) return "gerade eben";
+  if (m < 60) return `vor ${m} Min`;
+  return `vor ${Math.round(m / 60)} Std`;
+};
+const timeLeft = (d) => {
+  const m = Math.max(0, Math.round((new Date(d) - Date.now()) / 60000));
+  if (m < 60) return `noch ${m} Min`;
+  return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
 
@@ -85,16 +96,16 @@ function LoginScreen() {
           </div>
           {error && <p className="nick-status err"><X size={14} /> {error}</p>}
           <button className="btn primary" disabled={busy || !email.includes("@")} onClick={sendLink}>
-            {busy ? "Sende …" : <>Login-Link senden <ArrowRight size={18} /></>}
+            {busy ? "Sende ..." : <>Login-Link senden <ArrowRight size={18} /></>}
           </button>
-          <p className="hint">Kein Passwort nötig – du bekommst einen Link per Mail und bist drin.</p>
+          <p className="hint">Kein Passwort noetig - du bekommst einen Link per Mail und bist drin.</p>
         </div>
       ) : (
         <div className="login-card">
           <div className="sent-check"><Check size={28} /></div>
           <p className="sent-text">Link gesendet an<br /><b>{email}</b></p>
           <p className="hint" style={{ textAlign: "center" }}>
-            Öffne die Mail auf DIESEM Gerät und tippe auf den Link.
+            Oeffne die Mail auf DIESEM Geraet und tippe auf den Link.
             Nichts bekommen? Schau in den Spam-Ordner.
           </p>
           <button className="btn ghost" onClick={() => setSent(false)}>Andere Adresse verwenden</button>
@@ -142,15 +153,15 @@ function NicknameScreen({ onRegistered, existingPlayers }) {
             autoComplete="off" onChange={(e) => setNick(e.target.value)} />
         </div>
         {clean.length === 0 && <p className="nick-status dim">2 bis 30 Zeichen.</p>}
-        {tooShort && <p className="nick-status warn">Noch zu kurz – mindestens 2 Zeichen.</p>}
-        {taken && <p className="nick-status err"><X size={14} /> „{taken.nickname}“ ist schon vergeben.</p>}
+        {tooShort && <p className="nick-status warn">Noch zu kurz - mindestens 2 Zeichen.</p>}
+        {taken && <p className="nick-status err"><X size={14} /> "{taken.nickname}" ist schon vergeben.</p>}
         {legacyMatch && (
-          <p className="nick-status ok"><Check size={14} /> „{legacyMatch.nickname}“ gefunden! Deine bisherige Match-Historie wird übernommen.</p>
+          <p className="nick-status ok"><Check size={14} /> "{legacyMatch.nickname}" gefunden! Deine bisherige Match-Historie wird uebernommen.</p>
         )}
-        {valid && !legacyMatch && <p className="nick-status ok"><Check size={14} /> „{clean}“ ist frei!</p>}
+        {valid && !legacyMatch && <p className="nick-status ok"><Check size={14} /> "{clean}" ist frei!</p>}
         {error && <p className="nick-status err"><X size={14} /> {error}</p>}
         <button className="btn primary" disabled={!valid || busy} onClick={register}>
-          {busy ? "Speichere …" : <>Los geht&rsquo;s <ArrowRight size={18} /></>}
+          {busy ? "Speichere ..." : <>Los geht's <ArrowRight size={18} /></>}
         </button>
         <p className="hint">Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.</p>
       </div>
@@ -162,7 +173,7 @@ function NicknameScreen({ onRegistered, existingPlayers }) {
    RANGLISTE
    ============================================================ */
 
-function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports }) {
+function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports, colorOf }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
 
@@ -175,7 +186,7 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
     <div className="screen">
       <header className="screen-head">
         <h2>Rangliste</h2>
-        <span className="head-note">Fargo-Skala · 100 Punkte = 2:1</span>
+        <span className="head-note">Fargo-Skala - 100 Punkte = 2:1</span>
       </header>
 
       {pending.map((m) => {
@@ -184,7 +195,7 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
         const otherScore = m.player1_id === me.id ? m.score2 : m.score1;
         return (
           <div className="confirm-banner" key={m.id}>
-            <div><b>Match bestätigen:</b> {other} meldet ein {otherScore}:{myScore} gegen dich ({m.discipline}, {fmtDate(m.played_at)}).</div>
+            <div><b>Match bestaetigen:</b> {other} meldet ein {otherScore}:{myScore} gegen dich ({m.discipline}, {fmtDate(m.played_at)}).</div>
             <div className="confirm-actions">
               <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> Passt</button>
               <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> Falsch</button>
@@ -195,8 +206,8 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
 
       {myOpenReports.length > 0 && (
         <p className="open-note"><Clock size={14} /> {myOpenReports.length === 1
-          ? `1 gemeldetes Match wartet noch auf Bestätigung durch ${myOpenReports[0].p2.nickname}.`
-          : `${myOpenReports.length} gemeldete Matches warten noch auf Bestätigung.`}</p>
+          ? `1 gemeldetes Match wartet noch auf Bestaetigung durch ${myOpenReports[0].p2.nickname}.`
+          : `${myOpenReports.length} gemeldete Matches warten noch auf Bestaetigung.`}</p>
       )}
 
       <div className="chips">
@@ -210,13 +221,13 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
           <li key={r.nickname + r.discipline}>
             <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
               <span className={"rank-pos" + (i < 3 && !r.vorlaeufig ? " top" : "")}>{i + 1}</span>
-              <Ball color={colorFor(r.nickname)} label={initials(r.nickname)} gold={i === 0 && !r.vorlaeufig && r.aktiv} />
+              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} gold={i === 0 && !r.vorlaeufig && r.aktiv} />
               <span className="rank-name">
                 {r.nickname}
                 <span className="rank-meta">
-                  {r.spiele} Spiele · zuletzt {fmtDate(r.letzte_partie)}
-                  {r.vorlaeufig && <em className="prov"> · vorläufig</em>}
-                  {!r.aktiv && <em className="inactive"> · inaktiv</em>}
+                  {r.spiele} Spiele - zuletzt {fmtDate(r.letzte_partie)}
+                  {r.vorlaeufig && <em className="prov"> - vorlaeufig</em>}
+                  {!r.aktiv && <em className="inactive"> - inaktiv</em>}
                 </span>
               </span>
               <span className="rank-rating">{r.rating}</span>
@@ -227,17 +238,140 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
       {rows.length === 0 && <p className="hint center">Noch keine Ratings in dieser Disziplin.</p>}
       {hidden > 0 && !showAll && (
         <button className="btn ghost" onClick={() => setShowAll(true)}>
-          {hidden} inaktive / vorläufige Spieler einblenden
+          {hidden} inaktive / vorlaeufige Spieler einblenden
         </button>
       )}
       {showAll && (
         <button className="btn ghost" onClick={() => setShowAll(false)}>Nur aktive Rangliste zeigen</button>
       )}
       <p className="footnote">
-        Ratings werden nach jedem bestätigten Match über die gesamte Historie neu berechnet.
-        Jüngere Matches zählen stärker. Unter 10 Spielen gilt ein Rating als vorläufig,
+        Ratings werden nach jedem bestaetigten Match ueber die gesamte Historie neu berechnet.
+        Juengere Matches zaehlen staerker. Unter 10 Spielen gilt ein Rating als vorlaeufig,
         ohne Match seit 180 Tagen als inaktiv.
       </p>
+    </div>
+  );
+}
+
+/* ============================================================
+   LIVE-TICKER
+   ============================================================ */
+
+function PingCard({ ping, me, colorOf, onReply, onUnreply }) {
+  const myReply = ping.replies?.find((r) => r.player_id === me.id);
+  const [msg, setMsg] = useState("");
+  const [open, setOpen] = useState(false);
+  const mine = ping.player_id === me.id;
+
+  return (
+    <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
+      <div className="ping-head">
+        <Ball color={colorOf(ping.player.nickname)} label={initials(ping.player.nickname)} size={40} />
+        <div className="ping-who">
+          <b>{ping.player.nickname}</b>
+          <span className="rank-meta">{timeAgo(ping.created_at)} - {timeLeft(ping.expires_at)}</span>
+        </div>
+        <span className="live-pill"><span className="live-dot" /> LIVE</span>
+      </div>
+      <div className="ping-loc"><MapPin size={16} /> {ping.location}</div>
+      {ping.message && <p className="ping-msg">"{ping.message}"</p>}
+
+      {ping.replies?.length > 0 && (
+        <div className="ping-replies">
+          {ping.replies.map((r) => (
+            <div key={r.id} className="ping-reply">
+              <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} size={26} />
+              <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : " ist dabei!"}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!mine && !myReply && !open && (
+        <button className="btn primary small" onClick={() => setOpen(true)}>
+          <Swords size={16} /> Ich habe Lust!
+        </button>
+      )}
+      {!mine && !myReply && open && (
+        <div className="reply-form">
+          <div className="search-row" style={{ marginBottom: 8 }}>
+            <input placeholder="Nachricht (optional), z. B. 'Bin um 19 Uhr da'" value={msg}
+              maxLength={120} onChange={(e) => setMsg(e.target.value)} />
+          </div>
+          <div className="confirm-actions">
+            <button className="chip-btn ok" onClick={() => { onReply(ping.id, msg); setOpen(false); setMsg(""); }}>
+              <Check size={15} /> Zusagen
+            </button>
+            <button className="chip-btn no" onClick={() => setOpen(false)}><X size={15} /> Abbrechen</button>
+          </div>
+        </div>
+      )}
+      {!mine && myReply && (
+        <button className="btn ghost" onClick={() => onUnreply(ping.id)}>
+          <X size={15} /> Zusage zurueckziehen
+        </button>
+      )}
+    </section>
+  );
+}
+
+function LiveScreen({ me, pings, colorOf, onCreate, onClose, onReply, onUnreply }) {
+  const myPing = pings.find((p) => p.player_id === me.id);
+  const others = pings.filter((p) => p.player_id !== me.id);
+  const [loc, setLoc] = useState("");
+  const [msg, setMsg] = useState("");
+  const [hours, setHours] = useState(3);
+
+  return (
+    <div className="screen">
+      <header className="screen-head">
+        <h2>Live</h2>
+        <span className="head-note">Wer ist gerade am Tisch oder sucht ein Match?</span>
+      </header>
+
+      {myPing ? (
+        <PingCard ping={myPing} me={me} colorOf={colorOf} onReply={onReply} onUnreply={onUnreply} />
+      ) : (
+        <section className="stat-block">
+          <h3><Radio size={17} /> Ich bin bereit!</h3>
+          <div className="search-row">
+            <MapPin size={16} className="mail-ico" />
+            <input placeholder="Wo bist du? z. B. Schwedenplatz" value={loc}
+              maxLength={60} onChange={(e) => setLoc(e.target.value)} />
+          </div>
+          <div className="search-row">
+            <Pencil size={16} className="mail-ico" />
+            <input placeholder="Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'" value={msg}
+              maxLength={120} onChange={(e) => setMsg(e.target.value)} />
+          </div>
+          <div className="chips" style={{ marginBottom: 4 }}>
+            {[1, 2, 3, 6].map((h) => (
+              <button key={h} className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>
+                {h} Std
+              </button>
+            ))}
+          </div>
+          <button className="btn primary" disabled={loc.trim().length < 2}
+            onClick={() => { onCreate(loc, msg, hours); setLoc(""); setMsg(""); }}>
+            <Radio size={17} /> Live gehen
+          </button>
+          <p className="hint">Dein Eintrag verschwindet nach der gewaehlten Zeit von selbst.</p>
+        </section>
+      )}
+
+      {myPing && (
+        <button className="btn ghost" onClick={onClose}><X size={15} /> Meinen Live-Eintrag beenden</button>
+      )}
+
+      {others.length > 0 && <p className="q" style={{ marginTop: 18 }}>Gerade aktiv:</p>}
+      {others.map((p) => (
+        <PingCard key={p.id} ping={p} me={me} colorOf={colorOf} onReply={onReply} onUnreply={onUnreply} />
+      ))}
+      {others.length === 0 && !myPing && (
+        <p className="hint center" style={{ marginTop: 24 }}>
+          Gerade ist niemand live. Sei du der Erste - dein Eintrag erscheint hier fuer alle sichtbar.
+        </p>
+      )}
     </div>
   );
 }
@@ -246,7 +380,7 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
    MATCH MELDEN
    ============================================================ */
 
-function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toast }) {
+function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toast, colorOf }) {
   const [step, setStep] = useState(0);
   const [opp, setOpp] = useState(null);
   const [s1, setS1] = useState(0);
@@ -264,7 +398,7 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
   const oppRating = opp ? ratingOf(opp.nickname) : 500;
   const prob = winProb(myRating, oppRating);
   const total = s1 + s2;
-  const steps = ["Gegner", "Ergebnis", "Disziplin", "Prüfen"];
+  const steps = ["Gegner", "Ergebnis", "Disziplin", "Pruefen"];
 
   const save = async () => {
     setBusy(true);
@@ -279,7 +413,7 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
   return (
     <div className="screen">
       <header className="screen-head with-back">
-        <button className="back-btn" onClick={step === 0 || step === 4 ? onCancel : () => setStep(step - 1)} aria-label="Zurück">
+        <button className="back-btn" onClick={step === 0 || step === 4 ? onCancel : () => setStep(step - 1)} aria-label="Zurueck">
           <ChevronLeft size={22} />
         </button>
         <h2>Neues Match</h2>
@@ -300,15 +434,15 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
           <p className="q">Gegen wen hast du gespielt?</p>
           <div className="search-row">
             <Search size={16} className="mail-ico" />
-            <input placeholder="Spieler suchen …" value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
-            {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label="Suche löschen"><X size={15} /></button>}
+            <input placeholder="Spieler suchen ..." value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
+            {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label="Suche loeschen"><X size={15} /></button>}
           </div>
-          {opponents.length === 0 && <p className="hint">Kein Spieler namens „{oppQuery}“ gefunden.</p>}
+          {opponents.length === 0 && <p className="hint">Kein Spieler namens "{oppQuery}" gefunden.</p>}
           <div className="opp-grid">
             {opponents.map((p) => (
               <button key={p.id} className={"opp-card" + (opp?.id === p.id ? " sel" : "")}
                 onClick={() => { setOpp(p); setStep(1); }}>
-                <Ball color={colorFor(p.nickname)} label={initials(p.nickname)} size={48} />
+                <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} size={48} />
                 <span>{p.nickname}</span>
               </button>
             ))}
@@ -318,11 +452,11 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
 
       {step === 1 && opp && (
         <>
-          <p className="q">Wie ging&rsquo;s aus? <span className="q-sub">(gewonnene Spiele bzw. Punkte bei 14/1)</span></p>
+          <p className="q">Wie ging's aus? <span className="q-sub">(gewonnene Spiele bzw. Punkte bei 14/1)</span></p>
           <div className="score-row">
             {[{ p: me.nickname, v: s1, set: setS1 }, { p: opp.nickname, v: s2, set: setS2 }].map(({ p, v, set }) => (
               <div key={p} className="score-col">
-                <Ball color={colorFor(p)} label={initials(p)} size={46} />
+                <Ball color={colorOf(p)} label={initials(p)} size={46} />
                 <span className="score-name">{p}</span>
                 <div className="score-num">{v}</div>
                 <div className="score-btns">
@@ -335,7 +469,7 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
           <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(2)}>
             Weiter <ArrowRight size={18} />
           </button>
-          {s1 === s2 && total > 0 && <p className="hint center">Unentschieden gibt&rsquo;s beim Billard nicht 😉</p>}
+          {s1 === s2 && total > 0 && <p className="hint center">Unentschieden gibt's beim Billard nicht ;-)</p>}
         </>
       )}
 
@@ -356,12 +490,12 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
           <div className="summary">
             <div className="sum-vs">
               <div className="sum-side">
-                <Ball color={colorFor(me.nickname)} label={initials(me.nickname)} size={52} />
+                <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} size={52} />
                 <span>{me.nickname}</span>
               </div>
               <div className="sum-score">{s1}<i>:</i>{s2}</div>
               <div className="sum-side">
-                <Ball color={colorFor(opp.nickname)} label={initials(opp.nickname)} size={52} />
+                <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} size={52} />
                 <span>{opp.nickname}</span>
               </div>
             </div>
@@ -375,9 +509,9 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
             </div>
           </div>
           <button className="btn primary" disabled={busy} onClick={save}>
-            {busy ? "Speichere …" : <>Match speichern <Check size={18} /></>}
+            {busy ? "Speichere ..." : <>Match speichern <Check size={18} /></>}
           </button>
-          <p className="hint center">Das Match fließt erst ins Rating ein, wenn {opp.nickname} es bestätigt.</p>
+          <p className="hint center">Das Match fliesst erst ins Rating ein, wenn {opp.nickname} es bestaetigt.</p>
         </>
       )}
 
@@ -385,8 +519,8 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
         <div className="saved">
           <div className="sent-check big"><Check size={34} /></div>
           <h3>Gespeichert!</h3>
-          <p>Wartet auf Bestätigung von <b>{opp.nickname}</b>.<br />
-            Sobald {opp.nickname} die App öffnet und auf „Passt“ tippt, wird das Ranking neu berechnet.</p>
+          <p>Wartet auf Bestaetigung von <b>{opp.nickname}</b>.<br />
+            Sobald {opp.nickname} die App oeffnet und auf "Passt" tippt, wird das Ranking neu berechnet.</p>
           <button className="btn primary" onClick={onDone}>Zur Rangliste</button>
         </div>
       )}
@@ -424,10 +558,10 @@ function computeStats(matches) {
   return s;
 }
 
-function StatistikScreen({ matches, onOpenProfile }) {
+function StatistikScreen({ matches, onOpenProfile, colorOf }) {
   const stats = useMemo(() => computeStats(matches), [matches]);
   const list = Object.values(stats);
-  const medals = ["🥇", "🥈", "🥉"];
+  const medals = ["1.", "2.", "3."];
   const topWins = [...list].sort((a, b) => b.siege - a.siege).slice(0, 3);
   const topQuote = [...list].filter((p) => p.spiele >= 10).sort((a, b) => b.quote - a.quote).slice(0, 3);
   const topStreak = [...list].filter((p) => p.streak > 0).sort((a, b) => b.streak - a.streak).slice(0, 3);
@@ -440,7 +574,7 @@ function StatistikScreen({ matches, onOpenProfile }) {
       {rows.map((p, i) => (
         <button key={p.name} className="stat-row as-btn" onClick={() => onOpenProfile(p.name)}>
           <span className="medal">{medals[i]}</span>
-          <Ball color={colorFor(p.name)} label={initials(p.name)} size={34} />
+          <Ball color={colorOf(p.name)} label={initials(p.name)} size={34} />
           <span className="stat-name">{p.name}</span>
           <span className="stat-val">{fmt(p)}</span>
         </button>
@@ -450,7 +584,7 @@ function StatistikScreen({ matches, onOpenProfile }) {
 
   return (
     <div className="screen">
-      <header className="screen-head"><h2>Statistik</h2><span className="head-note">Bestenlisten (bestätigte Matches)</span></header>
+      <header className="screen-head"><h2>Statistik</h2><span className="head-note">Bestenlisten (bestaetigte Matches)</span></header>
       <Block icon={<Trophy size={17} />} title="Meiste Siege" rows={topWins} fmt={(p) => `${p.siege} Siege`} />
       <Block icon={<BarChart3 size={17} />} title="Beste Siegquote (ab 10 Spielen)" rows={topQuote} fmt={(p) => `${p.quote} %`} />
       <Block icon={<Flame size={17} />} title="Aktuelle Serien" rows={topStreak} fmt={(p) => `${p.streak} in Folge`} />
@@ -463,20 +597,34 @@ function StatistikScreen({ matches, onOpenProfile }) {
             <span className="m-disc">{m.discipline}</span>
           </div>
         ))}
-        {lastMatches.length === 0 && <p className="hint">Noch keine bestätigten Matches.</p>}
+        {lastMatches.length === 0 && <p className="hint">Noch keine bestaetigten Matches.</p>}
       </section>
     </div>
   );
 }
 
 /* ============================================================
-   PROFIL
+   PROFIL (inkl. Bearbeitung des eigenen Profils)
    ============================================================ */
 
-function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout }) {
+function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf,
+  players, meRow, onSaveProfile, onOpenAdmin }) {
+  const [edit, setEdit] = useState(false);
+  const [nick, setNick] = useState(nickname);
+  const [color, setColor] = useState(meRow?.avatar_color || null);
+  const [motto, setMotto] = useState(meRow?.motto || "");
+  const [busy, setBusy] = useState(false);
+
   const stats = useMemo(() => computeStats(matches)[nickname], [matches, nickname]);
   const myRows = rangliste.filter((r) => r.nickname === nickname);
   const gesamt = myRows.find((r) => r.discipline === "Gesamt");
+  const playerObj = players.find((p) => p.nickname === nickname);
+
+  const cleanNick = nick.trim();
+  const taken = players.some(
+    (p) => p.nickname.toLowerCase() === cleanNick.toLowerCase() && p.nickname !== nickname
+  );
+  const nickValid = cleanNick.length >= 2 && cleanNick.length <= 30 && !taken;
 
   const h2h = useMemo(() => {
     const map = {};
@@ -491,23 +639,92 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout }) 
     return Object.values(map).sort((a, b) => b.w + b.l - (a.w + a.l)).slice(0, 6);
   }, [matches, nickname]);
 
+  const save = async () => {
+    setBusy(true);
+    const ok = await onSaveProfile(cleanNick, color, motto);
+    setBusy(false);
+    if (ok) setEdit(false);
+  };
+
+  if (edit) {
+    return (
+      <div className="screen">
+        <header className="screen-head with-back">
+          <button className="back-btn" onClick={() => setEdit(false)} aria-label="Zurueck"><ChevronLeft size={22} /></button>
+          <h2>Profil bearbeiten</h2>
+        </header>
+
+        <section className="stat-block">
+          <label className="field-label" htmlFor="pnick">Nickname</label>
+          <div className="mail-row">
+            <User size={18} className="mail-ico" />
+            <input id="pnick" value={nick} maxLength={30} onChange={(e) => setNick(e.target.value)} />
+          </div>
+          {taken && <p className="nick-status err"><X size={14} /> Dieser Name ist schon vergeben.</p>}
+          {!taken && cleanNick !== nickname && nickValid && (
+            <p className="nick-status ok"><Check size={14} /> "{cleanNick}" ist frei.</p>
+          )}
+
+          <label className="field-label">Deine Kugel</label>
+          <div className="swatch-row">
+            <button className={"swatch auto" + (color === null ? " sel" : "")}
+              onClick={() => setColor(null)} aria-label="Automatische Farbe">Auto</button>
+            {BALL_PALETTE.map((c) => (
+              <button key={c} className={"swatch" + (color === c ? " sel" : "")}
+                style={{ background: c }} onClick={() => setColor(c)} aria-label={`Farbe ${c}`}>
+                {color === c && <Check size={16} />}
+              </button>
+            ))}
+          </div>
+          <div className="swatch-preview">
+            <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)} size={56} />
+            <span className="hint" style={{ marginTop: 0 }}>So sehen dich die anderen.</span>
+          </div>
+
+          <label className="field-label" htmlFor="pmotto">Motto (optional)</label>
+          <div className="mail-row">
+            <Pencil size={18} className="mail-ico" />
+            <input id="pmotto" value={motto} maxLength={80}
+              placeholder="z. B. 'Die 9 faellt immer'" onChange={(e) => setMotto(e.target.value)} />
+          </div>
+
+          <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
+            {busy ? "Speichere ..." : <>Speichern <Check size={18} /></>}
+          </button>
+          {cleanNick !== nickname && (
+            <p className="hint">Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.</p>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="screen">
       <header className="screen-head with-back">
-        {onBack && <button className="back-btn" onClick={onBack} aria-label="Zurück"><ChevronLeft size={22} /></button>}
+        {onBack && <button className="back-btn" onClick={onBack} aria-label="Zurueck"><ChevronLeft size={22} /></button>}
         <h2>{isMe ? "Mein Profil" : "Spielerprofil"}</h2>
       </header>
 
       <div className="profile-hero">
-        <Ball color={colorFor(nickname)} label={initials(nickname)} size={72} />
-        <div>
+        <Ball color={colorOf(nickname)} label={initials(nickname)} size={72} />
+        <div style={{ minWidth: 0 }}>
           <h3 className="p-name">{nickname}</h3>
           <div className="p-rating">
-            {gesamt ? gesamt.rating : "–"}
-            {gesamt?.vorlaeufig && <span className="prov-badge">vorläufig</span>}
+            {gesamt ? gesamt.rating : "-"}
+            {gesamt?.vorlaeufig && <span className="prov-badge">vorlaeufig</span>}
           </div>
+          {playerObj?.motto && <p className="p-motto">"{playerObj.motto}"</p>}
         </div>
       </div>
+
+      {isMe && (
+        <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
+          setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
+        }}>
+          <Pencil size={15} /> Profil bearbeiten
+        </button>
+      )}
 
       <div className="kpis">
         <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>Spiele</span></div>
@@ -525,14 +742,14 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout }) 
             <span className="stat-val">{r.rating}</span>
           </div>
         ))}
-        {myRows.length === 0 && <p className="hint">Noch kein Rating – erst ein Match spielen!</p>}
+        {myRows.length === 0 && <p className="hint">Noch kein Rating - erst ein Match spielen!</p>}
       </section>
 
       <section className="stat-block">
         <h3><Swords size={17} /> Head-to-Head (Match-Siege)</h3>
         {h2h.map(({ opp, w, l }) => (
           <div key={opp} className="h2h-row">
-            <Ball color={colorFor(opp)} label={initials(opp)} size={34} />
+            <Ball color={colorOf(opp)} label={initials(opp)} size={34} />
             <span className="stat-name">{opp}</span>
             <div className="h2h-bar"><div className="h2h-w" style={{ width: `${(100 * w) / Math.max(1, w + l)}%` }} /></div>
             <span className="h2h-score">{w}:{l}</span>
@@ -541,6 +758,9 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout }) 
         {h2h.length === 0 && <p className="hint">Noch keine Matches.</p>}
       </section>
 
+      {isMe && meRow?.role === "admin" && (
+        <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> Verwaltung oeffnen</button>
+      )}
       {isMe && (
         <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> Abmelden</button>
       )}
@@ -552,18 +772,21 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout }) 
    ADMIN
    ============================================================ */
 
-function AdminScreen({ allPending, players, onConfirm, me }) {
+function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf }) {
   return (
     <div className="screen">
-      <header className="screen-head"><h2>Verwaltung</h2><span className="head-note">Nur für Admins</span></header>
+      <header className="screen-head with-back">
+        <button className="back-btn" onClick={onBack} aria-label="Zurueck"><ChevronLeft size={22} /></button>
+        <h2>Verwaltung</h2>
+      </header>
 
       <section className="stat-block">
         <h3><Check size={17} /> Offene Matches ({allPending.length})</h3>
-        {allPending.length === 0 && <p className="hint">Alles erledigt – keine offenen Matches.</p>}
+        {allPending.length === 0 && <p className="hint">Alles erledigt - keine offenen Matches.</p>}
         {allPending.map((m) => (
           <div key={m.id} className="pending-row">
             <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
-            <span className="m-txt">{m.p1.nickname} <b>{m.score1}:{m.score2}</b> {m.p2.nickname} · {m.discipline}</span>
+            <span className="m-txt">{m.p1.nickname} <b>{m.score1}:{m.score2}</b> {m.p2.nickname} - {m.discipline}</span>
             <div className="confirm-actions">
               <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)} aria-label="freigeben"><Check size={15} /></button>
               <button className="chip-btn no" onClick={() => onConfirm(m.id, false)} aria-label="verwerfen"><X size={15} /></button>
@@ -576,7 +799,7 @@ function AdminScreen({ allPending, players, onConfirm, me }) {
         <h3><User size={17} /> Mitglieder ({players.length})</h3>
         {players.map((p) => (
           <div key={p.id} className="user-row">
-            <Ball color={colorFor(p.nickname)} label={initials(p.nickname)} size={34} />
+            <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} size={34} />
             <span className="stat-name">{p.nickname}{p.id === me.id ? " (du)" : ""}</span>
             {!p.auth_user_id && <span className="role-chip">ohne Login</span>}
             {p.role === "admin" && <span className="role-chip admin">admin</span>}
@@ -596,12 +819,13 @@ function AdminScreen({ allPending, players, onConfirm, me }) {
 export default function App() {
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(false);
-  const [player, setPlayer] = useState(null);       // mein players-Datensatz
+  const [player, setPlayer] = useState(null);
   const [playerChecked, setPlayerChecked] = useState(false);
   const [players, setPlayers] = useState([]);
   const [rangliste, setRangliste] = useState([]);
-  const [matches, setMatches] = useState([]);       // bestätigte
+  const [matches, setMatches] = useState([]);
   const [unconfirmed, setUnconfirmed] = useState([]);
+  const [pings, setPings] = useState([]);
   const [tab, setTab] = useState("rang");
   const [profileName, setProfileName] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
@@ -612,14 +836,12 @@ export default function App() {
     setTimeout(() => setToastMsg(null), 3200);
   }, []);
 
-  /* --- Auth --- */
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  /* --- Mein Spielerprofil laden --- */
   useEffect(() => {
     if (!session) { setPlayer(null); setPlayerChecked(false); return; }
     (async () => {
@@ -627,28 +849,32 @@ export default function App() {
         .eq("auth_user_id", session.user.id).maybeSingle();
       setPlayer(data ?? null);
       setPlayerChecked(true);
-      const { data: all } = await supabase.from("players").select("id, nickname, role, auth_user_id");
+      const { data: all } = await supabase.from("players")
+        .select("id, nickname, role, auth_user_id, avatar_color, motto");
       setPlayers(all ?? []);
     })();
   }, [session]);
 
-  /* --- Daten laden --- */
   const loadData = useCallback(async () => {
     setLoadingData(true);
-    const [rang, m, pl] = await Promise.all([
+    const [rang, m, pl, pi] = await Promise.all([
       supabase.from("rangliste").select("*"),
       supabase.from("matches")
         .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
         .order("played_at", { ascending: false }),
-      supabase.from("players").select("id, nickname, role, auth_user_id"),
+      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto"),
+      supabase.from("pings")
+        .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false }),
     ]);
-    if (rang.error || m.error || pl.error) {
-      toast("Fehler beim Laden: " + (rang.error || m.error || pl.error).message);
-    }
+    const err = rang.error || m.error || pl.error || pi.error;
+    if (err) toast("Fehler beim Laden: " + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
     setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
     setPlayers(pl.data ?? []);
+    setPings(pi.data ?? []);
     setLoadingData(false);
   }, [toast]);
 
@@ -665,6 +891,11 @@ export default function App() {
     return r ? r.rating : 500;
   }, [rangliste]);
 
+  const colorOf = useCallback((nick) => {
+    const p = players.find((x) => x.nickname === nick);
+    return p?.avatar_color || hashColor(nick);
+  }, [players]);
+
   const pendingForMe = player
     ? unconfirmed.filter((m) => (m.player1_id === player.id || m.player2_id === player.id) && m.reported_by !== player.id)
     : [];
@@ -675,16 +906,52 @@ export default function App() {
   const confirmMatch = async (id, ok) => {
     const { error } = await supabase.rpc("confirm_match", { p_match_id: id, p_ok: ok });
     if (error) toast("Fehler: " + error.message);
-    else toast(ok ? "Match bestätigt – Ranking wird neu berechnet." : "Match zurückgewiesen.");
+    else toast(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen.");
+    loadData();
+  };
+
+  const saveProfile = async (nick, color, motto) => {
+    const { data, error } = await supabase.rpc("update_profile", {
+      p_nickname: nick, p_avatar_color: color, p_motto: motto || null,
+    });
+    if (error) { toast("Fehler: " + error.message); return false; }
+    setPlayer(data);
+    toast("Profil gespeichert.");
+    loadData();
+    return true;
+  };
+
+  const createPing = async (loc, msg, hours) => {
+    const { error } = await supabase.rpc("create_ping", {
+      p_location: loc.trim(), p_message: msg.trim() || null, p_hours: hours,
+    });
+    if (error) toast("Fehler: " + error.message);
+    else toast("Du bist jetzt live!");
+    loadData();
+  };
+  const closePing = async () => {
+    const { error } = await supabase.rpc("close_ping");
+    if (error) toast("Fehler: " + error.message);
+    else toast("Live-Eintrag beendet.");
+    loadData();
+  };
+  const replyPing = async (id, msg) => {
+    const { error } = await supabase.rpc("reply_ping", { p_ping_id: id, p_message: msg.trim() || null });
+    if (error) toast("Fehler: " + error.message);
+    else toast("Zusage gesendet!");
+    loadData();
+  };
+  const unreplyPing = async (id) => {
+    const { error } = await supabase.rpc("unreply_ping", { p_ping_id: id });
+    if (error) toast("Fehler: " + error.message);
     loadData();
   };
 
   const openProfile = (nick) => { setProfileName(nick); setTab("fremdprofil"); };
   const logout = async () => { await supabase.auth.signOut(); setTab("rang"); };
 
-  /* --- Render --- */
   if (!authReady) {
-    return (<div className="stage"><style>{CSS}</style><div className="phone"><div className="center-load">Lade …</div></div></div>);
+    return (<div className="stage"><style>{CSS}</style><div className="phone"><div className="center-load">Lade ...</div></div></div>);
   }
 
   return (
@@ -693,7 +960,7 @@ export default function App() {
       <div className="phone">
         {!session && <LoginScreen />}
 
-        {session && !playerChecked && <div className="center-load">Lade Profil …</div>}
+        {session && !playerChecked && <div className="center-load">Lade Profil ...</div>}
 
         {session && playerChecked && !player && (
           <NicknameScreen existingPlayers={players}
@@ -706,25 +973,36 @@ export default function App() {
               {tab === "rang" && (
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
                   pending={pendingForMe} me={player} onConfirm={confirmMatch}
-                  onOpenProfile={openProfile} myOpenReports={myOpenReports} />
+                  onOpenProfile={openProfile} myOpenReports={myOpenReports} colorOf={colorOf} />
+              )}
+              {tab === "live" && (
+                <LiveScreen me={player} pings={pings} colorOf={colorOf}
+                  onCreate={createPing} onClose={closePing}
+                  onReply={replyPing} onUnreply={unreplyPing} />
               )}
               {tab === "match" && (
                 <MatchScreen me={player} players={players} disciplines={disciplines}
-                  ratingOf={ratingOf} toast={toast}
+                  ratingOf={ratingOf} toast={toast} colorOf={colorOf}
                   onDone={() => { setTab("rang"); loadData(); }}
                   onCancel={() => setTab("rang")} />
               )}
-              {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile} />}
+              {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile} colorOf={colorOf} />}
               {tab === "profil" && (
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
-                  onBack={null} isMe onLogout={logout} />
+                  onBack={null} isMe onLogout={logout} colorOf={colorOf}
+                  players={players} meRow={player} onSaveProfile={saveProfile}
+                  onOpenAdmin={() => setTab("admin")} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
-                  onBack={() => setTab("rang")} isMe={profileName === player.nickname} onLogout={logout} />
+                  onBack={() => setTab("rang")} isMe={profileName === player.nickname}
+                  onLogout={logout} colorOf={colorOf}
+                  players={players} meRow={player} onSaveProfile={saveProfile}
+                  onOpenAdmin={() => setTab("admin")} />
               )}
               {tab === "admin" && player.role === "admin" && (
-                <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch} me={player} />
+                <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
+                  me={player} onBack={() => setTab("profil")} colorOf={colorOf} />
               )}
               <button className="refresh-btn" onClick={loadData} aria-label="Aktualisieren">
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
@@ -736,20 +1014,19 @@ export default function App() {
                 <Trophy size={21} /><span>Rangliste</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
-              <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
-                <BarChart3 size={21} /><span>Statistik</span>
+              <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => setTab("live")}>
+                <Radio size={21} /><span>Live</span>
+                {pings.length > 0 && <span className="badge live">{pings.length}</span>}
               </button>
               <button className="tab fab" onClick={() => setTab("match")} aria-label="Neues Match">
                 <Plus size={26} />
               </button>
-              <button className={"tab" + (tab === "profil" ? " on" : "")} onClick={() => setTab("profil")}>
+              <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
+                <BarChart3 size={21} /><span>Statistik</span>
+              </button>
+              <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => setTab("profil")}>
                 <User size={21} /><span>Profil</span>
               </button>
-              {player.role === "admin" && (
-                <button className={"tab" + (tab === "admin" ? " on" : "")} onClick={() => setTab("admin")}>
-                  <Shield size={21} /><span>Admin</span>
-                </button>
-              )}
             </nav>
           </>
         )}
@@ -760,7 +1037,7 @@ export default function App() {
 }
 
 /* ============================================================
-   STYLES – Filztuch-Grün, Kreide-Blau, Elfenbein
+   STYLES
    ============================================================ */
 
 const CSS = `
@@ -774,16 +1051,12 @@ const CSS = `
 }
 * { box-sizing: border-box; margin: 0; }
 html, body { background: #071E17; }
-.stage {
-  min-height: 100vh; display: flex; justify-content: center;
+.stage { min-height: 100vh; display: flex; justify-content: center;
   background: radial-gradient(120% 90% at 50% 0%, #123829 0%, #071E17 70%);
-  font-family: 'Archivo', system-ui, sans-serif; color: var(--ivory);
-}
-.phone {
-  width: 100%; max-width: 430px; min-height: 100vh; position: relative;
+  font-family: 'Archivo', system-ui, sans-serif; color: var(--ivory); }
+.phone { width: 100%; max-width: 430px; min-height: 100vh; position: relative;
   background: radial-gradient(140% 100% at 50% -10%, var(--felt-2) 0%, var(--felt) 60%);
-  display: flex; flex-direction: column; box-shadow: 0 0 60px #00000070;
-}
+  display: flex; flex-direction: column; box-shadow: 0 0 60px #00000070; }
 .content { flex: 1; overflow-y: auto; padding-bottom: 92px; }
 .screen { padding: 22px 18px 28px; }
 .center-load { flex: 1; display: grid; place-items: center; color: var(--ivory-dim); min-height: 60vh; }
@@ -890,7 +1163,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .stat-row, .h2h-row, .user-row, .match-row, .pending-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 14px; }
 .stat-row.as-btn { width: 100%; background: none; border: none; color: inherit; cursor: pointer;
   font-family: inherit; text-align: left; }
-.medal { width: 24px; }
+.medal { width: 24px; font-weight: 700; color: var(--gold); }
 .stat-name { flex: 1; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .stat-val { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; white-space: nowrap; }
 .m-date { color: var(--ivory-dim); font-size: 12.5px; width: 44px; flex-shrink: 0; }
@@ -902,6 +1175,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .p-name { font-size: 22px; overflow-wrap: anywhere; }
 .p-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; font-weight: 800;
   display: flex; align-items: center; gap: 10px; }
+.p-motto { color: var(--ivory-dim); font-size: 13px; font-style: italic; margin-top: 4px; }
 .prov-badge { font-family: 'Archivo', sans-serif; font-size: 11px; font-weight: 600; color: var(--gold);
   border: 1px solid var(--gold); border-radius: 999px; padding: 3px 9px; }
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
@@ -913,6 +1187,32 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .role-chip { border-radius: 999px; border: 1px solid var(--line); background: transparent;
   color: var(--ivory-dim); font-size: 12px; padding: 4px 12px; }
 .role-chip.admin { border-color: var(--gold); color: var(--gold); font-weight: 700; }
+
+.swatch-row { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 12px; }
+.swatch { width: 40px; height: 40px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; display: grid; place-items: center; color: #fff; }
+.swatch.sel { border-color: var(--ivory); box-shadow: 0 0 0 2px var(--chalk); }
+.swatch.auto { background: var(--felt-3); color: var(--ivory-dim); font-size: 10px;
+  font-weight: 700; font-family: inherit; }
+.swatch-preview { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+.ping-card.mine { border-color: var(--chalk-deep); }
+.ping-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ping-who { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.live-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px;
+  font-weight: 800; letter-spacing: 0.08em; color: var(--loss);
+  border: 1px solid var(--loss); border-radius: 999px; padding: 3px 9px; }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--loss);
+  animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+.ping-loc { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 700;
+  font-family: 'Bricolage Grotesque', sans-serif; margin-bottom: 6px; }
+.ping-msg { color: var(--ivory-dim); font-size: 13.5px; font-style: italic; margin-bottom: 10px; }
+.ping-replies { border-top: 1px solid var(--line); padding-top: 10px; margin-bottom: 10px;
+  display: flex; flex-direction: column; gap: 8px; }
+.ping-reply { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.btn.small { padding: 11px; font-size: 14px; }
+.reply-form { margin-top: 4px; }
 
 .btn { width: 100%; border: none; border-radius: 16px; padding: 15px; font-size: 16px;
   font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -927,7 +1227,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .search-row { display: flex; align-items: center; gap: 10px; background: var(--felt);
   border: 1px solid var(--line); border-radius: 14px; padding: 0 12px; margin-bottom: 12px; }
 .search-row input { flex: 1; background: transparent; border: none; outline: none;
-  color: var(--ivory); font-size: 14px; padding: 11px 0; font-family: inherit; }
+  color: var(--ivory); font-size: 14px; padding: 11px 0; font-family: inherit; min-width: 0; }
 .clear-btn { background: none; border: none; color: var(--ivory-dim); cursor: pointer;
   display: grid; place-items: center; padding: 4px; }
 .nick-status { font-size: 13px; display: flex; align-items: flex-start; gap: 6px; margin: -4px 0 14px; line-height: 1.4; }
@@ -935,6 +1235,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .nick-status.warn { color: var(--gold); }
 .nick-status.err { color: var(--loss); }
 .nick-status.ok { color: var(--win); }
+.field-label { font-size: 13px; color: var(--ivory-dim); display: block; margin-bottom: 8px; }
 
 .login-screen { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
 .login-hero { text-align: center; margin-bottom: 34px; }
@@ -942,7 +1243,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .app-title { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; }
 .app-sub { color: var(--ivory-dim); margin-top: 8px; line-height: 1.5; font-size: 15px; }
 .login-card { background: var(--felt-2); border: 1px solid var(--line); border-radius: 22px; padding: 22px 18px; }
-.field-label { font-size: 13px; color: var(--ivory-dim); display: block; margin-bottom: 8px; }
 .mail-row { display: flex; align-items: center; gap: 10px; background: var(--felt);
   border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; margin-bottom: 14px; }
 .mail-ico { color: var(--ivory-dim); flex-shrink: 0; }
@@ -963,9 +1263,10 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .tab.on { color: var(--chalk); font-weight: 700; }
 .tab.fab { flex: 0 0 62px; background: var(--chalk); color: #08251C; width: 54px; height: 54px;
   border-radius: 50%; margin-top: -22px; box-shadow: 0 6px 16px #00000060; justify-content: center; }
-.badge { position: absolute; top: -2px; right: 22%; background: var(--loss); color: #fff;
+.badge { position: absolute; top: -2px; right: 18%; background: var(--loss); color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 16px; height: 16px;
   display: grid; place-items: center; padding: 0 4px; }
+.badge.live { background: var(--win); color: #06231A; }
 
 .refresh-btn { position: fixed; top: 14px; right: calc(50% - 215px + 14px);
   background: var(--felt-3); border: 1px solid var(--line); color: var(--ivory-dim);
@@ -983,5 +1284,8 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) {
   .rank-row, .opp-card, .btn, .tab, .chip-btn { transition: background .15s, border-color .15s, opacity .15s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; } .spin { animation: none; }
 }
 `;
