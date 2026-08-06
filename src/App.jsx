@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 import {
   Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
   Mail, ArrowRight, Swords, Flame, Search, LogOut, RefreshCw, Clock,
-  Radio, MapPin, Pencil,
+  Radio, MapPin, Pencil, Award, Lock,
 } from "lucide-react";
 
 /* ============================================================
@@ -39,14 +39,41 @@ const timeLeft = (d) => {
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
 
-function Ball({ color, label, size = 44, gold = false }) {
+/* Erfolgs-Katalog (Schlüssel identisch zur Datenbank, siehe phase5-badges.sql).
+   Reihenfolge = Anzeige-Reihenfolge in der Galerie. */
+const BADGES = {
+  streak3:    { emoji: "🎯", name: "Hattrick",       desc: "3 Siege in Folge" },
+  streak5:    { emoji: "🔥", name: "Serientäter",    desc: "5 Siege in Folge" },
+  streak10:   { emoji: "⚡", name: "Unaufhaltsam",   desc: "10 Siege in Folge" },
+  wins10:     { emoji: "🥉", name: "Routinier",      desc: "10 Siege insgesamt" },
+  wins50:     { emoji: "🥈", name: "Veteran",        desc: "50 Siege insgesamt" },
+  wins100:    { emoji: "🥇", name: "Legende",        desc: "100 Siege insgesamt" },
+  matches100: { emoji: "🎱", name: "Stammspieler",   desc: "100 Matches gespielt" },
+  shutout:    { emoji: "🧊", name: "Eiskalt",        desc: "Ein Match zu null gewonnen" },
+  giant:      { emoji: "🗡️", name: "Riesentöter",    desc: "Einen viel stärkeren Gegner geschlagen" },
+  allround:   { emoji: "🌈", name: "Allrounder",     desc: "In 3+ Disziplinen gesiegt" },
+  nemesis:    { emoji: "😈", name: "Angstgegner",    desc: "5+ Siege gegen denselben Gegner" },
+  nightowl:   { emoji: "🌙", name: "Nachtschwärmer", desc: "Match zwischen 0 und 5 Uhr" },
+  king4:      { emoji: "👑", name: "König",          desc: "4 Wochen auf Platz 1" },
+  king12:     { emoji: "♛",  name: "Dauer-König",    desc: "12 Wochen auf Platz 1" },
+  over500_4:  { emoji: "⭐", name: "Etabliert",      desc: "4 Wochen über 500 Punkte" },
+  over500_12: { emoji: "🌟", name: "Elite",          desc: "12 Wochen über 500 Punkte" },
+};
+const BADGE_ORDER = Object.keys(BADGES);
+
+function Ball({ color, label, size = 44, gold = false, badge = null }) {
   const c = gold ? "#D6A425" : color;
+  const b = badge && BADGES[badge] ? BADGES[badge] : null;
   return (
     <div className="ball" style={{ width: size, height: size, background: c }}>
       <div className="ball-shine" />
-      <div className="ball-num" style={{ width: size * 0.52, height: size * 0.52, fontSize: size * 0.28 }}>
-        {label}
-      </div>
+      {b ? (
+        <div className="ball-badge" style={{ fontSize: size * 0.5 }} title={b.name}>{b.emoji}</div>
+      ) : (
+        <div className="ball-num" style={{ width: size * 0.52, height: size * 0.52, fontSize: size * 0.28 }}>
+          {label}
+        </div>
+      )}
     </div>
   );
 }
@@ -173,7 +200,7 @@ function NicknameScreen({ onRegistered, existingPlayers }) {
    RANGLISTE
    ============================================================ */
 
-function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports, colorOf }) {
+function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports, colorOf, badgeOf }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
 
@@ -221,7 +248,7 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
           <li key={r.nickname + r.discipline}>
             <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
               <span className={"rank-pos" + (i < 3 && !r.vorlaeufig ? " top" : "")}>{i + 1}</span>
-              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} gold={i === 0 && !r.vorlaeufig && r.aktiv} />
+              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} gold={i === 0 && !r.vorlaeufig && r.aktiv} />
               <span className="rank-name">
                 {r.nickname}
                 <span className="rank-meta">
@@ -257,7 +284,7 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
    LIVE-TICKER
    ============================================================ */
 
-function PingCard({ ping, me, colorOf, onReply, onUnreply }) {
+function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnreply }) {
   const myReply = ping.replies?.find((r) => r.player_id === me.id);
   const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
@@ -266,7 +293,7 @@ function PingCard({ ping, me, colorOf, onReply, onUnreply }) {
   return (
     <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
       <div className="ping-head">
-        <Ball color={colorOf(ping.player.nickname)} label={initials(ping.player.nickname)} size={40} />
+        <Ball color={colorOf(ping.player.nickname)} label={initials(ping.player.nickname)} badge={badgeOf(ping.player.nickname)} size={40} />
         <div className="ping-who">
           <b>{ping.player.nickname}</b>
           <span className="rank-meta">{timeAgo(ping.created_at)} - {timeLeft(ping.expires_at)}</span>
@@ -280,7 +307,7 @@ function PingCard({ ping, me, colorOf, onReply, onUnreply }) {
         <div className="ping-replies">
           {ping.replies.map((r) => (
             <div key={r.id} className="ping-reply">
-              <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} size={26} />
+              <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} size={26} />
               <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : " ist dabei!"}</span>
             </div>
           ))}
@@ -315,7 +342,7 @@ function PingCard({ ping, me, colorOf, onReply, onUnreply }) {
   );
 }
 
-function LiveScreen({ me, pings, colorOf, onCreate, onClose, onReply, onUnreply }) {
+function LiveScreen({ me, pings, colorOf, badgeOf, onCreate, onClose, onReply, onUnreply }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
   const [loc, setLoc] = useState("");
@@ -330,7 +357,7 @@ function LiveScreen({ me, pings, colorOf, onCreate, onClose, onReply, onUnreply 
       </header>
 
       {myPing ? (
-        <PingCard ping={myPing} me={me} colorOf={colorOf} onReply={onReply} onUnreply={onUnreply} />
+        <PingCard ping={myPing} me={me} colorOf={colorOf} badgeOf={badgeOf} onReply={onReply} onUnreply={onUnreply} />
       ) : (
         <section className="stat-block">
           <h3><Radio size={17} /> Ich bin bereit!</h3>
@@ -365,7 +392,7 @@ function LiveScreen({ me, pings, colorOf, onCreate, onClose, onReply, onUnreply 
 
       {others.length > 0 && <p className="q" style={{ marginTop: 18 }}>Gerade aktiv:</p>}
       {others.map((p) => (
-        <PingCard key={p.id} ping={p} me={me} colorOf={colorOf} onReply={onReply} onUnreply={onUnreply} />
+        <PingCard key={p.id} ping={p} me={me} colorOf={colorOf} badgeOf={badgeOf} onReply={onReply} onUnreply={onUnreply} />
       ))}
       {others.length === 0 && !myPing && (
         <p className="hint center" style={{ marginTop: 24 }}>
@@ -380,7 +407,7 @@ function LiveScreen({ me, pings, colorOf, onCreate, onClose, onReply, onUnreply 
    MATCH MELDEN
    ============================================================ */
 
-function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toast, colorOf }) {
+function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toast, colorOf, badgeOf }) {
   const [step, setStep] = useState(0);
   const [opp, setOpp] = useState(null);
   const [s1, setS1] = useState(0);
@@ -442,7 +469,7 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
             {opponents.map((p) => (
               <button key={p.id} className={"opp-card" + (opp?.id === p.id ? " sel" : "")}
                 onClick={() => { setOpp(p); setStep(1); }}>
-                <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} size={48} />
+                <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={48} />
                 <span>{p.nickname}</span>
               </button>
             ))}
@@ -456,7 +483,7 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
           <div className="score-row">
             {[{ p: me.nickname, v: s1, set: setS1 }, { p: opp.nickname, v: s2, set: setS2 }].map(({ p, v, set }) => (
               <div key={p} className="score-col">
-                <Ball color={colorOf(p)} label={initials(p)} size={46} />
+                <Ball color={colorOf(p)} label={initials(p)} badge={badgeOf(p)} size={46} />
                 <span className="score-name">{p}</span>
                 <div className="score-num">{v}</div>
                 <div className="score-btns">
@@ -490,12 +517,12 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
           <div className="summary">
             <div className="sum-vs">
               <div className="sum-side">
-                <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} size={52} />
+                <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={52} />
                 <span>{me.nickname}</span>
               </div>
               <div className="sum-score">{s1}<i>:</i>{s2}</div>
               <div className="sum-side">
-                <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} size={52} />
+                <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={52} />
                 <span>{opp.nickname}</span>
               </div>
             </div>
@@ -558,7 +585,7 @@ function computeStats(matches) {
   return s;
 }
 
-function StatistikScreen({ matches, onOpenProfile, colorOf }) {
+function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf }) {
   const stats = useMemo(() => computeStats(matches), [matches]);
   const list = Object.values(stats);
   const medals = ["1.", "2.", "3."];
@@ -574,7 +601,7 @@ function StatistikScreen({ matches, onOpenProfile, colorOf }) {
       {rows.map((p, i) => (
         <button key={p.name} className="stat-row as-btn" onClick={() => onOpenProfile(p.name)}>
           <span className="medal">{medals[i]}</span>
-          <Ball color={colorOf(p.name)} label={initials(p.name)} size={34} />
+          <Ball color={colorOf(p.name)} label={initials(p.name)} badge={badgeOf(p.name)} size={34} />
           <span className="stat-name">{p.name}</span>
           <span className="stat-val">{fmt(p)}</span>
         </button>
@@ -607,8 +634,8 @@ function StatistikScreen({ matches, onOpenProfile, colorOf }) {
    PROFIL (inkl. Bearbeitung des eigenen Profils)
    ============================================================ */
 
-function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf,
-  players, meRow, onSaveProfile, onOpenAdmin }) {
+function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
+  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge }) {
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -707,7 +734,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
       </header>
 
       <div className="profile-hero">
-        <Ball color={colorOf(nickname)} label={initials(nickname)} size={72} />
+        <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} size={72} />
         <div style={{ minWidth: 0 }}>
           <h3 className="p-name">{nickname}</h3>
           <div className="p-rating">
@@ -746,10 +773,45 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
       </section>
 
       <section className="stat-block">
+        <h3><Award size={17} /> Erfolge ({earnedBadges.size} / {BADGE_ORDER.length})</h3>
+        {isMe && (
+          <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
+            Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.
+          </p>
+        )}
+        <div className="badge-grid">
+          {BADGE_ORDER.map((key) => {
+            const b = BADGES[key];
+            const earned = earnedBadges.has(key);
+            const selected = meRow?.selected_badge === key && isMe;
+            if (!isMe && !earned) return null; // fremde Profile: nur Erhaltenes zeigen
+            return (
+              <button key={key}
+                className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
+                disabled={!isMe || !earned}
+                onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
+                title={b.desc}>
+                <span className="badge-emoji">{earned ? b.emoji : <Lock size={18} />}</span>
+                <span className="badge-name">{b.name}</span>
+                <span className="badge-desc">{b.desc}</span>
+                {selected && <span className="badge-active">Als Avatar aktiv</span>}
+              </button>
+            );
+          })}
+        </div>
+        {isMe && meRow?.selected_badge && (
+          <button className="btn ghost" onClick={() => onSelectBadge(null)}>
+            Wieder meine Kugel zeigen
+          </button>
+        )}
+        {!isMe && earnedBadges.size === 0 && <p className="hint">Noch keine Erfolge freigeschaltet.</p>}
+      </section>
+
+      <section className="stat-block">
         <h3><Swords size={17} /> Head-to-Head (Match-Siege)</h3>
         {h2h.map(({ opp, w, l }) => (
           <div key={opp} className="h2h-row">
-            <Ball color={colorOf(opp)} label={initials(opp)} size={34} />
+            <Ball color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} size={34} />
             <span className="stat-name">{opp}</span>
             <div className="h2h-bar"><div className="h2h-w" style={{ width: `${(100 * w) / Math.max(1, w + l)}%` }} /></div>
             <span className="h2h-score">{w}:{l}</span>
@@ -772,7 +834,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
    ADMIN
    ============================================================ */
 
-function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf }) {
+function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf }) {
   return (
     <div className="screen">
       <header className="screen-head with-back">
@@ -799,7 +861,7 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf }) {
         <h3><User size={17} /> Mitglieder ({players.length})</h3>
         {players.map((p) => (
           <div key={p.id} className="user-row">
-            <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} size={34} />
+            <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={34} />
             <span className="stat-name">{p.nickname}{p.id === me.id ? " (du)" : ""}</span>
             {!p.auth_user_id && <span className="role-chip">ohne Login</span>}
             {p.role === "admin" && <span className="role-chip admin">admin</span>}
@@ -826,6 +888,7 @@ export default function App() {
   const [matches, setMatches] = useState([]);
   const [unconfirmed, setUnconfirmed] = useState([]);
   const [pings, setPings] = useState([]);
+  const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [tab, setTab] = useState("rang");
   const [profileName, setProfileName] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
@@ -850,31 +913,37 @@ export default function App() {
       setPlayer(data ?? null);
       setPlayerChecked(true);
       const { data: all } = await supabase.from("players")
-        .select("id, nickname, role, auth_user_id, avatar_color, motto");
+        .select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge");
       setPlayers(all ?? []);
     })();
   }, [session]);
 
   const loadData = useCallback(async () => {
     setLoadingData(true);
-    const [rang, m, pl, pi] = await Promise.all([
+    const [rang, m, pl, pi, bg] = await Promise.all([
       supabase.from("rangliste").select("*"),
       supabase.from("matches")
         .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
         .order("played_at", { ascending: false }),
-      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto"),
+      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge"),
       supabase.from("pings")
         .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false }),
+      supabase.from("player_badges").select("player_id, badge_key"),
     ]);
-    const err = rang.error || m.error || pl.error || pi.error;
+    const err = rang.error || m.error || pl.error || pi.error || bg.error;
     if (err) toast("Fehler beim Laden: " + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
     setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
     setPlayers(pl.data ?? []);
     setPings(pi.data ?? []);
+    const byPlayer = {};
+    (bg.data ?? []).forEach((r) => {
+      (byPlayer[r.player_id] ||= new Set()).add(r.badge_key);
+    });
+    setBadgesByPlayer(byPlayer);
     setLoadingData(false);
   }, [toast]);
 
@@ -896,6 +965,13 @@ export default function App() {
     return p?.avatar_color || hashColor(nick);
   }, [players]);
 
+  const badgeOf = useCallback((nick) => {
+    const p = players.find((x) => x.nickname === nick);
+    return p?.selected_badge || null;
+  }, [players]);
+
+  const badgesOfId = useCallback((id) => badgesByPlayer[id] || new Set(), [badgesByPlayer]);
+
   const pendingForMe = player
     ? unconfirmed.filter((m) => (m.player1_id === player.id || m.player2_id === player.id) && m.reported_by !== player.id)
     : [];
@@ -907,6 +983,14 @@ export default function App() {
     const { error } = await supabase.rpc("confirm_match", { p_match_id: id, p_ok: ok });
     if (error) toast("Fehler: " + error.message);
     else toast(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen.");
+    loadData();
+  };
+
+  const selectBadge = async (badgeKey) => {
+    const { data, error } = await supabase.rpc("select_badge", { p_badge_key: badgeKey });
+    if (error) { toast("Fehler: " + error.message); return; }
+    setPlayer(data);
+    toast(badgeKey ? "Erfolg als Avatar gesetzt." : "Wieder deine Kugel.");
     loadData();
   };
 
@@ -973,36 +1057,40 @@ export default function App() {
               {tab === "rang" && (
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
                   pending={pendingForMe} me={player} onConfirm={confirmMatch}
-                  onOpenProfile={openProfile} myOpenReports={myOpenReports} colorOf={colorOf} />
+                  onOpenProfile={openProfile} myOpenReports={myOpenReports}
+                  colorOf={colorOf} badgeOf={badgeOf} />
               )}
               {tab === "live" && (
-                <LiveScreen me={player} pings={pings} colorOf={colorOf}
+                <LiveScreen me={player} pings={pings} colorOf={colorOf} badgeOf={badgeOf}
                   onCreate={createPing} onClose={closePing}
                   onReply={replyPing} onUnreply={unreplyPing} />
               )}
               {tab === "match" && (
                 <MatchScreen me={player} players={players} disciplines={disciplines}
-                  ratingOf={ratingOf} toast={toast} colorOf={colorOf}
+                  ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf}
                   onDone={() => { setTab("rang"); loadData(); }}
                   onCancel={() => setTab("rang")} />
               )}
-              {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile} colorOf={colorOf} />}
+              {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile} colorOf={colorOf} badgeOf={badgeOf} />}
               {tab === "profil" && (
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
-                  onBack={null} isMe onLogout={logout} colorOf={colorOf}
+                  onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
+                  earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge}
                   onOpenAdmin={() => setTab("admin")} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
                   onBack={() => setTab("rang")} isMe={profileName === player.nickname}
-                  onLogout={logout} colorOf={colorOf}
+                  onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
+                  earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
+                  onSelectBadge={selectBadge}
                   onOpenAdmin={() => setTab("admin")} />
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
-                  me={player} onBack={() => setTab("profil")} colorOf={colorOf} />
+                  me={player} onBack={() => setTab("profil")} colorOf={colorOf} badgeOf={badgeOf} />
               )}
               <button className="refresh-btn" onClick={loadData} aria-label="Aktualisieren">
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
@@ -1077,6 +1165,22 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border-radius: 50%; display: grid; place-items: center; color: #1E1E1E;
   font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
   box-shadow: inset 0 -2px 4px #00000025; }
+.ball-badge { position: absolute; inset: 0; display: grid; place-items: center;
+  line-height: 1; filter: drop-shadow(0 1px 2px #00000060); }
+
+.badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+.badge-chip { display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: var(--felt); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 6px 10px; cursor: pointer; font-family: inherit; color: var(--ivory);
+  text-align: center; }
+.badge-chip.locked { opacity: 0.42; cursor: default; }
+.badge-chip.earned { border-color: #2C5547; }
+.badge-chip.selected { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); background: #17493A; }
+.badge-emoji { font-size: 26px; line-height: 1; height: 30px; display: grid; place-items: center;
+  color: var(--ivory-dim); }
+.badge-name { font-size: 12px; font-weight: 700; }
+.badge-desc { font-size: 10px; color: var(--ivory-dim); line-height: 1.3; }
+.badge-active { font-size: 9.5px; font-weight: 700; color: var(--gold); margin-top: 2px; }
 
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
 .chip { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
