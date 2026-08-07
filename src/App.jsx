@@ -695,10 +695,24 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
                 {color === c && <Check size={16} />}
               </button>
             ))}
+            {/* Eigene Wunschfarbe per Farb-Picker */}
+            <label className={"swatch picker" + (color && !BALL_PALETTE.includes(color) ? " sel" : "")}
+              style={color && !BALL_PALETTE.includes(color) ? { background: color } : undefined}
+              title="Eigene Farbe wählen">
+              {color && !BALL_PALETTE.includes(color)
+                ? <Check size={16} />
+                : <Pencil size={15} />}
+              <input type="color" className="color-input"
+                value={color && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : hashColor(cleanNick || nickname)}
+                onChange={(e) => setColor(e.target.value)}
+                aria-label="Eigene Kugelfarbe wählen" />
+            </label>
           </div>
           <div className="swatch-preview">
             <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)} size={56} />
-            <span className="hint" style={{ marginTop: 0 }}>So sehen dich die anderen.</span>
+            <span className="hint" style={{ marginTop: 0 }}>
+              So sehen dich die anderen.{color && !BALL_PALETTE.includes(color) ? ` Deine Farbe: ${color.toUpperCase()}` : ""}
+            </span>
           </div>
 
           <label className="field-label" htmlFor="pmotto">Motto (optional)</label>
@@ -1314,6 +1328,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .swatch { width: 40px; height: 40px; border-radius: 50%; border: 2px solid transparent;
   cursor: pointer; display: grid; place-items: center; color: #fff; }
 .swatch.sel { border-color: var(--ivory); box-shadow: 0 0 0 2px var(--chalk); }
+.swatch.picker { position: relative; overflow: hidden; cursor: pointer;
+  background: conic-gradient(from 0deg, #E8B321, #2E7D4F, #2B5DA8, #6C4AB0, #C0392B, #E8B321);
+  color: #fff; }
+.swatch.picker .color-input { position: absolute; inset: 0; opacity: 0; width: 100%;
+  height: 100%; border: none; padding: 0; cursor: pointer; }
 .swatch.auto { background: var(--felt-3); color: var(--ivory-dim); font-size: 10px;
   font-weight: 700; font-family: inherit; }
 .swatch-preview { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
