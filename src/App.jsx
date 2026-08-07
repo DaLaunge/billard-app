@@ -39,31 +39,17 @@ const timeLeft = (d) => {
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
 
-/* Erfolgs-Katalog (Schlüssel identisch zur Datenbank, siehe phase5-badges.sql).
-   Reihenfolge = Anzeige-Reihenfolge in der Galerie. */
-const BADGES = {
-  streak3:    { emoji: "🎯", name: "Hattrick",       desc: "3 Siege in Folge" },
-  streak5:    { emoji: "🔥", name: "Serientäter",    desc: "5 Siege in Folge" },
-  streak10:   { emoji: "⚡", name: "Unaufhaltsam",   desc: "10 Siege in Folge" },
-  wins10:     { emoji: "🥉", name: "Routinier",      desc: "10 Siege insgesamt" },
-  wins50:     { emoji: "🥈", name: "Veteran",        desc: "50 Siege insgesamt" },
-  wins100:    { emoji: "🥇", name: "Legende",        desc: "100 Siege insgesamt" },
-  matches100: { emoji: "🎱", name: "Stammspieler",   desc: "100 Matches gespielt" },
-  shutout:    { emoji: "🧊", name: "Eiskalt",        desc: "Ein Match zu null gewonnen" },
-  giant:      { emoji: "🗡️", name: "Riesentöter",    desc: "Einen viel stärkeren Gegner geschlagen" },
-  allround:   { emoji: "🌈", name: "Allrounder",     desc: "In 3+ Disziplinen gesiegt" },
-  nemesis:    { emoji: "😈", name: "Angstgegner",    desc: "5+ Siege gegen denselben Gegner" },
-  nightowl:   { emoji: "🌙", name: "Nachtschwärmer", desc: "Match zwischen 0 und 5 Uhr" },
-  king4:      { emoji: "👑", name: "König",          desc: "4 Wochen auf Platz 1" },
-  king12:     { emoji: "♛",  name: "Dauer-König",    desc: "12 Wochen auf Platz 1" },
-  over500_4:  { emoji: "⭐", name: "Etabliert",      desc: "4 Wochen über 500 Punkte" },
-  over500_12: { emoji: "🌟", name: "Elite",          desc: "12 Wochen über 500 Punkte" },
-};
-const BADGE_ORDER = Object.keys(BADGES);
+/* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
+   badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
+   Start befüllt – so kennt auch die (zustandslose) Ball-Komponente die
+   Emojis. Der kleine Fallback greift nur, falls der Katalog noch lädt. */
+const BADGE_INFO = {};
+const BADGE_FALLBACK = { emoji: "🏅", name: "Erfolg", description: "" };
+const badgeInfo = (key) => BADGE_INFO[key] || BADGE_FALLBACK;
 
 function Ball({ color, label, size = 44, gold = false, badge = null }) {
   const c = gold ? "#D6A425" : color;
-  const b = badge && BADGES[badge] ? BADGES[badge] : null;
+  const b = badge && BADGE_INFO[badge] ? BADGE_INFO[badge] : null;
   return (
     <div className="ball" style={{ width: size, height: size, background: c }}>
       <div className="ball-shine" />
@@ -635,7 +621,14 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf }) {
    ============================================================ */
 
 function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
-  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge }) {
+  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog }) {
+  const catalogByCategory = useMemo(() => {
+    const groups = {};
+    [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
+      (groups[b.category] ||= []).push(b);
+    });
+    return Object.entries(groups);
+  }, [catalog]);
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -773,32 +766,47 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
       </section>
 
       <section className="stat-block">
-        <h3><Award size={17} /> Erfolge ({earnedBadges.size} / {BADGE_ORDER.length})</h3>
+        <h3><Award size={17} /> Erfolge ({earnedBadges.size} / {catalog.length})</h3>
         {isMe && (
           <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
             Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.
           </p>
         )}
-        <div className="badge-grid">
-          {BADGE_ORDER.map((key) => {
-            const b = BADGES[key];
-            const earned = earnedBadges.has(key);
-            const selected = meRow?.selected_badge === key && isMe;
-            if (!isMe && !earned) return null; // fremde Profile: nur Erhaltenes zeigen
-            return (
-              <button key={key}
-                className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
-                disabled={!isMe || !earned}
-                onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
-                title={b.desc}>
-                <span className="badge-emoji">{earned ? b.emoji : <Lock size={18} />}</span>
-                <span className="badge-name">{b.name}</span>
-                <span className="badge-desc">{b.desc}</span>
-                {selected && <span className="badge-active">Als Avatar aktiv</span>}
-              </button>
-            );
-          })}
-        </div>
+        {catalogByCategory.map(([cat, items]) => {
+          // im eigenen Profil: versteckte, noch nicht erreichte Badges ausblenden.
+          // in fremden Profilen: nur erreichte zeigen.
+          const visible = items.filter((b) => {
+            const earned = earnedBadges.has(b.badge_key);
+            if (!isMe) return earned;
+            if (b.secret && !earned) return false;
+            return true;
+          });
+          if (visible.length === 0) return null;
+          return (
+            <div key={cat} className="badge-cat">
+              <div className="badge-cat-title">{cat}</div>
+              <div className="badge-grid">
+                {visible.map((b) => {
+                  const key = b.badge_key;
+                  const earned = earnedBadges.has(key);
+                  const selected = meRow?.selected_badge === key && isMe;
+                  return (
+                    <button key={key}
+                      className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
+                      disabled={!isMe || !earned}
+                      onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
+                      title={b.description}>
+                      <span className="badge-emoji">{earned ? b.emoji : <Lock size={18} />}</span>
+                      <span className="badge-name">{b.name}</span>
+                      <span className="badge-desc">{b.description}</span>
+                      {selected && <span className="badge-active">Als Avatar aktiv</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
         {isMe && meRow?.selected_badge && (
           <button className="btn ghost" onClick={() => onSelectBadge(null)}>
             Wieder meine Kugel zeigen
@@ -889,6 +897,7 @@ export default function App() {
   const [unconfirmed, setUnconfirmed] = useState([]);
   const [pings, setPings] = useState([]);
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
+  const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
   const [tab, setTab] = useState("rang");
   const [profileName, setProfileName] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
@@ -920,7 +929,7 @@ export default function App() {
 
   const loadData = useCallback(async () => {
     setLoadingData(true);
-    const [rang, m, pl, pi, bg] = await Promise.all([
+    const [rang, m, pl, pi, bg, ct] = await Promise.all([
       supabase.from("rangliste").select("*"),
       supabase.from("matches")
         .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
@@ -931,8 +940,9 @@ export default function App() {
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false }),
       supabase.from("player_badges").select("player_id, badge_key"),
+      supabase.from("badge_catalog").select("*"),
     ]);
-    const err = rang.error || m.error || pl.error || pi.error || bg.error;
+    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error;
     if (err) toast("Fehler beim Laden: " + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
@@ -944,6 +954,11 @@ export default function App() {
       (byPlayer[r.player_id] ||= new Set()).add(r.badge_key);
     });
     setBadgesByPlayer(byPlayer);
+    const cat = ct.data ?? [];
+    setCatalog(cat);
+    // modulweite Map füllen, damit auch die Ball-Komponente Emojis kennt
+    Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
+    cat.forEach((b) => { BADGE_INFO[b.badge_key] = { emoji: b.emoji, name: b.name, description: b.description }; });
     setLoadingData(false);
   }, [toast]);
 
@@ -1076,7 +1091,7 @@ export default function App() {
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
-                  earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge}
+                  earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog}
                   onOpenAdmin={() => setTab("admin")} />
               )}
               {tab === "fremdprofil" && profileName && (
@@ -1085,7 +1100,7 @@ export default function App() {
                   onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
-                  onSelectBadge={selectBadge}
+                  onSelectBadge={selectBadge} catalog={catalog}
                   onOpenAdmin={() => setTab("admin")} />
               )}
               {tab === "admin" && player.role === "admin" && (
@@ -1169,6 +1184,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   line-height: 1; filter: drop-shadow(0 1px 2px #00000060); }
 
 .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+.badge-cat { margin-bottom: 14px; }
+.badge-cat-title { font-size: 12px; font-weight: 700; color: var(--ivory-dim);
+  text-transform: uppercase; letter-spacing: 0.06em; margin: 4px 0 8px; }
 .badge-chip { display: flex; flex-direction: column; align-items: center; gap: 3px;
   background: var(--felt); border: 1px solid var(--line); border-radius: 14px;
   padding: 12px 6px 10px; cursor: pointer; font-family: inherit; color: var(--ivory);
