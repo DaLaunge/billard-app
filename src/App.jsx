@@ -587,12 +587,26 @@ function computeStats(matches) {
   return s;
 }
 
-/* Selbst gezeichnetes Mehrlinien-Diagramm (SVG, ohne externe Bibliothek). */
+/* ISO-Wochen-String ("2026-W05") -> Date des Wochen-Montags */
+function isoWeekToDate(wk) {
+  if (!wk || wk.length < 7) return null;
+  const y = parseInt(wk.slice(0, 4), 10);
+  const w = parseInt(wk.slice(6), 10);
+  const simple = new Date(Date.UTC(y, 0, 1 + (w - 1) * 7));
+  const dow = simple.getUTCDay();
+  const monday = new Date(simple);
+  if (dow <= 4) monday.setUTCDate(simple.getUTCDate() - dow + 1);
+  else monday.setUTCDate(simple.getUTCDate() + 8 - dow);
+  return monday;
+}
+
+/* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek). */
 function DevChart({ weeks, lines }) {
+  const [active, setActive] = useState(null);
   const W = 340, H = 210, padL = 34, padR = 12, padT = 12, padB = 26;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const all = lines.flatMap((l) => l.points.map((p) => p.rating));
-  if (all.length === 0) return <p className="hint center">Noch keine Verlaufsdaten.</p>;
+  if (all.length === 0) return <p className="hint center">Keine Daten im gewählten Zeitraum.</p>;
 
   let yMin = Math.min(...all), yMax = Math.max(...all);
   const pad = Math.max(10, (yMax - yMin) * 0.12);
@@ -600,57 +614,98 @@ function DevChart({ weeks, lines }) {
   yMax = Math.ceil((yMax + pad) / 10) * 10;
   const nW = weeks.length;
   const xFor = (wi) => (nW <= 1 ? padL + plotW / 2 : padL + (wi / (nW - 1)) * plotW);
-  const yFor = (r) => padT + (1 - (r - yMin) / (yMax - yMin || 1)) * plotH;
+  const yFor = (r) => padT + (1 - (r - yMin) / ((yMax - yMin) || 1)) * plotH;
+  const yticks = [0, 1, 2, 3].map((i) => Math.round(yMin + ((yMax - yMin) * i) / 3));
 
-  // horizontale Hilfslinien + Y-Beschriftung
-  const yticks = [];
-  for (let i = 0; i <= 3; i++) {
-    const val = Math.round(yMin + ((yMax - yMin) * i) / 3);
-    yticks.push(val);
-  }
-  // X-Beschriftung an Jahreswechseln
-  const xticks = [];
-  let lastYear = null;
-  weeks.forEach((wk, i) => {
-    const year = wk.slice(0, 4);
-    if (year !== lastYear) { xticks.push({ i, label: year }); lastYear = year; }
-  });
+  const nTicks = Math.min(5, nW);
+  const xtickIdx = [];
+  if (nW === 1) xtickIdx.push(0);
+  else for (let i = 0; i < nTicks; i++) xtickIdx.push(Math.round((i * (nW - 1)) / (nTicks - 1)));
+  const mmYY = (wk) => { const d = isoWeekToDate(wk); return d ? `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getFullYear()).slice(2)}` : wk; };
+  // Ticks entdoppeln (gleiche Monatslabels nebeneinander)
+  const seenX = new Set();
+  const xTicks = [...new Set(xtickIdx)].map((i) => ({ i, label: mmYY(weeks[i]) }))
+    .filter((t) => (seenX.has(t.label) ? false : (seenX.add(t.label), true)));
+
+  const valAt = (l, wi) => { const p = l.points.find((pp) => pp.wi === wi); return p ? p.rating : null; };
+
+  const onMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const vbX = ((e.clientX - rect.left) / rect.width) * W;
+    let wi = nW <= 1 ? 0 : Math.round(((vbX - padL) / plotW) * (nW - 1));
+    wi = Math.max(0, Math.min(nW - 1, wi));
+    setActive(wi);
+  };
+  const down = (e) => { e.currentTarget.setPointerCapture?.(e.pointerId); onMove(e); };
+  const up = (e) => { e.currentTarget.releasePointerCapture?.(e.pointerId); setActive(null); };
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label="Rating-Verlauf">
-      {yticks.map((val) => (
-        <g key={val}>
-          <line x1={padL} y1={yFor(val)} x2={W - padR} y2={yFor(val)} className="grid" />
-          <text x={padL - 5} y={yFor(val) + 3} className="ylabel">{val}</text>
-        </g>
-      ))}
-      {xticks.map((t) => (
-        <text key={t.i} x={xFor(t.i)} y={H - 8} className="xlabel">{t.label}</text>
-      ))}
-      {lines.map((l) => {
-        const pts = l.points.map((p) => `${xFor(p.wi)},${yFor(p.rating)}`).join(" ");
-        return (
-          <g key={l.nickname}>
-            <polyline points={pts} fill="none" stroke={l.color} strokeWidth="2.2"
-              strokeLinejoin="round" strokeLinecap="round" />
-            {l.points.length > 0 && (
-              <circle cx={xFor(l.points.at(-1).wi)} cy={yFor(l.points.at(-1).rating)}
-                r="3" fill={l.color} />
-            )}
+    <div className="dev-wrap">
+      <div className="dev-readout">
+        {active == null ? (
+          <span className="dev-hint">Zum Ablesen über den Graphen ziehen</span>
+        ) : (
+          <>
+            <b>{fmtDate(isoWeekToDate(weeks[active]))}</b>
+            {lines.map((l) => {
+              const v = valAt(l, active);
+              return v == null ? null : (
+                <span key={l.nickname} className="ro">
+                  <span className="legend-dot" style={{ background: l.color }} />{Math.round(v)}
+                </span>
+              );
+            })}
+          </>
+        )}
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label="Rating-Verlauf"
+        onPointerDown={down} onPointerMove={onMove} onPointerUp={up} onPointerLeave={() => setActive(null)} onPointerCancel={up}>
+        {yticks.map((val) => (
+          <g key={val}>
+            <line x1={padL} y1={yFor(val)} x2={W - padR} y2={yFor(val)} className="grid" />
+            <text x={padL - 5} y={yFor(val) + 3} className="ylabel">{val}</text>
           </g>
-        );
-      })}
-    </svg>
+        ))}
+        {xTicks.map((t) => (
+          <text key={t.i} x={xFor(t.i)} y={H - 8} className="xlabel">{t.label}</text>
+        ))}
+        {active != null && (
+          <line x1={xFor(active)} y1={padT} x2={xFor(active)} y2={padT + plotH} className="crosshair" />
+        )}
+        {lines.map((l) => {
+          const pts = l.points.map((p) => `${xFor(p.wi)},${yFor(p.rating)}`).join(" ");
+          const av = active != null ? valAt(l, active) : null;
+          return (
+            <g key={l.nickname}>
+              <polyline points={pts} fill="none" stroke={l.color} strokeWidth="2.2"
+                strokeLinejoin="round" strokeLinecap="round" />
+              {l.points.length > 0 && (
+                <circle cx={xFor(l.points.at(-1).wi)} cy={yFor(l.points.at(-1).rating)} r="3" fill={l.color} />
+              )}
+              {av != null && (
+                <circle cx={xFor(active)} cy={yFor(av)} r="4" fill={l.color} stroke="#0A2B21" strokeWidth="1.5" />
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
-function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf }) {
-  // Nickname je player_id
+const RANGES = [
+  { key: "1M", label: "1M", weeks: 5 },
+  { key: "3M", label: "3M", weeks: 13 },
+  { key: "6M", label: "6M", weeks: 26 },
+  { key: "1J", label: "1J", weeks: 53 },
+  { key: "ALL", label: "Alles", weeks: null },
+];
+
+function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
 
-  // Verlauf je Nickname: Map iso_week -> rating
   const seriesByNick = useMemo(() => {
     const s = {};
     snapshots.forEach((r) => {
@@ -666,11 +721,7 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf }) {
     [snapshots]
   );
 
-  // Standard-Auswahl: ich + 2 über + 2 unter mir (nach Gesamt-Rangliste)
-  const gesamt = useMemo(
-    () => rangliste.filter((r) => r.discipline === "Gesamt"),
-    [rangliste]
-  );
+  const gesamt = useMemo(() => rangliste.filter((r) => r.discipline === "Gesamt"), [rangliste]);
   const defaultSel = useMemo(() => {
     const names = gesamt.map((r) => r.nickname);
     const idx = names.indexOf(me.nickname);
@@ -679,7 +730,21 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf }) {
     return names.slice(from, from + 5);
   }, [gesamt, me]);
 
+  // Wie oft habe ich gegen wen gespielt? (für Vorschläge)
+  const freqByNick = useMemo(() => {
+    const f = {};
+    matches.forEach((m) => {
+      let opp = null;
+      if (m.p1.nickname === me.nickname) opp = m.p2.nickname;
+      else if (m.p2.nickname === me.nickname) opp = m.p1.nickname;
+      if (opp) f[opp] = (f[opp] || 0) + 1;
+    });
+    return f;
+  }, [matches, me]);
+
   const [sel, setSel] = useState(defaultSel);
+  const [rangeKey, setRangeKey] = useState("1J");
+  const [addOpen, setAddOpen] = useState(false);
   const [query, setQuery] = useState("");
   useEffect(() => { setSel(defaultSel); }, [defaultSel]);
 
@@ -689,22 +754,26 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf }) {
       : (cur.length < 6 ? [...cur, nick] : cur));
   };
 
+  const range = RANGES.find((r) => r.key === rangeKey) || RANGES.at(-1);
+  const visibleWeeks = range.weeks ? allWeeks.slice(-range.weeks) : allWeeks;
+
   const lines = sel
     .filter((nick) => seriesByNick[nick])
     .map((nick) => ({
       nickname: nick,
       color: colorOf(nick),
-      points: allWeeks
-        .map((wk, wi) => (seriesByNick[nick][wk] != null
-          ? { wi, rating: seriesByNick[nick][wk] } : null))
+      points: visibleWeeks
+        .map((wk, wi) => (seriesByNick[nick][wk] != null ? { wi, rating: seriesByNick[nick][wk] } : null))
         .filter(Boolean),
     }));
 
-  const candidates = players
-    .map((p) => p.nickname)
-    .filter((n) => seriesByNick[n])
-    .filter((n) => n.toLowerCase().includes(query.trim().toLowerCase()))
-    .sort((a, b) => a.localeCompare(b));
+  // Vorschläge: erst häufigste Gegner, dann Rest – jeweils mit Verlaufsdaten & nicht gewählt
+  const suggestions = useMemo(() => {
+    const withData = players.map((p) => p.nickname).filter((n) => seriesByNick[n] && !sel.includes(n));
+    const q = query.trim().toLowerCase();
+    const filtered = q ? withData.filter((n) => n.toLowerCase().includes(q)) : withData;
+    return filtered.sort((a, b) => (freqByNick[b] || 0) - (freqByNick[a] || 0) || a.localeCompare(b));
+  }, [players, seriesByNick, sel, query, freqByNick]);
 
   const latest = (nick) => {
     const pts = seriesByNick[nick];
@@ -720,36 +789,52 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf }) {
         <p className="hint">Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.</p>
       ) : (
         <>
-          <DevChart weeks={allWeeks} lines={lines} />
+          <div className="range-row">
+            {RANGES.map((r) => (
+              <button key={r.key} className={"range-btn" + (rangeKey === r.key ? " active" : "")}
+                onClick={() => setRangeKey(r.key)}>{r.label}</button>
+            ))}
+          </div>
+          <DevChart weeks={visibleWeeks} lines={lines} />
           <div className="legend">
             {sel.map((nick) => (
-              <button key={nick} className="legend-item" onClick={() => toggle(nick)}
-                title="Entfernen">
+              <button key={nick} className="legend-item" onClick={() => toggle(nick)} title="Entfernen">
                 <span className="legend-dot" style={{ background: colorOf(nick) }} />
                 {nick}{latest(nick) != null ? ` · ${latest(nick)}` : ""}
                 <X size={12} />
               </button>
             ))}
           </div>
-          <div className="search-row" style={{ marginTop: 4 }}>
-            <Search size={16} className="mail-ico" />
-            <input placeholder="Spieler zum Vergleich hinzufügen …" value={query}
-              onChange={(e) => setQuery(e.target.value)} />
-            {query && <button className="clear-btn" onClick={() => setQuery("")}><X size={15} /></button>}
-          </div>
-          {query && (
-            <div className="cand-row">
-              {candidates.filter((n) => !sel.includes(n)).slice(0, 12).map((n) => (
-                <button key={n} className="cand-chip" onClick={() => { toggle(n); setQuery(""); }}>
-                  <Plus size={13} /> {n}
-                </button>
-              ))}
-              {candidates.filter((n) => !sel.includes(n)).length === 0 && (
-                <p className="hint">Keine weiteren Spieler gefunden.</p>
+
+          {!addOpen ? (
+            <button className="btn ghost" onClick={() => setAddOpen(true)}>
+              <Plus size={16} /> Spieler hinzufügen
+            </button>
+          ) : (
+            <div className="add-panel">
+              <div className="search-row">
+                <Search size={16} className="mail-ico" />
+                <input placeholder="Spieler suchen …" value={query} autoFocus
+                  onChange={(e) => setQuery(e.target.value)} />
+                {query && <button className="clear-btn" onClick={() => setQuery("")}><X size={15} /></button>}
+              </div>
+              {!query && suggestions.length > 0 && (
+                <p className="hint" style={{ marginTop: 0, marginBottom: 6 }}>
+                  Deine häufigsten Mitspieler zuerst:
+                </p>
               )}
+              <div className="cand-row">
+                {suggestions.slice(0, 12).map((n) => (
+                  <button key={n} className="cand-chip" onClick={() => toggle(n)}>
+                    <Plus size={13} /> {n}{freqByNick[n] ? ` (${freqByNick[n]})` : ""}
+                  </button>
+                ))}
+                {suggestions.length === 0 && <p className="hint">Keine weiteren Spieler.</p>}
+              </div>
+              <button className="btn ghost" onClick={() => { setAddOpen(false); setQuery(""); }}>Fertig</button>
             </div>
           )}
-          <p className="hint">Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler gleichzeitig.</p>
+          <p className="hint">Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.</p>
         </>
       )}
     </section>
@@ -783,7 +868,7 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, 
   return (
     <div className="screen">
       <header className="screen-head"><h2>Statistik</h2><span className="head-note">Bestenlisten (bestaetigte Matches)</span></header>
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} />
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} />
       <Block icon={<Trophy size={17} />} title="Meiste Siege" rows={topWins} fmt={(p) => `${p.siege} Siege`} />
       <Block icon={<BarChart3 size={17} />} title="Beste Siegquote (ab 10 Spielen)" rows={topQuote} fmt={(p) => `${p.quote} %`} />
       <Block icon={<Flame size={17} />} title="Aktuelle Serien" rows={topStreak} fmt={(p) => `${p.streak} in Folge`} />
@@ -1394,10 +1479,23 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .badge-cat-title { font-size: 12px; font-weight: 700; color: var(--ivory-dim);
   text-transform: uppercase; letter-spacing: 0.06em; margin: 4px 0 8px; }
 
-.dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; }
+.dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
 .dev-chart .ylabel { fill: var(--ivory-dim); font-size: 9px; text-anchor: end; }
 .dev-chart .xlabel { fill: var(--ivory-dim); font-size: 9px; text-anchor: middle; }
+.dev-chart .crosshair { stroke: var(--ivory-dim); stroke-width: 1; stroke-dasharray: 3 3; }
+.dev-wrap { }
+.dev-readout { display: flex; align-items: center; gap: 10px; min-height: 22px; margin-bottom: 4px;
+  font-size: 13px; flex-wrap: wrap; }
+.dev-readout b { font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; }
+.dev-readout .ro { display: inline-flex; align-items: center; gap: 5px; font-weight: 700;
+  font-family: 'Bricolage Grotesque', sans-serif; }
+.dev-hint { color: var(--ivory-dim); font-size: 12px; }
+.range-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.range-btn { flex: 1; border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
+  border-radius: 10px; padding: 6px 0; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.range-btn.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.add-panel { margin-top: 8px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; background: var(--felt);
   border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 12.5px;
