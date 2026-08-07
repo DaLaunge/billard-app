@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 import {
   Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
   Mail, ArrowRight, Swords, Flame, Search, LogOut, RefreshCw, Clock,
-  Radio, MapPin, Pencil, Award, Lock,
+  Radio, MapPin, Pencil, Award, Lock, TrendingUp,
 } from "lucide-react";
 
 /* ============================================================
@@ -587,7 +587,176 @@ function computeStats(matches) {
   return s;
 }
 
-function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf }) {
+/* Selbst gezeichnetes Mehrlinien-Diagramm (SVG, ohne externe Bibliothek). */
+function DevChart({ weeks, lines }) {
+  const W = 340, H = 210, padL = 34, padR = 12, padT = 12, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const all = lines.flatMap((l) => l.points.map((p) => p.rating));
+  if (all.length === 0) return <p className="hint center">Noch keine Verlaufsdaten.</p>;
+
+  let yMin = Math.min(...all), yMax = Math.max(...all);
+  const pad = Math.max(10, (yMax - yMin) * 0.12);
+  yMin = Math.floor((yMin - pad) / 10) * 10;
+  yMax = Math.ceil((yMax + pad) / 10) * 10;
+  const nW = weeks.length;
+  const xFor = (wi) => (nW <= 1 ? padL + plotW / 2 : padL + (wi / (nW - 1)) * plotW);
+  const yFor = (r) => padT + (1 - (r - yMin) / (yMax - yMin || 1)) * plotH;
+
+  // horizontale Hilfslinien + Y-Beschriftung
+  const yticks = [];
+  for (let i = 0; i <= 3; i++) {
+    const val = Math.round(yMin + ((yMax - yMin) * i) / 3);
+    yticks.push(val);
+  }
+  // X-Beschriftung an Jahreswechseln
+  const xticks = [];
+  let lastYear = null;
+  weeks.forEach((wk, i) => {
+    const year = wk.slice(0, 4);
+    if (year !== lastYear) { xticks.push({ i, label: year }); lastYear = year; }
+  });
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label="Rating-Verlauf">
+      {yticks.map((val) => (
+        <g key={val}>
+          <line x1={padL} y1={yFor(val)} x2={W - padR} y2={yFor(val)} className="grid" />
+          <text x={padL - 5} y={yFor(val) + 3} className="ylabel">{val}</text>
+        </g>
+      ))}
+      {xticks.map((t) => (
+        <text key={t.i} x={xFor(t.i)} y={H - 8} className="xlabel">{t.label}</text>
+      ))}
+      {lines.map((l) => {
+        const pts = l.points.map((p) => `${xFor(p.wi)},${yFor(p.rating)}`).join(" ");
+        return (
+          <g key={l.nickname}>
+            <polyline points={pts} fill="none" stroke={l.color} strokeWidth="2.2"
+              strokeLinejoin="round" strokeLinecap="round" />
+            {l.points.length > 0 && (
+              <circle cx={xFor(l.points.at(-1).wi)} cy={yFor(l.points.at(-1).rating)}
+                r="3" fill={l.color} />
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf }) {
+  // Nickname je player_id
+  const nickById = useMemo(() => {
+    const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
+  }, [players]);
+
+  // Verlauf je Nickname: Map iso_week -> rating
+  const seriesByNick = useMemo(() => {
+    const s = {};
+    snapshots.forEach((r) => {
+      const nick = nickById[r.player_id];
+      if (!nick) return;
+      (s[nick] ||= {})[r.iso_week] = r.rating;
+    });
+    return s;
+  }, [snapshots, nickById]);
+
+  const allWeeks = useMemo(
+    () => [...new Set(snapshots.map((r) => r.iso_week))].sort(),
+    [snapshots]
+  );
+
+  // Standard-Auswahl: ich + 2 über + 2 unter mir (nach Gesamt-Rangliste)
+  const gesamt = useMemo(
+    () => rangliste.filter((r) => r.discipline === "Gesamt"),
+    [rangliste]
+  );
+  const defaultSel = useMemo(() => {
+    const names = gesamt.map((r) => r.nickname);
+    const idx = names.indexOf(me.nickname);
+    if (idx === -1) return names.slice(0, 5);
+    const from = Math.max(0, idx - 2);
+    return names.slice(from, from + 5);
+  }, [gesamt, me]);
+
+  const [sel, setSel] = useState(defaultSel);
+  const [query, setQuery] = useState("");
+  useEffect(() => { setSel(defaultSel); }, [defaultSel]);
+
+  const toggle = (nick) => {
+    setSel((cur) => cur.includes(nick)
+      ? cur.filter((x) => x !== nick)
+      : (cur.length < 6 ? [...cur, nick] : cur));
+  };
+
+  const lines = sel
+    .filter((nick) => seriesByNick[nick])
+    .map((nick) => ({
+      nickname: nick,
+      color: colorOf(nick),
+      points: allWeeks
+        .map((wk, wi) => (seriesByNick[nick][wk] != null
+          ? { wi, rating: seriesByNick[nick][wk] } : null))
+        .filter(Boolean),
+    }));
+
+  const candidates = players
+    .map((p) => p.nickname)
+    .filter((n) => seriesByNick[n])
+    .filter((n) => n.toLowerCase().includes(query.trim().toLowerCase()))
+    .sort((a, b) => a.localeCompare(b));
+
+  const latest = (nick) => {
+    const pts = seriesByNick[nick];
+    if (!pts) return null;
+    const wk = allWeeks.filter((w) => pts[w] != null).at(-1);
+    return wk ? Math.round(pts[wk]) : null;
+  };
+
+  return (
+    <section className="stat-block">
+      <h3><TrendingUp size={17} /> Entwicklung über die Zeit</h3>
+      {allWeeks.length === 0 ? (
+        <p className="hint">Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.</p>
+      ) : (
+        <>
+          <DevChart weeks={allWeeks} lines={lines} />
+          <div className="legend">
+            {sel.map((nick) => (
+              <button key={nick} className="legend-item" onClick={() => toggle(nick)}
+                title="Entfernen">
+                <span className="legend-dot" style={{ background: colorOf(nick) }} />
+                {nick}{latest(nick) != null ? ` · ${latest(nick)}` : ""}
+                <X size={12} />
+              </button>
+            ))}
+          </div>
+          <div className="search-row" style={{ marginTop: 4 }}>
+            <Search size={16} className="mail-ico" />
+            <input placeholder="Spieler zum Vergleich hinzufügen …" value={query}
+              onChange={(e) => setQuery(e.target.value)} />
+            {query && <button className="clear-btn" onClick={() => setQuery("")}><X size={15} /></button>}
+          </div>
+          {query && (
+            <div className="cand-row">
+              {candidates.filter((n) => !sel.includes(n)).slice(0, 12).map((n) => (
+                <button key={n} className="cand-chip" onClick={() => { toggle(n); setQuery(""); }}>
+                  <Plus size={13} /> {n}
+                </button>
+              ))}
+              {candidates.filter((n) => !sel.includes(n)).length === 0 && (
+                <p className="hint">Keine weiteren Spieler gefunden.</p>
+              )}
+            </div>
+          )}
+          <p className="hint">Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler gleichzeitig.</p>
+        </>
+      )}
+    </section>
+  );
+}
+
+function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, players, rangliste, me }) {
   const stats = useMemo(() => computeStats(matches), [matches]);
   const list = Object.values(stats);
   const medals = ["1.", "2.", "3."];
@@ -614,6 +783,7 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf }) {
   return (
     <div className="screen">
       <header className="screen-head"><h2>Statistik</h2><span className="head-note">Bestenlisten (bestaetigte Matches)</span></header>
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} />
       <Block icon={<Trophy size={17} />} title="Meiste Siege" rows={topWins} fmt={(p) => `${p.siege} Siege`} />
       <Block icon={<BarChart3 size={17} />} title="Beste Siegquote (ab 10 Spielen)" rows={topQuote} fmt={(p) => `${p.quote} %`} />
       <Block icon={<Flame size={17} />} title="Aktuelle Serien" rows={topStreak} fmt={(p) => `${p.streak} in Folge`} />
@@ -928,6 +1098,7 @@ export default function App() {
   const [pings, setPings] = useState([]);
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
+  const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
   const [tab, setTab] = useState("rang");
   const [profileName, setProfileName] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
@@ -959,7 +1130,7 @@ export default function App() {
 
   const loadData = useCallback(async () => {
     setLoadingData(true);
-    const [rang, m, pl, pi, bg, ct] = await Promise.all([
+    const [rang, m, pl, pi, bg, ct, sn] = await Promise.all([
       supabase.from("rangliste").select("*"),
       supabase.from("matches")
         .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
@@ -971,6 +1142,7 @@ export default function App() {
         .order("created_at", { ascending: false }),
       supabase.from("player_badges").select("player_id, badge_key"),
       supabase.from("badge_catalog").select("*"),
+      supabase.from("rating_snapshots").select("player_id, iso_week, rating, rank, provisional").eq("discipline", "Gesamt"),
     ]);
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error;
     if (err) toast("Fehler beim Laden: " + err.message);
@@ -989,6 +1161,7 @@ export default function App() {
     // modulweite Map füllen, damit auch die Ball-Komponente Emojis kennt
     Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
     cat.forEach((b) => { BADGE_INFO[b.badge_key] = { emoji: b.emoji, name: b.name, description: b.description }; });
+    setSnapshots(sn.data ?? []);
     setLoadingData(false);
   }, [toast]);
 
@@ -1116,7 +1289,9 @@ export default function App() {
                   onDone={() => { setTab("rang"); loadData(); }}
                   onCancel={() => setTab("rang")} />
               )}
-              {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile} colorOf={colorOf} badgeOf={badgeOf} />}
+              {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
+                colorOf={colorOf} badgeOf={badgeOf} snapshots={snapshots} players={players}
+                rangliste={rangliste} me={player} />}
               {tab === "profil" && (
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
@@ -1218,6 +1393,20 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .badge-cat { margin-bottom: 14px; }
 .badge-cat-title { font-size: 12px; font-weight: 700; color: var(--ivory-dim);
   text-transform: uppercase; letter-spacing: 0.06em; margin: 4px 0 8px; }
+
+.dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; }
+.dev-chart .grid { stroke: var(--line); stroke-width: 1; }
+.dev-chart .ylabel { fill: var(--ivory-dim); font-size: 9px; text-anchor: end; }
+.dev-chart .xlabel { fill: var(--ivory-dim); font-size: 9px; text-anchor: middle; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; background: var(--felt);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 12.5px;
+  font-weight: 600; color: var(--ivory); cursor: pointer; font-family: inherit; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.cand-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.cand-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--felt-3);
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 11px; font-size: 12.5px;
+  font-weight: 600; color: var(--ivory); cursor: pointer; font-family: inherit; }
 .badge-chip { display: flex; flex-direction: column; align-items: center; gap: 3px;
   background: var(--felt); border: 1px solid var(--line); border-radius: 14px;
   padding: 12px 6px 10px; cursor: pointer; font-family: inherit; color: var(--ivory);
