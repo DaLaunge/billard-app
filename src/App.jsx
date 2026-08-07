@@ -47,16 +47,32 @@ const BADGE_INFO = {};
 const BADGE_FALLBACK = { emoji: "🏅", name: "Erfolg", description: "" };
 const badgeInfo = (key) => BADGE_INFO[key] || BADGE_FALLBACK;
 
+/* Wahrgenommene Helligkeit einer Hex-Farbe (0 = dunkel, 1 = hell).
+   Nach WCAG-Luminanz-Näherung. */
+function luminance(hex) {
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return 0.5;
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 function Ball({ color, label, size = 44, gold = false, badge = null }) {
   const c = gold ? "#D6A425" : color;
   const b = badge && BADGE_INFO[badge] ? BADGE_INFO[badge] : null;
+  const light = luminance(c) > 0.6; // helle Kugel -> dunkle Beschriftung
+  const numStyle = light
+    ? { background: "#1E1E1E", color: "#F2EDE0" }
+    : { background: "#F2EDE0", color: "#1E1E1E" };
   return (
     <div className="ball" style={{ width: size, height: size, background: c }}>
       <div className="ball-shine" />
       {b ? (
-        <div className="ball-badge" style={{ fontSize: size * 0.5 }} title={b.name}>{b.emoji}</div>
+        <div className={"ball-badge" + (light ? " on-light" : "")}
+          style={{ fontSize: size * 0.5 }} title={b.name}>{b.emoji}</div>
       ) : (
-        <div className="ball-num" style={{ width: size * 0.52, height: size * 0.52, fontSize: size * 0.28 }}>
+        <div className="ball-num"
+          style={{ width: size * 0.52, height: size * 0.52, fontSize: size * 0.28, ...numStyle }}>
           {label}
         </div>
       )}
@@ -1196,6 +1212,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   box-shadow: inset 0 -2px 4px #00000025; }
 .ball-badge { position: absolute; inset: 0; display: grid; place-items: center;
   line-height: 1; filter: drop-shadow(0 1px 2px #00000060); }
+.ball-badge.on-light { filter: drop-shadow(0 1px 2px #ffffff80) drop-shadow(0 0 1px #00000070); }
 
 .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
 .badge-cat { margin-bottom: 14px; }
