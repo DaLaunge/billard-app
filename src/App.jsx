@@ -25,6 +25,23 @@ captureRef();
 const getRef = () => { try { return sessionStorage.getItem("invite_ref") || null; } catch { return null; } };
 const clearRef = () => { try { sessionStorage.removeItem("invite_ref"); } catch { /* */ } };
 
+/* Holt ALLE Zeilen einer Abfrage seitenweise (Supabase liefert je
+   Anfrage max. 1000 Zeilen). queryFn(from, to) muss einen Supabase-
+   Range-Query zurückgeben. Ergebnis: { data, error }. */
+async function fetchAllRows(queryFn, pageSize = 1000) {
+  let from = 0;
+  const all = [];
+  // Sicherheitslimit: max. 50 Seiten (50.000 Zeilen)
+  for (let page = 0; page < 50; page++) {
+    const { data, error } = await queryFn(from, from + pageSize - 1);
+    if (error) return { data: all, error };
+    if (data && data.length) all.push(...data);
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: all, error: null };
+}
+
 /* ============================================================
    HELFER
    ============================================================ */
@@ -1311,11 +1328,12 @@ export default function App() {
 
   const loadData = useCallback(async () => {
     setLoadingData(true);
-    const [rang, m, pl, pi, bg, ct, sn] = await Promise.all([
+    const [rang, m, pl, pi, bg, ct] = await Promise.all([
       supabase.from("rangliste").select("*"),
-      supabase.from("matches")
+      fetchAllRows((from, to) => supabase.from("matches")
         .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
-        .order("played_at", { ascending: false }),
+        .order("played_at", { ascending: false })
+        .range(from, to)),
       supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge"),
       supabase.from("pings")
         .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
@@ -1323,9 +1341,14 @@ export default function App() {
         .order("created_at", { ascending: false }),
       supabase.from("player_badges").select("player_id, badge_key"),
       supabase.from("badge_catalog").select("*"),
-      supabase.from("rating_snapshots").select("player_id, iso_week, rating, rank, provisional").eq("discipline", "Gesamt"),
     ]);
-    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error;
+    // Snapshots seitenweise laden (können > 1000 Zeilen sein: Wochen x Spieler)
+    const snap = await fetchAllRows((from, to) => supabase.from("rating_snapshots")
+      .select("player_id, iso_week, rating, rank, provisional")
+      .eq("discipline", "Gesamt")
+      .order("iso_week", { ascending: true })
+      .range(from, to));
+    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || snap.error;
     if (err) toast("Fehler beim Laden: " + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
@@ -1342,7 +1365,7 @@ export default function App() {
     // modulweite Map füllen, damit auch die Ball-Komponente Emojis kennt
     Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
     cat.forEach((b) => { BADGE_INFO[b.badge_key] = { emoji: b.emoji, name: b.name, description: b.description }; });
-    setSnapshots(sn.data ?? []);
+    setSnapshots(snap.data ?? []);
     setLoadingData(false);
   }, [toast]);
 
