@@ -1,10 +1,29 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "./supabase";
+import { QRCodeSVG } from "qrcode.react";
 import {
   Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
   Mail, ArrowRight, Swords, Flame, Search, LogOut, RefreshCw, Clock,
-  Radio, MapPin, Pencil, Award, Lock, TrendingUp,
+  Radio, MapPin, Pencil, Award, Lock, TrendingUp, QrCode, Share2, Copy,
 } from "lucide-react";
+
+/* Einladungs-Code aus der URL (?ref=CODE) einmalig sichern.
+   Übersteht den Magic-Link-Umweg über sessionStorage. */
+function captureRef() {
+  try {
+    const url = new URL(window.location.href);
+    const ref = url.searchParams.get("ref");
+    if (ref) {
+      sessionStorage.setItem("invite_ref", ref.trim());
+      // Parameter aus der Adresszeile entfernen (sauberer Look)
+      url.searchParams.delete("ref");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
+  } catch { /* ignore */ }
+}
+captureRef();
+const getRef = () => { try { return sessionStorage.getItem("invite_ref") || null; } catch { return null; } };
+const clearRef = () => { try { sessionStorage.removeItem("invite_ref"); } catch { /* */ } };
 
 /* ============================================================
    HELFER
@@ -111,6 +130,9 @@ function LoginScreen() {
         </div>
         <h1 className="app-title">Break &amp; Rank</h1>
         <p className="app-sub">Das Ranking eures Vereins.<br />Fargo-Style, fair, immer aktuell.</p>
+        {getRef() && (
+          <p className="invite-note"><Check size={14} /> Du wurdest eingeladen – melde dich an, um dabei zu sein!</p>
+        )}
       </div>
 
       {!sent ? (
@@ -161,10 +183,10 @@ function NicknameScreen({ onRegistered, existingPlayers }) {
 
   const register = async () => {
     setBusy(true); setError("");
-    const { data, error } = await supabase.rpc("register_player", { p_nickname: clean });
+    const { data, error } = await supabase.rpc("register_player", { p_nickname: clean, p_ref: getRef() });
     setBusy(false);
     if (error) setError(error.message);
-    else onRegistered(data);
+    else { clearRef(); onRegistered(data); }
   };
 
   return (
@@ -892,7 +914,7 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, 
    ============================================================ */
 
 function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
-  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog }) {
+  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -1113,12 +1135,86 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         {h2h.length === 0 && <p className="hint">Noch keine Matches.</p>}
       </section>
 
+      {isMe && (
+        <button className="btn ghost" onClick={onInvite}><QrCode size={16} /> Freund einladen</button>
+      )}
       {isMe && meRow?.role === "admin" && (
         <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> Verwaltung oeffnen</button>
       )}
       {isMe && (
         <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> Abmelden</button>
       )}
+    </div>
+  );
+}
+
+/* ============================================================
+   FREUND EINLADEN (QR + Link)
+   ============================================================ */
+
+function InviteScreen({ me, onBack, toast }) {
+  const [code, setCode] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.rpc("my_invite_code");
+      if (error) setError(error.message);
+      else setCode(data);
+    })();
+  }, []);
+
+  const link = code ? `${window.location.origin}/?ref=${code}` : "";
+
+  const share = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Break & Rank",
+          text: `${me.nickname} lädt dich zum Billard-Ranking ein! Tippe auf den Link, um mitzumachen:`,
+          url: link,
+        });
+      } catch { /* abgebrochen */ }
+    } else {
+      copy();
+    }
+  };
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(link); toast("Link kopiert!"); }
+    catch { toast("Kopieren nicht möglich – Link markieren und kopieren."); }
+  };
+
+  return (
+    <div className="screen">
+      <header className="screen-head with-back">
+        <button className="back-btn" onClick={onBack} aria-label="Zurück"><ChevronLeft size={22} /></button>
+        <h2>Freund einladen</h2>
+      </header>
+
+      {error && <p className="nick-status err"><X size={14} /> {error}</p>}
+
+      <section className="stat-block invite-card">
+        <p className="invite-lead">Neuer Spieler? Einfach diesen Code mit der Handykamera scannen –
+          das öffnet die App und führt direkt zur Anmeldung.</p>
+        <div className="qr-box">
+          {code ? (
+            <QRCodeSVG value={link} size={210} level="M"
+              bgColor="#F2EDE0" fgColor="#0A2B21" includeMargin />
+          ) : (
+            <div className="qr-loading">Code wird erstellt …</div>
+          )}
+        </div>
+        {code && <div className="invite-code">Code: <b>{code}</b></div>}
+      </section>
+
+      <button className="btn primary" onClick={share} disabled={!code}>
+        <Share2 size={18} /> Einladung teilen
+      </button>
+      <button className="btn ghost" onClick={copy} disabled={!code}>
+        <Copy size={16} /> Link kopieren
+      </button>
+      <p className="hint">Wer über deinen Code beitritt, wird dir als geworbener Spieler gutgeschrieben –
+        dafür gibt es später eigene Erfolge.</p>
     </div>
   );
 }
@@ -1382,7 +1478,7 @@ export default function App() {
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog}
-                  onOpenAdmin={() => setTab("admin")} />
+                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
@@ -1391,11 +1487,14 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
                   onSelectBadge={selectBadge} catalog={catalog}
-                  onOpenAdmin={() => setTab("admin")} />
+                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} />
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
                   me={player} onBack={() => setTab("profil")} colorOf={colorOf} badgeOf={badgeOf} />
+              )}
+              {tab === "invite" && (
+                <InviteScreen me={player} onBack={() => setTab("profil")} toast={toast} />
               )}
               <button className="refresh-btn" onClick={loadData} aria-label="Aktualisieren">
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
@@ -1495,6 +1594,15 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .range-btn { flex: 1; border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
   border-radius: 10px; padding: 6px 0; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .range-btn.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.invite-card { text-align: center; }
+.invite-lead { font-size: 13.5px; color: var(--ivory-dim); line-height: 1.5; margin-bottom: 14px; }
+.qr-box { display: grid; place-items: center; background: #F2EDE0; border-radius: 16px;
+  padding: 16px; width: fit-content; margin: 0 auto; }
+.qr-loading { width: 210px; height: 210px; display: grid; place-items: center; color: #0A2B21; font-size: 13px; }
+.invite-code { margin-top: 12px; font-size: 14px; color: var(--ivory-dim); letter-spacing: 0.04em; }
+.invite-code b { color: var(--ivory); font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; letter-spacing: 0.12em; }
+.invite-note { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px;
+  font-size: 13px; color: var(--win); font-weight: 600; }
 .add-panel { margin-top: 8px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; background: var(--felt);
