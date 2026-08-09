@@ -121,7 +121,7 @@ function Ball({ color, label, size = 44, gold = false, badge = null }) {
    ============================================================ */
 
 function LoginScreen() {
-  const [mode, setMode] = useState(getRef() ? "magic" : "password"); // Eingeladene starten mit Magic-Link
+  const [mode, setMode] = useState("magic"); // Standard: gewohnter Magic-Link; Passwort ist ein Tipp entfernt
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
@@ -174,10 +174,10 @@ function LoginScreen() {
       ) : (
         <div className="login-card">
           <div className="auth-tabs">
-            <button className={"auth-tab" + (mode === "password" ? " on" : "")}
-              onClick={() => { setMode("password"); setError(""); }}>Passwort</button>
             <button className={"auth-tab" + (mode === "magic" ? " on" : "")}
               onClick={() => { setMode("magic"); setError(""); }}>Magic-Link</button>
+            <button className={"auth-tab" + (mode === "password" ? " on" : "")}
+              onClick={() => { setMode("password"); setError(""); }}>Passwort</button>
           </div>
 
           <label className="field-label" htmlFor="mail">E-Mail-Adresse</label>
@@ -1308,7 +1308,7 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, 
    ============================================================ */
 
 function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
-  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite }) {
+  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -1936,7 +1936,7 @@ export default function App() {
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog}
-                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} />
+                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
@@ -1945,7 +1945,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
                   onSelectBadge={selectBadge} catalog={catalog}
-                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} />
+                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast} />
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
