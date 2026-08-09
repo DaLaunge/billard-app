@@ -121,7 +121,9 @@ function Ball({ color, label, size = 44, gold = false, badge = null }) {
    ============================================================ */
 
 function LoginScreen() {
+  const [mode, setMode] = useState("magic"); // Standard: gewohnter Magic-Link; Passwort ist ein Tipp entfernt
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -135,6 +137,13 @@ function LoginScreen() {
     setBusy(false);
     if (error) setError(error.message);
     else setSent(true);
+  };
+
+  const signInPw = async () => {
+    setBusy(true); setError("");
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setBusy(false);
+    if (error) setError("Anmeldung fehlgeschlagen – Passwort falsch oder noch keins gesetzt. Nutze den Magic-Link.");
   };
 
   return (
@@ -152,23 +161,7 @@ function LoginScreen() {
         )}
       </div>
 
-      {!sent ? (
-        <div className="login-card">
-          <label className="field-label" htmlFor="mail">E-Mail-Adresse</label>
-          <div className="mail-row">
-            <Mail size={18} className="mail-ico" />
-            <input id="mail" type="email" placeholder="du@beispiel.at" value={email}
-              autoComplete="email"
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && email.includes("@") && sendLink()} />
-          </div>
-          {error && <p className="nick-status err"><X size={14} /> {error}</p>}
-          <button className="btn primary" disabled={busy || !email.includes("@")} onClick={sendLink}>
-            {busy ? "Sende ..." : <>Login-Link senden <ArrowRight size={18} /></>}
-          </button>
-          <p className="hint">Kein Passwort noetig - du bekommst einen Link per Mail und bist drin.</p>
-        </div>
-      ) : (
+      {sent ? (
         <div className="login-card">
           <div className="sent-check"><Check size={28} /></div>
           <p className="sent-text">Link gesendet an<br /><b>{email}</b></p>
@@ -177,6 +170,51 @@ function LoginScreen() {
             Nichts bekommen? Schau in den Spam-Ordner.
           </p>
           <button className="btn ghost" onClick={() => setSent(false)}>Andere Adresse verwenden</button>
+        </div>
+      ) : (
+        <div className="login-card">
+          <div className="auth-tabs">
+            <button className={"auth-tab" + (mode === "magic" ? " on" : "")}
+              onClick={() => { setMode("magic"); setError(""); }}>Magic-Link</button>
+            <button className={"auth-tab" + (mode === "password" ? " on" : "")}
+              onClick={() => { setMode("password"); setError(""); }}>Passwort</button>
+          </div>
+
+          <label className="field-label" htmlFor="mail">E-Mail-Adresse</label>
+          <div className="mail-row">
+            <Mail size={18} className="mail-ico" />
+            <input id="mail" type="email" placeholder="du@beispiel.at" value={email} autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)} />
+          </div>
+
+          {mode === "password" ? (
+            <>
+              <label className="field-label" htmlFor="pw">Passwort</label>
+              <div className="mail-row">
+                <Lock size={18} className="mail-ico" />
+                <input id="pw" type="password" placeholder="Dein Passwort" value={password} autoComplete="current-password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && email.includes("@") && password && signInPw()} />
+              </div>
+              {error && <p className="nick-status err"><X size={14} /> {error}</p>}
+              <button className="btn primary" disabled={busy || !email.includes("@") || !password} onClick={signInPw}>
+                {busy ? "..." : <>Anmelden <ArrowRight size={18} /></>}
+              </button>
+              <button className="btn ghost" onClick={() => { setMode("magic"); setError(""); }}>
+                Passwort vergessen? Per Magic-Link anmelden
+              </button>
+              <p className="hint">Neu hier? Einmal per Magic-Link anmelden und danach im Profil ein Passwort festlegen.</p>
+            </>
+          ) : (
+            <>
+              {error && <p className="nick-status err"><X size={14} /> {error}</p>}
+              <button className="btn primary" disabled={busy || !email.includes("@")} onClick={sendLink}>
+                {busy ? "Sende ..." : <>Login-Link senden <ArrowRight size={18} /></>}
+              </button>
+              <p className="hint">Kein Passwort noetig – du bekommst einen Link per Mail und bist drin.
+                Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.</p>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -1491,6 +1529,8 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         {h2h.length === 0 && <p className="hint">Noch keine Matches.</p>}
       </section>
 
+      {isMe && <PasswordSection toast={toast} />}
+
       {isMe && (
         <button className="btn ghost" onClick={onInvite}><QrCode size={16} /> Freund einladen</button>
       )}
@@ -1501,6 +1541,61 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> Abmelden</button>
       )}
     </div>
+  );
+}
+
+/* ============================================================
+   PASSWORT SETZEN / ÄNDERN
+   ============================================================ */
+
+function PasswordSection({ toast }) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data?.user?.email || ""));
+  }, []);
+
+  const save = async () => {
+    setMsg("");
+    if (pw.length < 6) { setMsg("Mindestens 6 Zeichen."); return; }
+    if (pw !== pw2) { setMsg("Die Passwörter stimmen nicht überein."); return; }
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: pw });
+    setBusy(false);
+    if (error) { setMsg("Fehler: " + error.message); return; }
+    setPw(""); setPw2(""); setOpen(false);
+    toast("Passwort gespeichert – du kannst dich künftig damit anmelden.");
+  };
+
+  return (
+    <section className="stat-block">
+      <h3><Lock size={17} /> Anmeldung &amp; Sicherheit</h3>
+      {email && <p className="hint" style={{ marginTop: 0 }}>Angemeldet als <b>{email}</b></p>}
+      {!open ? (
+        <button className="btn ghost" onClick={() => setOpen(true)}>Passwort festlegen / ändern</button>
+      ) : (
+        <div className="pw-box">
+          <input type="password" placeholder="Neues Passwort (min. 6 Zeichen)" value={pw}
+            autoComplete="new-password" onChange={(e) => setPw(e.target.value)} />
+          <input type="password" placeholder="Passwort wiederholen" value={pw2}
+            autoComplete="new-password" onChange={(e) => setPw2(e.target.value)} />
+          {msg && <p className="nick-status err"><X size={14} /> {msg}</p>}
+          <div className="sp-controls">
+            <button className="btn ghost" onClick={() => { setOpen(false); setPw(""); setPw2(""); setMsg(""); }}>Abbrechen</button>
+            <button className="btn primary" disabled={busy || !pw || !pw2} onClick={save}>
+              {busy ? "..." : "Speichern"}
+            </button>
+          </div>
+          <p className="hint">Damit meldest du dich künftig mit E-Mail + Passwort an. Passwort vergessen?
+            Der Magic-Link bringt dich immer rein.</p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1966,6 +2061,14 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .invite-code b { color: var(--ivory); font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; letter-spacing: 0.12em; }
 .invite-note { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px;
   font-size: 13px; color: var(--win); font-weight: 600; }
+.auth-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.auth-tab { flex: 1; padding: 9px 0; border: 1px solid var(--line); background: transparent;
+  color: var(--ivory-dim); border-radius: 10px; font-size: 13.5px; font-weight: 700;
+  cursor: pointer; font-family: inherit; }
+.auth-tab.on { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.pw-box { display: flex; flex-direction: column; gap: 8px; }
+.pw-box input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--felt-2); color: var(--ivory); font-size: 15px; font-family: inherit; }
 .add-panel { margin-top: 8px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; background: var(--felt);
