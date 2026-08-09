@@ -121,7 +121,7 @@ function Ball({ color, label, size = 44, gold = false, badge = null }) {
    ============================================================ */
 
 function LoginScreen() {
-  const [mode, setMode] = useState("magic"); // Standard: gewohnter Magic-Link; Passwort ist ein Tipp entfernt
+  const [mode, setMode] = useState(getRef() ? "magic" : "password"); // Eingeladene starten mit Magic-Link
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
@@ -174,10 +174,10 @@ function LoginScreen() {
       ) : (
         <div className="login-card">
           <div className="auth-tabs">
-            <button className={"auth-tab" + (mode === "magic" ? " on" : "")}
-              onClick={() => { setMode("magic"); setError(""); }}>Magic-Link</button>
             <button className={"auth-tab" + (mode === "password" ? " on" : "")}
               onClick={() => { setMode("password"); setError(""); }}>Passwort</button>
+            <button className={"auth-tab" + (mode === "magic" ? " on" : "")}
+              onClick={() => { setMode("magic"); setError(""); }}>Magic-Link</button>
           </div>
 
           <label className="field-label" htmlFor="mail">E-Mail-Adresse</label>
