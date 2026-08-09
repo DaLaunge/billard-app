@@ -494,9 +494,10 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
 
   // Rack sofort übernehmen: +14 Punkte, Tisch neu aufgebaut (15), Serie läuft weiter.
   const bookRack = () => {
+    const pts = Math.max(0, onTable - 1);      // seit letzter Aufnahme versenkt, bis auf die Anstoßkugel
     pushHist(snap());
-    const ns = [...sc]; ns[active] += 14;
-    const nir = inningRun + 14;
+    const ns = [...sc]; ns[active] += pts;
+    const nir = inningRun + pts;
     const nhi = [...hi]; if (nir > nhi[active]) nhi[active] = nir;
     const nf = [...fouls]; nf[active] = 0;
     const nmd = withDeficit(ns, maxDef);
@@ -526,7 +527,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
     const nmd = withDeficit(ns, maxDef);
     const finished = ns[active] >= target;
     setSc(ns); setHi(nhi); setFouls(nf); setMaxDef(nmd);
-    setOnTable(remain); setInningRun(0); setEntry(null);
+    setOnTable(remain === 0 ? 15 : remain); setInningRun(0); setEntry(null);
     setActive((a) => 1 - a); setInnings((i) => i + 1);
     if (finished) onFinish({ s1: ns[0], s2: ns[1], hr1: nhi[0], hr2: nhi[1], def1: nmd[0], def2: nmd[1] });
   };
@@ -564,8 +565,9 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
         <button className="btn primary" disabled={!(target > 0)} onClick={() => setStarted(true)}>
           Los geht's – bis {target} <ArrowRight size={18} />
         </button>
-        <p className="hint center">Jede versenkte Kugel = 1 Punkt. Ausgeschossene Racks tippst du sofort
-          ein (+14). Am Ende einer Aufnahme zählst du die Kugeln am Tisch – den Rest rechnet die App.
+        <p className="hint center">Jede versenkte Kugel = 1 Punkt. Schießt du ein Rack aus, tippst du das
+          sofort ein – gezählt werden die seit der letzten Aufnahme versenkten Kugeln. Am Ende einer
+          Aufnahme zählst du die Kugeln am Tisch, den Rest rechnet die App.
           Foul = −1 (Anstoß −2, drei Fouls in Folge zusätzlich −15).</p>
       </div>
     );
@@ -579,7 +581,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
           {entry === "foul" ? " (Foul −1)" : entry === "break" ? " (Anstoß-Foul −2)" : ""}</p>
         <div className="sp-entry-lbl">Kugeln noch am Tisch</div>
         <div className="num-grid">
-          {Array.from({ length: 16 }, (_, n) => (
+          {Array.from({ length: onTable + 1 }, (_, n) => (
             <button key={n} className={"pool-ball" + (remain === n ? " sel" : "")} style={poolBallStyle(n)}
               onClick={() => setRemain(n)}><span className="pb-no">{n}</span></button>
           ))}
@@ -614,8 +616,8 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
         <div className="sp-need">Nur noch <b>{need}</b> Kugel{need > 1 ? "n" : ""} bis {names[active]} gewinnt!</div>
       )}
 
-      <button className="sp-rack" onClick={bookRack}>
-        <Plus size={20} /> Rack ausgeschossen (+14)
+      <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
+        <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
       </button>
       <button className="sp-pot" onClick={() => openEntry("miss")}>
         Aufnahme von {names[active]} beenden
@@ -2036,6 +2038,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   background: var(--gold); color: #2A2100; border: none; border-radius: 16px; padding: 15px;
   font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; }
 .sp-rack:active { filter: brightness(0.94); }
+.sp-rack:disabled { opacity: 0.45; cursor: default; }
 .sp-need { text-align: center; font-size: 13.5px; color: var(--gold); font-weight: 700; }
 .sp-need b { font-size: 17px; font-family: 'Bricolage Grotesque', sans-serif; }
 .confirm-box { background: var(--felt-2); border: 1px solid var(--gold); border-radius: 14px;
