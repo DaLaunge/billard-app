@@ -510,7 +510,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
 
   const partial = Math.max(0, onTable - remain);
 
-  const applyEntry = () => {
+  const applyEntry = (continueActive = false) => {
     const run = inningRun + partial;                 // gesamte Serie dieser Aufnahme
     const penalty = entry === "foul" ? 1 : entry === "break" ? 2 : 0;
     pushHist(snap());
@@ -526,9 +526,15 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
     }
     const nmd = withDeficit(ns, maxDef);
     const finished = ns[active] >= target;
+    const rerack = remain <= 1;                       // 0 oder 1 Kugel -> Tisch neu aufbauen
     setSc(ns); setHi(nhi); setFouls(nf); setMaxDef(nmd);
-    setOnTable(remain === 0 ? 15 : remain); setInningRun(0); setEntry(null);
-    setActive((a) => 1 - a); setInnings((i) => i + 1);
+    setOnTable(rerack ? 15 : remain); setEntry(null);
+    if (continueActive) {
+      setInningRun(run);                              // gleicher Spieler, Serie läuft weiter
+    } else {
+      setInningRun(0);
+      setActive((a) => 1 - a); setInnings((i) => i + 1);
+    }
     if (finished) onFinish({ s1: ns[0], s2: ns[1], hr1: nhi[0], hr2: nhi[1], def1: nmd[0], def2: nmd[1] });
   };
 
@@ -587,10 +593,21 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
           ))}
         </div>
         <div className="sp-run-preview">Serie dieser Aufnahme: <b>{inningRun + partial}</b></div>
-        <div className="sp-controls">
-          <button className="btn ghost" onClick={() => setEntry(null)}>Abbrechen</button>
-          <button className="btn primary" onClick={applyEntry}>Übernehmen</button>
-        </div>
+        {remain <= 1 && <p className="hint center" style={{ marginTop: 0 }}>Tisch wird neu aufgebaut (15 Kugeln).</p>}
+        {remain <= 1 && entry === "miss" ? (
+          <>
+            <div className="sp-controls">
+              <button className="btn ghost" onClick={() => setEntry(null)}>Abbrechen</button>
+              <button className="btn primary" onClick={() => applyEntry(false)}>Gegner ist dran</button>
+            </div>
+            <button className="btn ghost" onClick={() => applyEntry(true)}>{names[active]} macht weiter</button>
+          </>
+        ) : (
+          <div className="sp-controls">
+            <button className="btn ghost" onClick={() => setEntry(null)}>Abbrechen</button>
+            <button className="btn primary" onClick={() => applyEntry(false)}>Übernehmen</button>
+          </div>
+        )}
       </div>
     );
   }
@@ -661,6 +678,7 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
   const [leaveWarn, setLeaveWarn] = useState(false);
+  const [abortAsk, setAbortAsk] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const is141 = disc === "14/1 Endlos";
@@ -713,11 +731,24 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
   return (
     <div className="screen">
       <header className="screen-head with-back">
-        <button className="back-btn" onClick={step === 0 || step === 4 ? onCancel : () => setStep(step - 1)} aria-label="Zurueck">
+        <button className="back-btn" onClick={() => { if (step === 0 || step === 4) onCancel(); else setAbortAsk(true); }} aria-label="Zurueck">
           <ChevronLeft size={22} />
         </button>
         <h2>Neues Match</h2>
       </header>
+
+      {abortAsk && (
+        <div className="modal-overlay" onClick={() => setAbortAsk(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3>Match abbrechen?</h3>
+            <p>Alle Eingaben gehen verloren{is141 ? " – ein 14/1-Protokoll lässt sich nicht wiederherstellen" : ""}.</p>
+            <div className="sp-controls">
+              <button className="btn ghost" onClick={() => setAbortAsk(false)}>Weiter bearbeiten</button>
+              <button className="btn primary warn-solid" onClick={() => { setAbortAsk(false); onCancel(); }}>Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {step < 4 && (
         <div className="steps">
@@ -2041,6 +2072,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .sp-rack:disabled { opacity: 0.45; cursor: default; }
 .sp-need { text-align: center; font-size: 13.5px; color: var(--gold); font-weight: 700; }
 .sp-need b { font-size: 17px; font-family: 'Bricolage Grotesque', sans-serif; }
+.modal-overlay { position: fixed; inset: 0; background: #00000088; display: grid; place-items: center;
+  z-index: 100; padding: 24px; }
+.modal-box { background: var(--felt); border: 1px solid var(--gold); border-radius: 18px;
+  padding: 20px; max-width: 340px; width: 100%; }
+.modal-box h3 { margin: 0 0 8px; font-family: 'Bricolage Grotesque', sans-serif; }
+.modal-box p { font-size: 13.5px; color: var(--ivory-dim); line-height: 1.5; margin: 0 0 16px; }
+.btn.warn-solid { background: #B8402F; color: #fff; }
 .confirm-box { background: var(--felt-2); border: 1px solid var(--gold); border-radius: 14px;
   padding: 14px; margin-top: 12px; margin-bottom: 12px; font-size: 13.5px; line-height: 1.5; }
 
