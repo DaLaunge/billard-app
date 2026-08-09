@@ -452,23 +452,27 @@ function LiveScreen({ me, pings, colorOf, badgeOf, onCreate, onClose, onReply, o
    14/1 ENDLOS – Live-Protokoll nach WPA-Regeln
    ============================================================ */
 function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
-  const TARGETS = [60, 100, 125, 150];
+  const PRESETS = [50, 70, 90, 100, 150];
   const [target, setTarget] = useState(100);
+  const [custom, setCustom] = useState("");
   const [started, setStarted] = useState(false);
+
   const [sc, setSc] = useState([0, 0]);          // Punkte [ich, Gegner]
-  const [run, setRun] = useState(0);             // laufende Aufnahme
   const [active, setActive] = useState(0);       // 0 = ich, 1 = Gegner
   const [hi, setHi] = useState([0, 0]);          // Höchstserie
   const [fouls, setFouls] = useState([0, 0]);    // Fouls in Folge
   const [maxDef, setMaxDef] = useState([0, 0]);  // größter aufgeholter Rückstand
+  const [onTable, setOnTable] = useState(15);    // Kugeln aktuell am Tisch
   const [innings, setInnings] = useState(1);
+  const [entry, setEntry] = useState(null);      // null | 'miss' | 'foul' | 'break'
+  const [racks, setRacks] = useState(0);         // ausgeschossene Racks in dieser Aufnahme
+  const [remain, setRemain] = useState(15);      // Eingabe: Kugeln noch am Tisch
   const [hist, setHist] = useState([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   const names = [me.nickname, opp.nickname];
-  const pushHist = (snap) => setHist((h) => [...h.slice(-60), snap]);
-  const snap = () => ({ sc: [...sc], run, active, hi: [...hi], fouls: [...fouls], maxDef: [...maxDef], innings });
-
+  const snap = () => ({ sc: [...sc], active, hi: [...hi], fouls: [...fouls], maxDef: [...maxDef], onTable, innings });
+  const pushHist = (x) => setHist((h) => [...h.slice(-80), x]);
   const withDeficit = (scores, md) => {
     const nd = [...md];
     const d0 = scores[1] - scores[0]; if (d0 > nd[0]) nd[0] = d0;
@@ -476,63 +480,107 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
     return nd;
   };
 
-  const pot = () => {
+  const openEntry = (type) => { setEntry(type); setRacks(0); setRemain(onTable); };
+
+  const runPreview = Math.max(0, onTable + 14 * racks - remain);
+
+  const applyEntry = () => {
+    const run = runPreview;
+    const penalty = entry === "foul" ? 1 : entry === "break" ? 2 : 0;
     pushHist(snap());
-    const ns = [...sc]; ns[active] += 1;
-    const nr = run + 1;
-    const nhi = [...hi]; if (nr > nhi[active]) nhi[active] = nr;
-    const nmd = withDeficit(ns, maxDef);
-    const nf = [...fouls]; nf[active] = 0;
-    setSc(ns); setRun(nr); setHi(nhi); setMaxDef(nmd); setFouls(nf);
-    if (ns[active] >= target) {
-      onFinish({ s1: ns[0], s2: ns[1], hr1: nhi[0], hr2: nhi[1], def1: nmd[0], def2: nmd[1] });
+    const ns = [...sc];
+    ns[active] += run;
+    const nhi = [...hi]; if (run > nhi[active]) nhi[active] = run;
+    const nf = [...fouls];
+    if (penalty > 0) {
+      ns[active] -= penalty;
+      if (run > 0) nf[active] = 0;                       // legaler Score unterbricht Foul-Serie
+      else { nf[active] += 1; if (nf[active] >= 3) { ns[active] -= 15; nf[active] = 0; } }
+    } else {
+      nf[active] = 0;                                    // reguläres Aufnahmeende
     }
-  };
-
-  const endInning = () => {
-    pushHist(snap());
-    setRun(0); setActive((a) => 1 - a); setInnings((i) => i + 1);
-  };
-
-  const foul = (penalty) => {
-    pushHist(snap());
-    const ns = [...sc]; ns[active] -= penalty;
-    const nf = [...fouls]; nf[active] += 1;
-    if (nf[active] >= 3) { ns[active] -= 15; nf[active] = 0; }
     const nmd = withDeficit(ns, maxDef);
-    setSc(ns); setFouls(nf); setMaxDef(nmd); setRun(0);
+    const finished = ns[active] >= target;
+    setSc(ns); setHi(nhi); setFouls(nf); setMaxDef(nmd);
+    setOnTable(remain); setEntry(null); setRacks(0);
     setActive((a) => 1 - a); setInnings((i) => i + 1);
+    if (finished) onFinish({ s1: ns[0], s2: ns[1], hr1: nhi[0], hr2: nhi[1], def1: nmd[0], def2: nmd[1] });
   };
 
   const undo = () => {
     setHist((h) => {
       if (!h.length) return h;
       const last = h[h.length - 1];
-      setSc(last.sc); setRun(last.run); setActive(last.active);
-      setHi(last.hi); setFouls(last.fouls); setMaxDef(last.maxDef); setInnings(last.innings);
+      setSc(last.sc); setActive(last.active); setHi(last.hi);
+      setFouls(last.fouls); setMaxDef(last.maxDef); setOnTable(last.onTable); setInnings(last.innings);
+      setEntry(null); setRacks(0);
       return h.slice(0, -1);
     });
   };
 
+  // ---- Setup ----
   if (!started) {
     return (
       <div className="sp-setup">
         <p className="q">Zielpunktzahl für 14/1 Endlos</p>
         <div className="disc-grid">
-          {TARGETS.map((t) => (
-            <button key={t} className={"disc-card" + (target === t ? " sel" : "")}
-              onClick={() => setTarget(t)}>{t}</button>
+          {PRESETS.map((t) => (
+            <button key={t} className={"disc-card" + (target === t && custom === "" ? " sel" : "")}
+              onClick={() => { setTarget(t); setCustom(""); }}>{t}</button>
           ))}
         </div>
-        <button className="btn primary" onClick={() => setStarted(true)}>
+        <div className="search-row" style={{ marginTop: 4 }}>
+          <input type="number" inputMode="numeric" placeholder="oder eigenes Ziel eingeben …"
+            value={custom} onChange={(e) => {
+              setCustom(e.target.value);
+              const n = parseInt(e.target.value, 10);
+              if (!isNaN(n) && n > 0) setTarget(n);
+            }} />
+        </div>
+        <button className="btn primary" disabled={!(target > 0)} onClick={() => setStarted(true)}>
           Los geht's – bis {target} <ArrowRight size={18} />
         </button>
-        <p className="hint center">Jede versenkte Kugel = 1 Punkt. Foul = −1 (Anstoß-Foul −2, drei
-          Fouls in Folge zusätzlich −15). Serien laufen über Racks hinweg weiter.</p>
+        <p className="hint center">Jede versenkte Kugel = 1 Punkt. Am Ende jeder Aufnahme zählst du die
+          Kugeln am Tisch – die Serie rechnet die App. Ausgeschossene Racks tippst du separat ein.
+          Foul = −1 (Anstoß −2, drei Fouls in Folge zusätzlich −15).</p>
       </div>
     );
   }
 
+  // ---- Aufnahme-Abschluss (Eingabe) ----
+  if (entry) {
+    return (
+      <div className="sp-entry">
+        <p className="sp-entry-title">{names[active]}: Aufnahme abschließen
+          {entry === "foul" ? " (Foul −1)" : entry === "break" ? " (Anstoß-Foul −2)" : ""}</p>
+
+        <div className="sp-entry-row">
+          <span>Ausgeschossene Racks</span>
+          <div className="mini-stepper">
+            <button onClick={() => setRacks((r) => Math.max(0, r - 1))}><Minus size={16} /></button>
+            <b>{racks}</b>
+            <button onClick={() => setRacks((r) => r + 1)}><Plus size={16} /></button>
+          </div>
+        </div>
+
+        <div className="sp-entry-lbl">Kugeln noch am Tisch</div>
+        <div className="num-grid">
+          {Array.from({ length: 16 }, (_, n) => (
+            <button key={n} className={"num-btn" + (remain === n ? " sel" : "")} onClick={() => setRemain(n)}>{n}</button>
+          ))}
+        </div>
+
+        <div className="sp-run-preview">Serie dieser Aufnahme: <b>{runPreview}</b></div>
+
+        <div className="sp-controls">
+          <button className="btn ghost" onClick={() => { setEntry(null); setRacks(0); }}>Abbrechen</button>
+          <button className="btn primary" onClick={applyEntry}>Übernehmen</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Laufendes Spiel ----
   return (
     <div className="sp">
       <div className="sp-board">
@@ -542,28 +590,23 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
             <span className="sp-name">{names[i]}</span>
             <div className="sp-score">{sc[i]}</div>
             <div className="sp-meta">Höchstserie {hi[i]}{fouls[i] > 0 ? ` · ${fouls[i]} Foul${fouls[i] > 1 ? "s" : ""}` : ""}</div>
-            {active === i && <div className="sp-turn">am Tisch · Serie {run}</div>}
+            {active === i && <div className="sp-turn">am Tisch</div>}
           </div>
         ))}
       </div>
 
-      <div className="sp-target">Ziel: {target} · Aufnahme {innings}</div>
+      <div className="sp-target">Ziel {target} · Aufnahme {innings} · {onTable} Kugeln am Tisch</div>
 
-      <button className="sp-pot" onClick={pot}>
-        <Plus size={22} /> Kugel für {names[active]}
+      <button className="sp-pot" onClick={() => openEntry("miss")}>
+        Aufnahme von {names[active]} beenden
       </button>
 
       <div className="sp-controls">
-        <button className="btn ghost" onClick={endInning}>Aufnahme beenden</button>
-        <button className="btn ghost warn" onClick={() => foul(1)}>Foul −1</button>
+        <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
+        {innings === 1 && <button className="btn ghost warn" onClick={() => openEntry("break")}>Anstoß-Foul −2</button>}
       </div>
       <div className="sp-controls">
-        {innings === 1 && (
-          <button className="btn ghost warn" onClick={() => foul(2)}>Anstoß-Foul −2</button>
-        )}
-        <button className="btn ghost" onClick={undo} disabled={hist.length === 0}>
-          <RotateCcw size={15} /> Rückgängig
-        </button>
+        <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> Rückgängig</button>
       </div>
 
       {!confirmEnd ? (
@@ -594,6 +637,7 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
   const [hr, setHr] = useState([null, null]);   // Höchstserie [ich, Gegner] (nur 14/1)
   const [def, setDef] = useState([null, null]); // aufgeholter Rückstand (nur 14/1)
   const [oppQuery, setOppQuery] = useState("");
+  const [pendingDisc, setPendingDisc] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const is141 = disc === "14/1 Endlos";
@@ -609,6 +653,21 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
   const steps = ["Gegner", "Disziplin", "Ergebnis", "Pruefen"];
 
   const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); };
+
+  // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
+  // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
+  const chooseDisc = (d) => {
+    const from = disc;
+    if (!from || d === from) { setDisc(d); setStep(2); return; }
+    const crosses141 = (from === "14/1 Endlos") !== (d === "14/1 Endlos");
+    if (crosses141 && (s1 > 0 || s2 > 0)) { setPendingDisc(d); return; }
+    setDisc(d);
+    if (crosses141) resetScores();   // Schema-Wechsel ohne bisheriges Ergebnis: sauber starten
+    setStep(2);
+  };
+  const confirmDiscChange = () => {
+    setDisc(pendingDisc); resetScores(); setPendingDisc(null); setStep(2);
+  };
 
   const save = async () => {
     setBusy(true);
@@ -674,12 +733,23 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
           <div className="disc-grid">
             {disciplines.map((d) => (
               <button key={d} className={"disc-card" + (disc === d ? " sel" : "")}
-                onClick={() => { const changed = d !== disc; setDisc(d); if (changed) resetScores(); setStep(2); }}>
+                onClick={() => chooseDisc(d)}>
                 {d}
               </button>
             ))}
           </div>
-          <p className="hint center">Bei Disziplinwechsel wird das bisherige Ergebnis zurückgesetzt.</p>
+          {pendingDisc ? (
+            <div className="confirm-box">
+              <p>Wechsel zu bzw. von <b>14/1 Endlos</b> ändert das Punkteschema – das bisherige
+                Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?</p>
+              <div className="sp-controls">
+                <button className="btn ghost" onClick={() => setPendingDisc(null)}>Abbrechen</button>
+                <button className="btn primary" onClick={confirmDiscChange}>Wechseln &amp; zurücksetzen</button>
+              </div>
+            </div>
+          ) : (
+            <p className="hint center">Zwischen 8/9/10 Ball bleibt dein Ergebnis beim Wechsel erhalten.</p>
+          )}
         </>
       )}
 
@@ -1910,6 +1980,25 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   padding: 6px; cursor: pointer; font-family: inherit; }
 .sp-endbox { background: var(--felt-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
 .sum-141 { text-align: center; font-size: 12.5px; color: var(--gold); margin-top: 4px; }
+
+/* 14/1 Aufnahme-Eingabe */
+.sp-entry { display: flex; flex-direction: column; gap: 12px; background: var(--felt-2);
+  border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+.sp-entry-title { font-weight: 700; font-size: 14px; text-align: center; }
+.sp-entry-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.mini-stepper { display: flex; align-items: center; gap: 12px; }
+.mini-stepper button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--felt-3); color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
+.mini-stepper b { min-width: 20px; text-align: center; font-size: 17px; font-family: 'Bricolage Grotesque', sans-serif; }
+.sp-entry-lbl { font-size: 13px; color: var(--ivory-dim); }
+.num-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.num-btn { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line); background: var(--felt-3);
+  color: var(--ivory); font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Bricolage Grotesque', sans-serif; }
+.num-btn.sel { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.sp-run-preview { text-align: center; font-size: 14px; }
+.sp-run-preview b { font-size: 20px; color: var(--gold); font-family: 'Bricolage Grotesque', sans-serif; }
+.confirm-box { background: var(--felt-2); border: 1px solid var(--gold); border-radius: 14px;
+  padding: 14px; margin-top: 12px; font-size: 13.5px; line-height: 1.5; }
 
 
 .summary { background: var(--felt-2); border: 1px solid var(--line); border-radius: 20px;
