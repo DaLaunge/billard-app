@@ -463,7 +463,7 @@ function poolBallStyle(n) {
   return { background: `linear-gradient(180deg, #F2EDE0 0 30%, ${c} 30% 70%, #F2EDE0 70% 100%)` };
 }
 
-function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
+function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
   const PRESETS = [50, 70, 90, 100, 150];
   const [target, setTarget] = useState(100);
   const [custom, setCustom] = useState("");
@@ -517,24 +517,30 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
     const ns = [...sc]; ns[active] += partial;
     const nhi = [...hi]; if (run > nhi[active]) nhi[active] = run;
     const nf = [...fouls];
+    let threeFoul = false;
     if (penalty > 0) {
       ns[active] -= penalty;
-      if (run > 0) nf[active] = 0;
-      else { nf[active] += 1; if (nf[active] >= 3) { ns[active] -= 15; nf[active] = 0; } }
+      if (run > 0) {
+        nf[active] = 0;                               // legaler Score in der Aufnahme bricht die Foul-Serie
+      } else {
+        nf[active] += 1;
+        if (nf[active] >= 3) { ns[active] -= 15; nf[active] = 0; threeFoul = true; }
+      }
     } else {
       nf[active] = 0;
     }
     const nmd = withDeficit(ns, maxDef);
     const finished = ns[active] >= target;
-    const rerack = remain <= 1;                       // 0 oder 1 Kugel -> Tisch neu aufbauen
+    const rerack = remain <= 1 || threeFoul;          // 3-Foul-Regel: alle 15 Kugeln neu aufbauen
     setSc(ns); setHi(nhi); setFouls(nf); setMaxDef(nmd);
     setOnTable(rerack ? 15 : remain); setEntry(null);
-    if (continueActive) {
+    if (continueActive && !threeFoul) {
       setInningRun(run);                              // gleicher Spieler, Serie läuft weiter
     } else {
       setInningRun(0);
       setActive((a) => 1 - a); setInnings((i) => i + 1);
     }
+    if (threeFoul && toast) toast(`3 Fouls in Folge – ${names[active]} bekommt −15 Strafpunkte!`);
     if (finished) onFinish({ s1: ns[0], s2: ns[1], hr1: nhi[0], hr2: nhi[1], def1: nmd[0], def2: nmd[1] });
   };
 
@@ -622,52 +628,59 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish }) {
             <Ball color={colorOf(names[i])} label={initials(names[i])} badge={badgeOf(names[i])} size={40} />
             <span className="sp-name">{names[i]}</span>
             <div className="sp-score">{sc[i]}</div>
-            <div className="sp-meta">Höchstserie {hi[i]}{fouls[i] > 0 ? ` · ${fouls[i]} Foul${fouls[i] > 1 ? "s" : ""}` : ""}</div>
+            <div className="sp-meta">Höchstserie {hi[i]}</div>
+            {fouls[i] > 0 && (
+              <div className={"sp-foulwarn" + (fouls[i] >= 2 ? " danger" : "")}>
+                {fouls[i]} Foul{fouls[i] > 1 ? "s" : ""} in Folge{fouls[i] >= 2 ? " – Vorsicht!" : ""}
+              </div>
+            )}
             {active === i && <div className="sp-turn">am Tisch{inningRun > 0 ? ` · Serie ${inningRun}` : ""}</div>}
           </div>
         ))}
       </div>
 
-      <div className="sp-target">Ziel {target} · Aufnahme {innings} · {onTable} Kugeln am Tisch</div>
-      {need > 0 && need <= 14 && (
-        <div className="sp-need">Nur noch <b>{need}</b> Kugel{need > 1 ? "n" : ""} bis {names[active]} gewinnt!</div>
-      )}
+      <div className="sp-actions">
+        <div className="sp-target">Ziel {target} · Aufnahme {innings} · {onTable} Kugeln am Tisch</div>
+        {need > 0 && need <= 14 && (
+          <div className="sp-need">Nur noch <b>{need}</b> Kugel{need > 1 ? "n" : ""} bis {names[active]} gewinnt!</div>
+        )}
 
-      <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
-        <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
-      </button>
-      <button className="sp-pot" onClick={() => openEntry("miss")}>
-        Aufnahme von {names[active]} beenden
-      </button>
+        <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
+          <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
+        </button>
+        <button className="sp-pot" onClick={() => openEntry("miss")}>
+          Aufnahme von {names[active]} beenden
+        </button>
 
-      <div className="sp-controls">
-        <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
-        {innings === 1 && <button className="btn ghost warn" onClick={() => openEntry("break")}>Anstoß-Foul −2</button>}
-      </div>
-      <div className="sp-controls">
-        <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> Rückgängig</button>
-      </div>
-
-      {!confirmEnd ? (
-        <button className="btn subtle" onClick={() => setConfirmEnd(true)}>Match vorzeitig beenden</button>
-      ) : (
-        <div className="sp-endbox">
-          <p className="hint center" style={{ marginTop: 0 }}>Aktueller Stand {sc[0]} : {sc[1]} – wirklich beenden?</p>
-          <div className="sp-controls">
-            <button className="btn ghost" onClick={() => setConfirmEnd(false)}>Weiterspielen</button>
-            <button className="btn primary" disabled={sc[0] === sc[1]}
-              onClick={() => onFinish({ s1: sc[0], s2: sc[1], hr1: hi[0], hr2: hi[1], def1: maxDef[0], def2: maxDef[1] })}>
-              Beenden
-            </button>
-          </div>
-          {sc[0] === sc[1] && <p className="hint center">Bei Gleichstand kann nicht beendet werden.</p>}
+        <div className="sp-controls">
+          <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
+          {innings === 1 && <button className="btn ghost warn" onClick={() => openEntry("break")}>Anstoß-Foul −2</button>}
         </div>
-      )}
+        <div className="sp-controls">
+          <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> Rückgängig</button>
+        </div>
+
+        {!confirmEnd ? (
+          <button className="btn subtle" onClick={() => setConfirmEnd(true)}>Match vorzeitig beenden</button>
+        ) : (
+          <div className="sp-endbox">
+            <p className="hint center" style={{ marginTop: 0 }}>Aktueller Stand {sc[0]} : {sc[1]} – wirklich beenden?</p>
+            <div className="sp-controls">
+              <button className="btn ghost" onClick={() => setConfirmEnd(false)}>Weiterspielen</button>
+              <button className="btn primary" disabled={sc[0] === sc[1]}
+                onClick={() => onFinish({ s1: sc[0], s2: sc[1], hr1: hi[0], hr2: hi[1], def1: maxDef[0], def2: maxDef[1] })}>
+                Beenden
+              </button>
+            </div>
+            {sc[0] === sc[1] && <p className="hint center">Bei Gleichstand kann nicht beendet werden.</p>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toast, colorOf, badgeOf }) {
+function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf }) {
   const [step, setStep] = useState(0);
   const [opp, setOpp] = useState(null);
   const [s1, setS1] = useState(0);
@@ -679,13 +692,27 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
   const [pendingDisc, setPendingDisc] = useState(null);
   const [leaveWarn, setLeaveWarn] = useState(false);
   const [abortAsk, setAbortAsk] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const is141 = disc === "14/1 Endlos";
+
+  // Wie oft habe ich gegen wen gespielt? (häufigste Gegner zuerst)
+  const freqByNick = useMemo(() => {
+    const f = {};
+    (matches || []).forEach((m) => {
+      let o = null;
+      if (m.p1?.nickname === me.nickname) o = m.p2?.nickname;
+      else if (m.p2?.nickname === me.nickname) o = m.p1?.nickname;
+      if (o) f[o] = (f[o] || 0) + 1;
+    });
+    return f;
+  }, [matches, me]);
+
   const opponents = players
     .filter((p) => p.id !== me.id)
     .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
-    .sort((a, b) => a.nickname.localeCompare(b.nickname));
+    .sort((a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname));
 
   const myRating = ratingOf(me.nickname);
   const oppRating = opp ? ratingOf(opp.nickname) : 500;
@@ -728,6 +755,11 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
     </button>
   );
 
+  if (showInvite) {
+    return <InviteScreen me={me} toast={toast}
+      onBack={() => { setShowInvite(false); onReload && onReload(); }} />;
+  }
+
   return (
     <div className="screen">
       <header className="screen-head with-back">
@@ -743,8 +775,8 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
             <h3>Match abbrechen?</h3>
             <p>Alle Eingaben gehen verloren{is141 ? " – ein 14/1-Protokoll lässt sich nicht wiederherstellen" : ""}.</p>
             <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setAbortAsk(false)}>Weiter bearbeiten</button>
-              <button className="btn primary warn-solid" onClick={() => { setAbortAsk(false); onCancel(); }}>Abbrechen</button>
+              <button className="btn ghost warn" onClick={() => { setAbortAsk(false); onCancel(); }}>Ja – beenden</button>
+              <button className="btn primary" onClick={() => setAbortAsk(false)}>Match fortführen</button>
             </div>
           </div>
         </div>
@@ -762,7 +794,7 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
 
       {step === 0 && (
         <>
-          <p className="q">Gegen wen hast du gespielt?</p>
+          <p className="q">Gegen wen trittst du an?</p>
           <div className="search-row">
             <Search size={16} className="mail-ico" />
             <input placeholder="Spieler suchen ..." value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
@@ -778,6 +810,9 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
               </button>
             ))}
           </div>
+          <button className="btn ghost" onClick={() => setShowInvite(true)}>
+            <QrCode size={16} /> Neues Mitglied? Jetzt einladen
+          </button>
         </>
       )}
 
@@ -825,13 +860,13 @@ function MatchScreen({ me, players, disciplines, ratingOf, onDone, onCancel, toa
             </div>
           )}
           {is141 ? (
-            <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf}
+            <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} toast={toast}
               onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2 }) => {
                 setS1(a); setS2(b); setHr([hr1, hr2]); setDef([def1, def2]); setStep(3);
               }} />
           ) : (
             <>
-              <p className="q">Wie ging's aus? <span className="q-sub">(gewonnene Spiele)</span></p>
+              <p className="q">Wie steht's? <span className="q-sub">(gewonnene Spiele)</span></p>
               <div className="score-row">
                 {[{ p: me.nickname, v: s1, set: setS1 }, { p: opp.nickname, v: s2, set: setS2 }].map(({ p, v, set }) => (
                   <div key={p} className="score-col">
@@ -1792,8 +1827,9 @@ export default function App() {
                   onReply={replyPing} onUnreply={unreplyPing} />
               )}
               {tab === "match" && (
-                <MatchScreen me={player} players={players} disciplines={disciplines}
+                <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf}
+                  onReload={loadData}
                   onDone={() => { setTab("rang"); loadData(); }}
                   onCancel={() => setTab("rang")} />
               )}
@@ -2032,6 +2068,32 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .sp-name { font-size: 13px; font-weight: 700; }
 .sp-score { font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; line-height: 1; }
 .sp-meta { font-size: 11px; color: var(--ivory-dim); }
+.sp-foulwarn { font-size: 11px; font-weight: 700; color: #E8B923; margin-top: 2px; }
+.sp-foulwarn.danger { color: #E8703A; }
+
+/* ===== Querformat / große Bildschirme ===== */
+@media (orientation: landscape) and (min-width: 720px) {
+  .phone { max-width: 900px; }
+  .content { padding-bottom: 20px; }
+  .tabbar { max-width: 900px; }
+  /* 14/1-Zähler zweispaltig: Anzeigetafel links, Bedienung rechts */
+  .sp { display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; align-items: start; }
+  .sp-board { grid-column: 1; }
+  .sp-side { padding: 22px 10px; }
+  .sp-score { font-size: 60px; }
+  .sp-actions { grid-column: 2; display: flex; flex-direction: column; gap: 10px; }
+  /* Ergebnis-/Statistik-Inhalte etwas luftiger nutzen die Breite */
+  .opp-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Handy im Querformat: kompakter, damit alles ohne Scrollen sichtbar bleibt */
+  .content { padding-bottom: 76px; }
+  .sp-score { font-size: 40px; }
+  .sp-side { padding: 10px 8px; gap: 2px; }
+  .sp { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; align-items: start; }
+  .sp-board { grid-column: 1; }
+  .sp-actions { grid-column: 2; display: flex; flex-direction: column; gap: 8px; }
+}
 .sp-turn { font-size: 11.5px; font-weight: 700; color: var(--gold); }
 .sp-target { text-align: center; font-size: 12.5px; color: var(--ivory-dim); }
 .sp-pot { display: flex; align-items: center; justify-content: center; gap: 8px;
