@@ -569,7 +569,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
     const npk = [...pocketed]; npk[active] += pts;
     const nf = [...fouls]; nf[active] = 0;
     const nmd = withDeficit(ns, maxDef);
-    setSc(ns); setInningRun(nir); setHi(nhi); setPocketed(npk); setFouls(nf); setMaxDef(nmd); setOnTable(15);
+    setSc(ns); setInningRun(nir); setHi(nhi); setPocketed(npk); setFouls(nf); setMaxDef(nmd); setOnTable(15); setBreakPhase(false);
     if (ns[active] >= target) onFinish(buildResult(ns, nhi, nmd, npk, missInn, twoBall));
   };
 
@@ -612,12 +612,6 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
   };
 
   // Anstoß regulär gespielt (Safety-Anstoß): zählt als Safe-Aufnahme, Gegner ist dran
-  const legalBreak = () => {
-    pushHist(snap());
-    const nSI = [...safeInn]; nSI[active] += 1;
-    setSafeInn(nSI); setOnTable(15); setBreakPhase(false); setInningRun(0);
-    setActive((a) => 1 - a);
-  };
   // Anstoß-Foul −2: Safe-Aufnahme, danach Wahl, wer als Nächstes anstößt (mehrere Anstöße möglich)
   const breakFoul = () => {
     pushHist(snap());
@@ -755,28 +749,23 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
           <div className="sp-need">Nur noch <b>{need}</b> Kugel{need > 1 ? "n" : ""} bis {names[active]} gewinnt!</div>
         )}
 
-        {breakPhase ? (
-          <>
-            <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>Anstoß: {names[active]} ist dran</div>
-            <button className="sp-pot" onClick={legalBreak}>Anstoß gespielt (regulär)</button>
-            <div className="sp-controls">
-              <button className="btn ghost warn" onClick={breakFoul}>Anstoß-Foul −2</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
-              <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
-            </button>
-            <div className="sp-controls">
-              <button className="sp-pot half" onClick={() => openEntry("miss")}>Fehler</button>
-              <button className="sp-pot half safe" onClick={() => openEntry("safe")}>Safe</button>
-            </div>
-            <div className="sp-controls">
-              <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
-            </div>
-          </>
+        {breakPhase && (
+          <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>Anstoß: {names[active]} ist dran</div>
         )}
+        <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
+          <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
+        </button>
+        <div className="sp-controls">
+          <button className="sp-pot half" onClick={() => openEntry("miss")}>Fehler</button>
+          <button className="sp-pot half safe" onClick={() => openEntry("safe")}>Safe</button>
+        </div>
+        <div className="sp-controls">
+          {breakPhase ? (
+            <button className="btn ghost warn" onClick={breakFoul}>Anstoß-Foul −2</button>
+          ) : (
+            <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
+          )}
+        </div>
         <div className="sp-controls">
           <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> Rückgängig</button>
         </div>
