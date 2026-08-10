@@ -509,7 +509,7 @@ function poolBallStyle(n) {
 }
 
 function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
-  const PRESETS = [50, 70, 90, 100, 150];
+  const PRESETS = [50, 70, 80, 90, 100, 150];
   const [target, setTarget] = useState(100);
   const [custom, setCustom] = useState("");
   const [started, setStarted] = useState(false);
@@ -646,9 +646,9 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
     return (
       <div className="sp-setup">
         <p className="q">Zielpunktzahl für 14/1 Endlos</p>
-        <div className="disc-grid">
+        <div className="disc-grid target-grid">
           {PRESETS.map((t) => (
-            <button key={t} className={"disc-card" + (target === t && custom === "" ? " sel" : "")}
+            <button key={t} className={"disc-card compact" + (target === t && custom === "" ? " sel" : "")}
               onClick={() => { setTarget(t); setCustom(""); }}>{t}</button>
           ))}
         </div>
@@ -2274,6 +2274,8 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   padding: 22px 10px; color: var(--ivory); font-size: 16px; font-weight: 700; cursor: pointer;
   font-family: 'Bricolage Grotesque', sans-serif; }
 .disc-card.sel, .disc-card:active { border-color: var(--chalk); background: var(--felt-3); }
+.target-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.disc-card.compact { padding: 13px 4px; font-size: 15px; border-radius: 12px; }
 
 /* Disziplin-Chip + Kopf im Ergebnis-Schritt */
 .score-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
