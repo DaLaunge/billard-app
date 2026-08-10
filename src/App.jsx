@@ -509,6 +509,8 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
 
   const [sc, setSc] = useState([0, 0]);
   const [active, setActive] = useState(0);
+  const [starter, setStarter] = useState(0);        // wer beginnt (bricht auf)
+  const [breakPhase, setBreakPhase] = useState(true); // solange noch aufgebrochen wird (mehrere Anstoß-Fouls möglich)
   const [hi, setHi] = useState([0, 0]);
   const [fouls, setFouls] = useState([0, 0]);
   const [maxDef, setMaxDef] = useState([0, 0]);
@@ -521,7 +523,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   const names = [me.nickname, opp.nickname];
-  const snap = () => ({ sc: [...sc], active, hi: [...hi], fouls: [...fouls], maxDef: [...maxDef], onTable, inningRun, innings });
+  const snap = () => ({ sc: [...sc], active, hi: [...hi], fouls: [...fouls], maxDef: [...maxDef], onTable, inningRun, innings, breakPhase });
   const pushHist = (x) => setHist((h) => [...h.slice(-80), x]);
   const withDeficit = (scores, md) => {
     const nd = [...md];
@@ -579,6 +581,8 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
       setActive((a) => 1 - a); setInnings((i) => i + 1);
     }
     if (threeFoul && toast) toast(`3 Fouls in Folge – ${names[active]} bekommt −15 Strafpunkte!`);
+    // Anstoß-Phase endet, sobald regulär gespielt wird; ein weiteres Anstoß-Foul hält sie offen
+    if (entry !== "break") setBreakPhase(false);
     if (finished) onFinish({ s1: ns[0], s2: ns[1], hr1: nhi[0], hr2: nhi[1], def1: nmd[0], def2: nmd[1] });
   };
 
@@ -588,7 +592,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
       const last = h[h.length - 1];
       setSc(last.sc); setActive(last.active); setHi(last.hi); setFouls(last.fouls);
       setMaxDef(last.maxDef); setOnTable(last.onTable); setInningRun(last.inningRun); setInnings(last.innings);
-      setEntry(null);
+      setBreakPhase(last.breakPhase); setEntry(null);
       return h.slice(0, -1);
     });
   };
@@ -612,7 +616,15 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
               if (!isNaN(n) && n > 0) setTarget(n);
             }} />
         </div>
-        <button className="btn primary" disabled={!(target > 0)} onClick={() => setStarted(true)}>
+        <p className="q" style={{ marginTop: 8 }}>Wer bricht auf?</p>
+        <div className="disc-grid">
+          {[0, 1].map((i) => (
+            <button key={i} className={"disc-card" + (starter === i ? " sel" : "")}
+              onClick={() => setStarter(i)}>{names[i]}</button>
+          ))}
+        </div>
+        <button className="btn primary" disabled={!(target > 0)}
+          onClick={() => { setActive(starter); setStarted(true); }}>
           Los geht's – bis {target} <ArrowRight size={18} />
         </button>
         <p className="hint center">Jede versenkte Kugel = 1 Punkt. Schießt du ein Rack aus, tippst du das
@@ -683,16 +695,23 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
           <div className="sp-need">Nur noch <b>{need}</b> Kugel{need > 1 ? "n" : ""} bis {names[active]} gewinnt!</div>
         )}
 
-        <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
-          <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
-        </button>
+        {breakPhase ? (
+          <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>Anstoß: {names[active]} bricht auf</div>
+        ) : (
+          <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
+            <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
+          </button>
+        )}
         <button className="sp-pot" onClick={() => openEntry("miss")}>
           Aufnahme von {names[active]} beenden
         </button>
 
         <div className="sp-controls">
-          <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
-          {innings === 1 && <button className="btn ghost warn" onClick={() => openEntry("break")}>Anstoß-Foul −2</button>}
+          {breakPhase ? (
+            <button className="btn ghost warn" onClick={() => openEntry("break")}>Anstoß-Foul −2</button>
+          ) : (
+            <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
+          )}
         </div>
         <div className="sp-controls">
           <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> Rückgängig</button>
@@ -747,8 +766,9 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
     return f;
   }, [matches, me]);
 
+  const ghost = players.find((p) => p.is_ghost);
   const opponents = players
-    .filter((p) => p.id !== me.id)
+    .filter((p) => p.id !== me.id && !p.is_ghost)
     .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
     .sort((a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname));
 
@@ -775,7 +795,10 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
     setDisc(pendingDisc); resetScores(); setPendingDisc(null); setStep(2);
   };
 
+  const isGhost = !!opp?.is_ghost;
+
   const save = async () => {
+    if (isGhost) { setStep(4); return; }   // Trainingsmatch: nicht speichern, nur anzeigen
     setBusy(true);
     const { error } = await supabase.rpc("report_match", {
       p_opponent_id: opp.id, p_my_score: s1, p_opp_score: s2, p_discipline: disc,
@@ -839,6 +862,16 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label="Suche loeschen"><X size={15} /></button>}
           </div>
           {opponents.length === 0 && <p className="hint">Kein Spieler namens "{oppQuery}" gefunden.</p>}
+          {ghost && !oppQuery && (
+            <button className="ghost-card" onClick={() => { setOpp(ghost); setStep(1); }}>
+              <div className="ghost-ball">👻</div>
+              <div className="ghost-info">
+                <span className="ghost-name">Training gegen Ghost</span>
+                <span className="ghost-sub">Übungsmatch – zählt nicht fürs Rating</span>
+              </div>
+              <ArrowRight size={18} />
+            </button>
+          )}
           <div className="opp-grid">
             {opponents.map((p) => (
               <button key={p.id} className={"opp-card" + (opp?.id === p.id ? " sel" : "")}
@@ -941,31 +974,45 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
                 <span>{opp.nickname}</span>
               </div>
             </div>
-            <div className="sum-disc">{disc}</div>
+            <div className="sum-disc">{disc}{isGhost ? " · Training" : ""}</div>
             {is141 && (hr[0] != null || hr[1] != null) && (
               <div className="sum-141">Höchstserie: {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}</div>
             )}
-            <div className="prob-wrap">
-              <div className="prob-label">
-                <span>Erwartung laut Rating ({myRating} : {oppRating})</span>
-                <span>{Math.round(prob * 100)} % : {Math.round((1 - prob) * 100)} %</span>
+            {isGhost ? (
+              <p className="hint center" style={{ marginBottom: 0 }}>Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.</p>
+            ) : (
+              <div className="prob-wrap">
+                <div className="prob-label">
+                  <span>Erwartung laut Rating ({myRating} : {oppRating})</span>
+                  <span>{Math.round(prob * 100)} % : {Math.round((1 - prob) * 100)} %</span>
+                </div>
+                <div className="prob-bar"><div style={{ width: `${prob * 100}%` }} /></div>
               </div>
-              <div className="prob-bar"><div style={{ width: `${prob * 100}%` }} /></div>
-            </div>
+            )}
           </div>
           <button className="btn primary" disabled={busy} onClick={save}>
-            {busy ? "Speichere ..." : <>Match speichern <Check size={18} /></>}
+            {busy ? "Speichere ..." : isGhost ? <>Training abschließen <Check size={18} /></> : <>Match speichern <Check size={18} /></>}
           </button>
-          <p className="hint center">Das Match fliesst erst ins Rating ein, wenn {opp.nickname} es bestaetigt.</p>
+          {!isGhost && <p className="hint center">Das Match fliesst erst ins Rating ein, wenn {opp.nickname} es bestaetigt.</p>}
         </>
       )}
 
       {step === 4 && opp && (
         <div className="saved">
           <div className="sent-check big"><Check size={34} /></div>
-          <h3>Gespeichert!</h3>
-          <p>Wartet auf Bestaetigung von <b>{opp.nickname}</b>.<br />
-            Sobald {opp.nickname} die App oeffnet und auf "Passt" tippt, wird das Ranking neu berechnet.</p>
+          {isGhost ? (
+            <>
+              <h3>Training beendet!</h3>
+              <p>Ergebnis gegen den Ghost: <b>{s1} : {s2}</b>.<br />
+                Trainingsmatches werden nicht gespeichert und beeinflussen dein Rating nicht.</p>
+            </>
+          ) : (
+            <>
+              <h3>Gespeichert!</h3>
+              <p>Wartet auf Bestaetigung von <b>{opp.nickname}</b>.<br />
+                Sobald {opp.nickname} die App oeffnet und auf "Passt" tippt, wird das Ranking neu berechnet.</p>
+            </>
+          )}
           <button className="btn primary" onClick={onDone}>Zur Rangliste</button>
         </div>
       )}
@@ -1755,7 +1802,7 @@ export default function App() {
       setPlayer(data ?? null);
       setPlayerChecked(true);
       const { data: all } = await supabase.from("players")
-        .select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge");
+        .select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost");
       setPlayers(all ?? []);
     })();
   }, [session]);
@@ -1768,7 +1815,7 @@ export default function App() {
         .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
         .order("played_at", { ascending: false })
         .range(from, to)),
-      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge"),
+      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost"),
       supabase.from("pings")
         .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
         .gt("expires_at", new Date().toISOString())
@@ -2257,6 +2304,14 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .sum-score i { font-style: normal; color: var(--ivory-dim); padding: 0 4px; }
 .sum-disc { text-align: center; margin: 10px 0 16px; color: var(--chalk); font-weight: 600; font-size: 14px; }
 .prob-wrap { margin-bottom: 4px; }
+.ghost-card { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 12px;
+  background: var(--felt-2); border: 1px dashed #5B7B70; border-radius: 16px; padding: 12px 14px;
+  cursor: pointer; font-family: inherit; color: var(--ivory); }
+.ghost-ball { width: 44px; height: 44px; border-radius: 50%; background: #29453B; display: grid;
+  place-items: center; font-size: 24px; flex-shrink: 0; }
+.ghost-info { display: flex; flex-direction: column; text-align: left; flex: 1; min-width: 0; }
+.ghost-name { font-weight: 700; font-size: 14px; }
+.ghost-sub { font-size: 11.5px; color: var(--ivory-dim); }
 .prob-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--ivory-dim); margin-bottom: 6px; gap: 10px; }
 .prob-bar { height: 8px; border-radius: 99px; background: var(--felt-3); overflow: hidden; }
 .prob-bar div { height: 100%; background: var(--chalk); border-radius: 99px; }
