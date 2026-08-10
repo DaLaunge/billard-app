@@ -677,9 +677,12 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
     return (
       <div className="sp-entry">
         <p className="sp-entry-title">Anstoß-Foul −2 · Wer stößt als Nächstes an?</p>
-        <div className="sp-controls">
+        <div className="opp-grid">
           {[0, 1].map((i) => (
-            <button key={i} className="btn primary" onClick={() => chooseBreaker(i)}>{names[i]}</button>
+            <button key={i} className="opp-card" onClick={() => chooseBreaker(i)}>
+              <Ball color={colorOf(names[i])} label={initials(names[i])} badge={badgeOf(names[i])} size={48} />
+              <span>{names[i]}</span>
+            </button>
           ))}
         </div>
         <p className="hint center">So sind mehrere Anstöße hintereinander möglich (Wiederholungs-Anstoß).</p>
@@ -2340,6 +2343,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .mini-stepper b { min-width: 20px; text-align: center; font-size: 17px; font-family: 'Bricolage Grotesque', sans-serif; }
 .sp-entry-lbl { font-size: 13px; color: var(--ivory-dim); }
 .num-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (orientation: landscape) { .num-grid { grid-template-columns: repeat(8, 1fr); gap: 8px; } }
 .pool-ball { aspect-ratio: 1; border-radius: 50%; border: none; cursor: pointer; position: relative;
   padding: 0; box-shadow: inset -2px -3px 5px #00000055, inset 2px 2px 4px #ffffff35; }
 .pool-ball .pb-no { position: absolute; inset: 0; margin: auto; width: 56%; height: 56%;
