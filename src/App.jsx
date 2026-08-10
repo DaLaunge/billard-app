@@ -383,20 +383,27 @@ function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnreply }) {
       {ping.message && <p className="ping-msg">"{ping.message}"</p>}
 
       {ping.replies?.length > 0 && (
+        <div className="otw-count">🚗 {ping.replies.length} {ping.replies.length === 1 ? "Person ist" : "Leute sind"} unterwegs</div>
+      )}
+
+      {ping.replies?.length > 0 && (
         <div className="ping-replies">
           {ping.replies.map((r) => (
             <div key={r.id} className="ping-reply">
               <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} size={26} />
-              <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : " ist dabei!"}</span>
+              <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : " ist unterwegs!"}</span>
             </div>
           ))}
         </div>
       )}
 
       {!mine && !myReply && !open && (
-        <button className="btn primary small" onClick={() => setOpen(true)}>
-          <Swords size={16} /> Ich habe Lust!
-        </button>
+        <div className="sp-controls">
+          <button className="btn primary small" onClick={() => onReply(ping.id, "")}>
+            <Swords size={16} /> Bin unterwegs
+          </button>
+          <button className="btn ghost small" onClick={() => setOpen(true)}>mit Nachricht</button>
+        </div>
       )}
       {!mine && !myReply && open && (
         <div className="reply-form">
@@ -406,7 +413,7 @@ function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnreply }) {
           </div>
           <div className="confirm-actions">
             <button className="chip-btn ok" onClick={() => { onReply(ping.id, msg); setOpen(false); setMsg(""); }}>
-              <Check size={15} /> Zusagen
+              <Check size={15} /> Unterwegs
             </button>
             <button className="chip-btn no" onClick={() => setOpen(false)}><X size={15} /> Abbrechen</button>
           </div>
@@ -509,21 +516,33 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
 
   const [sc, setSc] = useState([0, 0]);
   const [active, setActive] = useState(0);
-  const [starter, setStarter] = useState(0);        // wer den Anstoß macht
-  const [breakPhase, setBreakPhase] = useState(true); // solange noch aufgebrochen wird (mehrere Anstoß-Fouls möglich)
+  const [starter, setStarter] = useState(0);
+  const [breakPhase, setBreakPhase] = useState(true);
+  const [breakChoose, setBreakChoose] = useState(false);   // nach Anstoß-Foul: wer stößt als Nächstes an
   const [hi, setHi] = useState([0, 0]);
   const [fouls, setFouls] = useState([0, 0]);
   const [maxDef, setMaxDef] = useState([0, 0]);
   const [onTable, setOnTable] = useState(15);
-  const [inningRun, setInningRun] = useState(0);   // Punkte der laufenden Aufnahme (für Höchstserie)
-  const [innings, setInnings] = useState(1);
-  const [entry, setEntry] = useState(null);        // null | 'miss' | 'foul' | 'break'
+  const [inningRun, setInningRun] = useState(0);
+  const [pocketed, setPocketed] = useState([0, 0]);        // versenkte Kugeln gesamt (Zähler für Schnitt)
+  const [missInn, setMissInn] = useState([0, 0]);          // Aufnahmen mit Miss/Foul
+  const [safeInn, setSafeInn] = useState([0, 0]);          // Aufnahmen mit Safe/Anstoß
+  const [twoBall, setTwoBall] = useState([0, 0]);          // Zwei-Kugel-Räumungen (0 Kugeln am Tisch)
+  const [entry, setEntry] = useState(null);                // null | 'miss' | 'safe' | 'foul'
   const [remain, setRemain] = useState(15);
   const [hist, setHist] = useState([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   const names = [me.nickname, opp.nickname];
-  const snap = () => ({ sc: [...sc], active, hi: [...hi], fouls: [...fouls], maxDef: [...maxDef], onTable, inningRun, innings, breakPhase });
+  const inningNo = missInn[0] + missInn[1] + safeInn[0] + safeInn[1] + 1;
+  const offAvg = (p, MI = missInn, PK = pocketed) => (MI[p] > 0 ? PK[p] / MI[p] : 0);
+  const allAvg = (p, MI = missInn, SI = safeInn, PK = pocketed) =>
+    (MI[p] + SI[p] > 0 ? PK[p] / (MI[p] + SI[p]) : 0);
+  const fmt = (x) => x.toFixed(1);
+
+  const snap = () => ({ sc: [...sc], active, breakPhase, hi: [...hi], fouls: [...fouls],
+    maxDef: [...maxDef], onTable, inningRun, pocketed: [...pocketed],
+    missInn: [...missInn], safeInn: [...safeInn], twoBall: [...twoBall] });
   const pushHist = (x) => setHist((h) => [...h.slice(-80), x]);
   const withDeficit = (scores, md) => {
     const nd = [...md];
@@ -532,67 +551,92 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
     return nd;
   };
 
-  // Rack sofort übernehmen: +14 Punkte, Tisch neu aufgebaut (15), Serie läuft weiter.
+  // Ergebnis fürs Speichern zusammenbauen (Offensivschnitt nur ab 3 Miss-Aufnahmen für Belohnungen)
+  const buildResult = (scores, HI, MD, PK, MI, TB) => ({
+    s1: scores[0], s2: scores[1], hr1: HI[0], hr2: HI[1], def1: MD[0], def2: MD[1],
+    avg1: MI[0] >= 3 ? Math.round((PK[0] / MI[0]) * 100) / 100 : null,
+    avg2: MI[1] >= 3 ? Math.round((PK[1] / MI[1]) * 100) / 100 : null,
+    tb1: TB[0], tb2: TB[1],
+  });
+
+  // Rack ausgeschossen: seit letzter Aufnahme versenkt (bis auf die Anstoßkugel), Serie läuft weiter.
   const bookRack = () => {
-    const pts = Math.max(0, onTable - 1);      // seit letzter Aufnahme versenkt, bis auf die Anstoßkugel
+    const pts = Math.max(0, onTable - 1);
     pushHist(snap());
     const ns = [...sc]; ns[active] += pts;
     const nir = inningRun + pts;
     const nhi = [...hi]; if (nir > nhi[active]) nhi[active] = nir;
+    const npk = [...pocketed]; npk[active] += pts;
     const nf = [...fouls]; nf[active] = 0;
     const nmd = withDeficit(ns, maxDef);
-    const finished = ns[active] >= target;
-    setSc(ns); setInningRun(nir); setHi(nhi); setFouls(nf); setMaxDef(nmd); setOnTable(15);
-    if (finished) onFinish({ s1: ns[0], s2: ns[1], hr1: nhi[0], hr2: nhi[1], def1: nmd[0], def2: nmd[1] });
+    setSc(ns); setInningRun(nir); setHi(nhi); setPocketed(npk); setFouls(nf); setMaxDef(nmd); setOnTable(15);
+    if (ns[active] >= target) onFinish(buildResult(ns, nhi, nmd, npk, missInn, twoBall));
   };
 
   const openEntry = (type) => { setEntry(type); setRemain(onTable); };
-
   const partial = Math.max(0, onTable - remain);
 
   const applyEntry = (continueActive = false) => {
-    const run = inningRun + partial;                 // gesamte Serie dieser Aufnahme
-    const penalty = entry === "foul" ? 1 : entry === "break" ? 2 : 0;
+    const run = inningRun + partial;
+    const penalty = entry === "foul" ? 1 : 0;
     pushHist(snap());
     const ns = [...sc]; ns[active] += partial;
     const nhi = [...hi]; if (run > nhi[active]) nhi[active] = run;
+    const npk = [...pocketed]; npk[active] += partial;
+    const ntb = [...twoBall]; if (remain === 0) ntb[active] += 1;
     const nf = [...fouls];
     let threeFoul = false;
     if (penalty > 0) {
       ns[active] -= penalty;
-      if (run > 0) {
-        nf[active] = 0;                               // legaler Score in der Aufnahme bricht die Foul-Serie
-      } else {
-        nf[active] += 1;
-        if (nf[active] >= 3) { ns[active] -= 15; nf[active] = 0; threeFoul = true; }
-      }
-    } else {
-      nf[active] = 0;
-    }
+      if (run > 0) nf[active] = 0;
+      else { nf[active] += 1; if (nf[active] >= 3) { ns[active] -= 15; nf[active] = 0; threeFoul = true; } }
+    } else { nf[active] = 0; }
     const nmd = withDeficit(ns, maxDef);
+    const rerack = remain <= 1 || threeFoul;
     const finished = ns[active] >= target;
-    const rerack = remain <= 1 || threeFoul;          // 3-Foul-Regel: alle 15 Kugeln neu aufbauen
-    setSc(ns); setHi(nhi); setFouls(nf); setMaxDef(nmd);
-    setOnTable(rerack ? 15 : remain); setEntry(null);
-    if (continueActive && !threeFoul) {
-      setInningRun(run);                              // gleicher Spieler, Serie läuft weiter
-    } else {
-      setInningRun(0);
-      setActive((a) => 1 - a); setInnings((i) => i + 1);
+    setSc(ns); setHi(nhi); setPocketed(npk); setTwoBall(ntb); setFouls(nf); setMaxDef(nmd);
+    setOnTable(rerack ? 15 : remain); setEntry(null); setBreakPhase(false);
+    const nMI = [...missInn], nSI = [...safeInn];
+    if (!finished) {
+      if (continueActive && !threeFoul) {
+        setInningRun(run);                                  // gleicher Spieler, keine Aufnahme gezählt
+      } else {
+        setInningRun(0);
+        if (entry === "safe") { nSI[active] += 1; setSafeInn(nSI); }
+        else { nMI[active] += 1; setMissInn(nMI); }         // Miss & Foul zählen als Miss-Aufnahme
+        setActive((a) => 1 - a);
+      }
     }
     if (threeFoul && toast) toast(`3 Fouls in Folge – ${names[active]} bekommt −15 Strafpunkte!`);
-    // Anstoß-Phase endet, sobald regulär gespielt wird; ein weiteres Anstoß-Foul hält sie offen
-    if (entry !== "break") setBreakPhase(false);
-    if (finished) onFinish({ s1: ns[0], s2: ns[1], hr1: nhi[0], hr2: nhi[1], def1: nmd[0], def2: nmd[1] });
+    if (finished) onFinish(buildResult(ns, nhi, nmd, npk, nMI, ntb));
   };
+
+  // Anstoß regulär gespielt (Safety-Anstoß): zählt als Safe-Aufnahme, Gegner ist dran
+  const legalBreak = () => {
+    pushHist(snap());
+    const nSI = [...safeInn]; nSI[active] += 1;
+    setSafeInn(nSI); setOnTable(15); setBreakPhase(false); setInningRun(0);
+    setActive((a) => 1 - a);
+  };
+  // Anstoß-Foul −2: Safe-Aufnahme, danach Wahl, wer als Nächstes anstößt (mehrere Anstöße möglich)
+  const breakFoul = () => {
+    pushHist(snap());
+    const ns = [...sc]; ns[active] -= 2;
+    const nSI = [...safeInn]; nSI[active] += 1;
+    const nmd = withDeficit(ns, maxDef);
+    setSc(ns); setSafeInn(nSI); setMaxDef(nmd); setOnTable(15); setInningRun(0);
+    setBreakChoose(true);
+  };
+  const chooseBreaker = (who) => { setActive(who); setBreakChoose(false); };
 
   const undo = () => {
     setHist((h) => {
       if (!h.length) return h;
-      const last = h[h.length - 1];
-      setSc(last.sc); setActive(last.active); setHi(last.hi); setFouls(last.fouls);
-      setMaxDef(last.maxDef); setOnTable(last.onTable); setInningRun(last.inningRun); setInnings(last.innings);
-      setBreakPhase(last.breakPhase); setEntry(null);
+      const l = h[h.length - 1];
+      setSc(l.sc); setActive(l.active); setBreakPhase(l.breakPhase); setHi(l.hi); setFouls(l.fouls);
+      setMaxDef(l.maxDef); setOnTable(l.onTable); setInningRun(l.inningRun); setPocketed(l.pocketed);
+      setMissInn(l.missInn); setSafeInn(l.safeInn); setTwoBall(l.twoBall);
+      setEntry(null); setBreakChoose(false);
       return h.slice(0, -1);
     });
   };
@@ -627,20 +671,34 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
           onClick={() => { setActive(starter); setStarted(true); }}>
           Los geht's – bis {target} <ArrowRight size={18} />
         </button>
-        <p className="hint center">Jede versenkte Kugel = 1 Punkt. Schießt du ein Rack aus, tippst du das
-          sofort ein – gezählt werden die seit der letzten Aufnahme versenkten Kugeln. Am Ende einer
-          Aufnahme zählst du die Kugeln am Tisch, den Rest rechnet die App.
-          Foul = −1 (Anstoß −2, drei Fouls in Folge zusätzlich −15).</p>
+        <p className="hint center">Jede versenkte Kugel = 1 Punkt. Aufnahme beenden mit <b>Fehler</b> (zählt
+          für den Schnitt) oder <b>Safe</b> (zählt nicht). Rack ausgeschossen tippst du sofort ein.
+          Foul = −1, Anstoß −2, drei Fouls in Folge zusätzlich −15.</p>
+      </div>
+    );
+  }
+
+  // ---- Wahl nach Anstoß-Foul ----
+  if (breakChoose) {
+    return (
+      <div className="sp-entry">
+        <p className="sp-entry-title">Anstoß-Foul −2 · Wer stößt als Nächstes an?</p>
+        <div className="sp-controls">
+          {[0, 1].map((i) => (
+            <button key={i} className="btn primary" onClick={() => chooseBreaker(i)}>{names[i]}</button>
+          ))}
+        </div>
+        <p className="hint center">So sind mehrere Anstöße hintereinander möglich (Wiederholungs-Anstoß).</p>
       </div>
     );
   }
 
   // ---- Aufnahme abschließen ----
   if (entry) {
+    const lbl = entry === "foul" ? " (Foul −1)" : entry === "safe" ? " (Safe)" : " (Fehler)";
     return (
       <div className="sp-entry">
-        <p className="sp-entry-title">{names[active]}: Aufnahme abschließen
-          {entry === "foul" ? " (Foul −1)" : entry === "break" ? " (Anstoß-Foul −2)" : ""}</p>
+        <p className="sp-entry-title">{names[active]}: Aufnahme abschließen{lbl}</p>
         <div className="sp-entry-lbl">Kugeln noch am Tisch</div>
         <div className="num-grid">
           {Array.from({ length: onTable + 1 }, (_, n) => (
@@ -649,7 +707,8 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
           ))}
         </div>
         <div className="sp-run-preview">Serie dieser Aufnahme: <b>{inningRun + partial}</b></div>
-        {remain <= 1 && <p className="hint center" style={{ marginTop: 0 }}>Tisch wird neu aufgebaut (15 Kugeln).</p>}
+        {remain === 0 && <p className="hint center" style={{ marginTop: 0 }}>Zwei-Kugel-Räumung! Tisch wird neu aufgebaut.</p>}
+        {remain === 1 && <p className="hint center" style={{ marginTop: 0 }}>Tisch wird neu aufgebaut (15 Kugeln).</p>}
         {remain <= 1 && entry === "miss" ? (
           <>
             <div className="sp-controls">
@@ -679,6 +738,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
             <span className="sp-name">{names[i]}</span>
             <div className="sp-score">{sc[i]}</div>
             <div className="sp-meta">Höchstserie {hi[i]}</div>
+            <div className="sp-avg">Ø {fmt(offAvg(i))} <span>Fehler</span> · {fmt(allAvg(i))} <span>ges.</span></div>
             {fouls[i] > 0 && (
               <div className={"sp-foulwarn" + (fouls[i] >= 2 ? " danger" : "")}>
                 {fouls[i]} Foul{fouls[i] > 1 ? "s" : ""} in Folge{fouls[i] >= 2 ? " – Vorsicht!" : ""}
@@ -690,29 +750,33 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
       </div>
 
       <div className="sp-actions">
-        <div className="sp-target">Ziel {target} · Aufnahme {innings} · {onTable} Kugeln am Tisch</div>
+        <div className="sp-target">Ziel {target} · Aufnahme {inningNo} · {onTable} Kugeln am Tisch</div>
         {need > 0 && need <= 14 && (
           <div className="sp-need">Nur noch <b>{need}</b> Kugel{need > 1 ? "n" : ""} bis {names[active]} gewinnt!</div>
         )}
 
         {breakPhase ? (
-          <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>Anstoß: {names[active]} ist dran</div>
+          <>
+            <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>Anstoß: {names[active]} ist dran</div>
+            <button className="sp-pot" onClick={legalBreak}>Anstoß gespielt (regulär)</button>
+            <div className="sp-controls">
+              <button className="btn ghost warn" onClick={breakFoul}>Anstoß-Foul −2</button>
+            </div>
+          </>
         ) : (
-          <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
-            <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
-          </button>
+          <>
+            <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
+              <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
+            </button>
+            <div className="sp-controls">
+              <button className="sp-pot half" onClick={() => openEntry("miss")}>Fehler</button>
+              <button className="sp-pot half safe" onClick={() => openEntry("safe")}>Safe</button>
+            </div>
+            <div className="sp-controls">
+              <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
+            </div>
+          </>
         )}
-        <button className="sp-pot" onClick={() => openEntry("miss")}>
-          Aufnahme von {names[active]} beenden
-        </button>
-
-        <div className="sp-controls">
-          {breakPhase ? (
-            <button className="btn ghost warn" onClick={() => openEntry("break")}>Anstoß-Foul −2</button>
-          ) : (
-            <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
-          )}
-        </div>
         <div className="sp-controls">
           <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> Rückgängig</button>
         </div>
@@ -725,7 +789,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
             <div className="sp-controls">
               <button className="btn ghost" onClick={() => setConfirmEnd(false)}>Weiterspielen</button>
               <button className="btn primary" disabled={sc[0] === sc[1]}
-                onClick={() => onFinish({ s1: sc[0], s2: sc[1], hr1: hi[0], hr2: hi[1], def1: maxDef[0], def2: maxDef[1] })}>
+                onClick={() => onFinish(buildResult(sc, hi, maxDef, pocketed, missInn, twoBall))}>
                 Beenden
               </button>
             </div>
@@ -745,6 +809,8 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const [disc, setDisc] = useState(null);
   const [hr, setHr] = useState([null, null]);   // Höchstserie [ich, Gegner] (nur 14/1)
   const [def, setDef] = useState([null, null]); // aufgeholter Rückstand (nur 14/1)
+  const [avg, setAvg] = useState([null, null]); // Offensivschnitt (nur 14/1)
+  const [tb, setTb] = useState([null, null]);   // Zwei-Kugel-Räumungen (nur 14/1)
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
   const [leaveWarn, setLeaveWarn] = useState(false);
@@ -778,7 +844,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const total = s1 + s2;
   const steps = ["Gegner", "Disziplin", "Ergebnis", "Pruefen"];
 
-  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); };
+  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); };
 
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
   // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
@@ -804,6 +870,8 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
       p_opponent_id: opp.id, p_my_score: s1, p_opp_score: s2, p_discipline: disc,
       p_high_run_me: is141 ? hr[0] : null, p_high_run_opp: is141 ? hr[1] : null,
       p_deficit_me: is141 ? def[0] : null, p_deficit_opp: is141 ? def[1] : null,
+      p_avg_me: is141 ? avg[0] : null, p_avg_opp: is141 ? avg[1] : null,
+      p_twoball_me: is141 ? tb[0] : null, p_twoball_opp: is141 ? tb[1] : null,
     });
     setBusy(false);
     if (error) { toast("Fehler: " + error.message); return; }
@@ -932,8 +1000,9 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           )}
           {is141 ? (
             <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} toast={toast}
-              onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2 }) => {
-                setS1(a); setS2(b); setHr([hr1, hr2]); setDef([def1, def2]); setStep(3);
+              onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2, avg1, avg2, tb1, tb2 }) => {
+                setS1(a); setS2(b); setHr([hr1, hr2]); setDef([def1, def2]);
+                setAvg([avg1, avg2]); setTb([tb1, tb2]); setStep(3);
               }} />
           ) : (
             <>
@@ -976,7 +1045,12 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             </div>
             <div className="sum-disc">{disc}{isGhost ? " · Training" : ""}</div>
             {is141 && (hr[0] != null || hr[1] != null) && (
-              <div className="sum-141">Höchstserie: {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}</div>
+              <div className="sum-141">
+                Höchstserie: {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}
+                {(avg[0] != null || avg[1] != null) && (
+                  <><br />Ø pro Fehler-Aufnahme: {me.nickname} {avg[0] ?? "–"} · {opp.nickname} {avg[1] ?? "–"}</>
+                )}
+              </div>
             )}
             {isGhost ? (
               <p className="hint center" style={{ marginBottom: 0 }}>Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.</p>
@@ -2218,6 +2292,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .sp-name { font-size: 13px; font-weight: 700; }
 .sp-score { font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; line-height: 1; }
 .sp-meta { font-size: 11px; color: var(--ivory-dim); }
+.sp-avg { font-size: 10.5px; color: var(--gold); margin-top: 1px; }
+.sp-avg span { color: var(--ivory-dim); }
+.sp-pot.half { flex: 1; margin: 0; padding: 16px; font-size: 16px; }
+.sp-pot.half.safe { background: #3E6B8A; color: #F2EDE0; }
+.otw-count { margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--gold); }
+.btn.small { padding: 9px 12px; font-size: 13px; }
 .sp-foulwarn { font-size: 11px; font-weight: 700; color: #E8B923; margin-top: 2px; }
 .sp-foulwarn.danger { color: #E8703A; }
 
