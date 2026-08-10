@@ -701,7 +701,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
         <p className="sp-entry-title">{names[active]}: Aufnahme abschließen{lbl}</p>
         <div className="sp-entry-lbl">Kugeln noch am Tisch</div>
         <div className="num-grid">
-          {Array.from({ length: onTable + 1 }, (_, n) => (
+          {Array.from({ length: onTable + 1 }, (_, n) => n).map((n) => (
             <button key={n} className={"pool-ball" + (remain === n ? " sel" : "")} style={poolBallStyle(n)}
               onClick={() => setRemain(n)}><span className="pb-no">{n}</span></button>
           ))}
@@ -2350,7 +2350,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   background: var(--felt-3); color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
 .mini-stepper b { min-width: 20px; text-align: center; font-size: 17px; font-family: 'Bricolage Grotesque', sans-serif; }
 .sp-entry-lbl { font-size: 13px; color: var(--ivory-dim); }
-.num-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
+.num-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .pool-ball { aspect-ratio: 1; border-radius: 50%; border: none; cursor: pointer; position: relative;
   padding: 0; box-shadow: inset -2px -3px 5px #00000055, inset 2px 2px 4px #ffffff35; }
 .pool-ball .pb-no { position: absolute; inset: 0; margin: auto; width: 56%; height: 56%;
