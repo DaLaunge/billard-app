@@ -2022,7 +2022,7 @@ export default function App() {
 
         {session && player && (
           <>
-            <main className="content">
+            <main className={"content" + (tab === "match" ? " no-tabbar" : "")}>
               {tab === "rang" && (
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
                   pending={pendingForMe} me={player} onConfirm={confirmMatch}
@@ -2072,6 +2072,7 @@ export default function App() {
               </button>
             </main>
 
+            {tab !== "match" && (
             <nav className="tabbar">
               <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => setTab("rang")}>
                 <Trophy size={21} /><span>Rangliste</span>
@@ -2091,6 +2092,7 @@ export default function App() {
                 <User size={21} /><span>Profil</span>
               </button>
             </nav>
+            )}
           </>
         )}
         {toastMsg && <div className="toast">{toastMsg}</div>}
@@ -2121,6 +2123,7 @@ html, body { background: #071E17; }
   background: radial-gradient(140% 100% at 50% -10%, var(--felt-2) 0%, var(--felt) 60%);
   display: flex; flex-direction: column; box-shadow: 0 0 60px #00000070; }
 .content { flex: 1; overflow-y: auto; padding-bottom: 92px; }
+.content.no-tabbar { padding-bottom: 24px; }
 .screen { padding: 22px 18px 28px; }
 .center-load { flex: 1; display: grid; place-items: center; color: var(--ivory-dim); min-height: 60vh; }
 
