@@ -509,7 +509,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
 
   const [sc, setSc] = useState([0, 0]);
   const [active, setActive] = useState(0);
-  const [starter, setStarter] = useState(0);        // wer beginnt (bricht auf)
+  const [starter, setStarter] = useState(0);        // wer den Anstoß macht
   const [breakPhase, setBreakPhase] = useState(true); // solange noch aufgebrochen wird (mehrere Anstoß-Fouls möglich)
   const [hi, setHi] = useState([0, 0]);
   const [fouls, setFouls] = useState([0, 0]);
@@ -616,7 +616,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
               if (!isNaN(n) && n > 0) setTarget(n);
             }} />
         </div>
-        <p className="q" style={{ marginTop: 8 }}>Wer bricht auf?</p>
+        <p className="q" style={{ marginTop: 8 }}>Wer hat den Anstoß?</p>
         <div className="disc-grid">
           {[0, 1].map((i) => (
             <button key={i} className={"disc-card" + (starter === i ? " sel" : "")}
@@ -696,7 +696,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
         )}
 
         {breakPhase ? (
-          <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>Anstoß: {names[active]} bricht auf</div>
+          <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>Anstoß: {names[active]} ist dran</div>
         ) : (
           <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
             <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
