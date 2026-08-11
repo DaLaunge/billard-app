@@ -1165,27 +1165,30 @@ function DevChart({ dates, lines }) {
   yMin = Math.floor((yMin - pad) / 10) * 10;
   yMax = Math.ceil((yMax + pad) / 10) * 10;
   const nD = dates.length;
-  const xFor = (i) => (nD <= 1 ? padL + plotW / 2 : padL + (i / (nD - 1)) * plotW);
+  const times = dates.map((ds) => new Date(ds + "T00:00:00").getTime());
+  const minT = times[0], maxT = times[nD - 1];
+  const spanT = (maxT - minT) || 1;
+  const xFor = (i) => (nD <= 1 ? padL + plotW / 2 : padL + ((times[i] - minT) / spanT) * plotW);
   const yFor = (r) => padT + (1 - (r - yMin) / ((yMax - yMin) || 1)) * plotH;
   const yticks = [0, 1, 2, 3].map((i) => Math.round(yMin + ((yMax - yMin) * i) / 3));
 
-  const nTicks = Math.min(5, nD);
-  const xtickIdx = [];
-  if (nD === 1) xtickIdx.push(0);
-  else for (let i = 0; i < nTicks; i++) xtickIdx.push(Math.round((i * (nD - 1)) / (nTicks - 1)));
-  const mmYY = (ds) => { if (!ds) return ""; const d = new Date(ds + "T00:00:00"); return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getFullYear()).slice(2)}`; };
+  // Zeitachse: gleichmäßig verteilte Beschriftungen nach ECHTER Zeit
+  const mmYY = (t) => { const d = new Date(t); return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getFullYear()).slice(2)}`; };
+  const nTicks = nD === 1 ? 1 : 5;
   const seenX = new Set();
-  const xTicks = [...new Set(xtickIdx)].map((i) => ({ i, label: mmYY(dates[i]) }))
-    .filter((t) => (seenX.has(t.label) ? false : (seenX.add(t.label), true)));
+  const xTicks = Array.from({ length: nTicks }, (_, k) => {
+    const frac = nTicks === 1 ? 0 : k / (nTicks - 1);
+    return { x: padL + frac * plotW, label: mmYY(minT + frac * spanT) };
+  }).filter((t) => (seenX.has(t.label) ? false : (seenX.add(t.label), true)));
 
   const valAt = (l, i) => { const p = l.points.find((pp) => pp.i === i); return p ? p.rating : null; };
 
   const onMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const vbX = ((e.clientX - rect.left) / rect.width) * W;
-    let i = nD <= 1 ? 0 : Math.round(((vbX - padL) / plotW) * (nD - 1));
-    i = Math.max(0, Math.min(nD - 1, i));
-    setActive(i);
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < nD; i++) { const dx = Math.abs(xFor(i) - vbX); if (dx < bd) { bd = dx; best = i; } }
+    setActive(best);
   };
   const down = (e) => { e.currentTarget.setPointerCapture?.(e.pointerId); onMove(e); };
   const up = (e) => { e.currentTarget.releasePointerCapture?.(e.pointerId); setActive(null); };
@@ -1217,8 +1220,8 @@ function DevChart({ dates, lines }) {
             <text x={padL - 5} y={yFor(val) + 3} className="ylabel">{val}</text>
           </g>
         ))}
-        {xTicks.map((t) => (
-          <text key={t.i} x={xFor(t.i)} y={H - 8} className="xlabel">{t.label}</text>
+        {xTicks.map((t, k) => (
+          <text key={k} x={t.x} y={H - 8} className="xlabel">{t.label}</text>
         ))}
         {active != null && (
           <line x1={xFor(active)} y1={padT} x2={xFor(active)} y2={padT + plotH} className="crosshair" />
