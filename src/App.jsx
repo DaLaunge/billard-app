@@ -1129,6 +1129,19 @@ function isoWeekToDate(wk) {
   return monday;
 }
 
+// Aktuelle ISO-Woche im DB-Format 'YYYY-Wnn' (wie to_char(now(),'IYYY-"W"IW'))
+function currentIsoWeek(dd = new Date()) {
+  const d = new Date(Date.UTC(dd.getFullYear(), dd.getMonth(), dd.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);              // Donnerstag dieser Woche
+  const isoYear = d.getUTCFullYear();
+  const firstThu = new Date(Date.UTC(isoYear, 0, 4));
+  const ftDay = (firstThu.getUTCDay() + 6) % 7;
+  firstThu.setUTCDate(firstThu.getUTCDate() - ftDay + 3); // Donnerstag der Woche 1
+  const week = 1 + Math.round((d - firstThu) / (7 * 86400000));
+  return `${isoYear}-W${String(week).padStart(2, "0")}`;
+}
+
 /* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek). */
 function DevChart({ weeks, lines }) {
   const [active, setActive] = useState(null);
@@ -1235,6 +1248,9 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
 
+  const gesamt = useMemo(() => rangliste.filter((r) => r.discipline === "Gesamt"), [rangliste]);
+  const liveWeek = useMemo(() => currentIsoWeek(), []);
+
   const seriesByNick = useMemo(() => {
     const s = {};
     snapshots.forEach((r) => {
@@ -1242,15 +1258,16 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
       if (!nick) return;
       (s[nick] ||= {})[r.iso_week] = r.rating;
     });
+    // Live-Punkt der aktuellen Woche aus den aktuellen Ratings -> sofort sichtbar nach jedem Match
+    gesamt.forEach((r) => { (s[r.nickname] ||= {})[liveWeek] = r.rating; });
     return s;
-  }, [snapshots, nickById]);
+  }, [snapshots, nickById, gesamt, liveWeek]);
 
-  const allWeeks = useMemo(
-    () => [...new Set(snapshots.map((r) => r.iso_week))].sort(),
-    [snapshots]
-  );
-
-  const gesamt = useMemo(() => rangliste.filter((r) => r.discipline === "Gesamt"), [rangliste]);
+  const allWeeks = useMemo(() => {
+    const set = new Set(snapshots.map((r) => r.iso_week));
+    set.add(liveWeek);
+    return [...set].sort();
+  }, [snapshots, liveWeek]);
   const defaultSel = useMemo(() => {
     const names = gesamt.map((r) => r.nickname);
     const idx = names.indexOf(me.nickname);
