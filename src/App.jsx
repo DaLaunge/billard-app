@@ -1819,6 +1819,10 @@ function InviteScreen({ me, onBack, toast }) {
 
 function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, toast, onReload }) {
   const [busy, setBusy] = useState(false);
+  const [busyBadges, setBusyBadges] = useState(false);
+  const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
+  const [busyUser, setBusyUser] = useState(false);
+
   const refresh = async () => {
     setBusy(true);
     const { error } = await supabase.rpc("admin_refresh_stats");
@@ -1827,6 +1831,30 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
     if (onReload) await onReload();
     toast("Statistik neu berechnet.");
   };
+  const recomputeBadges = async () => {
+    setBusyBadges(true);
+    const { error } = await supabase.rpc("admin_recompute_badges");
+    setBusyBadges(false);
+    if (error) { toast("Fehler: " + error.message); return; }
+    if (onReload) await onReload();
+    toast("Erfolge neu berechnet.");
+  };
+  const createUser = async () => {
+    if (!nu.email.includes("@") || nu.password.length < 6) {
+      toast("E-Mail und Passwort (min. 6 Zeichen) nötig."); return;
+    }
+    setBusyUser(true);
+    const { data, error } = await supabase.functions.invoke("admin-create-user", {
+      body: { email: nu.email.trim(), password: nu.password, nickname: nu.nickname.trim() },
+    });
+    setBusyUser(false);
+    if (error) { toast("Fehler: " + (error.message || "Anlage fehlgeschlagen")); return; }
+    if (data?.error) { toast("Fehler: " + data.error); return; }
+    if (data?.warning) { toast(data.warning); } else { toast("Nutzer angelegt."); }
+    setNu({ email: "", password: "", nickname: "" });
+    if (onReload) await onReload();
+  };
+
   return (
     <div className="screen">
       <header className="screen-head with-back">
@@ -1835,12 +1863,32 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
       </header>
 
       <section className="stat-block">
-        <h3><RotateCcw size={17} /> Statistik</h3>
+        <h3><RotateCcw size={17} /> Statistik &amp; Erfolge</h3>
         <p className="hint" style={{ marginTop: 0 }}>Rechnet Ratings, Verlauf und Erfolge sofort neu –
           nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.</p>
         <button className="btn primary" disabled={busy} onClick={refresh}>
           {busy ? "Rechne neu …" : <><RotateCcw size={16} /> Statistik jetzt aktualisieren</>}
         </button>
+        <button className="btn ghost" disabled={busyBadges} onClick={recomputeBadges}>
+          {busyBadges ? "Rechne neu …" : <><Award size={16} /> Nur Erfolge neu berechnen</>}
+        </button>
+      </section>
+
+      <section className="stat-block">
+        <h3><User size={17} /> Neuen Nutzer anlegen</h3>
+        <p className="hint" style={{ marginTop: 0 }}>Legt einen Login mit E-Mail + Passwort an (sofort nutzbar).
+          Spielername optional – sonst wählt ihn die Person beim ersten Login selbst.</p>
+        <div className="pw-box">
+          <input type="email" placeholder="E-Mail" value={nu.email} autoComplete="off"
+            onChange={(e) => setNu({ ...nu, email: e.target.value })} />
+          <input type="text" placeholder="Passwort (min. 6 Zeichen)" value={nu.password} autoComplete="off"
+            onChange={(e) => setNu({ ...nu, password: e.target.value })} />
+          <input type="text" placeholder="Spielername (optional)" value={nu.nickname} autoComplete="off"
+            onChange={(e) => setNu({ ...nu, nickname: e.target.value })} />
+          <button className="btn primary" disabled={busyUser} onClick={createUser}>
+            {busyUser ? "Lege an …" : "Nutzer anlegen"}
+          </button>
+        </div>
       </section>
 
       <section className="stat-block">
