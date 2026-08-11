@@ -1142,8 +1142,18 @@ function currentIsoWeek(dd = new Date()) {
   return `${isoYear}-W${String(week).padStart(2, "0")}`;
 }
 
+// Lokales Datum als 'YYYY-MM-DD'
+function todayStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function dateMinusDays(dateStr, days) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() - days);
+  return todayStr(d);
+}
+
 /* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek). */
-function DevChart({ weeks, lines }) {
+function DevChart({ dates, lines }) {
   const [active, setActive] = useState(null);
   const W = 340, H = 210, padL = 34, padR = 12, padT = 12, padB = 26;
   const plotW = W - padL - padR, plotH = H - padT - padB;
@@ -1154,29 +1164,28 @@ function DevChart({ weeks, lines }) {
   const pad = Math.max(10, (yMax - yMin) * 0.12);
   yMin = Math.floor((yMin - pad) / 10) * 10;
   yMax = Math.ceil((yMax + pad) / 10) * 10;
-  const nW = weeks.length;
-  const xFor = (wi) => (nW <= 1 ? padL + plotW / 2 : padL + (wi / (nW - 1)) * plotW);
+  const nD = dates.length;
+  const xFor = (i) => (nD <= 1 ? padL + plotW / 2 : padL + (i / (nD - 1)) * plotW);
   const yFor = (r) => padT + (1 - (r - yMin) / ((yMax - yMin) || 1)) * plotH;
   const yticks = [0, 1, 2, 3].map((i) => Math.round(yMin + ((yMax - yMin) * i) / 3));
 
-  const nTicks = Math.min(5, nW);
+  const nTicks = Math.min(5, nD);
   const xtickIdx = [];
-  if (nW === 1) xtickIdx.push(0);
-  else for (let i = 0; i < nTicks; i++) xtickIdx.push(Math.round((i * (nW - 1)) / (nTicks - 1)));
-  const mmYY = (wk) => { const d = isoWeekToDate(wk); return d ? `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getFullYear()).slice(2)}` : wk; };
-  // Ticks entdoppeln (gleiche Monatslabels nebeneinander)
+  if (nD === 1) xtickIdx.push(0);
+  else for (let i = 0; i < nTicks; i++) xtickIdx.push(Math.round((i * (nD - 1)) / (nTicks - 1)));
+  const mmYY = (ds) => { if (!ds) return ""; const d = new Date(ds + "T00:00:00"); return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getFullYear()).slice(2)}`; };
   const seenX = new Set();
-  const xTicks = [...new Set(xtickIdx)].map((i) => ({ i, label: mmYY(weeks[i]) }))
+  const xTicks = [...new Set(xtickIdx)].map((i) => ({ i, label: mmYY(dates[i]) }))
     .filter((t) => (seenX.has(t.label) ? false : (seenX.add(t.label), true)));
 
-  const valAt = (l, wi) => { const p = l.points.find((pp) => pp.wi === wi); return p ? p.rating : null; };
+  const valAt = (l, i) => { const p = l.points.find((pp) => pp.i === i); return p ? p.rating : null; };
 
   const onMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const vbX = ((e.clientX - rect.left) / rect.width) * W;
-    let wi = nW <= 1 ? 0 : Math.round(((vbX - padL) / plotW) * (nW - 1));
-    wi = Math.max(0, Math.min(nW - 1, wi));
-    setActive(wi);
+    let i = nD <= 1 ? 0 : Math.round(((vbX - padL) / plotW) * (nD - 1));
+    i = Math.max(0, Math.min(nD - 1, i));
+    setActive(i);
   };
   const down = (e) => { e.currentTarget.setPointerCapture?.(e.pointerId); onMove(e); };
   const up = (e) => { e.currentTarget.releasePointerCapture?.(e.pointerId); setActive(null); };
@@ -1188,7 +1197,7 @@ function DevChart({ weeks, lines }) {
           <span className="dev-hint">Zum Ablesen über den Graphen ziehen</span>
         ) : (
           <>
-            <b>{fmtDate(isoWeekToDate(weeks[active]))}</b>
+            <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
             {lines.map((l) => {
               const v = valAt(l, active);
               return v == null ? null : (
@@ -1215,14 +1224,14 @@ function DevChart({ weeks, lines }) {
           <line x1={xFor(active)} y1={padT} x2={xFor(active)} y2={padT + plotH} className="crosshair" />
         )}
         {lines.map((l) => {
-          const pts = l.points.map((p) => `${xFor(p.wi)},${yFor(p.rating)}`).join(" ");
+          const pts = l.points.map((p) => `${xFor(p.i)},${yFor(p.rating)}`).join(" ");
           const av = active != null ? valAt(l, active) : null;
           return (
             <g key={l.nickname}>
               <polyline points={pts} fill="none" stroke={l.color} strokeWidth="2.2"
                 strokeLinejoin="round" strokeLinecap="round" />
               {l.points.length > 0 && (
-                <circle cx={xFor(l.points.at(-1).wi)} cy={yFor(l.points.at(-1).rating)} r="3" fill={l.color} />
+                <circle cx={xFor(l.points.at(-1).i)} cy={yFor(l.points.at(-1).rating)} r="3" fill={l.color} />
               )}
               {av != null && (
                 <circle cx={xFor(active)} cy={yFor(av)} r="4" fill={l.color} stroke="#0A2B21" strokeWidth="1.5" />
@@ -1236,11 +1245,11 @@ function DevChart({ weeks, lines }) {
 }
 
 const RANGES = [
-  { key: "1M", label: "1M", weeks: 5 },
-  { key: "3M", label: "3M", weeks: 13 },
-  { key: "6M", label: "6M", weeks: 26 },
-  { key: "1J", label: "1J", weeks: 53 },
-  { key: "ALL", label: "Alles", weeks: null },
+  { key: "1M", label: "1M", days: 31 },
+  { key: "3M", label: "3M", days: 92 },
+  { key: "6M", label: "6M", days: 183 },
+  { key: "1J", label: "1J", days: 366 },
+  { key: "ALL", label: "Alles", days: null },
 ];
 
 function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches }) {
@@ -1249,25 +1258,25 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
   }, [players]);
 
   const gesamt = useMemo(() => rangliste.filter((r) => r.discipline === "Gesamt"), [rangliste]);
-  const liveWeek = useMemo(() => currentIsoWeek(), []);
+  const today = useMemo(() => todayStr(), []);
 
   const seriesByNick = useMemo(() => {
     const s = {};
     snapshots.forEach((r) => {
       const nick = nickById[r.player_id];
-      if (!nick) return;
-      (s[nick] ||= {})[r.iso_week] = r.rating;
+      if (!nick || !r.snap_date) return;
+      (s[nick] ||= {})[r.snap_date] = r.rating;
     });
-    // Live-Punkt der aktuellen Woche aus den aktuellen Ratings -> sofort sichtbar nach jedem Match
-    gesamt.forEach((r) => { (s[r.nickname] ||= {})[liveWeek] = r.rating; });
+    // Live-Punkt heute aus aktuellen Ratings -> sofort sichtbar nach jedem Match
+    gesamt.forEach((r) => { (s[r.nickname] ||= {})[today] = r.rating; });
     return s;
-  }, [snapshots, nickById, gesamt, liveWeek]);
+  }, [snapshots, nickById, gesamt, today]);
 
-  const allWeeks = useMemo(() => {
-    const set = new Set(snapshots.map((r) => r.iso_week));
-    set.add(liveWeek);
+  const allDates = useMemo(() => {
+    const set = new Set(snapshots.map((r) => r.snap_date).filter(Boolean));
+    set.add(today);
     return [...set].sort();
-  }, [snapshots, liveWeek]);
+  }, [snapshots, today]);
   const defaultSel = useMemo(() => {
     const names = gesamt.map((r) => r.nickname);
     const idx = names.indexOf(me.nickname);
@@ -1301,15 +1310,16 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
   };
 
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES.at(-1);
-  const visibleWeeks = range.weeks ? allWeeks.slice(-range.weeks) : allWeeks;
+  const cutoff = range.days ? dateMinusDays(today, range.days) : null;
+  const visibleDates = cutoff ? allDates.filter((d) => d >= cutoff) : allDates;
 
   const lines = sel
     .filter((nick) => seriesByNick[nick])
     .map((nick) => ({
       nickname: nick,
       color: colorOf(nick),
-      points: visibleWeeks
-        .map((wk, wi) => (seriesByNick[nick][wk] != null ? { wi, rating: seriesByNick[nick][wk] } : null))
+      points: visibleDates
+        .map((dt, i) => (seriesByNick[nick][dt] != null ? { i, rating: seriesByNick[nick][dt] } : null))
         .filter(Boolean),
     }));
 
@@ -1324,14 +1334,14 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
   const latest = (nick) => {
     const pts = seriesByNick[nick];
     if (!pts) return null;
-    const wk = allWeeks.filter((w) => pts[w] != null).at(-1);
-    return wk ? Math.round(pts[wk]) : null;
+    const dt = allDates.filter((w) => pts[w] != null).at(-1);
+    return dt ? Math.round(pts[dt]) : null;
   };
 
   return (
     <section className="stat-block">
       <h3><TrendingUp size={17} /> Entwicklung über die Zeit</h3>
-      {allWeeks.length === 0 ? (
+      {allDates.length === 0 ? (
         <p className="hint">Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.</p>
       ) : (
         <>
@@ -1341,7 +1351,7 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
                 onClick={() => setRangeKey(r.key)}>{r.label}</button>
             ))}
           </div>
-          <DevChart weeks={visibleWeeks} lines={lines} />
+          <DevChart dates={visibleDates} lines={lines} />
           <div className="legend">
             {sel.map((nick) => (
               <button key={nick} className="legend-item" onClick={() => toggle(nick)} title="Entfernen">
@@ -1804,13 +1814,31 @@ function InviteScreen({ me, onBack, toast }) {
    ADMIN
    ============================================================ */
 
-function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf }) {
+function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, toast, onReload }) {
+  const [busy, setBusy] = useState(false);
+  const refresh = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_refresh_stats");
+    setBusy(false);
+    if (error) { toast("Fehler: " + error.message); return; }
+    if (onReload) await onReload();
+    toast("Statistik neu berechnet.");
+  };
   return (
     <div className="screen">
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label="Zurueck"><ChevronLeft size={22} /></button>
         <h2>Verwaltung</h2>
       </header>
+
+      <section className="stat-block">
+        <h3><RotateCcw size={17} /> Statistik</h3>
+        <p className="hint" style={{ marginTop: 0 }}>Rechnet Ratings, Verlauf und Erfolge sofort neu –
+          nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.</p>
+        <button className="btn primary" disabled={busy} onClick={refresh}>
+          {busy ? "Rechne neu …" : <><RotateCcw size={16} /> Statistik jetzt aktualisieren</>}
+        </button>
+      </section>
 
       <section className="stat-block">
         <h3><Check size={17} /> Offene Matches ({allPending.length})</h3>
@@ -1908,9 +1936,9 @@ export default function App() {
     ]);
     // Snapshots seitenweise laden (können > 1000 Zeilen sein: Wochen x Spieler)
     const snap = await fetchAllRows((from, to) => supabase.from("rating_snapshots")
-      .select("player_id, iso_week, rating, rank, provisional")
+      .select("player_id, snap_date, iso_week, rating, rank, provisional")
       .eq("discipline", "Gesamt")
-      .order("iso_week", { ascending: true })
+      .order("snap_date", { ascending: true })
       .range(from, to));
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || snap.error;
     if (err) toast("Fehler beim Laden: " + err.message);
@@ -2079,7 +2107,8 @@ export default function App() {
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
-                  me={player} onBack={() => setTab("profil")} colorOf={colorOf} badgeOf={badgeOf} />
+                  me={player} onBack={() => setTab("profil")} colorOf={colorOf} badgeOf={badgeOf}
+                  toast={toast} onReload={loadData} />
               )}
               {tab === "invite" && (
                 <InviteScreen me={player} onBack={() => setTab("profil")} toast={toast} />
