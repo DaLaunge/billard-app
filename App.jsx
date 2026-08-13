@@ -1781,6 +1781,20 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         </button>
       )}
 
+      {isMe && (
+        <section className="stat-block lang-switch">
+          <h3><Globe size={17} /> {t("Sprache")}</h3>
+          <div className="lang-row">
+            <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
+              <span className="flag">🇩🇪</span><span>Deutsch</span>
+            </button>
+            <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
+              <span className="flag">🇬🇧</span><span>English</span>
+            </button>
+          </div>
+        </section>
+      )}
+
       <div className="kpis">
         <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
         <div className="kpi"><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
@@ -1862,16 +1876,6 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         ))}
         {h2h.length === 0 && <p className="hint">{t("Noch keine Matches.")}</p>}
       </section>
-
-      {isMe && (
-        <section className="stat-block">
-          <h3><Globe size={17} /> {t("Sprache")}</h3>
-          <div className="range-row">
-            <button className={"range-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")}>Deutsch</button>
-            <button className={"range-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")}>English</button>
-          </div>
-        </section>
-      )}
 
       {isMe && <PasswordSection toast={toast} />}
 
@@ -2470,6 +2474,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .range-btn { flex: 1; border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
   border-radius: 10px; padding: 6px 0; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .range-btn.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.lang-row { display: flex; gap: 10px; }
+.lang-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 9px;
+  border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
+  border-radius: 12px; padding: 11px 0; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.lang-btn.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.lang-btn .flag { font-size: 20px; line-height: 1; }
 .invite-card { text-align: center; }
 .invite-lead { font-size: 13.5px; color: var(--ivory-dim); line-height: 1.5; margin-bottom: 14px; }
 .qr-box { display: grid; place-items: center; background: #F2EDE0; border-radius: 16px;
