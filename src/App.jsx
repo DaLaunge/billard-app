@@ -11,6 +11,63 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "(zählt für den Schnitt) oder": "(counts toward the average) or",
+    "(zählt nicht). Rack ausgeschossen tippst du sofort ein. Foul = −1, Anstoß −2, drei Fouls in Folge zusätzlich −15.": "(doesn't count). When you run the rack out, tap it immediately. Foul = −1, break −2, three fouls in a row an extra −15.",
+    "Los geht's – bis": "Let's go – to",
+    "gefunden! Deine bisherige Match-Historie wird uebernommen.": "found! Your previous match history will be carried over.",
+    "zuletzt": "last",
+    "inaktive / vorlaeufige Spieler einblenden": "inactive / provisional players shown",
+    " (Foul −1)": " (foul −1)",
+    " (Safe)": " (safe)",
+    " (Fehler)": " (miss)",
+    "Aufnahme abschließen": "end inning",
+    "Höchstserie": "High run",
+    "Höchstserie:": "High run:",
+    "Anstoß: {name} ist dran": "Break: {name}'s turn",
+    "Alle Eingaben gehen verloren": "All entries will be lost",
+    " – ein 14/1-Protokoll lässt sich nicht wiederherstellen": " – a straight-pool score can't be restored",
+    "ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?": "changes the scoring scheme – the current result ({s1} : {s2}) will be lost. Continue?",
+    "Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.": "The match only counts toward the rating once {name} confirms it.",
+    "is available.": "is available.",
+    "Noch keine Daten.": "No data yet.",
+    "(gewonnene Spiele)": "(games won)",
+    "2 bis 30 Zeichen.": "2 to 30 characters.",
+    "Speichere ...": "Saving ...",
+    "Mein Profil": "My profile",
+    "Spielerprofil": "Player profile",
+    "So sehen dich die anderen.": "This is how others see you.",
+    "Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.": "Note: your name changes everywhere – including in old matches and the ranking.",
+    "z. B. 'Die 9 faellt immer'": "e.g. 'The 9 always drops'",
+    "Automatische Farbe": "Automatic color",
+    "Eigene Farbe wählen": "Choose your color",
+    " ist frei.": " is available.",
+    "Foul = −1, Anstoß −2, drei Fouls in Folge zusätzlich −15.": "Foul = −1, break −2, three fouls in a row an extra −15.",
+    "Dein Eintrag verschwindet nach der gewaehlten Zeit von selbst.": "Your entry disappears on its own after the selected time.",
+    "Gerade ist niemand live. Sei du der Erste - dein Eintrag erscheint hier fuer alle sichtbar.": "Nobody is live right now. Be the first – your entry appears here for everyone to see.",
+    "Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.": "New members register themselves: just share the app link.",
+    "Rollen und Korrekturen verwaltest du vorerst im Supabase Table Editor.": "Roles and corrections are managed in the Supabase Table Editor for now.",
+    "Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.": "Were you in the old Telegram ranking? Then enter your exact old nickname to keep your history.",
+    "Zwischen 8/9/10 Ball bleibt dein Ergebnis beim Wechsel erhalten.": "Your result is kept when switching between 8/9/10 ball.",
+    "Damit meldest du dich künftig mit E-Mail + Passwort an. Passwort vergessen? Der Magic-Link bringt dich immer rein.": "From now on you sign in with email + password. Forgot your password? The magic link always gets you in.",
+    "Kein Passwort noetig – du bekommst einen Link per Mail und bist drin. Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.": "No password needed – you get a link by email and you're in. Ideal for the first time or if you forgot your password.",
+    "Neu hier? Einmal per Magic-Link anmelden und danach im Profil ein Passwort festlegen.": "New here? Sign in once via magic link, then set a password in your profile.",
+    "Neuer Spieler? Einfach diesen Code mit der Handykamera scannen – das öffnet die App und führt direkt zur Anmeldung.": "New player? Just scan this code with your phone camera – it opens the app and leads straight to sign-in.",
+    "Oeffne die Mail auf DIESEM Geraet und tippe auf den Link. Nichts bekommen? Schau in den Spam-Ordner.": "Open the email on THIS device and tap the link. Got nothing? Check your spam folder.",
+    "Ratings werden nach jedem bestaetigten Match ueber die gesamte Historie neu berechnet. Juengere Matches zaehlen staerker. Unter 10 Spielen gilt ein Rating als vorlaeufig, ohne Match seit 180 Tagen als inaktiv.": "Ratings are recalculated over the entire history after every confirmed match. More recent matches count more. Under 10 games a rating is provisional; without a match for 180 days it's inactive.",
+    "Rechnet Ratings, Verlauf und Erfolge sofort neu – nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.": "Recomputes ratings, history and achievements immediately – useful after retroactively entered matches. May take a few seconds.",
+    "Legt einen Login mit E-Mail + Passwort an (sofort nutzbar). Spielername optional – sonst wählt ihn die Person beim ersten Login selbst.": "Creates a login with email + password (usable immediately). Player name optional – otherwise the person chooses it at first login.",
+    "Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.": "Tap an unlocked achievement to show it as your avatar.",
+    "Trainingsmatches werden nicht gespeichert und beeinflussen dein Rating nicht.": "Practice matches aren't saved and don't affect your rating.",
+    "Wer über deinen Code beitritt, wird dir als geworbener Spieler gutgeschrieben – dafür gibt es später eigene Erfolge.": "Anyone who joins via your code is credited to you as a recruited player – there are dedicated achievements for that later.",
+    "in Folge": "in a row",
+    " – Vorsicht!": " – careful!",
+    " ist unterwegs!": " is on the way!",
+    "Person ist": "person is",
+    "Leute sind": "people are",
+    "unterwegs": "on the way",
+    "- inaktiv": "- inactive",
+    "- vorlaeufig": "- provisional",
+    "3 Fouls in Folge – {name} bekommt −15 Strafpunkte!": "3 fouls in a row – {name} gets −15 penalty points!",
     "Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?": "A straight-pool game is running. Switching discipline discards the current score. Continue?",
     "So sind mehrere Anstöße hintereinander möglich (Wiederholungs-Anstoß).": "This allows several breaks in a row (repeated break).",
     "Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.": "Practice match – not saved and doesn't count toward rating.",
@@ -360,8 +417,7 @@ function LoginScreen() {
           <div className="sent-check"><Check size={28} /></div>
           <p className="sent-text">{t("Link gesendet an")}<br /><b>{email}</b></p>
           <p className="hint" style={{ textAlign: "center" }}>
-            Oeffne die Mail auf DIESEM Geraet und tippe auf den Link.
-            Nichts bekommen? Schau in den Spam-Ordner.
+            {t("Oeffne die Mail auf DIESEM Geraet und tippe auf den Link. Nichts bekommen? Schau in den Spam-Ordner.")}
           </p>
           <button className="btn ghost" onClick={() => setSent(false)}>{t("Andere Adresse verwenden")}</button>
         </div>
@@ -397,7 +453,7 @@ function LoginScreen() {
               <button className="btn ghost" onClick={() => { setMode("magic"); setError(""); }}>
                 {t("Passwort vergessen? Per Magic-Link anmelden")}
               </button>
-              <p className="hint">Neu hier? Einmal per Magic-Link anmelden und danach im Profil ein Passwort festlegen.</p>
+              <p className="hint">{t("Neu hier? Einmal per Magic-Link anmelden und danach im Profil ein Passwort festlegen.")}</p>
             </>
           ) : (
             <>
@@ -405,8 +461,7 @@ function LoginScreen() {
               <button className="btn primary" disabled={busy || !email.includes("@")} onClick={sendLink}>
                 {busy ? "Sende ..." : <>{t("Login-Link senden")} <ArrowRight size={18} /></>}
               </button>
-              <p className="hint">Kein Passwort noetig – du bekommst einen Link per Mail und bist drin.
-                Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.</p>
+              <p className="hint">{t("Kein Passwort noetig – du bekommst einen Link per Mail und bist drin. Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.")}</p>
             </>
           )}
         </div>
@@ -456,14 +511,14 @@ function NicknameScreen({ onRegistered, existingPlayers }) {
         {tooShort && <p className="nick-status warn">{t("Noch zu kurz - mindestens 2 Zeichen.")}</p>}
         {taken && <p className="nick-status err"><X size={14} /> "{taken.nickname}" ist schon vergeben.</p>}
         {legacyMatch && (
-          <p className="nick-status ok"><Check size={14} /> "{legacyMatch.nickname}" gefunden! Deine bisherige Match-Historie wird uebernommen.</p>
+          <p className="nick-status ok"><Check size={14} /> "{legacyMatch.nickname}" {t("gefunden! Deine bisherige Match-Historie wird uebernommen.")}</p>
         )}
         {valid && !legacyMatch && <p className="nick-status ok"><Check size={14} /> "{clean}" ist frei!</p>}
         {error && <p className="nick-status err"><X size={14} /> {error}</p>}
         <button className="btn primary" disabled={!valid || busy} onClick={register}>
           {busy ? "Speichere ..." : <>{t("Los geht's")} <ArrowRight size={18} /></>}
         </button>
-        <p className="hint">Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.</p>
+        <p className="hint">{t("Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.")}</p>
       </div>
     </div>
   );
@@ -525,7 +580,7 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
               <span className="rank-name">
                 {r.nickname}
                 <span className="rank-meta">
-                  {r.spiele} Spiele - zuletzt {fmtDate(r.letzte_partie)}
+                  {r.spiele} {t("Spiele")} - {t("zuletzt")} {fmtDate(r.letzte_partie)}
                   {r.vorlaeufig && <em className="prov"> - vorlaeufig</em>}
                   {!r.aktiv && <em className="inactive"> - inaktiv</em>}
                 </span>
@@ -538,16 +593,14 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
       {rows.length === 0 && <p className="hint center">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
       {hidden > 0 && !showAll && (
         <button className="btn ghost" onClick={() => setShowAll(true)}>
-          {hidden} inaktive / vorlaeufige Spieler einblenden
+          {hidden} {t("inaktive / vorlaeufige Spieler einblenden")}
         </button>
       )}
       {showAll && (
         <button className="btn ghost" onClick={() => setShowAll(false)}>{t("Nur aktive Rangliste zeigen")}</button>
       )}
       <p className="footnote">
-        Ratings werden nach jedem bestaetigten Match ueber die gesamte Historie neu berechnet.
-        Juengere Matches zaehlen staerker. Unter 10 Spielen gilt ein Rating als vorlaeufig,
-        ohne Match seit 180 Tagen als inaktiv.
+        {t("Ratings werden nach jedem bestaetigten Match ueber die gesamte Historie neu berechnet. Juengere Matches zaehlen staerker. Unter 10 Spielen gilt ein Rating als vorlaeufig, ohne Match seit 180 Tagen als inaktiv.")}
       </p>
     </div>
   );
@@ -577,7 +630,7 @@ function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnreply }) {
       {ping.message && <p className="ping-msg">"{ping.message}"</p>}
 
       {ping.replies?.length > 0 && (
-        <div className="otw-count">🚗 {ping.replies.length} {ping.replies.length === 1 ? "Person ist" : "Leute sind"} unterwegs</div>
+        <div className="otw-count">🚗 {ping.replies.length} {ping.replies.length === 1 ? t("Person ist") : t("Leute sind")} {t("unterwegs")}</div>
       )}
 
       {ping.replies?.length > 0 && (
@@ -585,7 +638,7 @@ function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnreply }) {
           {ping.replies.map((r) => (
             <div key={r.id} className="ping-reply">
               <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} size={26} />
-              <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : " ist unterwegs!"}</span>
+              <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : t(" ist unterwegs!")}</span>
             </div>
           ))}
         </div>
@@ -662,7 +715,7 @@ function LiveScreen({ me, pings, colorOf, badgeOf, onCreate, onClose, onReply, o
             onClick={() => { onCreate(loc, msg, hours); setLoc(""); setMsg(""); }}>
             <Radio size={17} /> {t("Live gehen")}
           </button>
-          <p className="hint">Dein Eintrag verschwindet nach der gewaehlten Zeit von selbst.</p>
+          <p className="hint">{t("Dein Eintrag verschwindet nach der gewaehlten Zeit von selbst.")}</p>
         </section>
       )}
 
@@ -676,7 +729,7 @@ function LiveScreen({ me, pings, colorOf, badgeOf, onCreate, onClose, onReply, o
       ))}
       {others.length === 0 && !myPing && (
         <p className="hint center" style={{ marginTop: 24 }}>
-          Gerade ist niemand live. Sei du der Erste - dein Eintrag erscheint hier fuer alle sichtbar.
+          {t("Gerade ist niemand live. Sei du der Erste - dein Eintrag erscheint hier fuer alle sichtbar.")}
         </p>
       )}
     </div>
@@ -801,7 +854,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
         setActive((a) => 1 - a);
       }
     }
-    if (threeFoul && toast) toast(`3 Fouls in Folge – ${names[active]} bekommt −15 Strafpunkte!`);
+    if (threeFoul && toast) toast(t("3 Fouls in Folge – {name} bekommt −15 Strafpunkte!", { name: names[active] }));
     if (finished) onFinish(buildResult(ns, nhi, nmd, npk, nMI, ntb));
   };
 
@@ -857,11 +910,9 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
         </div>
         <button className="btn primary" disabled={!(target > 0)}
           onClick={() => { setActive(starter); setStarted(true); }}>
-          Los geht's – bis {target} <ArrowRight size={18} />
+          {t("Los geht's – bis")} {target} <ArrowRight size={18} />
         </button>
-        <p className="hint center">{t("Jede versenkte Kugel = 1 Punkt. Aufnahme beenden mit")} <b>{t("Fehler")}</b> (zählt
-          für den Schnitt) oder <b>{t("Safe")}</b> (zählt nicht). Rack ausgeschossen tippst du sofort ein.
-          Foul = −1, Anstoß −2, drei Fouls in Folge zusätzlich −15.</p>
+        <p className="hint center">{t("Jede versenkte Kugel = 1 Punkt. Aufnahme beenden mit")} <b>{t("Fehler")}</b> {t("(zählt für den Schnitt) oder")} <b>{t("Safe")}</b> {t("(zählt nicht). Rack ausgeschossen tippst du sofort ein. Foul = −1, Anstoß −2, drei Fouls in Folge zusätzlich −15.")}</p>
       </div>
     );
   }
@@ -886,10 +937,10 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
 
   // ---- Aufnahme abschließen ----
   if (entry) {
-    const lbl = entry === "foul" ? " (Foul −1)" : entry === "safe" ? " (Safe)" : " (Fehler)";
+    const lbl = entry === "foul" ? t(" (Foul −1)") : entry === "safe" ? t(" (Safe)") : t(" (Fehler)");
     return (
       <div className="sp-entry">
-        <p className="sp-entry-title">{names[active]}: Aufnahme abschließen{lbl}</p>
+        <p className="sp-entry-title">{names[active]}: {t("Aufnahme abschließen")}{lbl}</p>
         <div className="sp-entry-lbl">{t("Kugeln noch am Tisch")}</div>
         <div className="num-grid">
           {Array.from({ length: onTable + 1 }, (_, n) => n).map((n) => (
@@ -928,11 +979,11 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
             <Ball color={colorOf(names[i])} label={initials(names[i])} badge={badgeOf(names[i])} size={40} />
             <span className="sp-name">{names[i]}</span>
             <div className="sp-score">{sc[i]}</div>
-            <div className="sp-meta">Höchstserie {hi[i]}</div>
+            <div className="sp-meta">{t("Höchstserie")} {hi[i]}</div>
             <div className="sp-avg">Ø {fmt(offAvg(i))} <span>{t("Fehler")}</span> · {fmt(allAvg(i))} <span>{t("ges.")}</span></div>
             {fouls[i] > 0 && (
               <div className={"sp-foulwarn" + (fouls[i] >= 2 ? " danger" : "")}>
-                {fouls[i]} Foul{fouls[i] > 1 ? "s" : ""} in Folge{fouls[i] >= 2 ? " – Vorsicht!" : ""}
+                {fouls[i]} Foul{fouls[i] > 1 ? "s" : ""} {t("in Folge")}{fouls[i] >= 2 ? t(" – Vorsicht!") : ""}
               </div>
             )}
             {active === i && <div className="sp-turn">am Tisch{inningRun > 0 ? ` · Serie ${inningRun}` : ""}</div>}
@@ -947,7 +998,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
         )}
 
         {breakPhase && (
-          <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>Anstoß: {names[active]} ist dran</div>
+          <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>{t("Anstoß: {name} ist dran", { name: names[active] })}</div>
         )}
         <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
           <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
@@ -1088,7 +1139,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
         <div className="modal-overlay" onClick={() => setAbortAsk(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <h3>{t("Match abbrechen?")}</h3>
-            <p>Alle Eingaben gehen verloren{is141 ? " – ein 14/1-Protokoll lässt sich nicht wiederherstellen" : ""}.</p>
+            <p>{t("Alle Eingaben gehen verloren")}{is141 ? t(" – ein 14/1-Protokoll lässt sich nicht wiederherstellen") : ""}.</p>
             <div className="sp-controls">
               <button className="btn ghost warn" onClick={() => { setAbortAsk(false); onCancel(); }}>{t("Ja – beenden")}</button>
               <button className="btn primary" onClick={() => setAbortAsk(false)}>{t("Match fortführen")}</button>
@@ -1154,15 +1205,14 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           </div>
           {pendingDisc ? (
             <div className="confirm-box">
-              <p>{t("Wechsel zu bzw. von")} <b>14/1 Endlos</b> ändert das Punkteschema – das bisherige
-                Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?</p>
+              <p>{t("Wechsel zu bzw. von")} <b>14/1 Endlos</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>
               <div className="sp-controls">
                 <button className="btn ghost" onClick={() => setPendingDisc(null)}>{t("Abbrechen")}</button>
                 <button className="btn primary" onClick={confirmDiscChange}>{t("Wechseln & zurücksetzen")}</button>
               </div>
             </div>
           ) : (
-            <p className="hint center">Zwischen 8/9/10 Ball bleibt dein Ergebnis beim Wechsel erhalten.</p>
+            <p className="hint center">{t("Zwischen 8/9/10 Ball bleibt dein Ergebnis beim Wechsel erhalten.")}</p>
           )}
         </>
       )}
@@ -1232,7 +1282,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             <div className="sum-disc">{disc}{isGhost ? " · Training" : ""}</div>
             {is141 && (hr[0] != null || hr[1] != null) && (
               <div className="sum-141">
-                Höchstserie: {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}
+                {t("Höchstserie:")} {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}
                 {(avg[0] != null || avg[1] != null) && (
                   <><br />Ø pro Fehler-Aufnahme: {me.nickname} {avg[0] ?? "–"} · {opp.nickname} {avg[1] ?? "–"}</>
                 )}
@@ -1253,7 +1303,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           <button className="btn primary" disabled={busy} onClick={save}>
             {busy ? "Speichere ..." : isGhost ? <>{t("Training abschließen")} <Check size={18} /></> : <>{t("Match speichern")} <Check size={18} /></>}
           </button>
-          {!isGhost && <p className="hint center">Das Match fliesst erst ins Rating ein, wenn {opp.nickname} es bestaetigt.</p>}
+          {!isGhost && <p className="hint center">{t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
         </>
       )}
 
@@ -1264,7 +1314,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             <>
               <h3>{t("Training beendet!")}</h3>
               <p>{t("Ergebnis gegen den Ghost:")} <b>{s1} : {s2}</b>.<br />
-                Trainingsmatches werden nicht gespeichert und beeinflussen dein Rating nicht.</p>
+                {t("Trainingsmatches werden nicht gespeichert und beeinflussen dein Rating nicht.")}</p>
             </>
           ) : (
             <>
@@ -1703,13 +1753,13 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
           </div>
           {taken && <p className="nick-status err"><X size={14} /> {t("Dieser Name ist schon vergeben.")}</p>}
           {!taken && cleanNick !== nickname && nickValid && (
-            <p className="nick-status ok"><Check size={14} /> "{cleanNick}" ist frei.</p>
+            <p className="nick-status ok"><Check size={14} /> "{cleanNick}" {t("is available.")}</p>
           )}
 
           <label className="field-label">{t("Deine Kugel")}</label>
           <div className="swatch-row">
             <button className={"swatch auto" + (color === null ? " sel" : "")}
-              onClick={() => setColor(null)} aria-label="Automatische Farbe">{t("Auto")}</button>
+              onClick={() => setColor(null)} aria-label={t("Automatische Farbe")}>{t("Auto")}</button>
             {BALL_PALETTE.map((c) => (
               <button key={c} className={"swatch" + (color === c ? " sel" : "")}
                 style={{ background: c }} onClick={() => setColor(c)} aria-label={`Farbe ${c}`}>
@@ -1719,7 +1769,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
             {/* Eigene Wunschfarbe per Farb-Picker */}
             <label className={"swatch picker" + (color && !BALL_PALETTE.includes(color) ? " sel" : "")}
               style={color && !BALL_PALETTE.includes(color) ? { background: color } : undefined}
-              title="Eigene Farbe wählen">
+              title={t("Eigene Farbe wählen")}>
               {color && !BALL_PALETTE.includes(color)
                 ? <Check size={16} />
                 : <Pencil size={15} />}
@@ -1732,7 +1782,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
           <div className="swatch-preview">
             <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)} size={56} />
             <span className="hint" style={{ marginTop: 0 }}>
-              So sehen dich die anderen.{color && !BALL_PALETTE.includes(color) ? ` Deine Farbe: ${color.toUpperCase()}` : ""}
+              {t("So sehen dich die anderen.")}{color && !BALL_PALETTE.includes(color) ? ` Deine Farbe: ${color.toUpperCase()}` : ""}
             </span>
           </div>
 
@@ -1740,14 +1790,24 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
           <div className="mail-row">
             <Pencil size={18} className="mail-ico" />
             <input id="pmotto" value={motto} maxLength={80}
-              placeholder="z. B. 'Die 9 faellt immer'" onChange={(e) => setMotto(e.target.value)} />
+              placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)} />
+          </div>
+
+          <label className="field-label">{t("Sprache")}</label>
+          <div className="lang-row" style={{ marginBottom: 6 }}>
+            <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
+              <span className="flag">🇩🇪</span><span>Deutsch</span>
+            </button>
+            <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
+              <span className="flag">🇬🇧</span><span>English</span>
+            </button>
           </div>
 
           <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
-            {busy ? "Speichere ..." : <>{t("Speichern")} <Check size={18} /></>}
+            {busy ? t("Speichere ...") : <>{t("Speichern")} <Check size={18} /></>}
           </button>
           {cleanNick !== nickname && (
-            <p className="hint">Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.</p>
+            <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
           )}
         </section>
       </div>
@@ -1758,7 +1818,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
     <div className="screen">
       <header className="screen-head with-back">
         {onBack && <button className="back-btn" onClick={onBack} aria-label="Zurueck"><ChevronLeft size={22} /></button>}
-        <h2>{isMe ? "Mein Profil" : "Spielerprofil"}</h2>
+        <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
       </header>
 
       <div className="profile-hero">
@@ -1781,19 +1841,6 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         </button>
       )}
 
-      {isMe && (
-        <section className="stat-block lang-switch">
-          <h3><Globe size={17} /> {t("Sprache")}</h3>
-          <div className="lang-row">
-            <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
-              <span className="flag">🇩🇪</span><span>Deutsch</span>
-            </button>
-            <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
-              <span className="flag">🇬🇧</span><span>English</span>
-            </button>
-          </div>
-        </section>
-      )}
 
       <div className="kpis">
         <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
@@ -1807,7 +1854,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         {myRows.map((r) => (
           <div key={r.discipline} className="stat-row">
             <span className="stat-name">{r.discipline}</span>
-            <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} Spiele</span>
+            <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
             <span className="stat-val">{r.rating}</span>
           </div>
         ))}
@@ -1818,7 +1865,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         <h3><Award size={17} /> Erfolge ({earnedBadges.size} / {catalog.length})</h3>
         {isMe && (
           <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
-            Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.
+            {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
           </p>
         )}
         {catalogByCategory.map(([cat, items]) => {
@@ -1939,8 +1986,7 @@ function PasswordSection({ toast }) {
               {busy ? "..." : "Speichern"}
             </button>
           </div>
-          <p className="hint">Damit meldest du dich künftig mit E-Mail + Passwort an. Passwort vergessen?
-            Der Magic-Link bringt dich immer rein.</p>
+          <p className="hint">{t("Damit meldest du dich künftig mit E-Mail + Passwort an. Passwort vergessen? Der Magic-Link bringt dich immer rein.")}</p>
         </div>
       )}
     </section>
@@ -1993,8 +2039,7 @@ function InviteScreen({ me, onBack, toast }) {
       {error && <p className="nick-status err"><X size={14} /> {error}</p>}
 
       <section className="stat-block invite-card">
-        <p className="invite-lead">Neuer Spieler? Einfach diesen Code mit der Handykamera scannen –
-          das öffnet die App und führt direkt zur Anmeldung.</p>
+        <p className="invite-lead">{t("Neuer Spieler? Einfach diesen Code mit der Handykamera scannen – das öffnet die App und führt direkt zur Anmeldung.")}</p>
         <div className="qr-box">
           {code ? (
             <QRCodeSVG value={link} size={210} level="M"
@@ -2012,8 +2057,7 @@ function InviteScreen({ me, onBack, toast }) {
       <button className="btn ghost" onClick={copy} disabled={!code}>
         <Copy size={16} /> {t("Link kopieren")}
       </button>
-      <p className="hint">Wer über deinen Code beitritt, wird dir als geworbener Spieler gutgeschrieben –
-        dafür gibt es später eigene Erfolge.</p>
+      <p className="hint">{t("Wer über deinen Code beitritt, wird dir als geworbener Spieler gutgeschrieben – dafür gibt es später eigene Erfolge.")}</p>
     </div>
   );
 }
@@ -2069,8 +2113,7 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
 
       <section className="stat-block">
         <h3><RotateCcw size={17} /> {t("Statistik & Erfolge")}</h3>
-        <p className="hint" style={{ marginTop: 0 }}>Rechnet Ratings, Verlauf und Erfolge sofort neu –
-          nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.</p>
+        <p className="hint" style={{ marginTop: 0 }}>{t("Rechnet Ratings, Verlauf und Erfolge sofort neu – nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.")}</p>
         <button className="btn primary" disabled={busy} onClick={refresh}>
           {busy ? "Rechne neu …" : <><RotateCcw size={16} /> {t("Statistik jetzt aktualisieren")}</>}
         </button>
@@ -2081,8 +2124,7 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
 
       <section className="stat-block">
         <h3><User size={17} /> {t("Neuen Nutzer anlegen")}</h3>
-        <p className="hint" style={{ marginTop: 0 }}>Legt einen Login mit E-Mail + Passwort an (sofort nutzbar).
-          Spielername optional – sonst wählt ihn die Person beim ersten Login selbst.</p>
+        <p className="hint" style={{ marginTop: 0 }}>{t("Legt einen Login mit E-Mail + Passwort an (sofort nutzbar). Spielername optional – sonst wählt ihn die Person beim ersten Login selbst.")}</p>
         <div className="pw-box">
           <input type="email" placeholder="E-Mail" value={nu.email} autoComplete="off"
             onChange={(e) => setNu({ ...nu, email: e.target.value })} />
