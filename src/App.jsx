@@ -1261,7 +1261,6 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
   }, [players]);
 
   const gesamt = useMemo(() => rangliste.filter((r) => r.discipline === "Gesamt"), [rangliste]);
-  const today = useMemo(() => todayStr(), []);
 
   const seriesByNick = useMemo(() => {
     const s = {};
@@ -1270,16 +1269,14 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
       if (!nick || !r.snap_date) return;
       (s[nick] ||= {})[r.snap_date] = r.rating;
     });
-    // Live-Punkt heute aus aktuellen Ratings -> sofort sichtbar nach jedem Match
-    gesamt.forEach((r) => { (s[r.nickname] ||= {})[today] = r.rating; });
+    // Kein Live-Overlay mehr: der Verlauf enthält den heutigen Tagespunkt bereits
+    // aus dem Backfill. So läuft die Linie glatt (inkl. Inaktivitäts-Verfall) ohne Knick.
     return s;
-  }, [snapshots, nickById, gesamt, today]);
+  }, [snapshots, nickById]);
 
   const allDates = useMemo(() => {
-    const set = new Set(snapshots.map((r) => r.snap_date).filter(Boolean));
-    set.add(today);
-    return [...set].sort();
-  }, [snapshots, today]);
+    return [...new Set(snapshots.map((r) => r.snap_date).filter(Boolean))].sort();
+  }, [snapshots]);
   const defaultSel = useMemo(() => {
     const names = gesamt.map((r) => r.nickname);
     const idx = names.indexOf(me.nickname);
@@ -1313,7 +1310,7 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
   };
 
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES.at(-1);
-  const cutoff = range.days ? dateMinusDays(today, range.days) : null;
+  const cutoff = range.days ? dateMinusDays(todayStr(), range.days) : null;
   const visibleDates = cutoff ? allDates.filter((d) => d >= cutoff) : allDates;
 
   const lines = sel
