@@ -4,8 +4,202 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
   Mail, ArrowRight, Swords, Flame, Search, LogOut, RefreshCw, Clock,
-  Radio, MapPin, Pencil, Award, Lock, TrendingUp, QrCode, Share2, Copy, RotateCcw,
+  Radio, MapPin, Pencil, Award, Lock, TrendingUp, QrCode, Share2, Copy, RotateCcw, Globe,
 } from "lucide-react";
+
+/* ---------- i18n (Deutsch = Schlüssel, Englisch als Overlay, Fallback auf Deutsch) ---------- */
+let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
+const TRANSLATIONS = {
+  en: {
+    "Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?": "A straight-pool game is running. Switching discipline discards the current score. Continue?",
+    "So sind mehrere Anstöße hintereinander möglich (Wiederholungs-Anstoß).": "This allows several breaks in a row (repeated break).",
+    "Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.": "Practice match – not saved and doesn't count toward rating.",
+    "Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.": "By default you see yourself and your closest neighbours. Up to 6 players, switch the period above, drag across the graph to read values.",
+    "Sprache": "Language",
+    "Rangliste": "Ranking",
+    "Live": "Live",
+    "Statistik": "Statistics",
+    "Profil": "Profile",
+    "Neues Match": "New match",
+    "Anmelden": "Sign in",
+    "Magic-Link": "Magic link",
+    "Passwort": "Password",
+    "E-Mail-Adresse": "Email address",
+    "Login-Link senden": "Send login link",
+    "Passwort vergessen? Per Magic-Link anmelden": "Forgot password? Sign in via magic link",
+    "Fargo-Style, fair, immer aktuell.": "Fargo-style, fair, always up to date.",
+    "Du wurdest eingeladen – melde dich an, um dabei zu sein!": "You've been invited – sign in to join!",
+    "Link gesendet an": "Link sent to",
+    "Andere Adresse verwenden": "Use a different address",
+    "Wie sollen wir dich nennen?": "What should we call you?",
+    "Dein Nickname erscheint in Rangliste und Statistiken.": "Your nickname appears in the ranking and statistics.",
+    "Er muss im Verein eindeutig sein.": "It must be unique within the club.",
+    "Nickname": "Nickname",
+    "Los geht's": "Let's go",
+    "Dieser Name ist schon vergeben.": "This name is already taken.",
+    "Noch zu kurz - mindestens 2 Zeichen.": "Too short – at least 2 characters.",
+    "Passt": "Looks good",
+    "z. B. Kleiner Stefan": "e.g. Kleiner Stefan",
+    "Das Ranking eures Vereins.": "Your club's ranking.",
+    "Ratings nach Disziplin": "Ratings by discipline",
+    "Nur aktive Rangliste zeigen": "Show active ranking only",
+    "Noch keine Ratings in dieser Disziplin.": "No ratings in this discipline yet.",
+    "Aktuelle Serien": "Current streaks",
+    "Letzte Matches": "Recent matches",
+    "Noch keine bestaetigten Matches.": "No confirmed matches yet.",
+    "Spiele": "Games",
+    "Siege": "Wins",
+    "vorlaeufig": "provisional",
+    "in Folge": "in a row",
+    "Gegen wen trittst du an?": "Who are you playing?",
+    "Welche Disziplin?": "Which discipline?",
+    "Wie steht's?": "What's the score?",
+    "Neues Mitglied? Jetzt einladen": "New member? Invite now",
+    "Training gegen Ghost": "Practice vs Ghost",
+    "Übungsmatch – zählt nicht fürs Rating": "Practice match – doesn't count toward rating",
+    "Disziplin wechseln": "Change discipline",
+    "Weiter": "Next",
+    "Match speichern": "Save match",
+    "Match abbrechen?": "Cancel match?",
+    "Match fortführen": "Continue match",
+    "Ja – beenden": "Yes – quit",
+    "Zur Rangliste": "To ranking",
+    "Match bestaetigen:": "Confirm match:",
+    "Wartet auf Bestaetigung von": "Waiting for confirmation from",
+    "Ergebnis gegen den Ghost:": "Result vs the Ghost:",
+    "Wechsel zu bzw. von": "Switching to/from",
+    "Wechseln & zurücksetzen": "Switch & reset",
+    "Unentschieden gibt's beim Billard nicht ;-)": "There are no draws in billiards ;-)",
+    "Zielpunktzahl für 14/1 Endlos": "Target score for straight pool",
+    "Wer hat den Anstoß?": "Who breaks?",
+    "Ich bin bereit!": "I'm ready!",
+    "oder eigenes Ziel eingeben …": "or enter a custom target …",
+    "Jede versenkte Kugel = 1 Punkt. Aufnahme beenden mit": "Each potted ball = 1 point. End the inning with",
+    "Fehler": "Miss",
+    "Safe": "Safe",
+    "Foul −1": "Foul −1",
+    "Anstoß-Foul −2": "Break foul −2",
+    "Anstoß-Foul −2 · Wer stößt als Nächstes an?": "Break foul −2 · Who breaks next?",
+    "Rückgängig": "Undo",
+    "Serie": "Run",
+    "Serie dieser Aufnahme:": "This inning's run:",
+    "Kugeln noch am Tisch": "Balls on the table",
+    "Deine Kugel": "Your ball",
+    "Gegner ist dran": "Opponent's turn",
+    "Nur noch": "Only",
+    "Weiterspielen": "Keep playing",
+    "Beenden": "Finish",
+    "Match vorzeitig beenden": "End match early",
+    "Bei Gleichstand kann nicht beendet werden.": "Can't finish on a tie.",
+    "Tisch wird neu aufgebaut (15 Kugeln).": "Table is being re-racked (15 balls).",
+    "Zwei-Kugel-Räumung! Tisch wird neu aufgebaut.": "Two-ball clearance! Table is being re-racked.",
+    "Wieder meine Kugel zeigen": "Show my ball again",
+    "Falsch": "Wrong",
+    "Fertig": "Done",
+    "Live gehen": "Go live",
+    "Wer ist gerade am Tisch oder sucht ein Match?": "Who's at the table or looking for a match?",
+    "Bin unterwegs": "On my way",
+    "Unterwegs": "On the way",
+    "Meinen Live-Eintrag beenden": "End my live entry",
+    "Zusage zurueckziehen": "Withdraw",
+    "Zusage gesendet!": "Response sent!",
+    "Gerade aktiv:": "Active now:",
+    "Wo bist du? z. B. Schwedenplatz": "Where are you? e.g. Schwedenplatz",
+    "Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'": "Message (optional), e.g. 'Anyone up for 9 ball?'",
+    "Nachricht (optional), z. B. 'Bin um 19 Uhr da'": "Message (optional), e.g. \"I'll be there at 7pm\"",
+    "mit Nachricht": "with message",
+    "Du bist jetzt live!": "You're live now!",
+    "Live-Eintrag beendet.": "Live entry ended.",
+    "Bestenlisten (bestaetigte Matches)": "Leaderboards (confirmed matches)",
+    "Entwicklung über die Zeit": "Development over time",
+    "Zum Ablesen über den Graphen ziehen": "Drag across the graph to read values",
+    "Keine Daten im gewählten Zeitraum.": "No data in the selected period.",
+    "Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.": "Curves will appear here once history data is available.",
+    "Spieler hinzufügen": "Add player",
+    "Spieler suchen …": "Search players …",
+    "Deine häufigsten Mitspieler zuerst:": "Your most frequent opponents first:",
+    "Keine weiteren Spieler.": "No more players.",
+    "Meiste Siege": "Most wins",
+    "Beste Siegquote (ab 10 Spielen)": "Best win rate (from 10 games)",
+    "Head-to-Head (Match-Siege)": "Head-to-head (match wins)",
+    "Quote": "Rate",
+    "ges.": "tot.",
+    "Profil bearbeiten": "Edit profile",
+    "Mein Profil": "My profile",
+    "Motto (optional)": "Motto (optional)",
+    "Eigene Farbe wählen": "Choose your color",
+    "Eigene Kugelfarbe wählen": "Choose your ball color",
+    "Als Avatar aktiv": "Active as avatar",
+    "Auto": "Auto",
+    "Speichern": "Save",
+    "Abbrechen": "Cancel",
+    "Übernehmen": "Apply",
+    "Abmelden": "Sign out",
+    "Anmeldung & Sicherheit": "Login & security",
+    "Passwort festlegen / ändern": "Set / change password",
+    "Dein Passwort": "Your password",
+    "Neues Passwort (min. 6 Zeichen)": "New password (min. 6 characters)",
+    "Passwort wiederholen": "Repeat password",
+    "Passwort (min. 6 Zeichen)": "Password (min. 6 characters)",
+    "Noch kein Rating - erst ein Match spielen!": "No rating yet – play a match first!",
+    "Noch keine Erfolge freigeschaltet.": "No achievements unlocked yet.",
+    "Noch keine Matches.": "No matches yet.",
+    "Erfolg als Avatar gesetzt.": "Achievement set as avatar.",
+    "Gespeichert!": "Saved!",
+    "Profil gespeichert.": "Profile saved.",
+    "Lade Profil ...": "Loading profile ...",
+    "Angemeldet als": "Signed in as",
+    "ohne Login": "no login",
+    "Freund einladen": "Invite a friend",
+    "Einladung teilen": "Share invitation",
+    "Link kopieren": "Copy link",
+    "Link kopiert!": "Link copied!",
+    "Code:": "Code:",
+    "Code wird erstellt …": "Creating code …",
+    "Kopieren nicht möglich – Link markieren und kopieren.": "Copy failed – select and copy the link.",
+    "Verwaltung": "Administration",
+    "Verwaltung oeffnen": "Open administration",
+    "Statistik & Erfolge": "Statistics & achievements",
+    "Statistik jetzt aktualisieren": "Refresh statistics now",
+    "Nur Erfolge neu berechnen": "Recompute achievements only",
+    "Neuen Nutzer anlegen": "Create new user",
+    "Nutzer anlegen": "Create user",
+    "Nutzer angelegt.": "User created.",
+    "Spielername (optional)": "Player name (optional)",
+    "Rechne neu …": "Recomputing …",
+    "Lege an …": "Creating …",
+    "Statistik neu berechnet.": "Statistics recomputed.",
+    "Erfolge neu berechnet.": "Achievements recomputed.",
+    "Alles erledigt - keine offenen Matches.": "All done – no open matches.",
+    "Anlage fehlgeschlagen": "Creation failed",
+    "Lade ...": "Loading ...",
+    "Speichere ...": "Saving ...",
+    "Zurück": "Back",
+    "Fehler beim Laden: ": "Error loading: ",
+    "Fehler: ": "Error: ",
+    "Match bestaetigt - Ranking wird neu berechnet.": "Match confirmed – ranking is being recomputed.",
+    "Match zurueckgewiesen.": "Match rejected.",
+    "gerade eben": "just now",
+    "Training beendet!": "Practice finished!",
+    "Training abschließen": "Finish practice",
+    "Fargo-Skala - 100 Punkte = 2:1": "Fargo scale – 100 points = 2:1",
+    "Wer bist du?": "Who are you?",
+    "ist unterwegs!": "is on the way!",
+    "Leute sind": "people are",
+    "Person ist": "person is",
+    "Wieder deine Kugel.": "Your ball again."
+  },
+};
+function setLangGlobal(l) {
+  _LANG = l;
+  try { localStorage.setItem("lang", l); } catch {}
+  try { document.documentElement.lang = l; } catch {}
+}
+function t(s, vars) {
+  let out = (_LANG !== "de" && TRANSLATIONS[_LANG] && TRANSLATIONS[_LANG][s] != null) ? TRANSLATIONS[_LANG][s] : s;
+  if (vars) for (const k in vars) out = out.split("{" + k + "}").join(String(vars[k]));
+  return out;
+}
 
 /* Einladungs-Code aus der URL (?ref=CODE) einmalig sichern.
    Übersteht den Magic-Link-Umweg über sessionStorage. */
@@ -155,32 +349,32 @@ function LoginScreen() {
           <Ball color="#C0392B" label="3" size={54} />
         </div>
         <h1 className="app-title">Break &amp; Rank</h1>
-        <p className="app-sub">Das Ranking eures Vereins.<br />Fargo-Style, fair, immer aktuell.</p>
+        <p className="app-sub">{t("Das Ranking eures Vereins.")}<br />{t("Fargo-Style, fair, immer aktuell.")}</p>
         {getRef() && (
-          <p className="invite-note"><Check size={14} /> Du wurdest eingeladen – melde dich an, um dabei zu sein!</p>
+          <p className="invite-note"><Check size={14} /> {t("Du wurdest eingeladen – melde dich an, um dabei zu sein!")}</p>
         )}
       </div>
 
       {sent ? (
         <div className="login-card">
           <div className="sent-check"><Check size={28} /></div>
-          <p className="sent-text">Link gesendet an<br /><b>{email}</b></p>
+          <p className="sent-text">{t("Link gesendet an")}<br /><b>{email}</b></p>
           <p className="hint" style={{ textAlign: "center" }}>
             Oeffne die Mail auf DIESEM Geraet und tippe auf den Link.
             Nichts bekommen? Schau in den Spam-Ordner.
           </p>
-          <button className="btn ghost" onClick={() => setSent(false)}>Andere Adresse verwenden</button>
+          <button className="btn ghost" onClick={() => setSent(false)}>{t("Andere Adresse verwenden")}</button>
         </div>
       ) : (
         <div className="login-card">
           <div className="auth-tabs">
             <button className={"auth-tab" + (mode === "magic" ? " on" : "")}
-              onClick={() => { setMode("magic"); setError(""); }}>Magic-Link</button>
+              onClick={() => { setMode("magic"); setError(""); }}>{t("Magic-Link")}</button>
             <button className={"auth-tab" + (mode === "password" ? " on" : "")}
-              onClick={() => { setMode("password"); setError(""); }}>Passwort</button>
+              onClick={() => { setMode("password"); setError(""); }}>{t("Passwort")}</button>
           </div>
 
-          <label className="field-label" htmlFor="mail">E-Mail-Adresse</label>
+          <label className="field-label" htmlFor="mail">{t("E-Mail-Adresse")}</label>
           <div className="mail-row">
             <Mail size={18} className="mail-ico" />
             <input id="mail" type="email" placeholder="du@beispiel.at" value={email} autoComplete="email"
@@ -189,19 +383,19 @@ function LoginScreen() {
 
           {mode === "password" ? (
             <>
-              <label className="field-label" htmlFor="pw">Passwort</label>
+              <label className="field-label" htmlFor="pw">{t("Passwort")}</label>
               <div className="mail-row">
                 <Lock size={18} className="mail-ico" />
-                <input id="pw" type="password" placeholder="Dein Passwort" value={password} autoComplete="current-password"
+                <input id="pw" type="password" placeholder={t("Dein Passwort")} value={password} autoComplete="current-password"
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && email.includes("@") && password && signInPw()} />
               </div>
               {error && <p className="nick-status err"><X size={14} /> {error}</p>}
               <button className="btn primary" disabled={busy || !email.includes("@") || !password} onClick={signInPw}>
-                {busy ? "..." : <>Anmelden <ArrowRight size={18} /></>}
+                {busy ? "..." : <>{t("Anmelden")} <ArrowRight size={18} /></>}
               </button>
               <button className="btn ghost" onClick={() => { setMode("magic"); setError(""); }}>
-                Passwort vergessen? Per Magic-Link anmelden
+                {t("Passwort vergessen? Per Magic-Link anmelden")}
               </button>
               <p className="hint">Neu hier? Einmal per Magic-Link anmelden und danach im Profil ein Passwort festlegen.</p>
             </>
@@ -209,7 +403,7 @@ function LoginScreen() {
             <>
               {error && <p className="nick-status err"><X size={14} /> {error}</p>}
               <button className="btn primary" disabled={busy || !email.includes("@")} onClick={sendLink}>
-                {busy ? "Sende ..." : <>Login-Link senden <ArrowRight size={18} /></>}
+                {busy ? "Sende ..." : <>{t("Login-Link senden")} <ArrowRight size={18} /></>}
               </button>
               <p className="hint">Kein Passwort noetig – du bekommst einen Link per Mail und bist drin.
                 Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.</p>
@@ -248,18 +442,18 @@ function NicknameScreen({ onRegistered, existingPlayers }) {
     <div className="screen login-screen">
       <div className="login-hero">
         <div className="login-balls"><Ball color="#6C4AB0" label="?" size={54} /></div>
-        <h1 className="app-title" style={{ fontSize: 28 }}>Wie sollen wir dich nennen?</h1>
-        <p className="app-sub">Dein Nickname erscheint in Rangliste und Statistiken.<br />Er muss im Verein eindeutig sein.</p>
+        <h1 className="app-title" style={{ fontSize: 28 }}>{t("Wie sollen wir dich nennen?")}</h1>
+        <p className="app-sub">{t("Dein Nickname erscheint in Rangliste und Statistiken.")}<br />{t("Er muss im Verein eindeutig sein.")}</p>
       </div>
       <div className="login-card">
-        <label className="field-label" htmlFor="nick">Nickname</label>
+        <label className="field-label" htmlFor="nick">{t("Nickname")}</label>
         <div className="mail-row">
           <User size={18} className="mail-ico" />
-          <input id="nick" value={nick} maxLength={30} placeholder="z. B. Kleiner Stefan"
+          <input id="nick" value={nick} maxLength={30} placeholder={t("z. B. Kleiner Stefan")}
             autoComplete="off" onChange={(e) => setNick(e.target.value)} />
         </div>
         {clean.length === 0 && <p className="nick-status dim">2 bis 30 Zeichen.</p>}
-        {tooShort && <p className="nick-status warn">Noch zu kurz - mindestens 2 Zeichen.</p>}
+        {tooShort && <p className="nick-status warn">{t("Noch zu kurz - mindestens 2 Zeichen.")}</p>}
         {taken && <p className="nick-status err"><X size={14} /> "{taken.nickname}" ist schon vergeben.</p>}
         {legacyMatch && (
           <p className="nick-status ok"><Check size={14} /> "{legacyMatch.nickname}" gefunden! Deine bisherige Match-Historie wird uebernommen.</p>
@@ -267,7 +461,7 @@ function NicknameScreen({ onRegistered, existingPlayers }) {
         {valid && !legacyMatch && <p className="nick-status ok"><Check size={14} /> "{clean}" ist frei!</p>}
         {error && <p className="nick-status err"><X size={14} /> {error}</p>}
         <button className="btn primary" disabled={!valid || busy} onClick={register}>
-          {busy ? "Speichere ..." : <>Los geht's <ArrowRight size={18} /></>}
+          {busy ? "Speichere ..." : <>{t("Los geht's")} <ArrowRight size={18} /></>}
         </button>
         <p className="hint">Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.</p>
       </div>
@@ -291,8 +485,8 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
   return (
     <div className="screen">
       <header className="screen-head">
-        <h2>Rangliste</h2>
-        <span className="head-note">Fargo-Skala - 100 Punkte = 2:1</span>
+        <h2>{t("Rangliste")}</h2>
+        <span className="head-note">{t("Fargo-Skala - 100 Punkte = 2:1")}</span>
       </header>
 
       {pending.map((m) => {
@@ -301,10 +495,10 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
         const otherScore = m.player1_id === me.id ? m.score2 : m.score1;
         return (
           <div className="confirm-banner" key={m.id}>
-            <div><b>Match bestaetigen:</b> {other} meldet ein {otherScore}:{myScore} gegen dich ({m.discipline}, {fmtDate(m.played_at)}).</div>
+            <div><b>{t("Match bestaetigen:")}</b> {other} meldet ein {otherScore}:{myScore} gegen dich ({m.discipline}, {fmtDate(m.played_at)}).</div>
             <div className="confirm-actions">
-              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> Passt</button>
-              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> Falsch</button>
+              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> {t("Passt")}</button>
+              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> {t("Falsch")}</button>
             </div>
           </div>
         );
@@ -341,14 +535,14 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
           </li>
         ))}
       </ol>
-      {rows.length === 0 && <p className="hint center">Noch keine Ratings in dieser Disziplin.</p>}
+      {rows.length === 0 && <p className="hint center">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
       {hidden > 0 && !showAll && (
         <button className="btn ghost" onClick={() => setShowAll(true)}>
           {hidden} inaktive / vorlaeufige Spieler einblenden
         </button>
       )}
       {showAll && (
-        <button className="btn ghost" onClick={() => setShowAll(false)}>Nur aktive Rangliste zeigen</button>
+        <button className="btn ghost" onClick={() => setShowAll(false)}>{t("Nur aktive Rangliste zeigen")}</button>
       )}
       <p className="footnote">
         Ratings werden nach jedem bestaetigten Match ueber die gesamte Historie neu berechnet.
@@ -400,28 +594,28 @@ function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnreply }) {
       {!mine && !myReply && !open && (
         <div className="sp-controls">
           <button className="btn primary small" onClick={() => onReply(ping.id, "")}>
-            <Swords size={16} /> Bin unterwegs
+            <Swords size={16} /> {t("Bin unterwegs")}
           </button>
-          <button className="btn ghost small" onClick={() => setOpen(true)}>mit Nachricht</button>
+          <button className="btn ghost small" onClick={() => setOpen(true)}>{t("mit Nachricht")}</button>
         </div>
       )}
       {!mine && !myReply && open && (
         <div className="reply-form">
           <div className="search-row" style={{ marginBottom: 8 }}>
-            <input placeholder="Nachricht (optional), z. B. 'Bin um 19 Uhr da'" value={msg}
+            <input placeholder={t("Nachricht (optional), z. B. 'Bin um 19 Uhr da'")} value={msg}
               maxLength={120} onChange={(e) => setMsg(e.target.value)} />
           </div>
           <div className="confirm-actions">
             <button className="chip-btn ok" onClick={() => { onReply(ping.id, msg); setOpen(false); setMsg(""); }}>
-              <Check size={15} /> Unterwegs
+              <Check size={15} /> {t("Unterwegs")}
             </button>
-            <button className="chip-btn no" onClick={() => setOpen(false)}><X size={15} /> Abbrechen</button>
+            <button className="chip-btn no" onClick={() => setOpen(false)}><X size={15} /> {t("Abbrechen")}</button>
           </div>
         </div>
       )}
       {!mine && myReply && (
         <button className="btn ghost" onClick={() => onUnreply(ping.id)}>
-          <X size={15} /> Zusage zurueckziehen
+          <X size={15} /> {t("Zusage zurueckziehen")}
         </button>
       )}
     </section>
@@ -438,23 +632,23 @@ function LiveScreen({ me, pings, colorOf, badgeOf, onCreate, onClose, onReply, o
   return (
     <div className="screen">
       <header className="screen-head">
-        <h2>Live</h2>
-        <span className="head-note">Wer ist gerade am Tisch oder sucht ein Match?</span>
+        <h2>{t("Live")}</h2>
+        <span className="head-note">{t("Wer ist gerade am Tisch oder sucht ein Match?")}</span>
       </header>
 
       {myPing ? (
         <PingCard ping={myPing} me={me} colorOf={colorOf} badgeOf={badgeOf} onReply={onReply} onUnreply={onUnreply} />
       ) : (
         <section className="stat-block">
-          <h3><Radio size={17} /> Ich bin bereit!</h3>
+          <h3><Radio size={17} /> {t("Ich bin bereit!")}</h3>
           <div className="search-row">
             <MapPin size={16} className="mail-ico" />
-            <input placeholder="Wo bist du? z. B. Schwedenplatz" value={loc}
+            <input placeholder={t("Wo bist du? z. B. Schwedenplatz")} value={loc}
               maxLength={60} onChange={(e) => setLoc(e.target.value)} />
           </div>
           <div className="search-row">
             <Pencil size={16} className="mail-ico" />
-            <input placeholder="Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'" value={msg}
+            <input placeholder={t("Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'")} value={msg}
               maxLength={120} onChange={(e) => setMsg(e.target.value)} />
           </div>
           <div className="chips" style={{ marginBottom: 4 }}>
@@ -466,17 +660,17 @@ function LiveScreen({ me, pings, colorOf, badgeOf, onCreate, onClose, onReply, o
           </div>
           <button className="btn primary" disabled={loc.trim().length < 2}
             onClick={() => { onCreate(loc, msg, hours); setLoc(""); setMsg(""); }}>
-            <Radio size={17} /> Live gehen
+            <Radio size={17} /> {t("Live gehen")}
           </button>
           <p className="hint">Dein Eintrag verschwindet nach der gewaehlten Zeit von selbst.</p>
         </section>
       )}
 
       {myPing && (
-        <button className="btn ghost" onClick={onClose}><X size={15} /> Meinen Live-Eintrag beenden</button>
+        <button className="btn ghost" onClick={onClose}><X size={15} /> {t("Meinen Live-Eintrag beenden")}</button>
       )}
 
-      {others.length > 0 && <p className="q" style={{ marginTop: 18 }}>Gerade aktiv:</p>}
+      {others.length > 0 && <p className="q" style={{ marginTop: 18 }}>{t("Gerade aktiv:")}</p>}
       {others.map((p) => (
         <PingCard key={p.id} ping={p} me={me} colorOf={colorOf} badgeOf={badgeOf} onReply={onReply} onUnreply={onUnreply} />
       ))}
@@ -639,7 +833,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
   if (!started) {
     return (
       <div className="sp-setup">
-        <p className="q">Zielpunktzahl für 14/1 Endlos</p>
+        <p className="q">{t("Zielpunktzahl für 14/1 Endlos")}</p>
         <div className="disc-grid target-grid">
           {PRESETS.map((t) => (
             <button key={t} className={"disc-card compact" + (target === t && custom === "" ? " sel" : "")}
@@ -647,14 +841,14 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
           ))}
         </div>
         <div className="search-row" style={{ marginTop: 4 }}>
-          <input type="number" inputMode="numeric" placeholder="oder eigenes Ziel eingeben …"
+          <input type="number" inputMode="numeric" placeholder={t("oder eigenes Ziel eingeben …")}
             value={custom} onChange={(e) => {
               setCustom(e.target.value);
               const n = parseInt(e.target.value, 10);
               if (!isNaN(n) && n > 0) setTarget(n);
             }} />
         </div>
-        <p className="q" style={{ marginTop: 8 }}>Wer hat den Anstoß?</p>
+        <p className="q" style={{ marginTop: 8 }}>{t("Wer hat den Anstoß?")}</p>
         <div className="disc-grid">
           {[0, 1].map((i) => (
             <button key={i} className={"disc-card" + (starter === i ? " sel" : "")}
@@ -665,8 +859,8 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
           onClick={() => { setActive(starter); setStarted(true); }}>
           Los geht's – bis {target} <ArrowRight size={18} />
         </button>
-        <p className="hint center">Jede versenkte Kugel = 1 Punkt. Aufnahme beenden mit <b>Fehler</b> (zählt
-          für den Schnitt) oder <b>Safe</b> (zählt nicht). Rack ausgeschossen tippst du sofort ein.
+        <p className="hint center">{t("Jede versenkte Kugel = 1 Punkt. Aufnahme beenden mit")} <b>{t("Fehler")}</b> (zählt
+          für den Schnitt) oder <b>{t("Safe")}</b> (zählt nicht). Rack ausgeschossen tippst du sofort ein.
           Foul = −1, Anstoß −2, drei Fouls in Folge zusätzlich −15.</p>
       </div>
     );
@@ -676,7 +870,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
   if (breakChoose) {
     return (
       <div className="sp-entry">
-        <p className="sp-entry-title">Anstoß-Foul −2 · Wer stößt als Nächstes an?</p>
+        <p className="sp-entry-title">{t("Anstoß-Foul −2 · Wer stößt als Nächstes an?")}</p>
         <div className="opp-grid">
           {[0, 1].map((i) => (
             <button key={i} className="opp-card" onClick={() => chooseBreaker(i)}>
@@ -685,7 +879,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
             </button>
           ))}
         </div>
-        <p className="hint center">So sind mehrere Anstöße hintereinander möglich (Wiederholungs-Anstoß).</p>
+        <p className="hint center">{t("So sind mehrere Anstöße hintereinander möglich (Wiederholungs-Anstoß).")}</p>
       </div>
     );
   }
@@ -696,28 +890,28 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
     return (
       <div className="sp-entry">
         <p className="sp-entry-title">{names[active]}: Aufnahme abschließen{lbl}</p>
-        <div className="sp-entry-lbl">Kugeln noch am Tisch</div>
+        <div className="sp-entry-lbl">{t("Kugeln noch am Tisch")}</div>
         <div className="num-grid">
           {Array.from({ length: onTable + 1 }, (_, n) => n).map((n) => (
             <button key={n} className={"pool-ball" + (remain === n ? " sel" : "")} style={poolBallStyle(n)}
               onClick={() => setRemain(n)}><span className="pb-no">{n}</span></button>
           ))}
         </div>
-        <div className="sp-run-preview">Serie dieser Aufnahme: <b>{inningRun + partial}</b></div>
-        {remain === 0 && <p className="hint center" style={{ marginTop: 0 }}>Zwei-Kugel-Räumung! Tisch wird neu aufgebaut.</p>}
-        {remain === 1 && <p className="hint center" style={{ marginTop: 0 }}>Tisch wird neu aufgebaut (15 Kugeln).</p>}
+        <div className="sp-run-preview">{t("Serie dieser Aufnahme:")} <b>{inningRun + partial}</b></div>
+        {remain === 0 && <p className="hint center" style={{ marginTop: 0 }}>{t("Zwei-Kugel-Räumung! Tisch wird neu aufgebaut.")}</p>}
+        {remain === 1 && <p className="hint center" style={{ marginTop: 0 }}>{t("Tisch wird neu aufgebaut (15 Kugeln).")}</p>}
         {remain <= 1 && entry === "miss" ? (
           <>
             <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setEntry(null)}>Abbrechen</button>
-              <button className="btn primary" onClick={() => applyEntry(false)}>Gegner ist dran</button>
+              <button className="btn ghost" onClick={() => setEntry(null)}>{t("Abbrechen")}</button>
+              <button className="btn primary" onClick={() => applyEntry(false)}>{t("Gegner ist dran")}</button>
             </div>
             <button className="btn ghost" onClick={() => applyEntry(true)}>{names[active]} macht weiter</button>
           </>
         ) : (
           <div className="sp-controls">
-            <button className="btn ghost" onClick={() => setEntry(null)}>Abbrechen</button>
-            <button className="btn primary" onClick={() => applyEntry(false)}>Übernehmen</button>
+            <button className="btn ghost" onClick={() => setEntry(null)}>{t("Abbrechen")}</button>
+            <button className="btn primary" onClick={() => applyEntry(false)}>{t("Übernehmen")}</button>
           </div>
         )}
       </div>
@@ -735,7 +929,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
             <span className="sp-name">{names[i]}</span>
             <div className="sp-score">{sc[i]}</div>
             <div className="sp-meta">Höchstserie {hi[i]}</div>
-            <div className="sp-avg">Ø {fmt(offAvg(i))} <span>Fehler</span> · {fmt(allAvg(i))} <span>ges.</span></div>
+            <div className="sp-avg">Ø {fmt(offAvg(i))} <span>{t("Fehler")}</span> · {fmt(allAvg(i))} <span>{t("ges.")}</span></div>
             {fouls[i] > 0 && (
               <div className={"sp-foulwarn" + (fouls[i] >= 2 ? " danger" : "")}>
                 {fouls[i]} Foul{fouls[i] > 1 ? "s" : ""} in Folge{fouls[i] >= 2 ? " – Vorsicht!" : ""}
@@ -749,7 +943,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
       <div className="sp-actions">
         <div className="sp-target">Ziel {target} · Aufnahme {inningNo} · {onTable} Kugeln am Tisch</div>
         {need > 0 && need <= 14 && (
-          <div className="sp-need">Nur noch <b>{need}</b> Kugel{need > 1 ? "n" : ""} bis {names[active]} gewinnt!</div>
+          <div className="sp-need">{t("Nur noch")} <b>{need}</b> Kugel{need > 1 ? "n" : ""} bis {names[active]} gewinnt!</div>
         )}
 
         {breakPhase && (
@@ -759,33 +953,33 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
           <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
         </button>
         <div className="sp-controls">
-          <button className="sp-pot half" onClick={() => openEntry("miss")}>Fehler</button>
-          <button className="sp-pot half safe" onClick={() => openEntry("safe")}>Safe</button>
+          <button className="sp-pot half" onClick={() => openEntry("miss")}>{t("Fehler")}</button>
+          <button className="sp-pot half safe" onClick={() => openEntry("safe")}>{t("Safe")}</button>
         </div>
         <div className="sp-controls">
           {breakPhase ? (
-            <button className="btn ghost warn" onClick={breakFoul}>Anstoß-Foul −2</button>
+            <button className="btn ghost warn" onClick={breakFoul}>{t("Anstoß-Foul −2")}</button>
           ) : (
-            <button className="btn ghost warn" onClick={() => openEntry("foul")}>Foul −1</button>
+            <button className="btn ghost warn" onClick={() => openEntry("foul")}>{t("Foul −1")}</button>
           )}
         </div>
         <div className="sp-controls">
-          <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> Rückgängig</button>
+          <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> {t("Rückgängig")}</button>
         </div>
 
         {!confirmEnd ? (
-          <button className="btn subtle" onClick={() => setConfirmEnd(true)}>Match vorzeitig beenden</button>
+          <button className="btn subtle" onClick={() => setConfirmEnd(true)}>{t("Match vorzeitig beenden")}</button>
         ) : (
           <div className="sp-endbox">
             <p className="hint center" style={{ marginTop: 0 }}>Aktueller Stand {sc[0]} : {sc[1]} – wirklich beenden?</p>
             <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setConfirmEnd(false)}>Weiterspielen</button>
+              <button className="btn ghost" onClick={() => setConfirmEnd(false)}>{t("Weiterspielen")}</button>
               <button className="btn primary" disabled={sc[0] === sc[1]}
                 onClick={() => onFinish(buildResult(sc, hi, maxDef, pocketed, missInn, twoBall))}>
-                Beenden
+                {t("Beenden")}
               </button>
             </div>
-            {sc[0] === sc[1] && <p className="hint center">Bei Gleichstand kann nicht beendet werden.</p>}
+            {sc[0] === sc[1] && <p className="hint center">{t("Bei Gleichstand kann nicht beendet werden.")}</p>}
           </div>
         )}
       </div>
@@ -866,7 +1060,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
       p_twoball_me: is141 ? tb[0] : null, p_twoball_opp: is141 ? tb[1] : null,
     });
     setBusy(false);
-    if (error) { toast("Fehler: " + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return; }
     setStep(4);
   };
 
@@ -887,17 +1081,17 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
         <button className="back-btn" onClick={() => { if (step === 0 || step === 4) onCancel(); else setAbortAsk(true); }} aria-label="Zurueck">
           <ChevronLeft size={22} />
         </button>
-        <h2>Neues Match</h2>
+        <h2>{t("Neues Match")}</h2>
       </header>
 
       {abortAsk && (
         <div className="modal-overlay" onClick={() => setAbortAsk(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <h3>Match abbrechen?</h3>
+            <h3>{t("Match abbrechen?")}</h3>
             <p>Alle Eingaben gehen verloren{is141 ? " – ein 14/1-Protokoll lässt sich nicht wiederherstellen" : ""}.</p>
             <div className="sp-controls">
-              <button className="btn ghost warn" onClick={() => { setAbortAsk(false); onCancel(); }}>Ja – beenden</button>
-              <button className="btn primary" onClick={() => setAbortAsk(false)}>Match fortführen</button>
+              <button className="btn ghost warn" onClick={() => { setAbortAsk(false); onCancel(); }}>{t("Ja – beenden")}</button>
+              <button className="btn primary" onClick={() => setAbortAsk(false)}>{t("Match fortführen")}</button>
             </div>
           </div>
         </div>
@@ -915,7 +1109,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
 
       {step === 0 && (
         <>
-          <p className="q">Gegen wen trittst du an?</p>
+          <p className="q">{t("Gegen wen trittst du an?")}</p>
           <div className="search-row">
             <Search size={16} className="mail-ico" />
             <input placeholder="Spieler suchen ..." value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
@@ -926,8 +1120,8 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             <button className="ghost-card" onClick={() => { setOpp(ghost); setStep(1); }}>
               <div className="ghost-ball">👻</div>
               <div className="ghost-info">
-                <span className="ghost-name">Training gegen Ghost</span>
-                <span className="ghost-sub">Übungsmatch – zählt nicht fürs Rating</span>
+                <span className="ghost-name">{t("Training gegen Ghost")}</span>
+                <span className="ghost-sub">{t("Übungsmatch – zählt nicht fürs Rating")}</span>
               </div>
               <ArrowRight size={18} />
             </button>
@@ -942,14 +1136,14 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             ))}
           </div>
           <button className="btn ghost" onClick={() => setShowInvite(true)}>
-            <QrCode size={16} /> Neues Mitglied? Jetzt einladen
+            <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
           </button>
         </>
       )}
 
       {step === 1 && (
         <>
-          <p className="q">Welche Disziplin?</p>
+          <p className="q">{t("Welche Disziplin?")}</p>
           <div className="disc-grid">
             {disciplines.map((d) => (
               <button key={d} className={"disc-card" + (disc === d ? " sel" : "")}
@@ -960,11 +1154,11 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           </div>
           {pendingDisc ? (
             <div className="confirm-box">
-              <p>Wechsel zu bzw. von <b>14/1 Endlos</b> ändert das Punkteschema – das bisherige
+              <p>{t("Wechsel zu bzw. von")} <b>14/1 Endlos</b> ändert das Punkteschema – das bisherige
                 Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?</p>
               <div className="sp-controls">
-                <button className="btn ghost" onClick={() => setPendingDisc(null)}>Abbrechen</button>
-                <button className="btn primary" onClick={confirmDiscChange}>Wechseln &amp; zurücksetzen</button>
+                <button className="btn ghost" onClick={() => setPendingDisc(null)}>{t("Abbrechen")}</button>
+                <button className="btn primary" onClick={confirmDiscChange}>{t("Wechseln & zurücksetzen")}</button>
               </div>
             </div>
           ) : (
@@ -981,11 +1175,11 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           </div>
           {leaveWarn && (
             <div className="confirm-box">
-              <p>Ein <b>14/1-Spiel</b> läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?</p>
+              <p>{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
               <div className="sp-controls">
-                <button className="btn ghost" onClick={() => setLeaveWarn(false)}>Weiterspielen</button>
+                <button className="btn ghost" onClick={() => setLeaveWarn(false)}>{t("Weiterspielen")}</button>
                 <button className="btn primary" onClick={() => { setLeaveWarn(false); resetScores(); setDisc(null); setStep(1); }}>
-                  Disziplin wechseln
+                  {t("Disziplin wechseln")}
                 </button>
               </div>
             </div>
@@ -998,7 +1192,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
               }} />
           ) : (
             <>
-              <p className="q">Wie steht's? <span className="q-sub">(gewonnene Spiele)</span></p>
+              <p className="q">{t("Wie steht's?")} <span className="q-sub">(gewonnene Spiele)</span></p>
               <div className="score-row">
                 {[{ p: me.nickname, v: s1, set: setS1 }, { p: opp.nickname, v: s2, set: setS2 }].map(({ p, v, set }) => (
                   <div key={p} className="score-col">
@@ -1013,9 +1207,9 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
                 ))}
               </div>
               <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
-                Weiter <ArrowRight size={18} />
+                {t("Weiter")} <ArrowRight size={18} />
               </button>
-              {s1 === s2 && total > 0 && <p className="hint center">Unentschieden gibt's beim Billard nicht ;-)</p>}
+              {s1 === s2 && total > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
             </>
           )}
         </>
@@ -1045,7 +1239,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
               </div>
             )}
             {isGhost ? (
-              <p className="hint center" style={{ marginBottom: 0 }}>Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.</p>
+              <p className="hint center" style={{ marginBottom: 0 }}>{t("Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.")}</p>
             ) : (
               <div className="prob-wrap">
                 <div className="prob-label">
@@ -1057,7 +1251,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             )}
           </div>
           <button className="btn primary" disabled={busy} onClick={save}>
-            {busy ? "Speichere ..." : isGhost ? <>Training abschließen <Check size={18} /></> : <>Match speichern <Check size={18} /></>}
+            {busy ? "Speichere ..." : isGhost ? <>{t("Training abschließen")} <Check size={18} /></> : <>{t("Match speichern")} <Check size={18} /></>}
           </button>
           {!isGhost && <p className="hint center">Das Match fliesst erst ins Rating ein, wenn {opp.nickname} es bestaetigt.</p>}
         </>
@@ -1068,18 +1262,18 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           <div className="sent-check big"><Check size={34} /></div>
           {isGhost ? (
             <>
-              <h3>Training beendet!</h3>
-              <p>Ergebnis gegen den Ghost: <b>{s1} : {s2}</b>.<br />
+              <h3>{t("Training beendet!")}</h3>
+              <p>{t("Ergebnis gegen den Ghost:")} <b>{s1} : {s2}</b>.<br />
                 Trainingsmatches werden nicht gespeichert und beeinflussen dein Rating nicht.</p>
             </>
           ) : (
             <>
-              <h3>Gespeichert!</h3>
-              <p>Wartet auf Bestaetigung von <b>{opp.nickname}</b>.<br />
+              <h3>{t("Gespeichert!")}</h3>
+              <p>{t("Wartet auf Bestaetigung von")} <b>{opp.nickname}</b>.<br />
                 Sobald {opp.nickname} die App oeffnet und auf "Passt" tippt, wird das Ranking neu berechnet.</p>
             </>
           )}
-          <button className="btn primary" onClick={onDone}>Zur Rangliste</button>
+          <button className="btn primary" onClick={onDone}>{t("Zur Rangliste")}</button>
         </div>
       )}
     </div>
@@ -1158,7 +1352,7 @@ function DevChart({ dates, lines }) {
   const W = 340, H = 210, padL = 34, padR = 12, padT = 12, padB = 26;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const all = lines.flatMap((l) => l.points.map((p) => p.rating));
-  if (all.length === 0) return <p className="hint center">Keine Daten im gewählten Zeitraum.</p>;
+  if (all.length === 0) return <p className="hint center">{t("Keine Daten im gewählten Zeitraum.")}</p>;
 
   let yMin = Math.min(...all), yMax = Math.max(...all);
   const pad = Math.max(10, (yMax - yMin) * 0.12);
@@ -1197,7 +1391,7 @@ function DevChart({ dates, lines }) {
     <div className="dev-wrap">
       <div className="dev-readout">
         {active == null ? (
-          <span className="dev-hint">Zum Ablesen über den Graphen ziehen</span>
+          <span className="dev-hint">{t("Zum Ablesen über den Graphen ziehen")}</span>
         ) : (
           <>
             <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
@@ -1261,7 +1455,6 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
   }, [players]);
 
   const gesamt = useMemo(() => rangliste.filter((r) => r.discipline === "Gesamt"), [rangliste]);
-  const today = useMemo(() => todayStr(), []);
 
   const seriesByNick = useMemo(() => {
     const s = {};
@@ -1270,16 +1463,14 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
       if (!nick || !r.snap_date) return;
       (s[nick] ||= {})[r.snap_date] = r.rating;
     });
-    // Live-Punkt heute aus aktuellen Ratings -> sofort sichtbar nach jedem Match
-    gesamt.forEach((r) => { (s[r.nickname] ||= {})[today] = r.rating; });
+    // Kein Live-Overlay mehr: der Verlauf enthält den heutigen Tagespunkt bereits
+    // aus dem Backfill. So läuft die Linie glatt (inkl. Inaktivitäts-Verfall) ohne Knick.
     return s;
-  }, [snapshots, nickById, gesamt, today]);
+  }, [snapshots, nickById]);
 
   const allDates = useMemo(() => {
-    const set = new Set(snapshots.map((r) => r.snap_date).filter(Boolean));
-    set.add(today);
-    return [...set].sort();
-  }, [snapshots, today]);
+    return [...new Set(snapshots.map((r) => r.snap_date).filter(Boolean))].sort();
+  }, [snapshots]);
   const defaultSel = useMemo(() => {
     const names = gesamt.map((r) => r.nickname);
     const idx = names.indexOf(me.nickname);
@@ -1313,7 +1504,7 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
   };
 
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES.at(-1);
-  const cutoff = range.days ? dateMinusDays(today, range.days) : null;
+  const cutoff = range.days ? dateMinusDays(todayStr(), range.days) : null;
   const visibleDates = cutoff ? allDates.filter((d) => d >= cutoff) : allDates;
 
   const lines = sel
@@ -1343,9 +1534,9 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
 
   return (
     <section className="stat-block">
-      <h3><TrendingUp size={17} /> Entwicklung über die Zeit</h3>
+      <h3><TrendingUp size={17} /> {t("Entwicklung über die Zeit")}</h3>
       {allDates.length === 0 ? (
-        <p className="hint">Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.</p>
+        <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
         <>
           <div className="range-row">
@@ -1367,19 +1558,19 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
 
           {!addOpen ? (
             <button className="btn ghost" onClick={() => setAddOpen(true)}>
-              <Plus size={16} /> Spieler hinzufügen
+              <Plus size={16} /> {t("Spieler hinzufügen")}
             </button>
           ) : (
             <div className="add-panel">
               <div className="search-row">
                 <Search size={16} className="mail-ico" />
-                <input placeholder="Spieler suchen …" value={query} autoFocus
+                <input placeholder={t("Spieler suchen …")} value={query} autoFocus
                   onChange={(e) => setQuery(e.target.value)} />
                 {query && <button className="clear-btn" onClick={() => setQuery("")}><X size={15} /></button>}
               </div>
               {!query && suggestions.length > 0 && (
                 <p className="hint" style={{ marginTop: 0, marginBottom: 6 }}>
-                  Deine häufigsten Mitspieler zuerst:
+                  {t("Deine häufigsten Mitspieler zuerst:")}
                 </p>
               )}
               <div className="cand-row">
@@ -1388,12 +1579,12 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
                     <Plus size={13} /> {n}{freqByNick[n] ? ` (${freqByNick[n]})` : ""}
                   </button>
                 ))}
-                {suggestions.length === 0 && <p className="hint">Keine weiteren Spieler.</p>}
+                {suggestions.length === 0 && <p className="hint">{t("Keine weiteren Spieler.")}</p>}
               </div>
-              <button className="btn ghost" onClick={() => { setAddOpen(false); setQuery(""); }}>Fertig</button>
+              <button className="btn ghost" onClick={() => { setAddOpen(false); setQuery(""); }}>{t("Fertig")}</button>
             </div>
           )}
-          <p className="hint">Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.</p>
+          <p className="hint">{t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}</p>
         </>
       )}
     </section>
@@ -1426,13 +1617,13 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, 
 
   return (
     <div className="screen">
-      <header className="screen-head"><h2>Statistik</h2><span className="head-note">Bestenlisten (bestaetigte Matches)</span></header>
+      <header className="screen-head"><h2>{t("Statistik")}</h2><span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span></header>
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} />
       <Block icon={<Trophy size={17} />} title="Meiste Siege" rows={topWins} fmt={(p) => `${p.siege} Siege`} />
       <Block icon={<BarChart3 size={17} />} title="Beste Siegquote (ab 10 Spielen)" rows={topQuote} fmt={(p) => `${p.quote} %`} />
       <Block icon={<Flame size={17} />} title="Aktuelle Serien" rows={topStreak} fmt={(p) => `${p.streak} in Folge`} />
       <section className="stat-block">
-        <h3><Swords size={17} /> Letzte Matches</h3>
+        <h3><Swords size={17} /> {t("Letzte Matches")}</h3>
         {lastMatches.map((m) => (
           <div key={m.id} className="match-row">
             <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
@@ -1440,7 +1631,7 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, 
             <span className="m-disc">{m.discipline}</span>
           </div>
         ))}
-        {lastMatches.length === 0 && <p className="hint">Noch keine bestaetigten Matches.</p>}
+        {lastMatches.length === 0 && <p className="hint">{t("Noch keine bestaetigten Matches.")}</p>}
       </section>
     </div>
   );
@@ -1451,7 +1642,7 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, 
    ============================================================ */
 
 function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
-  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast }) {
+  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -1501,24 +1692,24 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
       <div className="screen">
         <header className="screen-head with-back">
           <button className="back-btn" onClick={() => setEdit(false)} aria-label="Zurueck"><ChevronLeft size={22} /></button>
-          <h2>Profil bearbeiten</h2>
+          <h2>{t("Profil bearbeiten")}</h2>
         </header>
 
         <section className="stat-block">
-          <label className="field-label" htmlFor="pnick">Nickname</label>
+          <label className="field-label" htmlFor="pnick">{t("Nickname")}</label>
           <div className="mail-row">
             <User size={18} className="mail-ico" />
             <input id="pnick" value={nick} maxLength={30} onChange={(e) => setNick(e.target.value)} />
           </div>
-          {taken && <p className="nick-status err"><X size={14} /> Dieser Name ist schon vergeben.</p>}
+          {taken && <p className="nick-status err"><X size={14} /> {t("Dieser Name ist schon vergeben.")}</p>}
           {!taken && cleanNick !== nickname && nickValid && (
             <p className="nick-status ok"><Check size={14} /> "{cleanNick}" ist frei.</p>
           )}
 
-          <label className="field-label">Deine Kugel</label>
+          <label className="field-label">{t("Deine Kugel")}</label>
           <div className="swatch-row">
             <button className={"swatch auto" + (color === null ? " sel" : "")}
-              onClick={() => setColor(null)} aria-label="Automatische Farbe">Auto</button>
+              onClick={() => setColor(null)} aria-label="Automatische Farbe">{t("Auto")}</button>
             {BALL_PALETTE.map((c) => (
               <button key={c} className={"swatch" + (color === c ? " sel" : "")}
                 style={{ background: c }} onClick={() => setColor(c)} aria-label={`Farbe ${c}`}>
@@ -1535,7 +1726,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
               <input type="color" className="color-input"
                 value={color && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : hashColor(cleanNick || nickname)}
                 onChange={(e) => setColor(e.target.value)}
-                aria-label="Eigene Kugelfarbe wählen" />
+                aria-label={t("Eigene Kugelfarbe wählen")} />
             </label>
           </div>
           <div className="swatch-preview">
@@ -1545,7 +1736,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
             </span>
           </div>
 
-          <label className="field-label" htmlFor="pmotto">Motto (optional)</label>
+          <label className="field-label" htmlFor="pmotto">{t("Motto (optional)")}</label>
           <div className="mail-row">
             <Pencil size={18} className="mail-ico" />
             <input id="pmotto" value={motto} maxLength={80}
@@ -1553,7 +1744,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
           </div>
 
           <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
-            {busy ? "Speichere ..." : <>Speichern <Check size={18} /></>}
+            {busy ? "Speichere ..." : <>{t("Speichern")} <Check size={18} /></>}
           </button>
           {cleanNick !== nickname && (
             <p className="hint">Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.</p>
@@ -1576,7 +1767,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
           <h3 className="p-name">{nickname}</h3>
           <div className="p-rating">
             {gesamt ? gesamt.rating : "-"}
-            {gesamt?.vorlaeufig && <span className="prov-badge">vorlaeufig</span>}
+            {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
           </div>
           {playerObj?.motto && <p className="p-motto">"{playerObj.motto}"</p>}
         </div>
@@ -1586,19 +1777,33 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
           setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
         }}>
-          <Pencil size={15} /> Profil bearbeiten
+          <Pencil size={15} /> {t("Profil bearbeiten")}
         </button>
       )}
 
+      {isMe && (
+        <section className="stat-block lang-switch">
+          <h3><Globe size={17} /> {t("Sprache")}</h3>
+          <div className="lang-row">
+            <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
+              <span className="flag">🇩🇪</span><span>Deutsch</span>
+            </button>
+            <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
+              <span className="flag">🇬🇧</span><span>English</span>
+            </button>
+          </div>
+        </section>
+      )}
+
       <div className="kpis">
-        <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>Spiele</span></div>
-        <div className="kpi"><b>{stats?.siege ?? 0}</b><span>Siege</span></div>
-        <div className="kpi"><b>{stats?.quote ?? 0} %</b><span>Quote</span></div>
-        <div className="kpi"><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>Serie</span></div>
+        <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
+        <div className="kpi"><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
+        <div className="kpi"><b>{stats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
+        <div className="kpi"><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>{t("Serie")}</span></div>
       </div>
 
       <section className="stat-block">
-        <h3><Trophy size={17} /> Ratings nach Disziplin</h3>
+        <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
         {myRows.map((r) => (
           <div key={r.discipline} className="stat-row">
             <span className="stat-name">{r.discipline}</span>
@@ -1606,7 +1811,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
             <span className="stat-val">{r.rating}</span>
           </div>
         ))}
-        {myRows.length === 0 && <p className="hint">Noch kein Rating - erst ein Match spielen!</p>}
+        {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
       </section>
 
       <section className="stat-block">
@@ -1643,7 +1848,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
                       <span className="badge-emoji">{earned ? b.emoji : <Lock size={18} />}</span>
                       <span className="badge-name">{b.name}</span>
                       <span className="badge-desc">{b.description}</span>
-                      {selected && <span className="badge-active">Als Avatar aktiv</span>}
+                      {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
                     </button>
                   );
                 })}
@@ -1653,14 +1858,14 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         })}
         {isMe && meRow?.selected_badge && (
           <button className="btn ghost" onClick={() => onSelectBadge(null)}>
-            Wieder meine Kugel zeigen
+            {t("Wieder meine Kugel zeigen")}
           </button>
         )}
-        {!isMe && earnedBadges.size === 0 && <p className="hint">Noch keine Erfolge freigeschaltet.</p>}
+        {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
 
       <section className="stat-block">
-        <h3><Swords size={17} /> Head-to-Head (Match-Siege)</h3>
+        <h3><Swords size={17} /> {t("Head-to-Head (Match-Siege)")}</h3>
         {h2h.map(({ opp, w, l }) => (
           <div key={opp} className="h2h-row">
             <Ball color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} size={34} />
@@ -1669,19 +1874,19 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
             <span className="h2h-score">{w}:{l}</span>
           </div>
         ))}
-        {h2h.length === 0 && <p className="hint">Noch keine Matches.</p>}
+        {h2h.length === 0 && <p className="hint">{t("Noch keine Matches.")}</p>}
       </section>
 
       {isMe && <PasswordSection toast={toast} />}
 
       {isMe && (
-        <button className="btn ghost" onClick={onInvite}><QrCode size={16} /> Freund einladen</button>
+        <button className="btn ghost" onClick={onInvite}><QrCode size={16} /> {t("Freund einladen")}</button>
       )}
       {isMe && meRow?.role === "admin" && (
-        <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> Verwaltung oeffnen</button>
+        <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
       )}
       {isMe && (
-        <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> Abmelden</button>
+        <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
       )}
     </div>
   );
@@ -1717,19 +1922,19 @@ function PasswordSection({ toast }) {
 
   return (
     <section className="stat-block">
-      <h3><Lock size={17} /> Anmeldung &amp; Sicherheit</h3>
-      {email && <p className="hint" style={{ marginTop: 0 }}>Angemeldet als <b>{email}</b></p>}
+      <h3><Lock size={17} /> {t("Anmeldung & Sicherheit")}</h3>
+      {email && <p className="hint" style={{ marginTop: 0 }}>{t("Angemeldet als")} <b>{email}</b></p>}
       {!open ? (
-        <button className="btn ghost" onClick={() => setOpen(true)}>Passwort festlegen / ändern</button>
+        <button className="btn ghost" onClick={() => setOpen(true)}>{t("Passwort festlegen / ändern")}</button>
       ) : (
         <div className="pw-box">
-          <input type="password" placeholder="Neues Passwort (min. 6 Zeichen)" value={pw}
+          <input type="password" placeholder={t("Neues Passwort (min. 6 Zeichen)")} value={pw}
             autoComplete="new-password" onChange={(e) => setPw(e.target.value)} />
-          <input type="password" placeholder="Passwort wiederholen" value={pw2}
+          <input type="password" placeholder={t("Passwort wiederholen")} value={pw2}
             autoComplete="new-password" onChange={(e) => setPw2(e.target.value)} />
           {msg && <p className="nick-status err"><X size={14} /> {msg}</p>}
           <div className="sp-controls">
-            <button className="btn ghost" onClick={() => { setOpen(false); setPw(""); setPw2(""); setMsg(""); }}>Abbrechen</button>
+            <button className="btn ghost" onClick={() => { setOpen(false); setPw(""); setPw2(""); setMsg(""); }}>{t("Abbrechen")}</button>
             <button className="btn primary" disabled={busy || !pw || !pw2} onClick={save}>
               {busy ? "..." : "Speichern"}
             </button>
@@ -1774,15 +1979,15 @@ function InviteScreen({ me, onBack, toast }) {
     }
   };
   const copy = async () => {
-    try { await navigator.clipboard.writeText(link); toast("Link kopiert!"); }
-    catch { toast("Kopieren nicht möglich – Link markieren und kopieren."); }
+    try { await navigator.clipboard.writeText(link); toast(t("Link kopiert!")); }
+    catch { toast(t("Kopieren nicht möglich – Link markieren und kopieren.")); }
   };
 
   return (
     <div className="screen">
       <header className="screen-head with-back">
-        <button className="back-btn" onClick={onBack} aria-label="Zurück"><ChevronLeft size={22} /></button>
-        <h2>Freund einladen</h2>
+        <button className="back-btn" onClick={onBack} aria-label={t("Zurück")}><ChevronLeft size={22} /></button>
+        <h2>{t("Freund einladen")}</h2>
       </header>
 
       {error && <p className="nick-status err"><X size={14} /> {error}</p>}
@@ -1795,17 +2000,17 @@ function InviteScreen({ me, onBack, toast }) {
             <QRCodeSVG value={link} size={210} level="M"
               bgColor="#F2EDE0" fgColor="#0A2B21" includeMargin />
           ) : (
-            <div className="qr-loading">Code wird erstellt …</div>
+            <div className="qr-loading">{t("Code wird erstellt …")}</div>
           )}
         </div>
-        {code && <div className="invite-code">Code: <b>{code}</b></div>}
+        {code && <div className="invite-code">{t("Code:")} <b>{code}</b></div>}
       </section>
 
       <button className="btn primary" onClick={share} disabled={!code}>
-        <Share2 size={18} /> Einladung teilen
+        <Share2 size={18} /> {t("Einladung teilen")}
       </button>
       <button className="btn ghost" onClick={copy} disabled={!code}>
-        <Copy size={16} /> Link kopieren
+        <Copy size={16} /> {t("Link kopieren")}
       </button>
       <p className="hint">Wer über deinen Code beitritt, wird dir als geworbener Spieler gutgeschrieben –
         dafür gibt es später eigene Erfolge.</p>
@@ -1827,17 +2032,17 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
     setBusy(true);
     const { error } = await supabase.rpc("admin_refresh_stats");
     setBusy(false);
-    if (error) { toast("Fehler: " + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return; }
     if (onReload) await onReload();
-    toast("Statistik neu berechnet.");
+    toast(t("Statistik neu berechnet."));
   };
   const recomputeBadges = async () => {
     setBusyBadges(true);
     const { error } = await supabase.rpc("admin_recompute_badges");
     setBusyBadges(false);
-    if (error) { toast("Fehler: " + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return; }
     if (onReload) await onReload();
-    toast("Erfolge neu berechnet.");
+    toast(t("Erfolge neu berechnet."));
   };
   const createUser = async () => {
     if (!nu.email.includes("@") || nu.password.length < 6) {
@@ -1848,9 +2053,9 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
       body: { email: nu.email.trim(), password: nu.password, nickname: nu.nickname.trim() },
     });
     setBusyUser(false);
-    if (error) { toast("Fehler: " + (error.message || "Anlage fehlgeschlagen")); return; }
-    if (data?.error) { toast("Fehler: " + data.error); return; }
-    if (data?.warning) { toast(data.warning); } else { toast("Nutzer angelegt."); }
+    if (error) { toast(t("Fehler: ") + (error.message || "Anlage fehlgeschlagen")); return; }
+    if (data?.error) { toast(t("Fehler: ") + data.error); return; }
+    if (data?.warning) { toast(data.warning); } else { toast(t("Nutzer angelegt.")); }
     setNu({ email: "", password: "", nickname: "" });
     if (onReload) await onReload();
   };
@@ -1859,31 +2064,31 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
     <div className="screen">
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label="Zurueck"><ChevronLeft size={22} /></button>
-        <h2>Verwaltung</h2>
+        <h2>{t("Verwaltung")}</h2>
       </header>
 
       <section className="stat-block">
-        <h3><RotateCcw size={17} /> Statistik &amp; Erfolge</h3>
+        <h3><RotateCcw size={17} /> {t("Statistik & Erfolge")}</h3>
         <p className="hint" style={{ marginTop: 0 }}>Rechnet Ratings, Verlauf und Erfolge sofort neu –
           nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.</p>
         <button className="btn primary" disabled={busy} onClick={refresh}>
-          {busy ? "Rechne neu …" : <><RotateCcw size={16} /> Statistik jetzt aktualisieren</>}
+          {busy ? "Rechne neu …" : <><RotateCcw size={16} /> {t("Statistik jetzt aktualisieren")}</>}
         </button>
         <button className="btn ghost" disabled={busyBadges} onClick={recomputeBadges}>
-          {busyBadges ? "Rechne neu …" : <><Award size={16} /> Nur Erfolge neu berechnen</>}
+          {busyBadges ? "Rechne neu …" : <><Award size={16} /> {t("Nur Erfolge neu berechnen")}</>}
         </button>
       </section>
 
       <section className="stat-block">
-        <h3><User size={17} /> Neuen Nutzer anlegen</h3>
+        <h3><User size={17} /> {t("Neuen Nutzer anlegen")}</h3>
         <p className="hint" style={{ marginTop: 0 }}>Legt einen Login mit E-Mail + Passwort an (sofort nutzbar).
           Spielername optional – sonst wählt ihn die Person beim ersten Login selbst.</p>
         <div className="pw-box">
           <input type="email" placeholder="E-Mail" value={nu.email} autoComplete="off"
             onChange={(e) => setNu({ ...nu, email: e.target.value })} />
-          <input type="text" placeholder="Passwort (min. 6 Zeichen)" value={nu.password} autoComplete="off"
+          <input type="text" placeholder={t("Passwort (min. 6 Zeichen)")} value={nu.password} autoComplete="off"
             onChange={(e) => setNu({ ...nu, password: e.target.value })} />
-          <input type="text" placeholder="Spielername (optional)" value={nu.nickname} autoComplete="off"
+          <input type="text" placeholder={t("Spielername (optional)")} value={nu.nickname} autoComplete="off"
             onChange={(e) => setNu({ ...nu, nickname: e.target.value })} />
           <button className="btn primary" disabled={busyUser} onClick={createUser}>
             {busyUser ? "Lege an …" : "Nutzer anlegen"}
@@ -1893,7 +2098,7 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
 
       <section className="stat-block">
         <h3><Check size={17} /> Offene Matches ({allPending.length})</h3>
-        {allPending.length === 0 && <p className="hint">Alles erledigt - keine offenen Matches.</p>}
+        {allPending.length === 0 && <p className="hint">{t("Alles erledigt - keine offenen Matches.")}</p>}
         {allPending.map((m) => (
           <div key={m.id} className="pending-row">
             <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
@@ -1912,7 +2117,7 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
           <div key={p.id} className="user-row">
             <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={34} />
             <span className="stat-name">{p.nickname}{p.id === me.id ? " (du)" : ""}</span>
-            {!p.auth_user_id && <span className="role-chip">ohne Login</span>}
+            {!p.auth_user_id && <span className="role-chip">{t("ohne Login")}</span>}
             {p.role === "admin" && <span className="role-chip admin">admin</span>}
           </div>
         ))}
@@ -1944,6 +2149,8 @@ export default function App() {
   const [profileName, setProfileName] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
+  const [lang, setLang] = useState(_LANG);
+  const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
@@ -1992,7 +2199,7 @@ export default function App() {
       .order("snap_date", { ascending: true })
       .range(from, to));
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || snap.error;
-    if (err) toast("Fehler beim Laden: " + err.message);
+    if (err) toast(t("Fehler beim Laden: ") + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
     setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
@@ -2046,14 +2253,14 @@ export default function App() {
 
   const confirmMatch = async (id, ok) => {
     const { error } = await supabase.rpc("confirm_match", { p_match_id: id, p_ok: ok });
-    if (error) toast("Fehler: " + error.message);
+    if (error) toast(t("Fehler: ") + error.message);
     else toast(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen.");
     loadData();
   };
 
   const selectBadge = async (badgeKey) => {
     const { data, error } = await supabase.rpc("select_badge", { p_badge_key: badgeKey });
-    if (error) { toast("Fehler: " + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return; }
     setPlayer(data);
     toast(badgeKey ? "Erfolg als Avatar gesetzt." : "Wieder deine Kugel.");
     loadData();
@@ -2063,9 +2270,9 @@ export default function App() {
     const { data, error } = await supabase.rpc("update_profile", {
       p_nickname: nick, p_avatar_color: color, p_motto: motto || null,
     });
-    if (error) { toast("Fehler: " + error.message); return false; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     setPlayer(data);
-    toast("Profil gespeichert.");
+    toast(t("Profil gespeichert."));
     loadData();
     return true;
   };
@@ -2074,25 +2281,25 @@ export default function App() {
     const { error } = await supabase.rpc("create_ping", {
       p_location: loc.trim(), p_message: msg.trim() || null, p_hours: hours,
     });
-    if (error) toast("Fehler: " + error.message);
-    else toast("Du bist jetzt live!");
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Du bist jetzt live!"));
     loadData();
   };
   const closePing = async () => {
     const { error } = await supabase.rpc("close_ping");
-    if (error) toast("Fehler: " + error.message);
-    else toast("Live-Eintrag beendet.");
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Live-Eintrag beendet."));
     loadData();
   };
   const replyPing = async (id, msg) => {
     const { error } = await supabase.rpc("reply_ping", { p_ping_id: id, p_message: msg.trim() || null });
-    if (error) toast("Fehler: " + error.message);
-    else toast("Zusage gesendet!");
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Zusage gesendet!"));
     loadData();
   };
   const unreplyPing = async (id) => {
     const { error } = await supabase.rpc("unreply_ping", { p_ping_id: id });
-    if (error) toast("Fehler: " + error.message);
+    if (error) toast(t("Fehler: ") + error.message);
     loadData();
   };
 
@@ -2100,7 +2307,7 @@ export default function App() {
   const logout = async () => { await supabase.auth.signOut(); setTab("rang"); };
 
   if (!authReady) {
-    return (<div className="stage"><style>{CSS}</style><div className="phone"><div className="center-load">Lade ...</div></div></div>);
+    return (<div className="stage"><style>{CSS}</style><div className="phone"><div className="center-load">{t("Lade ...")}</div></div></div>);
   }
 
   return (
@@ -2109,7 +2316,7 @@ export default function App() {
       <div className="phone">
         {!session && <LoginScreen />}
 
-        {session && !playerChecked && <div className="center-load">Lade Profil ...</div>}
+        {session && !playerChecked && <div className="center-load">{t("Lade Profil ...")}</div>}
 
         {session && playerChecked && !player && (
           <NicknameScreen existingPlayers={players}
@@ -2145,7 +2352,8 @@ export default function App() {
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog}
-                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast} />
+                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
+                  lang={lang} onLang={changeLang} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
@@ -2154,7 +2362,8 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
                   onSelectBadge={selectBadge} catalog={catalog}
-                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast} />
+                  onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
+                  lang={lang} onLang={changeLang} />
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
@@ -2172,21 +2381,21 @@ export default function App() {
             {tab !== "match" && (
             <nav className="tabbar">
               <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => setTab("rang")}>
-                <Trophy size={21} /><span>Rangliste</span>
+                <Trophy size={21} /><span>{t("Rangliste")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
               <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => setTab("live")}>
-                <Radio size={21} /><span>Live</span>
+                <Radio size={21} /><span>{t("Live")}</span>
                 {pings.length > 0 && <span className="badge live">{pings.length}</span>}
               </button>
-              <button className="tab fab" onClick={() => setTab("match")} aria-label="Neues Match">
+              <button className="tab fab" onClick={() => setTab("match")} aria-label={t("Neues Match")}>
                 <Plus size={26} />
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
-                <BarChart3 size={21} /><span>Statistik</span>
+                <BarChart3 size={21} /><span>{t("Statistik")}</span>
               </button>
               <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => setTab("profil")}>
-                <User size={21} /><span>Profil</span>
+                <User size={21} /><span>{t("Profil")}</span>
               </button>
             </nav>
             )}
@@ -2265,6 +2474,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .range-btn { flex: 1; border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
   border-radius: 10px; padding: 6px 0; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .range-btn.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.lang-row { display: flex; gap: 10px; }
+.lang-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 9px;
+  border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
+  border-radius: 12px; padding: 11px 0; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.lang-btn.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.lang-btn .flag { font-size: 20px; line-height: 1; }
 .invite-card { text-align: center; }
 .invite-lead { font-size: 13.5px; color: var(--ivory-dim); line-height: 1.5; margin-bottom: 14px; }
 .qr-box { display: grid; place-items: center; background: #F2EDE0; border-radius: 16px;
