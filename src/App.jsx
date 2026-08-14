@@ -11,6 +11,138 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Allrounder": "All-rounder",
+    "Tausendsassa": "Jack of all trades",
+    "Weltklasse-Schnitt": "World-class average",
+    "Starker Schnitt": "Strong average",
+    "Souveräner Schnitt": "Commanding average",
+    "Aufholjagd": "Comeback",
+    "Unmögliches möglich": "The impossible made possible",
+    "Comeback-König": "Comeback king",
+    "David": "David",
+    "Spezialist": "Specialist",
+    "Doppeltalent": "Double talent",
+    "Frühaufsteher": "Early bird",
+    "Riesentöter": "Giant slayer",
+    "Drachentöter": "Dragon slayer",
+    "Titanentöter": "Titan slayer",
+    "Krimi": "Nail-biter",
+    "Pechvogel": "Hard luck",
+    "Dauer-König": "Long-reigning king",
+    "König": "King",
+    "Marathon": "Marathon",
+    "Neuling": "Newcomer",
+    "Stammspieler": "Regular",
+    "Inventar": "Fixture",
+    "Stammgast": "Regular guest",
+    "Angstgegner": "Nemesis",
+    "Nachtschwärmer": "Night owl",
+    "Weltoffen": "Cosmopolitan",
+    "Geselligkeit": "Sociable",
+    "Elite": "Elite",
+    "Etabliert": "Established",
+    "Über den Wolken": "Above the clouds",
+    "Phönix": "Phoenix",
+    "Gastgeber": "Host",
+    "Botschafter": "Ambassador",
+    "Vereinsheld": "Club hero",
+    "Erzrivale": "Arch-rival",
+    "Dauerduell": "Endless duel",
+    "Schicksalsgegner": "Destined rival",
+    "Jahrhundertserie": "Century run",
+    "Große Serie": "Big run",
+    "Halbe Hundert": "Half century",
+    "Eiskalt": "Ice cold",
+    "Schneesturm": "Blizzard",
+    "Absolute Null": "Absolute zero",
+    "Frostkönig": "Frost king",
+    "Gefrierschrank": "Freezer",
+    "Gletscher": "Glacier",
+    "Unaufhaltsam": "Unstoppable",
+    "Naturgewalt": "Force of nature",
+    "Komet": "Comet",
+    "Hattrick": "Hat-trick",
+    "Serientäter": "Serial offender",
+    "Doppelpack": "Double pack",
+    "Wochenendkrieger": "Weekend warrior",
+    "Erster Sieg": "First win",
+    "Routinier": "Old hand",
+    "Legende": "Legend",
+    "Aufsteiger": "Riser",
+    "Großmeister": "Grandmaster",
+    "Veteran": "Veteran",
+    "Unsterblich": "Immortal",
+    "In 3+ Disziplinen gesiegt": "Won in 3+ disciplines",
+    "In allen 4 Disziplinen gesiegt": "Won in all 4 disciplines",
+    "14/1: Ø 12 Kugeln pro Fehler-Aufnahme": "Straight pool: avg 12 balls per miss inning",
+    "14/1: Ø 5 Kugeln pro Fehler-Aufnahme": "Straight pool: avg 5 balls per miss inning",
+    "14/1: Ø 8 Kugeln pro Fehler-Aufnahme": "Straight pool: avg 8 balls per miss inning",
+    "14/1: Sieg nach 30+ Punkten Rückstand": "Straight pool: win from 30+ points behind",
+    "14/1: Sieg nach 50+ Punkten Rückstand": "Straight pool: win from 50+ points behind",
+    "Match gewonnen nach 4+ Racks Rückstand": "Won a match from 4+ racks behind",
+    "Als vorläufiger Spieler einen Top-3-Gegner geschlagen": "Beat a top-3 opponent as a provisional player",
+    "In 1 Disziplin gesiegt": "Won in 1 discipline",
+    "In 2 Disziplinen gesiegt": "Won in 2 disciplines",
+    "In 3 Disziplinen gesiegt": "Won in 3 disciplines",
+    "Match am frühen Morgen (5–8 Uhr)": "Match in the early morning (5–8 am)",
+    "Einen 100+ Punkte stärkeren Gegner geschlagen": "Beat an opponent 100+ points stronger",
+    "Einen 150+ Punkte stärkeren Gegner geschlagen": "Beat an opponent 150+ points stronger",
+    "Einen 200+ Punkte stärkeren Gegner geschlagen": "Beat an opponent 200+ points stronger",
+    "Einen 50+ Punkte stärkeren Gegner geschlagen": "Beat an opponent 50+ points stronger",
+    "Ein Match mit 15+ gespielten Racks gewonnen": "Won a match with 15+ racks played",
+    "Ein Match ganz knapp verloren": "Lost a match by the narrowest margin",
+    "12 Wochen auf Platz 1": "12 weeks at rank 1",
+    "4 Wochen auf Platz 1": "4 weeks at rank 1",
+    "4 Matches an einem Tag": "4 matches in one day",
+    "10 Matches gespielt": "Played 10 matches",
+    "100 Matches gespielt": "Played 100 matches",
+    "250 Matches gespielt": "Played 250 matches",
+    "50 Matches gespielt": "Played 50 matches",
+    "5+ Siege gegen denselben Gegner": "5+ wins against the same opponent",
+    "Match mitten in der Nacht (1–4 Uhr)": "Match in the middle of the night (1–4 am)",
+    "Gegen 10 verschiedene Gegner gespielt": "Played against 10 different opponents",
+    "Gegen 5 verschiedene Gegner gespielt": "Played against 5 different opponents",
+    "12 Wochen über 500 Punkte": "12 weeks above 500 points",
+    "4 Wochen über 500 Punkte": "4 weeks above 500 points",
+    "600 Punkte erreicht": "Reached 600 points",
+    "Nach 3 Niederlagen in Folge wieder gewonnen": "Won again after 3 losses in a row",
+    "1 Spieler geworben": "Recruited 1 player",
+    "3 Spieler geworben": "Recruited 3 players",
+    "5 Spieler geworben": "Recruited 5 players",
+    "10+ Matches gegen denselben Gegner": "10+ matches against the same opponent",
+    "25+ Matches gegen denselben Gegner": "25+ matches against the same opponent",
+    "50+ Matches gegen denselben Gegner": "50+ matches against the same opponent",
+    "14/1: Höchstserie von 100": "Straight pool: high run of 100",
+    "14/1: Höchstserie von 25": "Straight pool: high run of 25",
+    "14/1: Höchstserie von 50": "Straight pool: high run of 50",
+    "Ein Match zu null gewonnen": "Won a match to zero",
+    "10 Matches zu null gewonnen": "Won 10 matches to zero",
+    "100 Matches zu null gewonnen": "Won 100 matches to zero",
+    "25 Matches zu null gewonnen": "Won 25 matches to zero",
+    "5 Matches zu null gewonnen": "Won 5 matches to zero",
+    "50 Matches zu null gewonnen": "Won 50 matches to zero",
+    "10 Siege in Folge": "10 wins in a row",
+    "15 Siege in Folge": "15 wins in a row",
+    "20 Siege in Folge": "20 wins in a row",
+    "3 Siege in Folge": "3 wins in a row",
+    "5 Siege in Folge": "5 wins in a row",
+    "14/1: zwei Kugeln in einer Aufnahme geräumt": "Straight pool: cleared two balls in one inning",
+    "20 Matches am Wochenende": "20 matches on the weekend",
+    "Dein erstes Match gewonnen": "Won your first match",
+    "10 Siege insgesamt": "10 wins total",
+    "100 Siege insgesamt": "100 wins total",
+    "25 Siege insgesamt": "25 wins total",
+    "250 Siege insgesamt": "250 wins total",
+    "50 Siege insgesamt": "50 wins total",
+    "500 Siege insgesamt": "500 wins total",
+    "Siege": "Wins",
+    "Serien": "Streaks",
+    "Treue": "Loyalty",
+    "Skill": "Skill",
+    "Kurios": "Quirky",
+    "Gesamt": "Overall",
+    "14/1 Endlos": "Straight Pool",
+    " · Training": " · Practice",
     "(zählt für den Schnitt) oder": "(counts toward the average) or",
     "(zählt nicht). Rack ausgeschossen tippst du sofort ein. Foul = −1, Anstoß −2, drei Fouls in Folge zusätzlich −15.": "(doesn't count). When you run the rack out, tap it immediately. Foul = −1, break −2, three fouls in a row an extra −15.",
     "Los geht's – bis": "Let's go – to",
@@ -356,7 +488,7 @@ function Ball({ color, label, size = 44, gold = false, badge = null }) {
       <div className="ball-shine" />
       {b ? (
         <div className={"ball-badge" + (light ? " on-light" : "")}
-          style={{ fontSize: size * 0.5 }} title={b.name}>{b.emoji}</div>
+          style={{ fontSize: size * 0.5 }} title={t(b.name)}>{b.emoji}</div>
       ) : (
         <div className="ball-num"
           style={{ width: size * 0.52, height: size * 0.52, fontSize: size * 0.28, ...numStyle }}>
@@ -567,7 +699,7 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
 
       <div className="chips">
         {["Gesamt", ...disciplines].map((d) => (
-          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => setDisc(d)}>{d}</button>
+          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => setDisc(d)}>{t(d)}</button>
         ))}
       </div>
 
@@ -1117,7 +1249,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
 
   const DiscChip = () => (
     <button className="disc-chip" onClick={() => { if (is141) setLeaveWarn(true); else setStep(1); }}>
-      <span>{disc}</span><Pencil size={13} />
+      <span>{t(disc)}</span><Pencil size={13} />
     </button>
   );
 
@@ -1198,9 +1330,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           <div className="disc-grid">
             {disciplines.map((d) => (
               <button key={d} className={"disc-card" + (disc === d ? " sel" : "")}
-                onClick={() => chooseDisc(d)}>
-                {d}
-              </button>
+                onClick={() => chooseDisc(d)}>{t(d)}</button>
             ))}
           </div>
           {pendingDisc ? (
@@ -1279,7 +1409,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
                 <span>{opp.nickname}</span>
               </div>
             </div>
-            <div className="sum-disc">{disc}{isGhost ? " · Training" : ""}</div>
+            <div className="sum-disc">{t(disc)}{isGhost ? t(" · Training") : ""}</div>
             {is141 && (hr[0] != null || hr[1] != null) && (
               <div className="sum-141">
                 {t("Höchstserie:")} {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}
@@ -1669,9 +1799,9 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, 
     <div className="screen">
       <header className="screen-head"><h2>{t("Statistik")}</h2><span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span></header>
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} />
-      <Block icon={<Trophy size={17} />} title="Meiste Siege" rows={topWins} fmt={(p) => `${p.siege} Siege`} />
-      <Block icon={<BarChart3 size={17} />} title="Beste Siegquote (ab 10 Spielen)" rows={topQuote} fmt={(p) => `${p.quote} %`} />
-      <Block icon={<Flame size={17} />} title="Aktuelle Serien" rows={topStreak} fmt={(p) => `${p.streak} in Folge`} />
+      <Block icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} fmt={(p) => `${p.siege} ${t("Siege")}`} />
+      <Block icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} fmt={(p) => `${p.quote} %`} />
+      <Block icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} fmt={(p) => `${p.streak} ${t("in Folge")}`} />
       <section className="stat-block">
         <h3><Swords size={17} /> {t("Letzte Matches")}</h3>
         {lastMatches.map((m) => (
@@ -1853,7 +1983,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
         {myRows.map((r) => (
           <div key={r.discipline} className="stat-row">
-            <span className="stat-name">{r.discipline}</span>
+            <span className="stat-name">{t(r.discipline)}</span>
             <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
             <span className="stat-val">{r.rating}</span>
           </div>
@@ -1880,7 +2010,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
           if (visible.length === 0) return null;
           return (
             <div key={cat} className="badge-cat">
-              <div className="badge-cat-title">{cat}</div>
+              <div className="badge-cat-title">{t(cat)}</div>
               <div className="badge-grid">
                 {visible.map((b) => {
                   const key = b.badge_key;
@@ -1891,10 +2021,10 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
                       className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
                       disabled={!isMe || !earned}
                       onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
-                      title={b.description}>
+                      title={t(b.description)}>
                       <span className="badge-emoji">{earned ? b.emoji : <Lock size={18} />}</span>
-                      <span className="badge-name">{b.name}</span>
-                      <span className="badge-desc">{b.description}</span>
+                      <span className="badge-name">{t(b.name)}</span>
+                      <span className="badge-desc">{t(b.description)}</span>
                       {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
                     </button>
                   );
