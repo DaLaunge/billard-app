@@ -11,6 +11,9 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Impressum": "Legal notice",
+    "Kontakt": "Contact",
+    "Version": "Version",
     "Allrounder": "All-rounder",
     "Tausendsassa": "Jack of all trades",
     "Weltklasse-Schnitt": "World-class average",
@@ -457,6 +460,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
+const APP_VERSION = "37";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -2065,6 +2069,15 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
       {isMe && (
         <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
       )}
+
+      <footer className="imprint">
+        <div className="imprint-title">{t("Impressum")}</div>
+        <p>
+          Break &amp; Rank · {t("Version")} {APP_VERSION}<br />
+          © {new Date().getFullYear()} Break &amp; Rank<br />
+          {t("Kontakt")}: <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a>
+        </p>
+      </footer>
     </div>
   );
 }
@@ -2652,6 +2665,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border-radius: 12px; padding: 11px 0; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .lang-btn.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
 .lang-btn .flag { font-size: 20px; line-height: 1; }
+.imprint { margin-top: 22px; padding: 14px 4px 6px; text-align: center; border-top: 1px solid var(--line); }
+.imprint-title { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ivory-dim); opacity: 0.7; margin-bottom: 6px; }
+.imprint p { font-size: 12px; color: var(--ivory-dim); line-height: 1.7; margin: 0; }
+.imprint a { color: var(--chalk); text-decoration: none; }
 .invite-card { text-align: center; }
 .invite-lead { font-size: 13.5px; color: var(--ivory-dim); line-height: 1.5; margin-bottom: 14px; }
 .qr-box { display: grid; place-items: center; background: #F2EDE0; border-radius: 16px;
