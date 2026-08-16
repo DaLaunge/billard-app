@@ -11,6 +11,8 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Alles aufklappen": "Expand all",
+    "Alles zuklappen": "Collapse all",
     "Erfolge": "Achievements",
     "Ghost": "Ghost",
     "Geister-Kontakt": "Ghost contact",
@@ -484,7 +486,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "39";  // bei jedem Release erhöhen
+const APP_VERSION = "40";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1860,13 +1862,17 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
   }, [catalog]);
   // Kategorien mit mind. 1 erreichten Erfolg sind anfangs aufgeklappt, der Rest zugeklappt.
   const [openCats, setOpenCats] = useState(() => {
-    const s = new Set();
-    catalog.forEach((b) => { if (earnedBadges.has(b.badge_key)) s.add(b.category); });
-    return s;
+    try { const s = localStorage.getItem("badgeCats"); if (s) return new Set(JSON.parse(s)); } catch { /* ignore */ }
+    return new Set();  // Standard: alles eingeklappt
   });
+  useEffect(() => {
+    try { localStorage.setItem("badgeCats", JSON.stringify([...openCats])); } catch { /* ignore */ }
+  }, [openCats]);
   const toggleCat = (cat) => setOpenCats((prev) => {
     const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n;
   });
+  const expandAll = () => setOpenCats(new Set(catalogByCategory.map(([c]) => c)));
+  const collapseAll = () => setOpenCats(new Set());
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -2035,6 +2041,10 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
             {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
           </p>
         )}
+        <div className="badge-tools">
+          <button className="badge-tool-btn" onClick={expandAll}>{t("Alles aufklappen")}</button>
+          <button className="badge-tool-btn" onClick={collapseAll}>{t("Alles zuklappen")}</button>
+        </div>
         {catalogByCategory.map(([cat, items]) => {
           // im eigenen Profil: geheime, noch nicht erreichte Badges ausblenden.
           // in fremden Profilen: nur erreichte zeigen.
@@ -2689,6 +2699,10 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .cat-chev { color: var(--ivory-dim); transition: transform 0.18s ease; }
 .cat-chev.open { transform: rotate(180deg); }
 .badge-cat .badge-grid { padding-top: 10px; }
+.badge-tools { display: flex; gap: 8px; margin-bottom: 6px; }
+.badge-tool-btn { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
+  border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.badge-tool-btn:active { background: var(--felt); }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
