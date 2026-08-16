@@ -4,13 +4,37 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
   Mail, ArrowRight, Swords, Flame, Search, LogOut, RefreshCw, Clock,
-  Radio, MapPin, Pencil, Award, Lock, TrendingUp, QrCode, Share2, Copy, RotateCcw, Globe,
+  Radio, MapPin, Pencil, Award, Lock, TrendingUp, QrCode, Share2, Copy, RotateCcw, Globe, ChevronDown,
 } from "lucide-react";
 
 /* ---------- i18n (Deutsch = Schlüssel, Englisch als Overlay, Fallback auf Deutsch) ---------- */
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Erfolge": "Achievements",
+    "Ghost": "Ghost",
+    "Geister-Kontakt": "Ghost contact",
+    "1 Spiel gegen den Ghost": "1 game vs the Ghost",
+    "Geister-Sparring": "Ghost sparring",
+    "5 Spiele gegen den Ghost": "5 games vs the Ghost",
+    "Übungsfleiß": "Diligent practice",
+    "10 Spiele gegen den Ghost": "10 games vs the Ghost",
+    "Kalt erwischt": "Caught cold",
+    "25 Spiele gegen den Ghost": "25 games vs the Ghost",
+    "Geisterbeschwörer": "Ghost summoner",
+    "50 Spiele gegen den Ghost": "50 games vs the Ghost",
+    "Geisterbezwinger": "Ghost vanquisher",
+    "100 Spiele gegen den Ghost": "100 games vs the Ghost",
+    "Spukhaus-Stammgast": "Haunted-house regular",
+    "250 Spiele gegen den Ghost": "250 games vs the Ghost",
+    "Geisterlegende": "Ghost legend",
+    "500 Spiele gegen den Ghost": "500 games vs the Ghost",
+    "Geistermeister": "Ghost master",
+    "1000 Spiele gegen den Ghost": "1000 games vs the Ghost",
+    "Trainingslager": "Training camp",
+    "10 Ghost-Spiele an einem Tag": "10 Ghost games in one day",
+    "Trainingsritual": "Training ritual",
+    "Ghost-Spiele an 7 verschiedenen Tagen": "Ghost games on 7 different days",
     "Impressum": "Legal notice",
     "Kontakt": "Contact",
     "Version": "Version",
@@ -460,7 +484,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "37";  // bei jedem Release erhöhen
+const APP_VERSION = "39";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1237,7 +1261,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const isGhost = !!opp?.is_ghost;
 
   const save = async () => {
-    if (isGhost) { setStep(4); return; }   // Trainingsmatch: nicht speichern, nur anzeigen
+    if (isGhost) { try { await supabase.rpc("record_ghost_game"); } catch (e) { /* Zählung optional */ } setStep(4); return; }   // Trainingsmatch: nicht speichern, nur zählen
     setBusy(true);
     const { error } = await supabase.rpc("report_match", {
       p_opponent_id: opp.id, p_my_score: s1, p_opp_score: s2, p_discipline: disc,
@@ -1834,6 +1858,15 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
     });
     return Object.entries(groups);
   }, [catalog]);
+  // Kategorien mit mind. 1 erreichten Erfolg sind anfangs aufgeklappt, der Rest zugeklappt.
+  const [openCats, setOpenCats] = useState(() => {
+    const s = new Set();
+    catalog.forEach((b) => { if (earnedBadges.has(b.badge_key)) s.add(b.category); });
+    return s;
+  });
+  const toggleCat = (cat) => setOpenCats((prev) => {
+    const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n;
+  });
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -1996,14 +2029,14 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
       </section>
 
       <section className="stat-block">
-        <h3><Award size={17} /> Erfolge ({earnedBadges.size} / {catalog.length})</h3>
+        <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
         {isMe && (
           <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
             {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
           </p>
         )}
         {catalogByCategory.map(([cat, items]) => {
-          // im eigenen Profil: versteckte, noch nicht erreichte Badges ausblenden.
+          // im eigenen Profil: geheime, noch nicht erreichte Badges ausblenden.
           // in fremden Profilen: nur erreichte zeigen.
           const visible = items.filter((b) => {
             const earned = earnedBadges.has(b.badge_key);
@@ -2012,28 +2045,36 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
             return true;
           });
           if (visible.length === 0) return null;
+          const earnedCount = visible.filter((b) => earnedBadges.has(b.badge_key)).length;
+          const open = openCats.has(cat);
           return (
             <div key={cat} className="badge-cat">
-              <div className="badge-cat-title">{t(cat)}</div>
-              <div className="badge-grid">
-                {visible.map((b) => {
-                  const key = b.badge_key;
-                  const earned = earnedBadges.has(key);
-                  const selected = meRow?.selected_badge === key && isMe;
-                  return (
-                    <button key={key}
-                      className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
-                      disabled={!isMe || !earned}
-                      onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
-                      title={t(b.description)}>
-                      <span className="badge-emoji">{earned ? b.emoji : <Lock size={18} />}</span>
-                      <span className="badge-name">{t(b.name)}</span>
-                      <span className="badge-desc">{t(b.description)}</span>
-                      {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
-                    </button>
-                  );
-                })}
-              </div>
+              <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
+                <span className="badge-cat-title">{t(cat)}</span>
+                <span className="badge-cat-count">{earnedCount} / {visible.length}</span>
+                <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
+              </button>
+              {open && (
+                <div className="badge-grid">
+                  {visible.map((b) => {
+                    const key = b.badge_key;
+                    const earned = earnedBadges.has(key);
+                    const selected = meRow?.selected_badge === key && isMe;
+                    return (
+                      <button key={key}
+                        className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
+                        disabled={!isMe || !earned}
+                        onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
+                        title={t(b.description)}>
+                        <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
+                        <span className="badge-name">{t(b.name)}</span>
+                        <span className="badge-desc">{t(b.description)}</span>
+                        {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
@@ -2639,9 +2680,15 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .ball-badge.on-light { filter: drop-shadow(0 1px 2px #ffffff80) drop-shadow(0 0 1px #00000070); }
 
 .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
-.badge-cat { margin-bottom: 14px; }
-.badge-cat-title { font-size: 12px; font-weight: 700; color: var(--ivory-dim);
-  text-transform: uppercase; letter-spacing: 0.06em; margin: 4px 0 8px; }
+.badge-cat { margin-bottom: 10px; }
+.badge-cat-head { width: 100%; display: flex; align-items: center; gap: 8px; background: transparent;
+  border: none; border-bottom: 1px solid var(--line); padding: 9px 2px; cursor: pointer; font-family: inherit; }
+.badge-cat-title { font-size: 12px; font-weight: 700; color: var(--ivory);
+  text-transform: uppercase; letter-spacing: 0.06em; }
+.badge-cat-count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--ivory-dim); }
+.cat-chev { color: var(--ivory-dim); transition: transform 0.18s ease; }
+.cat-chev.open { transform: rotate(180deg); }
+.badge-cat .badge-grid { padding-top: 10px; }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
@@ -2701,7 +2748,8 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   background: var(--felt); border: 1px solid var(--line); border-radius: 14px;
   padding: 12px 6px 10px; cursor: pointer; font-family: inherit; color: var(--ivory);
   text-align: center; }
-.badge-chip.locked { opacity: 0.42; cursor: default; }
+.badge-chip.locked { opacity: 0.75; cursor: default; }
+.badge-emoji.locked-emoji { filter: grayscale(1); opacity: 0.45; }
 .badge-chip.earned { border-color: #2C5547; }
 .badge-chip.selected { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); background: #17493A; }
 .badge-emoji { font-size: 26px; line-height: 1; height: 30px; display: grid; place-items: center;
