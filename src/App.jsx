@@ -11,6 +11,13 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Nutzer": "Users",
+    "Zum Admin machen": "Make admin",
+    "Admin entfernen": "Remove admin",
+    "{name} zum Admin machen?": "Make {name} an admin?",
+    "{name} die Admin-Rolle entziehen?": "Remove admin role from {name}?",
+    "Zum Admin gemacht.": "Promoted to admin.",
+    "Admin-Rolle entfernt.": "Admin role removed.",
     "Letzte Nutzung": "Last activity",
     "Letzte Anmeldungen": "Last sign-ins",
     "nie": "never",
@@ -499,7 +506,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "42";  // bei jedem Release erhöhen
+const APP_VERSION = "43";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -2059,22 +2066,21 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
           <button className="badge-tool-btn" onClick={collapseAll}>{t("Alles zuklappen")}</button>
         </div>
         {catalogByCategory.map(([cat, items]) => {
-          // im eigenen Profil: geheime, noch nicht erreichte Badges ausblenden.
-          // in fremden Profilen: nur erreichte zeigen.
+          // eigenes Profil: ALLE Erfolge zeigen (gesperrte gedimmt) -> Symbole + korrekte Gesamtzahl.
+          // fremde Profile: nur erreichte zeigen.
           const visible = items.filter((b) => {
-            const earned = earnedBadges.has(b.badge_key);
-            if (!isMe) return earned;
-            if (b.secret && !earned) return false;
+            if (!isMe) return earnedBadges.has(b.badge_key);
             return true;
           });
           if (visible.length === 0) return null;
-          const earnedCount = visible.filter((b) => earnedBadges.has(b.badge_key)).length;
+          // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
+          const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
           const open = openCats.has(cat);
           return (
             <div key={cat} className="badge-cat">
               <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
                 <span className="badge-cat-title">{t(cat)}</span>
-                <span className="badge-cat-count">{earnedCount} / {visible.length}</span>
+                <span className="badge-cat-count">{earnedCount} / {items.length}</span>
                 <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
               </button>
               {open && (
@@ -2279,12 +2285,23 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
   const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
   const [busyUser, setBusyUser] = useState(false);
   const [logins, setLogins] = useState(null);
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.rpc("admin_player_logins");
-      if (!error) setLogins(data || []);
-    })();
-  }, []);
+  const loadLogins = async () => {
+    const { data, error } = await supabase.rpc("admin_player_logins");
+    if (!error) setLogins(data || []);
+  };
+  useEffect(() => { loadLogins(); }, []);
+
+  const setRole = async (p, role) => {
+    const msg = role === "admin"
+      ? t("{name} zum Admin machen?", { name: p.nickname })
+      : t("{name} die Admin-Rolle entziehen?", { name: p.nickname });
+    if (!window.confirm(msg)) return;
+    const { error } = await supabase.rpc("admin_set_role", { p_player: p.player_id, p_role: role });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await loadLogins();
+    if (onReload) await onReload();
+    toast(role === "admin" ? t("Zum Admin gemacht.") : t("Admin-Rolle entfernt."));
+  };
 
   const refresh = async () => {
     setBusy(true);
@@ -2353,23 +2370,40 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
       </section>
 
       <section className="stat-block">
-        <h3><Clock size={17} /> {t("Letzte Nutzung")}</h3>
+        <h3><User size={17} /> {t("Nutzer")}</h3>
         {logins == null ? (
           <p className="hint">{t("Lade ...")}</p>
         ) : logins.length === 0 ? (
           <p className="hint">{t("Noch keine Daten.")}</p>
         ) : (
-          <div className="login-list">
-            {logins.map((p) => (
-              <div key={p.player_id} className="login-row">
-                <span className="login-nick">{p.nickname}</span>
-                {p.last_seen ? (
-                  <span className="login-when">{fmtDate(p.last_seen)} <span className="login-ago">· {fmtAgo(p.last_seen)}</span></span>
-                ) : (
-                  <span className="login-when login-never">{t("nie")}</span>
-                )}
-              </div>
-            ))}
+          <div className="user-list">
+            {logins.map((p) => {
+              const isGhost = p.is_ghost;
+              const roleLabel = isGhost ? "Special" : p.role === "admin" ? "Admin" : "User";
+              const roleClass = isGhost ? "special" : p.role === "admin" ? "admin" : "user";
+              const isSelf = p.player_id === me.id;
+              return (
+                <div key={p.player_id} className="user-row">
+                  <div className="user-line">
+                    <span className="user-nick">{p.nickname}</span>
+                    <span className={"role-chip role-" + roleClass}>{roleLabel}</span>
+                  </div>
+                  <div className="user-line sub">
+                    <span className="user-when">
+                      {isGhost ? "—" : p.last_seen
+                        ? <>{fmtDate(p.last_seen)} · {fmtAgo(p.last_seen)}</>
+                        : <span className="login-never">{t("nie")}</span>}
+                    </span>
+                    {!isGhost && p.role !== "admin" && (
+                      <button className="user-act" onClick={() => setRole(p, "admin")}>{t("Zum Admin machen")}</button>
+                    )}
+                    {!isGhost && p.role === "admin" && !isSelf && (
+                      <button className="user-act danger" onClick={() => setRole(p, "user")}>{t("Admin entfernen")}</button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
@@ -2752,6 +2786,20 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .login-when { font-size: 13px; color: var(--ivory-dim); white-space: nowrap; }
 .login-ago { opacity: 0.7; }
 .login-never { color: var(--loss); opacity: 0.8; }
+.user-list { display: flex; flex-direction: column; }
+.user-row { padding: 9px 2px; border-bottom: 1px solid var(--line); }
+.user-line { display: flex; align-items: center; gap: 8px; }
+.user-line.sub { margin-top: 3px; }
+.user-nick { font-weight: 600; font-size: 14px; }
+.role-chip { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.role-admin { background: var(--gold); color: #2A1E00; }
+.role-user { border: 1px solid var(--line); color: var(--ivory-dim); }
+.role-special { background: var(--chalk); color: #08251C; }
+.user-when { font-size: 12.5px; color: var(--ivory-dim); }
+.user-act { margin-left: auto; border: 1px solid var(--chalk); background: transparent; color: var(--chalk);
+  border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.user-act.danger { border-color: var(--loss); color: var(--loss); }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
