@@ -11,6 +11,11 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Letzte Anmeldungen": "Last sign-ins",
+    "nie": "never",
+    "heute": "today",
+    "gestern": "yesterday",
+    "vor {n} Tagen": "{n} days ago",
     "Alles aufklappen": "Expand all",
     "Alles zuklappen": "Collapse all",
     "Erfolge": "Achievements",
@@ -474,6 +479,13 @@ const fmtDate = (d) => {
   const x = new Date(d);
   return `${String(x.getDate()).padStart(2, "0")}.${String(x.getMonth() + 1).padStart(2, "0")}.${x.getFullYear()}`;
 };
+const fmtAgo = (d) => {
+  if (!d) return t("nie");
+  const days = Math.floor((Date.now() - new Date(d)) / 86400000);
+  if (days <= 0) return t("heute");
+  if (days === 1) return t("gestern");
+  return t("vor {n} Tagen", { n: days });
+};
 const timeAgo = (d) => {
   const m = Math.round((Date.now() - new Date(d)) / 60000);
   if (m < 1) return "gerade eben";
@@ -486,7 +498,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "40";  // bei jedem Release erhöhen
+const APP_VERSION = "41";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -2265,6 +2277,13 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
   const [busyBadges, setBusyBadges] = useState(false);
   const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
   const [busyUser, setBusyUser] = useState(false);
+  const [logins, setLogins] = useState(null);
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.rpc("admin_player_logins");
+      if (!error) setLogins(data || []);
+    })();
+  }, []);
 
   const refresh = async () => {
     setBusy(true);
@@ -2330,6 +2349,28 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
             {busyUser ? "Lege an …" : "Nutzer anlegen"}
           </button>
         </div>
+      </section>
+
+      <section className="stat-block">
+        <h3><Clock size={17} /> {t("Letzte Anmeldungen")}</h3>
+        {logins == null ? (
+          <p className="hint">{t("Lade ...")}</p>
+        ) : logins.length === 0 ? (
+          <p className="hint">{t("Noch keine Daten.")}</p>
+        ) : (
+          <div className="login-list">
+            {logins.map((p) => (
+              <div key={p.player_id} className="login-row">
+                <span className="login-nick">{p.nickname}</span>
+                {p.last_sign_in ? (
+                  <span className="login-when">{fmtDate(p.last_sign_in)} <span className="login-ago">· {fmtAgo(p.last_sign_in)}</span></span>
+                ) : (
+                  <span className="login-when login-never">{t("nie")}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="stat-block">
@@ -2703,6 +2744,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .badge-tool-btn { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
   border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .badge-tool-btn:active { background: var(--felt); }
+.login-list { display: flex; flex-direction: column; gap: 2px; }
+.login-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 8px 2px; border-bottom: 1px solid var(--line); }
+.login-nick { font-weight: 600; font-size: 14px; }
+.login-when { font-size: 13px; color: var(--ivory-dim); white-space: nowrap; }
+.login-ago { opacity: 0.7; }
+.login-never { color: var(--loss); opacity: 0.8; }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
