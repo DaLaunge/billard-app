@@ -7,6 +7,7 @@ import {
   Radio, MapPin, Pencil, Award, Lock, TrendingUp, QrCode, Share2, Copy, RotateCcw, Globe, ChevronDown,
 } from "lucide-react";
 
+import { Analytics } from "@vercel/analytics/react";
 /* ---------- i18n (Deutsch = Schlüssel, Englisch als Overlay, Fallback auf Deutsch) ---------- */
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
@@ -2681,6 +2682,7 @@ export default function App() {
         )}
         {toastMsg && <div className="toast">{toastMsg}</div>}
       </div>
+      <Analytics />
     </div>
   );
 }
