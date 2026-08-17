@@ -11,6 +11,7 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Letzte Nutzung": "Last activity",
     "Letzte Anmeldungen": "Last sign-ins",
     "nie": "never",
     "heute": "today",
@@ -498,7 +499,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "41";  // bei jedem Release erhöhen
+const APP_VERSION = "42";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -2352,7 +2353,7 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
       </section>
 
       <section className="stat-block">
-        <h3><Clock size={17} /> {t("Letzte Anmeldungen")}</h3>
+        <h3><Clock size={17} /> {t("Letzte Nutzung")}</h3>
         {logins == null ? (
           <p className="hint">{t("Lade ...")}</p>
         ) : logins.length === 0 ? (
@@ -2362,8 +2363,8 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
             {logins.map((p) => (
               <div key={p.player_id} className="login-row">
                 <span className="login-nick">{p.nickname}</span>
-                {p.last_sign_in ? (
-                  <span className="login-when">{fmtDate(p.last_sign_in)} <span className="login-ago">· {fmtAgo(p.last_sign_in)}</span></span>
+                {p.last_seen ? (
+                  <span className="login-when">{fmtDate(p.last_seen)} <span className="login-ago">· {fmtAgo(p.last_seen)}</span></span>
                 ) : (
                   <span className="login-when login-never">{t("nie")}</span>
                 )}
