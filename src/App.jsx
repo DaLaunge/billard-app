@@ -11,6 +11,9 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Offene Matches": "Open matches",
+    "Mitglieder": "Members",
+    "(du)": "(you)",
     "Nutzer": "Users",
     "Zum Admin machen": "Make admin",
     "Admin entfernen": "Remove admin",
@@ -506,7 +509,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "43";  // bei jedem Release erhöhen
+const APP_VERSION = "44";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -2343,6 +2346,21 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
       </header>
 
       <section className="stat-block">
+        <h3><Check size={17} /> {t("Offene Matches")} ({allPending.length})</h3>
+        {allPending.length === 0 && <p className="hint">{t("Alles erledigt - keine offenen Matches.")}</p>}
+        {allPending.map((m) => (
+          <div key={m.id} className="pending-row">
+            <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
+            <span className="m-txt">{m.p1.nickname} <b>{m.score1}:{m.score2}</b> {m.p2.nickname} - {m.discipline}</span>
+            <div className="confirm-actions">
+              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)} aria-label="freigeben"><Check size={15} /></button>
+              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)} aria-label="verwerfen"><X size={15} /></button>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="stat-block">
         <h3><RotateCcw size={17} /> {t("Statistik & Erfolge")}</h3>
         <p className="hint" style={{ marginTop: 0 }}>{t("Rechnet Ratings, Verlauf und Erfolge sofort neu – nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.")}</p>
         <button className="btn primary" disabled={busy} onClick={refresh}>
@@ -2370,7 +2388,7 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
       </section>
 
       <section className="stat-block">
-        <h3><User size={17} /> {t("Nutzer")}</h3>
+        <h3><User size={17} /> {t("Mitglieder")} ({logins ? logins.length : players.length})</h3>
         {logins == null ? (
           <p className="hint">{t("Lade ...")}</p>
         ) : logins.length === 0 ? (
@@ -2382,60 +2400,36 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
               const roleLabel = isGhost ? "Special" : p.role === "admin" ? "Admin" : "User";
               const roleClass = isGhost ? "special" : p.role === "admin" ? "admin" : "user";
               const isSelf = p.player_id === me.id;
+              const pr = players.find((x) => x.id === p.player_id);
+              const noLogin = pr && !pr.auth_user_id && !isGhost;
               return (
                 <div key={p.player_id} className="user-row">
                   <div className="user-line">
-                    <span className="user-nick">{p.nickname}</span>
+                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={30} />
+                    <span className="user-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
                     <span className={"role-chip role-" + roleClass}>{roleLabel}</span>
-                  </div>
-                  <div className="user-line sub">
+                    {noLogin && <span className="role-chip">{t("ohne Login")}</span>}
                     <span className="user-when">
                       {isGhost ? "—" : p.last_seen
                         ? <>{fmtDate(p.last_seen)} · {fmtAgo(p.last_seen)}</>
                         : <span className="login-never">{t("nie")}</span>}
                     </span>
-                    {!isGhost && p.role !== "admin" && (
-                      <button className="user-act" onClick={() => setRole(p, "admin")}>{t("Zum Admin machen")}</button>
-                    )}
-                    {!isGhost && p.role === "admin" && !isSelf && (
-                      <button className="user-act danger" onClick={() => setRole(p, "user")}>{t("Admin entfernen")}</button>
-                    )}
                   </div>
+                  {!isGhost && !isSelf && (
+                    <div className="user-line sub">
+                      {p.role !== "admin"
+                        ? <button className="user-act" onClick={() => setRole(p, "admin")}>{t("Zum Admin machen")}</button>
+                        : <button className="user-act danger" onClick={() => setRole(p, "user")}>{t("Admin entfernen")}</button>}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
+        <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
       </section>
 
-      <section className="stat-block">
-        <h3><Check size={17} /> Offene Matches ({allPending.length})</h3>
-        {allPending.length === 0 && <p className="hint">{t("Alles erledigt - keine offenen Matches.")}</p>}
-        {allPending.map((m) => (
-          <div key={m.id} className="pending-row">
-            <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
-            <span className="m-txt">{m.p1.nickname} <b>{m.score1}:{m.score2}</b> {m.p2.nickname} - {m.discipline}</span>
-            <div className="confirm-actions">
-              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)} aria-label="freigeben"><Check size={15} /></button>
-              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)} aria-label="verwerfen"><X size={15} /></button>
-            </div>
-          </div>
-        ))}
-      </section>
-
-      <section className="stat-block">
-        <h3><User size={17} /> Mitglieder ({players.length})</h3>
-        {players.map((p) => (
-          <div key={p.id} className="user-row">
-            <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={34} />
-            <span className="stat-name">{p.nickname}{p.id === me.id ? " (du)" : ""}</span>
-            {!p.auth_user_id && <span className="role-chip">{t("ohne Login")}</span>}
-            {p.role === "admin" && <span className="role-chip admin">admin</span>}
-          </div>
-        ))}
-        <p className="hint">Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.
-          Rollen und Korrekturen verwaltest du vorerst im Supabase Table Editor.</p>
-      </section>
     </div>
   );
 }
@@ -2708,6 +2702,7 @@ export default function App() {
               </button>
               <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => setTab("profil")}>
                 <User size={21} /><span>{t("Profil")}</span>
+                {player?.role === "admin" && unconfirmed.length > 0 && <span className="badge">{unconfirmed.length}</span>}
               </button>
             </nav>
             )}
@@ -2796,7 +2791,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .role-admin { background: var(--gold); color: #2A1E00; }
 .role-user { border: 1px solid var(--line); color: var(--ivory-dim); }
 .role-special { background: var(--chalk); color: #08251C; }
-.user-when { font-size: 12.5px; color: var(--ivory-dim); }
+.user-when { font-size: 12.5px; color: var(--ivory-dim); margin-left: auto; white-space: nowrap; }
 .user-act { margin-left: auto; border: 1px solid var(--chalk); background: transparent; color: var(--chalk);
   border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
 .user-act.danger { border-color: var(--loss); color: var(--loss); }
