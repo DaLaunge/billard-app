@@ -4,13 +4,28 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
   Mail, ArrowRight, Swords, Flame, Search, LogOut, RefreshCw, Clock,
-  Radio, MapPin, Pencil, Award, Lock, TrendingUp, QrCode, Share2, Copy, RotateCcw, Globe, ChevronDown,
+  Radio, MapPin, Pencil, Award, Lock, TrendingUp, QrCode, Share2, Copy, RotateCcw, Globe, ChevronDown, Download,
 } from "lucide-react";
 
 /* ---------- i18n (Deutsch = Schlüssel, Englisch als Overlay, Fallback auf Deutsch) ---------- */
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Bearbeiten": "Edit",
+    "Blockieren": "Block",
+    "Entsperren": "Unblock",
+    "{name} blockieren?": "Block {name}?",
+    "{name} entsperren?": "Unblock {name}?",
+    "Blockiert.": "Blocked.",
+    "Entsperrt.": "Unblocked.",
+    "Das bist du.": "That's you.",
+    "Ghost-Spieler – keine Aktionen.": "Ghost player – no actions.",
+    "vorgestern": "2 days ago",
+    "Name": "Name",
+    "Rolle": "Role",
+    "Blockiert": "Blocked",
+    "Letzte Aktivität": "Last activity",
+    "Registriert am": "Registered on",
     "Offene Matches": "Open matches",
     "Mitglieder": "Members",
     "(du)": "(you)",
@@ -495,6 +510,7 @@ const fmtAgo = (d) => {
   const days = Math.floor((Date.now() - new Date(d)) / 86400000);
   if (days <= 0) return t("heute");
   if (days === 1) return t("gestern");
+  if (days === 2) return t("vorgestern");
   return t("vor {n} Tagen", { n: days });
 };
 const timeAgo = (d) => {
@@ -509,7 +525,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "44";  // bei jedem Release erhöhen
+const APP_VERSION = "45";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1256,7 +1272,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
 
   const ghost = players.find((p) => p.is_ghost);
   const opponents = players
-    .filter((p) => p.id !== me.id && !p.is_ghost)
+    .filter((p) => p.id !== me.id && !p.is_ghost && !p.blocked)
     .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
     .sort((a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname));
 
@@ -2305,6 +2321,33 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
     if (onReload) await onReload();
     toast(role === "admin" ? t("Zum Admin gemacht.") : t("Admin-Rolle entfernt."));
   };
+  const [editId, setEditId] = useState(null);
+  const setBlocked = async (p, blocked) => {
+    const msg = blocked ? t("{name} blockieren?", { name: p.nickname }) : t("{name} entsperren?", { name: p.nickname });
+    if (!window.confirm(msg)) return;
+    const { error } = await supabase.rpc("admin_set_blocked", { p_player: p.player_id, p_blocked: blocked });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await loadLogins();
+    if (onReload) await onReload();
+    toast(blocked ? t("Blockiert.") : t("Entsperrt."));
+  };
+  const downloadCsv = () => {
+    if (!logins) return;
+    const sep = ";";
+    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const head = [t("Name"), t("Rolle"), t("Blockiert"), t("Letzte Aktivität"), t("Registriert am")].map(esc).join(sep);
+    const rows = logins.map((p) => {
+      const role = p.is_ghost ? "Special" : p.blocked ? "Blocked" : p.role === "admin" ? "Admin" : "User";
+      return [p.nickname, role, p.blocked ? "ja" : "nein",
+        p.last_seen ? fmtDate(p.last_seen) : "", p.created_at ? fmtDate(p.created_at) : ""].map(esc).join(sep);
+    });
+    const csv = "\uFEFF" + [head, ...rows].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "mitglieder.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const refresh = async () => {
     setBusy(true);
@@ -2388,38 +2431,55 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
       </section>
 
       <section className="stat-block">
-        <h3><User size={17} /> {t("Mitglieder")} ({logins ? logins.length : players.length})</h3>
+        <div className="mem-head-row">
+          <h3><User size={17} /> {t("Mitglieder")} ({logins ? logins.length : players.length})</h3>
+          {logins && logins.length > 0 && (
+            <button className="csv-btn" onClick={downloadCsv}><Download size={14} /> CSV</button>
+          )}
+        </div>
         {logins == null ? (
           <p className="hint">{t("Lade ...")}</p>
         ) : logins.length === 0 ? (
           <p className="hint">{t("Noch keine Daten.")}</p>
         ) : (
-          <div className="user-list">
+          <div className="mem-list">
             {logins.map((p) => {
               const isGhost = p.is_ghost;
-              const roleLabel = isGhost ? "Special" : p.role === "admin" ? "Admin" : "User";
-              const roleClass = isGhost ? "special" : p.role === "admin" ? "admin" : "user";
               const isSelf = p.player_id === me.id;
               const pr = players.find((x) => x.id === p.player_id);
               const noLogin = pr && !pr.auth_user_id && !isGhost;
+              const letter = p.blocked ? "B" : isGhost ? "S" : p.role === "admin" ? "A" : "U";
+              const lclass = p.blocked ? "blocked" : isGhost ? "special" : p.role === "admin" ? "admin" : "user";
+              const open = editId === p.player_id;
               return (
-                <div key={p.player_id} className="user-row">
-                  <div className="user-line">
-                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={30} />
-                    <span className="user-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
-                    <span className={"role-chip role-" + roleClass}>{roleLabel}</span>
-                    {noLogin && <span className="role-chip">{t("ohne Login")}</span>}
-                    <span className="user-when">
-                      {isGhost ? "—" : p.last_seen
-                        ? <>{fmtDate(p.last_seen)} · {fmtAgo(p.last_seen)}</>
-                        : <span className="login-never">{t("nie")}</span>}
-                    </span>
+                <div key={p.player_id} className={"mem-row" + (p.blocked ? " is-blocked" : "")}>
+                  <div className="mem-line">
+                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={28} />
+                    <span className={"role-letter role-" + lclass}>{letter}</span>
+                    <span className="mem-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
+                    <span className="mem-when">{isGhost ? "—" : fmtAgo(p.last_seen)}</span>
+                    <button className={"mem-edit" + (open ? " on" : "")} aria-label={t("Bearbeiten")}
+                      onClick={() => setEditId(open ? null : p.player_id)}><Pencil size={14} /></button>
                   </div>
-                  {!isGhost && !isSelf && (
-                    <div className="user-line sub">
-                      {p.role !== "admin"
-                        ? <button className="user-act" onClick={() => setRole(p, "admin")}>{t("Zum Admin machen")}</button>
-                        : <button className="user-act danger" onClick={() => setRole(p, "user")}>{t("Admin entfernen")}</button>}
+                  {open && (
+                    <div className="mem-panel">
+                      <div className="mem-info">
+                        {p.last_seen ? fmtDate(p.last_seen) : t("nie")}{noLogin ? " · " + t("ohne Login") : ""}
+                      </div>
+                      {isSelf ? (
+                        <span className="hint">{t("Das bist du.")}</span>
+                      ) : isGhost ? (
+                        <span className="hint">{t("Ghost-Spieler – keine Aktionen.")}</span>
+                      ) : (
+                        <>
+                          {p.role !== "admin"
+                            ? <button className="user-act" onClick={() => setRole(p, "admin")}>{t("Zum Admin machen")}</button>
+                            : <button className="user-act danger" onClick={() => setRole(p, "user")}>{t("Admin entfernen")}</button>}
+                          {!p.blocked
+                            ? <button className="user-act danger" onClick={() => setBlocked(p, true)}>{t("Blockieren")}</button>
+                            : <button className="user-act" onClick={() => setBlocked(p, false)}>{t("Entsperren")}</button>}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2477,7 +2537,7 @@ export default function App() {
       setPlayer(data ?? null);
       setPlayerChecked(true);
       const { data: all } = await supabase.from("players")
-        .select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost");
+        .select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost, blocked");
       setPlayers(all ?? []);
     })();
   }, [session]);
@@ -2490,7 +2550,7 @@ export default function App() {
         .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
         .order("played_at", { ascending: false })
         .range(from, to)),
-      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost"),
+      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost, blocked"),
       supabase.from("pings")
         .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
         .gt("expires_at", new Date().toISOString())
@@ -2795,6 +2855,28 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .user-act { margin-left: auto; border: 1px solid var(--chalk); background: transparent; color: var(--chalk);
   border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
 .user-act.danger { border-color: var(--loss); color: var(--loss); }
+.mem-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mem-head-row h3 { margin: 0; }
+.csv-btn { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
+  border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.mem-list { display: flex; flex-direction: column; margin-top: 8px; }
+.mem-row { border-bottom: 1px solid var(--line); }
+.mem-row.is-blocked .mem-nick { text-decoration: line-through; opacity: 0.6; }
+.mem-line { display: flex; align-items: center; gap: 9px; padding: 7px 2px; }
+.role-letter { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center;
+  font-size: 12px; font-weight: 800; flex: 0 0 auto; }
+.role-letter.role-admin { background: var(--gold); color: #2A1E00; }
+.role-letter.role-special { background: var(--chalk); color: #08251C; }
+.role-letter.role-blocked { background: var(--loss); color: #fff; }
+.role-letter.role-user { background: transparent; border: 1px solid var(--line); color: var(--ivory-dim); }
+.mem-nick { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mem-when { margin-left: auto; font-size: 12.5px; color: var(--ivory-dim); white-space: nowrap; text-align: right; }
+.mem-edit { flex: 0 0 auto; border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
+  border-radius: 8px; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; }
+.mem-edit.on { border-color: var(--chalk); color: var(--chalk); }
+.mem-panel { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 2px 2px 11px 39px; }
+.mem-info { width: 100%; font-size: 12px; color: var(--ivory-dim); }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
