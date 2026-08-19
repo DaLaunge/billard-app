@@ -11,6 +11,10 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Ihr trefft euch? Meinen Code zeigen": "Meeting up? Show my code",
+    "Code ausblenden": "Hide code",
+    "Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.": "The other person scans this with their phone camera and then enters the result.",
+    "Der gescannte Spieler wurde nicht gefunden.": "The scanned player wasn't found.",
     "Bearbeiten": "Edit",
     "Blockieren": "Block",
     "Entsperren": "Unblock",
@@ -468,6 +472,22 @@ captureRef();
 const getRef = () => { try { return sessionStorage.getItem("invite_ref") || null; } catch { return null; } };
 const clearRef = () => { try { sessionStorage.removeItem("invite_ref"); } catch { /* */ } };
 
+/* Schnellmatch-Code aus der URL (?vs=PLAYER_ID) einmalig sichern. */
+function captureVs() {
+  try {
+    const url = new URL(window.location.href);
+    const vs = url.searchParams.get("vs");
+    if (vs) {
+      sessionStorage.setItem("match_vs", vs.trim());
+      url.searchParams.delete("vs");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
+  } catch { /* ignore */ }
+}
+captureVs();
+const getVs = () => { try { return sessionStorage.getItem("match_vs") || null; } catch { return null; } };
+const clearVs = () => { try { sessionStorage.removeItem("match_vs"); } catch { /* */ } };
+
 /* Holt ALLE Zeilen einer Abfrage seitenweise (Supabase liefert je
    Anfrage max. 1000 Zeilen). queryFn(from, to) muss einen Supabase-
    Range-Query zurückgeben. Ergebnis: { data, error }. */
@@ -525,7 +545,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "45";  // bei jedem Release erhöhen
+const APP_VERSION = "46";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1239,9 +1259,10 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
   );
 }
 
-function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf }) {
-  const [step, setStep] = useState(0);
-  const [opp, setOpp] = useState(null);
+function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, initialOpp }) {
+  const [step, setStep] = useState(initialOpp ? 1 : 0);
+  const [opp, setOpp] = useState(initialOpp || null);
+  const [showMyQr, setShowMyQr] = useState(false);
   const [s1, setS1] = useState(0);
   const [s2, setS2] = useState(0);
   const [disc, setDisc] = useState(null);
@@ -1362,6 +1383,18 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
       {step === 0 && (
         <>
           <p className="q">{t("Gegen wen trittst du an?")}</p>
+          <button className="btn ghost" onClick={() => setShowMyQr((v) => !v)}>
+            <QrCode size={16} /> {showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}
+          </button>
+          {showMyQr && (
+            <div className="my-qr">
+              <div className="qr-box">
+                <QRCodeSVG value={`${window.location.origin}/?vs=${me.id}`} size={190} level="M"
+                  bgColor="#F2EDE0" fgColor="#0A2B21" />
+              </div>
+              <p className="hint center">{t("Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.")}</p>
+            </div>
+          )}
           <div className="search-row">
             <Search size={16} className="mail-ico" />
             <input placeholder="Spieler suchen ..." value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
@@ -2517,6 +2550,7 @@ export default function App() {
   const [loadingData, setLoadingData] = useState(false);
   const [lang, setLang] = useState(_LANG);
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
+  const [vsOpp, setVsOpp] = useState(null);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
@@ -2586,6 +2620,14 @@ export default function App() {
   }, [toast]);
 
   useEffect(() => { if (player) loadData(); }, [player, loadData]);
+  useEffect(() => {
+    const vs = getVs();
+    if (!vs || !player || players.length === 0) return;
+    clearVs();
+    const o = players.find((p) => p.id === vs && p.id !== player.id && !p.is_ghost && !p.blocked);
+    if (o) { setVsOpp(o); setTab("match"); }
+    else toast(t("Der gescannte Spieler wurde nicht gefunden."));
+  }, [player, players, toast]);
 
   const disciplines = useMemo(() => {
     const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt"));
@@ -2706,9 +2748,9 @@ export default function App() {
               {tab === "match" && (
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf}
-                  onReload={loadData}
-                  onDone={() => { setTab("rang"); loadData(); }}
-                  onCancel={() => setTab("rang")} />
+                  onReload={loadData} initialOpp={vsOpp}
+                  onDone={() => { setVsOpp(null); setTab("rang"); loadData(); }}
+                  onCancel={() => { setVsOpp(null); setTab("rang"); }} />
               )}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
                 colorOf={colorOf} badgeOf={badgeOf} snapshots={snapshots} players={players}
@@ -2754,7 +2796,7 @@ export default function App() {
                 <Radio size={21} /><span>{t("Live")}</span>
                 {pings.length > 0 && <span className="badge live">{pings.length}</span>}
               </button>
-              <button className="tab fab" onClick={() => setTab("match")} aria-label={t("Neues Match")}>
+              <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
                 <Plus size={26} />
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
@@ -2877,6 +2919,8 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .mem-edit.on { border-color: var(--chalk); color: var(--chalk); }
 .mem-panel { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 2px 2px 11px 39px; }
 .mem-info { width: 100%; font-size: 12px; color: var(--ivory-dim); }
+.my-qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 6px 0 14px; }
+.my-qr .qr-box { padding: 12px; }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
