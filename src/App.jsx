@@ -11,6 +11,23 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Einzel": "Singles",
+    "Dein Partner": "Your partner",
+    "Gegner 1": "Opponent 1",
+    "Gegner 2": "Opponent 2",
+    "Partner": "Partner",
+    "Tippe drei Spieler an: zuerst deinen Partner, dann die beiden Gegner.": "Tap three players: first your partner, then the two opponents.",
+    "Kein Spieler gefunden.": "No player found.",
+    "Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.": "The doubles match only counts once all three others confirm.",
+    "Wartet auf Bestätigung der drei anderen. Sobald alle bestätigt haben, wird das Ranking neu berechnet.": "Waiting for the other three to confirm. Once all confirm, the ranking is recomputed.",
+    "Sobald {name} die App öffnet und auf Passt tippt, wird das Ranking neu berechnet.": "Once {name} opens the app and taps Looks good, the ranking is recomputed.",
+    "Doppel bestätigen:": "Confirm doubles:",
+    "Doppel": "Doubles",
+    "Nur bestätigen, wenn du dieses Doppel wirklich gespielt hast.": "Only confirm if you actually played this doubles match.",
+    "meldet ein": "reports a",
+    "gegen dich": "against you",
+    "1 gemeldetes Match wartet noch auf Bestätigung durch {name}.": "1 reported match is still waiting for confirmation by {name}.",
+    "{n} gemeldete Matches warten noch auf Bestätigung.": "{n} reported matches are still waiting for confirmation.",
     "Ihr trefft euch? Meinen Code zeigen": "Meeting up? Show my code",
     "Code ausblenden": "Hide code",
     "Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.": "The other person scans this with their phone camera and then enters the result.",
@@ -533,6 +550,12 @@ const fmtAgo = (d) => {
   if (days === 2) return t("vorgestern");
   return t("vor {n} Tagen", { n: days });
 };
+const isDoubles = (m) => !!m.player1b_id;
+const mSide = (m, s) => {
+  const a = s === 1 ? m.p1?.nickname : m.p2?.nickname;
+  const b = s === 1 ? m.p1b?.nickname : m.p2b?.nickname;
+  return b ? `${a} & ${b}` : (a || "?");
+};
 const timeAgo = (d) => {
   const m = Math.round((Date.now() - new Date(d)) / 60000);
   if (m < 1) return "gerade eben";
@@ -545,7 +568,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "46";  // bei jedem Release erhöhen
+const APP_VERSION = "47";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -766,12 +789,26 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
       </header>
 
       {pending.map((m) => {
+        if (isDoubles(m)) {
+          return (
+            <div className="confirm-banner" key={m.id}>
+              <div>
+                <b>{t("Doppel bestätigen:")}</b> {mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)} ({t(m.discipline)}, {fmtDate(m.played_at)}).
+                <span className="confirm-warn"> {t("Nur bestätigen, wenn du dieses Doppel wirklich gespielt hast.")}</span>
+              </div>
+              <div className="confirm-actions">
+                <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> {t("Passt")}</button>
+                <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> {t("Falsch")}</button>
+              </div>
+            </div>
+          );
+        }
         const other = m.player1_id === me.id ? m.p2.nickname : m.p1.nickname;
         const myScore = m.player1_id === me.id ? m.score1 : m.score2;
         const otherScore = m.player1_id === me.id ? m.score2 : m.score1;
         return (
           <div className="confirm-banner" key={m.id}>
-            <div><b>{t("Match bestaetigen:")}</b> {other} meldet ein {otherScore}:{myScore} gegen dich ({m.discipline}, {fmtDate(m.played_at)}).</div>
+            <div><b>{t("Match bestaetigen:")}</b> {other} {t("meldet ein")} {otherScore}:{myScore} {t("gegen dich")} ({t(m.discipline)}, {fmtDate(m.played_at)}).</div>
             <div className="confirm-actions">
               <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> {t("Passt")}</button>
               <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> {t("Falsch")}</button>
@@ -781,9 +818,9 @@ function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpe
       })}
 
       {myOpenReports.length > 0 && (
-        <p className="open-note"><Clock size={14} /> {myOpenReports.length === 1
-          ? `1 gemeldetes Match wartet noch auf Bestaetigung durch ${myOpenReports[0].p2.nickname}.`
-          : `${myOpenReports.length} gemeldete Matches warten noch auf Bestaetigung.`}</p>
+        <p className="open-note"><Clock size={14} /> {myOpenReports.length === 1 && !isDoubles(myOpenReports[0])
+          ? t("1 gemeldetes Match wartet noch auf Bestätigung durch {name}.", { name: myOpenReports[0].p2.nickname })
+          : t("{n} gemeldete Matches warten noch auf Bestätigung.", { n: myOpenReports.length })}</p>
       )}
 
       <div className="chips">
@@ -1263,6 +1300,9 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const [step, setStep] = useState(initialOpp ? 1 : 0);
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
+  const [mode, setMode] = useState("single");
+  const [partner, setPartner] = useState(null);
+  const [opp2, setOpp2] = useState(null);
   const [s1, setS1] = useState(0);
   const [s2, setS2] = useState(0);
   const [disc, setDisc] = useState(null);
@@ -1277,12 +1317,22 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const [showInvite, setShowInvite] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const is141 = disc === "14/1 Endlos";
+  const is141 = disc === "14/1 Endlos" && mode === "single";
+  const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
+  const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
+  const pickPlayer = (p) => {
+    if (mode === "single") { setOpp(p); setStep(1); return; }
+    if (partner?.id === p.id) { setPartner(null); return; }
+    if (opp?.id === p.id) { setOpp(null); return; }
+    if (opp2?.id === p.id) { setOpp2(null); return; }
+    if (!partner) setPartner(p); else if (!opp) setOpp(p); else if (!opp2) setOpp2(p);
+  };
 
   // Wie oft habe ich gegen wen gespielt? (häufigste Gegner zuerst)
   const freqByNick = useMemo(() => {
     const f = {};
     (matches || []).forEach((m) => {
+      if (m.player1b_id) return;
       let o = null;
       if (m.p1?.nickname === me.nickname) o = m.p2?.nickname;
       else if (m.p2?.nickname === me.nickname) o = m.p1?.nickname;
@@ -1308,6 +1358,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
   // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
   const chooseDisc = (d) => {
+    if (mode === "double") { setDisc(d); setStep(2); return; }
     const from = disc;
     if (!from || d === from) { setDisc(d); setStep(2); return; }
     const crosses141 = (from === "14/1 Endlos") !== (d === "14/1 Endlos");
@@ -1323,6 +1374,16 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const isGhost = !!opp?.is_ghost;
 
   const save = async () => {
+    if (mode === "double") {
+      setBusy(true);
+      const { error } = await supabase.rpc("report_doubles", {
+        p_partner_id: partner.id, p_opp1_id: opp.id, p_opp2_id: opp2.id,
+        p_my_score: s1, p_opp_score: s2, p_discipline: disc,
+      });
+      setBusy(false);
+      if (error) { toast(t("Fehler: ") + error.message); return; }
+      setStep(4); return;
+    }
     if (isGhost) { try { await supabase.rpc("record_ghost_game"); } catch (e) { /* Zählung optional */ } setStep(4); return; }   // Trainingsmatch: nicht speichern, nur zählen
     setBusy(true);
     const { error } = await supabase.rpc("report_match", {
@@ -1383,25 +1444,46 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
       {step === 0 && (
         <>
           <p className="q">{t("Gegen wen trittst du an?")}</p>
-          <button className="btn ghost" onClick={() => setShowMyQr((v) => !v)}>
-            <QrCode size={16} /> {showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}
-          </button>
-          {showMyQr && (
-            <div className="my-qr">
-              <div className="qr-box">
-                <QRCodeSVG value={`${window.location.origin}/?vs=${me.id}`} size={190} level="M"
-                  bgColor="#F2EDE0" fgColor="#0A2B21" />
-              </div>
-              <p className="hint center">{t("Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.")}</p>
+          <div className="mode-row">
+            <button className={"mode-btn" + (mode === "single" ? " active" : "")}
+              onClick={() => { setMode("single"); setPartner(null); setOpp2(null); }}>{t("Einzel")}</button>
+            <button className={"mode-btn" + (mode === "double" ? " active" : "")}
+              onClick={() => { setMode("double"); setOpp(null); }}>{t("Doppel")}</button>
+          </div>
+
+          {mode === "single" && (
+            <>
+              <button className="btn ghost" onClick={() => setShowMyQr((v) => !v)}>
+                <QrCode size={16} /> {showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}
+              </button>
+              {showMyQr && (
+                <div className="my-qr">
+                  <div className="qr-box">
+                    <QRCodeSVG value={`${window.location.origin}/?vs=${me.id}`} size={190} level="M"
+                      bgColor="#F2EDE0" fgColor="#0A2B21" />
+                  </div>
+                  <p className="hint center">{t("Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.")}</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {mode === "double" && (
+            <div className="dbl-roster">
+              <div className="dbl-slot"><span>{t("Dein Partner")}</span><b>{partner?.nickname || "–"}</b></div>
+              <div className="dbl-slot"><span>{t("Gegner 1")}</span><b>{opp?.nickname || "–"}</b></div>
+              <div className="dbl-slot"><span>{t("Gegner 2")}</span><b>{opp2?.nickname || "–"}</b></div>
+              <p className="hint">{t("Tippe drei Spieler an: zuerst deinen Partner, dann die beiden Gegner.")}</p>
             </div>
           )}
+
           <div className="search-row">
             <Search size={16} className="mail-ico" />
-            <input placeholder="Spieler suchen ..." value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
+            <input placeholder={t("Spieler suchen …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
             {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label="Suche loeschen"><X size={15} /></button>}
           </div>
-          {opponents.length === 0 && <p className="hint">Kein Spieler namens "{oppQuery}" gefunden.</p>}
-          {ghost && !oppQuery && (
+          {opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
+          {mode === "single" && ghost && !oppQuery && (
             <button className="ghost-card" onClick={() => { setOpp(ghost); setStep(1); }}>
               <div className="ghost-ball">👻</div>
               <div className="ghost-info">
@@ -1412,14 +1494,22 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             </button>
           )}
           <div className="opp-grid">
-            {opponents.map((p) => (
-              <button key={p.id} className={"opp-card" + (opp?.id === p.id ? " sel" : "")}
-                onClick={() => { setOpp(p); setStep(1); }}>
-                <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={48} />
-                <span>{p.nickname}</span>
-              </button>
-            ))}
+            {opponents.map((p) => {
+              const role = mode === "double"
+                ? (partner?.id === p.id ? t("Partner") : opp?.id === p.id ? t("Gegner 1") : opp2?.id === p.id ? t("Gegner 2") : null)
+                : (opp?.id === p.id ? "•" : null);
+              return (
+                <button key={p.id} className={"opp-card" + (role ? " sel" : "")} onClick={() => pickPlayer(p)}>
+                  <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={48} />
+                  <span>{p.nickname}</span>
+                  {mode === "double" && role && <span className="dbl-role">{role}</span>}
+                </button>
+              );
+            })}
           </div>
+          {mode === "double" && partner && opp && opp2 && (
+            <button className="btn primary" onClick={() => setStep(1)}>{t("Weiter")} <ArrowRight size={18} /></button>
+          )}
           <button className="btn ghost" onClick={() => setShowInvite(true)}>
             <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
           </button>
@@ -1452,7 +1542,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
       {step === 2 && opp && disc && (
         <>
           <div className="score-head">
-            <span className="sh-players">{me.nickname} vs {opp.nickname}</span>
+            <span className="sh-players">{teamA} vs {teamB}</span>
             <DiscChip />
           </div>
           {leaveWarn && (
@@ -1476,7 +1566,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             <>
               <p className="q">{t("Wie steht's?")} <span className="q-sub">(gewonnene Spiele)</span></p>
               <div className="score-row">
-                {[{ p: me.nickname, v: s1, set: setS1 }, { p: opp.nickname, v: s2, set: setS2 }].map(({ p, v, set }) => (
+                {[{ p: teamA, v: s1, set: setS1 }, { p: teamB, v: s2, set: setS2 }].map(({ p, v, set }) => (
                   <div key={p} className="score-col">
                     <Ball color={colorOf(p)} label={initials(p)} badge={badgeOf(p)} size={46} />
                     <span className="score-name">{p}</span>
@@ -1503,12 +1593,12 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             <div className="sum-vs">
               <div className="sum-side">
                 <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={52} />
-                <span>{me.nickname}</span>
+                <span>{teamA}</span>
               </div>
               <div className="sum-score">{s1}<i>:</i>{s2}</div>
               <div className="sum-side">
                 <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={52} />
-                <span>{opp.nickname}</span>
+                <span>{teamB}</span>
               </div>
             </div>
             <div className="sum-disc">{t(disc)}{isGhost ? t(" · Training") : ""}</div>
@@ -1533,9 +1623,11 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             )}
           </div>
           <button className="btn primary" disabled={busy} onClick={save}>
-            {busy ? "Speichere ..." : isGhost ? <>{t("Training abschließen")} <Check size={18} /></> : <>{t("Match speichern")} <Check size={18} /></>}
+            {busy ? t("Speichere ...") : isGhost ? <>{t("Training abschließen")} <Check size={18} /></> : <>{t("Match speichern")} <Check size={18} /></>}
           </button>
-          {!isGhost && <p className="hint center">{t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
+          {!isGhost && <p className="hint center">{mode === "double"
+            ? t("Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.")
+            : t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
         </>
       )}
 
@@ -1551,8 +1643,12 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           ) : (
             <>
               <h3>{t("Gespeichert!")}</h3>
-              <p>{t("Wartet auf Bestaetigung von")} <b>{opp.nickname}</b>.<br />
-                Sobald {opp.nickname} die App oeffnet und auf "Passt" tippt, wird das Ranking neu berechnet.</p>
+              {mode === "double" ? (
+                <p>{t("Wartet auf Bestätigung der drei anderen. Sobald alle bestätigt haben, wird das Ranking neu berechnet.")}</p>
+              ) : (
+                <p>{t("Wartet auf Bestaetigung von")} <b>{opp.nickname}</b>.<br />
+                  {t("Sobald {name} die App öffnet und auf Passt tippt, wird das Ranking neu berechnet.", { name: opp.nickname })}</p>
+              )}
             </>
           )}
           <button className="btn primary" onClick={onDone}>{t("Zur Rangliste")}</button>
@@ -1571,6 +1667,7 @@ function computeStats(matches) {
   const get = (n) => (s[n] ||= { name: n, spiele: 0, siege: 0, racksW: 0, racksT: 0, results: [] });
   const sorted = [...matches].sort((a, b) => new Date(a.played_at) - new Date(b.played_at));
   sorted.forEach((m) => {
+    if (m.player1b_id) return;
     const a = get(m.p1.nickname), b = get(m.p2.nickname);
     a.spiele++; b.spiele++;
     a.racksW += m.score1; a.racksT += m.score1 + m.score2;
@@ -1765,6 +1862,7 @@ function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches 
   const freqByNick = useMemo(() => {
     const f = {};
     matches.forEach((m) => {
+      if (m.player1b_id) return;
       let opp = null;
       if (m.p1.nickname === me.nickname) opp = m.p2.nickname;
       else if (m.p2.nickname === me.nickname) opp = m.p1.nickname;
@@ -1909,7 +2007,7 @@ function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, 
         {lastMatches.map((m) => (
           <div key={m.id} className="match-row">
             <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
-            <span className="m-txt">{m.p1.nickname} <b>{m.score1}:{m.score2}</b> {m.p2.nickname}</span>
+            <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</span>
             <span className="m-disc">{m.discipline}</span>
           </div>
         ))}
@@ -1965,6 +2063,7 @@ function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, co
   const h2h = useMemo(() => {
     const map = {};
     matches.forEach((m) => {
+      if (m.player1b_id) return;
       let opp = null, w = 0, l = 0;
       if (m.p1.nickname === nickname) { opp = m.p2.nickname; w = m.score1 > m.score2 ? 1 : 0; l = 1 - w; }
       if (m.p2.nickname === nickname) { opp = m.p1.nickname; w = m.score2 > m.score1 ? 1 : 0; l = 1 - w; }
@@ -2427,7 +2526,7 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
         {allPending.map((m) => (
           <div key={m.id} className="pending-row">
             <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
-            <span className="m-txt">{m.p1.nickname} <b>{m.score1}:{m.score2}</b> {m.p2.nickname} - {m.discipline}</span>
+            <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)} - {t(m.discipline)}</span>
             <div className="confirm-actions">
               <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)} aria-label="freigeben"><Check size={15} /></button>
               <button className="chip-btn no" onClick={() => onConfirm(m.id, false)} aria-label="verwerfen"><X size={15} /></button>
@@ -2540,6 +2639,7 @@ export default function App() {
   const [rangliste, setRangliste] = useState([]);
   const [matches, setMatches] = useState([]);
   const [unconfirmed, setUnconfirmed] = useState([]);
+  const [confirmations, setConfirmations] = useState([]);
   const [pings, setPings] = useState([]);
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
@@ -2578,10 +2678,10 @@ export default function App() {
 
   const loadData = useCallback(async () => {
     setLoadingData(true);
-    const [rang, m, pl, pi, bg, ct] = await Promise.all([
+    const [rang, m, pl, pi, bg, ct, mc] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
-        .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname)")
+        .select("id, played_at, score1, score2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
         .order("played_at", { ascending: false })
         .range(from, to)),
       supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost, blocked"),
@@ -2591,6 +2691,7 @@ export default function App() {
         .order("created_at", { ascending: false }),
       supabase.from("player_badges").select("player_id, badge_key"),
       supabase.from("badge_catalog").select("*"),
+      supabase.from("match_confirmations").select("match_id, player_id, status"),
     ]);
     // Snapshots seitenweise laden (können > 1000 Zeilen sein: Wochen x Spieler)
     const snap = await fetchAllRows((from, to) => supabase.from("rating_snapshots")
@@ -2615,6 +2716,7 @@ export default function App() {
     // modulweite Map füllen, damit auch die Ball-Komponente Emojis kennt
     Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
     cat.forEach((b) => { BADGE_INFO[b.badge_key] = { emoji: b.emoji, name: b.name, description: b.description }; });
+    setConfirmations(mc.data ?? []);
     setSnapshots(snap.data ?? []);
     setLoadingData(false);
   }, [toast]);
@@ -2652,11 +2754,19 @@ export default function App() {
 
   const badgesOfId = useCallback((id) => badgesByPlayer[id] || new Set(), [badgesByPlayer]);
 
+  const MATCH_EXPIRY_DAYS = 7;
+  const notExpired = (m) => (Date.now() - new Date(m.played_at)) < MATCH_EXPIRY_DAYS * 86400000;
+  const myPendingIds = player
+    ? new Set(confirmations.filter((c) => c.player_id === player.id && c.status === "pending").map((c) => c.match_id))
+    : new Set();
   const pendingForMe = player
-    ? unconfirmed.filter((m) => (m.player1_id === player.id || m.player2_id === player.id) && m.reported_by !== player.id)
+    ? unconfirmed.filter((m) => notExpired(m) && (
+        m.player1b_id
+          ? myPendingIds.has(m.id)                                   // Doppel: nur wenn ich noch bestätigen muss
+          : (m.player1_id === player.id || m.player2_id === player.id) && m.reported_by !== player.id))
     : [];
   const myOpenReports = player
-    ? unconfirmed.filter((m) => m.reported_by === player.id)
+    ? unconfirmed.filter((m) => notExpired(m) && m.reported_by === player.id)
     : [];
 
   const confirmMatch = async (id, ok) => {
@@ -2921,6 +3031,17 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .mem-info { width: 100%; font-size: 12px; color: var(--ivory-dim); }
 .my-qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 6px 0 14px; }
 .my-qr .qr-box { padding: 12px; }
+.mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.mode-btn { flex: 1; border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
+  border-radius: 12px; padding: 10px 0; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.mode-btn.active { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+.dbl-roster { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+.dbl-slot { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; font-size: 14px; }
+.dbl-slot span { color: var(--ivory-dim); font-size: 12.5px; }
+.dbl-roster .hint { margin: 6px 0 0; }
+.opp-card { position: relative; }
+.dbl-role { position: absolute; top: 4px; right: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #08251C; background: var(--chalk); border-radius: 999px; padding: 1px 6px; }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
