@@ -581,7 +581,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "53";  // bei jedem Release erhöhen
+const APP_VERSION = "54";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1026,7 +1026,7 @@ function poolBallStyle(n) {
   return { background: `linear-gradient(180deg, #F2EDE0 0 30%, ${c} 30% 70%, #F2EDE0 70% 100%)` };
 }
 
-function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
+function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast, sideNames, sideAvatars }) {
   const PRESETS = [50, 70, 80, 90, 100, 150];
   const [target, setTarget] = useState(100);
   const [custom, setCustom] = useState("");
@@ -1051,7 +1051,8 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
   const [hist, setHist] = useState([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
-  const names = [me.nickname, opp.nickname];
+  const names = sideNames || [me.nickname, opp.nickname];
+  const membersOf = (i) => (sideAvatars ? sideAvatars[i] : [i === 0 ? me : opp]);
   const inningNo = missInn[0] + missInn[1] + safeInn[0] + safeInn[1] + 1;
   const offAvg = (p, MI = missInn, PK = pocketed) => (MI[p] > 0 ? PK[p] / MI[p] : 0);
   const allAvg = (p, MI = missInn, SI = safeInn, PK = pocketed) =>
@@ -1196,7 +1197,11 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
         <div className="opp-grid">
           {[0, 1].map((i) => (
             <button key={i} className="opp-card" onClick={() => chooseBreaker(i)}>
-              <Ball color={colorOf(names[i])} label={initials(names[i])} badge={badgeOf(names[i])} size={48} />
+              <div className="sc-avatars">
+                {membersOf(i).map((mm) => (
+                  <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} size={44} />
+                ))}
+              </div>
               <span>{names[i]}</span>
             </button>
           ))}
@@ -1247,7 +1252,11 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
       <div className="sp-board">
         {[0, 1].map((i) => (
           <div key={i} className={"sp-side" + (active === i ? " active" : "")}>
-            <Ball color={colorOf(names[i])} label={initials(names[i])} badge={badgeOf(names[i])} size={40} />
+            <div className="sc-avatars">
+              {membersOf(i).map((mm) => (
+                <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} size={36} />
+              ))}
+            </div>
             <span className="sp-name">{names[i]}</span>
             <div className="sp-score">{sc[i]}</div>
             <div className="sp-meta">{t("Höchstserie")} {hi[i]}</div>
@@ -1330,7 +1339,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const [showInvite, setShowInvite] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const is141 = disc === "14/1 Endlos" && mode === "single";
+  const is141 = disc === "14/1 Endlos";
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
   const pickPlayer = (p) => {
@@ -1535,7 +1544,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
         <>
           <p className="q">{t("Welche Disziplin?")}</p>
           <div className="disc-grid">
-            {disciplines.map((d) => (
+            {disciplines.filter((d) => d !== "Doppel" && d !== "Gesamt").map((d) => (
               <button key={d} className={"disc-card" + (disc === d ? " sel" : "")}
                 onClick={() => chooseDisc(d)}>{t(d)}</button>
             ))}
@@ -1572,6 +1581,8 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           )}
           {is141 ? (
             <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} toast={toast}
+              sideNames={mode === "double" ? [teamA, teamB] : undefined}
+              sideAvatars={mode === "double" ? [[me, partner], [opp, opp2]] : undefined}
               onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2, avg1, avg2, tb1, tb2 }) => {
                 setS1(a); setS2(b); setHr([hr1, hr2]); setDef([def1, def2]);
                 setAvg([avg1, avg2]); setTb([tb1, tb2]); setStep(3);
