@@ -11,6 +11,9 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Keine Verbindung": "No connection",
+    "Dein Profil konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.": "Your profile couldn't be loaded. Check your internet connection and try again.",
+    "Erneut versuchen": "Try again",
     "Diagnose": "Diagnostics",
     "Datenbank": "Database",
     "Diese Kennung muss sich zwischen Test und Produktion unterscheiden. Ist sie gleich, greifen beide auf dieselbe Datenbank zu.": "This ID must differ between test and production. If it's the same, both use the same database.",
@@ -578,7 +581,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "50";  // bei jedem Release erhöhen
+const APP_VERSION = "51";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1555,6 +1558,19 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
       {step === 2 && opp && disc && (
         <>
           <div className="score-head">
+            {mode === "double" && partner && opp2 && (
+              <div className="dbl-avatars">
+                <div className="sum-avatars">
+                  <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={34} />
+                  <Ball color={colorOf(partner.nickname)} label={initials(partner.nickname)} badge={badgeOf(partner.nickname)} size={34} />
+                </div>
+                <span className="dbl-vs">vs</span>
+                <div className="sum-avatars">
+                  <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={34} />
+                  <Ball color={colorOf(opp2.nickname)} label={initials(opp2.nickname)} badge={badgeOf(opp2.nickname)} size={34} />
+                </div>
+              </div>
+            )}
             <span className="sh-players">{teamA} vs {teamB}</span>
             <DiscChip />
           </div>
@@ -2510,10 +2526,9 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
     URL.revokeObjectURL(url);
   };
   const addMatch = async () => {
-    const s1 = parseInt(am.s1, 10) || 0;
-    const s2 = parseInt(am.s2, 10) || 0;
-    if (s1 < 0 || s2 < 0 || s1 + s2 === 0 || s1 === s2) { toast(t("Ungültiges Ergebnis.")); return; }
+    const s1 = parseInt(am.s1, 10) || 0, s2 = parseInt(am.s2, 10) || 0;
     if (!am.p1 || !am.p2 || am.p1 === am.p2) { toast(t("Zwei verschiedene Spieler wählen.")); return; }
+    if (s1 < 0 || s2 < 0 || s1 + s2 === 0 || s1 === s2) { toast(t("Ungültiges Ergebnis.")); return; }
     setBusyAdd(true);
     const played = am.date ? new Date(am.date + "T12:00:00").toISOString() : null;
     const { error } = await supabase.rpc("admin_add_match", {
@@ -2715,6 +2730,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [player, setPlayer] = useState(null);
+  const [loadErr, setLoadErr] = useState(false);
   const [playerChecked, setPlayerChecked] = useState(false);
   const [players, setPlayers] = useState([]);
   const [rangliste, setRangliste] = useState([]);
@@ -2747,8 +2763,10 @@ export default function App() {
   useEffect(() => {
     if (!session) { setPlayer(null); setPlayerChecked(false); return; }
     (async () => {
-      const { data } = await supabase.from("players").select("*")
+      const { data, error } = await supabase.from("players").select("*")
         .eq("auth_user_id", session.user.id).maybeSingle();
+      if (error) { setLoadErr(true); setPlayerChecked(false); return; }  // offline/Fehler: NICHT als neuer Nutzer behandeln
+      setLoadErr(false);
       setPlayer(data ?? null);
       setPlayerChecked(true);
       const { data: all } = await supabase.from("players")
@@ -2915,7 +2933,15 @@ export default function App() {
       <div className="phone">
         {!session && <LoginScreen />}
 
-        {session && !playerChecked && <div className="center-load">{t("Lade Profil ...")}</div>}
+        {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
+
+        {session && loadErr && !player && (
+          <div className="center-load" style={{ flexDirection: "column", gap: 12, textAlign: "center", padding: "0 24px" }}>
+            <b>{t("Keine Verbindung")}</b>
+            <span className="hint">{t("Dein Profil konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.")}</span>
+            <button className="btn primary" onClick={() => window.location.reload()}>{t("Erneut versuchen")}</button>
+          </div>
+        )}
 
         {session && playerChecked && !player && (
           <NicknameScreen existingPlayers={players}
@@ -3274,6 +3300,8 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 /* Disziplin-Chip + Kopf im Ergebnis-Schritt */
 .score-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .sh-players { font-size: 13px; color: var(--ivory-dim); }
+.dbl-avatars { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; }
+.dbl-vs { font-size: 13px; font-weight: 700; color: var(--ivory-dim); }
 .disc-chip { display: inline-flex; align-items: center; gap: 7px; background: var(--felt-3);
   border: 1px solid var(--gold); color: var(--gold); border-radius: 999px; padding: 6px 12px;
   font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
