@@ -581,7 +581,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "51";  // bei jedem Release erhöhen
+const APP_VERSION = "52";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1413,7 +1413,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
 
   const DiscChip = () => (
     <button className="disc-chip" onClick={() => { if (is141) setLeaveWarn(true); else setStep(1); }}>
-      <span>{t(disc)}</span><Pencil size={13} />
+      <span>{t(disc)}</span><Pencil size={15} />
     </button>
   );
 
@@ -1558,20 +1558,6 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
       {step === 2 && opp && disc && (
         <>
           <div className="score-head">
-            {mode === "double" && partner && opp2 && (
-              <div className="dbl-avatars">
-                <div className="sum-avatars">
-                  <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={34} />
-                  <Ball color={colorOf(partner.nickname)} label={initials(partner.nickname)} badge={badgeOf(partner.nickname)} size={34} />
-                </div>
-                <span className="dbl-vs">vs</span>
-                <div className="sum-avatars">
-                  <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={34} />
-                  <Ball color={colorOf(opp2.nickname)} label={initials(opp2.nickname)} badge={badgeOf(opp2.nickname)} size={34} />
-                </div>
-              </div>
-            )}
-            <span className="sh-players">{teamA} vs {teamB}</span>
             <DiscChip />
           </div>
           {leaveWarn && (
@@ -1595,10 +1581,17 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             <>
               <p className="q">{t("Wie steht's?")} <span className="q-sub">(gewonnene Spiele)</span></p>
               <div className="score-row">
-                {[{ p: teamA, v: s1, set: setS1 }, { p: teamB, v: s2, set: setS2 }].map(({ p, v, set }) => (
-                  <div key={p} className="score-col">
-                    <Ball color={colorOf(p)} label={initials(p)} badge={badgeOf(p)} size={46} />
-                    <span className="score-name">{p}</span>
+                {(mode === "double"
+                  ? [{ members: [me, partner], name: teamA, v: s1, set: setS1 }, { members: [opp, opp2], name: teamB, v: s2, set: setS2 }]
+                  : [{ members: [me], name: me.nickname, v: s1, set: setS1 }, { members: [opp], name: opp.nickname, v: s2, set: setS2 }]
+                ).map(({ members, name, v, set }) => (
+                  <div key={name} className="score-col">
+                    <div className="sc-avatars">
+                      {members.map((pl) => (
+                        <Ball key={pl.id} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} size={44} />
+                      ))}
+                    </div>
+                    <span className="score-name">{name}</span>
                     <div className="score-num">{v}</div>
                     <div className="score-btns">
                       <button className="round-btn" onClick={() => set(Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
@@ -3298,13 +3291,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .disc-card.compact { padding: 13px 4px; font-size: 15px; border-radius: 12px; }
 
 /* Disziplin-Chip + Kopf im Ergebnis-Schritt */
-.score-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.score-head { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
 .sh-players { font-size: 13px; color: var(--ivory-dim); }
-.dbl-avatars { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; }
-.dbl-vs { font-size: 13px; font-weight: 700; color: var(--ivory-dim); }
-.disc-chip { display: inline-flex; align-items: center; gap: 7px; background: var(--felt-3);
-  border: 1px solid var(--gold); color: var(--gold); border-radius: 999px; padding: 6px 12px;
-  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.sc-avatars { display: flex; gap: 5px; justify-content: center; align-items: center; }
+.disc-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--felt-3);
+  border: 1px solid var(--gold); color: var(--gold); border-radius: 999px; padding: 10px 20px;
+  font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
 
 /* 14/1 Live-Zähler */
 .sp-setup { display: flex; flex-direction: column; gap: 12px; }
