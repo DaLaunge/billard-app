@@ -581,7 +581,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "52";  // bei jedem Release erhöhen
+const APP_VERSION = "53";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1371,7 +1371,6 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
   // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
   const chooseDisc = (d) => {
-    if (mode === "double") { setDisc(d); setStep(2); return; }
     const from = disc;
     if (!from || d === from) { setDisc(d); setStep(2); return; }
     const crosses141 = (from === "14/1 Endlos") !== (d === "14/1 Endlos");
