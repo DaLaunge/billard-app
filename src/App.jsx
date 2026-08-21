@@ -578,7 +578,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "49";  // bei jedem Release erhöhen
+const APP_VERSION = "50";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -2510,9 +2510,10 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
     URL.revokeObjectURL(url);
   };
   const addMatch = async () => {
-    const s1 = parseInt(am.s1, 10), s2 = parseInt(am.s2, 10);
+    const s1 = parseInt(am.s1, 10) || 0;
+    const s2 = parseInt(am.s2, 10) || 0;
+    if (s1 < 0 || s2 < 0 || s1 + s2 === 0 || s1 === s2) { toast(t("Ungültiges Ergebnis.")); return; }
     if (!am.p1 || !am.p2 || am.p1 === am.p2) { toast(t("Zwei verschiedene Spieler wählen.")); return; }
-    if (!(s1 >= 0) || !(s2 >= 0) || s1 + s2 === 0 || s1 === s2) { toast(t("Ungültiges Ergebnis.")); return; }
     setBusyAdd(true);
     const played = am.date ? new Date(am.date + "T12:00:00").toISOString() : null;
     const { error } = await supabase.rpc("admin_add_match", {
