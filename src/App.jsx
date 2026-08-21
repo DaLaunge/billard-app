@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase, DB_REF } from "./supabase";
+import { supabase } from "./supabase";
 import { QRCodeSVG } from "qrcode.react";
 import {
   Trophy, Plus, BarChart3, Shield, User, ChevronLeft, Check, X, Minus,
@@ -11,9 +11,6 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
-    "Diagnose": "Diagnostics",
-    "Datenbank": "Database",
-    "Diese Kennung muss sich zwischen Test und Produktion unterscheiden. Ist sie gleich, greifen beide auf dieselbe Datenbank zu.": "This ID must differ between test and production. If it's the same, both use the same database.",
     "Match nachtragen": "Add past match",
     "Als Admin ein bereits gespieltes Match eintragen – gilt sofort als bestätigt.": "As admin, enter an already-played match – counts as confirmed immediately.",
     "Spieler 1": "Player 1",
@@ -578,7 +575,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "49";  // bei jedem Release erhöhen
+const APP_VERSION = "48";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -2696,12 +2693,6 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
       </section>
 
-      <section className="stat-block">
-        <h3><Shield size={17} /> {t("Diagnose")}</h3>
-        <div className="diag-row"><span>{t("Datenbank")}</span><code>{DB_REF}</code></div>
-        <p className="hint" style={{ marginTop: 6 }}>{t("Diese Kennung muss sich zwischen Test und Produktion unterscheiden. Ist sie gleich, greifen beide auf dieselbe Datenbank zu.")}</p>
-      </section>
-
     </div>
   );
 }
@@ -3133,10 +3124,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .am-scores input { width: 72px; text-align: center; background: var(--felt); color: var(--ivory);
   border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; font-size: 20px; font-weight: 700; font-family: inherit; }
 .am-scores span { font-size: 20px; font-weight: 700; color: var(--ivory-dim); }
-.diag-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 2px; }
-.diag-row span { color: var(--ivory-dim); font-size: 13px; }
-.diag-row code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 700; color: var(--chalk);
-  background: var(--felt); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
