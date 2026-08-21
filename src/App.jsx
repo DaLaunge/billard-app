@@ -11,6 +11,13 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Match nachtragen": "Add past match",
+    "Als Admin ein bereits gespieltes Match eintragen – gilt sofort als bestätigt.": "As admin, enter an already-played match – counts as confirmed immediately.",
+    "Spieler 1": "Player 1",
+    "Spieler 2": "Player 2",
+    "Zwei verschiedene Spieler wählen.": "Choose two different players.",
+    "Ungültiges Ergebnis.": "Invalid result.",
+    "Match nachgetragen.": "Match added.",
     "Einzel": "Singles",
     "Dein Partner": "Your partner",
     "Gegner 1": "Opponent 1",
@@ -568,7 +575,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "47";  // bei jedem Release erhöhen
+const APP_VERSION = "48";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1451,6 +1458,12 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
               onClick={() => { setMode("double"); setOpp(null); }}>{t("Doppel")}</button>
           </div>
 
+          {mode === "double" && (
+            <button className="btn primary" disabled={!(partner && opp && opp2)} onClick={() => setStep(1)}>
+              {t("Weiter")} <ArrowRight size={18} />
+            </button>
+          )}
+
           {mode === "single" && (
             <>
               <button className="btn ghost" onClick={() => setShowMyQr((v) => !v)}>
@@ -1507,9 +1520,6 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
               );
             })}
           </div>
-          {mode === "double" && partner && opp && opp2 && (
-            <button className="btn primary" onClick={() => setStep(1)}>{t("Weiter")} <ArrowRight size={18} /></button>
-          )}
           <button className="btn ghost" onClick={() => setShowInvite(true)}>
             <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
           </button>
@@ -1592,12 +1602,26 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           <div className="summary">
             <div className="sum-vs">
               <div className="sum-side">
-                <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={52} />
+                {mode === "double" ? (
+                  <div className="sum-avatars">
+                    <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={40} />
+                    <Ball color={colorOf(partner.nickname)} label={initials(partner.nickname)} badge={badgeOf(partner.nickname)} size={40} />
+                  </div>
+                ) : (
+                  <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={52} />
+                )}
                 <span>{teamA}</span>
               </div>
               <div className="sum-score">{s1}<i>:</i>{s2}</div>
               <div className="sum-side">
-                <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={52} />
+                {mode === "double" ? (
+                  <div className="sum-avatars">
+                    <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={40} />
+                    <Ball color={colorOf(opp2.nickname)} label={initials(opp2.nickname)} badge={badgeOf(opp2.nickname)} size={40} />
+                  </div>
+                ) : (
+                  <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={52} />
+                )}
                 <span>{teamB}</span>
               </div>
             </div>
@@ -2435,6 +2459,8 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
   const [busyBadges, setBusyBadges] = useState(false);
   const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
   const [busyUser, setBusyUser] = useState(false);
+  const [am, setAm] = useState({ p1: "", p2: "", s1: "", s2: "", disc: "9 Ball", date: "" });
+  const [busyAdd, setBusyAdd] = useState(false);
   const [logins, setLogins] = useState(null);
   const loadLogins = async () => {
     const { data, error } = await supabase.rpc("admin_player_logins");
@@ -2479,6 +2505,22 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
     const a = document.createElement("a");
     a.href = url; a.download = "mitglieder.csv"; a.click();
     URL.revokeObjectURL(url);
+  };
+  const addMatch = async () => {
+    const s1 = parseInt(am.s1, 10), s2 = parseInt(am.s2, 10);
+    if (!am.p1 || !am.p2 || am.p1 === am.p2) { toast(t("Zwei verschiedene Spieler wählen.")); return; }
+    if (!(s1 >= 0) || !(s2 >= 0) || s1 + s2 === 0 || s1 === s2) { toast(t("Ungültiges Ergebnis.")); return; }
+    setBusyAdd(true);
+    const played = am.date ? new Date(am.date + "T12:00:00").toISOString() : null;
+    const { error } = await supabase.rpc("admin_add_match", {
+      p_player1: am.p1, p_player2: am.p2, p_score1: s1, p_score2: s2,
+      p_discipline: am.disc, p_played_at: played,
+    });
+    setBusyAdd(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Match nachgetragen."));
+    setAm({ p1: "", p2: "", s1: "", s2: "", disc: am.disc, date: "" });
+    if (onReload) await onReload();
   };
 
   const refresh = async () => {
@@ -2533,6 +2575,35 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
             </div>
           </div>
         ))}
+      </section>
+
+      <section className="stat-block">
+        <h3><Plus size={17} /> {t("Match nachtragen")}</h3>
+        <p className="hint" style={{ marginTop: 0 }}>{t("Als Admin ein bereits gespieltes Match eintragen – gilt sofort als bestätigt.")}</p>
+        <div className="add-match">
+          <select value={am.p1} onChange={(e) => setAm({ ...am, p1: e.target.value })}>
+            <option value="">{t("Spieler 1")}</option>
+            {players.filter((p) => !p.is_ghost).map((p) => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+          </select>
+          <div className="am-scores">
+            <input type="number" inputMode="numeric" min="0" placeholder="0" value={am.s1} onChange={(e) => setAm({ ...am, s1: e.target.value })} />
+            <span>:</span>
+            <input type="number" inputMode="numeric" min="0" placeholder="0" value={am.s2} onChange={(e) => setAm({ ...am, s2: e.target.value })} />
+          </div>
+          <select value={am.p2} onChange={(e) => setAm({ ...am, p2: e.target.value })}>
+            <option value="">{t("Spieler 2")}</option>
+            {players.filter((p) => !p.is_ghost).map((p) => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+          </select>
+          <div className="am-row">
+            <select value={am.disc} onChange={(e) => setAm({ ...am, disc: e.target.value })}>
+              {DEFAULT_DISCIPLINES.map((d) => <option key={d} value={d}>{t(d)}</option>)}
+            </select>
+            <input type="date" value={am.date} onChange={(e) => setAm({ ...am, date: e.target.value })} />
+          </div>
+          <button className="btn primary" disabled={busyAdd} onClick={addMatch}>
+            {busyAdd ? t("Speichere ...") : <>{t("Match nachtragen")} <Check size={16} /></>}
+          </button>
+        </div>
       </section>
 
       <section className="stat-block">
@@ -3042,6 +3113,17 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .opp-card { position: relative; }
 .dbl-role { position: absolute; top: 4px; right: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.04em; color: #08251C; background: var(--chalk); border-radius: 999px; padding: 1px 6px; }
+.sum-avatars { display: flex; gap: 4px; justify-content: center; }
+.add-match { display: flex; flex-direction: column; gap: 10px; }
+.add-match select, .add-match input[type="date"] { width: 100%; box-sizing: border-box;
+  background: var(--felt); color: var(--ivory); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; font-size: 14px; font-family: inherit; }
+.am-row { display: flex; gap: 10px; }
+.am-row select, .am-row input { flex: 1; }
+.am-scores { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.am-scores input { width: 72px; text-align: center; background: var(--felt); color: var(--ivory);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 0; font-size: 20px; font-weight: 700; font-family: inherit; }
+.am-scores span { font-size: 20px; font-weight: 700; color: var(--ivory-dim); }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
