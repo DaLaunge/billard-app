@@ -581,7 +581,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "54";  // bei jedem Release erhöhen
+const APP_VERSION = "55";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1227,20 +1227,10 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast, sideNa
         <div className="sp-run-preview">{t("Serie dieser Aufnahme:")} <b>{inningRun + partial}</b></div>
         {remain === 0 && <p className="hint center" style={{ marginTop: 0 }}>{t("Zwei-Kugel-Räumung! Tisch wird neu aufgebaut.")}</p>}
         {remain === 1 && <p className="hint center" style={{ marginTop: 0 }}>{t("Tisch wird neu aufgebaut (15 Kugeln).")}</p>}
-        {remain <= 1 && entry === "miss" ? (
-          <>
-            <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setEntry(null)}>{t("Abbrechen")}</button>
-              <button className="btn primary" onClick={() => applyEntry(false)}>{t("Gegner ist dran")}</button>
-            </div>
-            <button className="btn ghost" onClick={() => applyEntry(true)}>{names[active]} macht weiter</button>
-          </>
-        ) : (
-          <div className="sp-controls">
-            <button className="btn ghost" onClick={() => setEntry(null)}>{t("Abbrechen")}</button>
-            <button className="btn primary" onClick={() => applyEntry(false)}>{t("Übernehmen")}</button>
-          </div>
-        )}
+        <div className="sp-controls">
+          <button className="btn ghost" onClick={() => setEntry(null)}>{t("Abbrechen")}</button>
+          <button className="btn primary" onClick={() => applyEntry(false)}>{t("Übernehmen")}</button>
+        </div>
       </div>
     );
   }
