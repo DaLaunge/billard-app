@@ -11,6 +11,9 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Keine Verbindung": "No connection",
+    "Dein Profil konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.": "Your profile couldn't be loaded. Check your internet connection and try again.",
+    "Erneut versuchen": "Try again",
     "Diagnose": "Diagnostics",
     "Datenbank": "Database",
     "Diese Kennung muss sich zwischen Test und Produktion unterscheiden. Ist sie gleich, greifen beide auf dieselbe Datenbank zu.": "This ID must differ between test and production. If it's the same, both use the same database.",
@@ -578,7 +581,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "50";  // bei jedem Release erhöhen
+const APP_VERSION = "56";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1023,7 +1026,7 @@ function poolBallStyle(n) {
   return { background: `linear-gradient(180deg, #F2EDE0 0 30%, ${c} 30% 70%, #F2EDE0 70% 100%)` };
 }
 
-function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
+function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast, sideNames, sideAvatars }) {
   const PRESETS = [50, 70, 80, 90, 100, 150];
   const [target, setTarget] = useState(100);
   const [custom, setCustom] = useState("");
@@ -1048,7 +1051,8 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
   const [hist, setHist] = useState([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
-  const names = [me.nickname, opp.nickname];
+  const names = sideNames || [me.nickname, opp.nickname];
+  const membersOf = (i) => (sideAvatars ? sideAvatars[i] : [i === 0 ? me : opp]);
   const inningNo = missInn[0] + missInn[1] + safeInn[0] + safeInn[1] + 1;
   const offAvg = (p, MI = missInn, PK = pocketed) => (MI[p] > 0 ? PK[p] / MI[p] : 0);
   const allAvg = (p, MI = missInn, SI = safeInn, PK = pocketed) =>
@@ -1068,7 +1072,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
 
   // Ergebnis fürs Speichern zusammenbauen (Offensivschnitt nur ab 3 Miss-Aufnahmen für Belohnungen)
   const buildResult = (scores, HI, MD, PK, MI, TB) => ({
-    s1: scores[0], s2: scores[1], hr1: HI[0], hr2: HI[1], def1: MD[0], def2: MD[1],
+    s1: Math.max(0, scores[0]), s2: Math.max(0, scores[1]), hr1: HI[0], hr2: HI[1], def1: MD[0], def2: MD[1],
     avg1: MI[0] >= 3 ? Math.round((PK[0] / MI[0]) * 100) / 100 : null,
     avg2: MI[1] >= 3 ? Math.round((PK[1] / MI[1]) * 100) / 100 : null,
     tb1: TB[0], tb2: TB[1],
@@ -1193,7 +1197,11 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
         <div className="opp-grid">
           {[0, 1].map((i) => (
             <button key={i} className="opp-card" onClick={() => chooseBreaker(i)}>
-              <Ball color={colorOf(names[i])} label={initials(names[i])} badge={badgeOf(names[i])} size={48} />
+              <div className="sc-avatars">
+                {membersOf(i).map((mm) => (
+                  <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} size={44} />
+                ))}
+              </div>
               <span>{names[i]}</span>
             </button>
           ))}
@@ -1219,20 +1227,10 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
         <div className="sp-run-preview">{t("Serie dieser Aufnahme:")} <b>{inningRun + partial}</b></div>
         {remain === 0 && <p className="hint center" style={{ marginTop: 0 }}>{t("Zwei-Kugel-Räumung! Tisch wird neu aufgebaut.")}</p>}
         {remain === 1 && <p className="hint center" style={{ marginTop: 0 }}>{t("Tisch wird neu aufgebaut (15 Kugeln).")}</p>}
-        {remain <= 1 && entry === "miss" ? (
-          <>
-            <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setEntry(null)}>{t("Abbrechen")}</button>
-              <button className="btn primary" onClick={() => applyEntry(false)}>{t("Gegner ist dran")}</button>
-            </div>
-            <button className="btn ghost" onClick={() => applyEntry(true)}>{names[active]} macht weiter</button>
-          </>
-        ) : (
-          <div className="sp-controls">
-            <button className="btn ghost" onClick={() => setEntry(null)}>{t("Abbrechen")}</button>
-            <button className="btn primary" onClick={() => applyEntry(false)}>{t("Übernehmen")}</button>
-          </div>
-        )}
+        <div className="sp-controls">
+          <button className="btn ghost" onClick={() => setEntry(null)}>{t("Abbrechen")}</button>
+          <button className="btn primary" onClick={() => applyEntry(false)}>{t("Übernehmen")}</button>
+        </div>
       </div>
     );
   }
@@ -1244,7 +1242,11 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast }) {
       <div className="sp-board">
         {[0, 1].map((i) => (
           <div key={i} className={"sp-side" + (active === i ? " active" : "")}>
-            <Ball color={colorOf(names[i])} label={initials(names[i])} badge={badgeOf(names[i])} size={40} />
+            <div className="sc-avatars">
+              {membersOf(i).map((mm) => (
+                <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} size={36} />
+              ))}
+            </div>
             <span className="sp-name">{names[i]}</span>
             <div className="sp-score">{sc[i]}</div>
             <div className="sp-meta">{t("Höchstserie")} {hi[i]}</div>
@@ -1327,7 +1329,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const [showInvite, setShowInvite] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const is141 = disc === "14/1 Endlos" && mode === "single";
+  const is141 = disc === "14/1 Endlos";
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
   const pickPlayer = (p) => {
@@ -1368,7 +1370,6 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
   // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
   const chooseDisc = (d) => {
-    if (mode === "double") { setDisc(d); setStep(2); return; }
     const from = disc;
     if (!from || d === from) { setDisc(d); setStep(2); return; }
     const crosses141 = (from === "14/1 Endlos") !== (d === "14/1 Endlos");
@@ -1410,7 +1411,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
 
   const DiscChip = () => (
     <button className="disc-chip" onClick={() => { if (is141) setLeaveWarn(true); else setStep(1); }}>
-      <span>{t(disc)}</span><Pencil size={13} />
+      <span>{t(disc)}</span><Pencil size={15} />
     </button>
   );
 
@@ -1533,7 +1534,7 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
         <>
           <p className="q">{t("Welche Disziplin?")}</p>
           <div className="disc-grid">
-            {disciplines.map((d) => (
+            {disciplines.filter((d) => d !== "Doppel" && d !== "Gesamt").map((d) => (
               <button key={d} className={"disc-card" + (disc === d ? " sel" : "")}
                 onClick={() => chooseDisc(d)}>{t(d)}</button>
             ))}
@@ -1555,7 +1556,6 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
       {step === 2 && opp && disc && (
         <>
           <div className="score-head">
-            <span className="sh-players">{teamA} vs {teamB}</span>
             <DiscChip />
           </div>
           {leaveWarn && (
@@ -1571,6 +1571,8 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           )}
           {is141 ? (
             <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} toast={toast}
+              sideNames={mode === "double" ? [teamA, teamB] : undefined}
+              sideAvatars={mode === "double" ? [[me, partner], [opp, opp2]] : undefined}
               onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2, avg1, avg2, tb1, tb2 }) => {
                 setS1(a); setS2(b); setHr([hr1, hr2]); setDef([def1, def2]);
                 setAvg([avg1, avg2]); setTb([tb1, tb2]); setStep(3);
@@ -1579,10 +1581,17 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             <>
               <p className="q">{t("Wie steht's?")} <span className="q-sub">(gewonnene Spiele)</span></p>
               <div className="score-row">
-                {[{ p: teamA, v: s1, set: setS1 }, { p: teamB, v: s2, set: setS2 }].map(({ p, v, set }) => (
-                  <div key={p} className="score-col">
-                    <Ball color={colorOf(p)} label={initials(p)} badge={badgeOf(p)} size={46} />
-                    <span className="score-name">{p}</span>
+                {(mode === "double"
+                  ? [{ members: [me, partner], name: teamA, v: s1, set: setS1 }, { members: [opp, opp2], name: teamB, v: s2, set: setS2 }]
+                  : [{ members: [me], name: me.nickname, v: s1, set: setS1 }, { members: [opp], name: opp.nickname, v: s2, set: setS2 }]
+                ).map(({ members, name, v, set }) => (
+                  <div key={name} className="score-col">
+                    <div className="sc-avatars">
+                      {members.map((pl) => (
+                        <Ball key={pl.id} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} size={44} />
+                      ))}
+                    </div>
+                    <span className="score-name">{name}</span>
                     <div className="score-num">{v}</div>
                     <div className="score-btns">
                       <button className="round-btn" onClick={() => set(Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
@@ -2510,10 +2519,9 @@ function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badg
     URL.revokeObjectURL(url);
   };
   const addMatch = async () => {
-    const s1 = parseInt(am.s1, 10) || 0;
-    const s2 = parseInt(am.s2, 10) || 0;
-    if (s1 < 0 || s2 < 0 || s1 + s2 === 0 || s1 === s2) { toast(t("Ungültiges Ergebnis.")); return; }
+    const s1 = parseInt(am.s1, 10) || 0, s2 = parseInt(am.s2, 10) || 0;
     if (!am.p1 || !am.p2 || am.p1 === am.p2) { toast(t("Zwei verschiedene Spieler wählen.")); return; }
+    if (s1 < 0 || s2 < 0 || s1 + s2 === 0 || s1 === s2) { toast(t("Ungültiges Ergebnis.")); return; }
     setBusyAdd(true);
     const played = am.date ? new Date(am.date + "T12:00:00").toISOString() : null;
     const { error } = await supabase.rpc("admin_add_match", {
@@ -2715,6 +2723,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [player, setPlayer] = useState(null);
+  const [loadErr, setLoadErr] = useState(false);
   const [playerChecked, setPlayerChecked] = useState(false);
   const [players, setPlayers] = useState([]);
   const [rangliste, setRangliste] = useState([]);
@@ -2747,8 +2756,10 @@ export default function App() {
   useEffect(() => {
     if (!session) { setPlayer(null); setPlayerChecked(false); return; }
     (async () => {
-      const { data } = await supabase.from("players").select("*")
+      const { data, error } = await supabase.from("players").select("*")
         .eq("auth_user_id", session.user.id).maybeSingle();
+      if (error) { setLoadErr(true); setPlayerChecked(false); return; }  // offline/Fehler: NICHT als neuer Nutzer behandeln
+      setLoadErr(false);
       setPlayer(data ?? null);
       setPlayerChecked(true);
       const { data: all } = await supabase.from("players")
@@ -2915,7 +2926,15 @@ export default function App() {
       <div className="phone">
         {!session && <LoginScreen />}
 
-        {session && !playerChecked && <div className="center-load">{t("Lade Profil ...")}</div>}
+        {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
+
+        {session && loadErr && !player && (
+          <div className="center-load" style={{ flexDirection: "column", gap: 12, textAlign: "center", padding: "0 24px" }}>
+            <b>{t("Keine Verbindung")}</b>
+            <span className="hint">{t("Dein Profil konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.")}</span>
+            <button className="btn primary" onClick={() => window.location.reload()}>{t("Erneut versuchen")}</button>
+          </div>
+        )}
 
         {session && playerChecked && !player && (
           <NicknameScreen existingPlayers={players}
@@ -3272,11 +3291,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .disc-card.compact { padding: 13px 4px; font-size: 15px; border-radius: 12px; }
 
 /* Disziplin-Chip + Kopf im Ergebnis-Schritt */
-.score-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.score-head { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
 .sh-players { font-size: 13px; color: var(--ivory-dim); }
-.disc-chip { display: inline-flex; align-items: center; gap: 7px; background: var(--felt-3);
-  border: 1px solid var(--gold); color: var(--gold); border-radius: 999px; padding: 6px 12px;
-  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.sc-avatars { display: flex; gap: 5px; justify-content: center; align-items: center; }
+.disc-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--felt-3);
+  border: 1px solid var(--gold); color: var(--gold); border-radius: 999px; padding: 10px 20px;
+  font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
 
 /* 14/1 Live-Zähler */
 .sp-setup { display: flex; flex-direction: column; gap: 12px; }
