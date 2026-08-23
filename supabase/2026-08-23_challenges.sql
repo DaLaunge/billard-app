@@ -132,8 +132,32 @@ create trigger trg_fulfill_challenges
 -- Neuberechnungs-Funktion ab ("Erfolge neu berechnen" im Adminbereich) -
 -- die kenne ich nicht und muesste separat um diese drei badge_keys
 -- erweitert werden. sort-Werte ggf. an eure bestehende Nummerierung anpassen.
+--
+-- Emojis muessen katalogweit eindeutig sein. Ich kann badge_catalog nicht
+-- lesen (RLS blockiert anonyme Reads), daher bricht dieser Block VOR dem
+-- Insert kontrolliert ab, falls eines der drei gewaehlten Emojis (⚔️ 🗡️ 🏹)
+-- bereits vergeben ist - dann bitte hier im Skript ein anderes Emoji
+-- eintragen und erneut ausfuehren.
+do $$
+declare v_conflict text;
+begin
+  select string_agg(emoji || ' (' || badge_key || ')', ', ')
+    into v_conflict
+    from badge_catalog
+    where emoji in ('⚔️', '🗡️', '🏹');
+  if v_conflict is not null then
+    raise exception 'Emoji-Kollision mit bestehenden Erfolgen: %. Bitte in diesem Skript ein anderes Emoji waehlen.', v_conflict;
+  end if;
+end $$;
+
 insert into badge_catalog (badge_key, category, sort, emoji, name, description) values
   ('challenge_accepted_1', 'Treue', 900, '⚔️', 'Angenommen', '1 Herausforderung angenommen'),
   ('challenge_accepted_5', 'Treue', 901, '🗡️', 'Kampflustig', '5 Herausforderungen angenommen'),
   ('challenge_accepted_15', 'Treue', 902, '🏹', 'Gladiator', '15 Herausforderungen angenommen')
 on conflict (badge_key) do nothing;
+
+-- Optional danach ausfuehren: findet JEDE Emoji-Dopplung im gesamten
+-- Katalog (auch unabhaengig von den drei neuen Zeilen oben) - sollte
+-- leer zurueckkommen.
+-- select emoji, array_agg(badge_key order by badge_key) as badge_keys, count(*)
+--   from badge_catalog group by emoji having count(*) > 1;
