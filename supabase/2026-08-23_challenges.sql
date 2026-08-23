@@ -133,26 +133,17 @@ create trigger trg_fulfill_challenges
 -- die kenne ich nicht und muesste separat um diese drei badge_keys
 -- erweitert werden. sort-Werte ggf. an eure bestehende Nummerierung anpassen.
 --
--- Emojis muessen katalogweit eindeutig sein. Ich kann badge_catalog nicht
--- lesen (RLS blockiert anonyme Reads), daher bricht dieser Block VOR dem
--- Insert kontrolliert ab, falls eines der drei gewaehlten Emojis (⚔️ 🗡️ 🏹)
--- bereits vergeben ist - dann bitte hier im Skript ein anderes Emoji
--- eintragen und erneut ausfuehren.
-do $$
-declare v_conflict text;
-begin
-  select string_agg(emoji || ' (' || badge_key || ')', ', ')
-    into v_conflict
-    from badge_catalog
-    where emoji in ('⚔️', '🗡️', '🏹');
-  if v_conflict is not null then
-    raise exception 'Emoji-Kollision mit bestehenden Erfolgen: %. Bitte in diesem Skript ein anderes Emoji waehlen.', v_conflict;
-  end if;
-end $$;
+-- Emojis muessen katalogweit eindeutig sein. Geprueft per Live-Read gegen
+-- den vollstaendigen Katalog (moeglich seit 2026-08-23_badge_catalog_
+-- public_read.sql) - Stand 2026-08-23 sind 🥊 🪓 🏹 nicht vergeben.
+-- (Ein frueherer In-Script-Guard mit einem DO-Block VOR dem Insert hat
+-- sich als unzuverlaessig erwiesen: der SQL-Editor fuehrt eingefuegte
+-- Statements offenbar nicht als eine Transaktion aus, der Insert lief
+-- trotz Exception im Guard. Deshalb hier nur noch die direkte Pruefung.)
 
 insert into badge_catalog (badge_key, category, sort, emoji, name, description) values
-  ('challenge_accepted_1', 'Treue', 900, '⚔️', 'Angenommen', '1 Herausforderung angenommen'),
-  ('challenge_accepted_5', 'Treue', 901, '🗡️', 'Kampflustig', '5 Herausforderungen angenommen'),
+  ('challenge_accepted_1', 'Treue', 900, '🥊', 'Angenommen', '1 Herausforderung angenommen'),
+  ('challenge_accepted_5', 'Treue', 901, '🪓', 'Kampflustig', '5 Herausforderungen angenommen'),
   ('challenge_accepted_15', 'Treue', 902, '🏹', 'Gladiator', '15 Herausforderungen angenommen')
 on conflict (badge_key) do nothing;
 
