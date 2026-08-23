@@ -1,5 +1,8 @@
 -- Herausforderungen (Challenges)
--- In Supabase SQL-Editor ausfuehren (Projekt: hadamdvpnwslztsxmwdr).
+-- In Supabase SQL-Editor ausfuehren. Test und Produktion sind getrennte
+-- Supabase-Projekte (Test: hadamdvpnwslztsxmwdr, Produktion: wofsutwidaitloeiwnma)
+-- - dieses Skript muss in BEIDEN separat laufen: zuerst Test, und erst wenn
+-- das Feature auf main geht, auch in Produktion.
 --
 -- Konzept: Spieler A fordert Spieler B heraus ("offen"). Es gibt keinen
 -- expliziten Annahme-Schritt - sobald A und B ein bestaetigtes Match
