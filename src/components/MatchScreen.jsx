@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight } from "lucide-react";
+import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
@@ -8,7 +8,7 @@ import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, initialOpp }) {
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, initialOpp, onChallenge }) {
   const [step, setStep] = useState(initialOpp ? 1 : 0);
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
@@ -240,11 +240,16 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 <div className="suggest-streak">{t("Noch 1 Sieg bis zur {n}er-Serie!", { n: nextStreak })}</div>
               )}
               {suggestions.map(({ p, gain }) => (
-                <button key={p.id} className="suggest-row" onClick={() => { setOpp(p); setStep(1); }}>
-                  <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={34} />
-                  <span className="suggest-name">{p.nickname}</span>
-                  <span className="suggest-gain">{t("bis zu")} {fmtD(gain)}</span>
-                </button>
+                <div key={p.id} className="suggest-row">
+                  <button className="suggest-row-play" onClick={() => { setOpp(p); setStep(1); }}>
+                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={34} />
+                    <span className="suggest-name">{p.nickname}</span>
+                    <span className="suggest-gain">{t("bis zu")} {fmtD(gain)}</span>
+                  </button>
+                  <button className="suggest-challenge-btn" onClick={() => onChallenge(p.id)} title={t("Herausfordern")} aria-label={t("Herausfordern")}>
+                    <Swords size={17} />
+                  </button>
+                </div>
               ))}
             </div>
           )}

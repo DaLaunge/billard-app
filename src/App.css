@@ -270,10 +270,14 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .suggest-card { border: 1px solid var(--gold); border-radius: 14px; padding: 10px 12px; margin-bottom: 12px; background: var(--felt-3); }
 .suggest-title { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 4px; }
 .suggest-streak { font-size: 12.5px; color: var(--chalk); margin-bottom: 2px; }
-.suggest-row { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--felt);
-  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-top: 6px; cursor: pointer; font-family: inherit; }
+.suggest-row { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 6px; }
+.suggest-row-play { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; background: var(--felt);
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: pointer; font-family: inherit; }
 .suggest-name { flex: 1; text-align: left; color: var(--ivory); font-weight: 600; font-size: 14px; }
 .suggest-gain { color: var(--win); font-weight: 700; font-size: 13px; }
+.suggest-challenge-btn { flex: 0 0 auto; background: var(--felt); border: 1px solid var(--line); border-radius: 10px;
+  width: 38px; height: 38px; display: grid; place-items: center; color: var(--ivory-dim); cursor: pointer; }
+.suggest-challenge-btn:active { border-color: var(--chalk); color: var(--chalk); }
 .sc-avatars { display: flex; gap: 5px; justify-content: center; align-items: center; }
 .disc-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--felt-3);
   border: 1px solid var(--gold); color: var(--gold); border-radius: 999px; padding: 10px 20px;

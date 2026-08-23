@@ -1,14 +1,21 @@
 import { useState } from "react";
 import { Radio, MapPin, Pencil, X } from "lucide-react";
 import { t } from "../lib/i18n";
+import { initials, timeLeft } from "../lib/format";
+import Ball from "./Ball";
 import PingCard from "./PingCard";
 
-export default function LiveScreen({ me, pings, colorOf, badgeOf, onCreate, onClose, onReply, onUnreply }) {
+export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, onCreate, onClose, onReply, onUnreply,
+  onDeclineChallenge, onCancelChallenge }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
   const [loc, setLoc] = useState("");
   const [msg, setMsg] = useState("");
   const [hours, setHours] = useState(3);
+
+  const openChallenges = (challenges || []).filter((c) => c.status === "open" && new Date(c.expires_at) > new Date());
+  const challengesToMe = openChallenges.filter((c) => c.challenged_id === me.id);
+  const challengesFromMe = openChallenges.filter((c) => c.challenger_id === me.id);
 
   return (
     <div className="screen">
@@ -16,6 +23,48 @@ export default function LiveScreen({ me, pings, colorOf, badgeOf, onCreate, onCl
         <h2>{t("Live")}</h2>
         <span className="head-note">{t("Wer ist gerade am Tisch oder sucht ein Match?")}</span>
       </header>
+
+      {challengesToMe.length > 0 && (
+        <>
+          <p className="q">{t("Herausforderungen an dich")}</p>
+          {challengesToMe.map((c) => (
+            <section key={c.id} className="stat-block ping-card">
+              <div className="ping-head">
+                <Ball color={colorOf(c.challenger.nickname)} label={initials(c.challenger.nickname)}
+                  badge={badgeOf(c.challenger.nickname)} size={40} />
+                <div className="ping-who">
+                  <b>{c.challenger.nickname}</b>
+                  <span className="rank-meta">{t("fordert dich heraus")} · {timeLeft(c.expires_at)}</span>
+                </div>
+              </div>
+              <button className="btn ghost small" onClick={() => onDeclineChallenge(c.id)}>
+                <X size={15} /> {t("Ablehnen")}
+              </button>
+            </section>
+          ))}
+        </>
+      )}
+
+      {challengesFromMe.length > 0 && (
+        <>
+          <p className="q">{t("Deine offenen Herausforderungen")}</p>
+          {challengesFromMe.map((c) => (
+            <section key={c.id} className="stat-block ping-card">
+              <div className="ping-head">
+                <Ball color={colorOf(c.challenged.nickname)} label={initials(c.challenged.nickname)}
+                  badge={badgeOf(c.challenged.nickname)} size={40} />
+                <div className="ping-who">
+                  <b>{c.challenged.nickname}</b>
+                  <span className="rank-meta">{t("wartet auf ein Match")} · {timeLeft(c.expires_at)}</span>
+                </div>
+              </div>
+              <button className="btn ghost small" onClick={() => onCancelChallenge(c.id)}>
+                <X size={15} /> {t("Zurückziehen")}
+              </button>
+            </section>
+          ))}
+        </>
+      )}
 
       {myPing ? (
         <PingCard ping={myPing} me={me} colorOf={colorOf} badgeOf={badgeOf} onReply={onReply} onUnreply={onUnreply} />

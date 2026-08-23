@@ -8,7 +8,8 @@ import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
-  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang }) {
+  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang,
+  onChallenge, challenges }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -56,14 +57,18 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     });
     const myId = players.find((p) => p.nickname === nickname)?.id;
     const recruitedCount = myId ? players.filter((p) => p.invited_by === myId).length : 0;
+    const challengesAccepted = myId
+      ? (challenges || []).filter((c) => c.challenged_id === myId && c.status === "fulfilled").length
+      : 0;
     return {
       shutoutWins,
       highRun,
       recruitedCount,
+      challengesAccepted,
       maxVsOpponent: Math.max(0, ...Object.values(perOpp)),
       maxPerDay: Math.max(0, ...Object.values(perDay)),
     };
-  }, [matches, players, nickname]);
+  }, [matches, players, nickname, challenges]);
 
   // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
   // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB
@@ -81,6 +86,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     if (has(/Matches an einem Tag/)) parts.push(`${t("Rekord")}: ${extras.maxPerDay}`);
     if (has(/14\/1: Höchstserie/)) parts.push(`${t("Rekord")}: ${extras.highRun}`);
     if (has(/Spieler geworben/)) parts.push(`${t("Insgesamt")}: ${extras.recruitedCount}`);
+    if (has(/Herausforderung(en)? angenommen/)) parts.push(`${t("Insgesamt")}: ${extras.challengesAccepted}`);
     return parts.length ? parts.join(" · ") : null;
   };
 
@@ -210,6 +216,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           {playerObj?.motto && <p className="p-motto">"{playerObj.motto}"</p>}
         </div>
       </div>
+
+      {!isMe && playerObj && (
+        <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => onChallenge(playerObj.id)}>
+          <Swords size={15} /> {t("Herausfordern")}
+        </button>
+      )}
 
       {isMe && (
         <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
