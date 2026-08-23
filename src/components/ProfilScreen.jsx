@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut } from "lucide-react";
 import { t } from "../lib/i18n";
-import { computeStats } from "../lib/stats";
+import { computeStats, todayStr } from "../lib/stats";
 import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
@@ -36,6 +36,54 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [busy, setBusy] = useState(false);
 
   const stats = useMemo(() => computeStats(matches)[nickname], [matches, nickname]);
+
+  // Zusatzkennzahlen, die aus den bereits geladenen Matches berechenbar sind
+  // (Zu-Null-Siege, Rekord gegen einen einzelnen Gegner, Rekord an einem Tag).
+  const liveExtras = useMemo(() => {
+    let shutoutWins = 0, highRun = 0;
+    const perOpp = {}, perDay = {};
+    matches.forEach((m) => {
+      if (m.player1b_id) return;
+      let my, opp, oppNick, myRun;
+      if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; myRun = m.high_run1; }
+      else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; myRun = m.high_run2; }
+      else return;
+      if (my > opp && opp === 0) shutoutWins++;
+      if (myRun != null && myRun > highRun) highRun = myRun;
+      perOpp[oppNick] = (perOpp[oppNick] || 0) + 1;
+      const day = todayStr(new Date(m.played_at));
+      perDay[day] = (perDay[day] || 0) + 1;
+    });
+    const myId = players.find((p) => p.nickname === nickname)?.id;
+    const recruitedCount = myId ? players.filter((p) => p.invited_by === myId).length : 0;
+    return {
+      shutoutWins,
+      highRun,
+      recruitedCount,
+      maxVsOpponent: Math.max(0, ...Object.values(perOpp)),
+      maxPerDay: Math.max(0, ...Object.values(perDay)),
+    };
+  }, [matches, players, nickname]);
+
+  // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
+  // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB
+  // und ihre Zuordnung ist der App nicht fix bekannt.
+  const catLiveStat = (items, s, extras) => {
+    const has = (re) => items.some((b) => re.test(b.description));
+    const parts = [];
+    if (has(/Siege in Folge$/) && s) {
+      const curTxt = s.streak > 0 ? `+${s.streak}` : `${s.streak}`;
+      parts.push(`${t("Aktuell")}: ${curTxt} · ${t("Beste Serie")}: ${s.longestStreak}`);
+    }
+    if (has(/^\d+ Siege insgesamt$/) && s) parts.push(`${t("Insgesamt")}: ${s.siege}`);
+    if (has(/zu null gewonnen/)) parts.push(`${t("Zu-Null-Siege")}: ${extras.shutoutWins}`);
+    if (has(/Matches gegen denselben Gegner/)) parts.push(`${t("Rekord")}: ${extras.maxVsOpponent}`);
+    if (has(/Matches an einem Tag/)) parts.push(`${t("Rekord")}: ${extras.maxPerDay}`);
+    if (has(/14\/1: Höchstserie/)) parts.push(`${t("Rekord")}: ${extras.highRun}`);
+    if (has(/Spieler geworben/)) parts.push(`${t("Insgesamt")}: ${extras.recruitedCount}`);
+    return parts.length ? parts.join(" · ") : null;
+  };
+
   const myRows = rangliste.filter((r) => r.nickname === nickname);
   const gesamt = myRows.find((r) => r.discipline === "Gesamt");
   const playerObj = players.find((p) => p.nickname === nickname);
@@ -213,12 +261,16 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
           const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
           const open = openCats.has(cat);
+          const liveStat = isMe ? catLiveStat(items, stats, liveExtras) : null;
           return (
             <div key={cat} className="badge-cat">
               <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
-                <span className="badge-cat-title">{t(cat)}</span>
-                <span className="badge-cat-count">{earnedCount} / {items.length}</span>
-                <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
+                <div className="badge-cat-head-row">
+                  <span className="badge-cat-title">{t(cat)}</span>
+                  <span className="badge-cat-count">{earnedCount} / {items.length}</span>
+                  <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
+                </div>
+                {liveStat && <span className="badge-cat-live">{liveStat}</span>}
               </button>
               {open && (
                 <div className="badge-grid">
