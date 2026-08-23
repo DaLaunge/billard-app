@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut } from "lucide-react";
 import { t } from "../lib/i18n";
-import { computeStats } from "../lib/stats";
+import { computeStats, todayStr } from "../lib/stats";
 import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
@@ -29,17 +29,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   });
   const expandAll = () => setOpenCats(new Set(catalogByCategory.map(([c]) => c)));
   const collapseAll = () => setOpenCats(new Set());
-  // Live-Stand je Kategorie: nur dort, wo aus den vorhandenen Match-Daten sauber
-  // ein aktueller Wert berechnet werden kann (Rest der Erfolge braucht DB-Zusatzdaten).
-  const catLiveStat = (cat, s) => {
-    if (!s) return null;
-    if (cat === "Serien") {
-      const curTxt = s.streak > 0 ? `+${s.streak}` : `${s.streak}`;
-      return `${t("Aktuell")}: ${curTxt} · ${t("Beste Serie")}: ${s.longestStreak}`;
-    }
-    if (cat === "Siege") return `${s.siege} ${t("insgesamt")}`;
-    return null;
-  };
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -47,6 +36,48 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [busy, setBusy] = useState(false);
 
   const stats = useMemo(() => computeStats(matches)[nickname], [matches, nickname]);
+
+  // Zusatzkennzahlen, die aus den bereits geladenen Matches berechenbar sind
+  // (Zu-Null-Siege, Rekord gegen einen einzelnen Gegner, Rekord an einem Tag).
+  const liveExtras = useMemo(() => {
+    let shutoutWins = 0;
+    const perOpp = {}, perDay = {};
+    matches.forEach((m) => {
+      if (m.player1b_id) return;
+      let my, opp, oppNick;
+      if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; }
+      else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; }
+      else return;
+      if (my > opp && opp === 0) shutoutWins++;
+      perOpp[oppNick] = (perOpp[oppNick] || 0) + 1;
+      const day = todayStr(new Date(m.played_at));
+      perDay[day] = (perDay[day] || 0) + 1;
+    });
+    return {
+      shutoutWins,
+      maxVsOpponent: Math.max(0, ...Object.values(perOpp)),
+      maxPerDay: Math.max(0, ...Object.values(perDay)),
+    };
+  }, [matches, nickname]);
+
+  // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
+  // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB
+  // und ihre Zuordnung ist der App nicht fix bekannt. Familien ohne lokal
+  // berechenbare Daten (z.B. 14/1-Höchstserie, geworbene Spieler) bleiben ohne Anzeige.
+  const catLiveStat = (items, s, extras) => {
+    const has = (re) => items.some((b) => re.test(b.description));
+    const parts = [];
+    if (has(/Siege in Folge$/) && s) {
+      const curTxt = s.streak > 0 ? `+${s.streak}` : `${s.streak}`;
+      parts.push(`${t("Aktuell")}: ${curTxt} · ${t("Beste Serie")}: ${s.longestStreak}`);
+    }
+    if (has(/^\d+ Siege insgesamt$/) && s) parts.push(`${t("Insgesamt")}: ${s.siege}`);
+    if (has(/zu null gewonnen/)) parts.push(`${t("Zu-Null-Siege")}: ${extras.shutoutWins}`);
+    if (has(/Matches gegen denselben Gegner/)) parts.push(`${t("Rekord")}: ${extras.maxVsOpponent}`);
+    if (has(/Matches an einem Tag/)) parts.push(`${t("Rekord")}: ${extras.maxPerDay}`);
+    return parts.length ? parts.join(" · ") : null;
+  };
+
   const myRows = rangliste.filter((r) => r.nickname === nickname);
   const gesamt = myRows.find((r) => r.discipline === "Gesamt");
   const playerObj = players.find((p) => p.nickname === nickname);
@@ -224,7 +255,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
           const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
           const open = openCats.has(cat);
-          const liveStat = isMe ? catLiveStat(cat, stats) : null;
+          const liveStat = isMe ? catLiveStat(items, stats, liveExtras) : null;
           return (
             <div key={cat} className="badge-cat">
               <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
