@@ -11,6 +11,15 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Neuer Erfolg!": "New achievement!",
+    "Neue Erfolge!": "New achievements!",
+    "Super!": "Nice!",
+    "Doppelschlag": "Double Strike",
+    "2 Siege in Folge": "2 wins in a row",
+    "Vierer-Lauf": "Four in a Row",
+    "4 Siege in Folge": "4 wins in a row",
+    "Höhenflug": "High Flyer",
+    "7 Siege in Folge": "7 wins in a row",
     "Keine Verbindung": "No connection",
     "Dein Profil konnte nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.": "Your profile couldn't be loaded. Check your internet connection and try again.",
     "Erneut versuchen": "Try again",
@@ -581,7 +590,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "57";  // bei jedem Release erhöhen
+const APP_VERSION = "58";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -2738,6 +2747,7 @@ export default function App() {
   const [profileName, setProfileName] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
+  const [celebrate, setCelebrate] = useState(null);  // neue Erfolge fürs Popup
   const [lang, setLang] = useState(_LANG);
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
   const [vsOpp, setVsOpp] = useState(null);
@@ -2752,6 +2762,26 @@ export default function App() {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Neue Erfolge erkennen -> Popup (gesehene je Spieler in localStorage)
+  useEffect(() => {
+    if (!player || Object.keys(badgesByPlayer).length === 0) return;
+    const earned = Array.from(badgesByPlayer[player.id] || []);
+    const key = "seenBadges:" + player.id;
+    let raw = null;
+    try { raw = localStorage.getItem(key); } catch { return; }
+    if (raw == null) {                       // Erststart: alles als gesehen, kein Popup
+      try { localStorage.setItem(key, JSON.stringify(earned)); } catch {}
+      return;
+    }
+    let seen;
+    try { seen = new Set(JSON.parse(raw)); } catch { seen = new Set(); }
+    const fresh = earned.filter((k) => !seen.has(k));
+    if (fresh.length > 0) {
+      setCelebrate(fresh);
+      try { localStorage.setItem(key, JSON.stringify(earned)); } catch {}
+    }
+  }, [player, badgesByPlayer]);
 
   useEffect(() => {
     if (!session) { setPlayer(null); setPlayerChecked(false); return; }
@@ -2943,6 +2973,28 @@ export default function App() {
 
         {session && player && (
           <>
+            {celebrate && (
+              <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
+                <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
+                  <div className="celebrate-head">🎉 {t(celebrate.length > 1 ? "Neue Erfolge!" : "Neuer Erfolg!")}</div>
+                  <div className="celebrate-list">
+                    {celebrate.map((k) => {
+                      const info = badgeInfo(k);
+                      return (
+                        <div key={k} className="celebrate-item">
+                          <div className="celebrate-emoji">{info.emoji}</div>
+                          <div className="celebrate-txt">
+                            <span className="celebrate-name">{t(info.name)}</span>
+                            <span className="celebrate-desc">{t(info.description)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button className="btn primary" onClick={() => setCelebrate(null)}>{t("Super!")}</button>
+                </div>
+              </div>
+            )}
             <main className={"content" + (tab === "match" ? " no-tabbar" : "")}>
               {tab === "rang" && (
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
@@ -3383,6 +3435,19 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .sp-need b { font-size: 17px; font-family: 'Bricolage Grotesque', sans-serif; }
 .modal-overlay { position: fixed; inset: 0; background: #00000088; display: grid; place-items: center;
   z-index: 100; padding: 24px; }
+.celebrate-overlay { position: fixed; inset: 0; background: rgba(4, 20, 15, 0.80); z-index: 120;
+  display: grid; place-items: center; padding: 24px; animation: fadeIn 0.2s ease; }
+.celebrate-card { background: var(--felt-3); border: 1px solid var(--gold); border-radius: 18px;
+  padding: 22px 20px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+.celebrate-head { font-size: 19px; font-weight: 800; color: var(--gold); margin-bottom: 14px; }
+.celebrate-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.celebrate-item { display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--felt); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.celebrate-emoji { font-size: 30px; line-height: 1; }
+.celebrate-txt { display: flex; flex-direction: column; }
+.celebrate-name { font-weight: 700; color: var(--ivory); font-size: 15px; }
+.celebrate-desc { color: var(--ivory-dim); font-size: 12.5px; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .modal-box { background: var(--felt); border: 1px solid var(--gold); border-radius: 18px;
   padding: 20px; max-width: 340px; width: 100%; }
 .modal-box h3 { margin: 0 0 8px; font-family: 'Bricolage Grotesque', sans-serif; }
