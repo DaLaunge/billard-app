@@ -40,30 +40,34 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // Zusatzkennzahlen, die aus den bereits geladenen Matches berechenbar sind
   // (Zu-Null-Siege, Rekord gegen einen einzelnen Gegner, Rekord an einem Tag).
   const liveExtras = useMemo(() => {
-    let shutoutWins = 0;
+    let shutoutWins = 0, highRun = 0;
     const perOpp = {}, perDay = {};
     matches.forEach((m) => {
       if (m.player1b_id) return;
-      let my, opp, oppNick;
-      if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; }
-      else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; }
+      let my, opp, oppNick, myRun;
+      if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; myRun = m.high_run1; }
+      else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; myRun = m.high_run2; }
       else return;
       if (my > opp && opp === 0) shutoutWins++;
+      if (myRun != null && myRun > highRun) highRun = myRun;
       perOpp[oppNick] = (perOpp[oppNick] || 0) + 1;
       const day = todayStr(new Date(m.played_at));
       perDay[day] = (perDay[day] || 0) + 1;
     });
+    const myId = players.find((p) => p.nickname === nickname)?.id;
+    const recruitedCount = myId ? players.filter((p) => p.invited_by === myId).length : 0;
     return {
       shutoutWins,
+      highRun,
+      recruitedCount,
       maxVsOpponent: Math.max(0, ...Object.values(perOpp)),
       maxPerDay: Math.max(0, ...Object.values(perDay)),
     };
-  }, [matches, nickname]);
+  }, [matches, players, nickname]);
 
   // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
   // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB
-  // und ihre Zuordnung ist der App nicht fix bekannt. Familien ohne lokal
-  // berechenbare Daten (z.B. 14/1-Höchstserie, geworbene Spieler) bleiben ohne Anzeige.
+  // und ihre Zuordnung ist der App nicht fix bekannt.
   const catLiveStat = (items, s, extras) => {
     const has = (re) => items.some((b) => re.test(b.description));
     const parts = [];
@@ -75,6 +79,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     if (has(/zu null gewonnen/)) parts.push(`${t("Zu-Null-Siege")}: ${extras.shutoutWins}`);
     if (has(/Matches gegen denselben Gegner/)) parts.push(`${t("Rekord")}: ${extras.maxVsOpponent}`);
     if (has(/Matches an einem Tag/)) parts.push(`${t("Rekord")}: ${extras.maxPerDay}`);
+    if (has(/14\/1: Höchstserie/)) parts.push(`${t("Rekord")}: ${extras.highRun}`);
+    if (has(/Spieler geworben/)) parts.push(`${t("Insgesamt")}: ${extras.recruitedCount}`);
     return parts.length ? parts.join(" · ") : null;
   };
 
