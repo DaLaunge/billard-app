@@ -11,6 +11,14 @@ import {
 let _LANG = (() => { try { return localStorage.getItem("lang") || "de"; } catch { return "de"; } })();
 const TRANSLATIONS = {
   en: {
+    "Siegchance": "Win chance",
+    "Bei Race to 4": "In a race to 4",
+    "Bei Distanz 50": "At a distance of 50",
+    "Sieg": "Win",
+    "Niederlage": "Loss",
+    "Empfehlung": "Suggestion",
+    "bis zu": "up to",
+    "Noch 1 Sieg bis zur {n}er-Serie!": "1 more win for a {n}-streak!",
     "Neuer Erfolg!": "New achievement!",
     "Neue Erfolge!": "New achievements!",
     "Super!": "Nice!",
@@ -590,7 +598,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "58";  // bei jedem Release erhöhen
+const APP_VERSION = "59";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1374,6 +1382,39 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
   const total = s1 + s2;
   const steps = ["Gegner", "Disziplin", "Ergebnis", "Pruefen"];
 
+  // --- Punkte-Vorschau (#1) + Gegner-Vorschlag (#2) ---
+  const fmtD = (x) => (x >= 0 ? "+" : "\u2212") + Math.abs(Math.round(x));
+  const previewFor = (dsc, oppNick) => {
+    const ea = winProb(ratingOf(me.nickname, dsc), ratingOf(oppNick, dsc));
+    const is141d = dsc === "14/1 Endlos";
+    const D = is141d ? 50 : 4;
+    const nf = (tot) => Math.min(tot, 16);
+    return {
+      ea, is141d,
+      winMin: 4 * nf(2 * D - 1) * (D / (2 * D - 1) - ea),
+      winMax: 4 * nf(D) * (1 - ea),
+      lossMin: 4 * nf(2 * D - 1) * ((D - 1) / (2 * D - 1) - ea),
+      lossMax: 4 * nf(D) * (0 - ea),
+    };
+  };
+  const STREAK_THR = [2, 3, 4, 5, 7, 10, 15, 20];
+  const myStreak = (() => {
+    const mine = matches
+      .filter((m) => m.player1_id === me.id || m.player2_id === me.id)
+      .sort((a, b) => new Date(b.played_at) - new Date(a.played_at));
+    let s = 0;
+    for (const m of mine) {
+      const won = (m.player1_id === me.id && m.score1 > m.score2) || (m.player2_id === me.id && m.score2 > m.score1);
+      if (won) s++; else break;
+    }
+    return s;
+  })();
+  const nextStreak = STREAK_THR.find((tt) => tt === myStreak + 1);
+  const suggestions = opponents
+    .map((p) => ({ p, gain: previewFor("Gesamt", p.nickname).winMax }))
+    .sort((a, b) => b.gain - a.gain)
+    .slice(0, 2);
+
   const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); };
 
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
@@ -1509,6 +1550,21 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
             {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label="Suche loeschen"><X size={15} /></button>}
           </div>
           {opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
+          {mode === "single" && !oppQuery && suggestions.length > 0 && (
+            <div className="suggest-card">
+              <div className="suggest-title">\ud83d\udca1 {t("Empfehlung")}</div>
+              {nextStreak && (
+                <div className="suggest-streak">{t("Noch 1 Sieg bis zur {n}er-Serie!", { n: nextStreak })}</div>
+              )}
+              {suggestions.map(({ p, gain }) => (
+                <button key={p.id} className="suggest-row" onClick={() => { setOpp(p); setStep(1); }}>
+                  <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={34} />
+                  <span className="suggest-name">{p.nickname}</span>
+                  <span className="suggest-gain">{t("bis zu")} {fmtD(gain)}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {mode === "single" && ghost && !oppQuery && (
             <button className="ghost-card" onClick={() => { setOpp(ghost); setStep(1); }}>
               <div className="ghost-ball">👻</div>
@@ -1567,6 +1623,15 @@ function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCa
           <div className="score-head">
             <DiscChip />
           </div>
+          {mode === "single" && (() => {
+            const pv = previewFor(disc, opp.nickname);
+            return (
+              <div className="pt-preview">
+                <span className="pt-chance">{t("Siegchance")} <b>{Math.round(pv.ea * 100)}%</b></span>
+                <span className="pt-range">{pv.is141d ? t("Bei Distanz 50") : t("Bei Race to 4")}: {t("Sieg")} {fmtD(pv.winMin)}\u2026{fmtD(pv.winMax)} \u00b7 {t("Niederlage")} {fmtD(pv.lossMin)}\u2026{fmtD(pv.lossMax)}</span>
+              </div>
+            );
+          })()}
           {leaveWarn && (
             <div className="confirm-box">
               <p>{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
@@ -3345,6 +3410,17 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 /* Disziplin-Chip + Kopf im Ergebnis-Schritt */
 .score-head { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
 .sh-players { font-size: 13px; color: var(--ivory-dim); }
+.pt-preview { text-align: center; margin: -4px 0 14px; display: flex; flex-direction: column; gap: 3px; }
+.pt-chance { font-size: 13px; color: var(--ivory-dim); }
+.pt-chance b { color: var(--chalk); }
+.pt-range { font-size: 12px; color: var(--ivory-dim); }
+.suggest-card { border: 1px solid var(--gold); border-radius: 14px; padding: 10px 12px; margin-bottom: 12px; background: var(--felt-3); }
+.suggest-title { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 4px; }
+.suggest-streak { font-size: 12.5px; color: var(--chalk); margin-bottom: 2px; }
+.suggest-row { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--felt);
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-top: 6px; cursor: pointer; font-family: inherit; }
+.suggest-name { flex: 1; text-align: left; color: var(--ivory); font-weight: 600; font-size: 14px; }
+.suggest-gain { color: var(--win); font-weight: 700; font-size: 13px; }
 .sc-avatars { display: flex; gap: 5px; justify-content: center; align-items: center; }
 .disc-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--felt-3);
   border: 1px solid var(--gold); color: var(--gold); border-radius: 999px; padding: 10px 20px;
