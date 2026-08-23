@@ -581,7 +581,7 @@ const timeLeft = (d) => {
   return `noch ca. ${Math.round(m / 60)} Std`;
 };
 const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-const APP_VERSION = "56";  // bei jedem Release erhöhen
+const APP_VERSION = "57";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
@@ -1072,7 +1072,7 @@ function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast, sideNa
 
   // Ergebnis fürs Speichern zusammenbauen (Offensivschnitt nur ab 3 Miss-Aufnahmen für Belohnungen)
   const buildResult = (scores, HI, MD, PK, MI, TB) => ({
-    s1: Math.max(0, scores[0]), s2: Math.max(0, scores[1]), hr1: HI[0], hr2: HI[1], def1: MD[0], def2: MD[1],
+    s1: scores[0], s2: scores[1], hr1: HI[0], hr2: HI[1], def1: MD[0], def2: MD[1],
     avg1: MI[0] >= 3 ? Math.round((PK[0] / MI[0]) * 100) / 100 : null,
     avg2: MI[1] >= 3 ? Math.round((PK[1] / MI[1]) * 100) / 100 : null,
     tb1: TB[0], tb2: TB[1],
