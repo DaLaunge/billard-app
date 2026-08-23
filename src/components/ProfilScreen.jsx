@@ -29,6 +29,17 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   });
   const expandAll = () => setOpenCats(new Set(catalogByCategory.map(([c]) => c)));
   const collapseAll = () => setOpenCats(new Set());
+  // Live-Stand je Kategorie: nur dort, wo aus den vorhandenen Match-Daten sauber
+  // ein aktueller Wert berechnet werden kann (Rest der Erfolge braucht DB-Zusatzdaten).
+  const catLiveStat = (cat, s) => {
+    if (!s) return null;
+    if (cat === "Serien") {
+      const curTxt = s.streak > 0 ? `+${s.streak}` : `${s.streak}`;
+      return `${t("Aktuell")}: ${curTxt} · ${t("Beste Serie")}: ${s.longestStreak}`;
+    }
+    if (cat === "Siege") return `${s.siege} ${t("insgesamt")}`;
+    return null;
+  };
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -213,12 +224,16 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
           const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
           const open = openCats.has(cat);
+          const liveStat = isMe ? catLiveStat(cat, stats) : null;
           return (
             <div key={cat} className="badge-cat">
               <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
-                <span className="badge-cat-title">{t(cat)}</span>
-                <span className="badge-cat-count">{earnedCount} / {items.length}</span>
-                <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
+                <div className="badge-cat-head-row">
+                  <span className="badge-cat-title">{t(cat)}</span>
+                  <span className="badge-cat-count">{earnedCount} / {items.length}</span>
+                  <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
+                </div>
+                {liveStat && <span className="badge-cat-live">{liveStat}</span>}
               </button>
               {open && (
                 <div className="badge-grid">

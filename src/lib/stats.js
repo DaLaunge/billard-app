@@ -21,6 +21,9 @@ export function computeStats(matches) {
       else break;
     }
     p.streak = st;
+    let cur = 0, best = 0;
+    p.results.forEach((r) => { if (r) { cur++; best = Math.max(best, cur); } else cur = 0; });
+    p.longestStreak = best;
   });
   return s;
 }
