@@ -42,7 +42,9 @@ export const timeAgo = (d) => {
 export const timeLeft = (d) => {
   const m = Math.max(0, Math.round((new Date(d) - Date.now()) / 60000));
   if (m < 60) return `noch ${m} Min`;
-  return `noch ca. ${Math.round(m / 60)} Std`;
+  const h = Math.round(m / 60);
+  if (h < 48) return `noch ca. ${h} Std`;
+  return `noch ca. ${Math.round(h / 24)} Tage`;
 };
 
 /* Wahrgenommene Helligkeit einer Hex-Farbe (0 = dunkel, 1 = hell).

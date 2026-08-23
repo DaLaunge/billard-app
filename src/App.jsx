@@ -31,6 +31,7 @@ export default function App() {
   const [unconfirmed, setUnconfirmed] = useState([]);
   const [confirmations, setConfirmations] = useState([]);
   const [pings, setPings] = useState([]);
+  const [challenges, setChallenges] = useState([]);
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
   const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
@@ -91,7 +92,7 @@ export default function App() {
 
   const loadData = useCallback(async () => {
     setLoadingData(true);
-    const [rang, m, pl, pi, bg, ct, mc] = await Promise.all([
+    const [rang, m, pl, pi, bg, ct, mc, ch] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
         .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
@@ -105,6 +106,9 @@ export default function App() {
       supabase.from("player_badges").select("player_id, badge_key"),
       supabase.from("badge_catalog").select("*"),
       supabase.from("match_confirmations").select("match_id, player_id, status"),
+      supabase.from("challenges")
+        .select("id, challenger_id, challenged_id, status, created_at, expires_at, resolved_match_id, challenger:players!challenges_challenger_id_fkey(nickname), challenged:players!challenges_challenged_id_fkey(nickname)")
+        .order("created_at", { ascending: false }),
     ]);
     // Snapshots seitenweise laden (können > 1000 Zeilen sein: Wochen x Spieler)
     const snap = await fetchAllRows((from, to) => supabase.from("rating_snapshots")
@@ -119,6 +123,7 @@ export default function App() {
     setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
     setPlayers(pl.data ?? []);
     setPings(pi.data ?? []);
+    setChallenges(ch.data ?? []);
     const byPlayer = {};
     (bg.data ?? []).forEach((r) => {
       (byPlayer[r.player_id] ||= new Set()).add(r.badge_key);
@@ -234,6 +239,23 @@ export default function App() {
     loadData();
   };
 
+  const createChallenge = async (playerId) => {
+    const { error } = await supabase.rpc("create_challenge", { p_challenged_id: playerId });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Herausforderung gesendet!"));
+    loadData();
+  };
+  const cancelChallenge = async (id) => {
+    const { error } = await supabase.rpc("cancel_challenge", { p_challenge_id: id });
+    if (error) toast(t("Fehler: ") + error.message);
+    loadData();
+  };
+  const declineChallenge = async (id) => {
+    const { error } = await supabase.rpc("decline_challenge", { p_challenge_id: id });
+    if (error) toast(t("Fehler: ") + error.message);
+    loadData();
+  };
+
   const openProfile = (nick) => { setProfileName(nick); setTab("fremdprofil"); };
   const logout = async () => { await supabase.auth.signOut(); setTab("rang"); };
 
@@ -293,14 +315,15 @@ export default function App() {
                   colorOf={colorOf} badgeOf={badgeOf} />
               )}
               {tab === "live" && (
-                <LiveScreen me={player} pings={pings} colorOf={colorOf} badgeOf={badgeOf}
+                <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf}
                   onCreate={createPing} onClose={closePing}
-                  onReply={replyPing} onUnreply={unreplyPing} />
+                  onReply={replyPing} onUnreply={unreplyPing}
+                  onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge} />
               )}
               {tab === "match" && (
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf}
-                  onReload={loadData} initialOpp={vsOpp}
+                  onReload={loadData} initialOpp={vsOpp} onChallenge={createChallenge}
                   onDone={() => { setVsOpp(null); setTab("rang"); loadData(); }}
                   onCancel={() => { setVsOpp(null); setTab("rang"); }} />
               )}
@@ -311,7 +334,7 @@ export default function App() {
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
-                  earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog}
+                  earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang} />
               )}
@@ -321,7 +344,7 @@ export default function App() {
                   onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
-                  onSelectBadge={selectBadge} catalog={catalog}
+                  onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang} />
               )}
