@@ -3,14 +3,13 @@ import { luminance } from "../lib/format";
 import { BADGE_INFO } from "../lib/constants";
 
 export default function Ball({ color, label, size = 44, gold = false, badge = null }) {
-  const c = gold ? "#D6A425" : color;
   const b = badge && BADGE_INFO[badge] ? BADGE_INFO[badge] : null;
-  const light = luminance(c) > 0.6; // helle Kugel -> dunkle Beschriftung
+  const light = luminance(color) > 0.6; // helle Kugel -> dunkle Beschriftung
   const numStyle = light
     ? { background: "#1E1E1E", color: "#F2EDE0" }
     : { background: "#F2EDE0", color: "#1E1E1E" };
   return (
-    <div className="ball" style={{ width: size, height: size, background: c }}>
+    <div className={"ball" + (gold ? " gold-ring" : "")} style={{ width: size, height: size, background: color }}>
       <div className="ball-shine" />
       {b ? (
         <div className={"ball-badge" + (light ? " on-light" : "")}

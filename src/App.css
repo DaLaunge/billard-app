@@ -29,6 +29,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 
 .ball { position: relative; border-radius: 50%; flex-shrink: 0;
   box-shadow: inset -4px -6px 10px #00000055, 0 2px 5px #00000060; }
+.ball.gold-ring { box-shadow: inset -4px -6px 10px #00000055, 0 2px 5px #00000060, 0 0 0 3px var(--gold); }
 .ball-shine { position: absolute; top: 12%; left: 16%; width: 34%; height: 26%;
   background: radial-gradient(closest-side, #FFFFFFCC, transparent); border-radius: 50%; }
 .ball-num { position: absolute; inset: 0; margin: auto; background: var(--ivory);
