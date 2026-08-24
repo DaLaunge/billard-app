@@ -17,14 +17,14 @@ export default function PasswordSection({ toast }) {
 
   const save = async () => {
     setMsg("");
-    if (pw.length < 6) { setMsg("Mindestens 6 Zeichen."); return; }
-    if (pw !== pw2) { setMsg("Die Passwörter stimmen nicht überein."); return; }
+    if (pw.length < 6) { setMsg(t("Mindestens 6 Zeichen.")); return; }
+    if (pw !== pw2) { setMsg(t("Die Passwörter stimmen nicht überein.")); return; }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);
-    if (error) { setMsg("Fehler: " + error.message); return; }
+    if (error) { setMsg(t("Fehler: ") + error.message); return; }
     setPw(""); setPw2(""); setOpen(false);
-    toast("Passwort gespeichert – du kannst dich künftig damit anmelden.");
+    toast(t("Passwort gespeichert – du kannst dich künftig damit anmelden."));
   };
 
   return (
@@ -43,7 +43,7 @@ export default function PasswordSection({ toast }) {
           <div className="sp-controls">
             <button className="btn ghost" onClick={() => { setOpen(false); setPw(""); setPw2(""); setMsg(""); }}>{t("Abbrechen")}</button>
             <button className="btn primary" disabled={busy || !pw || !pw2} onClick={save}>
-              {busy ? "..." : "Speichern"}
+              {busy ? "..." : t("Speichern")}
             </button>
           </div>
           <p className="hint">{t("Damit meldest du dich künftig mit E-Mail + Passwort an. Passwort vergessen? Der Magic-Link bringt dich immer rein.")}</p>

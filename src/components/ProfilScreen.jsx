@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
+import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
@@ -33,6 +34,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const collapseAll = () => setOpenCats(new Set());
   const [challengeForm, setChallengeForm] = useState(false);
   const [challengeMsg, setChallengeMsg] = useState("");
+  const installPrompt = useInstallPrompt();
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -104,7 +106,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     return (
       <div className="screen">
         <header className="screen-head with-back">
-          <button className="back-btn" onClick={() => setEdit(false)} aria-label="Zurueck"><ChevronLeft size={22} /></button>
+          <button className="back-btn" onClick={() => setEdit(false)} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
           <h2>{t("Profil bearbeiten")}</h2>
         </header>
 
@@ -116,7 +118,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </div>
           {taken && <p className="nick-status err"><X size={14} /> {t("Dieser Name ist schon vergeben.")}</p>}
           {!taken && cleanNick !== nickname && nickValid && (
-            <p className="nick-status ok"><Check size={14} /> "{cleanNick}" {t("is available.")}</p>
+            <p className="nick-status ok"><Check size={14} /> "{cleanNick}" {t("ist verfügbar.")}</p>
           )}
 
           <label className="field-label">{t("Deine Kugel")}</label>
@@ -125,7 +127,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               onClick={() => setColor(null)} aria-label={t("Automatische Farbe")}>{t("Auto")}</button>
             {BALL_PALETTE.map((c) => (
               <button key={c} className={"swatch" + (color === c ? " sel" : "")}
-                style={{ background: c }} onClick={() => setColor(c)} aria-label={`Farbe ${c}`}>
+                style={{ background: c }} onClick={() => setColor(c)} aria-label={t("Farbe {c}", { c })}>
                 {color === c && <Check size={16} />}
               </button>
             ))}
@@ -145,7 +147,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <div className="swatch-preview">
             <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)} size={56} />
             <span className="hint" style={{ marginTop: 0 }}>
-              {t("So sehen dich die anderen.")}{color && !BALL_PALETTE.includes(color) ? ` Deine Farbe: ${color.toUpperCase()}` : ""}
+              {t("So sehen dich die anderen.")}{color && !BALL_PALETTE.includes(color) ? ` ${t("Deine Farbe: {c}", { c: color.toUpperCase() })}` : ""}
             </span>
           </div>
 
@@ -180,7 +182,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   return (
     <div className="screen">
       <header className="screen-head with-back">
-        {onBack && <button className="back-btn" onClick={onBack} aria-label="Zurueck"><ChevronLeft size={22} /></button>}
+        {onBack && <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>}
         <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
       </header>
 
@@ -366,6 +368,24 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           {t("Kontakt")}: <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a>
         </p>
       </footer>
+
+      {isMe && installPrompt.canShow && (
+        <section className="stat-block install-block">
+          {installPrompt.isIos ? (
+            <p className="hint center">
+              📲 {t("Installiere Break & Rank auf deinem Home-Bildschirm")} — <Share size={13} style={{ verticalAlign: "-2px" }} /> {t("Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"")}
+            </p>
+          ) : installPrompt.hasPrompt ? (
+            <button className="btn ghost" onClick={installPrompt.install}>
+              <Download size={16} /> {t("App installieren")}
+            </button>
+          ) : (
+            <p className="hint center">
+              💻 {t("Kein Installations-Dialog verfuegbar. Schon installiert, aber kein Symbol mehr sichtbar? Oeffne chrome://apps oder suche im Startmenue nach \"Break & Rank\". Noch nicht installiert? Browser-Menue (⋮) -> \"App installieren\".")}
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
 }

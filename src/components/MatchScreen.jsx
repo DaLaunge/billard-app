@@ -148,7 +148,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   return (
     <div className="screen">
       <header className="screen-head with-back">
-        <button className="back-btn" onClick={() => { if (step === 0 || step === 4) onCancel(); else setAbortAsk(true); }} aria-label="Zurueck">
+        <button className="back-btn" onClick={() => { if (step === 0 || step === 4) onCancel(); else setAbortAsk(true); }} aria-label={t("Zurueck")}>
           <ChevronLeft size={22} />
         </button>
         <h2>{t("Neues Match")}</h2>
@@ -171,7 +171,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
         <div className="steps">
           {steps.map((s, i) => (
             <div key={s} className={"step-dot" + (i === step ? " cur" : i < step ? " done" : "")}>
-              <span>{i < step ? <Check size={12} /> : i + 1}</span>{s}
+              <span>{i < step ? <Check size={12} /> : i + 1}</span>{t(s)}
             </div>
           ))}
         </div>
@@ -224,7 +224,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <div className="search-row">
             <Search size={16} className="mail-ico" />
             <input placeholder={t("Spieler suchen …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
-            {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label="Suche loeschen"><X size={15} /></button>}
+            {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
           </div>
           {opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
           {mode === "single" && !oppQuery && suggestions.length > 0 && (
@@ -285,7 +285,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           </div>
           {pendingDisc ? (
             <div className="confirm-box">
-              <p>{t("Wechsel zu bzw. von")} <b>14/1 Endlos</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>
+              <p>{t("Wechsel zu bzw. von")} <b>{t("14/1 Endlos")}</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>
               <div className="sp-controls">
                 <button className="btn ghost" onClick={() => setPendingDisc(null)}>{t("Abbrechen")}</button>
                 <button className="btn primary" onClick={confirmDiscChange}>{t("Wechseln & zurücksetzen")}</button>
@@ -332,7 +332,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               }} />
           ) : (
             <>
-              <p className="q">{t("Wie steht's?")} <span className="q-sub">(gewonnene Spiele)</span></p>
+              <p className="q">{t("Wie steht's?")} <span className="q-sub">{t("(gewonnene Spiele)")}</span></p>
               <div className="score-row">
                 {(mode === "double"
                   ? [{ members: [me, partner], name: teamA, v: s1, set: setS1 }, { members: [opp, opp2], name: teamB, v: s2, set: setS2 }]
@@ -404,7 +404,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             ) : (
               <div className="prob-wrap">
                 <div className="prob-label">
-                  <span>Erwartung laut Rating ({myRating} : {oppRating})</span>
+                  <span>{t("Erwartung laut Rating ({a} : {b})", { a: myRating, b: oppRating })}</span>
                   <span>{Math.round(prob * 100)} % : {Math.round((1 - prob) * 100)} %</span>
                 </div>
                 <div className="prob-bar"><div style={{ width: `${prob * 100}%` }} /></div>

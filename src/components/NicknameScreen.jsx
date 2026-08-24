@@ -42,16 +42,16 @@ export default function NicknameScreen({ onRegistered, existingPlayers }) {
           <input id="nick" value={nick} maxLength={30} placeholder={t("z. B. Kleiner Stefan")}
             autoComplete="off" onChange={(e) => setNick(e.target.value)} />
         </div>
-        {clean.length === 0 && <p className="nick-status dim">2 bis 30 Zeichen.</p>}
+        {clean.length === 0 && <p className="nick-status dim">{t("2 bis 30 Zeichen.")}</p>}
         {tooShort && <p className="nick-status warn">{t("Noch zu kurz - mindestens 2 Zeichen.")}</p>}
-        {taken && <p className="nick-status err"><X size={14} /> "{taken.nickname}" ist schon vergeben.</p>}
+        {taken && <p className="nick-status err"><X size={14} /> {t("Dieser Name ist schon vergeben.")}</p>}
         {legacyMatch && (
           <p className="nick-status ok"><Check size={14} /> "{legacyMatch.nickname}" {t("gefunden! Deine bisherige Match-Historie wird uebernommen.")}</p>
         )}
-        {valid && !legacyMatch && <p className="nick-status ok"><Check size={14} /> "{clean}" ist frei!</p>}
+        {valid && !legacyMatch && <p className="nick-status ok"><Check size={14} /> "{clean}" {t("ist verfügbar!")}</p>}
         {error && <p className="nick-status err"><X size={14} /> {error}</p>}
         <button className="btn primary" disabled={!valid || busy} onClick={register}>
-          {busy ? "Speichere ..." : <>{t("Los geht's")} <ArrowRight size={18} /></>}
+          {busy ? t("Speichere ...") : <>{t("Los geht's")} <ArrowRight size={18} /></>}
         </button>
         <p className="hint">{t("Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.")}</p>
       </div>

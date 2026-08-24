@@ -23,7 +23,7 @@ export default function InviteScreen({ me, onBack, toast }) {
       try {
         await navigator.share({
           title: "Break & Rank",
-          text: `${me.nickname} lädt dich zum Billard-Ranking ein! Tippe auf den Link, um mitzumachen:`,
+          text: t("{name} lädt dich zum Billard-Ranking ein! Tippe auf den Link, um mitzumachen:", { name: me.nickname }),
           url: link,
         });
       } catch { /* abgebrochen */ }

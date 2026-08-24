@@ -35,16 +35,16 @@ export const mSide = (m, s) => {
 };
 export const timeAgo = (d) => {
   const m = Math.round((Date.now() - new Date(d)) / 60000);
-  if (m < 1) return "gerade eben";
-  if (m < 60) return `vor ${m} Min`;
-  return `vor ${Math.round(m / 60)} Std`;
+  if (m < 1) return t("gerade eben");
+  if (m < 60) return t("vor {n} Min", { n: m });
+  return t("vor {n} Std", { n: Math.round(m / 60) });
 };
 export const timeLeft = (d) => {
   const m = Math.max(0, Math.round((new Date(d) - Date.now()) / 60000));
-  if (m < 60) return `noch ${m} Min`;
+  if (m < 60) return t("noch {n} Min", { n: m });
   const h = Math.round(m / 60);
-  if (h < 48) return `noch ca. ${h} Std`;
-  return `noch ca. ${Math.round(h / 24)} Tage`;
+  if (h < 48) return t("noch ca. {n} Std", { n: h });
+  return t("noch ca. {n} Tage", { n: Math.round(h / 24) });
 };
 
 /* Wahrgenommene Helligkeit einer Hex-Farbe (0 = dunkel, 1 = hell).
