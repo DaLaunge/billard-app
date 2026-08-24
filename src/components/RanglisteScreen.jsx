@@ -4,6 +4,8 @@ import { t } from "../lib/i18n";
 import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
 import Ball from "./Ball";
 
+const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
+
 export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports, colorOf, badgeOf }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
@@ -63,12 +65,12 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
 
       <ol className="ranking">
         {rows.map((r, i) => {
-          const medal = i < 3 && !r.vorlaeufig && r.aktiv ? ["gold", "silver", "bronze"][i] : null;
+          const medalEmoji = i < 3 && !r.vorlaeufig && r.aktiv ? MEDAL_EMOJI[i] : null;
           return (
           <li key={r.nickname + r.discipline}>
             <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
-              <span className={"rank-pos" + (medal ? ` ${medal}` : "")}>{i + 1}</span>
-              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} medal={medal} />
+              <span className="rank-pos">{medalEmoji || i + 1}</span>
+              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} />
               <span className="rank-name">
                 {r.nickname}
                 <span className="rank-meta">
