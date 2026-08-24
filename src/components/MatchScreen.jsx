@@ -4,11 +4,12 @@ import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight,
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
+import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, initialOpp, onChallenge }) {
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, initialOpp, onChallenge, catalog, challenges }) {
   const [step, setStep] = useState(initialOpp ? 1 : 0);
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
@@ -80,19 +81,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       lossMax: 4 * nf(D) * (0 - ea),
     };
   };
-  const STREAK_THR = [2, 3, 4, 5, 7, 10, 15, 20];
-  const myStreak = (() => {
-    const mine = matches
-      .filter((m) => m.player1_id === me.id || m.player2_id === me.id)
-      .sort((a, b) => new Date(b.played_at) - new Date(a.played_at));
-    let s = 0;
-    for (const m of mine) {
-      const won = (m.player1_id === me.id && m.score1 > m.score2) || (m.player2_id === me.id && m.score2 > m.score1);
-      if (won) s++; else break;
-    }
-    return s;
-  })();
-  const nextStreak = STREAK_THR.find((tt) => tt === myStreak + 1);
+  const achievementHint = useMemo(
+    () => nextAchievementHint(catalog, computeAchievementExtras(me.nickname, matches, players, challenges)),
+    [catalog, matches, players, challenges, me.nickname]
+  );
   const suggestions = opponents
     .map((p) => ({ p, gain: previewFor("Gesamt", p.nickname).winMax }))
     .sort((a, b) => b.gain - a.gain)
@@ -227,6 +219,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </div>
           )}
 
+          {achievementHint && <p className="hint-highlight">🎯 {achievementHint}</p>}
+
           <div className="search-row">
             <Search size={16} className="mail-ico" />
             <input placeholder={t("Spieler suchen …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
@@ -236,9 +230,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {mode === "single" && !oppQuery && suggestions.length > 0 && (
             <div className="suggest-card">
               <div className="suggest-title">💡 {t("Empfehlung")}</div>
-              {nextStreak && (
-                <div className="suggest-streak">{t("Noch 1 Sieg bis zur {n}er-Serie!", { n: nextStreak })}</div>
-              )}
               {suggestions.map(({ p, gain }) => (
                 <div key={p.id} className="suggest-row">
                   <button className="suggest-row-play" onClick={() => { setOpp(p); setStep(1); }}>
