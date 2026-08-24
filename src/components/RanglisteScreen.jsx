@@ -4,6 +4,8 @@ import { t } from "../lib/i18n";
 import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
 import Ball from "./Ball";
 
+const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
+
 export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports, colorOf, badgeOf }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
@@ -62,11 +64,13 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
       </div>
 
       <ol className="ranking">
-        {rows.map((r, i) => (
+        {rows.map((r, i) => {
+          const medalEmoji = i < 3 && !r.vorlaeufig && r.aktiv ? MEDAL_EMOJI[i] : null;
+          return (
           <li key={r.nickname + r.discipline}>
             <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
-              <span className={"rank-pos" + (i < 3 && !r.vorlaeufig ? " top" : "")}>{i + 1}</span>
-              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} gold={i === 0 && !r.vorlaeufig && r.aktiv} />
+              <span className="rank-pos">{medalEmoji || i + 1}</span>
+              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} />
               <span className="rank-name">
                 {r.nickname}
                 <span className="rank-meta">
@@ -78,7 +82,8 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
               <span className="rank-rating">{r.rating}</span>
             </button>
           </li>
-        ))}
+          );
+        })}
       </ol>
       {rows.length === 0 && <p className="hint center">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
       {hidden > 0 && !showAll && (
