@@ -4,6 +4,7 @@
   --felt: #0A2B21; --felt-2: #10382C; --felt-3: #17493A;
   --line: #24564660; --chalk: #7CC1E8; --chalk-deep: #3E82B4;
   --ivory: #F2EDE0; --ivory-dim: #9DBAAE; --gold: #D6A425;
+  --silver: #C7CDD6; --bronze: #C97C43;
   --win: #4CAF6E; --loss: #D9614C;
 }
 * { box-sizing: border-box; margin: 0; }
@@ -30,6 +31,8 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .ball { position: relative; border-radius: 50%; flex-shrink: 0;
   box-shadow: inset -4px -6px 10px #00000055, 0 2px 5px #00000060; }
 .ball.gold-ring { box-shadow: inset -4px -6px 10px #00000055, 0 2px 5px #00000060, 0 0 0 3px var(--gold); }
+.ball.silver-ring { box-shadow: inset -4px -6px 10px #00000055, 0 2px 5px #00000060, 0 0 0 3px var(--silver); }
+.ball.bronze-ring { box-shadow: inset -4px -6px 10px #00000055, 0 2px 5px #00000060, 0 0 0 3px var(--bronze); }
 .ball-shine { position: absolute; top: 12%; left: 16%; width: 34%; height: 26%;
   background: radial-gradient(closest-side, #FFFFFFCC, transparent); border-radius: 50%; }
 .ball-num { position: absolute; inset: 0; margin: auto; background: var(--ivory);
@@ -209,7 +212,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   padding: 11px 14px; color: inherit; cursor: pointer; font-family: inherit; }
 .rank-row:active { background: var(--felt-3); }
 .rank-pos { width: 22px; font-weight: 700; color: var(--ivory-dim); font-size: 15px; }
-.rank-pos.top { color: var(--gold); }
+.rank-pos.gold { color: var(--gold); }
+.rank-pos.silver { color: var(--silver); }
+.rank-pos.bronze { color: var(--bronze); }
 .rank-name { flex: 1; font-weight: 600; font-size: 15.5px; display: flex; flex-direction: column; min-width: 0; }
 .rank-meta { font-weight: 400; font-size: 12px; color: var(--ivory-dim); }
 .prov { color: var(--gold); font-style: normal; }

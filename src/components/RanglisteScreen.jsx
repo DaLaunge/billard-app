@@ -62,11 +62,13 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
       </div>
 
       <ol className="ranking">
-        {rows.map((r, i) => (
+        {rows.map((r, i) => {
+          const medal = i < 3 && !r.vorlaeufig && r.aktiv ? ["gold", "silver", "bronze"][i] : null;
+          return (
           <li key={r.nickname + r.discipline}>
             <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
-              <span className={"rank-pos" + (i < 3 && !r.vorlaeufig ? " top" : "")}>{i + 1}</span>
-              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} gold={i === 0 && !r.vorlaeufig && r.aktiv} />
+              <span className={"rank-pos" + (medal ? ` ${medal}` : "")}>{i + 1}</span>
+              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} medal={medal} />
               <span className="rank-name">
                 {r.nickname}
                 <span className="rank-meta">
@@ -78,7 +80,8 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
               <span className="rank-rating">{r.rating}</span>
             </button>
           </li>
-        ))}
+          );
+        })}
       </ol>
       {rows.length === 0 && <p className="hint center">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
       {hidden > 0 && !showAll && (
