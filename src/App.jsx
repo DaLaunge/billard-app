@@ -107,7 +107,7 @@ export default function App() {
       supabase.from("badge_catalog").select("*"),
       supabase.from("match_confirmations").select("match_id, player_id, status"),
       supabase.from("challenges")
-        .select("id, challenger_id, challenged_id, status, created_at, expires_at, resolved_match_id, challenger:players!challenges_challenger_id_fkey(nickname), challenged:players!challenges_challenged_id_fkey(nickname)")
+        .select("id, challenger_id, challenged_id, status, created_at, expires_at, resolved_match_id, message, message_updated_at, reply, reply_updated_at, challenger:players!challenges_challenger_id_fkey(nickname), challenged:players!challenges_challenged_id_fkey(nickname)")
         .order("created_at", { ascending: false }),
     ]);
     // Snapshots seitenweise laden (können > 1000 Zeilen sein: Wochen x Spieler)
@@ -186,6 +186,9 @@ export default function App() {
   const myOpenReports = player
     ? unconfirmed.filter((m) => notExpired(m) && m.reported_by === player.id)
     : [];
+  const openChallengesToMe = player
+    ? challenges.filter((c) => c.challenged_id === player.id && c.status === "open" && new Date(c.expires_at) > new Date())
+    : [];
 
   const confirmMatch = async (id, ok) => {
     const { error } = await supabase.rpc("confirm_match", { p_match_id: id, p_ok: ok });
@@ -239,10 +242,20 @@ export default function App() {
     loadData();
   };
 
-  const createChallenge = async (playerId) => {
-    const { error } = await supabase.rpc("create_challenge", { p_challenged_id: playerId });
+  const createChallenge = async (playerId, message) => {
+    const { error } = await supabase.rpc("create_challenge", { p_challenged_id: playerId, p_message: message || null });
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Herausforderung gesendet!"));
+    loadData();
+  };
+  const editChallengeMessage = async (id, message) => {
+    const { error } = await supabase.rpc("edit_challenge_message", { p_challenge_id: id, p_message: message });
+    if (error) toast(t("Fehler: ") + error.message);
+    loadData();
+  };
+  const replyToChallenge = async (id, reply) => {
+    const { error } = await supabase.rpc("reply_to_challenge", { p_challenge_id: id, p_reply: reply });
+    if (error) toast(t("Fehler: ") + error.message);
     loadData();
   };
   const cancelChallenge = async (id) => {
@@ -318,12 +331,14 @@ export default function App() {
                 <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf}
                   onCreate={createPing} onClose={closePing}
                   onReply={replyPing} onUnreply={unreplyPing}
-                  onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge} />
+                  onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
+                  onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge} />
               )}
               {tab === "match" && (
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf}
                   onReload={loadData} initialOpp={vsOpp} onChallenge={createChallenge}
+                  catalog={catalog} challenges={challenges}
                   onDone={() => { setVsOpp(null); setTab("rang"); loadData(); }}
                   onCancel={() => { setVsOpp(null); setTab("rang"); }} />
               )}
@@ -369,7 +384,9 @@ export default function App() {
               </button>
               <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => setTab("live")}>
                 <Radio size={21} /><span>{t("Live")}</span>
-                {pings.length > 0 && <span className="badge live">{pings.length}</span>}
+                {pings.length + openChallengesToMe.length > 0 && (
+                  <span className="badge live">{pings.length + openChallengesToMe.length}</span>
+                )}
               </button>
               <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
                 <Plus size={26} />

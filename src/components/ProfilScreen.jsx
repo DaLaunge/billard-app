@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut } from "lucide-react";
 import { t } from "../lib/i18n";
-import { computeStats, todayStr } from "../lib/stats";
+import { computeStats } from "../lib/stats";
+import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
@@ -30,6 +31,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   });
   const expandAll = () => setOpenCats(new Set(catalogByCategory.map(([c]) => c)));
   const collapseAll = () => setOpenCats(new Set());
+  const [challengeForm, setChallengeForm] = useState(false);
+  const [challengeMsg, setChallengeMsg] = useState("");
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -38,49 +41,25 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
   const stats = useMemo(() => computeStats(matches)[nickname], [matches, nickname]);
 
-  // Zusatzkennzahlen, die aus den bereits geladenen Matches berechenbar sind
-  // (Zu-Null-Siege, Rekord gegen einen einzelnen Gegner, Rekord an einem Tag).
-  const liveExtras = useMemo(() => {
-    let shutoutWins = 0, highRun = 0;
-    const perOpp = {}, perDay = {};
-    matches.forEach((m) => {
-      if (m.player1b_id) return;
-      let my, opp, oppNick, myRun;
-      if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; myRun = m.high_run1; }
-      else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; myRun = m.high_run2; }
-      else return;
-      if (my > opp && opp === 0) shutoutWins++;
-      if (myRun != null && myRun > highRun) highRun = myRun;
-      perOpp[oppNick] = (perOpp[oppNick] || 0) + 1;
-      const day = todayStr(new Date(m.played_at));
-      perDay[day] = (perDay[day] || 0) + 1;
-    });
-    const myId = players.find((p) => p.nickname === nickname)?.id;
-    const recruitedCount = myId ? players.filter((p) => p.invited_by === myId).length : 0;
-    const challengesAccepted = myId
-      ? (challenges || []).filter((c) => c.challenged_id === myId && c.status === "fulfilled").length
-      : 0;
-    return {
-      shutoutWins,
-      highRun,
-      recruitedCount,
-      challengesAccepted,
-      maxVsOpponent: Math.max(0, ...Object.values(perOpp)),
-      maxPerDay: Math.max(0, ...Object.values(perDay)),
-    };
-  }, [matches, players, nickname, challenges]);
+  // Zusatzkennzahlen (Serien, Zu-Null-Siege, Rekorde, geworbene Spieler, ...),
+  // geteilt mit MatchScreen fuer den Fortschritts-Hinweis dort.
+  const liveExtras = useMemo(
+    () => computeAchievementExtras(nickname, matches, players, challenges),
+    [matches, players, nickname, challenges]
+  );
+  const achievementHint = useMemo(() => nextAchievementHint(catalog, liveExtras), [catalog, liveExtras]);
 
   // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
   // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB
   // und ihre Zuordnung ist der App nicht fix bekannt.
-  const catLiveStat = (items, s, extras) => {
+  const catLiveStat = (items, extras) => {
     const has = (re) => items.some((b) => re.test(b.description));
     const parts = [];
-    if (has(/Siege in Folge$/) && s) {
-      const curTxt = s.streak > 0 ? `+${s.streak}` : `${s.streak}`;
-      parts.push(`${t("Serie aktuell: {n}", { n: curTxt })} · ${t("Beste Serie: {n}", { n: s.longestStreak })}`);
+    if (has(/Siege in Folge$/)) {
+      const curTxt = extras.streak > 0 ? `+${extras.streak}` : `${extras.streak}`;
+      parts.push(`${t("Serie aktuell: {n}", { n: curTxt })} · ${t("Beste Serie: {n}", { n: extras.longestStreak })}`);
     }
-    if (has(/^\d+ Siege insgesamt$/) && s) parts.push(t("{n} Siege insgesamt", { n: s.siege }));
+    if (has(/^\d+ Siege insgesamt$/)) parts.push(t("{n} Siege insgesamt", { n: extras.siege }));
     if (has(/zu null gewonnen/)) parts.push(t("{n} Zu-Null-Siege", { n: extras.shutoutWins }));
     if (has(/Matches gegen denselben Gegner/)) parts.push(t("Rekord gegen 1 Gegner: {n} Matches", { n: extras.maxVsOpponent }));
     if (has(/Matches an einem Tag/)) parts.push(t("Rekord an 1 Tag: {n} Matches", { n: extras.maxPerDay }));
@@ -217,10 +196,28 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </div>
       </div>
 
-      {!isMe && playerObj && (
-        <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => onChallenge(playerObj.id)}>
+      {!isMe && playerObj && !challengeForm && (
+        <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => setChallengeForm(true)}>
           <Swords size={15} /> {t("Herausfordern")}
         </button>
+      )}
+      {!isMe && playerObj && challengeForm && (
+        <div className="challenge-form">
+          <div className="search-row" style={{ marginBottom: 8 }}>
+            <input placeholder={t("z. B. 'Hast du heute Abend Zeit?'")} value={challengeMsg}
+              maxLength={200} onChange={(e) => setChallengeMsg(e.target.value)} />
+          </div>
+          <div className="sp-controls">
+            <button className="btn ghost" onClick={() => { setChallengeForm(false); setChallengeMsg(""); }}>
+              {t("Abbrechen")}
+            </button>
+            <button className="btn primary" onClick={() => {
+              onChallenge(playerObj.id, challengeMsg); setChallengeForm(false); setChallengeMsg("");
+            }}>
+              <Swords size={15} /> {t("Herausfordern")}
+            </button>
+          </div>
+        </div>
       )}
 
       {isMe && (
@@ -253,6 +250,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <section className="stat-block">
         <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
+        {isMe && achievementHint && (
+          <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
+        )}
         {isMe && (
           <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
             {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
@@ -273,7 +273,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
           const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
           const open = openCats.has(cat);
-          const liveStat = isMe ? catLiveStat(items, stats, liveExtras) : null;
+          const liveStat = isMe ? catLiveStat(items, liveExtras) : null;
           return (
             <div key={cat} className="badge-cat">
               <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
