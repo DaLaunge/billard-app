@@ -525,6 +525,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .nick-status.err { color: var(--loss); }
 .nick-status.ok { color: var(--win); }
 .field-label { font-size: 13px; color: var(--ivory-dim); display: block; margin-bottom: 8px; }
+.settings-select { width: 100%; box-sizing: border-box; background: var(--felt); color: var(--ivory);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px;
+  font-family: inherit; margin-bottom: 10px; }
 
 .login-screen { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
 .login-hero { text-align: center; margin-bottom: 34px; }
@@ -569,6 +572,15 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   background: var(--ivory); color: #08251C; font-weight: 600; font-size: 14px;
   border-radius: 999px; padding: 10px 20px; box-shadow: 0 8px 24px #00000070;
   white-space: nowrap; z-index: 50; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+
+.install-banner { display: flex; align-items: center; gap: 10px; background: var(--felt-3);
+  border-bottom: 1px solid var(--gold); padding: 10px 16px; }
+.install-banner-text { flex: 1; font-size: 12.5px; color: var(--ivory); line-height: 1.4; }
+.install-banner-btn { flex: 1; border: none; border-radius: 12px; background: var(--gold); color: #2A1E00;
+  font-weight: 700; font-size: 14px; padding: 10px; display: flex; align-items: center;
+  justify-content: center; gap: 8px; cursor: pointer; font-family: 'Bricolage Grotesque', sans-serif; }
+.install-banner-close { flex-shrink: 0; background: transparent; border: none; color: var(--ivory-dim);
+  cursor: pointer; padding: 4px; display: flex; }
 
 button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) {

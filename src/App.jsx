@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { RefreshCw, Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
+import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
 
@@ -18,6 +19,7 @@ import StatistikScreen from "./components/StatistikScreen";
 import ProfilScreen from "./components/ProfilScreen";
 import AdminScreen from "./components/AdminScreen";
 import InviteScreen from "./components/InviteScreen";
+import InstallBanner from "./components/InstallBanner";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -43,6 +45,39 @@ export default function App() {
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
   const [vsOpp, setVsOpp] = useState(null);
+
+  // --- App-Updates (Service Worker) --------------------------------------
+  // "bei jedem Aufruf" = kein Timer, stattdessen bei jedem Sichtbarwerden der
+  // App pruefen; sonst alle 30/60 Min per Timer; "manual" = nur per Klick in
+  // den Profileinstellungen. Ein gefundenes Update wird sofort angewendet
+  // (Reload), ausser waehrend einer laufenden Matcheingabe - dann erst,
+  // sobald der Match-Bildschirm verlassen wird (siehe Effekt unten).
+  const [updateInterval, setUpdateInterval] = useState(() => {
+    try { return localStorage.getItem("updateCheckInterval") || "30"; } catch { return "30"; }
+  });
+  const swRegistration = useRef(null);
+  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW({
+    onRegisteredSW(_url, reg) { swRegistration.current = reg || null; },
+  });
+  const checkForUpdate = useCallback(() => { swRegistration.current?.update(); }, []);
+  const setUpdateCheckInterval = useCallback((v) => {
+    setUpdateInterval(v);
+    try { localStorage.setItem("updateCheckInterval", v); } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    if (updateInterval === "manual") return;
+    if (updateInterval === "open") {
+      checkForUpdate();
+      const onVis = () => { if (document.visibilityState === "visible") checkForUpdate(); };
+      document.addEventListener("visibilitychange", onVis);
+      return () => document.removeEventListener("visibilitychange", onVis);
+    }
+    const id = setInterval(checkForUpdate, Number(updateInterval) * 60000);
+    return () => clearInterval(id);
+  }, [updateInterval, checkForUpdate]);
+  useEffect(() => {
+    if (needRefresh && tab !== "match") updateServiceWorker(true);
+  }, [needRefresh, tab, updateServiceWorker]);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
@@ -279,6 +314,7 @@ export default function App() {
   return (
     <div className="stage">
       <div className="phone">
+        <InstallBanner />
         {!session && <LoginScreen />}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
@@ -351,7 +387,8 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
-                  lang={lang} onLang={changeLang} />
+                  lang={lang} onLang={changeLang}
+                  updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}

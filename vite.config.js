@@ -7,6 +7,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: false, // Registrierung laeuft manuell ueber useRegisterSW() in App.jsx
+      workbox: { skipWaiting: true, clientsClaim: true },
+      devOptions: { enabled: true, type: "module" }, // Service Worker auch im `npm run dev` aktiv, zum Testen
       includeAssets: ["apple-touch-icon.png"],
       manifest: {
         name: "Break & Rank",
