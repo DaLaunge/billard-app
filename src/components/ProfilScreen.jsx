@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
@@ -10,7 +10,7 @@ import PasswordSection from "./PasswordSection";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang,
-  onChallenge, challenges }) {
+  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -328,6 +328,23 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         ))}
         {h2h.length === 0 && <p className="hint">{t("Noch keine Matches.")}</p>}
       </section>
+
+      {isMe && (
+        <section className="stat-block">
+          <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
+          <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
+          <select id="updateInterval" className="settings-select" value={updateInterval}
+            onChange={(e) => onSetUpdateInterval(e.target.value)}>
+            <option value="open">{t("Bei jedem Aufruf")}</option>
+            <option value="30">{t("Alle 30 Minuten")}</option>
+            <option value="60">{t("Alle 60 Minuten")}</option>
+            <option value="manual">{t("Manuell")}</option>
+          </select>
+          <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
+            <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
+          </button>
+        </section>
+      )}
 
       {isMe && <PasswordSection toast={toast} />}
 
