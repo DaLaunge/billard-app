@@ -62,7 +62,7 @@ export default function DevChart({ dates, lines }) {
           </>
         )}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label="Rating-Verlauf"
+      <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label={t("Rating-Verlauf")}
         onPointerDown={down} onPointerMove={onMove} onPointerUp={up} onPointerLeave={() => setActive(null)} onPointerCancel={up}>
         {yticks.map((val) => (
           <g key={val}>

@@ -227,7 +227,7 @@ export default function App() {
   const confirmMatch = async (id, ok) => {
     const { error } = await supabase.rpc("confirm_match", { p_match_id: id, p_ok: ok });
     if (error) toast(t("Fehler: ") + error.message);
-    else toast(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen.");
+    else toast(t(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen."));
     loadData();
   };
 
@@ -235,7 +235,7 @@ export default function App() {
     const { data, error } = await supabase.rpc("select_badge", { p_badge_key: badgeKey });
     if (error) { toast(t("Fehler: ") + error.message); return; }
     setPlayer(data);
-    toast(badgeKey ? "Erfolg als Avatar gesetzt." : "Wieder deine Kugel.");
+    toast(t(badgeKey ? "Erfolg als Avatar gesetzt." : "Wieder deine Kugel."));
     loadData();
   };
 
@@ -327,7 +327,7 @@ export default function App() {
 
         {session && playerChecked && !player && (
           <NicknameScreen existingPlayers={players}
-            onRegistered={(p) => { setPlayer(p); toast(`Willkommen, ${p.nickname}!`); }} />
+            onRegistered={(p) => { setPlayer(p); toast(t("Willkommen, {name}!", { name: p.nickname })); }} />
         )}
 
         {session && player && (
@@ -406,7 +406,7 @@ export default function App() {
               {tab === "invite" && (
                 <InviteScreen me={player} onBack={() => setTab("profil")} toast={toast} />
               )}
-              <button className="refresh-btn" onClick={loadData} aria-label="Aktualisieren">
+              <button className="refresh-btn" onClick={loadData} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
               </button>
             </main>

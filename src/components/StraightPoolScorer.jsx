@@ -235,7 +235,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish
                 {fouls[i]} Foul{fouls[i] > 1 ? "s" : ""} {t("in Folge")}{fouls[i] >= 2 ? t(" – Vorsicht!") : ""}
               </div>
             )}
-            {active === i && <div className="sp-turn">am Tisch{inningRun > 0 ? ` · Serie ${inningRun}` : ""}</div>}
+            {active === i && <div className="sp-turn">{t("am Tisch")}{inningRun > 0 ? ` · ${t("Serie {n}", { n: inningRun })}` : ""}</div>}
           </div>
         ))}
       </div>

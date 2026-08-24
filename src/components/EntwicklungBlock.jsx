@@ -106,13 +106,13 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
           <div className="range-row">
             {RANGES.map((r) => (
               <button key={r.key} className={"range-btn" + (rangeKey === r.key ? " active" : "")}
-                onClick={() => setRangeKey(r.key)}>{r.label}</button>
+                onClick={() => setRangeKey(r.key)}>{t(r.label)}</button>
             ))}
           </div>
           <DevChart dates={visibleDates} lines={lines} />
           <div className="legend">
             {sel.map((nick) => (
-              <button key={nick} className="legend-item" onClick={() => toggle(nick)} title="Entfernen">
+              <button key={nick} className="legend-item" onClick={() => toggle(nick)} title={t("Entfernen")}>
                 <span className="legend-dot" style={{ background: colorOf(nick) }} />
                 {nick}{latest(nick) != null ? ` · ${latest(nick)}` : ""}
                 <X size={12} />

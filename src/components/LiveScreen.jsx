@@ -122,7 +122,7 @@ export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, on
                 <div className="chips" style={{ marginBottom: 4 }}>
                   {[1, 2, 3, 6].map((h) => (
                     <button key={h} className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>
-                      {h} Std
+                      {t("{n} Std", { n: h })}
                     </button>
                   ))}
                 </div>

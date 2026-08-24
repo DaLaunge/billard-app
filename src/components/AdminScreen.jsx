@@ -48,7 +48,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     const head = [t("Name"), t("Rolle"), t("Blockiert"), t("Letzte Aktivität"), t("Registriert am")].map(esc).join(sep);
     const rows = logins.map((p) => {
       const role = p.is_ghost ? "Special" : p.blocked ? "Blocked" : p.role === "admin" ? "Admin" : "User";
-      return [p.nickname, role, p.blocked ? "ja" : "nein",
+      return [p.nickname, role, p.blocked ? t("ja") : t("nein"),
         p.last_seen ? fmtDate(p.last_seen) : "", p.created_at ? fmtDate(p.created_at) : ""].map(esc).join(sep);
     });
     const csv = "\uFEFF" + [head, ...rows].join("\r\n");
@@ -93,7 +93,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   };
   const createUser = async () => {
     if (!nu.email.includes("@") || nu.password.length < 6) {
-      toast("E-Mail und Passwort (min. 6 Zeichen) nötig."); return;
+      toast(t("E-Mail und Passwort (min. 6 Zeichen) nötig.")); return;
     }
     setBusyUser(true);
     const { data, error } = await supabase.functions.invoke("admin-create-user", {
@@ -110,7 +110,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   return (
     <div className="screen">
       <header className="screen-head with-back">
-        <button className="back-btn" onClick={onBack} aria-label="Zurueck"><ChevronLeft size={22} /></button>
+        <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{t("Verwaltung")}</h2>
       </header>
 
@@ -122,8 +122,8 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
             <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)} - {t(m.discipline)}</span>
             <div className="confirm-actions">
-              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)} aria-label="freigeben"><Check size={15} /></button>
-              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)} aria-label="verwerfen"><X size={15} /></button>
+              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)} aria-label={t("freigeben")}><Check size={15} /></button>
+              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)} aria-label={t("verwerfen")}><X size={15} /></button>
             </div>
           </div>
         ))}
@@ -180,7 +180,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           <input type="text" placeholder={t("Spielername (optional)")} value={nu.nickname} autoComplete="off"
             onChange={(e) => setNu({ ...nu, nickname: e.target.value })} />
           <button className="btn primary" disabled={busyUser} onClick={createUser}>
-            {busyUser ? "Lege an …" : "Nutzer anlegen"}
+            {busyUser ? t("Lege an …") : t("Nutzer anlegen")}
           </button>
         </div>
       </section>

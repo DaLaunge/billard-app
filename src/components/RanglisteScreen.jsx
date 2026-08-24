@@ -75,8 +75,8 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
                 {r.nickname}
                 <span className="rank-meta">
                   {r.spiele} {t("Spiele")} - {t("zuletzt")} {fmtDate(r.letzte_partie)}
-                  {r.vorlaeufig && <em className="prov"> - vorlaeufig</em>}
-                  {!r.aktiv && <em className="inactive"> - inaktiv</em>}
+                  {r.vorlaeufig && <em className="prov"> {t("- vorlaeufig")}</em>}
+                  {!r.aktiv && <em className="inactive"> {t("- inaktiv")}</em>}
                 </span>
               </span>
               <span className="rank-rating">{r.rating}</span>

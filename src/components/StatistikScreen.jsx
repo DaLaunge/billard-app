@@ -18,7 +18,7 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
   const Block = ({ icon, title, rows, fmt }) => (
     <section className="stat-block">
       <h3>{icon} {title}</h3>
-      {rows.length === 0 && <p className="hint">Noch keine Daten.</p>}
+      {rows.length === 0 && <p className="hint">{t("Noch keine Daten.")}</p>}
       {rows.map((p, i) => (
         <button key={p.name} className="stat-row as-btn" onClick={() => onOpenProfile(p.name)}>
           <span className="medal">{medals[i]}</span>
@@ -43,7 +43,7 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
           <div key={m.id} className="match-row">
             <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
             <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</span>
-            <span className="m-disc">{m.discipline}</span>
+            <span className="m-disc">{t(m.discipline)}</span>
           </div>
         ))}
         {lastMatches.length === 0 && <p className="hint">{t("Noch keine bestaetigten Matches.")}</p>}
