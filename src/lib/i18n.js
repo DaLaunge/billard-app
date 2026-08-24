@@ -278,6 +278,7 @@ const TRANSLATIONS = {
     "Installiere Break & Rank auf deinem Home-Bildschirm": "Install Break & Rank on your home screen",
     "Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"": "Tap Share below, then \"Add to Home Screen\"",
     "App installieren": "Install app",
+    "Kein Installations-Dialog verfuegbar. Schon installiert, aber kein Symbol mehr sichtbar? Oeffne chrome://apps oder suche im Startmenue nach \"Break & Rank\". Noch nicht installiert? Browser-Menue (⋮) -> \"App installieren\".": "No install dialog available. Already installed but the icon is gone? Open chrome://apps or search your start menu for \"Break & Rank\". Not installed yet? Browser menu (⋮) -> \"Install app\".",
     "Schliessen": "Close",
     "Noch keine Herausforderungen - fordere jemanden beim Match anlegen oder im Profil heraus.": "No challenges yet - challenge someone when starting a match or from their profile.",
     "Live": "Live",

@@ -375,10 +375,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <p className="hint center">
               📲 {t("Installiere Break & Rank auf deinem Home-Bildschirm")} — <Share size={13} style={{ verticalAlign: "-2px" }} /> {t("Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"")}
             </p>
-          ) : (
+          ) : installPrompt.hasPrompt ? (
             <button className="btn ghost" onClick={installPrompt.install}>
               <Download size={16} /> {t("App installieren")}
             </button>
+          ) : (
+            <p className="hint center">
+              💻 {t("Kein Installations-Dialog verfuegbar. Schon installiert, aber kein Symbol mehr sichtbar? Oeffne chrome://apps oder suche im Startmenue nach \"Break & Rank\". Noch nicht installiert? Browser-Menue (⋮) -> \"App installieren\".")}
+            </p>
           )}
         </section>
       )}
