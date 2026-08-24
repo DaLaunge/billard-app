@@ -78,15 +78,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     const parts = [];
     if (has(/Siege in Folge$/) && s) {
       const curTxt = s.streak > 0 ? `+${s.streak}` : `${s.streak}`;
-      parts.push(`${t("Aktuell")}: ${curTxt} · ${t("Beste Serie")}: ${s.longestStreak}`);
+      parts.push(`${t("Serie aktuell: {n}", { n: curTxt })} · ${t("Beste Serie: {n}", { n: s.longestStreak })}`);
     }
-    if (has(/^\d+ Siege insgesamt$/) && s) parts.push(`${t("Insgesamt")}: ${s.siege}`);
-    if (has(/zu null gewonnen/)) parts.push(`${t("Zu-Null-Siege")}: ${extras.shutoutWins}`);
-    if (has(/Matches gegen denselben Gegner/)) parts.push(`${t("Rekord")}: ${extras.maxVsOpponent}`);
-    if (has(/Matches an einem Tag/)) parts.push(`${t("Rekord")}: ${extras.maxPerDay}`);
-    if (has(/14\/1: Höchstserie/)) parts.push(`${t("Rekord")}: ${extras.highRun}`);
-    if (has(/Spieler geworben/)) parts.push(`${t("Insgesamt")}: ${extras.recruitedCount}`);
-    if (has(/Herausforderung(en)? angenommen/)) parts.push(`${t("Insgesamt")}: ${extras.challengesAccepted}`);
+    if (has(/^\d+ Siege insgesamt$/) && s) parts.push(t("{n} Siege insgesamt", { n: s.siege }));
+    if (has(/zu null gewonnen/)) parts.push(t("{n} Zu-Null-Siege", { n: extras.shutoutWins }));
+    if (has(/Matches gegen denselben Gegner/)) parts.push(t("Rekord gegen 1 Gegner: {n} Matches", { n: extras.maxVsOpponent }));
+    if (has(/Matches an einem Tag/)) parts.push(t("Rekord an 1 Tag: {n} Matches", { n: extras.maxPerDay }));
+    if (has(/14\/1: Höchstserie/)) parts.push(t("Höchstserie: {n}", { n: extras.highRun }));
+    if (has(/Spieler geworben/)) parts.push(t("{n} Spieler geworben", { n: extras.recruitedCount }));
+    if (has(/Herausforderung(en)? angenommen/)) parts.push(t("{n} Herausforderungen angenommen", { n: extras.challengesAccepted }));
     return parts.length ? parts.join(" · ") : null;
   };
 
