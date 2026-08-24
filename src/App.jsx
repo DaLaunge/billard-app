@@ -19,7 +19,6 @@ import StatistikScreen from "./components/StatistikScreen";
 import ProfilScreen from "./components/ProfilScreen";
 import AdminScreen from "./components/AdminScreen";
 import InviteScreen from "./components/InviteScreen";
-import InstallBanner from "./components/InstallBanner";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -314,7 +313,6 @@ export default function App() {
   return (
     <div className="stage">
       <div className="phone">
-        <InstallBanner />
         {!session && <LoginScreen />}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}

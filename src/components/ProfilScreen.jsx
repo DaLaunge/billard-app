@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
+import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
@@ -33,6 +34,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const collapseAll = () => setOpenCats(new Set());
   const [challengeForm, setChallengeForm] = useState(false);
   const [challengeMsg, setChallengeMsg] = useState("");
+  const installPrompt = useInstallPrompt();
   const [edit, setEdit] = useState(false);
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -366,6 +368,20 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           {t("Kontakt")}: <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a>
         </p>
       </footer>
+
+      {isMe && installPrompt.canShow && (
+        <section className="stat-block install-block">
+          {installPrompt.isIos ? (
+            <p className="hint center">
+              📲 {t("Installiere Break & Rank auf deinem Home-Bildschirm")} — <Share size={13} style={{ verticalAlign: "-2px" }} /> {t("Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"")}
+            </p>
+          ) : (
+            <button className="btn ghost" onClick={installPrompt.install}>
+              <Download size={16} /> {t("App installieren")}
+            </button>
+          )}
+        </section>
+      )}
     </div>
   );
 }
