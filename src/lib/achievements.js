@@ -77,11 +77,20 @@ const FAMILIES = [
   { test: (d) => /Siege in Folge gegen denselben Gegner$/.test(d), current: (e) => (e.maxOpponentStreak > 0 ? e.maxOpponentStreak : null), unit: () => t("Sieg(e) in Folge gegen 1 Gegner") },
 ];
 
-/* Findet ueber alle bekannten Familien hinweg den zahlenmaessig naechstliegenden
-   noch nicht erreichten Schwellenwert und gibt einen fertigen Hinweistext zurueck
-   (oder null, wenn nichts Berechenbares in Reichweite ist). */
-export function nextAchievementHint(catalog, extras) {
-  let best = null;
+// Einfacher, deterministischer Streuwert aus einem String (kein Crypto-Anspruch,
+// nur um taeglich + je Spieler eine andere, aber stabile Auswahl zu treffen).
+const hashString = (s) => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+};
+
+const CLOSE_CANDIDATES = 5; // aus den X naechstliegenden Erfolgen wird taeglich einer gewaehlt
+
+/* Sammelt ueber alle bekannten Familien hinweg die naechstliegenden, noch nicht
+   erreichten Schwellenwerte (aufsteigend nach Abstand) - Rohdaten, kein Text. */
+function closestCandidates(catalog, extras) {
+  const candidates = [];
   (catalog || []).forEach((b) => {
     const fam = FAMILIES.find((f) => f.test(b.description));
     if (!fam) return;
@@ -89,10 +98,20 @@ export function nextAchievementHint(catalog, extras) {
     if (cur == null) return;
     const gap = leadingNumber(b.description) - cur;
     if (gap <= 0) return;
-    if (!best || gap < best.gap) {
-      best = { gap, unit: fam.unit(), name: t(b.name) };
-    }
+    candidates.push({ gap, unit: fam.unit(), name: t(b.name) });
   });
-  if (!best) return null;
-  return t('Noch {gap} {unit} bis "{name}"', { gap: best.gap, unit: best.unit, name: best.name });
+  candidates.sort((a, b) => a.gap - b.gap);
+  return candidates;
+}
+
+/* Waehlt aus den paar naechstliegenden, noch nicht erreichten Erfolgen einen
+   Hinweistext aus - nicht immer denselben (sonst nutzt sich die Motivation ab),
+   aber auch nicht bei jedem Rendern neu (das waere nur Geflacker): die Auswahl
+   ist stabil fuer einen Tag und einen Spieler, wechselt aber von Tag zu Tag. */
+export function nextAchievementHint(catalog, extras, seedKey = "") {
+  const shortlist = closestCandidates(catalog, extras).slice(0, CLOSE_CANDIDATES);
+  if (shortlist.length === 0) return null;
+  const seed = hashString(todayStr(new Date()) + "|" + seedKey);
+  const pick = shortlist[seed % shortlist.length];
+  return t('Noch {gap} {unit} bis "{name}"', { gap: pick.gap, unit: pick.unit, name: pick.name });
 }
