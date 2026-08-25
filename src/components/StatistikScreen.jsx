@@ -110,7 +110,7 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
             value={filterPlayer || null}
             onSelect={(nick) => { setFilterPlayer(nick || ""); setFilterResult("all"); }} />
           {filterPlayer && (
-            <div className="chips small" style={{ paddingBottom: 0 }}>
+            <div className="chips small" style={{ marginBottom: 0 }}>
               {["all", "win", "loss"].map((r) => (
                 <button key={r} className={"chip" + (filterResult === r ? " active" : "")} onClick={() => setFilterResult(r)}>
                   {r === "all" ? t("Alle") : r === "win" ? t("Siege") : t("Niederlagen")}
@@ -118,7 +118,7 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
               ))}
             </div>
           )}
-          <div className="chips small" style={{ paddingBottom: 0 }}>
+          <div className="chips small" style={{ marginBottom: 0 }}>
             <button className={"chip" + (filterDisc === "all" ? " active" : "")} onClick={() => setFilterDisc("all")}>
               {t("Alle")}
             </button>

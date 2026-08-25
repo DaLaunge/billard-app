@@ -207,9 +207,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .badge-desc { font-size: 10px; color: var(--ivory-dim); line-height: 1.3; }
 .badge-active { font-size: 9.5px; font-weight: 700; color: var(--gold); margin-top: 2px; }
 
-.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px;
-  scrollbar-width: none; -ms-overflow-style: none; }
-.chips::-webkit-scrollbar { display: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .chip { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
   border-radius: 999px; padding: 7px 14px; font-size: 13.5px; cursor: pointer;
   white-space: nowrap; font-family: inherit; }
@@ -432,7 +430,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .stat-block h3 { font-size: 15px; display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--chalk); }
 .stat-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .stat-block-head h3 { margin-bottom: 0; }
-.chips.small { gap: 6px; padding-bottom: 8px; }
+.chips.small { gap: 6px; margin-bottom: 8px; }
 .chips.small .chip { padding: 5px 11px; font-size: 12.5px; }
 .match-filters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 .date-range { display: flex; align-items: center; gap: 8px; }
