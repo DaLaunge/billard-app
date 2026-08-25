@@ -5,6 +5,7 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
+import { recentOpponentFreq } from "../lib/frequency";
 import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
@@ -41,18 +42,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (!partner) setPartner(p); else if (!opp) setOpp(p); else if (!opp2) setOpp2(p);
   };
 
-  // Wie oft habe ich gegen wen gespielt? (häufigste Gegner zuerst)
-  const freqByNick = useMemo(() => {
-    const f = {};
-    (matches || []).forEach((m) => {
-      if (m.player1b_id) return;
-      let o = null;
-      if (m.p1?.nickname === me.nickname) o = m.p2?.nickname;
-      else if (m.p2?.nickname === me.nickname) o = m.p1?.nickname;
-      if (o) f[o] = (f[o] || 0) + 1;
-    });
-    return f;
-  }, [matches, me]);
+  // Wie oft habe ich in letzter Zeit gegen wen gespielt? (häufigste Gegner zuerst,
+  // dieselbe Logik wie im PlayerPicker – siehe lib/frequency.js)
+  const freqByNick = useMemo(() => recentOpponentFreq(matches, me), [matches, me]);
 
   const ghost = players.find((p) => p.is_ghost);
   const opponents = players
