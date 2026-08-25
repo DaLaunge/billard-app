@@ -2,12 +2,17 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronDown, Search, X } from "lucide-react";
 import { t } from "../lib/i18n";
 
+/* Zeitfenster fuer "haeufigste Mitspieler in letzter Zeit", von eng nach weit:
+   erstes Fenster mit genug Matches gewinnt. Trifft keines die Schwelle, zaehlt
+   die gesamte Historie (Infinity) – gibt es ueberhaupt keine gemeinsamen
+   Matches, bleibt freqByKey leer und die Sortierung faellt automatisch auf
+   alphabetisch zurueck. */
+const RECENT_WINDOWS_DAYS = [90, 180, 365, Infinity];
+const MIN_SIGNIFICANT_MATCHES = 3;
+
 /* Wiederverwendbarer Spieler-Auswahl: Trigger-Button klappt ein Suchfeld +
    Vorschlags-Chips auf (haeufigste Mitspieler mit `me` zuerst), statt einer
-   langen <select>-Dropdown. Ersetzt alle Spieler-Dropdowns der App.
-   Frequenz wie bisher schon in EntwicklungBlock/MatchScreen ueber die
-   gesamte Match-Historie berechnet (kein Zeitfenster), fuer einheitliches
-   Verhalten ueberall. */
+   langen <select>-Dropdown. Ersetzt alle Spieler-Dropdowns der App. */
 export default function PlayerPicker({
   players, matches, me, value, onSelect, getKey = (p) => p.nickname,
   placeholder, allowAll = false, exclude = [], maxSuggestions = 8,
@@ -26,15 +31,23 @@ export default function PlayerPicker({
   }, [open]);
 
   const freqByKey = useMemo(() => {
-    const f = {};
-    (matches || []).forEach((m) => {
-      if (m.player1b_id || !me) return;
-      let opp = null;
-      if (m.p1?.nickname === me.nickname) opp = m.p2?.nickname;
-      else if (m.p2?.nickname === me.nickname) opp = m.p1?.nickname;
-      if (opp) f[opp] = (f[opp] || 0) + 1;
-    });
-    return f;
+    if (!me) return {};
+    const now = Date.now();
+    for (const days of RECENT_WINDOWS_DAYS) {
+      const cutoff = days === Infinity ? 0 : now - days * 86400000;
+      const f = {};
+      let total = 0;
+      (matches || []).forEach((m) => {
+        if (m.player1b_id) return;
+        if (new Date(m.played_at).getTime() < cutoff) return;
+        let opp = null;
+        if (m.p1?.nickname === me.nickname) opp = m.p2?.nickname;
+        else if (m.p2?.nickname === me.nickname) opp = m.p1?.nickname;
+        if (opp) { f[opp] = (f[opp] || 0) + 1; total++; }
+      });
+      if (total >= MIN_SIGNIFICANT_MATCHES || days === Infinity) return f;
+    }
+    return {};
   }, [matches, me]);
 
   const candidates = useMemo(() => {
