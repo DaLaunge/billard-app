@@ -57,8 +57,14 @@ export default function PlayerPicker({
     const sorted = [...filtered].sort(
       (a, b) => (freqByKey[b.nickname] || 0) - (freqByKey[a.nickname] || 0) || a.nickname.localeCompare(b.nickname)
     );
-    return q ? sorted : sorted.slice(0, maxSuggestions);
-  }, [players, query, freqByKey, exclude, getKey, maxSuggestions]);
+    if (q) return sorted;
+    // Man spielt nie gegen sich selbst, daher landet man ueber die Haeufigkeit
+    // sonst nie unter den Top-Vorschlaegen. Eingeloggten Nutzer immer zuerst zeigen.
+    const meIdx = me ? sorted.findIndex((p) => p.nickname === me.nickname) : -1;
+    if (meIdx === -1) return sorted.slice(0, maxSuggestions);
+    const [meEntry] = sorted.splice(meIdx, 1);
+    return [meEntry, ...sorted.slice(0, maxSuggestions - 1)];
+  }, [players, query, freqByKey, exclude, getKey, maxSuggestions, me]);
 
   const selected = players.find((p) => value && getKey(p) === value);
   const label = selected ? selected.nickname : (allowAll ? t("Alle Spieler") : (placeholder || t("Spieler wählen")));
@@ -88,7 +94,8 @@ export default function PlayerPicker({
             )}
             {candidates.map((p) => (
               <button key={p.id} className={"cand-chip" + (value === getKey(p) ? " sel" : "")} onClick={() => pick(getKey(p))}>
-                {p.nickname}{freqByKey[p.nickname] ? ` (${freqByKey[p.nickname]})` : ""}
+                {p.nickname}
+                {me && p.nickname === me.nickname ? ` ${t("(du)")}` : (freqByKey[p.nickname] ? ` (${freqByKey[p.nickname]})` : "")}
               </button>
             ))}
             {candidates.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
