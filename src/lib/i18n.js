@@ -319,7 +319,7 @@ const TRANSLATIONS = {
     "20 Siege in Folge": "20 wins in a row",
     "3 Siege in Folge": "3 wins in a row",
     "5 Siege in Folge": "5 wins in a row",
-    "14/1: zwei Kugeln in einer Aufnahme geräumt": "Straight pool: cleared two balls in one inning",
+    "14/1: letzte zwei Kugeln des Racks gleichzeitig versenkt": "Straight pool: pocketed the last two balls of the rack at once",
     "20 Matches am Wochenende": "20 matches on the weekend",
     "Dein erstes Match gewonnen": "Won your first match",
     "10 Siege insgesamt": "10 wins total",
