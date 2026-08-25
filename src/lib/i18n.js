@@ -566,6 +566,15 @@ const TRANSLATIONS = {
     "ist verfügbar!": "is available!",
     "Sieg(e) in Folge gegen 1 Gegner": "win(s) in a row vs. 1 opponent",
     "Laufende Serie gegen 1 Gegner: {n}": "Current streak vs. 1 opponent: {n}",
+    "Alle": "All",
+    "Alle Spieler": "All players",
+    "Niederlagen": "Losses",
+    "Von": "From",
+    "Bis": "To",
+    "bis": "to",
+    "Filter zurücksetzen": "Reset filters",
+    "{n} Matches gefunden": "{n} matches found",
+    "Keine Matches fuer diese Filter.": "No matches for these filters.",
   },
 };
 export function setLangGlobal(l) {
