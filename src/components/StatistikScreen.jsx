@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Trophy, BarChart3, Flame, Swords, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
-import { initials, fmtDate, mSide, isDoubles } from "../lib/format";
+import { initials, fmtDateTime, mSide, isDoubles } from "../lib/format";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 
@@ -158,7 +158,7 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
 
         {visibleMatches.map((m) => (
           <div key={m.id} className="match-row">
-            <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
+            <span className="m-date m-datetime">{fmtDateTime(m.played_at)}</span>
             <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</span>
             <span className="m-disc">{t(m.discipline)}</span>
           </div>

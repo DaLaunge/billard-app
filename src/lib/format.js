@@ -19,6 +19,13 @@ export const fmtDate = (d) => {
   const x = new Date(d);
   return `${String(x.getDate()).padStart(2, "0")}.${String(x.getMonth() + 1).padStart(2, "0")}.${x.getFullYear()}`;
 };
+export const fmtDateTime = (d) => {
+  if (!d) return "-";
+  const x = new Date(d);
+  const hh = String(x.getHours()).padStart(2, "0");
+  const mm = String(x.getMinutes()).padStart(2, "0");
+  return `${fmtDate(x)} ${hh}:${mm}`;
+};
 export const fmtAgo = (d) => {
   if (!d) return t("nie");
   const days = Math.floor((Date.now() - new Date(d)) / 86400000);
