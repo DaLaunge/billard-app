@@ -5,6 +5,7 @@ import { computeStats } from "../lib/stats";
 import { initials, fmtDateTime, mSide, isDoubles } from "../lib/format";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
+import PlayerPicker from "./PlayerPicker";
 
 const COUNT_OPTIONS = [3, 10, "all"];
 const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
@@ -105,13 +106,9 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
       <section className="stat-block">
         <h3><Swords size={17} /> {t("Letzte Matches")}</h3>
         <div className="match-filters">
-          <select className="settings-select" style={{ marginBottom: 0 }}
-            value={filterPlayer} onChange={(e) => { setFilterPlayer(e.target.value); setFilterResult("all"); }}>
-            <option value="">{t("Alle Spieler")}</option>
-            {[...players].filter((p) => !p.is_ghost).sort((a, b) => a.nickname.localeCompare(b.nickname)).map((p) => (
-              <option key={p.id} value={p.nickname}>{p.nickname}</option>
-            ))}
-          </select>
+          <PlayerPicker players={players} matches={matches} me={me} allowAll
+            value={filterPlayer || null}
+            onSelect={(nick) => { setFilterPlayer(nick || ""); setFilterResult("all"); }} />
           {filterPlayer && (
             <div className="chips small" style={{ paddingBottom: 0 }}>
               {["all", "win", "loss"].map((r) => (

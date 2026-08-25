@@ -182,6 +182,17 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .cand-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--felt-3);
   border: 1px solid var(--line); border-radius: 999px; padding: 6px 11px; font-size: 12.5px;
   font-weight: 600; color: var(--ivory); cursor: pointer; font-family: inherit; }
+.cand-chip.sel { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+
+.player-picker { position: relative; margin-bottom: 10px; }
+.pp-trigger { width: 100%; box-sizing: border-box; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px; background: var(--felt); color: var(--ivory-dim);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px;
+  font-family: inherit; cursor: pointer; text-align: left; }
+.pp-trigger.has-value { color: var(--ivory); }
+.pp-panel { margin-top: 8px; background: var(--felt-2); border: 1px solid var(--line);
+  border-radius: 14px; padding: 10px; }
+.pp-panel .search-row { margin-bottom: 10px; }
 .badge-chip { display: flex; flex-direction: column; align-items: center; gap: 3px;
   background: var(--felt); border: 1px solid var(--line); border-radius: 14px;
   padding: 12px 6px 10px; cursor: pointer; font-family: inherit; color: var(--ivory);

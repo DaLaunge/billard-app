@@ -401,7 +401,7 @@ export default function App() {
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
                   me={player} onBack={() => setTab("profil")} colorOf={colorOf} badgeOf={badgeOf}
-                  toast={toast} onReload={loadData} />
+                  toast={toast} onReload={loadData} matches={matches} />
               )}
               {tab === "invite" && (
                 <InviteScreen me={player} onBack={() => setTab("profil")} toast={toast} />
