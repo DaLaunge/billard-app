@@ -5,8 +5,9 @@ import { t } from "../lib/i18n";
 import { fmtDate, fmtAgo, mSide, initials } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
 import Ball from "./Ball";
+import PlayerPicker from "./PlayerPicker";
 
-export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, toast, onReload }) {
+export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, toast, onReload, matches }) {
   const [busy, setBusy] = useState(false);
   const [busyBadges, setBusyBadges] = useState(false);
   const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
@@ -133,19 +134,17 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         <h3><Plus size={17} /> {t("Match nachtragen")}</h3>
         <p className="hint" style={{ marginTop: 0 }}>{t("Als Admin ein bereits gespieltes Match eintragen – gilt sofort als bestätigt.")}</p>
         <div className="add-match">
-          <select value={am.p1} onChange={(e) => setAm({ ...am, p1: e.target.value })}>
-            <option value="">{t("Spieler 1")}</option>
-            {players.filter((p) => !p.is_ghost).map((p) => <option key={p.id} value={p.id}>{p.nickname}</option>)}
-          </select>
+          <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
+            value={am.p1} exclude={am.p2 ? [am.p2] : []} placeholder={t("Spieler 1")}
+            onSelect={(id) => setAm({ ...am, p1: id })} />
           <div className="am-scores">
             <input type="number" inputMode="numeric" min="0" placeholder="0" value={am.s1} onChange={(e) => setAm({ ...am, s1: e.target.value })} />
             <span>:</span>
             <input type="number" inputMode="numeric" min="0" placeholder="0" value={am.s2} onChange={(e) => setAm({ ...am, s2: e.target.value })} />
           </div>
-          <select value={am.p2} onChange={(e) => setAm({ ...am, p2: e.target.value })}>
-            <option value="">{t("Spieler 2")}</option>
-            {players.filter((p) => !p.is_ghost).map((p) => <option key={p.id} value={p.id}>{p.nickname}</option>)}
-          </select>
+          <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
+            value={am.p2} exclude={am.p1 ? [am.p1] : []} placeholder={t("Spieler 2")}
+            onSelect={(id) => setAm({ ...am, p2: id })} />
           <div className="am-row">
             <select value={am.disc} onChange={(e) => setAm({ ...am, disc: e.target.value })}>
               {DEFAULT_DISCIPLINES.map((d) => <option key={d} value={d}>{t(d)}</option>)}
