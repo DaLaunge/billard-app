@@ -49,7 +49,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     () => computeAchievementExtras(nickname, matches, players, challenges),
     [matches, players, nickname, challenges]
   );
-  const achievementHint = useMemo(() => nextAchievementHint(catalog, liveExtras), [catalog, liveExtras]);
+  const achievementHint = useMemo(() => nextAchievementHint(catalog, liveExtras, nickname), [catalog, liveExtras, nickname]);
 
   // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
   // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB

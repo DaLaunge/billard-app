@@ -82,7 +82,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     };
   };
   const achievementHint = useMemo(
-    () => nextAchievementHint(catalog, computeAchievementExtras(me.nickname, matches, players, challenges)),
+    () => nextAchievementHint(catalog, computeAchievementExtras(me.nickname, matches, players, challenges), me.nickname),
     [catalog, matches, players, challenges, me.nickname]
   );
   const suggestions = opponents
