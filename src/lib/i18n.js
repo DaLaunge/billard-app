@@ -564,6 +564,8 @@ const TRANSLATIONS = {
     "Pruefen": "Confirm",
     "Erwartung laut Rating ({a} : {b})": "Expected outcome by rating ({a} : {b})",
     "ist verfügbar!": "is available!",
+    "Sieg(e) in Folge gegen 1 Gegner": "win(s) in a row vs. 1 opponent",
+    "Laufende Serie gegen 1 Gegner: {n}": "Current streak vs. 1 opponent: {n}",
   },
 };
 export function setLangGlobal(l) {
