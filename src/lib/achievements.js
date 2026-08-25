@@ -25,6 +25,23 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
   const challengesAccepted = myId
     ? (challenges || []).filter((c) => c.challenged_id === myId && c.status === "fulfilled").length
     : 0;
+
+  // Aktuelle (ununterbrochene) Gewinnserie je Gegner: von den neuesten Matches
+  // rueckwaerts durchgehen, sobald gegen einen Gegner verloren wird, ist dessen
+  // Serie beendet (fruehere Matches gegen ihn zaehlen nicht mehr mit).
+  const byDateDesc = [...matches].sort((a, b) => new Date(b.played_at) - new Date(a.played_at));
+  const oppStreak = {}, oppBroken = {};
+  byDateDesc.forEach((m) => {
+    if (m.player1b_id) return;
+    let my, opp, oppNick;
+    if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; }
+    else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; }
+    else return;
+    if (oppBroken[oppNick]) return;
+    if (my > opp) oppStreak[oppNick] = (oppStreak[oppNick] || 0) + 1;
+    else oppBroken[oppNick] = true;
+  });
+
   return {
     streak: s.streak,
     longestStreak: s.longestStreak,
@@ -35,12 +52,15 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
     challengesAccepted,
     maxVsOpponent: Math.max(0, ...Object.values(perOpp)),
     maxPerDay: Math.max(0, ...Object.values(perDay)),
+    maxOpponentStreak: Math.max(0, ...Object.values(oppStreak)),
   };
 }
 
 const leadingNumber = (desc) => {
-  const m = /(\d+)/.exec(desc);
-  return m ? parseInt(m[1], 10) : 1; // "Ein Match zu null gewonnen" / "1 Herausforderung ..." -> 1
+  // Letzte Zahl im Text nehmen, nicht die erste: "14/1: Höchstserie von 25" enthaelt
+  // mit der "14" aus "14/1" sonst faelschlich eine fruehere Zahl als die echte Schwelle.
+  const all = desc.match(/\d+/g);
+  return all ? parseInt(all[all.length - 1], 10) : 1; // "Ein Match zu null gewonnen" / "1 Herausforderung ..." -> 1
 };
 
 /* Erfolgs-Familien, die sich lokal berechnen lassen (siehe computeAchievementExtras) -
@@ -54,6 +74,7 @@ const FAMILIES = [
   { test: (d) => /14\/1: Höchstserie/.test(d), current: (e) => e.highRun, unit: () => t("Kugeln") },
   { test: (d) => /Spieler geworben/.test(d), current: (e) => e.recruitedCount, unit: () => t("geworbene Spieler") },
   { test: (d) => /Herausforderung(en)? angenommen/.test(d), current: (e) => e.challengesAccepted, unit: () => t("Herausforderungen") },
+  { test: (d) => /Siege in Folge gegen denselben Gegner$/.test(d), current: (e) => (e.maxOpponentStreak > 0 ? e.maxOpponentStreak : null), unit: () => t("Sieg(e) in Folge gegen 1 Gegner") },
 ];
 
 /* Findet ueber alle bekannten Familien hinweg den zahlenmaessig naechstliegenden
