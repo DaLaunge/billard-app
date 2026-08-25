@@ -573,7 +573,7 @@ const TRANSLATIONS = {
     "Bis": "To",
     "bis": "to",
     "Filter zurücksetzen": "Reset filters",
-    "{n} Matches gefunden": "{n} matches found",
+    "{shown} von {total} Matches": "{shown} of {total} matches",
     "Keine Matches fuer diese Filter.": "No matches for these filters.",
   },
 };

@@ -2,11 +2,13 @@ import { useState, useMemo } from "react";
 import { Trophy, BarChart3, Flame, Swords, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
-import { initials, fmtDate, mSide } from "../lib/format";
+import { initials, fmtDate, mSide, isDoubles } from "../lib/format";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 
 const COUNT_OPTIONS = [3, 10, "all"];
+const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
+const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
 
 // Eigene Komponente statt Definition innerhalb von StatistikScreen: sonst
 // waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
@@ -54,8 +56,10 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
 
   const [filterPlayer, setFilterPlayer] = useState("");
   const [filterResult, setFilterResult] = useState("all"); // all | win | loss
+  const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ... | "Doppel"
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [matchCount, setMatchCount] = useState(10);
 
   const filteredMatches = useMemo(() => {
     return [...matches]
@@ -70,16 +74,22 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
             if (filterResult === "loss" && won) return false;
           }
         }
+        if (filterDisc === "Doppel") { if (!isDoubles(m)) return false; }
+        else if (filterDisc !== "all") { if (m.discipline !== filterDisc) return false; }
         const day = m.played_at.slice(0, 10);
         if (dateFrom && day < dateFrom) return false;
         if (dateTo && day > dateTo) return false;
         return true;
       })
       .sort((a, b) => new Date(b.played_at) - new Date(a.played_at));
-  }, [matches, filterPlayer, filterResult, dateFrom, dateTo]);
+  }, [matches, filterPlayer, filterResult, filterDisc, dateFrom, dateTo]);
 
-  const filtersActive = !!(filterPlayer || dateFrom || dateTo);
-  const resetFilters = () => { setFilterPlayer(""); setFilterResult("all"); setDateFrom(""); setDateTo(""); };
+  const visibleMatches = matchCount === "all" ? filteredMatches : filteredMatches.slice(0, matchCount);
+  const filtersActive = !!(filterPlayer || filterDisc !== "all" || dateFrom || dateTo);
+  const resetFilters = () => {
+    setFilterPlayer(""); setFilterResult("all"); setFilterDisc("all"); setDateFrom(""); setDateTo("");
+    setMatchCount(10);
+  };
 
   return (
     <div className="screen">
@@ -111,6 +121,16 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
               ))}
             </div>
           )}
+          <div className="chips small" style={{ paddingBottom: 0 }}>
+            <button className={"chip" + (filterDisc === "all" ? " active" : "")} onClick={() => setFilterDisc("all")}>
+              {t("Alle")}
+            </button>
+            {MATCH_DISCIPLINES.map((d) => (
+              <button key={d} className={"chip" + (filterDisc === d ? " active" : "")} onClick={() => setFilterDisc(d)}>
+                {t(d)}
+              </button>
+            ))}
+          </div>
           <div className="date-range">
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label={t("Von")} />
             <span>{t("bis")}</span>
@@ -122,10 +142,21 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
             </button>
           )}
         </div>
-        {filtersActive && (
-          <p className="filter-count">{t("{n} Matches gefunden", { n: filteredMatches.length })}</p>
-        )}
-        {filteredMatches.map((m) => (
+
+        <div className="stat-block-head">
+          <p className="filter-count" style={{ marginBottom: 0 }}>
+            {t("{shown} von {total} Matches", { shown: visibleMatches.length, total: filteredMatches.length })}
+          </p>
+          <div className="chips small">
+            {MATCH_COUNT_OPTIONS.map((c) => (
+              <button key={c} className={"chip" + (matchCount === c ? " active" : "")} onClick={() => setMatchCount(c)}>
+                {c === "all" ? t("Alle") : c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {visibleMatches.map((m) => (
           <div key={m.id} className="match-row">
             <span className="m-date">{fmtDate(m.played_at).slice(0, 6)}</span>
             <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</span>
