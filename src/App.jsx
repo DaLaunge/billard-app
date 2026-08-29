@@ -306,6 +306,19 @@ export default function App() {
   const openProfile = (nick) => { setProfileName(nick); setTab("fremdprofil"); };
   const logout = async () => { await supabase.auth.signOut(); setTab("rang"); };
 
+  const submitFeedback = async (category, message) => {
+    const { error } = await supabase.rpc("submit_feedback", { p_category: category, p_message: message });
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
+    toast(t("Danke für dein Feedback!"));
+    return true;
+  };
+  const deleteAccount = async () => {
+    const { error } = await supabase.rpc("self_delete_account");
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await supabase.auth.signOut();
+    setTab("rang");
+  };
+
   if (!authReady) {
     return (<div className="stage"><div className="phone"><div className="center-load">{t("Lade ...")}</div></div></div>);
   }
@@ -386,7 +399,8 @@ export default function App() {
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang}
-                  updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate} />
+                  updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
@@ -396,7 +410,8 @@ export default function App() {
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
                   onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
-                  lang={lang} onLang={changeLang} />
+                  lang={lang} onLang={changeLang}
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} />
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}

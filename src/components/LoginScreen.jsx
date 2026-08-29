@@ -4,6 +4,7 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { getRef } from "../lib/session";
 import Ball from "./Ball";
+import LegalModal from "./LegalModal";
 
 export default function LoginScreen() {
   const [mode, setMode] = useState("magic"); // Standard: gewohnter Magic-Link; Passwort ist ein Tipp entfernt
@@ -12,6 +13,7 @@ export default function LoginScreen() {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [legalOpen, setLegalOpen] = useState(false);
 
   const sendLink = async () => {
     setBusy(true); setError("");
@@ -100,6 +102,12 @@ export default function LoginScreen() {
           )}
         </div>
       )}
+
+      <p className="hint center" style={{ marginTop: 14 }}>
+        {t("Mit dem Fortfahren akzeptierst du die")}{" "}
+        <button className="legal-link" onClick={() => setLegalOpen(true)}>{t("Nutzungsbedingungen & Datenschutzerklärung")}</button>.
+      </p>
+      {legalOpen && <LegalModal onClose={() => setLegalOpen(false)} />}
     </div>
   );
 }
