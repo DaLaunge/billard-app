@@ -501,6 +501,8 @@ const TRANSLATIONS = {
     "Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?": "A straight-pool game is running. Switching discipline discards the current score. Continue?",
     "So sind mehrere Anstöße hintereinander möglich (Wiederholungs-Anstoß).": "This allows several breaks in a row (repeated break).",
     "Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.": "Practice match – not saved and doesn't count toward rating.",
+    "Noch {time} …": "{time} left …",
+    "Ein echtes Training dauert länger – bitte warte, bis der Timer abgelaufen ist.": "A real training session takes longer – please wait until the timer runs out.",
     "Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.": "By default you see yourself and your closest neighbours. Up to 6 players, switch the period above, drag across the graph to read values.",
     "Sprache": "Language",
     "Rangliste": "Ranking",

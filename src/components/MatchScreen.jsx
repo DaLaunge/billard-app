@@ -1,11 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords } from "lucide-react";
+import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import { recentOpponentFreq } from "../lib/frequency";
+import { minGhostSeconds } from "../lib/ghostTiming";
 import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
@@ -30,6 +31,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [abortAsk, setAbortAsk] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [ghostStartedAt, setGhostStartedAt] = useState(null); // gegen "Durchklicken" beim Ghost-Training
+  const [nowTick, setNowTick] = useState(Date.now());
 
   const is141 = disc === "14/1 Endlos";
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
@@ -101,6 +104,20 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
 
   const isGhost = !!opp?.is_ghost;
 
+  // Mindestdauer gegen "Durchklicken" beim Ghost-Training (siehe lib/ghostTiming.js) -
+  // ab Auswahl von Ghost tickt eine Sekundenuhr, "Training abschließen" bleibt bis
+  // dahin gesperrt. Serverseitig wird dieselbe Mindestzeit in record_ghost_game()
+  // nochmal durchgesetzt, falls diese Sperre umgangen wird.
+  useEffect(() => {
+    if (!isGhost || step !== 3 || !ghostStartedAt) return;
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isGhost, step, ghostStartedAt]);
+  const ghostRequiredSec = isGhost ? minGhostSeconds(disc, s1, s2) : 0;
+  const ghostElapsedSec = ghostStartedAt ? Math.floor((nowTick - ghostStartedAt) / 1000) : 0;
+  const ghostRemainingSec = Math.max(0, ghostRequiredSec - ghostElapsedSec);
+  const ghostReady = !isGhost || ghostRemainingSec === 0;
+
   const save = async () => {
     if (mode === "double") {
       setBusy(true);
@@ -112,7 +129,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       if (error) { toast(t("Fehler: ") + error.message); return; }
       setStep(4); return;
     }
-    if (isGhost) { try { await supabase.rpc("record_ghost_game"); } catch (e) { /* Zählung optional */ } setStep(4); return; }   // Trainingsmatch: nicht speichern, nur zählen
+    if (isGhost) {
+      setBusy(true);
+      const { error } = await supabase.rpc("record_ghost_game", { p_discipline: disc, p_score1: s1, p_score2: s2 });
+      setBusy(false);
+      if (error) { toast(t("Fehler: ") + error.message); return; }
+      setStep(4); return;
+    }
     setBusy(true);
     const { error } = await supabase.rpc("report_match", {
       p_opponent_id: opp.id, p_my_score: s1, p_opp_score: s2, p_discipline: disc,
@@ -237,7 +260,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </div>
           )}
           {mode === "single" && ghost && !oppQuery && (
-            <button className="ghost-card" onClick={() => { setOpp(ghost); setStep(1); }}>
+            <button className="ghost-card" onClick={() => { setOpp(ghost); setGhostStartedAt(Date.now()); setStep(1); }}>
               <div className="ghost-ball">👻</div>
               <div className="ghost-info">
                 <span className="ghost-name">{t("Training gegen Ghost")}</span>
@@ -403,9 +426,16 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </div>
             )}
           </div>
-          <button className="btn primary" disabled={busy} onClick={save}>
-            {busy ? t("Speichere ...") : isGhost ? <>{t("Training abschließen")} <Check size={18} /></> : <>{t("Match speichern")} <Check size={18} /></>}
+          <button className="btn primary" disabled={busy || !ghostReady} onClick={save}>
+            {busy ? t("Speichere ...")
+              : isGhost && !ghostReady ? <>
+                  <Clock size={18} /> {t("Noch {time} …", { time: `${Math.floor(ghostRemainingSec / 60)}:${String(ghostRemainingSec % 60).padStart(2, "0")}` })}
+                </>
+              : isGhost ? <>{t("Training abschließen")} <Check size={18} /></> : <>{t("Match speichern")} <Check size={18} /></>}
           </button>
+          {isGhost && !ghostReady && (
+            <p className="hint center">{t("Ein echtes Training dauert länger – bitte warte, bis der Timer abgelaufen ist.")}</p>
+          )}
           {!isGhost && <p className="hint center">{mode === "double"
             ? t("Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.")
             : t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
