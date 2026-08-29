@@ -35,6 +35,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border-radius: 50%; display: grid; place-items: center; color: #1E1E1E;
   font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
   box-shadow: inset 0 -2px 4px #00000025; }
+.ball-badge { position: absolute; inset: 0; display: grid; place-items: center;
+  line-height: 1; filter: drop-shadow(0 1px 2px #00000060); }
+.ball-badge.on-light { filter: drop-shadow(0 1px 2px #ffffff80) drop-shadow(0 0 1px #00000070); }
 .ball-badge-chip { position: absolute; bottom: -6%; right: -6%; border-radius: 50%;
   background: var(--felt-2); border: 2px solid var(--felt); display: grid; place-items: center;
   line-height: 1; box-shadow: 0 1px 3px #00000060; }

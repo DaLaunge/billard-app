@@ -14,13 +14,17 @@ export default function Ball({ color, label, size = 44, badge = null, photo = nu
   return (
     <div className="ball" style={ballStyle}>
       {!photo && <div className="ball-shine" />}
+      {!photo && b && (
+        <div className={"ball-badge" + (light ? " on-light" : "")}
+          style={{ fontSize: size * 0.5 }} title={t(b.name)}>{b.emoji}</div>
+      )}
       {!photo && !b && (
         <div className="ball-num"
           style={{ width: size * 0.52, height: size * 0.52, fontSize: size * 0.28, ...numStyle }}>
           {label}
         </div>
       )}
-      {b && (
+      {photo && b && (
         <div className="ball-badge-chip" style={{ width: size * 0.46, height: size * 0.46, fontSize: size * 0.26 }} title={t(b.name)}>
           {b.emoji}
         </div>
