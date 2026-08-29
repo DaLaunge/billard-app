@@ -6,7 +6,7 @@ import Ball from "./Ball";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 
-export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports, colorOf, badgeOf }) {
+export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports, colorOf, badgeOf, photoOf }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
 
@@ -70,7 +70,7 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
           <li key={r.nickname + r.discipline}>
             <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
               <span className="rank-pos">{medalEmoji || i + 1}</span>
-              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} />
+              <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} photo={photoOf(r.nickname)} />
               <span className="rank-name">
                 {r.nickname}
                 <span className="rank-meta">

@@ -7,7 +7,7 @@ import { DEFAULT_DISCIPLINES } from "../lib/constants";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 
-export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, toast, onReload, matches }) {
+export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
   const [busy, setBusy] = useState(false);
   const [busyBadges, setBusyBadges] = useState(false);
   const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
@@ -252,7 +252,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
               return (
                 <div key={p.player_id} className={"mem-row" + (p.blocked ? " is-blocked" : "")}>
                   <div className="mem-line">
-                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={28} />
+                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={28} />
                     <span className={"role-letter role-" + lclass}>{letter}</span>
                     <span className="mem-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
                     <span className="mem-when">{isGhost ? "—" : fmtAgo(p.last_seen)}</span>

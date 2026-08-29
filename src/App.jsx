@@ -119,7 +119,7 @@ export default function App() {
       setPlayer(data ?? null);
       setPlayerChecked(true);
       const { data: all } = await supabase.from("players")
-        .select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost, blocked, invited_by");
+        .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by");
       setPlayers(all ?? []);
     })();
   }, [session]);
@@ -132,7 +132,7 @@ export default function App() {
         .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
         .order("played_at", { ascending: false })
         .range(from, to)),
-      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, motto, selected_badge, is_ghost, blocked, invited_by"),
+      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by"),
       supabase.from("pings")
         .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
         .gt("expires_at", new Date().toISOString())
@@ -202,6 +202,13 @@ export default function App() {
   const badgeOf = useCallback((nick) => {
     const p = players.find((x) => x.nickname === nick);
     return p?.selected_badge || null;
+  }, [players]);
+
+  const photoOf = useCallback((nick) => {
+    const p = players.find((x) => x.nickname === nick);
+    if (!p?.avatar_photo_at) return null;
+    const { data } = supabase.storage.from("avatars").getPublicUrl(`${p.id}.jpg`);
+    return `${data.publicUrl}?v=${encodeURIComponent(p.avatar_photo_at)}`;
   }, [players]);
 
   const badgesOfId = useCallback((id) => badgesByPlayer[id] || new Set(), [badgesByPlayer]);
@@ -372,10 +379,10 @@ export default function App() {
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
                   pending={pendingForMe} me={player} onConfirm={confirmMatch}
                   onOpenProfile={openProfile} myOpenReports={myOpenReports}
-                  colorOf={colorOf} badgeOf={badgeOf} />
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
               )}
               {tab === "live" && (
-                <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf}
+                <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onCreate={createPing} onClose={closePing}
                   onReply={replyPing} onUnreply={unreplyPing}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
@@ -383,39 +390,39 @@ export default function App() {
               )}
               {tab === "match" && (
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
-                  ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf}
+                  ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onReload={loadData} initialOpp={vsOpp} onChallenge={createChallenge}
                   catalog={catalog} challenges={challenges}
                   onDone={() => { setVsOpp(null); setTab("rang"); loadData(); }}
                   onCancel={() => { setVsOpp(null); setTab("rang"); }} />
               )}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
-                colorOf={colorOf} badgeOf={badgeOf} snapshots={snapshots} players={players}
+                colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
                 rangliste={rangliste} me={player} />}
               {tab === "profil" && (
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
-                  onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
+                  onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
-                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} />
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
                   onBack={() => setTab("rang")} isMe={profileName === player.nickname}
-                  onLogout={logout} colorOf={colorOf} badgeOf={badgeOf}
+                  onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
                   onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang}
-                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} />
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData} />
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
-                  me={player} onBack={() => setTab("profil")} colorOf={colorOf} badgeOf={badgeOf}
+                  me={player} onBack={() => setTab("profil")} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   toast={toast} onReload={loadData} matches={matches} />
               )}
               {tab === "invite" && (

@@ -4,7 +4,7 @@ import { t } from "../lib/i18n";
 import { initials, timeAgo, timeLeft } from "../lib/format";
 import Ball from "./Ball";
 
-export default function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnreply }) {
+export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply, onUnreply }) {
   const myReply = ping.replies?.find((r) => r.player_id === me.id);
   const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
@@ -13,7 +13,7 @@ export default function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnrepl
   return (
     <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
       <div className="ping-head">
-        <Ball color={colorOf(ping.player.nickname)} label={initials(ping.player.nickname)} badge={badgeOf(ping.player.nickname)} size={40} />
+        <Ball color={colorOf(ping.player.nickname)} label={initials(ping.player.nickname)} badge={badgeOf(ping.player.nickname)} photo={photoOf(ping.player.nickname)} size={40} />
         <div className="ping-who">
           <b>{ping.player.nickname}</b>
           <span className="rank-meta">{timeAgo(ping.created_at)} - {timeLeft(ping.expires_at)}</span>
@@ -31,7 +31,7 @@ export default function PingCard({ ping, me, colorOf, badgeOf, onReply, onUnrepl
         <div className="ping-replies">
           {ping.replies.map((r) => (
             <div key={r.id} className="ping-reply">
-              <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} size={26} />
+              <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={26} />
               <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : t(" ist unterwegs!")}</span>
             </div>
           ))}

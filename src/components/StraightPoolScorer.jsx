@@ -5,7 +5,7 @@ import { initials } from "../lib/format";
 import { poolBallStyle } from "../lib/pool";
 import Ball from "./Ball";
 
-export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish, toast, sideNames, sideAvatars }) {
+export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf, onFinish, toast, sideNames, sideAvatars }) {
   const PRESETS = [50, 70, 80, 90, 100, 150];
   const [target, setTarget] = useState(100);
   const [custom, setCustom] = useState("");
@@ -178,7 +178,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish
             <button key={i} className="opp-card" onClick={() => chooseBreaker(i)}>
               <div className="sc-avatars">
                 {membersOf(i).map((mm) => (
-                  <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} size={44} />
+                  <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={44} />
                 ))}
               </div>
               <span>{names[i]}</span>
@@ -223,7 +223,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, onFinish
           <div key={i} className={"sp-side" + (active === i ? " active" : "")}>
             <div className="sc-avatars">
               {membersOf(i).map((mm) => (
-                <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} size={36} />
+                <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={36} />
               ))}
             </div>
             <span className="sp-name">{names[i]}</span>
