@@ -154,7 +154,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <div className="swatch-preview">
             <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)}
               photo={photoOf(nickname)} size={56} />
-            <AvatarPhotoField playerId={meRow.id} hasPhoto={!!photoOf(nickname)} onReload={onReload} toast={toast} />
+            <AvatarPhotoField hasPhoto={!!photoOf(nickname)} onReload={onReload} toast={toast} />
           </div>
           <p className="hint">{t("Ohne Foto zeigt deine Kugel Initialen in deiner gewählten Farbe.")}</p>
 

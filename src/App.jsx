@@ -206,8 +206,8 @@ export default function App() {
 
   const photoOf = useCallback((nick) => {
     const p = players.find((x) => x.nickname === nick);
-    if (!p?.avatar_photo_at) return null;
-    const { data } = supabase.storage.from("avatars").getPublicUrl(`${p.id}.jpg`);
+    if (!p?.avatar_photo_at || !p?.auth_user_id) return null;
+    const { data } = supabase.storage.from("avatars").getPublicUrl(`${p.auth_user_id}/avatar.jpg`);
     return `${data.publicUrl}?v=${encodeURIComponent(p.avatar_photo_at)}`;
   }, [players]);
 

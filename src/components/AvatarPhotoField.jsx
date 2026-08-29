@@ -4,18 +4,24 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { compressImageFile } from "../lib/avatarPhoto";
 
-export default function AvatarPhotoField({ playerId, hasPhoto, onReload, toast }) {
+export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
   const cameraRef = useRef(null);
   const galleryRef = useRef(null);
   const [busy, setBusy] = useState(false);
+
+  const myPath = async () => {
+    const { data } = await supabase.auth.getUser();
+    return `${data.user.id}/avatar.jpg`;
+  };
 
   const handleFile = async (file) => {
     if (!file) return;
     setBusy(true);
     try {
       const blob = await compressImageFile(file);
+      const path = await myPath();
       const { error } = await supabase.storage.from("avatars")
-        .upload(`${playerId}.jpg`, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
       if (error) throw error;
       const { error: rpcError } = await supabase.rpc("set_avatar_photo", { p_has_photo: true });
       if (rpcError) throw rpcError;
@@ -30,7 +36,8 @@ export default function AvatarPhotoField({ playerId, hasPhoto, onReload, toast }
   const removePhoto = async () => {
     setBusy(true);
     try {
-      await supabase.storage.from("avatars").remove([`${playerId}.jpg`]);
+      const path = await myPath();
+      await supabase.storage.from("avatars").remove([path]);
       const { error } = await supabase.rpc("set_avatar_photo", { p_has_photo: false });
       if (error) throw error;
       toast(t("Foto entfernt."));
