@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
@@ -8,10 +8,11 @@ import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
+import LegalModal from "./LegalModal";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang,
-  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate }) {
+  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -40,6 +41,30 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [color, setColor] = useState(meRow?.avatar_color || null);
   const [motto, setMotto] = useState(meRow?.motto || "");
   const [busy, setBusy] = useState(false);
+  const [legalOpen, setLegalOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackCat, setFeedbackCat] = useState("bug");
+  const [feedbackMsg, setFeedbackMsg] = useState("");
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackBusy, setFeedbackBusy] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(0); // 0 versteckt, 1 erste Warnung, 2 Namen eintippen
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const sendFeedback = async () => {
+    if (!feedbackMsg.trim()) return;
+    setFeedbackBusy(true);
+    const ok = await onSubmitFeedback(feedbackCat, feedbackMsg.trim());
+    setFeedbackBusy(false);
+    if (ok) { setFeedbackMsg(""); setFeedbackSent(true); }
+  };
+  const closeFeedback = () => { setFeedbackOpen(false); setFeedbackSent(false); setFeedbackMsg(""); setFeedbackCat("bug"); };
+
+  const confirmDelete = async () => {
+    setDeleteBusy(true);
+    await onDeleteAccount();
+    setDeleteBusy(false);
+  };
 
   const stats = useMemo(() => computeStats(matches)[nickname], [matches, nickname]);
 
@@ -361,14 +386,107 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
       )}
 
+      {isMe && (
+        <section className="stat-block">
+          <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
+          {!feedbackOpen ? (
+            <>
+              <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
+              <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
+                <MessageCircle size={15} /> {t("Feedback geben")}
+              </button>
+            </>
+          ) : feedbackSent ? (
+            <>
+              <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
+              <div className="sp-controls">
+                <a className="btn ghost" href="https://t.me/+vG8sWgH_utJlODRk" target="_blank" rel="noopener noreferrer">
+                  {t("Per Telegram")}
+                </a>
+                <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
+              </div>
+              <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
+            </>
+          ) : (
+            <div className="challenge-form">
+              <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
+                {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
+                  <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="search-row" style={{ marginBottom: 8 }}>
+                <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
+                  style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
+                  onChange={(e) => setFeedbackMsg(e.target.value)} />
+              </div>
+              <div className="sp-controls">
+                <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
+                <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
+                  {feedbackBusy ? t("Speichere ...") : t("Absenden")}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {isMe && (
+        <section className="stat-block danger-zone">
+          <h3><AlertTriangle size={17} /> {t("Konto löschen")}</h3>
+          <p className="hint" style={{ marginTop: 0 }}>
+            {t("Entfernt unwiderruflich all deine persönlichen Daten (Login, Name, Profilfarbe, Motto, Nachrichten). Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt.")}
+          </p>
+          <button className="btn ghost warn" onClick={() => setDeleteStep(1)}>
+            <AlertTriangle size={15} /> {t("Meine Daten löschen")}
+          </button>
+        </section>
+      )}
+
+      {deleteStep === 1 && (
+        <div className="modal-overlay" onClick={() => setDeleteStep(0)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3>{t("Wirklich alle Daten löschen?")}</h3>
+            <p>{t("Das entfernt dein Login und deine persönlichen Daten unwiderruflich. Das kann nicht rückgängig gemacht werden.")}</p>
+            <div className="sp-controls">
+              <button className="btn primary" onClick={() => setDeleteStep(0)}>{t("Abbrechen")}</button>
+              <button className="btn ghost warn" onClick={() => setDeleteStep(2)}>{t("Ja, fortfahren")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteStep === 2 && (
+        <div className="modal-overlay" onClick={() => { setDeleteStep(0); setDeleteConfirmText(""); }}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3>{t("Letzte Bestätigung")}</h3>
+            <p>{t("Tippe deinen Namen \"{name}\" ein, um die endgültige Löschung zu bestätigen.", { name: nickname })}</p>
+            <div className="mail-row" style={{ marginBottom: 14 }}>
+              <User size={18} className="mail-ico" />
+              <input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} autoFocus />
+            </div>
+            <div className="sp-controls">
+              <button className="btn primary" onClick={() => { setDeleteStep(0); setDeleteConfirmText(""); }}>{t("Abbrechen")}</button>
+              <button className="btn ghost warn" disabled={deleteConfirmText.trim() !== nickname || deleteBusy}
+                onClick={confirmDelete}>
+                {deleteBusy ? t("Speichere ...") : t("Endgültig löschen")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <footer className="imprint">
         <div className="imprint-title">{t("Impressum")}</div>
         <p>
           Break &amp; Rank · {t("Version")} {APP_VERSION}<br />
           © {new Date().getFullYear()} Break &amp; Rank<br />
-          {t("Kontakt")}: <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a>
+          {t("Kontakt")}: <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a><br />
+          {t("Diskussion im")} <a href="https://t.me/+vG8sWgH_utJlODRk" target="_blank" rel="noopener noreferrer">Telegram-Kanal</a>
         </p>
+        <button className="legal-link" onClick={() => setLegalOpen(true)}>{t("Nutzungsbedingungen & Datenschutzerklärung")}</button>
       </footer>
+      {legalOpen && <LegalModal onClose={() => setLegalOpen(false)} />}
 
       {isMe && installPrompt.canShow && (
         <section className="stat-block install-block">

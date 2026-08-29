@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
-import { fmtDate, fmtAgo, mSide, initials } from "../lib/format";
+import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
@@ -20,6 +20,20 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     if (!error) setLogins(data || []);
   };
   useEffect(() => { loadLogins(); }, []);
+
+  const [feedback, setFeedback] = useState(null);
+  const loadFeedback = async () => {
+    const { data, error } = await supabase.from("feedback")
+      .select("id, category, message, status, created_at, player:players!feedback_player_id_fkey(nickname)")
+      .order("created_at", { ascending: false });
+    if (!error) setFeedback(data || []);
+  };
+  useEffect(() => { loadFeedback(); }, []);
+  const setFeedbackStatus = async (id, status) => {
+    const { error } = await supabase.rpc("admin_set_feedback_status", { p_id: id, p_status: status });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await loadFeedback();
+  };
 
   const setRole = async (p, role) => {
     const msg = role === "admin"
@@ -128,6 +142,36 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             </div>
           </div>
         ))}
+      </section>
+
+      <section className="stat-block">
+        <h3><MessageCircle size={17} /> {t("Feedback")} ({feedback ? feedback.filter((f) => f.status === "open").length : 0})</h3>
+        {feedback == null ? (
+          <p className="hint">{t("Lade ...")}</p>
+        ) : feedback.length === 0 ? (
+          <p className="hint">{t("Noch kein Feedback.")}</p>
+        ) : (
+          feedback.map((f) => (
+            <div key={f.id} className={"pending-row" + (f.status === "done" ? " done" : "")}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span className="m-txt">
+                  <b>{f.category === "bug" ? t("Bug") : f.category === "idea" ? t("Idee") : t("Sonstiges")}</b>
+                  {" · "}{f.player?.nickname || t("Unbekannt")}{" · "}{fmtDateTime(f.created_at)}
+                </span>
+                <p className="hint" style={{ marginTop: 2, marginBottom: 0 }}>{f.message}</p>
+              </div>
+              {f.status === "open" ? (
+                <button className="chip-btn ok" onClick={() => setFeedbackStatus(f.id, "done")} aria-label={t("erledigt")}>
+                  <Check size={15} />
+                </button>
+              ) : (
+                <button className="chip-btn" onClick={() => setFeedbackStatus(f.id, "open")} aria-label={t("wieder oeffnen")}>
+                  <RotateCcw size={15} />
+                </button>
+              )}
+            </div>
+          ))
+        )}
       </section>
 
       <section className="stat-block">
