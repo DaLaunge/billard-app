@@ -75,8 +75,10 @@ export default function App() {
     return () => clearInterval(id);
   }, [updateInterval, checkForUpdate]);
   useEffect(() => {
-    if (needRefresh && tab !== "match") updateServiceWorker(true);
-  }, [needRefresh, tab, updateServiceWorker]);
+    // Auch das Erfolgs-Popup nicht durch einen Reload wegreissen - sobald es
+    // geschlossen wird, greift dieser Effekt erneut und holt das Update nach.
+    if (needRefresh && tab !== "match" && !celebrate) updateServiceWorker(true);
+  }, [needRefresh, tab, celebrate, updateServiceWorker]);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
