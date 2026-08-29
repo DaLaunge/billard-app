@@ -10,7 +10,7 @@ import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, initialOpp, onChallenge, catalog, challenges }) {
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges }) {
   const [step, setStep] = useState(initialOpp ? 1 : 0);
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
@@ -225,7 +225,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               {suggestions.map(({ p, gain }) => (
                 <div key={p.id} className="suggest-row">
                   <button className="suggest-row-play" onClick={() => { setOpp(p); setStep(1); }}>
-                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={34} />
+                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={34} />
                     <span className="suggest-name">{p.nickname}</span>
                     <span className="suggest-gain">{t("bis zu")} {fmtD(gain)}</span>
                   </button>
@@ -253,7 +253,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 : (opp?.id === p.id ? "•" : null);
               return (
                 <button key={p.id} className={"opp-card" + (role ? " sel" : "")} onClick={() => pickPlayer(p)}>
-                  <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} size={48} />
+                  <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
                   <span>{p.nickname}</span>
                   {mode === "double" && role && <span className="dbl-role">{role}</span>}
                 </button>
@@ -315,7 +315,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </div>
           )}
           {is141 ? (
-            <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} toast={toast}
+            <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} toast={toast}
               sideNames={mode === "double" ? [teamA, teamB] : undefined}
               sideAvatars={mode === "double" ? [[me, partner], [opp, opp2]] : undefined}
               onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2, avg1, avg2, tb1, tb2 }) => {
@@ -333,7 +333,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   <div key={name} className="score-col">
                     <div className="sc-avatars">
                       {members.map((pl) => (
-                        <Ball key={pl.id} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} size={44} />
+                        <Ball key={pl.id} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={44} />
                       ))}
                     </div>
                     <span className="score-name">{name}</span>
@@ -361,11 +361,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <div className="sum-side">
                 {mode === "double" ? (
                   <div className="sum-avatars">
-                    <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={40} />
-                    <Ball color={colorOf(partner.nickname)} label={initials(partner.nickname)} badge={badgeOf(partner.nickname)} size={40} />
+                    <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} photo={photoOf(me.nickname)} size={40} />
+                    <Ball color={colorOf(partner.nickname)} label={initials(partner.nickname)} badge={badgeOf(partner.nickname)} photo={photoOf(partner.nickname)} size={40} />
                   </div>
                 ) : (
-                  <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} size={52} />
+                  <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} photo={photoOf(me.nickname)} size={52} />
                 )}
                 <span>{teamA}</span>
               </div>
@@ -373,11 +373,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <div className="sum-side">
                 {mode === "double" ? (
                   <div className="sum-avatars">
-                    <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={40} />
-                    <Ball color={colorOf(opp2.nickname)} label={initials(opp2.nickname)} badge={badgeOf(opp2.nickname)} size={40} />
+                    <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} photo={photoOf(opp.nickname)} size={40} />
+                    <Ball color={colorOf(opp2.nickname)} label={initials(opp2.nickname)} badge={badgeOf(opp2.nickname)} photo={photoOf(opp2.nickname)} size={40} />
                   </div>
                 ) : (
-                  <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} size={52} />
+                  <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} photo={photoOf(opp.nickname)} size={52} />
                 )}
                 <span>{teamB}</span>
               </div>

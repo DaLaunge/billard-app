@@ -9,10 +9,11 @@ import { APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import LegalModal from "./LegalModal";
+import AvatarPhotoField from "./AvatarPhotoField";
 
-export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf,
+export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang,
-  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount }) {
+  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -50,6 +51,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [deleteStep, setDeleteStep] = useState(0); // 0 versteckt, 1 erste Warnung, 2 Namen eintippen
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const heroPhoto = photoOf(nickname);
 
   const sendFeedback = async () => {
     if (!feedbackMsg.trim()) return;
@@ -147,6 +150,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <p className="nick-status ok"><Check size={14} /> "{cleanNick}" {t("ist verfügbar.")}</p>
           )}
 
+          <label className="field-label">{t("Profilfoto")}</label>
+          <div className="swatch-preview">
+            <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)}
+              photo={photoOf(nickname)} size={56} />
+            <AvatarPhotoField hasPhoto={!!photoOf(nickname)} onReload={onReload} toast={toast} />
+          </div>
+          <p className="hint">{t("Ohne Foto zeigt deine Kugel Initialen in deiner gewählten Farbe.")}</p>
+
           <label className="field-label">{t("Deine Kugel")}</label>
           <div className="swatch-row">
             <button className={"swatch auto" + (color === null ? " sel" : "")}
@@ -213,7 +224,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </header>
 
       <div className="profile-hero">
-        <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} size={72} />
+        {heroPhoto ? (
+          <button className="avatar-tap" onClick={() => setPhotoViewerOpen(true)} aria-label={t("Foto ansehen")}>
+            <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={heroPhoto} size={72} />
+          </button>
+        ) : (
+          <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} size={72} />
+        )}
         <div style={{ minWidth: 0 }}>
           <h3 className="p-name">{nickname}</h3>
           <div className="p-rating">
@@ -348,7 +365,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <h3><Swords size={17} /> {t("Head-to-Head (Match-Siege)")}</h3>
         {h2h.map(({ opp, w, l }) => (
           <div key={opp} className="h2h-row">
-            <Ball color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} size={34} />
+            <Ball color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} photo={photoOf(opp)} size={34} />
             <span className="stat-name">{opp}</span>
             <div className="h2h-bar"><div className="h2h-w" style={{ width: `${(100 * w) / Math.max(1, w + l)}%` }} /></div>
             <span className="h2h-score">{w}:{l}</span>
@@ -487,6 +504,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <button className="legal-link" onClick={() => setLegalOpen(true)}>{t("Nutzungsbedingungen & Datenschutzerklärung")}</button>
       </footer>
       {legalOpen && <LegalModal onClose={() => setLegalOpen(false)} />}
+      {photoViewerOpen && heroPhoto && (
+        <div className="modal-overlay photo-viewer" onClick={() => setPhotoViewerOpen(false)}>
+          <img src={heroPhoto} alt={nickname} className="photo-viewer-img" />
+        </div>
+      )}
 
       {isMe && installPrompt.canShow && (
         <section className="stat-block install-block">

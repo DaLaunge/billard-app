@@ -15,7 +15,7 @@ const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel
 // waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
 // React wuerde sie als anderen Komponententyp behandeln und ihren
 // useState (die gewaehlte Anzahl) jedes Mal verwerfen.
-function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, onOpenProfile }) {
+function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile }) {
   const [count, setCount] = useState(3);
   const visible = count === "all" ? rows : rows.slice(0, count);
   return (
@@ -34,7 +34,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, onOpenProf
       {visible.map((p, i) => (
         <button key={p.name} className="stat-row as-btn" onClick={() => onOpenProfile(p.name)}>
           <span className="medal">{i + 1}.</span>
-          <Ball color={colorOf(p.name)} label={initials(p.name)} badge={badgeOf(p.name)} size={34} />
+          <Ball color={colorOf(p.name)} label={initials(p.name)} badge={badgeOf(p.name)} photo={photoOf(p.name)} size={34} />
           <span className="stat-name">{p.name}</span>
           <span className="stat-val">{fmt(p)}</span>
         </button>
@@ -43,7 +43,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, onOpenProf
   );
 }
 
-export default function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, snapshots, players, rangliste, me }) {
+export default function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me }) {
   const stats = useMemo(() => computeStats(matches), [matches]);
   const topWins = useMemo(() => Object.values(stats).sort((a, b) => b.siege - a.siege), [stats]);
   const topQuote = useMemo(
@@ -97,11 +97,11 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
       <header className="screen-head"><h2>{t("Statistik")}</h2><span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span></header>
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} />
       <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins}
-        fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} onOpenProfile={onOpenProfile} />
+        fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
       <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote}
-        fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} onOpenProfile={onOpenProfile} />
+        fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
       <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak}
-        fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} onOpenProfile={onOpenProfile} />
+        fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
 
       <section className="stat-block">
         <h3><Swords size={17} /> {t("Letzte Matches")}</h3>
