@@ -10,6 +10,7 @@ import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import LegalModal from "./LegalModal";
 import AvatarPhotoField from "./AvatarPhotoField";
+import MyFeedbackTickets from "./MyFeedbackTickets";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang,
@@ -52,6 +53,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [ticketsRefresh, setTicketsRefresh] = useState(0);
   const heroPhoto = photoOf(nickname);
 
   const sendFeedback = async () => {
@@ -59,7 +61,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     setFeedbackBusy(true);
     const ok = await onSubmitFeedback(feedbackCat, feedbackMsg.trim());
     setFeedbackBusy(false);
-    if (ok) { setFeedbackMsg(""); setFeedbackSent(true); }
+    if (ok) { setFeedbackMsg(""); setFeedbackSent(true); setTicketsRefresh((n) => n + 1); }
   };
   const closeFeedback = () => { setFeedbackOpen(false); setFeedbackSent(false); setFeedbackMsg(""); setFeedbackCat("bug"); };
 
@@ -448,6 +450,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           )}
         </section>
       )}
+
+      {isMe && <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />}
 
       {isMe && (
         <section className="stat-block danger-zone">

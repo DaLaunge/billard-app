@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
+import FeedbackThread from "./FeedbackThread";
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
   const [busy, setBusy] = useState(false);
@@ -22,17 +23,47 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   useEffect(() => { loadLogins(); }, []);
 
   const [feedback, setFeedback] = useState(null);
+  const [feedbackMsgs, setFeedbackMsgs] = useState({}); // feedback_id -> Nachrichten
+  const [openThread, setOpenThread] = useState(null);
+  const [seenThreads, setSeenThreads] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("seenFeedbackAdmin") || "{}"); } catch { return {}; }
+  });
   const loadFeedback = async () => {
     const { data, error } = await supabase.from("feedback")
       .select("id, category, message, status, created_at, player:players!feedback_player_id_fkey(nickname)")
       .order("created_at", { ascending: false });
     if (!error) setFeedback(data || []);
+    const { data: msgs } = await supabase.from("feedback_messages")
+      .select("id, feedback_id, sender_id, message, created_at, sender:players!feedback_messages_sender_id_fkey(nickname)")
+      .order("created_at");
+    const grouped = {};
+    (msgs || []).forEach((m) => { (grouped[m.feedback_id] ||= []).push(m); });
+    setFeedbackMsgs(grouped);
   };
   useEffect(() => { loadFeedback(); }, []);
   const setFeedbackStatus = async (id, status) => {
     const { error } = await supabase.rpc("admin_set_feedback_status", { p_id: id, p_status: status });
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await loadFeedback();
+  };
+  const toggleThread = (id) => {
+    setOpenThread(openThread === id ? null : id);
+    const next = { ...seenThreads, [id]: new Date().toISOString() };
+    setSeenThreads(next);
+    try { localStorage.setItem("seenFeedbackAdmin", JSON.stringify(next)); } catch { /* ignore */ }
+  };
+  const sendFeedbackMsg = async (feedbackId, message) => {
+    const { error } = await supabase.rpc("send_feedback_message", { p_feedback_id: feedbackId, p_message: message });
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
+    await loadFeedback();
+    return true;
+  };
+  const threadHasNew = (id) => {
+    const msgs = feedbackMsgs[id] || [];
+    const lastFromPlayer = [...msgs].reverse().find((m) => m.sender_id !== me.id);
+    if (!lastFromPlayer) return false;
+    const seenAt = seenThreads[id];
+    return !seenAt || new Date(lastFromPlayer.created_at) > new Date(seenAt);
   };
 
   const setRole = async (p, role) => {
@@ -152,22 +183,36 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           <p className="hint">{t("Noch kein Feedback.")}</p>
         ) : (
           feedback.map((f) => (
-            <div key={f.id} className={"pending-row" + (f.status === "done" ? " done" : "")}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span className="m-txt">
-                  <b>{f.category === "bug" ? t("Bug") : f.category === "idea" ? t("Idee") : t("Sonstiges")}</b>
-                  {" · "}{f.player?.nickname || t("Unbekannt")}{" · "}{fmtDateTime(f.created_at)}
-                </span>
-                <p className="hint" style={{ marginTop: 2, marginBottom: 0 }}>{f.message}</p>
+            <div key={f.id} className={"pending-row" + (f.status === "done" ? " done" : "")} style={{ display: "block" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span className="m-txt">
+                    <b>{f.category === "bug" ? t("Bug") : f.category === "idea" ? t("Idee") : t("Sonstiges")}</b>
+                    {" · "}{f.player?.nickname || t("Unbekannt")}{" · "}{fmtDateTime(f.created_at)}
+                  </span>
+                  <p className="hint" style={{ marginTop: 2, marginBottom: 0 }}>{f.message}</p>
+                </div>
+                {f.status === "open" ? (
+                  <button className="chip-btn ok" onClick={() => setFeedbackStatus(f.id, "done")} aria-label={t("erledigt")}>
+                    <Check size={15} />
+                  </button>
+                ) : (
+                  <button className="chip-btn" onClick={() => setFeedbackStatus(f.id, "open")} aria-label={t("wieder oeffnen")}>
+                    <RotateCcw size={15} />
+                  </button>
+                )}
               </div>
-              {f.status === "open" ? (
-                <button className="chip-btn ok" onClick={() => setFeedbackStatus(f.id, "done")} aria-label={t("erledigt")}>
-                  <Check size={15} />
-                </button>
-              ) : (
-                <button className="chip-btn" onClick={() => setFeedbackStatus(f.id, "open")} aria-label={t("wieder oeffnen")}>
-                  <RotateCcw size={15} />
-                </button>
+              <button className="ticket-head" onClick={() => toggleThread(f.id)}>
+                <MessageCircle size={14} />
+                <span className="ticket-msg">
+                  {t("Chat")}{(feedbackMsgs[f.id]?.length || 0) > 0 ? ` (${feedbackMsgs[f.id].length})` : ""}
+                </span>
+                {threadHasNew(f.id) && <span className="new-dot" />}
+                <ChevronDown size={15} className={"cat-chev" + (openThread === f.id ? " open" : "")} />
+              </button>
+              {openThread === f.id && (
+                <FeedbackThread messages={feedbackMsgs[f.id] || []} meId={me.id}
+                  onSend={(msg) => sendFeedbackMsg(f.id, msg)} />
               )}
             </div>
           ))
