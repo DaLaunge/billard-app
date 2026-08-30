@@ -412,6 +412,26 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .danger-zone h3 { color: #e07b6f; }
 
 .avatar-photo-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.ticket-item { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
+.ticket-item:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.ticket-head { width: 100%; display: flex; align-items: center; gap: 8px; background: none; border: none;
+  padding: 4px 0; cursor: pointer; text-align: left; font-family: inherit; color: inherit; }
+.ticket-cat { flex-shrink: 0; font-weight: 700; font-size: 12.5px; color: var(--chalk); }
+.ticket-msg { flex: 1; min-width: 0; font-size: 13px; color: var(--ivory-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.new-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+.feedback-thread { margin: 8px 0 4px; }
+.feedback-msgs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;
+  max-height: 260px; overflow-y: auto; }
+.chat-bubble { background: var(--felt); border: 1px solid var(--line); border-radius: 12px;
+  padding: 7px 11px; max-width: 85%; align-self: flex-start; display: flex;
+  flex-direction: column; gap: 2px; }
+.chat-bubble.mine { align-self: flex-end; background: var(--felt-3); border-color: var(--gold); }
+.chat-bubble-name { font-size: 11px; font-weight: 700; color: var(--chalk); }
+.chat-bubble-text { font-size: 13.5px; color: var(--ivory); line-height: 1.4;
+  white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-bubble-time { font-size: 10px; color: var(--ivory-dim); align-self: flex-end; }
 .avatar-tap { background: none; border: none; padding: 0; cursor: pointer; border-radius: 50%; }
 .photo-viewer { background: #000000dd; padding: 24px; }
 .photo-viewer-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 14px;
