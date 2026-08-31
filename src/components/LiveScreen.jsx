@@ -5,7 +5,7 @@ import PingCard from "./PingCard";
 import ChallengeCard from "./ChallengeCard";
 
 export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
-  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge }) {
+  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
   const [loc, setLoc] = useState("");
@@ -78,12 +78,12 @@ export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, ph
           <>
             {challengesToMe.length > 0 && <p className="q">{t("Herausforderungen an dich")}</p>}
             {challengesToMe.map((c) => (
-              <ChallengeCard key={c.id} challenge={c} role="to" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+              <ChallengeCard key={c.id} challenge={c} role="to" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
                 isNewMsg={isNew(c, "msg")} onDecline={onDeclineChallenge} onReply={onReplyToChallenge} />
             ))}
             {challengesFromMe.length > 0 && <p className="q" style={{ marginTop: challengesToMe.length ? 18 : 0 }}>{t("Deine offenen Herausforderungen")}</p>}
             {challengesFromMe.map((c) => (
-              <ChallengeCard key={c.id} challenge={c} role="from" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+              <ChallengeCard key={c.id} challenge={c} role="from" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
                 isNewReply={isNew(c, "reply")} onCancel={onCancelChallenge} onEditMessage={onEditChallengeMessage} />
             ))}
             {openChallenges.length === 0 && (
@@ -105,7 +105,7 @@ export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, ph
         {liveOpen && (
           <>
             {myPing ? (
-              <PingCard ping={myPing} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReply={onReply} onUnreply={onUnreply} />
+              <PingCard ping={myPing} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onReply={onReply} onUnreply={onUnreply} />
             ) : (
               <section className="stat-block">
                 <h3><Radio size={17} /> {t("Ich bin bereit!")}</h3>
@@ -140,7 +140,7 @@ export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, ph
 
             {others.length > 0 && <p className="q" style={{ marginTop: 18 }}>{t("Gerade aktiv:")}</p>}
             {others.map((p) => (
-              <PingCard key={p.id} ping={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReply={onReply} onUnreply={onUnreply} />
+              <PingCard key={p.id} ping={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onReply={onReply} onUnreply={onUnreply} />
             ))}
             {others.length === 0 && !myPing && (
               <p className="hint center" style={{ marginTop: 24 }}>

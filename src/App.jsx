@@ -385,7 +385,7 @@ export default function App() {
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                  onCreate={createPing} onClose={closePing}
+                  onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge} />
@@ -394,7 +394,7 @@ export default function App() {
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onReload={loadData} initialOpp={vsOpp} onChallenge={createChallenge}
-                  catalog={catalog} challenges={challenges}
+                  catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
                   onDone={() => { setVsOpp(null); setTab("rang"); loadData(); }}
                   onCancel={() => { setVsOpp(null); setTab("rang"); }} />
               )}
@@ -409,7 +409,8 @@ export default function App() {
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
-                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData} />
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
+                  onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
@@ -420,7 +421,8 @@ export default function App() {
                   onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang}
-                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData} />
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
+                  onOpenProfile={openProfile} />
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}
@@ -448,7 +450,31 @@ export default function App() {
                 )}
               </button>
               <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
-                <Plus size={26} />
+                <svg className="fab-ball" viewBox="0 0 200 200" aria-hidden="true">
+                  <defs>
+                    <clipPath id="fabClip"><circle cx="100" cy="100" r="97" /></clipPath>
+                    {/* Physikalisch beleuchtete Kugel: feDiffuseLighting/feSpecularLighting
+                        berechnen echtes Licht+Glanz auf der Alpha-Silhouette (statt von
+                        Hand geraetener Verlaeufe). */}
+                    <filter id="fabOrbLight" x="-40%" y="-40%" width="180%" height="180%" colorInterpolationFilters="sRGB">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur" />
+                      <feSpecularLighting in="blur" surfaceScale="8" specularConstant="0.95" specularExponent="20" lightingColor="#ffffff" result="spec">
+                        <fePointLight x="42" y="32" z="115" />
+                      </feSpecularLighting>
+                      <feComposite in="spec" in2="SourceAlpha" operator="in" result="specClip" />
+                      <feDiffuseLighting in="blur" surfaceScale="8" diffuseConstant="1.25" lightingColor="#fffaf1" result="diff">
+                        <fePointLight x="42" y="32" z="115" />
+                      </feDiffuseLighting>
+                      <feComposite in="diff" in2="SourceAlpha" operator="in" result="diffClip" />
+                      <feBlend in="SourceGraphic" in2="diffClip" mode="multiply" result="shaded" />
+                      <feComposite in="specClip" in2="shaded" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" />
+                    </filter>
+                  </defs>
+                  <g clipPath="url(#fabClip)" filter="url(#fabOrbLight)">
+                    <circle cx="100" cy="100" r="97" fill="#ede4d0" />
+                  </g>
+                </svg>
+                <Plus size={26} className="fab-plus" />
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>

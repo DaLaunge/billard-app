@@ -4,7 +4,7 @@ import { t } from "../lib/i18n";
 import { initials, timeAgo, timeLeft } from "../lib/format";
 import Ball from "./Ball";
 
-export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply, onUnreply }) {
+export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply, onUnreply, onOpenProfile }) {
   const myReply = ping.replies?.find((r) => r.player_id === me.id);
   const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
@@ -12,14 +12,14 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
 
   return (
     <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
-      <div className="ping-head">
+      <button className="ping-head as-btn" onClick={() => onOpenProfile(ping.player.nickname)}>
         <Ball color={colorOf(ping.player.nickname)} label={initials(ping.player.nickname)} badge={badgeOf(ping.player.nickname)} photo={photoOf(ping.player.nickname)} size={40} />
         <div className="ping-who">
           <b>{ping.player.nickname}</b>
           <span className="rank-meta">{timeAgo(ping.created_at)} - {timeLeft(ping.expires_at)}</span>
         </div>
         <span className="live-pill"><span className="live-dot" /> LIVE</span>
-      </div>
+      </button>
       <div className="ping-loc"><MapPin size={16} /> {ping.location}</div>
       {ping.message && <p className="ping-msg">"{ping.message}"</p>}
 
@@ -30,10 +30,10 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
       {ping.replies?.length > 0 && (
         <div className="ping-replies">
           {ping.replies.map((r) => (
-            <div key={r.id} className="ping-reply">
+            <button key={r.id} className="ping-reply as-btn" onClick={() => onOpenProfile(r.player.nickname)}>
               <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={26} />
               <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : t(" ist unterwegs!")}</span>
-            </div>
+            </button>
           ))}
         </div>
       )}

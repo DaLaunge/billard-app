@@ -88,10 +88,17 @@ const hashString = (s) => {
 const CLOSE_CANDIDATES = 5; // aus den X naechstliegenden Erfolgen wird taeglich einer gewaehlt
 
 /* Sammelt ueber alle bekannten Familien hinweg die naechstliegenden, noch nicht
-   erreichten Schwellenwerte (aufsteigend nach Abstand) - Rohdaten, kein Text. */
-function closestCandidates(catalog, extras) {
+   erreichten Schwellenwerte (aufsteigend nach Abstand) - Rohdaten, kein Text.
+   earnedBadges (Set von badge_key) schliesst bereits freigeschaltete Erfolge
+   explizit aus: bei Serien-Familien (aktuelle Gewinnserie, aktuelle Serie
+   gegen 1 Gegner) sinkt der live berechnete Wert nach einer Niederlage
+   wieder, ohne das den Erfolg selbst wieder aberkennt - ohne diesen Check
+   wuerde ein laengst erreichter Serien-Erfolg dann faelschlich erneut als
+   "naechstes Ziel" vorgeschlagen. */
+function closestCandidates(catalog, extras, earnedBadges) {
   const candidates = [];
   (catalog || []).forEach((b) => {
+    if (earnedBadges && earnedBadges.has(b.badge_key)) return;
     const fam = FAMILIES.find((f) => f.test(b.description));
     if (!fam) return;
     const cur = fam.current(extras);
@@ -108,8 +115,8 @@ function closestCandidates(catalog, extras) {
    Hinweistext aus - nicht immer denselben (sonst nutzt sich die Motivation ab),
    aber auch nicht bei jedem Rendern neu (das waere nur Geflacker): die Auswahl
    ist stabil fuer einen Tag und einen Spieler, wechselt aber von Tag zu Tag. */
-export function nextAchievementHint(catalog, extras, seedKey = "") {
-  const shortlist = closestCandidates(catalog, extras).slice(0, CLOSE_CANDIDATES);
+export function nextAchievementHint(catalog, extras, seedKey = "", earnedBadges) {
+  const shortlist = closestCandidates(catalog, extras, earnedBadges).slice(0, CLOSE_CANDIDATES);
   if (shortlist.length === 0) return null;
   const seed = hashString(todayStr(new Date()) + "|" + seedKey);
   const pick = shortlist[seed % shortlist.length];

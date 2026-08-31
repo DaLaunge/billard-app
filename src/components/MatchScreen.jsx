@@ -11,7 +11,7 @@ import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges }) {
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges }) {
   const [step, setStep] = useState(initialOpp ? 1 : 0);
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
@@ -77,8 +77,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     };
   };
   const achievementHint = useMemo(
-    () => nextAchievementHint(catalog, computeAchievementExtras(me.nickname, matches, players, challenges), me.nickname),
-    [catalog, matches, players, challenges, me.nickname]
+    () => nextAchievementHint(catalog, computeAchievementExtras(me.nickname, matches, players, challenges), me.nickname, earnedBadges),
+    [catalog, matches, players, challenges, me.nickname, earnedBadges]
   );
   const suggestions = opponents
     .map((p) => ({ p, gain: previewFor("Gesamt", p.nickname).winMax }))
