@@ -450,6 +450,7 @@ export default function App() {
                 )}
               </button>
               <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
+                <span className="fab-dot d1" /><span className="fab-dot d2" /><span className="fab-dot d3" />
                 <Plus size={26} />
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
