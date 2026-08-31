@@ -450,8 +450,35 @@ export default function App() {
                 )}
               </button>
               <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
-                <span className="fab-dot d1" /><span className="fab-dot d2" /><span className="fab-dot d3" />
-                <Plus size={26} />
+                <svg className="fab-ball" viewBox="0 0 200 200" aria-hidden="true">
+                  <defs>
+                    <radialGradient id="fabSphere" cx="35%" cy="28%" r="75%">
+                      <stop offset="0%" stopColor="#fffdf6" />
+                      <stop offset="20%" stopColor="#f7f0da" />
+                      <stop offset="45%" stopColor="#e9ddbd" />
+                      <stop offset="70%" stopColor="#c4b088" />
+                      <stop offset="100%" stopColor="#8a7852" />
+                    </radialGradient>
+                    <radialGradient id="fabDot" cx="35%" cy="30%" r="75%">
+                      <stop offset="0%" stopColor="#e2493a" />
+                      <stop offset="40%" stopColor="#cc3323" />
+                      <stop offset="78%" stopColor="#a3211a" />
+                      <stop offset="100%" stopColor="#7d1811" />
+                    </radialGradient>
+                    <radialGradient id="fabGloss" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+                      <stop offset="55%" stopColor="#ffffff" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+                  <circle cx="100" cy="100" r="97" fill="url(#fabSphere)" />
+                  <ellipse cx="130" cy="55" rx="26" ry="19" fill="url(#fabDot)" transform="rotate(20 130 55)" />
+                  <ellipse cx="46" cy="122" rx="27" ry="20" fill="url(#fabDot)" transform="rotate(-15 46 122)" />
+                  <ellipse cx="126" cy="142" rx="23" ry="17" fill="url(#fabDot)" transform="rotate(10 126 142)" />
+                  <ellipse cx="66" cy="52" rx="46" ry="30" fill="url(#fabGloss)" />
+                  <circle cx="58" cy="66" r="5" fill="#ffffff" opacity="0.9" />
+                </svg>
+                <Plus size={26} className="fab-plus" />
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
