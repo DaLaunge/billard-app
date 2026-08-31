@@ -385,7 +385,7 @@ export default function App() {
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                  onCreate={createPing} onClose={closePing}
+                  onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge} />
@@ -394,7 +394,7 @@ export default function App() {
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onReload={loadData} initialOpp={vsOpp} onChallenge={createChallenge}
-                  catalog={catalog} challenges={challenges}
+                  catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
                   onDone={() => { setVsOpp(null); setTab("rang"); loadData(); }}
                   onCancel={() => { setVsOpp(null); setTab("rang"); }} />
               )}
@@ -409,7 +409,8 @@ export default function App() {
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
-                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData} />
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
+                  onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
@@ -420,7 +421,8 @@ export default function App() {
                   onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang}
-                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData} />
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
+                  onOpenProfile={openProfile} />
               )}
               {tab === "admin" && player.role === "admin" && (
                 <AdminScreen allPending={unconfirmed} players={players} onConfirm={confirmMatch}

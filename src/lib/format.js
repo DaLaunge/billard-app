@@ -35,6 +35,13 @@ export const fmtAgo = (d) => {
   return t("vor {n} Tagen", { n: days });
 };
 export const isDoubles = (m) => !!m.player1b_id;
+// Wie mSide, aber als Namens-Array statt fertigem String - fuer Stellen, an
+// denen jeder Name einzeln anklickbar sein soll (z. B. Letzte Matches).
+export const sideNames = (m, s) => {
+  const a = s === 1 ? m.p1?.nickname : m.p2?.nickname;
+  const b = s === 1 ? m.p1b?.nickname : m.p2b?.nickname;
+  return [a, b].filter(Boolean);
+};
 export const mSide = (m, s) => {
   const a = s === 1 ? m.p1?.nickname : m.p2?.nickname;
   const b = s === 1 ? m.p1b?.nickname : m.p2b?.nickname;

@@ -4,7 +4,7 @@ import { t } from "../lib/i18n";
 import { initials, timeLeft } from "../lib/format";
 import Ball from "./Ball";
 
-export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, photoOf, isNewMsg, isNewReply, onDecline, onCancel, onEditMessage, onReply }) {
+export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, photoOf, isNewMsg, isNewReply, onDecline, onCancel, onEditMessage, onReply, onOpenProfile }) {
   const other = role === "to" ? c.challenger : c.challenged;
   const [editingMsg, setEditingMsg] = useState(false);
   const [msgDraft, setMsgDraft] = useState(c.message || "");
@@ -13,7 +13,7 @@ export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, ph
 
   return (
     <section className={"stat-block challenge-card" + (role === "to" ? " to-me" : "")}>
-      <div className="ping-head">
+      <button className="ping-head as-btn" onClick={() => onOpenProfile(other.nickname)}>
         <Ball color={colorOf(other.nickname)} label={initials(other.nickname)} badge={badgeOf(other.nickname)} photo={photoOf(other.nickname)} size={40} />
         <div className="ping-who">
           <b>{other.nickname}</b>
@@ -22,7 +22,7 @@ export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, ph
           </span>
         </div>
         <Swords size={18} className="challenge-ico" />
-      </div>
+      </button>
 
       {role === "from" ? (
         editingMsg ? (

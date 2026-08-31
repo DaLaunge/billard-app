@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Trophy, BarChart3, Flame, Swords, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
-import { initials, fmtDateTime, mSide, isDoubles } from "../lib/format";
+import { initials, fmtDateTime, sideNames, isDoubles } from "../lib/format";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -156,7 +156,15 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
         {visibleMatches.map((m) => (
           <div key={m.id} className="match-row">
             <span className="m-date m-datetime">{fmtDateTime(m.played_at)}</span>
-            <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</span>
+            <span className="m-txt">
+              {sideNames(m, 1).map((n, i) => (
+                <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
+              ))}
+              {" "}<b>{m.score1}:{m.score2}</b>{" "}
+              {sideNames(m, 2).map((n, i) => (
+                <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
+              ))}
+            </span>
             <span className="m-disc">{t(m.discipline)}</span>
           </div>
         ))}
