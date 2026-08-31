@@ -621,15 +621,16 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   font-size: 10.5px; cursor: pointer; font-family: inherit; padding: 4px 0; position: relative; }
 .tab.on { color: var(--chalk); font-weight: 700; }
 .tab.fab { flex: 0 0 54px; width: 54px; height: 54px; border: none;
-  border-radius: 50%; margin-top: -22px; justify-content: center; color: #1a1a1a;
+  border-radius: 50%; margin-top: -22px; justify-content: center; color: #262220;
   background:
-    radial-gradient(circle at 68% 74%, #9c231b 0 1px, #d13a29 1px 5px, transparent 5.5px),
-    radial-gradient(circle at 27% 64%, #9c231b 0 1px, #d13a29 1px 4.5px, transparent 5px),
-    radial-gradient(circle at 74% 26%, #9c231b 0 1px, #d13a29 1px 4px, transparent 4.5px),
-    radial-gradient(circle at 46% 87%, #9c231b 0 0.5px, #d13a29 0.5px 3.2px, transparent 3.7px),
-    radial-gradient(circle at 30% 24%, #ffffff 0%, #fbfbfb 34%, #e3e3e3 64%, #bfbfbf 88%, #979797 100%);
-  box-shadow: 0 6px 16px #00000060, inset -5px -5px 9px #00000033, inset 3px 3px 7px #ffffffee; }
-.tab.fab svg { position: relative; }
+    radial-gradient(circle 1.6px at 33% 38%, #ffffff 0%, #ffffff 70%, transparent 100%),
+    radial-gradient(ellipse 26% 17% at 35% 27%, #ffffffee 0%, #ffffff8c 45%, transparent 78%),
+    radial-gradient(ellipse 17% 12% at 68% 26%, #c22e22 0%, #a3231a 75%, transparent 100%),
+    radial-gradient(ellipse 18% 13% at 27% 68%, #c22e22 0%, #a3231a 75%, transparent 100%),
+    radial-gradient(ellipse 15% 11% at 70% 74%, #c22e22 0%, #a3231a 75%, transparent 100%),
+    radial-gradient(circle at 35% 30%, #fffdf6 0%, #f7f0da 22%, #e9ddbd 42%, #cebc91 68%, #a99569 88%, #897751 100%);
+  box-shadow: 0 6px 16px #00000060, inset 0 0 6px #00000030; }
+.tab.fab svg { position: relative; filter: drop-shadow(0 1px 0 #ffffff66); }
 .badge { position: absolute; top: -2px; right: 18%; background: var(--loss); color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 16px; height: 16px;
   display: grid; place-items: center; padding: 0 4px; }
