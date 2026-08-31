@@ -294,12 +294,15 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
               const letter = p.blocked ? "B" : isGhost ? "S" : p.role === "admin" ? "A" : "U";
               const lclass = p.blocked ? "blocked" : isGhost ? "special" : p.role === "admin" ? "admin" : "user";
               const open = editId === p.player_id;
+              const inviter = pr?.invited_by ? players.find((x) => x.id === pr.invited_by) : null;
+              const joinedRecently = p.created_at && (Date.now() - new Date(p.created_at).getTime()) < 7 * 86400000;
               return (
                 <div key={p.player_id} className={"mem-row" + (p.blocked ? " is-blocked" : "")}>
                   <div className="mem-line">
                     <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={28} />
                     <span className={"role-letter role-" + lclass}>{letter}</span>
                     <span className="mem-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
+                    {inviter && joinedRecently && <span className="new-dot" title={t("Neu über Einladung von {name}", { name: inviter.nickname })} />}
                     <span className="mem-when">{isGhost ? "—" : fmtAgo(p.last_seen)}</span>
                     <button className={"mem-edit" + (open ? " on" : "")} aria-label={t("Bearbeiten")}
                       onClick={() => setEditId(open ? null : p.player_id)}><Pencil size={14} /></button>
@@ -308,6 +311,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                     <div className="mem-panel">
                       <div className="mem-info">
                         {p.last_seen ? fmtDate(p.last_seen) : t("nie")}{noLogin ? " · " + t("ohne Login") : ""}
+                        {inviter && <><br />{t("Eingeladen von {name}", { name: inviter.nickname })}</>}
                       </div>
                       {isSelf ? (
                         <span className="hint">{t("Das bist du.")}</span>

@@ -10,7 +10,7 @@ export default function InviteScreen({ me, onBack, toast }) {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.rpc("my_invite_code");
+      const { data, error } = await supabase.rpc("get_or_create_my_invite");
       if (error) setError(error.message);
       else setCode(data);
     })();
@@ -64,7 +64,7 @@ export default function InviteScreen({ me, onBack, toast }) {
       <button className="btn ghost" onClick={copy} disabled={!code}>
         <Copy size={16} /> {t("Link kopieren")}
       </button>
-      <p className="hint">{t("Wer über deinen Code beitritt, wird dir als geworbener Spieler gutgeschrieben – dafür gibt es später eigene Erfolge.")}</p>
+      <p className="hint">{t("Dieser Code gilt nur für eine einzige Anmeldung. Wer damit beitritt, wird dir als geworbener Spieler gutgeschrieben – dafür gibt es eigene Erfolge. Für die nächste Einladung bekommst du automatisch einen neuen Code.")}</p>
     </div>
   );
 }
