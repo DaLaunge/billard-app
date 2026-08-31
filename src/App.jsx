@@ -455,17 +455,14 @@ export default function App() {
                     <clipPath id="fabClip"><circle cx="100" cy="100" r="97" /></clipPath>
                     {/* Physikalisch beleuchtete Kugel: feDiffuseLighting/feSpecularLighting
                         berechnen echtes Licht+Glanz auf der Alpha-Silhouette (statt von
-                        Hand geraetener Verlaeufe). Die roten Punkte liegen in der
-                        unbeleuchteten Grundfarben-Ebene und werden vom selben simulierten
-                        Licht erfasst wie die Kugel - dadurch wirken sie wirklich auf die
-                        Oberflaeche projiziert statt aufgeklebt. */}
+                        Hand geraetener Verlaeufe). */}
                     <filter id="fabOrbLight" x="-40%" y="-40%" width="180%" height="180%" colorInterpolationFilters="sRGB">
                       <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur" />
                       <feSpecularLighting in="blur" surfaceScale="8" specularConstant="0.95" specularExponent="20" lightingColor="#ffffff" result="spec">
                         <fePointLight x="42" y="32" z="115" />
                       </feSpecularLighting>
                       <feComposite in="spec" in2="SourceAlpha" operator="in" result="specClip" />
-                      <feDiffuseLighting in="blur" surfaceScale="8" diffuseConstant="1.25" lightingColor="#fff7e6" result="diff">
+                      <feDiffuseLighting in="blur" surfaceScale="8" diffuseConstant="1.25" lightingColor="#fffaf1" result="diff">
                         <fePointLight x="42" y="32" z="115" />
                       </feDiffuseLighting>
                       <feComposite in="diff" in2="SourceAlpha" operator="in" result="diffClip" />
@@ -474,10 +471,7 @@ export default function App() {
                     </filter>
                   </defs>
                   <g clipPath="url(#fabClip)" filter="url(#fabOrbLight)">
-                    <circle cx="100" cy="100" r="97" fill="#d9c9a2" />
-                    <polygon points="171.82,50.35 172.99,53.68 173.66,56.93 173.83,60.02 173.49,62.86 172.65,65.40 171.34,67.57 169.57,69.32 167.40,70.60 164.88,71.38 162.07,71.64 159.04,71.38 155.87,70.60 152.63,69.32 149.40,67.57 146.27,65.40 143.31,62.86 140.59,60.02 138.17,56.93 136.13,53.68 134.51,50.35 133.35,47.02 132.67,43.77 132.50,40.68 132.84,37.84 133.68,35.29 135.00,33.12 136.77,31.38 138.94,30.10 141.46,29.32 144.27,29.06 147.29,29.32 150.47,30.10 153.71,31.38 156.93,33.12 160.07,35.29 163.03,37.84 165.75,40.68 168.16,43.77 170.20,47.02" fill="#b3271c" />
-                    <polygon points="60.49,146.62 61.76,150.24 62.55,153.78 62.83,157.13 62.59,160.23 61.85,162.99 60.61,165.35 58.91,167.25 56.80,168.64 54.32,169.49 51.53,169.78 48.51,169.49 45.32,168.64 42.05,167.25 38.78,165.35 35.58,162.99 32.54,160.23 29.73,157.13 27.22,153.78 25.07,150.24 23.34,146.62 22.06,143.00 21.28,139.47 21.00,136.11 21.23,133.01 21.98,130.25 23.22,127.89 24.91,125.99 27.03,124.60 29.51,123.75 32.30,123.47 35.32,123.75 38.51,124.60 41.78,125.99 45.05,127.89 48.25,130.25 51.29,133.01 54.10,136.11 56.61,139.47 58.75,143.00" fill="#b3271c" />
-                    <polygon points="153.60,157.95 152.35,160.84 150.61,163.66 148.43,166.34 145.85,168.81 142.95,171.02 139.79,172.91 136.44,174.42 133.01,175.53 129.56,176.21 126.18,176.44 122.96,176.21 119.97,175.53 117.29,174.42 114.99,172.91 113.12,171.02 111.73,168.81 110.84,166.34 110.50,163.66 110.69,160.84 111.42,157.95 112.67,155.05 114.41,152.23 116.60,149.55 119.17,147.08 122.08,144.87 125.24,142.99 128.58,141.47 132.02,140.36 135.47,139.68 138.85,139.45 142.07,139.68 145.05,140.36 147.73,141.47 150.03,142.99 151.90,144.87 153.30,147.08 154.18,149.55 154.53,152.23 154.34,155.05" fill="#b3271c" />
+                    <circle cx="100" cy="100" r="97" fill="#ede4d0" />
                   </g>
                 </svg>
                 <Plus size={26} className="fab-plus" />
