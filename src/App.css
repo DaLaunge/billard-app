@@ -620,8 +620,16 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   font-size: 10.5px; cursor: pointer; font-family: inherit; padding: 4px 0; position: relative; }
 .tab.on { color: var(--chalk); font-weight: 700; }
-.tab.fab { flex: 0 0 62px; background: var(--chalk); color: #08251C; width: 54px; height: 54px;
-  border-radius: 50%; margin-top: -22px; box-shadow: 0 6px 16px #00000060; justify-content: center; }
+.tab.fab { flex: 0 0 54px; width: 54px; height: 54px; border: none;
+  border-radius: 50%; margin-top: -22px; justify-content: center; color: #1a1a1a;
+  background:
+    radial-gradient(circle at 68% 74%, #9c231b 0 1px, #d13a29 1px 5px, transparent 5.5px),
+    radial-gradient(circle at 27% 64%, #9c231b 0 1px, #d13a29 1px 4.5px, transparent 5px),
+    radial-gradient(circle at 74% 26%, #9c231b 0 1px, #d13a29 1px 4px, transparent 4.5px),
+    radial-gradient(circle at 46% 87%, #9c231b 0 0.5px, #d13a29 0.5px 3.2px, transparent 3.7px),
+    radial-gradient(circle at 30% 24%, #ffffff 0%, #fbfbfb 34%, #e3e3e3 64%, #bfbfbf 88%, #979797 100%);
+  box-shadow: 0 6px 16px #00000060, inset -5px -5px 9px #00000033, inset 3px 3px 7px #ffffffee; }
+.tab.fab svg { position: relative; }
 .badge { position: absolute; top: -2px; right: 18%; background: var(--loss); color: #fff;
   font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 16px; height: 16px;
   display: grid; place-items: center; padding: 0 4px; }
