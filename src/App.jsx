@@ -450,30 +450,7 @@ export default function App() {
                 )}
               </button>
               <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
-                <svg className="fab-ball" viewBox="0 0 200 200" aria-hidden="true">
-                  <defs>
-                    <clipPath id="fabClip"><circle cx="100" cy="100" r="97" /></clipPath>
-                    {/* Physikalisch beleuchtete Kugel: feDiffuseLighting/feSpecularLighting
-                        berechnen echtes Licht+Glanz auf der Alpha-Silhouette (statt von
-                        Hand geraetener Verlaeufe). */}
-                    <filter id="fabOrbLight" x="-40%" y="-40%" width="180%" height="180%" colorInterpolationFilters="sRGB">
-                      <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur" />
-                      <feSpecularLighting in="blur" surfaceScale="8" specularConstant="0.95" specularExponent="20" lightingColor="#ffffff" result="spec">
-                        <fePointLight x="42" y="32" z="115" />
-                      </feSpecularLighting>
-                      <feComposite in="spec" in2="SourceAlpha" operator="in" result="specClip" />
-                      <feDiffuseLighting in="blur" surfaceScale="8" diffuseConstant="1.25" lightingColor="#fffaf1" result="diff">
-                        <fePointLight x="42" y="32" z="115" />
-                      </feDiffuseLighting>
-                      <feComposite in="diff" in2="SourceAlpha" operator="in" result="diffClip" />
-                      <feBlend in="SourceGraphic" in2="diffClip" mode="multiply" result="shaded" />
-                      <feComposite in="specClip" in2="shaded" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" />
-                    </filter>
-                  </defs>
-                  <g clipPath="url(#fabClip)" filter="url(#fabOrbLight)">
-                    <circle cx="100" cy="100" r="97" fill="#ede4d0" />
-                  </g>
-                </svg>
+                <span className="fab-shine" />
                 <Plus size={26} className="fab-plus" />
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
