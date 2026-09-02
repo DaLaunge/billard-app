@@ -318,6 +318,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--ivory-dim); }
 .sp-log-row:last-child { border-bottom: none; }
 .sp-log-player { color: var(--ivory); font-weight: 600; flex: 0 0 auto; }
+.sp-rail { display: none; }
 .otw-count { margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--gold); }
 .btn.small { padding: 9px 12px; font-size: 13px; }
 .sp-foulwarn { font-size: 11px; font-weight: 700; color: #E8B923; margin-top: 2px; }
@@ -781,13 +782,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .match-score-step .round-btn svg { width: 34px; height: 34px; }
 
   /* 14/1: Board (Punktestand) oben, direkt darunter eine kompakte
-     Buttonleiste (Rack/Fehler/Safe nebeneinander statt einzeln volle
-     Breite) - alles ohne Scrollen sichtbar. Bewusst nicht bildschirmfuellend
-     breit (dafuer ruhige Raender links/rechts): ein einzelner Button ueber
-     die ganze Seite bringt nichts, und die Aufmerksamkeit soll auf dem
-     Punktestand bleiben, nicht auf ausgefuellter Flaeche. */
-  .phone.app .screen:has(.match-score-step .sp) { max-width: 1000px; }
-  .match-score-step .sp { display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
+     Buttonleiste (Rack/Fehler/Safe/Foul/Rueckgaengig in EINER Reihe statt
+     gestapelter Vollbreite-Balken) - alles ohne Scrollen sichtbar. Die
+     bisher ungenutzten Raender links/rechts zeigen jetzt je Spieler ein
+     groesseres Foto + sein persoenliches Aufnahme-Protokoll, damit klar
+     ist wer wer ist und wer was gemacht hat. */
+  .phone.app .screen:has(.match-score-step .sp) { max-width: 1440px; }
+  .match-score-step .sp { display: grid; grid-template-columns: 200px 1fr 200px; gap: 24px; align-items: start; }
+  .match-score-step .sp-center { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .match-score-step .sp-board { gap: 20px; }
   .match-score-step .sp-side { padding: 22px 14px; }
   .match-score-step .sp-score { font-size: 130px; }
@@ -795,16 +797,29 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .match-score-step .sp-meta { font-size: 14px; }
   .match-score-step .sp-avg { font-size: 13px; }
   .match-score-step .sp-turn { font-size: 13px; }
-  .match-score-step .sp-actions { gap: 10px; }
+  .match-score-step .sp-actions { display: flex; flex-direction: column; gap: 10px; }
   .match-score-step .sp-target { font-size: 14px; }
   .match-score-step .sp-need { font-size: 15px; }
   .match-score-step .sp-need b { font-size: 19px; }
+  /* die gemeinsame Verlaufsliste unten weicht den beiden Rand-Protokollen */
+  .match-score-step .sp-log { display: none; }
 
-  /* Buttonleiste: Rack + Fehler/Safe nebeneinander in einer Reihe statt
-     drei gestapelten Vollbreite-Balken. */
+  /* Buttonleiste: alle Aktionen in einer Reihe statt gestapelter Balken. */
   .match-score-step .sp-primary-actions { display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
   .match-score-step .sp-primary-actions .sp-rack { flex: 1.3; margin: 0; }
   .match-score-step .sp-primary-actions .sp-controls { flex: 1; }
   .match-score-step .sp-rack { padding: 16px; font-size: 16px; border-radius: 16px; }
   .match-score-step .sp-pot { padding: 16px; font-size: 17px; border-radius: 16px; }
+
+  /* Rand-Spalten: groesseres Foto + Name + persoenliches Protokoll */
+  .match-score-step .sp-rail { display: flex; flex-direction: column; align-items: center; gap: 10px;
+    background: var(--felt-2); border: 2px solid var(--line); border-radius: 18px; padding: 20px 12px; }
+  .match-score-step .sp-rail.active { border-color: var(--gold); background: var(--felt-3); }
+  .match-score-step .sp-rail-name { font-size: 15px; font-weight: 700; text-align: center; }
+  .match-score-step .sp-mini-log { width: 100%; display: flex; flex-direction: column; gap: 6px;
+    max-height: 420px; overflow-y: auto; }
+  .match-score-step .sp-mini-log-row { font-size: 12px; color: var(--ivory-dim); text-align: center;
+    padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  .match-score-step .sp-mini-log-row:last-child { border-bottom: none; }
+  .match-score-step .sp-mini-log-row.hint { font-size: 12px; }
 }

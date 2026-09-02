@@ -46,6 +46,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
   const allAvg = (p, MI = missInn, SI = safeInn, PK = pocketed) =>
     (MI[p] + SI[p] > 0 ? PK[p] / (MI[p] + SI[p]) : 0);
   const fmt = (x) => x.toFixed(1);
+  const logForPlayer = (i) => log.filter((e) => e.player === i);
   const describeLog = (e) => {
     switch (e.type) {
       case "rack": return t("Rack ausgeschossen (+{n})", { n: e.pts });
@@ -245,8 +246,26 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
 
   // ---- Laufendes Spiel ----
   const need = target - sc[active];
+  const rail = (i) => (
+    <div className={"sp-rail" + (active === i ? " active" : "")}>
+      <div className="sp-rail-avatar">
+        {membersOf(i).map((mm) => (
+          <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={88} />
+        ))}
+      </div>
+      <span className="sp-rail-name">{names[i]}</span>
+      <div className="sp-mini-log">
+        {[...logForPlayer(i)].reverse().map((e, idx) => (
+          <div key={logForPlayer(i).length - idx} className="sp-mini-log-row">{describeLog(e)}</div>
+        ))}
+        {logForPlayer(i).length === 0 && <div className="sp-mini-log-row hint">{t("Noch keine Aufnahme.")}</div>}
+      </div>
+    </div>
+  );
   return (
     <div className="sp">
+      {rail(0)}
+      <div className="sp-center">
       <div className="sp-board">
         {[0, 1].map((i) => (
           <div key={i} className={"sp-side" + (active === i ? " active" : "")}>
@@ -286,14 +305,14 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
             <button className="sp-pot half" onClick={() => openEntry("miss")}>{t("Fehler")}</button>
             <button className="sp-pot half safe" onClick={() => openEntry("safe")}>{t("Safe")}</button>
           </div>
-        </div>
-        <div className="sp-controls">
-          {breakPhase ? (
-            <button className="btn ghost warn" onClick={breakFoul}>{t("Anstoß-Foul −2")}</button>
-          ) : (
-            <button className="btn ghost warn" onClick={() => openEntry("foul")}>{t("Foul −1")}</button>
-          )}
-          <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> {t("Rückgängig")}</button>
+          <div className="sp-controls">
+            {breakPhase ? (
+              <button className="btn ghost warn" onClick={breakFoul}>{t("Anstoß-Foul −2")}</button>
+            ) : (
+              <button className="btn ghost warn" onClick={() => openEntry("foul")}>{t("Foul −1")}</button>
+            )}
+            <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> {t("Rückgängig")}</button>
+          </div>
         </div>
 
         {!confirmEnd ? (
@@ -326,6 +345,8 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
           </div>
         )}
       </div>
+      </div>
+      {rail(1)}
     </div>
   );
 }

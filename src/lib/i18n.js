@@ -767,6 +767,7 @@ const TRANSLATIONS = {
     "Fehler (Serie {n})": "Miss (run {n})",
     "Verlauf": "History",
     "{n} Aufnahmen": "{n} innings",
+    "Noch keine Aufnahme.": "No innings yet.",
   },
 };
 export function setLangGlobal(l) {
