@@ -1,9 +1,14 @@
-// Gemeinsame Aufbereitung des 14/1-Aufnahme-Protokolls (matches.run_log) -
-// wird sowohl live waehrend des Spiels (StraightPoolScorer) als auch beim
-// nachtraeglichen Download (StatistikScreen) verwendet, damit beide exakt
-// dieselbe Darstellung zeigen.
+// Gemeinsame Aufbereitung des Match-Protokolls (matches.run_log). Zwei
+// Formen: das detaillierte 14/1-Aufnahme-Protokoll (Array von Objekten mit
+// .type) sowie das simple Punktestand-Protokoll aller anderen Disziplinen
+// (Array von [s1, s2]-Paaren, ein Eintrag pro Zaehler-Klick). Wird sowohl
+// live waehrend des Spiels (StraightPoolScorer) als auch beim
+// nachtraeglichen Download (StatistikScreen, RanglisteScreen) verwendet,
+// damit alle Stellen exakt dieselbe Darstellung zeigen.
 import { t } from "./i18n";
 import { fmtDateTime } from "./format";
+
+export const isSimpleScoreLog = (log) => Array.isArray(log) && Array.isArray(log[0]);
 
 // Mehrere Racks innerhalb derselben Aufnahme (Rack, Rack, ... erst dann
 // Fehler/Safe/Foul) erzeugen je einen Log-Eintrag - fuer die Anzeige wird
@@ -38,8 +43,12 @@ export function describeRunLogEntry(e) {
   return { label: parts.join(" · "), score: e.scoreAfter };
 }
 
-// Reines Text-Protokoll fuer den Download - eine Zeile pro Aufnahme,
-// chronologisch, mit Spielername.
+// Reines Text-Protokoll fuer den Download.
+// 14/1: eine Zeile pro Aufnahme, chronologisch, mit Spielername.
+// Andere Disziplinen: eine Zeile pro Punktestand-Aenderung ("s1:s2"), z.B.
+// 0:0, 1:0, 2:0, 2:1, ... - so ist jederzeit nachvollziehbar, wie der
+// Spielstand zustande kam, ohne dass jeder einzelne Ballwechsel erfasst
+// werden muss.
 export function formatRunLogText(log, names, meta) {
   const lines = [];
   if (meta) {
@@ -47,16 +56,20 @@ export function formatRunLogText(log, names, meta) {
     if (meta.playedAt) lines.push(meta.playedAt);
     lines.push("");
   }
-  for (const e of collapseRunLog(log)) {
-    const d = describeRunLogEntry(e);
-    lines.push(`${names[e.player]}: ${d.label} → ${d.score} Punkte`);
+  if (isSimpleScoreLog(log)) {
+    for (const [a, b] of log) lines.push(`${a}:${b}`);
+  } else {
+    for (const e of collapseRunLog(log)) {
+      const d = describeRunLogEntry(e);
+      lines.push(`${names[e.player]}: ${d.label} → ${d.score} Punkte`);
+    }
   }
   return lines.join("\n");
 }
 
-// 14/1-Protokoll eines Matches als .txt herunterladen - clientseitig per
-// Blob, kein Server-Endpunkt noetig (run_log ist bereits vollstaendig im
-// Match dabei, auch schon vor der Bestaetigung durch den Gegner).
+// Protokoll eines Matches als .txt herunterladen - clientseitig per Blob,
+// kein Server-Endpunkt noetig (run_log ist bereits vollstaendig im Match
+// dabei, auch schon vor der Bestaetigung durch den Gegner).
 export function downloadRunLogFile(m) {
   const names = [m.p1?.nickname ?? "?", m.p2?.nickname ?? "?"];
   const text = formatRunLogText(m.run_log, names, {
@@ -65,9 +78,10 @@ export function downloadRunLogFile(m) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const safe = (s) => s.replace(/[^\p{L}\p{N}]+/gu, "-");
+  const discSlug = safe(m.discipline || "match");
   const a = document.createElement("a");
   a.href = url;
-  a.download = `14-1_${m.played_at.slice(0, 10)}_${safe(names[0])}-${safe(names[1])}.txt`;
+  a.download = `${discSlug}_${m.played_at.slice(0, 10)}_${safe(names[0])}-${safe(names[1])}.txt`;
   document.body.appendChild(a);
   a.click();
   a.remove();

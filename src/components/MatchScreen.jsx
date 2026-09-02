@@ -26,6 +26,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [avg, setAvg] = useState([null, null]); // Offensivschnitt (nur 14/1)
   const [tb, setTb] = useState([null, null]);   // Zwei-Kugel-Räumungen (nur 14/1)
   const [runLog, setRunLog] = useState(null);   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
+  const [scoreLog, setScoreLog] = useState([[0, 0]]); // Punktestand nach jedem Zaehler-Klick (alle anderen Disziplinen)
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
   const [leaveWarn, setLeaveWarn] = useState(false);
@@ -86,7 +87,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     .sort((a, b) => b.gain - a.gain)
     .slice(0, 2);
 
-  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); };
+  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0]]); };
 
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
   // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
@@ -125,6 +126,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       const { error } = await supabase.rpc("report_doubles", {
         p_partner_id: partner.id, p_opp1_id: opp.id, p_opp2_id: opp2.id,
         p_my_score: s1, p_opp_score: s2, p_discipline: disc,
+        p_run_log: scoreLog.length > 1 ? scoreLog : null,
       });
       setBusy(false);
       if (error) { toast(t("Fehler: ") + error.message); return; }
@@ -144,7 +146,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       p_deficit_me: is141 ? def[0] : null, p_deficit_opp: is141 ? def[1] : null,
       p_avg_me: is141 ? avg[0] : null, p_avg_opp: is141 ? avg[1] : null,
       p_twoball_me: is141 ? tb[0] : null, p_twoball_opp: is141 ? tb[1] : null,
-      p_run_log: is141 ? runLog : null,
+      p_run_log: is141 ? runLog : (scoreLog.length > 1 ? scoreLog : null),
     });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
@@ -359,8 +361,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <p className="q">{t("Wie steht's?")} <span className="q-sub">{t("(gewonnene Spiele)")}</span></p>
               <div className="score-row">
                 {(mode === "double"
-                  ? [{ members: [me, partner], name: teamA, v: s1, set: setS1 }, { members: [opp, opp2], name: teamB, v: s2, set: setS2 }]
-                  : [{ members: [me], name: me.nickname, v: s1, set: setS1 }, { members: [opp], name: opp.nickname, v: s2, set: setS2 }]
+                  ? [{ members: [me, partner], name: teamA, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2]]); } },
+                     { members: [opp, opp2], name: teamB, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv]]); } }]
+                  : [{ members: [me], name: me.nickname, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2]]); } },
+                     { members: [opp], name: opp.nickname, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv]]); } }]
                 ).map(({ members, name, v, set }) => (
                   <div key={name} className="score-col">
                     <div className="sc-avatars">
@@ -464,10 +468,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             <>
               <h3>{t("Gespeichert!")}</h3>
               {mode === "double" ? (
-                <p>{t("Wartet auf Bestätigung der drei anderen. Sobald alle bestätigt haben, wird das Ranking neu berechnet.")}</p>
+                <p>{t("Wartet auf Bestätigung der drei anderen.")}<br />
+                  <b>{t("Ohne Bestätigung zählt das Match nicht fürs Rating.")}</b></p>
               ) : (
                 <p>{t("Wartet auf Bestaetigung von")} <b>{opp.nickname}</b>.<br />
-                  {t("Sobald {name} die App öffnet und auf Passt tippt, wird das Ranking neu berechnet.", { name: opp.nickname })}</p>
+                  <b>{t("Ohne Bestätigung zählt das Match nicht fürs Rating.")}</b></p>
               )}
             </>
           )}
