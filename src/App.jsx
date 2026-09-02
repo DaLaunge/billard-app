@@ -404,7 +404,9 @@ export default function App() {
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
                   pending={pendingForMe} me={player} onConfirm={confirmMatch}
                   onOpenProfile={openProfile} myOpenReports={myOpenReports}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                  matches={matches} players={players} challenges={challenges}
+                  catalog={catalog} earnedBadges={badgesOfId(player.id)} />
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}

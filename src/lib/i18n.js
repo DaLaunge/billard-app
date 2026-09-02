@@ -744,6 +744,9 @@ const TRANSLATIONS = {
     "Hintergrund": "Background",
     "Akzent": "Accent",
     "Rating": "Rating",
+    "noch {n}": "{n} to go",
+    "Alle erreichbaren Erfolge freigeschaltet!": "All available achievements unlocked!",
+    "Alle Erfolge ansehen": "View all achievements",
   },
 };
 export function setLangGlobal(l) {

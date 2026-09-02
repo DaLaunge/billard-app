@@ -105,10 +105,18 @@ function closestCandidates(catalog, extras, earnedBadges) {
     if (cur == null) return;
     const gap = leadingNumber(b.description) - cur;
     if (gap <= 0) return;
-    candidates.push({ gap, unit: fam.unit(), name: t(b.name) });
+    candidates.push({ gap, unit: fam.unit(), name: t(b.name), badgeKey: b.badge_key, emoji: b.emoji });
   });
   candidates.sort((a, b) => a.gap - b.gap);
   return candidates;
+}
+
+/* Die paar naechstliegenden, noch nicht erreichten Erfolge als Rohdaten
+   (fuer eine kompakte Fortschritts-Anzeige, z.B. im Desktop-Sidebar-Panel) -
+   im Unterschied zu nextAchievementHint() nicht als fertiger Satz, sondern
+   als Liste zum selbst Rendern. */
+export function upcomingAchievements(catalog, extras, earnedBadges, count = 3) {
+  return closestCandidates(catalog, extras, earnedBadges).slice(0, count);
 }
 
 /* Waehlt aus den paar naechstliegenden, noch nicht erreichten Erfolgen einen
