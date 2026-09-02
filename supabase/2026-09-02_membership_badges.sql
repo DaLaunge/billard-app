@@ -5,9 +5,20 @@
 --
 -- Ghost-Konten (is_ghost) werden bewusst ausgenommen - kein echtes
 -- Mitglied. compute_membership_badges() wird wie die anderen
--- compute_*_badges()-Funktionen nur ueber admin_recompute_badges()
+-- compute_*_badges()-Funktionen zukuenftig ueber admin_recompute_badges()
 -- aufgerufen (manuell durch einen Admin, "Nur Erfolge neu berechnen") -
 -- genau wie compute_recruit_badges()/compute_141_badges() bisher auch.
+-- Dieses Skript vergibt die neuen Erfolge zusaetzlich einmalig sofort
+-- rueckwirkend (letzter Befehl unten), damit laengst verdiente Erfolge
+-- nicht erst beim naechsten manuellen Neuberechnen auftauchen.
+--
+-- Duplikat-Schutz: ein "not exists"-Check verhindert doppelte Zeilen
+-- innerhalb von compute_membership_badges() selbst; zusaetzlich wird
+-- unten (falls noch nicht vorhanden) ein echter Unique-Constraint auf
+-- player_badges(player_id, badge_key) angelegt, der Duplikate auch bei
+-- wiederholten/parallelen Aufrufen auf DB-Ebene unmoeglich macht -
+-- inklusive eines Aufraeum-Schritts fuer eventuell schon vorhandene
+-- Duplikate (behaelt jeweils die aelteste Zeile).
 --
 -- Achtung: "on conflict (badge_key)" setzt voraus, dass badge_key der
 -- Primary/Unique-Key von badge_catalog ist (wie ueberall sonst in der App
@@ -19,6 +30,26 @@
 -- Supabase-Projekte (Test: hadamdvpnwslztsxmwdr, Produktion: wofsutwidaitloeiwnma)
 -- - dieses Skript muss in BEIDEN separat laufen.
 
+-- 1) Eventuell schon vorhandene Duplikate in player_badges aufraeumen
+--    (behaelt pro Spieler+Erfolg die aelteste Zeile, loescht den Rest).
+delete from public.player_badges a
+using public.player_badges b
+where a.ctid > b.ctid
+  and a.player_id = b.player_id
+  and a.badge_key = b.badge_key;
+
+-- 2) Unique-Constraint anlegen, falls noch nicht vorhanden - macht
+--    doppelte Erfolge fuer denselben Spieler ab jetzt auf DB-Ebene
+--    unmoeglich (unabhaengig vom Aufrufer/Code).
+do $$
+begin
+  alter table public.player_badges
+    add constraint player_badges_player_id_badge_key_key unique (player_id, badge_key);
+exception when duplicate_object then
+  null; -- Constraint (evtl. unter anderem Namen) existiert schon
+end $$;
+
+-- 3) Neue Erfolgs-Eintraege
 insert into public.badge_catalog (badge_key, name, description, emoji, category, sort) values
   ('member_1w',  '1 Woche dabei',     '1 Woche dabei',   '🌱', 'Mitgliedschaft', 1),
   ('member_1m',  '1 Monat dabei',     '1 Monat dabei',   '🌿', 'Mitgliedschaft', 2),
@@ -36,6 +67,7 @@ insert into public.badge_catalog (badge_key, name, description, emoji, category,
   ('member_10y', '10 Jahre dabei',    '10 Jahre dabei',  '🚀', 'Mitgliedschaft', 14)
 on conflict (badge_key) do nothing;
 
+-- 4) Vergabe-Funktion
 create or replace function public.compute_membership_badges()
 returns void
 language plpgsql security definer set search_path to 'public' as $function$
@@ -65,12 +97,13 @@ begin
     and not exists (
       select 1 from player_badges pb
       where pb.player_id = p.id and pb.badge_key = th.badge_key
-    );
+    )
+  on conflict (player_id, badge_key) do nothing;
 end;
 $function$;
 
--- admin_recompute_badges() um den neuen Aufruf ergaenzt (Rest 1:1 wie
--- bisher, siehe von dir bereitgestellte Definition).
+-- 5) admin_recompute_badges() um den neuen Aufruf ergaenzt (Rest 1:1 wie
+--    bisher, siehe von dir bereitgestellte Definition).
 create or replace function public.admin_recompute_badges()
 returns text
 language plpgsql
@@ -95,3 +128,8 @@ begin
   return 'ok';
 end;
 $function$;
+
+-- 6) Rueckwirkend sofort vergeben (direkter Aufruf statt ueber
+--    admin_recompute_badges(), weil dessen is_admin()-Check hier im
+--    SQL-Editor ohne eingeloggte Session fehlschlagen wuerde).
+select public.compute_membership_badges();
