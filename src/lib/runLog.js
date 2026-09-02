@@ -3,6 +3,7 @@
 // nachtraeglichen Download (StatistikScreen) verwendet, damit beide exakt
 // dieselbe Darstellung zeigen.
 import { t } from "./i18n";
+import { fmtDateTime } from "./format";
 
 // Mehrere Racks innerhalb derselben Aufnahme (Rack, Rack, ... erst dann
 // Fehler/Safe/Foul) erzeugen je einen Log-Eintrag - fuer die Anzeige wird
@@ -51,4 +52,24 @@ export function formatRunLogText(log, names, meta) {
     lines.push(`${names[e.player]}: ${d.label} → ${d.score} Punkte`);
   }
   return lines.join("\n");
+}
+
+// 14/1-Protokoll eines Matches als .txt herunterladen - clientseitig per
+// Blob, kein Server-Endpunkt noetig (run_log ist bereits vollstaendig im
+// Match dabei, auch schon vor der Bestaetigung durch den Gegner).
+export function downloadRunLogFile(m) {
+  const names = [m.p1?.nickname ?? "?", m.p2?.nickname ?? "?"];
+  const text = formatRunLogText(m.run_log, names, {
+    score1: m.score1, score2: m.score2, playedAt: fmtDateTime(m.played_at),
+  });
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const safe = (s) => s.replace(/[^\p{L}\p{N}]+/gu, "-");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `14-1_${m.played_at.slice(0, 10)}_${safe(names[0])}-${safe(names[1])}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

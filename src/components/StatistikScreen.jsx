@@ -3,27 +3,8 @@ import { Trophy, BarChart3, Flame, Swords, X, Download } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { initials, fmtDateTime, sideNames, isDoubles } from "../lib/format";
-import { formatRunLogText } from "../lib/runLog";
+import { downloadRunLogFile } from "../lib/runLog";
 import Ball from "./Ball";
-
-// 14/1-Protokoll als .txt herunterladen - clientseitig per Blob, kein
-// Server-Endpunkt noetig (run_log ist bereits vollstaendig im Match dabei).
-function downloadRunLog(m) {
-  const names = [m.p1?.nickname ?? "?", m.p2?.nickname ?? "?"];
-  const text = formatRunLogText(m.run_log, names, {
-    score1: m.score1, score2: m.score2, playedAt: fmtDateTime(m.played_at),
-  });
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const safe = (s) => s.replace(/[^\p{L}\p{N}]+/gu, "-");
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `14-1_${m.played_at.slice(0, 10)}_${safe(names[0])}-${safe(names[1])}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
 
@@ -193,7 +174,7 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
             </span>
             <span className="m-disc">{t(m.discipline)}</span>
             {m.discipline === "14/1 Endlos" && m.run_log?.length > 0 && (
-              <button className="m-download" onClick={() => downloadRunLog(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
+              <button className="m-download" onClick={() => downloadRunLogFile(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
                 <Download size={15} />
               </button>
             )}
