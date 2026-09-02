@@ -74,11 +74,18 @@ export function buildCustomTheme(bgHex, accentHex) {
   const safeAccent = /^#[0-9A-Fa-f]{6}$/.test(accentHex || "") ? accentHex : "#7CC1E8";
   const [bh, bs] = hexToHsl(safeBg);
   const [ah, as_] = hexToHsl(safeAccent);
-  const felt = hslToHex(bh, Math.max(28, bs), 12);
-  const felt2 = hslToHex(bh, Math.max(28, bs), 17);
-  const felt3 = hslToHex(bh, Math.max(28, bs), 23);
-  const chalk = hslToHex(ah, Math.max(40, as_), 72);
-  const chalkDeep = hslToHex(ah, Math.max(40, as_), 48);
+  // Bei sehr geringer Saettigung (Schwarz/Weiss/Grau) ist der berechnete
+  // Farbton mathematisch bedeutungslos (hexToHsl liefert dafuer immer 0Â° =
+  // Rot) - ihn trotzdem hochzusaettigen wuerde z.B. echtes Schwarz in ein
+  // sattes Rot verwandeln statt neutral zu bleiben. Die Mindest-Saettigung
+  // gilt daher nur, wenn die Farbe ueberhaupt einen erkennbaren Farbton hat.
+  const bSat = bs < 6 ? bs : Math.max(28, bs);
+  const aSat = as_ < 6 ? as_ : Math.max(40, as_);
+  const felt = hslToHex(bh, bSat, 12);
+  const felt2 = hslToHex(bh, bSat, 17);
+  const felt3 = hslToHex(bh, bSat, 23);
+  const chalk = hslToHex(ah, aSat, 72);
+  const chalkDeep = hslToHex(ah, aSat, 48);
   return {
     name: "Eigenes Thema", felt, felt2, felt3, line: `${felt3}60`,
     chalk, chalkDeep, ivory: "#F2EDE0", ivoryDim: "#A8A8AE", gold: "#D6A425",
