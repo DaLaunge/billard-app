@@ -760,6 +760,13 @@ const TRANSLATIONS = {
     "Übersicht": "Overview",
     "Dabei seit {date}": "Member since {date}",
     "Match starten": "Start match",
+    "Rack ausgeschossen (+{n})": "Rack cleared (+{n})",
+    "3 Fouls in Folge (−15)": "3 fouls in a row (−15)",
+    "Foul (Serie {n})": "Foul (run {n})",
+    "Anstoß-Foul (−2)": "Break foul (−2)",
+    "Fehler (Serie {n})": "Miss (run {n})",
+    "Verlauf": "History",
+    "{n} Aufnahmen": "{n} innings",
   },
 };
 export function setLangGlobal(l) {

@@ -311,6 +311,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .sp-pot.half { flex: 1; margin: 0; padding: 16px; font-size: 16px; }
 .sp-pot.half.safe { background: #3E6B8A; color: #F2EDE0; }
 .sp-primary-actions { display: flex; flex-direction: column; gap: 10px; }
+.sp-log { margin-top: 4px; }
+.sp-log h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ivory-dim); margin-bottom: 6px; }
+.sp-log-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
+.sp-log-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px;
+  border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--ivory-dim); }
+.sp-log-row:last-child { border-bottom: none; }
+.sp-log-player { color: var(--ivory); font-weight: 600; flex: 0 0 auto; }
 .otw-count { margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--gold); }
 .btn.small { padding: 9px 12px; font-size: 13px; }
 .sp-foulwarn { font-size: 11px; font-weight: 700; color: #E8B923; margin-top: 2px; }
@@ -757,6 +764,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }
   .match-split { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+
+  /* Neues Match, uebrige Schritte (Disziplin/Pruefen/Bestaetigung):
+     nur zentrieren, keine besondere Breite/Groesse noetig. */
+  .phone.app .screen:has(.match-center-step) { max-width: 700px; margin: 0 auto; }
 
   /* Neues Match, Schritt "Ergebnis": zentriert und deutlich groesser -
      das ist der Bildschirm, an dem man waehrend des Spiels staendig den
