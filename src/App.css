@@ -627,7 +627,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 
 .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   width: 100%; max-width: 430px; display: flex; align-items: center;
-  background: #082017F2; border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--felt) 92%, transparent); border-top: 1px solid var(--line);
   padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(8px); z-index: 30; }
 .tab { flex: 1; background: none; border: none; color: var(--ivory-dim);
   display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -671,6 +671,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
    schmal/zentriert. Ab hier wird aus der Tabbar eine feste linke
    Seitenleiste (das Kugel-Icon des Match-Buttons weicht einem normalen
    Button mit sichtbarem Label), .phone nutzt die verfuegbare Breite. */
+.fab-ball-icon { display: contents; }
+.fab-label { display: none; }
+.sidebar-widget { display: none; }
 @media (min-width: 900px) {
   .phone.app { max-width: 1240px; margin: 0 auto; }
   .phone.app .content { padding-left: 234px; padding-bottom: 24px; }
@@ -681,24 +684,44 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
     width: 206px; max-width: none; flex-direction: column;
     align-items: stretch; justify-content: flex-start; gap: 3px;
     padding: 26px 12px; border-top: none; border-right: 1px solid var(--line);
-    backdrop-filter: none; background: #082017F2; }
+    backdrop-filter: none; background: color-mix(in srgb, var(--felt) 92%, transparent); }
   .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
   .phone.app .tab { flex-direction: row; justify-content: flex-start; gap: 12px;
     font-size: 14.5px; padding: 11px 12px; border-radius: 10px; }
-  .phone.app .tab.on { background: #0A2B2180; }
+  .phone.app .tab.on { background: color-mix(in srgb, var(--felt-3) 65%, transparent); }
   .phone.app .tab .badge { position: static; margin-left: auto; }
 
-  .phone.app .tab.fab { order: -1; margin: 0 0 12px; width: auto; height: auto;
-    flex: 0 0 auto; flex-direction: row; justify-content: flex-start; gap: 12px;
-    padding: 12px 14px; border-radius: 12px; background: var(--chalk); color: #08251C;
-    box-shadow: none; }
-  .phone.app .fab-shine { display: none; }
-  .phone.app .fab-plus { filter: none; }
+  /* Match-Button: bleibt die gewohnte weisse Kugel (klein, links), jetzt
+     in einer Pille mit sichtbarem Label statt eines rein flachen Icons. */
+  .phone.app .tab.fab { order: -1; margin: 0 0 14px; width: auto; height: auto;
+    flex: 0 0 auto; flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px;
+    padding: 7px 16px 7px 7px; border-radius: 999px; background: var(--chalk); color: #08251C;
+    box-shadow: 0 4px 14px #00000040; }
+  .phone.app .fab-ball-icon { display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%; background: var(--ivory);
+    position: relative; box-shadow: inset -2px -3px 5px #00000030, 0 1px 2px #00000040; }
+  .phone.app .fab-shine { display: block; }
+  .phone.app .fab-plus { filter: none; width: 18px; height: 18px; color: #262220; }
   .phone.app .fab-label { display: inline; font-size: 14.5px; font-weight: 700; }
 
   /* Statistik: die drei kleinen Bestenlisten nebeneinander statt gestapelt */
   .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
   .stat-grid .stat-block { margin-bottom: 0; }
+  .phone.app .screen { max-width: 660px; }
   .phone.app .screen:has(.stat-grid) { max-width: 1160px; }
+
+  /* Sidebar-Widget: eigener Kurzstatus (Ball, Rating, Kernzahlen, naechster
+     Erfolg) - fuellt die sonst leere Flaeche unter der Navigation, nur im
+     Desktop-Modus sichtbar (fuer die Bottom-Tabbar am Handy ist kein Platz). */
+  .sidebar-widget { display: flex; flex-direction: column; gap: 10px; margin-top: auto;
+    padding: 14px 12px; border-radius: 12px; background: color-mix(in srgb, var(--felt-2) 70%, transparent);
+    border: 1px solid var(--line); }
+  .sidebar-widget-head { display: flex; align-items: center; gap: 10px; }
+  .sidebar-widget-head b { font-size: 13.5px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-widget-head span { font-size: 12px; color: var(--ivory-dim); }
+  .sidebar-widget-stats { display: flex; justify-content: space-between; text-align: center; }
+  .sidebar-widget-stats div { display: flex; flex-direction: column; }
+  .sidebar-widget-stats b { font-size: 15px; }
+  .sidebar-widget-stats span { font-size: 10.5px; color: var(--ivory-dim); }
+  .sidebar-widget-hint { font-size: 12px; color: var(--chalk); line-height: 1.4; margin: 0; }
 }
-.fab-label { display: none; }

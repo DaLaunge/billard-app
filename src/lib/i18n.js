@@ -743,7 +743,7 @@ const TRANSLATIONS = {
     "Eigenes Thema": "Custom theme",
     "Hintergrund": "Background",
     "Akzent": "Accent",
-    "Übernehmen": "Apply",
+    "Rating": "Rating",
   },
 };
 export function setLangGlobal(l) {

@@ -7,10 +7,13 @@ import "./App.css";
 import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
-import { hashColor } from "./lib/format";
+import { hashColor, initials } from "./lib/format";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
+import { computeStats } from "./lib/stats";
+import { computeAchievementExtras, nextAchievementHint } from "./lib/achievements";
 
+import Ball from "./components/Ball";
 import LoginScreen from "./components/LoginScreen";
 import NicknameScreen from "./components/NicknameScreen";
 import RanglisteScreen from "./components/RanglisteScreen";
@@ -216,6 +219,18 @@ export default function App() {
   }, [players]);
 
   const badgesOfId = useCallback((id) => badgesByPlayer[id] || new Set(), [badgesByPlayer]);
+
+  // Kurzstatus fuers Sidebar-Widget (nur Desktop) - dieselbe Logik wie im
+  // Profil/MatchScreen, hier einmal fuers eigene Profil berechnet.
+  const myStats = useMemo(() => player ? computeStats(matches)[player.nickname] : null, [matches, player]);
+  const myExtras = useMemo(
+    () => player ? computeAchievementExtras(player.nickname, matches, players, challenges) : null,
+    [player, matches, players, challenges]
+  );
+  const myHint = useMemo(
+    () => (player && myExtras) ? nextAchievementHint(catalog, myExtras, player.nickname, badgesOfId(player.id)) : null,
+    [player, myExtras, catalog, badgesOfId]
+  );
 
   const MATCH_EXPIRY_DAYS = 7;
   const notExpired = (m) => (Date.now() - new Date(m.played_at)) < MATCH_EXPIRY_DAYS * 86400000;
@@ -459,8 +474,10 @@ export default function App() {
                 )}
               </button>
               <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
-                <span className="fab-shine" />
-                <Plus size={26} className="fab-plus" />
+                <span className="fab-ball-icon">
+                  <span className="fab-shine" />
+                  <Plus size={26} className="fab-plus" />
+                </span>
                 <span className="fab-label">{t("Neues Match")}</span>
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
@@ -470,6 +487,23 @@ export default function App() {
                 <User size={21} /><span>{t("Profil")}</span>
                 {player?.role === "admin" && unconfirmed.length > 0 && <span className="badge">{unconfirmed.length}</span>}
               </button>
+
+              <div className="sidebar-widget">
+                <div className="sidebar-widget-head">
+                  <Ball color={colorOf(player.nickname)} label={initials(player.nickname)}
+                    badge={badgeOf(player.nickname)} photo={photoOf(player.nickname)} size={38} />
+                  <div style={{ minWidth: 0 }}>
+                    <b>{player.nickname}</b>
+                    <span>{ratingOf(player.nickname)} · {t("Rating")}</span>
+                  </div>
+                </div>
+                <div className="sidebar-widget-stats">
+                  <div><b>{myStats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
+                  <div><b>{myStats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
+                  <div><b>{myStats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
+                </div>
+                {myHint && <p className="sidebar-widget-hint">🎯 {myHint}</p>}
+              </div>
             </nav>
             )}
           </>
