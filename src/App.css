@@ -320,6 +320,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   .phone { max-width: 900px; }
   .content { padding-bottom: 20px; }
   .tabbar { max-width: 900px; }
+  .refresh-btn { right: max(14px, calc(50% - 450px + 14px)); }
   /* 14/1-Zähler zweispaltig: Anzeigetafel links, Bedienung rechts */
   .sp { display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; align-items: start; }
   .sp-board { grid-column: 1; }
@@ -652,3 +653,40 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 @media (prefers-reduced-motion: reduce) {
   .live-dot { animation: none; } .spin { animation: none; }
 }
+
+/* ===== Desktop: Seitenleiste statt Tableiste, breitere Flaeche =====
+   Nur aktiv, wenn eingeloggt (.phone.app) - Login/Ladebildschirm bleiben
+   schmal/zentriert. Ab hier wird aus der Tabbar eine feste linke
+   Seitenleiste (das Kugel-Icon des Match-Buttons weicht einem normalen
+   Button mit sichtbarem Label), .phone nutzt die verfuegbare Breite. */
+@media (min-width: 900px) {
+  .phone.app { max-width: 1240px; margin: 0 auto; }
+  .phone.app .content { padding-left: 234px; padding-bottom: 24px; }
+  .phone.app .content.no-tabbar { padding-left: 24px; }
+  .phone.app .screen { padding: 28px 32px 32px; max-width: 780px; }
+
+  .phone.app .tabbar { left: max(0px, calc(50% - 620px)); top: 0; bottom: 0; transform: none;
+    width: 206px; max-width: none; flex-direction: column;
+    align-items: stretch; justify-content: flex-start; gap: 3px;
+    padding: 26px 12px; border-top: none; border-right: 1px solid var(--line);
+    backdrop-filter: none; background: #082017F2; }
+  .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
+  .phone.app .tab { flex-direction: row; justify-content: flex-start; gap: 12px;
+    font-size: 14.5px; padding: 11px 12px; border-radius: 10px; }
+  .phone.app .tab.on { background: #0A2B2180; }
+  .phone.app .tab .badge { position: static; margin-left: auto; }
+
+  .phone.app .tab.fab { order: -1; margin: 0 0 12px; width: auto; height: auto;
+    flex: 0 0 auto; flex-direction: row; justify-content: flex-start; gap: 12px;
+    padding: 12px 14px; border-radius: 12px; background: var(--chalk); color: #08251C;
+    box-shadow: none; }
+  .phone.app .fab-shine { display: none; }
+  .phone.app .fab-plus { filter: none; }
+  .phone.app .fab-label { display: inline; font-size: 14.5px; font-weight: 700; }
+
+  /* Statistik: die drei kleinen Bestenlisten nebeneinander statt gestapelt */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .stat-grid .stat-block { margin-bottom: 0; }
+  .phone.app .screen:has(.stat-grid) { max-width: 1160px; }
+}
+.fab-label { display: none; }

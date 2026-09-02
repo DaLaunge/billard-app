@@ -334,7 +334,7 @@ export default function App() {
 
   return (
     <div className="stage">
-      <div className="phone">
+      <div className={"phone" + (session && player ? " app" : "")}>
         {!session && <LoginScreen />}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
@@ -452,6 +452,7 @@ export default function App() {
               <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
                 <span className="fab-shine" />
                 <Plus size={26} className="fab-plus" />
+                <span className="fab-label">{t("Neues Match")}</span>
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
