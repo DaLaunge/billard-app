@@ -261,7 +261,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .score-col { flex: 1; background: var(--felt-2); border: 1px solid var(--line); border-radius: 18px;
   padding: 16px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .score-name { font-size: 13px; font-weight: 600; text-align: center; }
-.score-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 52px; font-weight: 800; line-height: 1; }
+.score-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 62px; font-weight: 800; line-height: 1; }
 .score-btns { display: flex; gap: 10px; }
 .round-btn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line);
   background: var(--felt-3); color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
@@ -304,7 +304,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   background: var(--felt-2); border: 2px solid var(--line); border-radius: 18px; padding: 14px 8px; }
 .sp-side.active { border-color: var(--gold); background: var(--felt-3); }
 .sp-name { font-size: 13px; font-weight: 700; }
-.sp-score { font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; line-height: 1; }
+.sp-score { font-size: 54px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; line-height: 1; }
 .sp-meta { font-size: 11px; color: var(--ivory-dim); }
 .sp-avg { font-size: 10.5px; color: var(--gold); margin-top: 1px; }
 .sp-avg span { color: var(--ivory-dim); }
@@ -325,7 +325,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   .sp { display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; align-items: start; }
   .sp-board { grid-column: 1; }
   .sp-side { padding: 22px 10px; }
-  .sp-score { font-size: 60px; }
+  .sp-score { font-size: 72px; }
   .sp-actions { grid-column: 2; display: flex; flex-direction: column; gap: 10px; }
   /* Ergebnis-/Statistik-Inhalte etwas luftiger nutzen die Breite */
   .opp-grid { grid-template-columns: repeat(4, 1fr); }
@@ -763,8 +763,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .phone.app .screen:has(.match-score-step) { max-width: 820px; margin: 0 auto; }
   .match-score-step .score-row { gap: 28px; }
   .match-score-step .score-col { padding: 24px 16px; }
-  .match-score-step .score-name { font-size: 16px; }
-  .match-score-step .score-num { font-size: 92px; }
-  .match-score-step .round-btn { width: 72px; height: 72px; }
-  .match-score-step .round-btn svg { width: 30px; height: 30px; }
+  .match-score-step .score-name { font-size: 17px; }
+  .match-score-step .score-num { font-size: 130px; }
+  .match-score-step .round-btn { width: 84px; height: 84px; }
+  .match-score-step .round-btn svg { width: 34px; height: 34px; }
+
+  /* 14/1: eigene, breitere Bühne - hier soll der Punktestand ganz klar
+     im Fokus stehen, Nebenwerte (Schnitt, Höchstserie) bleiben klein. */
+  .phone.app .screen:has(.match-score-step .sp) { max-width: 1100px; }
+  .match-score-step .sp-side { padding: 32px 16px; }
+  .match-score-step .sp-score { font-size: 108px; }
+  .match-score-step .sp-name { font-size: 18px; }
+  .match-score-step .sp-meta { font-size: 14px; }
+  .match-score-step .sp-avg { font-size: 13px; }
 }
