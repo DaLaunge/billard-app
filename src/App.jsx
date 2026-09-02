@@ -20,6 +20,7 @@ import StatistikScreen from "./components/StatistikScreen";
 import ProfilScreen from "./components/ProfilScreen";
 import AdminScreen from "./components/AdminScreen";
 import InviteScreen from "./components/InviteScreen";
+import MatchProtokollScreen from "./components/MatchProtokollScreen";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -39,6 +40,8 @@ export default function App() {
   const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
   const [tab, setTab] = useState("rang");
   const [profileName, setProfileName] = useState(null);
+  const [protokollMatch, setProtokollMatch] = useState(null);
+  const [protokollBackTab, setProtokollBackTab] = useState("stats");
   const [toastMsg, setToastMsg] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   const [celebrate, setCelebrate] = useState(null);  // neue Erfolge fürs Popup
@@ -321,6 +324,7 @@ export default function App() {
   };
 
   const openProfile = (nick) => { setProfileName(nick); setTab("fremdprofil"); };
+  const openProtokoll = (m) => { setProtokollMatch(m); setProtokollBackTab(tab); setTab("protokoll"); };
   const startMatchVs = (opponent) => { setVsOpp(opponent); setTab("match"); };
   const logout = async () => { await supabase.auth.signOut(); setTab("rang"); };
 
@@ -389,7 +393,7 @@ export default function App() {
               {tab === "rang" && (
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
                   pending={pendingForMe} me={player} onConfirm={confirmMatch}
-                  onOpenProfile={openProfile} myOpenReports={myOpenReports}
+                  onOpenProfile={openProfile} onOpenProtokoll={openProtokoll} myOpenReports={myOpenReports}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf}
                   matches={matches} players={players} challenges={challenges}
                   catalog={catalog} earnedBadges={badgesOfId(player.id)}
@@ -411,8 +415,12 @@ export default function App() {
                   onCancel={() => { setVsOpp(null); setTab("rang"); }} />
               )}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
+                onOpenProtokoll={openProtokoll}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
                 rangliste={rangliste} me={player} />}
+              {tab === "protokoll" && protokollMatch && (
+                <MatchProtokollScreen match={protokollMatch} onBack={() => setTab(protokollBackTab)} />
+              )}
               {tab === "profil" && (
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}

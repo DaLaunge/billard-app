@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
-import { Check, X, Clock, Download } from "lucide-react";
+import { Check, X, Clock, FileText } from "lucide-react";
 import { t } from "../lib/i18n";
 import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
-import { downloadRunLogFile } from "../lib/runLog";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import Ball from "./Ball";
@@ -20,7 +19,7 @@ const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
    dieselben Karten sind auch anderswo wiederverwendbar (z.B. Head-to-
    Head im Profil). Ab 900px zweispaltig, darunter alles untereinander -
    die Zusatzinfos sind also auf jedem Geraet sichtbar, nicht nur Desktop. */
-export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, myOpenReports, colorOf, badgeOf, photoOf,
+export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, onOpenProtokoll, myOpenReports, colorOf, badgeOf, photoOf,
   matches, players, challenges, catalog, earnedBadges, ratingOf, pings, openChallengesToMe, onGoToLive }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
@@ -80,8 +79,8 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
             <div><b>{t("Match bestaetigen:")}</b> {other} {t("meldet ein")} {otherScore}:{myScore} {t("gegen dich")} ({t(m.discipline)}, {fmtDate(m.played_at)}).</div>
             <div className="confirm-actions">
               {hasLog && (
-                <button className="chip-btn" onClick={() => downloadRunLogFile(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
-                  <Download size={15} />
+                <button className="chip-btn" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
+                  <FileText size={15} />
                 </button>
               )}
               <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> {t("Passt")}</button>
@@ -103,8 +102,8 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
               <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</span>
               <span className="m-disc">{t(m.discipline)}</span>
               {m.run_log?.length > 0 && (
-                <button className="m-download" onClick={() => downloadRunLogFile(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
-                  <Download size={15} />
+                <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
+                  <FileText size={15} />
                 </button>
               )}
             </div>

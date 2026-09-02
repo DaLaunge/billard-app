@@ -837,3 +837,48 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .match-score-step .sp-mini-log-score { flex: 0 0 auto; min-width: 32px; text-align: right;
     font-weight: 700; color: var(--ivory); font-variant-numeric: tabular-nums; }
 }
+
+/* ============================================================
+   MATCH-PROTOKOLL (nachtraegliche Ansicht + Druck/PDF)
+   Echte <table> statt Fliesstext: jede Spalte bedeutet immer
+   dasselbe, kein Herumspringen des Texts. Faerbung macht Fouls/
+   Fehler/Safes auf einen Blick unterscheidbar.
+   ============================================================ */
+.protokoll-doc { max-width: 640px; margin: 0 auto; }
+.protokoll-head { margin-bottom: 18px; }
+.protokoll-head h1 { font-size: 20px; font-weight: 800; line-height: 1.3; }
+.protokoll-score { color: var(--gold); margin: 0 8px; }
+.protokoll-meta { color: var(--ivory-dim); font-size: 13px; margin-top: 4px; }
+.protokoll-table-wrap { overflow-x: auto; margin-bottom: 20px; border: 1px solid var(--line); border-radius: 12px; }
+.protokoll-table { width: 100%; border-collapse: collapse; font-size: 13.5px; white-space: nowrap; }
+.protokoll-table th, .protokoll-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+.protokoll-table thead th { background: var(--felt-2); color: var(--ivory-dim); font-size: 11.5px;
+  text-transform: uppercase; letter-spacing: 0.04em; position: sticky; top: 0; }
+.protokoll-table tbody tr:last-child td { border-bottom: none; }
+.protokoll-table tbody tr.pl-0 { border-left: 3px solid var(--chalk); }
+.protokoll-table tbody tr.pl-1 { border-left: 3px solid var(--gold); }
+.protokoll-score-cell { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.protokoll-tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.protokoll-tag.t-rack { background: #1E5B3A55; color: #7CE8A8; }
+.protokoll-tag.t-safe { background: #1F4A6655; color: #7CC1E8; }
+.protokoll-tag.t-foul, .protokoll-tag.t-breakfoul { background: #6B1F2455; color: #E88C8C; }
+.protokoll-tag.t-miss { background: #3A3A4055; color: var(--ivory-dim); }
+
+@media print {
+  .no-print, .tabbar, .refresh-btn { display: none !important; }
+  body, .phone.app, .screen, .protokoll-doc { background: #fff !important; color: #111 !important; max-width: none !important; }
+  .protokoll-meta { color: #555 !important; }
+  .protokoll-table-wrap { border-color: #ccc !important; overflow: visible; }
+  .protokoll-table th, .protokoll-table td { border-color: #ddd !important; }
+  .protokoll-table thead th { background: #f2f2f2 !important; color: #333 !important; }
+  .protokoll-score-cell { color: #111 !important; }
+  .protokoll-tag, .protokoll-table thead th, .protokoll-table-wrap {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .protokoll-tag.t-rack { background: #DCF5E4 !important; color: #1E5B3A !important; }
+  .protokoll-tag.t-safe { background: #DCEAF5 !important; color: #1F4A66 !important; }
+  .protokoll-tag.t-foul, .protokoll-tag.t-breakfoul { background: #F8DCDC !important; color: #6B1F24 !important; }
+  .protokoll-tag.t-miss { background: #EAEAEA !important; color: #444 !important; }
+  .protokoll-table tbody tr.pl-0 { border-left-color: #3E82B4 !important; }
+  .protokoll-table tbody tr.pl-1 { border-left-color: #B4862A !important; }
+}
