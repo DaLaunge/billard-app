@@ -47,14 +47,23 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
     (MI[p] + SI[p] > 0 ? PK[p] / (MI[p] + SI[p]) : 0);
   const fmt = (x) => x.toFixed(1);
   const logForPlayer = (i) => log.filter((e) => e.player === i);
+  // Jede Zeile ist eigenstaendig nachvollziehbar: was ist passiert (inkl.
+  // Foul-Abzug), welche Serie stand zu dem Zeitpunkt, und wie hoch war der
+  // Gesamtpunktestand des Spielers UNMITTELBAR danach (e.scoreAfter).
   const describeLog = (e) => {
+    const parts = [];
     switch (e.type) {
-      case "rack": return t("Rack ausgeschossen (+{n})", { n: e.pts });
-      case "safe": return t("Safe");
-      case "foul": return e.threeFoul ? t("3 Fouls in Folge (−15)") : t("Foul (Serie {n})", { n: e.run });
-      case "breakfoul": return t("Anstoß-Foul (−2)");
-      default: return t("Fehler (Serie {n})", { n: e.run }); // "miss"
+      case "rack": parts.push(t("Rack +{n}", { n: e.potted })); break;
+      case "safe": parts.push(t("Safe")); break;
+      case "breakfoul": parts.push(t("Anstoß-Foul −2")); break;
+      case "foul":
+        parts.push(e.bonus ? t("Foul −1, 3er-Foul −15") : t("Foul −1"));
+        break;
+      default: parts.push(t("Fehler")); break; // "miss"
     }
+    if (e.run > 0) parts.push(t("Serie {n}", { n: e.run }));
+    parts.push(t("→ {s} Punkte", { s: e.scoreAfter }));
+    return parts.join(" · ");
   };
 
   const snap = () => ({ sc: [...sc], active, breakPhase, hi: [...hi], fouls: [...fouls],
@@ -88,7 +97,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
     const nf = [...fouls]; nf[active] = 0;
     const nmd = withDeficit(ns, maxDef);
     setSc(ns); setInningRun(nir); setHi(nhi); setPocketed(npk); setFouls(nf); setMaxDef(nmd); setOnTable(15); setBreakPhase(false);
-    const nlog = [...log, { type: "rack", player: active, pts }];
+    const nlog = [...log, { type: "rack", player: active, potted: pts, run: nir, scoreAfter: ns[active] }];
     setLog(nlog);
     if (ns[active] >= target) onFinish(buildResult(ns, nhi, nmd, npk, missInn, twoBall, nlog));
   };
@@ -127,7 +136,8 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
         setActive((a) => 1 - a);
       }
     }
-    const nlog = [...log, { type: entry, player: active, pts: partial - penalty, run, threeFoul }];
+    const nlog = [...log, { type: entry, player: active, potted: partial, run: threeFoul ? 0 : run,
+      bonus: threeFoul ? 15 : 0, scoreAfter: ns[active] }];
     setLog(nlog);
     if (threeFoul && toast) toast(t("3 Fouls in Folge – {name} bekommt −15 Strafpunkte!", { name: names[active] }));
     if (finished) onFinish(buildResult(ns, nhi, nmd, npk, nMI, ntb, nlog));
@@ -144,7 +154,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
     if (!breakCharged) { nSI[active] += 1; setBreakCharged(true); }
     const nmd = withDeficit(ns, maxDef);
     setSc(ns); setSafeInn(nSI); setMaxDef(nmd); setOnTable(15); setInningRun(0);
-    pushLog({ type: "breakfoul", player: active });
+    pushLog({ type: "breakfoul", player: active, run: 0, scoreAfter: ns[active] });
     setBreakChoose(true);
   };
   const chooseBreaker = (who) => { setActive(who); setBreakChoose(false); };
