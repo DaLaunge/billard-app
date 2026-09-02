@@ -144,6 +144,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       p_deficit_me: is141 ? def[0] : null, p_deficit_opp: is141 ? def[1] : null,
       p_avg_me: is141 ? avg[0] : null, p_avg_opp: is141 ? avg[1] : null,
       p_twoball_me: is141 ? tb[0] : null, p_twoball_opp: is141 ? tb[1] : null,
+      p_run_log: is141 ? runLog : null,
     });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
