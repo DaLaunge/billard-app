@@ -46,7 +46,17 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
   const allAvg = (p, MI = missInn, SI = safeInn, PK = pocketed) =>
     (MI[p] + SI[p] > 0 ? PK[p] / (MI[p] + SI[p]) : 0);
   const fmt = (x) => x.toFixed(1);
-  const logForPlayer = (i) => log.filter((e) => e.player === i);
+  // Mehrere Racks innerhalb derselben Aufnahme (Rack, Rack, ... erst dann
+  // Fehler/Safe/Foul) erzeugen je einen Log-Eintrag - fuer die Anzeige wird
+  // pro Spieler+Aufnahme aber nur die JEWEILS LETZTE Zeile gezeigt (die schon
+  // die kumulierte Serie und den Gesamtpunktestand dieser Aufnahme traegt).
+  const clog = log.reduce((acc, e) => {
+    const last = acc[acc.length - 1];
+    if (last && last.player === e.player && last.inning === e.inning) acc[acc.length - 1] = e;
+    else acc.push(e);
+    return acc;
+  }, []);
+  const logForPlayer = (i) => clog.filter((e) => e.player === i);
   // Jede Zeile ist eigenstaendig nachvollziehbar: welche Aufnahme, was ist
   // passiert (inkl. Foul-Abzug), welche Serie stand zu dem Zeitpunkt, und
   // wie hoch war der Gesamtpunktestand des Spielers UNMITTELBAR danach
@@ -348,14 +358,14 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
           </div>
         )}
 
-        {log.length > 0 && (
+        {clog.length > 0 && (
           <div className="sp-log">
             <h4>{t("Verlauf")}</h4>
             <div className="sp-log-list">
-              {[...log].reverse().map((e, idx) => {
+              {[...clog].reverse().map((e, idx) => {
                 const d = describeLog(e);
                 return (
-                <div key={log.length - idx} className="sp-log-row">
+                <div key={clog.length - idx} className="sp-log-row">
                   <span className="sp-log-player">{names[e.player]}</span>
                   <span className="sp-log-label">{d.label}</span>
                   <span className="sp-log-score">{d.score}</span>
