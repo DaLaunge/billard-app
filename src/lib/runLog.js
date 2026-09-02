@@ -45,3 +45,29 @@ export function describeRunLogEntry(e) {
   if (p.run) parts.push(t("Serie {n}", { n: p.run }));
   return { label: parts.join(" · "), score: p.score };
 }
+
+// Fuer die Tabellen-Ansicht: kollabiert wie collapseRunLog(), traegt aber
+// zusaetzlich den laufenden Offensivschnitt (versenkte Kugeln je Fehler-
+// Aufnahme, wie am Spielbrett selbst) je Zeile mit. Wird auf dem
+// UNKOLLABIERTEN Log berechnet, damit auch mehrere Racks innerhalb
+// derselben Aufnahme korrekt mitzaehlen, bevor am Ende kollabiert wird.
+export function buildProtocolRows(log) {
+  const pk = [0, 0], mi = [0, 0];
+  return (log || []).reduce((acc, e) => {
+    pk[e.player] += e.potted || 0;
+    if (e.type === "miss" || e.type === "foul") mi[e.player] += 1;
+    const row = { ...e, avg: mi[e.player] > 0 ? pk[e.player] / mi[e.player] : null };
+    const last = acc[acc.length - 1];
+    if (last && last.player === e.player && last.inning === e.inning) acc[acc.length - 1] = row;
+    else acc.push(row);
+    return acc;
+  }, []);
+}
+
+// Zwei getrennte, chronologisch sortierte Listen (eine je Spieler) fuer die
+// Tabellenansicht mit einem eigenen Bereich pro Spieler statt abwechselnder
+// Zeilen - Zeile i zeigt links die i-te Aufnahme von Spieler 0 und rechts
+// die i-te Aufnahme von Spieler 1.
+export function splitProtocolRowsByPlayer(rows) {
+  return [rows.filter((r) => r.player === 0), rows.filter((r) => r.player === 1)];
+}

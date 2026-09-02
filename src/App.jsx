@@ -411,6 +411,7 @@ export default function App() {
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onReload={loadData} initialOpp={vsOpp} onChallenge={createChallenge}
                   catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
+                  onOpenProtokoll={openProtokoll}
                   onDone={() => { setVsOpp(null); setTab("rang"); loadData(); }}
                   onCancel={() => { setVsOpp(null); setTab("rang"); }} />
               )}

@@ -854,9 +854,19 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 .protokoll-table th, .protokoll-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
 .protokoll-table thead th { background: var(--felt-2); color: var(--ivory-dim); font-size: 11.5px;
   text-transform: uppercase; letter-spacing: 0.04em; position: sticky; top: 0; }
+.protokoll-table-141 thead tr:first-child th { text-align: center; font-size: 14px; text-transform: none;
+  letter-spacing: 0; color: var(--ivory); font-weight: 800; }
 .protokoll-table tbody tr:last-child td { border-bottom: none; }
-.protokoll-table tbody tr.pl-0 { border-left: 3px solid var(--chalk); }
-.protokoll-table tbody tr.pl-1 { border-left: 3px solid var(--gold); }
+/* Aufnahme-Spalte beim horizontalen Scrollen auf schmalen Bildschirmen
+   sichtbar halten, damit der Bezug zur Zeile nie verloren geht. */
+.protokoll-table-141 th:first-child, .protokoll-table-141 td:first-child {
+  position: sticky; left: 0; background: var(--felt); z-index: 1;
+}
+.protokoll-table-141 thead th:first-child { z-index: 2; }
+/* Zwei-Spalten-Layout beim 14/1: eine deutliche Trennlinie zwischen den
+   Bereichen der beiden Spieler statt Zeilen abwechselnd nach Spieler
+   einzufaerben - jede Tabellenzeile ist "Aufnahme n" fuer BEIDE Spieler. */
+.protokoll-divider { border-left: 2px solid var(--line); }
 .protokoll-score-cell { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .protokoll-tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .protokoll-tag.t-rack { background: #1E5B3A55; color: #7CE8A8; }
@@ -871,6 +881,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .protokoll-table-wrap { border-color: #ccc !important; overflow: visible; }
   .protokoll-table th, .protokoll-table td { border-color: #ddd !important; }
   .protokoll-table thead th { background: #f2f2f2 !important; color: #333 !important; }
+  .protokoll-table-141 thead tr:first-child th { color: #111 !important; }
+  .protokoll-divider { border-left-color: #999 !important; }
+  .protokoll-table-141 td:first-child { position: static !important; background: transparent !important; }
+  .protokoll-table-141 th:first-child { background: #f2f2f2 !important; }
   .protokoll-score-cell { color: #111 !important; }
   .protokoll-tag, .protokoll-table thead th, .protokoll-table-wrap {
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
@@ -879,6 +893,4 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .protokoll-tag.t-safe { background: #DCEAF5 !important; color: #1F4A66 !important; }
   .protokoll-tag.t-foul, .protokoll-tag.t-breakfoul { background: #F8DCDC !important; color: #6B1F24 !important; }
   .protokoll-tag.t-miss { background: #EAEAEA !important; color: #444 !important; }
-  .protokoll-table tbody tr.pl-0 { border-left-color: #3E82B4 !important; }
-  .protokoll-table tbody tr.pl-1 { border-left-color: #B4862A !important; }
 }
