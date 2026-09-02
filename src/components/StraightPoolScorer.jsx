@@ -3,6 +3,7 @@ import { ArrowRight, Plus, RotateCcw } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import { poolBallStyle } from "../lib/pool";
+import { collapseRunLog, describeRunLogEntry } from "../lib/runLog";
 import Ball from "./Ball";
 
 export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf, onFinish, toast, sideNames, sideAvatars }) {
@@ -46,16 +47,9 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
   const allAvg = (p, MI = missInn, SI = safeInn, PK = pocketed) =>
     (MI[p] + SI[p] > 0 ? PK[p] / (MI[p] + SI[p]) : 0);
   const fmt = (x) => x.toFixed(1);
-  const logForPlayer = (i) => log.filter((e) => e.player === i);
-  const describeLog = (e) => {
-    switch (e.type) {
-      case "rack": return t("Rack ausgeschossen (+{n})", { n: e.pts });
-      case "safe": return t("Safe");
-      case "foul": return e.threeFoul ? t("3 Fouls in Folge (−15)") : t("Foul (Serie {n})", { n: e.run });
-      case "breakfoul": return t("Anstoß-Foul (−2)");
-      default: return t("Fehler (Serie {n})", { n: e.run }); // "miss"
-    }
-  };
+  const clog = collapseRunLog(log);
+  const logForPlayer = (i) => clog.filter((e) => e.player === i);
+  const describeLog = describeRunLogEntry;
 
   const snap = () => ({ sc: [...sc], active, breakPhase, hi: [...hi], fouls: [...fouls],
     maxDef: [...maxDef], onTable, inningRun, pocketed: [...pocketed],
@@ -88,7 +82,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
     const nf = [...fouls]; nf[active] = 0;
     const nmd = withDeficit(ns, maxDef);
     setSc(ns); setInningRun(nir); setHi(nhi); setPocketed(npk); setFouls(nf); setMaxDef(nmd); setOnTable(15); setBreakPhase(false);
-    const nlog = [...log, { type: "rack", player: active, pts }];
+    const nlog = [...log, { type: "rack", player: active, potted: pts, run: nir, scoreAfter: ns[active], inning: inningsOf(active) + 1 }];
     setLog(nlog);
     if (ns[active] >= target) onFinish(buildResult(ns, nhi, nmd, npk, missInn, twoBall, nlog));
   };
@@ -127,7 +121,8 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
         setActive((a) => 1 - a);
       }
     }
-    const nlog = [...log, { type: entry, player: active, pts: partial - penalty, run, threeFoul }];
+    const nlog = [...log, { type: entry, player: active, potted: partial, run: threeFoul ? 0 : run,
+      bonus: threeFoul ? 15 : 0, scoreAfter: ns[active], inning: inningsOf(active) + 1 }];
     setLog(nlog);
     if (threeFoul && toast) toast(t("3 Fouls in Folge – {name} bekommt −15 Strafpunkte!", { name: names[active] }));
     if (finished) onFinish(buildResult(ns, nhi, nmd, npk, nMI, ntb, nlog));
@@ -144,7 +139,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
     if (!breakCharged) { nSI[active] += 1; setBreakCharged(true); }
     const nmd = withDeficit(ns, maxDef);
     setSc(ns); setSafeInn(nSI); setMaxDef(nmd); setOnTable(15); setInningRun(0);
-    pushLog({ type: "breakfoul", player: active });
+    pushLog({ type: "breakfoul", player: active, run: 0, scoreAfter: ns[active], inning: inningsOf(active) + 1 });
     setBreakChoose(true);
   };
   const chooseBreaker = (who) => { setActive(who); setBreakChoose(false); };
@@ -253,11 +248,16 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
           <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={88} />
         ))}
       </div>
-      <span className="sp-rail-name">{names[i]}</span>
       <div className="sp-mini-log">
-        {[...logForPlayer(i)].reverse().map((e, idx) => (
-          <div key={logForPlayer(i).length - idx} className="sp-mini-log-row">{describeLog(e)}</div>
-        ))}
+        {[...logForPlayer(i)].reverse().map((e, idx) => {
+          const d = describeLog(e);
+          return (
+            <div key={logForPlayer(i).length - idx} className="sp-mini-log-row">
+              <span className="sp-mini-log-label">{d.label}</span>
+              <span className="sp-mini-log-score">{d.score}</span>
+            </div>
+          );
+        })}
         {logForPlayer(i).length === 0 && <div className="sp-mini-log-row hint">{t("Noch keine Aufnahme.")}</div>}
       </div>
     </div>
@@ -331,16 +331,20 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
           </div>
         )}
 
-        {log.length > 0 && (
+        {clog.length > 0 && (
           <div className="sp-log">
             <h4>{t("Verlauf")}</h4>
             <div className="sp-log-list">
-              {[...log].reverse().map((e, idx) => (
-                <div key={log.length - idx} className="sp-log-row">
+              {[...clog].reverse().map((e, idx) => {
+                const d = describeLog(e);
+                return (
+                <div key={clog.length - idx} className="sp-log-row">
                   <span className="sp-log-player">{names[e.player]}</span>
-                  <span>{describeLog(e)}</span>
+                  <span className="sp-log-label">{d.label}</span>
+                  <span className="sp-log-score">{d.score}</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

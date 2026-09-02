@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Trophy, BarChart3, Flame, Swords, X } from "lucide-react";
+import { Trophy, BarChart3, Flame, Swords, X, Download } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { initials, fmtDateTime, sideNames, isDoubles } from "../lib/format";
+import { downloadRunLogFile } from "../lib/runLog";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -172,6 +173,11 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
               ))}
             </span>
             <span className="m-disc">{t(m.discipline)}</span>
+            {m.discipline === "14/1 Endlos" && m.run_log?.length > 0 && (
+              <button className="m-download" onClick={() => downloadRunLogFile(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
+                <Download size={15} />
+              </button>
+            )}
           </div>
         ))}
         {filteredMatches.length === 0 && (
