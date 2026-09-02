@@ -29,18 +29,37 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
   const [remain, setRemain] = useState(15);
   const [hist, setHist] = useState([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [log, setLog] = useState([]);                       // Verlauf: eine Zeile je Aufnahme/Ereignis
+  const pushLog = (e) => setLog((l) => [...l, e]);
+  // Egal wie oft der Anstoss foult (moeglicherweise von wechselnden Spielern
+  // versucht): die eroeffnende Aufnahme wird nur EINMAL gezaehlt, nicht pro
+  // Fehlversuch. Wird beim ersten Anstoss-Foul auf true gesetzt und bleibt
+  // es fuer den Rest des Spiels (die breakPhase endet ohnehin mit dem
+  // ersten regulaeren Stoss und startet nie wieder).
+  const [breakCharged, setBreakCharged] = useState(false);
 
   const names = sideNames || [me.nickname, opp.nickname];
   const membersOf = (i) => (sideAvatars ? sideAvatars[i] : [i === 0 ? me : opp]);
   const inningNo = missInn[0] + missInn[1] + safeInn[0] + safeInn[1] + 1;
+  const inningsOf = (i) => missInn[i] + safeInn[i];
   const offAvg = (p, MI = missInn, PK = pocketed) => (MI[p] > 0 ? PK[p] / MI[p] : 0);
   const allAvg = (p, MI = missInn, SI = safeInn, PK = pocketed) =>
     (MI[p] + SI[p] > 0 ? PK[p] / (MI[p] + SI[p]) : 0);
   const fmt = (x) => x.toFixed(1);
+  const logForPlayer = (i) => log.filter((e) => e.player === i);
+  const describeLog = (e) => {
+    switch (e.type) {
+      case "rack": return t("Rack ausgeschossen (+{n})", { n: e.pts });
+      case "safe": return t("Safe");
+      case "foul": return e.threeFoul ? t("3 Fouls in Folge (−15)") : t("Foul (Serie {n})", { n: e.run });
+      case "breakfoul": return t("Anstoß-Foul (−2)");
+      default: return t("Fehler (Serie {n})", { n: e.run }); // "miss"
+    }
+  };
 
   const snap = () => ({ sc: [...sc], active, breakPhase, hi: [...hi], fouls: [...fouls],
     maxDef: [...maxDef], onTable, inningRun, pocketed: [...pocketed],
-    missInn: [...missInn], safeInn: [...safeInn], twoBall: [...twoBall] });
+    missInn: [...missInn], safeInn: [...safeInn], twoBall: [...twoBall], breakCharged, log: [...log] });
   const pushHist = (x) => setHist((h) => [...h.slice(-80), x]);
   const withDeficit = (scores, md) => {
     const nd = [...md];
@@ -50,11 +69,12 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
   };
 
   // Ergebnis fürs Speichern zusammenbauen (Offensivschnitt nur ab 3 Miss-Aufnahmen für Belohnungen)
-  const buildResult = (scores, HI, MD, PK, MI, TB) => ({
+  const buildResult = (scores, HI, MD, PK, MI, TB, LOG = log) => ({
     s1: scores[0], s2: scores[1], hr1: HI[0], hr2: HI[1], def1: MD[0], def2: MD[1],
     avg1: MI[0] >= 3 ? Math.round((PK[0] / MI[0]) * 100) / 100 : null,
     avg2: MI[1] >= 3 ? Math.round((PK[1] / MI[1]) * 100) / 100 : null,
     tb1: TB[0], tb2: TB[1],
+    log: LOG,
   });
 
   // Rack ausgeschossen: seit letzter Aufnahme versenkt (bis auf die Anstoßkugel), Serie läuft weiter.
@@ -68,7 +88,9 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
     const nf = [...fouls]; nf[active] = 0;
     const nmd = withDeficit(ns, maxDef);
     setSc(ns); setInningRun(nir); setHi(nhi); setPocketed(npk); setFouls(nf); setMaxDef(nmd); setOnTable(15); setBreakPhase(false);
-    if (ns[active] >= target) onFinish(buildResult(ns, nhi, nmd, npk, missInn, twoBall));
+    const nlog = [...log, { type: "rack", player: active, pts }];
+    setLog(nlog);
+    if (ns[active] >= target) onFinish(buildResult(ns, nhi, nmd, npk, missInn, twoBall, nlog));
   };
 
   const openEntry = (type) => { setEntry(type); setRemain(onTable); };
@@ -105,18 +127,24 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
         setActive((a) => 1 - a);
       }
     }
+    const nlog = [...log, { type: entry, player: active, pts: partial - penalty, run, threeFoul }];
+    setLog(nlog);
     if (threeFoul && toast) toast(t("3 Fouls in Folge – {name} bekommt −15 Strafpunkte!", { name: names[active] }));
-    if (finished) onFinish(buildResult(ns, nhi, nmd, npk, nMI, ntb));
+    if (finished) onFinish(buildResult(ns, nhi, nmd, npk, nMI, ntb, nlog));
   };
 
   // Anstoß regulär gespielt (Safety-Anstoß): zählt als Safe-Aufnahme, Gegner ist dran
-  // Anstoß-Foul −2: Safe-Aufnahme, danach Wahl, wer als Nächstes anstößt (mehrere Anstöße möglich)
+  // Anstoß-Foul −2: Safe-Aufnahme, danach Wahl, wer als Nächstes anstößt (mehrere Anstöße
+  // moeglich) - egal wie viele Anstoss-Fouls es dabei gibt, die Eroeffnung
+  // zaehlt insgesamt nur als EINE Aufnahme (des ersten Anstoss-Versuchs).
   const breakFoul = () => {
     pushHist(snap());
     const ns = [...sc]; ns[active] -= 2;
-    const nSI = [...safeInn]; nSI[active] += 1;
+    const nSI = [...safeInn];
+    if (!breakCharged) { nSI[active] += 1; setBreakCharged(true); }
     const nmd = withDeficit(ns, maxDef);
     setSc(ns); setSafeInn(nSI); setMaxDef(nmd); setOnTable(15); setInningRun(0);
+    pushLog({ type: "breakfoul", player: active });
     setBreakChoose(true);
   };
   const chooseBreaker = (who) => { setActive(who); setBreakChoose(false); };
@@ -128,6 +156,8 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
       setSc(l.sc); setActive(l.active); setBreakPhase(l.breakPhase); setHi(l.hi); setFouls(l.fouls);
       setMaxDef(l.maxDef); setOnTable(l.onTable); setInningRun(l.inningRun); setPocketed(l.pocketed);
       setMissInn(l.missInn); setSafeInn(l.safeInn); setTwoBall(l.twoBall);
+      setBreakCharged(l.breakCharged ?? false);
+      setLog(l.log ?? []);
       setEntry(null); setBreakChoose(false);
       return h.slice(0, -1);
     });
@@ -216,19 +246,37 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
 
   // ---- Laufendes Spiel ----
   const need = target - sc[active];
+  const rail = (i) => (
+    <div className={"sp-rail" + (active === i ? " active" : "")}>
+      <div className="sp-rail-avatar">
+        {membersOf(i).map((mm) => (
+          <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={88} />
+        ))}
+      </div>
+      <span className="sp-rail-name">{names[i]}</span>
+      <div className="sp-mini-log">
+        {[...logForPlayer(i)].reverse().map((e, idx) => (
+          <div key={logForPlayer(i).length - idx} className="sp-mini-log-row">{describeLog(e)}</div>
+        ))}
+        {logForPlayer(i).length === 0 && <div className="sp-mini-log-row hint">{t("Noch keine Aufnahme.")}</div>}
+      </div>
+    </div>
+  );
   return (
     <div className="sp">
+      {rail(0)}
+      <div className="sp-center">
       <div className="sp-board">
         {[0, 1].map((i) => (
           <div key={i} className={"sp-side" + (active === i ? " active" : "")}>
             <div className="sc-avatars">
               {membersOf(i).map((mm) => (
-                <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={36} />
+                <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={52} />
               ))}
             </div>
             <span className="sp-name">{names[i]}</span>
             <div className="sp-score">{sc[i]}</div>
-            <div className="sp-meta">{t("Höchstserie")} {hi[i]}</div>
+            <div className="sp-meta">{t("Höchstserie")} {hi[i]} · {t("{n} Aufnahmen", { n: inningsOf(i) })}</div>
             <div className="sp-avg">Ø {fmt(offAvg(i))} <span>{t("Fehler")}</span> · {fmt(allAvg(i))} <span>{t("ges.")}</span></div>
             {fouls[i] > 0 && (
               <div className={"sp-foulwarn" + (fouls[i] >= 2 ? " danger" : "")}>
@@ -249,22 +297,22 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
         {breakPhase && (
           <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>{t("Anstoß: {name} ist dran", { name: names[active] })}</div>
         )}
-        <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
-          <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
-        </button>
-        <div className="sp-controls">
-          <button className="sp-pot half" onClick={() => openEntry("miss")}>{t("Fehler")}</button>
-          <button className="sp-pot half safe" onClick={() => openEntry("safe")}>{t("Safe")}</button>
-        </div>
-        <div className="sp-controls">
-          {breakPhase ? (
-            <button className="btn ghost warn" onClick={breakFoul}>{t("Anstoß-Foul −2")}</button>
-          ) : (
-            <button className="btn ghost warn" onClick={() => openEntry("foul")}>{t("Foul −1")}</button>
-          )}
-        </div>
-        <div className="sp-controls">
-          <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> {t("Rückgängig")}</button>
+        <div className="sp-primary-actions">
+          <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
+            <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
+          </button>
+          <div className="sp-controls">
+            <button className="sp-pot half" onClick={() => openEntry("miss")}>{t("Fehler")}</button>
+            <button className="sp-pot half safe" onClick={() => openEntry("safe")}>{t("Safe")}</button>
+          </div>
+          <div className="sp-controls">
+            {breakPhase ? (
+              <button className="btn ghost warn" onClick={breakFoul}>{t("Anstoß-Foul −2")}</button>
+            ) : (
+              <button className="btn ghost warn" onClick={() => openEntry("foul")}>{t("Foul −1")}</button>
+            )}
+            <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> {t("Rückgängig")}</button>
+          </div>
         </div>
 
         {!confirmEnd ? (
@@ -282,7 +330,23 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
             {sc[0] === sc[1] && <p className="hint center">{t("Bei Gleichstand kann nicht beendet werden.")}</p>}
           </div>
         )}
+
+        {log.length > 0 && (
+          <div className="sp-log">
+            <h4>{t("Verlauf")}</h4>
+            <div className="sp-log-list">
+              {[...log].reverse().map((e, idx) => (
+                <div key={log.length - idx} className="sp-log-row">
+                  <span className="sp-log-player">{names[e.player]}</span>
+                  <span>{describeLog(e)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+      </div>
+      {rail(1)}
     </div>
   );
 }

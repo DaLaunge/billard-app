@@ -1,22 +1,23 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
-import { initials, hashColor, BALL_PALETTE } from "../lib/format";
+import { initials, hashColor, BALL_PALETTE, fmtDate } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
+import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
 import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import LegalModal from "./LegalModal";
 import AvatarPhotoField from "./AvatarPhotoField";
 import MyFeedbackTickets from "./MyFeedbackTickets";
-
-const H2H_COUNT_OPTIONS = [3, 10, 20, "all"];
+import HeadToHeadCard from "./widgets/HeadToHeadCard";
+import RecordsCard from "./widgets/RecordsCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload }) {
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -57,6 +58,31 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [ticketsRefresh, setTicketsRefresh] = useState(0);
   const heroPhoto = photoOf(nickname);
+
+  // Farbthema: sofort live vorschauen (applyTheme), Speichern separat -
+  // bei Presets zusammen mit der Auswahl, bei "Eigenes" ueber den
+  // Uebernehmen-Button (sonst wuerde jeder Klick im Farbwaehler einen
+  // eigenen Server-Request ausloesen).
+  const [themeKey, setThemeKey] = useState(meRow?.theme_key || "green");
+  const [customBg, setCustomBg] = useState(meRow?.theme_custom?.bg || "#0A2B21");
+  const [customAccent, setCustomAccent] = useState(meRow?.theme_custom?.accent || "#7CC1E8");
+  const [themeBusy, setThemeBusy] = useState(false);
+  const pickPresetTheme = async (key) => {
+    setThemeKey(key);
+    applyTheme(key);
+    setThemeBusy(true);
+    await onSetTheme(key, null);
+    setThemeBusy(false);
+  };
+  const previewCustomTheme = (bg, accent) => {
+    setCustomBg(bg); setCustomAccent(accent); setThemeKey("custom");
+    applyTheme("custom", { bg, accent });
+  };
+  const saveCustomTheme = async () => {
+    setThemeBusy(true);
+    await onSetTheme("custom", { bg: customBg, accent: customAccent });
+    setThemeBusy(false);
+  };
 
   const sendFeedback = async () => {
     if (!feedbackMsg.trim()) return;
@@ -114,22 +140,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   );
   const nickValid = cleanNick.length >= 2 && cleanNick.length <= 30 && !taken;
 
-  const h2h = useMemo(() => {
-    const map = {};
-    matches.forEach((m) => {
-      if (m.player1b_id) return;
-      let opp = null, w = 0, l = 0;
-      if (m.p1.nickname === nickname) { opp = m.p2.nickname; w = m.score1 > m.score2 ? 1 : 0; l = 1 - w; }
-      if (m.p2.nickname === nickname) { opp = m.p1.nickname; w = m.score2 > m.score1 ? 1 : 0; l = 1 - w; }
-      if (!opp) return;
-      map[opp] ||= { opp, w: 0, l: 0 };
-      map[opp].w += w; map[opp].l += l;
-    });
-    return Object.values(map).sort((a, b) => b.w + b.l - (a.w + a.l));
-  }, [matches, nickname]);
-  const [h2hCount, setH2hCount] = useState(3);
-  const visibleH2h = h2hCount === "all" ? h2h : h2h.slice(0, h2hCount);
-
   const save = async () => {
     setBusy(true);
     const ok = await onSaveProfile(cleanNick, color, motto);
@@ -145,6 +155,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <h2>{t("Profil bearbeiten")}</h2>
         </header>
 
+        <div className="pf-edit-layout">
         <section className="stat-block">
           <label className="field-label" htmlFor="pnick">{t("Nickname")}</label>
           <div className="mail-row">
@@ -201,16 +212,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)} />
           </div>
 
-          <label className="field-label">{t("Sprache")}</label>
-          <div className="lang-row" style={{ marginBottom: 6 }}>
-            <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
-              <span className="flag">🇩🇪</span><span>Deutsch</span>
-            </button>
-            <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
-              <span className="flag">🇬🇧</span><span>English</span>
-            </button>
-          </div>
-
           <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
             {busy ? t("Speichere ...") : <>{t("Speichern")} <Check size={18} /></>}
           </button>
@@ -218,6 +219,61 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
           )}
         </section>
+
+        <div className="pf-edit-side">
+          <section className="stat-block">
+            <label className="field-label">{t("Sprache")}</label>
+            <div className="lang-row" style={{ marginBottom: 0 }}>
+              <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
+                <span className="flag">🇩🇪</span><span>Deutsch</span>
+              </button>
+              <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
+                <span className="flag">🇬🇧</span><span>English</span>
+              </button>
+            </div>
+          </section>
+
+          <section className="stat-block">
+            <h3><Palette size={17} /> {t("Design")}</h3>
+            <div className="theme-grid">
+              {THEME_KEYS.map((key) => {
+                const th = THEME_CATALOG[key];
+                return (
+                  <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
+                    style={{ background: th.felt, borderColor: themeKey === key ? th.chalk : "transparent" }}
+                    onClick={() => pickPresetTheme(key)} disabled={themeBusy}>
+                    <span className="theme-dot" style={{ background: th.chalk }} />
+                    {t(th.name)}
+                    {themeKey === key && <Check size={14} />}
+                  </button>
+                );
+              })}
+              <button className={"theme-swatch" + (themeKey === "custom" ? " sel" : "")}
+                style={{ background: customBg, borderColor: themeKey === "custom" ? customAccent : "transparent" }}
+                onClick={() => previewCustomTheme(customBg, customAccent)} disabled={themeBusy}>
+                <span className="theme-dot" style={{ background: customAccent }} />
+                {t("Eigenes")}
+                {themeKey === "custom" && <Check size={14} />}
+              </button>
+            </div>
+            {themeKey === "custom" && (
+              <div className="theme-custom-row">
+                <label className="theme-color-field">
+                  {t("Hintergrund")}
+                  <input type="color" value={customBg} onChange={(e) => previewCustomTheme(e.target.value, customAccent)} />
+                </label>
+                <label className="theme-color-field">
+                  {t("Akzent")}
+                  <input type="color" value={customAccent} onChange={(e) => previewCustomTheme(customBg, e.target.value)} />
+                </label>
+                <button className="btn primary small" disabled={themeBusy} onClick={saveCustomTheme}>
+                  {themeBusy ? t("Speichere ...") : t("Übernehmen")}
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+        </div>
       </div>
     );
   }
@@ -229,6 +285,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
       </header>
 
+      <div className="pf-layout">
+      <div className="pf-left">
       <div className="profile-hero">
         {heroPhoto ? (
           <button className="avatar-tap" onClick={() => setPhotoViewerOpen(true)} aria-label={t("Foto ansehen")}>
@@ -244,13 +302,19 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
           </div>
           {playerObj?.motto && <p className="p-motto">"{playerObj.motto}"</p>}
+          {playerObj?.created_at && <p className="p-since">{t("Dabei seit {date}", { date: fmtDate(playerObj.created_at) })}</p>}
         </div>
       </div>
 
       {!isMe && playerObj && !challengeForm && (
-        <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => setChallengeForm(true)}>
-          <Swords size={15} /> {t("Herausfordern")}
-        </button>
+        <div className="sp-controls" style={{ marginBottom: 14 }}>
+          <button className="btn primary" onClick={() => onStartMatch(playerObj)}>
+            <Play size={15} /> {t("Match starten")}
+          </button>
+          <button className="btn primary" onClick={() => setChallengeForm(true)}>
+            <Swords size={15} /> {t("Herausfordern")}
+          </button>
+        </div>
       )}
       {!isMe && playerObj && challengeForm && (
         <div className="challenge-form">
@@ -279,7 +343,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </button>
       )}
 
-
       <div className="kpis">
         <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
         <div className="kpi"><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
@@ -299,6 +362,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
       </section>
 
+      <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
+      </div>
+
+      <div className="pf-right">
       <section className="stat-block">
         <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
         {isMe && achievementHint && (
@@ -367,29 +434,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
 
-      <section className="stat-block">
-        <div className="stat-block-head">
-          <h3><Swords size={17} /> {t("Head-to-Head (Match-Siege)")}</h3>
-          {h2h.length > 0 && (
-            <div className="chips small">
-              {H2H_COUNT_OPTIONS.map((c) => (
-                <button key={c} className={"chip" + (h2hCount === c ? " active" : "")} onClick={() => setH2hCount(c)}>
-                  {c === "all" ? t("Alle") : c}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        {visibleH2h.map(({ opp, w, l }) => (
-          <button key={opp} className="h2h-row as-btn" onClick={() => onOpenProfile(opp)}>
-            <Ball color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} photo={photoOf(opp)} size={34} />
-            <span className="stat-name">{opp}</span>
-            <div className="h2h-bar"><div className="h2h-w" style={{ width: `${(100 * w) / Math.max(1, w + l)}%` }} /></div>
-            <span className="h2h-score">{w}:{l}</span>
-          </button>
-        ))}
-        {h2h.length === 0 && <p className="hint">{t("Noch keine Matches.")}</p>}
-      </section>
+      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
+        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
 
       {isMe && (
         <section className="stat-block">
@@ -479,6 +525,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </button>
         </section>
       )}
+      </div>
+      </div>
 
       {deleteStep === 1 && (
         <div className="modal-overlay" onClick={() => setDeleteStep(0)}>

@@ -25,6 +25,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [def, setDef] = useState([null, null]); // aufgeholter Rückstand (nur 14/1)
   const [avg, setAvg] = useState([null, null]); // Offensivschnitt (nur 14/1)
   const [tb, setTb] = useState([null, null]);   // Zwei-Kugel-Räumungen (nur 14/1)
+  const [runLog, setRunLog] = useState(null);   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
   const [leaveWarn, setLeaveWarn] = useState(false);
@@ -195,6 +196,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       {step === 0 && (
         <>
           <p className="q">{t("Gegen wen trittst du an?")}</p>
+          <div className="match-split">
+          <div className="match-selectors">
           <div className="mode-row">
             <button className={"mode-btn" + (mode === "single" ? " active" : "")}
               onClick={() => { setMode("single"); setPartner(null); setOpp2(null); }}>{t("Einzel")}</button>
@@ -241,6 +244,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             <input placeholder={t("Spieler suchen …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
             {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
           </div>
+          </div>
+
+          <div className="match-players">
           {opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
           {mode === "single" && !oppQuery && suggestions.length > 0 && (
             <div className="suggest-card">
@@ -286,11 +292,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <button className="btn ghost" onClick={() => setShowInvite(true)}>
             <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
           </button>
+          </div>
+          </div>
         </>
       )}
 
       {step === 1 && (
-        <>
+        <div className="match-center-step">
           <p className="q">{t("Welche Disziplin?")}</p>
           <div className="disc-grid">
             {disciplines.filter((d) => d !== "Doppel" && d !== "Gesamt").map((d) => (
@@ -309,11 +317,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           ) : (
             <p className="hint center">{t("Zwischen 8/9/10 Ball bleibt dein Ergebnis beim Wechsel erhalten.")}</p>
           )}
-        </>
+        </div>
       )}
 
       {step === 2 && opp && disc && (
-        <>
+        <div className="match-score-step">
           <div className="score-head">
             <DiscChip />
           </div>
@@ -341,9 +349,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} toast={toast}
               sideNames={mode === "double" ? [teamA, teamB] : undefined}
               sideAvatars={mode === "double" ? [[me, partner], [opp, opp2]] : undefined}
-              onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2, avg1, avg2, tb1, tb2 }) => {
+              onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2, avg1, avg2, tb1, tb2, log }) => {
                 setS1(a); setS2(b); setHr([hr1, hr2]); setDef([def1, def2]);
-                setAvg([avg1, avg2]); setTb([tb1, tb2]); setStep(3);
+                setAvg([avg1, avg2]); setTb([tb1, tb2]); setRunLog(log); setStep(3);
               }} />
           ) : (
             <>
@@ -356,7 +364,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   <div key={name} className="score-col">
                     <div className="sc-avatars">
                       {members.map((pl) => (
-                        <Ball key={pl.id} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={44} />
+                        <Ball key={pl.id} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={56} />
                       ))}
                     </div>
                     <span className="score-name">{name}</span>
@@ -374,11 +382,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               {s1 === s2 && total > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
             </>
           )}
-        </>
+        </div>
       )}
 
       {step === 3 && opp && (
-        <>
+        <div className="match-center-step">
           <div className="summary">
             <div className="sum-vs">
               <div className="sum-side">
@@ -439,11 +447,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {!isGhost && <p className="hint center">{mode === "double"
             ? t("Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.")
             : t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
-        </>
+        </div>
       )}
 
       {step === 4 && opp && (
-        <div className="saved">
+        <div className="saved match-center-step">
           <div className="sent-check big"><Check size={34} /></div>
           {isGhost ? (
             <>

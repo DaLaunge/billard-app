@@ -7,9 +7,9 @@
   --win: #4CAF6E; --loss: #D9614C;
 }
 * { box-sizing: border-box; margin: 0; }
-html, body { background: #071E17; }
+html, body { background: var(--felt); }
 .stage { min-height: 100vh; display: flex; justify-content: center;
-  background: radial-gradient(120% 90% at 50% 0%, #123829 0%, #071E17 70%);
+  background: radial-gradient(120% 90% at 50% 0%, var(--felt-3) 0%, var(--felt) 70%);
   font-family: 'Archivo', system-ui, sans-serif; color: var(--ivory); }
 .phone { width: 100%; max-width: 430px; min-height: 100vh; position: relative;
   background: radial-gradient(140% 100% at 50% -10%, var(--felt-2) 0%, var(--felt) 60%);
@@ -261,7 +261,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .score-col { flex: 1; background: var(--felt-2); border: 1px solid var(--line); border-radius: 18px;
   padding: 16px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .score-name { font-size: 13px; font-weight: 600; text-align: center; }
-.score-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 52px; font-weight: 800; line-height: 1; }
+.score-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 62px; font-weight: 800; line-height: 1; }
 .score-btns { display: flex; gap: 10px; }
 .round-btn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line);
   background: var(--felt-3); color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
@@ -304,12 +304,21 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   background: var(--felt-2); border: 2px solid var(--line); border-radius: 18px; padding: 14px 8px; }
 .sp-side.active { border-color: var(--gold); background: var(--felt-3); }
 .sp-name { font-size: 13px; font-weight: 700; }
-.sp-score { font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; line-height: 1; }
+.sp-score { font-size: 54px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; line-height: 1; }
 .sp-meta { font-size: 11px; color: var(--ivory-dim); }
 .sp-avg { font-size: 10.5px; color: var(--gold); margin-top: 1px; }
 .sp-avg span { color: var(--ivory-dim); }
 .sp-pot.half { flex: 1; margin: 0; padding: 16px; font-size: 16px; }
 .sp-pot.half.safe { background: #3E6B8A; color: #F2EDE0; }
+.sp-primary-actions { display: flex; flex-direction: column; gap: 10px; }
+.sp-log { margin-top: 4px; }
+.sp-log h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ivory-dim); margin-bottom: 6px; }
+.sp-log-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
+.sp-log-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px;
+  border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--ivory-dim); }
+.sp-log-row:last-child { border-bottom: none; }
+.sp-log-player { color: var(--ivory); font-weight: 600; flex: 0 0 auto; }
+.sp-rail { display: none; }
 .otw-count { margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--gold); }
 .btn.small { padding: 9px 12px; font-size: 13px; }
 .sp-foulwarn { font-size: 11px; font-weight: 700; color: #E8B923; margin-top: 2px; }
@@ -320,11 +329,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   .phone { max-width: 900px; }
   .content { padding-bottom: 20px; }
   .tabbar { max-width: 900px; }
+  .refresh-btn { right: max(14px, calc(50% - 450px + 14px)); }
   /* 14/1-Zähler zweispaltig: Anzeigetafel links, Bedienung rechts */
   .sp { display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; align-items: start; }
   .sp-board { grid-column: 1; }
   .sp-side { padding: 22px 10px; }
-  .sp-score { font-size: 60px; }
+  .sp-score { font-size: 72px; }
   .sp-actions { grid-column: 2; display: flex; flex-direction: column; gap: 10px; }
   /* Ergebnis-/Statistik-Inhalte etwas luftiger nutzen die Breite */
   .opp-grid { grid-template-columns: repeat(4, 1fr); }
@@ -499,6 +509,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .p-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; font-weight: 800;
   display: flex; align-items: center; gap: 10px; }
 .p-motto { color: var(--ivory-dim); font-size: 13px; font-style: italic; margin-top: 4px; }
+.p-since { color: var(--ivory-dim); font-size: 12px; margin-top: 3px; }
 .prov-badge { font-family: 'Archivo', sans-serif; font-size: 11px; font-weight: 600; color: var(--gold);
   border: 1px solid var(--gold); border-radius: 999px; padding: 3px 9px; }
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
@@ -523,6 +534,18 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .swatch.auto { background: var(--felt-3); color: var(--ivory-dim); font-size: 10px;
   font-weight: 700; font-family: inherit; }
 .swatch-preview { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+.theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; }
+.theme-swatch { display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  padding: 10px 12px; border-radius: 12px; border: 2px solid transparent; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ivory); position: relative; }
+.theme-swatch.sel { box-shadow: 0 0 0 1px #ffffff30; }
+.theme-swatch svg { position: absolute; top: 8px; right: 8px; }
+.theme-dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 2px #00000030; }
+.theme-custom-row { display: flex; align-items: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+.theme-color-field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ivory-dim); }
+.theme-color-field input[type="color"] { width: 34px; height: 34px; border: none; border-radius: 8px;
+  padding: 0; cursor: pointer; background: none; }
 
 .ping-card.mine { border-color: var(--chalk-deep); }
 .ping-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -614,7 +637,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 
 .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   width: 100%; max-width: 430px; display: flex; align-items: center;
-  background: #082017F2; border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--felt) 92%, transparent); border-top: 1px solid var(--line);
   padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(8px); z-index: 30; }
 .tab { flex: 1; background: none; border: none; color: var(--ivory-dim);
   display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -651,4 +674,152 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 }
 @media (prefers-reduced-motion: reduce) {
   .live-dot { animation: none; } .spin { animation: none; }
+}
+
+/* ===== Uebersicht-Dashboard: Module (siehe src/components/widgets) =====
+   Immer sichtbar, auf jeder Groesse - am Handy einfach untereinander
+   (.ov-layout ist von Haus aus eine Spalte), ab 900px zweispaltig neben
+   der Tabelle. So sieht man dieselben Infos auf jedem Geraet, nur anders
+   angeordnet - keine Inhalte, die am Handy verschwinden. */
+.ov-layout { display: flex; flex-direction: column; gap: 22px; }
+.ov-side { display: flex; flex-direction: column; gap: 16px; }
+.ov-side .stat-block { margin-bottom: 0; }
+.side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.side-row:last-of-type { border-bottom: none; }
+.side-row-emoji { font-size: 16px; line-height: 1; }
+.side-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-row-gap { color: var(--ivory-dim); font-size: 12px; white-space: nowrap; }
+
+.dash-photo { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  width: 100%; background: none; border: none; color: inherit; font-family: inherit; cursor: pointer; padding: 0 0 14px; }
+.dash-photo b { font-size: 15px; }
+.dash-photo span { font-size: 12.5px; color: var(--ivory-dim); }
+.dash-stats { display: flex; justify-content: space-between; text-align: center; }
+.dash-stats div { display: flex; flex-direction: column; }
+.dash-stats b { font-size: 16px; }
+.dash-stats span { font-size: 10.5px; color: var(--ivory-dim); }
+.dash-live { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; width: 100%;
+  background: color-mix(in srgb, var(--loss) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--loss) 45%, transparent);
+  color: var(--ivory); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left; }
+.records-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 8px; }
+.records-grid div { display: flex; flex-direction: column; gap: 1px; }
+.records-grid b { font-size: 15px; }
+.records-grid span { font-size: 10px; color: var(--ivory-dim); line-height: 1.25; }
+.record-emoji { margin-right: 4px; }
+
+/* Profil: Foto + Kernzahlen links, Rest rechts - gleiches Prinzip wie
+   .ov-layout (immer sichtbar, am Handy untereinander). */
+.pf-layout { display: flex; flex-direction: column; gap: 22px; }
+.pf-right { display: flex; flex-direction: column; }
+.pf-right > * { margin-bottom: 14px; }
+.pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
+.pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
+
+/* Live: Duelle + Live-Liste; Statistik: Chart + Rest; Neues Match (Schritt
+   "Gegner waehlen"): Auswahl-Elemente + Spieler-Raster. Alle drei nach
+   demselben Prinzip - am Handy untereinander (Quelltext-Reihenfolge),
+   ab 900px zweispaltig. */
+.live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: 20px; }
+.stat-chart-col, .stat-rest-col, .match-selectors, .match-players { min-width: 0; }
+
+/* ===== Desktop: breitere Flaeche, Uebersicht/Statistik zweispaltig =====
+   Nur aktiv, wenn eingeloggt (.phone.app) - Login/Ladebildschirm bleiben
+   schmal/zentriert. Die Tabbar bleibt bewusst unten und unveraendert wie
+   am Handy (gleiche Bedienung, kein Umlernen). */
+@media (min-width: 900px) {
+  .phone.app { max-width: 1240px; margin: 0 auto; }
+  .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; }
+  .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
+
+  /* Statistik: die drei kleinen Bestenlisten nebeneinander statt gestapelt */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .stat-grid .stat-block { margin-bottom: 0; }
+  .phone.app .screen:has(.stat-grid) { max-width: 1160px; }
+
+  /* Uebersicht: Spieler-Module links, Rangliste rechts */
+  .phone.app .screen:has(.ov-layout) { max-width: 1160px; }
+  .ov-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+
+  /* Profil: Foto/Kernzahlen links (bleibt beim Scrollen sichtbar), Rest rechts */
+  .phone.app .screen:has(.pf-layout) { max-width: 1000px; }
+  .pf-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
+  .pf-left { position: sticky; top: 28px; }
+
+  /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
+     (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
+  .phone.app .screen:has(.pf-edit-layout) { max-width: 900px; }
+  .pf-edit-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+
+  /* Live: Duelle links, Live-Liste rechts */
+  .phone.app .screen:has(.live-split) { max-width: 1000px; }
+  .live-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+
+  /* Statistik: Trendverlauf links, Bestenlisten + Letzte Matches rechts.
+     Die 3er-Bestenlisten-Reihe faellt in der schmaleren rechten Spalte
+     auf eine Spalte zurueck statt gequetschter 3 Mini-Karten. */
+  .phone.app .screen:has(.stat-split) { max-width: 1160px; }
+  .stat-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .stat-split .stat-grid { grid-template-columns: 1fr; }
+
+  /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
+  .phone.app .screen:has(.match-split) { max-width: 1160px; }
+  .match-split { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+
+  /* Neues Match, uebrige Schritte (Disziplin/Pruefen/Bestaetigung):
+     nur zentrieren, keine besondere Breite/Groesse noetig. */
+  .phone.app .screen:has(.match-center-step) { max-width: 700px; margin: 0 auto; }
+
+  /* Neues Match, Schritt "Ergebnis": zentriert und deutlich groesser -
+     das ist der Bildschirm, an dem man waehrend des Spiels staendig den
+     Stand abliest, soll also aus Distanz gut lesbar sein. */
+  .phone.app .screen:has(.match-score-step) { max-width: 820px; margin: 0 auto; }
+  .match-score-step .score-row { gap: 28px; }
+  .match-score-step .score-col { padding: 24px 16px; }
+  .match-score-step .score-name { font-size: 17px; }
+  .match-score-step .score-num { font-size: 130px; }
+  .match-score-step .round-btn { width: 84px; height: 84px; }
+  .match-score-step .round-btn svg { width: 34px; height: 34px; }
+
+  /* 14/1: Board (Punktestand) oben, direkt darunter eine kompakte
+     Buttonleiste (Rack/Fehler/Safe/Foul/Rueckgaengig in EINER Reihe statt
+     gestapelter Vollbreite-Balken) - alles ohne Scrollen sichtbar. Die
+     bisher ungenutzten Raender links/rechts zeigen jetzt je Spieler ein
+     groesseres Foto + sein persoenliches Aufnahme-Protokoll, damit klar
+     ist wer wer ist und wer was gemacht hat. */
+  .phone.app .screen:has(.match-score-step .sp) { max-width: 1440px; }
+  .match-score-step .sp { display: grid; grid-template-columns: 200px 1fr 200px; gap: 24px; align-items: start; }
+  .match-score-step .sp-center { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .match-score-step .sp-board { gap: 20px; }
+  .match-score-step .sp-side { padding: 22px 14px; }
+  .match-score-step .sp-score { font-size: 130px; }
+  .match-score-step .sp-name { font-size: 18px; }
+  .match-score-step .sp-meta { font-size: 14px; }
+  .match-score-step .sp-avg { font-size: 13px; }
+  .match-score-step .sp-turn { font-size: 13px; }
+  .match-score-step .sp-actions { display: flex; flex-direction: column; gap: 10px; }
+  .match-score-step .sp-target { font-size: 14px; }
+  .match-score-step .sp-need { font-size: 15px; }
+  .match-score-step .sp-need b { font-size: 19px; }
+  /* die gemeinsame Verlaufsliste unten weicht den beiden Rand-Protokollen */
+  .match-score-step .sp-log { display: none; }
+
+  /* Buttonleiste: alle Aktionen in einer Reihe statt gestapelter Balken. */
+  .match-score-step .sp-primary-actions { display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
+  .match-score-step .sp-primary-actions .sp-rack { flex: 1.3; margin: 0; }
+  .match-score-step .sp-primary-actions .sp-controls { flex: 1; }
+  .match-score-step .sp-rack { padding: 16px; font-size: 16px; border-radius: 16px; }
+  .match-score-step .sp-pot { padding: 16px; font-size: 17px; border-radius: 16px; }
+
+  /* Rand-Spalten: groesseres Foto + Name + persoenliches Protokoll */
+  .match-score-step .sp-rail { display: flex; flex-direction: column; align-items: center; gap: 10px;
+    background: var(--felt-2); border: 2px solid var(--line); border-radius: 18px; padding: 20px 12px; }
+  .match-score-step .sp-rail.active { border-color: var(--gold); background: var(--felt-3); }
+  .match-score-step .sp-rail-name { font-size: 15px; font-weight: 700; text-align: center; }
+  .match-score-step .sp-mini-log { width: 100%; display: flex; flex-direction: column; gap: 6px;
+    max-height: 420px; overflow-y: auto; }
+  .match-score-step .sp-mini-log-row { font-size: 12px; color: var(--ivory-dim); text-align: center;
+    padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  .match-score-step .sp-mini-log-row:last-child { border-bottom: none; }
+  .match-score-step .sp-mini-log-row.hint { font-size: 12px; }
 }

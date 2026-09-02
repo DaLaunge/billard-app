@@ -9,6 +9,7 @@ import { getVs, clearVs } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
 import { hashColor } from "./lib/format";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
+import { applyTheme } from "./lib/themes";
 
 import LoginScreen from "./components/LoginScreen";
 import NicknameScreen from "./components/NicknameScreen";
@@ -121,7 +122,7 @@ export default function App() {
       setPlayer(data ?? null);
       setPlayerChecked(true);
       const { data: all } = await supabase.from("players")
-        .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by");
+        .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by, created_at");
       setPlayers(all ?? []);
     })();
   }, [session]);
@@ -134,7 +135,7 @@ export default function App() {
         .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
         .order("played_at", { ascending: false })
         .range(from, to)),
-      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by"),
+      supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by, created_at"),
       supabase.from("pings")
         .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
         .gt("expires_at", new Date().toISOString())
@@ -176,6 +177,7 @@ export default function App() {
   }, [toast]);
 
   useEffect(() => { if (player) loadData(); }, [player, loadData]);
+  useEffect(() => { if (player) applyTheme(player.theme_key || "green", player.theme_custom); }, [player]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -248,6 +250,12 @@ export default function App() {
     loadData();
   };
 
+  const setTheme = async (themeKey, themeCustom) => {
+    const { data, error } = await supabase.rpc("set_theme", { p_theme_key: themeKey, p_theme_custom: themeCustom ?? null });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setPlayer(data);
+  };
+
   const saveProfile = async (nick, color, motto) => {
     const { data, error } = await supabase.rpc("update_profile", {
       p_nickname: nick, p_avatar_color: color, p_motto: motto || null,
@@ -313,6 +321,7 @@ export default function App() {
   };
 
   const openProfile = (nick) => { setProfileName(nick); setTab("fremdprofil"); };
+  const startMatchVs = (opponent) => { setVsOpp(opponent); setTab("match"); };
   const logout = async () => { await supabase.auth.signOut(); setTab("rang"); };
 
   const submitFeedback = async (category, message) => {
@@ -334,7 +343,7 @@ export default function App() {
 
   return (
     <div className="stage">
-      <div className="phone">
+      <div className={"phone" + (session && player ? " app" : "")}>
         {!session && <LoginScreen />}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
@@ -381,7 +390,10 @@ export default function App() {
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
                   pending={pendingForMe} me={player} onConfirm={confirmMatch}
                   onOpenProfile={openProfile} myOpenReports={myOpenReports}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf}
+                  matches={matches} players={players} challenges={challenges}
+                  catalog={catalog} earnedBadges={badgesOfId(player.id)}
+                  pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => setTab("live")} />
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
@@ -410,6 +422,7 @@ export default function App() {
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
+                  onSetTheme={setTheme}
                   onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (
@@ -418,9 +431,9 @@ export default function App() {
                   onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
-                  onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} challenges={challenges}
+                  onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} onStartMatch={startMatchVs} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
-                  lang={lang} onLang={changeLang}
+                  lang={lang} onLang={changeLang} onSetTheme={setTheme}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onOpenProfile={openProfile} />
               )}
@@ -440,7 +453,7 @@ export default function App() {
             {tab !== "match" && (
             <nav className="tabbar">
               <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => setTab("rang")}>
-                <Trophy size={21} /><span>{t("Rangliste")}</span>
+                <Trophy size={21} /><span>{t("Übersicht")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
               <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => setTab("live")}>

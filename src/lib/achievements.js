@@ -66,15 +66,15 @@ const leadingNumber = (desc) => {
 /* Erfolgs-Familien, die sich lokal berechnen lassen (siehe computeAchievementExtras) -
    dieselben, die auch in ProfilScreen als Live-Kennzahl je Kategorie erscheinen. */
 const FAMILIES = [
-  { test: (d) => /Siege in Folge$/.test(d), current: (e) => (e.streak > 0 ? e.streak : null), unit: () => t("Sieg(e) in Folge") },
-  { test: (d) => /^\d+ Siege insgesamt$/.test(d), current: (e) => e.siege, unit: () => t("Sieg(e)") },
-  { test: (d) => /zu null gewonnen/.test(d), current: (e) => e.shutoutWins, unit: () => t("Zu-Null-Sieg(e)") },
-  { test: (d) => /Matches gegen denselben Gegner/.test(d), current: (e) => e.maxVsOpponent, unit: () => t("Match(es) gegen denselben Gegner") },
-  { test: (d) => /Matches an einem Tag/.test(d), current: (e) => e.maxPerDay, unit: () => t("Match(es) an einem Tag") },
-  { test: (d) => /14\/1: Höchstserie/.test(d), current: (e) => e.highRun, unit: () => t("Kugeln") },
-  { test: (d) => /Spieler geworben/.test(d), current: (e) => e.recruitedCount, unit: () => t("geworbene Spieler") },
-  { test: (d) => /Herausforderung(en)? angenommen/.test(d), current: (e) => e.challengesAccepted, unit: () => t("Herausforderungen") },
-  { test: (d) => /Siege in Folge gegen denselben Gegner$/.test(d), current: (e) => (e.maxOpponentStreak > 0 ? e.maxOpponentStreak : null), unit: () => t("Sieg(e) in Folge gegen 1 Gegner") },
+  { metric: "longestStreak", test: (d) => /Siege in Folge$/.test(d), current: (e) => (e.streak > 0 ? e.streak : null), unit: () => t("Sieg(e) in Folge") },
+  { metric: "siege", test: (d) => /^\d+ Siege insgesamt$/.test(d), current: (e) => e.siege, unit: () => t("Sieg(e)") },
+  { metric: "shutoutWins", test: (d) => /zu null gewonnen/.test(d), current: (e) => e.shutoutWins, unit: () => t("Zu-Null-Sieg(e)") },
+  { metric: "maxVsOpponent", test: (d) => /Matches gegen denselben Gegner/.test(d), current: (e) => e.maxVsOpponent, unit: () => t("Match(es) gegen denselben Gegner") },
+  { metric: "maxPerDay", test: (d) => /Matches an einem Tag/.test(d), current: (e) => e.maxPerDay, unit: () => t("Match(es) an einem Tag") },
+  { metric: "highRun", test: (d) => /14\/1: Höchstserie/.test(d), current: (e) => e.highRun, unit: () => t("Kugeln") },
+  { metric: "recruitedCount", test: (d) => /Spieler geworben/.test(d), current: (e) => e.recruitedCount, unit: () => t("geworbene Spieler") },
+  { metric: "challengesAccepted", test: (d) => /Herausforderung(en)? angenommen/.test(d), current: (e) => e.challengesAccepted, unit: () => t("Herausforderungen") },
+  { metric: "maxOpponentStreak", test: (d) => /Siege in Folge gegen denselben Gegner$/.test(d), current: (e) => (e.maxOpponentStreak > 0 ? e.maxOpponentStreak : null), unit: () => t("Sieg(e) in Folge gegen 1 Gegner") },
 ];
 
 // Einfacher, deterministischer Streuwert aus einem String (kein Crypto-Anspruch,
@@ -105,10 +105,36 @@ function closestCandidates(catalog, extras, earnedBadges) {
     if (cur == null) return;
     const gap = leadingNumber(b.description) - cur;
     if (gap <= 0) return;
-    candidates.push({ gap, unit: fam.unit(), name: t(b.name) });
+    candidates.push({ gap, unit: fam.unit(), name: t(b.name), badgeKey: b.badge_key, emoji: b.emoji });
   });
   candidates.sort((a, b) => a.gap - b.gap);
   return candidates;
+}
+
+/* Die paar naechstliegenden, noch nicht erreichten Erfolge als Rohdaten
+   (fuer eine kompakte Fortschritts-Anzeige, z.B. im Desktop-Sidebar-Panel) -
+   im Unterschied zu nextAchievementHint() nicht als fertiger Satz, sondern
+   als Liste zum selbst Rendern. */
+export function upcomingAchievements(catalog, extras, earnedBadges, count = 3) {
+  return closestCandidates(catalog, extras, earnedBadges).slice(0, count);
+}
+
+/* Emoji des bereits erreichten Erfolgs zu einer Rekord-Kennzahl (z.B.
+   "highRun" -> Emoji des hoechsten erreichten 14/1-Serien-Erfolgs), oder
+   null, wenn dazu noch kein Erfolg freigeschaltet ist. Bei mehreren
+   erreichten Stufen derselben Familie zaehlt die mit der hoechsten
+   Schwelle (die anderen sind automatisch mit erreicht). */
+export function recordBadgeEmoji(catalog, earnedBadges, metric) {
+  const fam = FAMILIES.find((f) => f.metric === metric);
+  if (!fam || !catalog || !earnedBadges) return null;
+  let best = null, bestN = -1;
+  catalog.forEach((b) => {
+    if (!fam.test(b.description)) return;
+    if (!earnedBadges.has(b.badge_key)) return;
+    const n = leadingNumber(b.description);
+    if (n > bestN) { bestN = n; best = b; }
+  });
+  return best ? best.emoji : null;
 }
 
 /* Waehlt aus den paar naechstliegenden, noch nicht erreichten Erfolgen einen
