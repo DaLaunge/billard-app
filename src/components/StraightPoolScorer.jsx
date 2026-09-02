@@ -3,6 +3,7 @@ import { ArrowRight, Plus, RotateCcw } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import { poolBallStyle } from "../lib/pool";
+import { collapseRunLog, describeRunLogEntry } from "../lib/runLog";
 import Ball from "./Ball";
 
 export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf, onFinish, toast, sideNames, sideAvatars }) {
@@ -46,36 +47,9 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
   const allAvg = (p, MI = missInn, SI = safeInn, PK = pocketed) =>
     (MI[p] + SI[p] > 0 ? PK[p] / (MI[p] + SI[p]) : 0);
   const fmt = (x) => x.toFixed(1);
-  // Mehrere Racks innerhalb derselben Aufnahme (Rack, Rack, ... erst dann
-  // Fehler/Safe/Foul) erzeugen je einen Log-Eintrag - fuer die Anzeige wird
-  // pro Spieler+Aufnahme aber nur die JEWEILS LETZTE Zeile gezeigt (die schon
-  // die kumulierte Serie und den Gesamtpunktestand dieser Aufnahme traegt).
-  const clog = log.reduce((acc, e) => {
-    const last = acc[acc.length - 1];
-    if (last && last.player === e.player && last.inning === e.inning) acc[acc.length - 1] = e;
-    else acc.push(e);
-    return acc;
-  }, []);
+  const clog = collapseRunLog(log);
   const logForPlayer = (i) => clog.filter((e) => e.player === i);
-  // Jede Zeile ist eigenstaendig nachvollziehbar: welche Aufnahme, was ist
-  // passiert (inkl. Foul-Abzug), welche Serie stand zu dem Zeitpunkt, und
-  // wie hoch war der Gesamtpunktestand des Spielers UNMITTELBAR danach
-  // (e.scoreAfter) - Score wird separat zurueckgegeben, damit er in einer
-  // eigenen rechtsbuendigen Spalte dargestellt werden kann.
-  const describeLog = (e) => {
-    const parts = [t("Aufnahme {n}", { n: e.inning })];
-    switch (e.type) {
-      case "rack": parts.push(t("Rack +{n}", { n: e.potted })); break;
-      case "safe": parts.push(t("Safe")); break;
-      case "breakfoul": parts.push(t("Anstoß-Foul −2")); break;
-      case "foul":
-        parts.push(e.bonus ? t("Foul −1, 3er-Foul −15") : t("Foul −1"));
-        break;
-      default: parts.push(t("Fehler")); break; // "miss"
-    }
-    if (e.run > 0) parts.push(t("Serie {n}", { n: e.run }));
-    return { label: parts.join(" · "), score: e.scoreAfter };
-  };
+  const describeLog = describeRunLogEntry;
 
   const snap = () => ({ sc: [...sc], active, breakPhase, hi: [...hi], fouls: [...fouls],
     maxDef: [...maxDef], onTable, inningRun, pocketed: [...pocketed],
@@ -274,7 +248,6 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
           <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={88} />
         ))}
       </div>
-      <span className="sp-rail-name">{names[i]}</span>
       <div className="sp-mini-log">
         {[...logForPlayer(i)].reverse().map((e, idx) => {
           const d = describeLog(e);

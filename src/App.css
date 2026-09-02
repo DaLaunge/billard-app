@@ -493,6 +493,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .date-range span { color: var(--ivory-dim); font-size: 12.5px; }
 .filter-count { font-size: 12.5px; color: var(--ivory-dim); margin-bottom: 8px; }
 .stat-row, .h2h-row, .user-row, .match-row, .pending-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 14px; }
+.m-download { flex: 0 0 auto; background: none; border: none; color: var(--ivory-dim); cursor: pointer;
+  padding: 4px; border-radius: 8px; display: flex; align-items: center; }
+.m-download:hover { color: var(--gold); background: var(--felt-2); }
 .stat-row.as-btn, .h2h-row.as-btn, .ping-head.as-btn, .ping-reply.as-btn {
   width: 100%; background: none; border: none; padding: 0; color: inherit;
   font-family: inherit; text-align: left; cursor: pointer; }
@@ -814,11 +817,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .match-score-step .sp-rack { padding: 16px; font-size: 16px; border-radius: 16px; }
   .match-score-step .sp-pot { padding: 16px; font-size: 17px; border-radius: 16px; }
 
-  /* Rand-Spalten: groesseres Foto + Name + persoenliches Protokoll */
+  /* Rand-Spalten: groesseres Foto + persoenliches Protokoll. Der Name steht
+     schon im Punktestand daneben - der kleine Avatar dort wird ausgeblendet,
+     damit das Foto nur noch einmal (gross, im Rand) zu sehen ist. */
+  .match-score-step .sp-board .sc-avatars { display: none; }
   .match-score-step .sp-rail { display: flex; flex-direction: column; align-items: center; gap: 10px;
     background: var(--felt-2); border: 2px solid var(--line); border-radius: 18px; padding: 20px 12px; }
   .match-score-step .sp-rail.active { border-color: var(--gold); background: var(--felt-3); }
-  .match-score-step .sp-rail-name { font-size: 15px; font-weight: 700; text-align: center; }
   .match-score-step .sp-mini-log { width: 100%; display: flex; flex-direction: column; gap: 6px;
     max-height: 420px; overflow-y: auto; }
   .match-score-step .sp-mini-log-row { display: flex; align-items: baseline; justify-content: space-between;
