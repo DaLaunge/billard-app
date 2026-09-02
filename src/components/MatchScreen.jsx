@@ -11,7 +11,7 @@ import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges }) {
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll }) {
   const [step, setStep] = useState(initialOpp ? 1 : 0);
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
@@ -26,7 +26,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [avg, setAvg] = useState([null, null]); // Offensivschnitt (nur 14/1)
   const [tb, setTb] = useState([null, null]);   // Zwei-Kugel-Räumungen (nur 14/1)
   const [runLog, setRunLog] = useState(null);   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
-  const [scoreLog, setScoreLog] = useState([[0, 0]]); // Punktestand nach jedem Zaehler-Klick (alle anderen Disziplinen)
+  const [scoreLog, setScoreLog] = useState([[0, 0, Date.now()]]); // Punktestand + Zeitpunkt nach jedem Zaehler-Klick (alle anderen Disziplinen)
+  const [savedMatch, setSavedMatch] = useState(null); // gerade gespeichertes Match, fuers direkte "Protokoll"-Ansehen
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
   const [leaveWarn, setLeaveWarn] = useState(false);
@@ -87,7 +88,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     .sort((a, b) => b.gain - a.gain)
     .slice(0, 2);
 
-  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0]]); };
+  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); };
 
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
   // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
@@ -123,13 +124,16 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const save = async () => {
     if (mode === "double") {
       setBusy(true);
-      const { error } = await supabase.rpc("report_doubles", {
+      const { data, error } = await supabase.rpc("report_doubles", {
         p_partner_id: partner.id, p_opp1_id: opp.id, p_opp2_id: opp2.id,
         p_my_score: s1, p_opp_score: s2, p_discipline: disc,
         p_run_log: scoreLog.length > 1 ? scoreLog : null,
       });
       setBusy(false);
       if (error) { toast(t("Fehler: ") + error.message); return; }
+      const row = Array.isArray(data) ? data[0] : data;
+      setSavedMatch({ ...row, p1: { nickname: me.nickname }, p1b: { nickname: partner.nickname },
+        p2: { nickname: opp.nickname }, p2b: { nickname: opp2.nickname } });
       setStep(4); return;
     }
     if (isGhost) {
@@ -140,7 +144,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       setStep(4); return;
     }
     setBusy(true);
-    const { error } = await supabase.rpc("report_match", {
+    const { data, error } = await supabase.rpc("report_match", {
       p_opponent_id: opp.id, p_my_score: s1, p_opp_score: s2, p_discipline: disc,
       p_high_run_me: is141 ? hr[0] : null, p_high_run_opp: is141 ? hr[1] : null,
       p_deficit_me: is141 ? def[0] : null, p_deficit_opp: is141 ? def[1] : null,
@@ -150,6 +154,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
+    const row = Array.isArray(data) ? data[0] : data;
+    setSavedMatch({ ...row, p1: { nickname: me.nickname }, p2: { nickname: opp.nickname } });
     setStep(4);
   };
 
@@ -361,10 +367,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <p className="q">{t("Wie steht's?")} <span className="q-sub">{t("(gewonnene Spiele)")}</span></p>
               <div className="score-row">
                 {(mode === "double"
-                  ? [{ members: [me, partner], name: teamA, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2]]); } },
-                     { members: [opp, opp2], name: teamB, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv]]); } }]
-                  : [{ members: [me], name: me.nickname, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2]]); } },
-                     { members: [opp], name: opp.nickname, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv]]); } }]
+                  ? [{ members: [me, partner], name: teamA, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
+                     { members: [opp, opp2], name: teamB, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
+                  : [{ members: [me], name: me.nickname, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
+                     { members: [opp], name: opp.nickname, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
                 ).map(({ members, name, v, set }) => (
                   <div key={name} className="score-col">
                     <div className="sc-avatars">
@@ -475,6 +481,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   <b>{t("Ohne Bestätigung zählt das Match nicht fürs Rating.")}</b></p>
               )}
             </>
+          )}
+          {savedMatch?.run_log?.length > 0 && (
+            <button className="btn ghost" onClick={() => onOpenProtokoll(savedMatch)}>{t("Protokoll ansehen")}</button>
           )}
           <button className="btn primary" onClick={onDone}>{t("Zur Rangliste")}</button>
         </div>

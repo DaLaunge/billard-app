@@ -26,6 +26,22 @@ export const fmtDateTime = (d) => {
   const mm = String(x.getMinutes()).padStart(2, "0");
   return `${fmtDate(x)} ${hh}:${mm}`;
 };
+export const fmtTime = (ms) => {
+  if (typeof ms !== "number") return "-";
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+// Dauer in ms als lesbaren Text ("1 Std 12 Min", "8 Min 34 Sek", "42 Sek").
+export const fmtDuration = (ms) => {
+  if (typeof ms !== "number" || !isFinite(ms) || ms < 0) return "–";
+  const totalSec = Math.round(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return t("{h} Std {m} Min", { h, m });
+  if (m > 0) return t("{m} Min {s} Sek", { m, s });
+  return t("{s} Sek", { s });
+};
 export const fmtAgo = (d) => {
   if (!d) return t("nie");
   const days = Math.floor((Date.now() - new Date(d)) / 86400000);

@@ -1,9 +1,8 @@
 import { useState, useMemo } from "react";
-import { Trophy, BarChart3, Flame, Swords, X, Download } from "lucide-react";
+import { Trophy, BarChart3, Flame, Swords, X, FileText } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { initials, fmtDateTime, sideNames, isDoubles } from "../lib/format";
-import { downloadRunLogFile } from "../lib/runLog";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -44,7 +43,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
   );
 }
 
-export default function StatistikScreen({ matches, onOpenProfile, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me }) {
+export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me }) {
   const stats = useMemo(() => computeStats(matches), [matches]);
   const topWins = useMemo(() => Object.values(stats).sort((a, b) => b.siege - a.siege), [stats]);
   const topQuote = useMemo(
@@ -174,8 +173,8 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
             </span>
             <span className="m-disc">{t(m.discipline)}</span>
             {m.run_log?.length > 0 && (
-              <button className="m-download" onClick={() => downloadRunLogFile(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
-                <Download size={15} />
+              <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
+                <FileText size={15} />
               </button>
             )}
           </div>

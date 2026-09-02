@@ -837,3 +837,76 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .match-score-step .sp-mini-log-score { flex: 0 0 auto; min-width: 32px; text-align: right;
     font-weight: 700; color: var(--ivory); font-variant-numeric: tabular-nums; }
 }
+
+/* ============================================================
+   MATCH-PROTOKOLL (nachtraegliche Ansicht + Druck/PDF)
+   Echte <table> statt Fliesstext: jede Spalte bedeutet immer
+   dasselbe, kein Herumspringen des Texts. Faerbung macht Fouls/
+   Fehler/Safes auf einen Blick unterscheidbar.
+   ============================================================ */
+.protokoll-doc { max-width: 640px; margin: 0 auto; }
+/* Beim 14/1 (9 statt 2 Spalten) mehr Breite zulassen, damit auf PC kein
+   horizontales Scrollen noetig ist - auf schmalen Bildschirmen bewirkt der
+   groessere max-width nichts, dort begrenzt ohnehin die Viewport-Breite. */
+.protokoll-doc:has(.protokoll-table-141) { max-width: 860px; }
+.protokoll-head { margin-bottom: 18px; }
+.protokoll-head h1 { font-size: 20px; font-weight: 800; line-height: 1.3; }
+.protokoll-score { color: var(--gold); margin: 0 8px; }
+.protokoll-meta { color: var(--ivory-dim); font-size: 13px; margin-top: 4px; }
+.protokoll-table-wrap { overflow-x: auto; margin-bottom: 20px; border: 1px solid var(--line); border-radius: 12px; }
+.protokoll-table { width: 100%; border-collapse: collapse; font-size: 13.5px; white-space: nowrap; }
+.protokoll-table th, .protokoll-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+.protokoll-table thead th { background: var(--felt-2); color: var(--ivory-dim); font-size: 11.5px;
+  text-transform: uppercase; letter-spacing: 0.04em; position: sticky; top: 0; }
+.protokoll-table tbody tr:last-child td { border-bottom: none; }
+/* 14/1: engere Zellen (kleinere Schrift/Polsterung, Ereignis-Text darf
+   umbrechen statt die Spalte in die Breite zu treiben) - damit moeglichst
+   auch am Handy ohne horizontales Scrollen alles hineinpasst. */
+.protokoll-table-141 { font-size: 12px; }
+.protokoll-table-141 th, .protokoll-table-141 td { padding: 5px 6px; }
+.protokoll-table-141 td:nth-child(2), .protokoll-table-141 td:nth-child(6) { white-space: normal; min-width: 58px; }
+.protokoll-table-141 thead tr:first-child th { text-align: center; font-size: 13px; text-transform: none;
+  letter-spacing: 0; color: var(--ivory); font-weight: 800; padding: 7px 6px; }
+/* Aufnahme-Spalte beim horizontalen Scrollen auf schmalen Bildschirmen
+   sichtbar halten, damit der Bezug zur Zeile nie verloren geht. */
+.protokoll-table-141 th:first-child, .protokoll-table-141 td:first-child {
+  position: sticky; left: 0; background: var(--felt); z-index: 1; text-align: center;
+}
+.protokoll-table-141 thead th:first-child { z-index: 2; }
+/* Zwei-Spalten-Layout beim 14/1: eine deutliche Trennlinie zwischen den
+   Bereichen der beiden Spieler statt Zeilen abwechselnd nach Spieler
+   einzufaerben - jede Tabellenzeile ist "Aufnahme n" fuer BEIDE Spieler. */
+.protokoll-divider { border-left: 2px solid var(--line); }
+.protokoll-score-cell { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.protokoll-tag { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  line-height: 1.35; }
+.protokoll-tag.t-rack { background: #1E5B3A55; color: #7CE8A8; }
+.protokoll-tag.t-safe { background: #1F4A6655; color: #7CC1E8; }
+.protokoll-tag.t-foul, .protokoll-tag.t-breakfoul { background: #6B1F2455; color: #E88C8C; }
+.protokoll-tag.t-miss { background: #3A3A4055; color: var(--ivory-dim); }
+.protokoll-duration { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px;
+  color: var(--ivory-dim); margin: -8px 0 16px; }
+.protokoll-duration b { color: var(--ivory); }
+
+@media print {
+  .no-print, .tabbar, .refresh-btn { display: none !important; }
+  body, .phone.app, .screen, .protokoll-doc { background: #fff !important; color: #111 !important; max-width: none !important; }
+  .protokoll-meta { color: #555 !important; }
+  .protokoll-table-wrap { border-color: #ccc !important; overflow: visible; }
+  .protokoll-table th, .protokoll-table td { border-color: #ddd !important; }
+  .protokoll-table thead th { background: #f2f2f2 !important; color: #333 !important; }
+  .protokoll-table-141 thead tr:first-child th { color: #111 !important; }
+  .protokoll-divider { border-left-color: #999 !important; }
+  .protokoll-duration { color: #444 !important; }
+  .protokoll-duration b { color: #111 !important; }
+  .protokoll-table-141 td:first-child { position: static !important; background: transparent !important; }
+  .protokoll-table-141 th:first-child { background: #f2f2f2 !important; }
+  .protokoll-score-cell { color: #111 !important; }
+  .protokoll-tag, .protokoll-table thead th, .protokoll-table-wrap {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .protokoll-tag.t-rack { background: #DCF5E4 !important; color: #1E5B3A !important; }
+  .protokoll-tag.t-safe { background: #DCEAF5 !important; color: #1F4A66 !important; }
+  .protokoll-tag.t-foul, .protokoll-tag.t-breakfoul { background: #F8DCDC !important; color: #6B1F24 !important; }
+  .protokoll-tag.t-miss { background: #EAEAEA !important; color: #444 !important; }
+}
