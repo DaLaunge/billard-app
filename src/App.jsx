@@ -321,6 +321,7 @@ export default function App() {
   };
 
   const openProfile = (nick) => { setProfileName(nick); setTab("fremdprofil"); };
+  const startMatchVs = (opponent) => { setVsOpp(opponent); setTab("match"); };
   const logout = async () => { await supabase.auth.signOut(); setTab("rang"); };
 
   const submitFeedback = async (category, message) => {
@@ -430,7 +431,7 @@ export default function App() {
                   onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
-                  onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} challenges={challenges}
+                  onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} onStartMatch={startMatchVs} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
                   lang={lang} onLang={changeLang} onSetTheme={setTheme}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}

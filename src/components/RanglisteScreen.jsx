@@ -51,7 +51,7 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
           onOpenProfile={onOpenProfile} nickname={me.nickname} />
         <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
           colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-        <RecordsCard extras={myExtras} />
+        <RecordsCard extras={myExtras} catalog={catalog} earnedBadges={earnedBadges} />
       </aside>
 
       <div className="ov-main">

@@ -320,7 +320,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       )}
 
       {step === 2 && opp && disc && (
-        <>
+        <div className="match-score-step">
           <div className="score-head">
             <DiscChip />
           </div>
@@ -381,7 +381,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               {s1 === s2 && total > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
             </>
           )}
-        </>
+        </div>
       )}
 
       {step === 3 && opp && (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
@@ -17,7 +17,7 @@ import RecordsCard from "./widgets/RecordsCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme }) {
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -155,6 +155,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <h2>{t("Profil bearbeiten")}</h2>
         </header>
 
+        <div className="pf-edit-layout">
         <section className="stat-block">
           <label className="field-label" htmlFor="pnick">{t("Nickname")}</label>
           <div className="mail-row">
@@ -211,16 +212,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)} />
           </div>
 
-          <label className="field-label">{t("Sprache")}</label>
-          <div className="lang-row" style={{ marginBottom: 6 }}>
-            <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
-              <span className="flag">🇩🇪</span><span>Deutsch</span>
-            </button>
-            <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
-              <span className="flag">🇬🇧</span><span>English</span>
-            </button>
-          </div>
-
           <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
             {busy ? t("Speichere ...") : <>{t("Speichern")} <Check size={18} /></>}
           </button>
@@ -228,6 +219,61 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
           )}
         </section>
+
+        <div className="pf-edit-side">
+          <section className="stat-block">
+            <label className="field-label">{t("Sprache")}</label>
+            <div className="lang-row" style={{ marginBottom: 0 }}>
+              <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
+                <span className="flag">🇩🇪</span><span>Deutsch</span>
+              </button>
+              <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
+                <span className="flag">🇬🇧</span><span>English</span>
+              </button>
+            </div>
+          </section>
+
+          <section className="stat-block">
+            <h3><Palette size={17} /> {t("Design")}</h3>
+            <div className="theme-grid">
+              {THEME_KEYS.map((key) => {
+                const th = THEME_CATALOG[key];
+                return (
+                  <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
+                    style={{ background: th.felt, borderColor: themeKey === key ? th.chalk : "transparent" }}
+                    onClick={() => pickPresetTheme(key)} disabled={themeBusy}>
+                    <span className="theme-dot" style={{ background: th.chalk }} />
+                    {t(th.name)}
+                    {themeKey === key && <Check size={14} />}
+                  </button>
+                );
+              })}
+              <button className={"theme-swatch" + (themeKey === "custom" ? " sel" : "")}
+                style={{ background: customBg, borderColor: themeKey === "custom" ? customAccent : "transparent" }}
+                onClick={() => previewCustomTheme(customBg, customAccent)} disabled={themeBusy}>
+                <span className="theme-dot" style={{ background: customAccent }} />
+                {t("Eigenes")}
+                {themeKey === "custom" && <Check size={14} />}
+              </button>
+            </div>
+            {themeKey === "custom" && (
+              <div className="theme-custom-row">
+                <label className="theme-color-field">
+                  {t("Hintergrund")}
+                  <input type="color" value={customBg} onChange={(e) => previewCustomTheme(e.target.value, customAccent)} />
+                </label>
+                <label className="theme-color-field">
+                  {t("Akzent")}
+                  <input type="color" value={customAccent} onChange={(e) => previewCustomTheme(customBg, e.target.value)} />
+                </label>
+                <button className="btn primary small" disabled={themeBusy} onClick={saveCustomTheme}>
+                  {themeBusy ? t("Speichere ...") : t("Übernehmen")}
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+        </div>
       </div>
     );
   }
@@ -261,9 +307,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
 
       {!isMe && playerObj && !challengeForm && (
-        <button className="btn primary" style={{ marginBottom: 14 }} onClick={() => setChallengeForm(true)}>
-          <Swords size={15} /> {t("Herausfordern")}
-        </button>
+        <div className="sp-controls" style={{ marginBottom: 14 }}>
+          <button className="btn primary" onClick={() => onStartMatch(playerObj)}>
+            <Play size={15} /> {t("Match starten")}
+          </button>
+          <button className="btn primary" onClick={() => setChallengeForm(true)}>
+            <Swords size={15} /> {t("Herausfordern")}
+          </button>
+        </div>
       )}
       {!isMe && playerObj && challengeForm && (
         <div className="challenge-form">
@@ -311,7 +362,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
       </section>
 
-      <RecordsCard extras={liveExtras} />
+      <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
       </div>
 
       <div className="pf-right">
@@ -400,48 +451,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
             <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
           </button>
-        </section>
-      )}
-
-      {isMe && (
-        <section className="stat-block">
-          <h3><Palette size={17} /> {t("Design")}</h3>
-          <div className="theme-grid">
-            {THEME_KEYS.map((key) => {
-              const th = THEME_CATALOG[key];
-              return (
-                <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
-                  style={{ background: th.felt, borderColor: themeKey === key ? th.chalk : "transparent" }}
-                  onClick={() => pickPresetTheme(key)} disabled={themeBusy}>
-                  <span className="theme-dot" style={{ background: th.chalk }} />
-                  {t(th.name)}
-                  {themeKey === key && <Check size={14} />}
-                </button>
-              );
-            })}
-            <button className={"theme-swatch" + (themeKey === "custom" ? " sel" : "")}
-              style={{ background: customBg, borderColor: themeKey === "custom" ? customAccent : "transparent" }}
-              onClick={() => previewCustomTheme(customBg, customAccent)} disabled={themeBusy}>
-              <span className="theme-dot" style={{ background: customAccent }} />
-              {t("Eigenes")}
-              {themeKey === "custom" && <Check size={14} />}
-            </button>
-          </div>
-          {themeKey === "custom" && (
-            <div className="theme-custom-row">
-              <label className="theme-color-field">
-                {t("Hintergrund")}
-                <input type="color" value={customBg} onChange={(e) => previewCustomTheme(e.target.value, customAccent)} />
-              </label>
-              <label className="theme-color-field">
-                {t("Akzent")}
-                <input type="color" value={customAccent} onChange={(e) => previewCustomTheme(customBg, e.target.value)} />
-              </label>
-              <button className="btn primary small" disabled={themeBusy} onClick={saveCustomTheme}>
-                {themeBusy ? t("Speichere ...") : t("Übernehmen")}
-              </button>
-            </div>
-          )}
         </section>
       )}
 

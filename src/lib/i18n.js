@@ -759,6 +759,7 @@ const TRANSLATIONS = {
     "Geworben": "Recruited",
     "Übersicht": "Overview",
     "Dabei seit {date}": "Member since {date}",
+    "Match starten": "Start match",
   },
 };
 export function setLangGlobal(l) {
