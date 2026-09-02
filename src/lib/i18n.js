@@ -757,6 +757,7 @@ const TRANSLATIONS = {
     "Rekord geg. 1 Gegner": "Record vs. 1 opponent",
     "Meiste an 1 Tag": "Most in 1 day",
     "Geworben": "Recruited",
+    "Übersicht": "Overview",
   },
 };
 export function setLangGlobal(l) {

@@ -12,8 +12,7 @@ import PasswordSection from "./PasswordSection";
 import LegalModal from "./LegalModal";
 import AvatarPhotoField from "./AvatarPhotoField";
 import MyFeedbackTickets from "./MyFeedbackTickets";
-
-const H2H_COUNT_OPTIONS = [3, 10, 20, "all"];
+import HeadToHeadCard from "./widgets/HeadToHeadCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
@@ -139,22 +138,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     (p) => p.nickname.toLowerCase() === cleanNick.toLowerCase() && p.nickname !== nickname
   );
   const nickValid = cleanNick.length >= 2 && cleanNick.length <= 30 && !taken;
-
-  const h2h = useMemo(() => {
-    const map = {};
-    matches.forEach((m) => {
-      if (m.player1b_id) return;
-      let opp = null, w = 0, l = 0;
-      if (m.p1.nickname === nickname) { opp = m.p2.nickname; w = m.score1 > m.score2 ? 1 : 0; l = 1 - w; }
-      if (m.p2.nickname === nickname) { opp = m.p1.nickname; w = m.score2 > m.score1 ? 1 : 0; l = 1 - w; }
-      if (!opp) return;
-      map[opp] ||= { opp, w: 0, l: 0 };
-      map[opp].w += w; map[opp].l += l;
-    });
-    return Object.values(map).sort((a, b) => b.w + b.l - (a.w + a.l));
-  }, [matches, nickname]);
-  const [h2hCount, setH2hCount] = useState(3);
-  const visibleH2h = h2hCount === "all" ? h2h : h2h.slice(0, h2hCount);
 
   const save = async () => {
     setBusy(true);
@@ -393,29 +376,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
 
-      <section className="stat-block">
-        <div className="stat-block-head">
-          <h3><Swords size={17} /> {t("Head-to-Head (Match-Siege)")}</h3>
-          {h2h.length > 0 && (
-            <div className="chips small">
-              {H2H_COUNT_OPTIONS.map((c) => (
-                <button key={c} className={"chip" + (h2hCount === c ? " active" : "")} onClick={() => setH2hCount(c)}>
-                  {c === "all" ? t("Alle") : c}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        {visibleH2h.map(({ opp, w, l }) => (
-          <button key={opp} className="h2h-row as-btn" onClick={() => onOpenProfile(opp)}>
-            <Ball color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} photo={photoOf(opp)} size={34} />
-            <span className="stat-name">{opp}</span>
-            <div className="h2h-bar"><div className="h2h-w" style={{ width: `${(100 * w) / Math.max(1, w + l)}%` }} /></div>
-            <span className="h2h-score">{w}:{l}</span>
-          </button>
-        ))}
-        {h2h.length === 0 && <p className="hint">{t("Noch keine Matches.")}</p>}
-      </section>
+      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
+        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
 
       {isMe && (
         <section className="stat-block">

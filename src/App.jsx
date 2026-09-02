@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { RefreshCw, Trophy, Radio, Plus, BarChart3, User, Award, Swords } from "lucide-react";
+import { RefreshCw, Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -7,13 +7,10 @@ import "./App.css";
 import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
-import { hashColor, initials } from "./lib/format";
+import { hashColor } from "./lib/format";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
-import { computeStats } from "./lib/stats";
-import { computeAchievementExtras, upcomingAchievements } from "./lib/achievements";
 
-import Ball from "./components/Ball";
 import LoginScreen from "./components/LoginScreen";
 import NicknameScreen from "./components/NicknameScreen";
 import RanglisteScreen from "./components/RanglisteScreen";
@@ -220,18 +217,6 @@ export default function App() {
 
   const badgesOfId = useCallback((id) => badgesByPlayer[id] || new Set(), [badgesByPlayer]);
 
-  // Kurzstatus fuers Desktop-Dashboard (linke Spalte) - dieselbe Logik wie im
-  // Profil/MatchScreen, hier einmal fuers eigene Profil berechnet.
-  const myStats = useMemo(() => player ? computeStats(matches)[player.nickname] : null, [matches, player]);
-  const myExtras = useMemo(
-    () => player ? computeAchievementExtras(player.nickname, matches, players, challenges) : null,
-    [player, matches, players, challenges]
-  );
-  const myUpcoming = useMemo(
-    () => (player && myExtras) ? upcomingAchievements(catalog, myExtras, badgesOfId(player.id), 3) : [],
-    [player, myExtras, catalog, badgesOfId]
-  );
-
   const MATCH_EXPIRY_DAYS = 7;
   const notExpired = (m) => (Date.now() - new Date(m.played_at)) < MATCH_EXPIRY_DAYS * 86400000;
   const myPendingIds = player
@@ -404,9 +389,10 @@ export default function App() {
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
                   pending={pendingForMe} me={player} onConfirm={confirmMatch}
                   onOpenProfile={openProfile} myOpenReports={myOpenReports}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf}
                   matches={matches} players={players} challenges={challenges}
-                  catalog={catalog} earnedBadges={badgesOfId(player.id)} />
+                  catalog={catalog} earnedBadges={badgesOfId(player.id)}
+                  pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => setTab("live")} />
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
@@ -466,7 +452,7 @@ export default function App() {
             {tab !== "match" && (
             <nav className="tabbar">
               <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => setTab("rang")}>
-                <Trophy size={21} /><span>{t("Rangliste")}</span>
+                <Trophy size={21} /><span>{t("Übersicht")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
               <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => setTab("live")}>
@@ -487,61 +473,6 @@ export default function App() {
                 {player?.role === "admin" && unconfirmed.length > 0 && <span className="badge">{unconfirmed.length}</span>}
               </button>
             </nav>
-            )}
-
-            {tab !== "match" && (
-            <aside className="dash-rail">
-              <button className="dash-photo as-btn" onClick={() => setTab("profil")}>
-                <Ball color={colorOf(player.nickname)} label={initials(player.nickname)}
-                  badge={badgeOf(player.nickname)} photo={photoOf(player.nickname)} size={84} />
-                <b>{player.nickname}</b>
-                <span>{ratingOf(player.nickname)} · {t("Rating")}</span>
-              </button>
-
-              <div className="dash-stats">
-                <div><b>{myStats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
-                <div><b>{myStats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
-                <div><b>{myStats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
-              </div>
-
-              {(pings.length > 0 || openChallengesToMe.length > 0) && (
-                <button className="dash-live" onClick={() => setTab("live")}>
-                  <Radio size={15} />
-                  <span>
-                    {pings.length > 0 && t("{n} live", { n: pings.length })}
-                    {pings.length > 0 && openChallengesToMe.length > 0 && " · "}
-                    {openChallengesToMe.length > 0 && t("{n} Herausforderung(en)", { n: openChallengesToMe.length })}
-                  </span>
-                </button>
-              )}
-
-              {myUpcoming.length > 0 && (
-                <div className="dash-section">
-                  <h4><Award size={13} /> {t("Nächste Erfolge")}</h4>
-                  {myUpcoming.map((c) => (
-                    <div key={c.badgeKey} className="side-row">
-                      <span className="side-row-emoji">{c.emoji}</span>
-                      <span className="side-row-name">{c.name}</span>
-                      <span className="side-row-gap">{t("noch {n}", { n: c.gap })}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {myExtras && (
-                <div className="dash-section">
-                  <h4><Swords size={13} /> {t("Rekorde")}</h4>
-                  <div className="dash-records">
-                    <div><b>{myExtras.highRun}</b><span>{t("Höchstserie 14/1")}</span></div>
-                    <div><b>{myExtras.longestStreak}</b><span>{t("Beste Serie")}</span></div>
-                    <div><b>{myExtras.shutoutWins}</b><span>{t("Zu-Null-Siege")}</span></div>
-                    <div><b>{myExtras.maxVsOpponent}</b><span>{t("Rekord geg. 1 Gegner")}</span></div>
-                    <div><b>{myExtras.maxPerDay}</b><span>{t("Meiste an 1 Tag")}</span></div>
-                    <div><b>{myExtras.recruitedCount}</b><span>{t("Geworben")}</span></div>
-                  </div>
-                </div>
-              )}
-            </aside>
             )}
           </>
         )}
