@@ -747,6 +747,16 @@ const TRANSLATIONS = {
     "noch {n}": "{n} to go",
     "Alle erreichbaren Erfolge freigeschaltet!": "All available achievements unlocked!",
     "Alle Erfolge ansehen": "View all achievements",
+    "{n} live": "{n} live",
+    "{n} Herausforderung(en)": "{n} challenge(s)",
+    "Nächste Erfolge": "Next achievements",
+    "Rekorde": "Records",
+    "Höchstserie 14/1": "Best run (14/1)",
+    "Beste Serie": "Best streak",
+    "Zu-Null-Siege": "Shutout wins",
+    "Rekord geg. 1 Gegner": "Record vs. 1 opponent",
+    "Meiste an 1 Tag": "Most in 1 day",
+    "Geworben": "Recruited",
   },
 };
 export function setLangGlobal(l) {

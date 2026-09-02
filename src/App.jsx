@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { RefreshCw, Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
+import { RefreshCw, Trophy, Radio, Plus, BarChart3, User, Award, Swords } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -11,7 +11,7 @@ import { hashColor, initials } from "./lib/format";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 import { computeStats } from "./lib/stats";
-import { computeAchievementExtras, nextAchievementHint } from "./lib/achievements";
+import { computeAchievementExtras, upcomingAchievements } from "./lib/achievements";
 
 import Ball from "./components/Ball";
 import LoginScreen from "./components/LoginScreen";
@@ -220,15 +220,15 @@ export default function App() {
 
   const badgesOfId = useCallback((id) => badgesByPlayer[id] || new Set(), [badgesByPlayer]);
 
-  // Kurzstatus fuers Sidebar-Widget (nur Desktop) - dieselbe Logik wie im
+  // Kurzstatus fuers Desktop-Dashboard (linke Spalte) - dieselbe Logik wie im
   // Profil/MatchScreen, hier einmal fuers eigene Profil berechnet.
   const myStats = useMemo(() => player ? computeStats(matches)[player.nickname] : null, [matches, player]);
   const myExtras = useMemo(
     () => player ? computeAchievementExtras(player.nickname, matches, players, challenges) : null,
     [player, matches, players, challenges]
   );
-  const myHint = useMemo(
-    () => (player && myExtras) ? nextAchievementHint(catalog, myExtras, player.nickname, badgesOfId(player.id)) : null,
+  const myUpcoming = useMemo(
+    () => (player && myExtras) ? upcomingAchievements(catalog, myExtras, badgesOfId(player.id), 3) : [],
     [player, myExtras, catalog, badgesOfId]
   );
 
@@ -476,11 +476,8 @@ export default function App() {
                 )}
               </button>
               <button className="tab fab" onClick={() => { setVsOpp(null); setTab("match"); }} aria-label={t("Neues Match")}>
-                <span className="fab-ball-icon">
-                  <span className="fab-shine" />
-                  <Plus size={26} className="fab-plus" />
-                </span>
-                <span className="fab-label">{t("Neues Match")}</span>
+                <span className="fab-shine" />
+                <Plus size={26} className="fab-plus" />
               </button>
               <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => setTab("stats")}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
@@ -489,24 +486,62 @@ export default function App() {
                 <User size={21} /><span>{t("Profil")}</span>
                 {player?.role === "admin" && unconfirmed.length > 0 && <span className="badge">{unconfirmed.length}</span>}
               </button>
+            </nav>
+            )}
 
-              <div className="sidebar-widget">
-                <div className="sidebar-widget-head">
-                  <Ball color={colorOf(player.nickname)} label={initials(player.nickname)}
-                    badge={badgeOf(player.nickname)} photo={photoOf(player.nickname)} size={38} />
-                  <div style={{ minWidth: 0 }}>
-                    <b>{player.nickname}</b>
-                    <span>{ratingOf(player.nickname)} · {t("Rating")}</span>
+            {tab !== "match" && (
+            <aside className="dash-rail">
+              <button className="dash-photo as-btn" onClick={() => setTab("profil")}>
+                <Ball color={colorOf(player.nickname)} label={initials(player.nickname)}
+                  badge={badgeOf(player.nickname)} photo={photoOf(player.nickname)} size={84} />
+                <b>{player.nickname}</b>
+                <span>{ratingOf(player.nickname)} · {t("Rating")}</span>
+              </button>
+
+              <div className="dash-stats">
+                <div><b>{myStats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
+                <div><b>{myStats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
+                <div><b>{myStats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
+              </div>
+
+              {(pings.length > 0 || openChallengesToMe.length > 0) && (
+                <button className="dash-live" onClick={() => setTab("live")}>
+                  <Radio size={15} />
+                  <span>
+                    {pings.length > 0 && t("{n} live", { n: pings.length })}
+                    {pings.length > 0 && openChallengesToMe.length > 0 && " · "}
+                    {openChallengesToMe.length > 0 && t("{n} Herausforderung(en)", { n: openChallengesToMe.length })}
+                  </span>
+                </button>
+              )}
+
+              {myUpcoming.length > 0 && (
+                <div className="dash-section">
+                  <h4><Award size={13} /> {t("Nächste Erfolge")}</h4>
+                  {myUpcoming.map((c) => (
+                    <div key={c.badgeKey} className="side-row">
+                      <span className="side-row-emoji">{c.emoji}</span>
+                      <span className="side-row-name">{c.name}</span>
+                      <span className="side-row-gap">{t("noch {n}", { n: c.gap })}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {myExtras && (
+                <div className="dash-section">
+                  <h4><Swords size={13} /> {t("Rekorde")}</h4>
+                  <div className="dash-records">
+                    <div><b>{myExtras.highRun}</b><span>{t("Höchstserie 14/1")}</span></div>
+                    <div><b>{myExtras.longestStreak}</b><span>{t("Beste Serie")}</span></div>
+                    <div><b>{myExtras.shutoutWins}</b><span>{t("Zu-Null-Siege")}</span></div>
+                    <div><b>{myExtras.maxVsOpponent}</b><span>{t("Rekord geg. 1 Gegner")}</span></div>
+                    <div><b>{myExtras.maxPerDay}</b><span>{t("Meiste an 1 Tag")}</span></div>
+                    <div><b>{myExtras.recruitedCount}</b><span>{t("Geworben")}</span></div>
                   </div>
                 </div>
-                <div className="sidebar-widget-stats">
-                  <div><b>{myStats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
-                  <div><b>{myStats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
-                  <div><b>{myStats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
-                </div>
-                {myHint && <p className="sidebar-widget-hint">🎯 {myHint}</p>}
-              </div>
-            </nav>
+              )}
+            </aside>
             )}
           </>
         )}
