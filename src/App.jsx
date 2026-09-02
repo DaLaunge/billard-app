@@ -9,6 +9,7 @@ import { getVs, clearVs } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
 import { hashColor } from "./lib/format";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
+import { applyTheme } from "./lib/themes";
 
 import LoginScreen from "./components/LoginScreen";
 import NicknameScreen from "./components/NicknameScreen";
@@ -176,6 +177,7 @@ export default function App() {
   }, [toast]);
 
   useEffect(() => { if (player) loadData(); }, [player, loadData]);
+  useEffect(() => { if (player) applyTheme(player.theme_key || "green", player.theme_custom); }, [player]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -246,6 +248,12 @@ export default function App() {
     setPlayer(data);
     toast(t(badgeKey ? "Erfolg als Avatar gesetzt." : "Wieder deine Kugel."));
     loadData();
+  };
+
+  const setTheme = async (themeKey, themeCustom) => {
+    const { data, error } = await supabase.rpc("set_theme", { p_theme_key: themeKey, p_theme_custom: themeCustom ?? null });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setPlayer(data);
   };
 
   const saveProfile = async (nick, color, motto) => {
@@ -410,6 +418,7 @@ export default function App() {
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
+                  onSetTheme={setTheme}
                   onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (
@@ -420,7 +429,7 @@ export default function App() {
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
                   onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} challenges={challenges}
                   onOpenAdmin={() => setTab("admin")} onInvite={() => setTab("invite")} toast={toast}
-                  lang={lang} onLang={changeLang}
+                  lang={lang} onLang={changeLang} onSetTheme={setTheme}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onOpenProfile={openProfile} />
               )}

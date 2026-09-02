@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
+import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
 import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import LegalModal from "./LegalModal";
@@ -16,7 +17,7 @@ const H2H_COUNT_OPTIONS = [3, 10, 20, "all"];
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload }) {
+  onChallenge, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -57,6 +58,31 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [ticketsRefresh, setTicketsRefresh] = useState(0);
   const heroPhoto = photoOf(nickname);
+
+  // Farbthema: sofort live vorschauen (applyTheme), Speichern separat -
+  // bei Presets zusammen mit der Auswahl, bei "Eigenes" ueber den
+  // Uebernehmen-Button (sonst wuerde jeder Klick im Farbwaehler einen
+  // eigenen Server-Request ausloesen).
+  const [themeKey, setThemeKey] = useState(meRow?.theme_key || "green");
+  const [customBg, setCustomBg] = useState(meRow?.theme_custom?.bg || "#0A2B21");
+  const [customAccent, setCustomAccent] = useState(meRow?.theme_custom?.accent || "#7CC1E8");
+  const [themeBusy, setThemeBusy] = useState(false);
+  const pickPresetTheme = async (key) => {
+    setThemeKey(key);
+    applyTheme(key);
+    setThemeBusy(true);
+    await onSetTheme(key, null);
+    setThemeBusy(false);
+  };
+  const previewCustomTheme = (bg, accent) => {
+    setCustomBg(bg); setCustomAccent(accent); setThemeKey("custom");
+    applyTheme("custom", { bg, accent });
+  };
+  const saveCustomTheme = async () => {
+    setThemeBusy(true);
+    await onSetTheme("custom", { bg: customBg, accent: customAccent });
+    setThemeBusy(false);
+  };
 
   const sendFeedback = async () => {
     if (!feedbackMsg.trim()) return;
@@ -405,6 +431,48 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
             <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
           </button>
+        </section>
+      )}
+
+      {isMe && (
+        <section className="stat-block">
+          <h3><Palette size={17} /> {t("Design")}</h3>
+          <div className="theme-grid">
+            {THEME_KEYS.map((key) => {
+              const th = THEME_CATALOG[key];
+              return (
+                <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
+                  style={{ background: th.felt, borderColor: themeKey === key ? th.chalk : "transparent" }}
+                  onClick={() => pickPresetTheme(key)} disabled={themeBusy}>
+                  <span className="theme-dot" style={{ background: th.chalk }} />
+                  {t(th.name)}
+                  {themeKey === key && <Check size={14} />}
+                </button>
+              );
+            })}
+            <button className={"theme-swatch" + (themeKey === "custom" ? " sel" : "")}
+              style={{ background: customBg, borderColor: themeKey === "custom" ? customAccent : "transparent" }}
+              onClick={() => previewCustomTheme(customBg, customAccent)} disabled={themeBusy}>
+              <span className="theme-dot" style={{ background: customAccent }} />
+              {t("Eigenes")}
+              {themeKey === "custom" && <Check size={14} />}
+            </button>
+          </div>
+          {themeKey === "custom" && (
+            <div className="theme-custom-row">
+              <label className="theme-color-field">
+                {t("Hintergrund")}
+                <input type="color" value={customBg} onChange={(e) => previewCustomTheme(e.target.value, customAccent)} />
+              </label>
+              <label className="theme-color-field">
+                {t("Akzent")}
+                <input type="color" value={customAccent} onChange={(e) => previewCustomTheme(customBg, e.target.value)} />
+              </label>
+              <button className="btn primary small" disabled={themeBusy} onClick={saveCustomTheme}>
+                {themeBusy ? t("Speichere ...") : t("Übernehmen")}
+              </button>
+            </div>
+          )}
         </section>
       )}
 
