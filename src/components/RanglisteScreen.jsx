@@ -74,12 +74,12 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
         const other = m.player1_id === me.id ? m.p2.nickname : m.p1.nickname;
         const myScore = m.player1_id === me.id ? m.score1 : m.score2;
         const otherScore = m.player1_id === me.id ? m.score2 : m.score1;
-        const has141Log = m.discipline === "14/1 Endlos" && m.run_log?.length > 0;
+        const hasLog = m.run_log?.length > 0;
         return (
           <div className="confirm-banner" key={m.id}>
             <div><b>{t("Match bestaetigen:")}</b> {other} {t("meldet ein")} {otherScore}:{myScore} {t("gegen dich")} ({t(m.discipline)}, {fmtDate(m.played_at)}).</div>
             <div className="confirm-actions">
-              {has141Log && (
+              {hasLog && (
                 <button className="chip-btn" onClick={() => downloadRunLogFile(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
                   <Download size={15} />
                 </button>
@@ -95,13 +95,14 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
         <div className="open-reports">
           <p className="open-note"><Clock size={14} /> {myOpenReports.length === 1 && !isDoubles(myOpenReports[0])
             ? t("1 gemeldetes Match wartet noch auf Bestätigung durch {name}.", { name: myOpenReports[0].p2.nickname })
-            : t("{n} gemeldete Matches warten noch auf Bestätigung.", { n: myOpenReports.length })}</p>
+            : t("{n} gemeldete Matches warten noch auf Bestätigung.", { n: myOpenReports.length })}{" "}
+            {t("Ohne Bestätigung fließt das nicht ins Rating ein.")}</p>
           {myOpenReports.map((m) => (
             <div key={m.id} className="match-row">
               <span className="m-date">{fmtDate(m.played_at)}</span>
               <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</span>
               <span className="m-disc">{t(m.discipline)}</span>
-              {m.discipline === "14/1 Endlos" && m.run_log?.length > 0 && (
+              {m.run_log?.length > 0 && (
                 <button className="m-download" onClick={() => downloadRunLogFile(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
                   <Download size={15} />
                 </button>

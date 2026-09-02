@@ -173,7 +173,7 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
               ))}
             </span>
             <span className="m-disc">{t(m.discipline)}</span>
-            {m.discipline === "14/1 Endlos" && m.run_log?.length > 0 && (
+            {m.run_log?.length > 0 && (
               <button className="m-download" onClick={() => downloadRunLogFile(m)} aria-label={t("Protokoll herunterladen")} title={t("Protokoll herunterladen")}>
                 <Download size={15} />
               </button>
