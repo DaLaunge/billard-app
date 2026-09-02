@@ -310,6 +310,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .sp-avg span { color: var(--ivory-dim); }
 .sp-pot.half { flex: 1; margin: 0; padding: 16px; font-size: 16px; }
 .sp-pot.half.safe { background: #3E6B8A; color: #F2EDE0; }
+.sp-primary-actions { display: flex; flex-direction: column; gap: 10px; }
 .otw-count { margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--gold); }
 .btn.small { padding: 9px 12px; font-size: 13px; }
 .sp-foulwarn { font-size: 11px; font-weight: 700; color: #E8B923; margin-top: 2px; }
@@ -768,24 +769,31 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .match-score-step .round-btn { width: 84px; height: 84px; }
   .match-score-step .round-btn svg { width: 34px; height: 34px; }
 
-  /* 14/1: eigene, breite Buehne - nutzt den PC-Platz voll aus statt der
-     schmalen Board+Bedienung-Seite-an-Seite-Aufteilung vom Handy/Tablet:
-     Board (Punktestand) oben ueber die volle Breite, Bedienung darunter
-     mit viel Luft. Punktestand genauso gross wie beim einfachen Zaehler. */
-  .phone.app:has(.match-score-step .sp) { max-width: 1600px; }
-  .phone.app .screen:has(.match-score-step .sp) { max-width: 1400px; }
-  .match-score-step .sp { display: flex; flex-direction: column; align-items: stretch; gap: 32px; }
-  .match-score-step .sp-board { gap: 32px; }
-  .match-score-step .sp-side { padding: 36px 16px; }
+  /* 14/1: Board (Punktestand) oben, direkt darunter eine kompakte
+     Buttonleiste (Rack/Fehler/Safe nebeneinander statt einzeln volle
+     Breite) - alles ohne Scrollen sichtbar. Bewusst nicht bildschirmfuellend
+     breit (dafuer ruhige Raender links/rechts): ein einzelner Button ueber
+     die ganze Seite bringt nichts, und die Aufmerksamkeit soll auf dem
+     Punktestand bleiben, nicht auf ausgefuellter Flaeche. */
+  .phone.app .screen:has(.match-score-step .sp) { max-width: 1000px; }
+  .match-score-step .sp { display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
+  .match-score-step .sp-board { gap: 20px; }
+  .match-score-step .sp-side { padding: 22px 14px; }
   .match-score-step .sp-score { font-size: 130px; }
-  .match-score-step .sp-name { font-size: 20px; }
-  .match-score-step .sp-meta { font-size: 15px; }
-  .match-score-step .sp-avg { font-size: 14px; }
-  .match-score-step .sp-turn { font-size: 14px; }
-  .match-score-step .sp-actions { gap: 16px; }
-  .match-score-step .sp-target { font-size: 15px; }
-  .match-score-step .sp-need { font-size: 16px; }
-  .match-score-step .sp-need b { font-size: 20px; }
-  .match-score-step .sp-rack { padding: 22px; font-size: 19px; border-radius: 18px; }
-  .match-score-step .sp-pot { padding: 26px; font-size: 22px; border-radius: 18px; }
+  .match-score-step .sp-name { font-size: 18px; }
+  .match-score-step .sp-meta { font-size: 14px; }
+  .match-score-step .sp-avg { font-size: 13px; }
+  .match-score-step .sp-turn { font-size: 13px; }
+  .match-score-step .sp-actions { gap: 10px; }
+  .match-score-step .sp-target { font-size: 14px; }
+  .match-score-step .sp-need { font-size: 15px; }
+  .match-score-step .sp-need b { font-size: 19px; }
+
+  /* Buttonleiste: Rack + Fehler/Safe nebeneinander in einer Reihe statt
+     drei gestapelten Vollbreite-Balken. */
+  .match-score-step .sp-primary-actions { display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
+  .match-score-step .sp-primary-actions .sp-rack { flex: 1.3; margin: 0; }
+  .match-score-step .sp-primary-actions .sp-controls { flex: 1; }
+  .match-score-step .sp-rack { padding: 16px; font-size: 16px; border-radius: 16px; }
+  .match-score-step .sp-pot { padding: 16px; font-size: 17px; border-radius: 16px; }
 }

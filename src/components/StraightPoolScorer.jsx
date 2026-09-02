@@ -249,12 +249,14 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
         {breakPhase && (
           <div className="sp-need" style={{ color: "var(--ivory-dim)" }}>{t("Anstoß: {name} ist dran", { name: names[active] })}</div>
         )}
-        <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
-          <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
-        </button>
-        <div className="sp-controls">
-          <button className="sp-pot half" onClick={() => openEntry("miss")}>{t("Fehler")}</button>
-          <button className="sp-pot half safe" onClick={() => openEntry("safe")}>{t("Safe")}</button>
+        <div className="sp-primary-actions">
+          <button className="sp-rack" onClick={bookRack} disabled={onTable <= 1}>
+            <Plus size={20} /> Rack ausgeschossen (+{Math.max(0, onTable - 1)})
+          </button>
+          <div className="sp-controls">
+            <button className="sp-pot half" onClick={() => openEntry("miss")}>{t("Fehler")}</button>
+            <button className="sp-pot half safe" onClick={() => openEntry("safe")}>{t("Safe")}</button>
+          </div>
         </div>
         <div className="sp-controls">
           {breakPhase ? (
@@ -262,8 +264,6 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
           ) : (
             <button className="btn ghost warn" onClick={() => openEntry("foul")}>{t("Foul −1")}</button>
           )}
-        </div>
-        <div className="sp-controls">
           <button className="btn ghost" onClick={undo} disabled={hist.length === 0}><RotateCcw size={15} /> {t("Rückgängig")}</button>
         </div>
 
