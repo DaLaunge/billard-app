@@ -26,7 +26,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [avg, setAvg] = useState([null, null]); // Offensivschnitt (nur 14/1)
   const [tb, setTb] = useState([null, null]);   // Zwei-Kugel-Räumungen (nur 14/1)
   const [runLog, setRunLog] = useState(null);   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
-  const [scoreLog, setScoreLog] = useState([[0, 0]]); // Punktestand nach jedem Zaehler-Klick (alle anderen Disziplinen)
+  const [scoreLog, setScoreLog] = useState([[0, 0, Date.now()]]); // Punktestand + Zeitpunkt nach jedem Zaehler-Klick (alle anderen Disziplinen)
   const [savedMatch, setSavedMatch] = useState(null); // gerade gespeichertes Match, fuers direkte "Protokoll"-Ansehen
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
@@ -88,7 +88,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     .sort((a, b) => b.gain - a.gain)
     .slice(0, 2);
 
-  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0]]); };
+  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); };
 
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
   // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
@@ -367,10 +367,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <p className="q">{t("Wie steht's?")} <span className="q-sub">{t("(gewonnene Spiele)")}</span></p>
               <div className="score-row">
                 {(mode === "double"
-                  ? [{ members: [me, partner], name: teamA, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2]]); } },
-                     { members: [opp, opp2], name: teamB, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv]]); } }]
-                  : [{ members: [me], name: me.nickname, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2]]); } },
-                     { members: [opp], name: opp.nickname, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv]]); } }]
+                  ? [{ members: [me, partner], name: teamA, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
+                     { members: [opp, opp2], name: teamB, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
+                  : [{ members: [me], name: me.nickname, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
+                     { members: [opp], name: opp.nickname, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
                 ).map(({ members, name, v, set }) => (
                   <div key={name} className="score-col">
                     <div className="sc-avatars">

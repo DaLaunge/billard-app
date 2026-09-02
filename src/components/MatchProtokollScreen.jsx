@@ -1,7 +1,8 @@
 import { ChevronLeft, Printer } from "lucide-react";
 import { t } from "../lib/i18n";
-import { fmtDateTime, mSide } from "../lib/format";
-import { runLogEntryParts, isSimpleScoreLog, buildProtocolRows, splitProtocolRowsByPlayer } from "../lib/runLog";
+import { fmtDateTime, fmtTime, fmtDuration, mSide } from "../lib/format";
+import { runLogEntryParts, isSimpleScoreLog, buildProtocolRows, splitProtocolRowsByPlayer,
+  matchDurationMs, matchUnitCount, avgUnitDurationMs } from "../lib/runLog";
 
 // Eine Tabellenzeile je Spieler+Seite: entweder die vier Datenzellen
 // (Ereignis/Serie/Schnitt/Punkte) oder leer, wenn dieser Spieler diese
@@ -34,6 +35,10 @@ export default function MatchProtokollScreen({ match: m, onBack }) {
   const simple = isSimpleScoreLog(m.run_log);
   const [rowsA, rowsB] = simple ? [[], []] : splitProtocolRowsByPlayer(buildProtocolRows(m.run_log));
   const maxRows = Math.max(rowsA.length, rowsB.length);
+  const hasTime = simple ? m.run_log?.[0]?.[2] != null : m.run_log?.[0]?.ts != null;
+  const duration = hasTime ? matchDurationMs(m.run_log) : null;
+  const units = hasTime ? matchUnitCount(m.run_log) : null;
+  const avgUnit = hasTime ? avgUnitDurationMs(m.run_log) : null;
 
   return (
     <div className="screen protokoll-screen">
@@ -51,10 +56,14 @@ export default function MatchProtokollScreen({ match: m, onBack }) {
         {simple ? (
           <div className="protokoll-table-wrap">
             <table className="protokoll-table">
-              <thead><tr><th>#</th><th>{t("Stand")}</th></tr></thead>
+              <thead><tr><th>#</th><th>{t("Stand")}</th>{hasTime && <th>{t("Zeit")}</th>}</tr></thead>
               <tbody>
-                {m.run_log.map(([a, b], i) => (
-                  <tr key={i}><td>{i}</td><td className="protokoll-score-cell">{a}:{b}</td></tr>
+                {m.run_log.map(([a, b, ts], i) => (
+                  <tr key={i}>
+                    <td>{i}</td>
+                    <td className="protokoll-score-cell">{a}:{b}</td>
+                    {hasTime && <td>{fmtTime(ts)}</td>}
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -64,13 +73,13 @@ export default function MatchProtokollScreen({ match: m, onBack }) {
             <table className="protokoll-table protokoll-table-141">
               <thead>
                 <tr>
-                  <th rowSpan={2}>{t("Aufnahme")}</th>
+                  <th rowSpan={2} title={t("Aufnahme")}>#</th>
                   <th colSpan={4}>{names[0]}</th>
                   <th colSpan={4} className="protokoll-divider">{names[1]}</th>
                 </tr>
                 <tr>
-                  <th>{t("Ereignis")}</th><th>{t("Serie")}</th><th>{t("Schnitt")}</th><th>{t("Punkte")}</th>
-                  <th className="protokoll-divider">{t("Ereignis")}</th><th>{t("Serie")}</th><th>{t("Schnitt")}</th><th>{t("Punkte")}</th>
+                  <th>{t("Ereignis")}</th><th>{t("Serie")}</th><th title={t("Schnitt")}>Ø</th><th title={t("Punkte")}>{t("Pkt.")}</th>
+                  <th className="protokoll-divider">{t("Ereignis")}</th><th>{t("Serie")}</th><th title={t("Schnitt")}>Ø</th><th title={t("Punkte")}>{t("Pkt.")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -83,6 +92,17 @@ export default function MatchProtokollScreen({ match: m, onBack }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {duration != null && (
+          <div className="protokoll-duration">
+            <span>{t("Gesamtdauer")}: <b>{fmtDuration(duration)}</b></span>
+            {units > 0 && (
+              <span>
+                {simple ? t("Ø pro Spiel") : t("Ø pro Aufnahme")}: <b>{fmtDuration(avgUnit)}</b>
+              </span>
+            )}
           </div>
         )}
 

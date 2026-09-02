@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
-import { initials, hashColor, BALL_PALETTE, fmtDate } from "../lib/format";
+import { initials, hashColor, BALL_PALETTE, fmtDate, fmtDuration } from "../lib/format";
+import { computeSpeedStats } from "../lib/runLog";
 import { APP_VERSION } from "../lib/constants";
 import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
 import Ball from "./Ball";
@@ -133,6 +134,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const myRows = rangliste.filter((r) => r.nickname === nickname);
   const gesamt = myRows.find((r) => r.discipline === "Gesamt");
   const playerObj = players.find((p) => p.nickname === nickname);
+  const speedStats = useMemo(() => computeSpeedStats(matches, playerObj?.id), [matches, playerObj?.id]);
 
   const cleanNick = nick.trim();
   const taken = players.some(
@@ -363,6 +365,24 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </section>
 
       <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
+
+      {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
+        <section className="stat-block">
+          <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
+          {speedStats.avgGameMs != null && (
+            <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
+              <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
+          )}
+          {speedStats.avgBallMs != null && (
+            <>
+              <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Kugel (14/1)")}</span>
+                <span className="stat-val">{fmtDuration(speedStats.avgBallMs)}</span></div>
+              <div className="stat-row"><span className="stat-name">{t("Hochgerechnet pro Rack")}</span>
+                <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
+            </>
+          )}
+        </section>
+      )}
       </div>
 
       <div className="pf-right">
