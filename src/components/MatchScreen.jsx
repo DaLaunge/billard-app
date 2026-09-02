@@ -126,6 +126,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       const { error } = await supabase.rpc("report_doubles", {
         p_partner_id: partner.id, p_opp1_id: opp.id, p_opp2_id: opp2.id,
         p_my_score: s1, p_opp_score: s2, p_discipline: disc,
+        p_run_log: scoreLog.length > 1 ? scoreLog : null,
       });
       setBusy(false);
       if (error) { toast(t("Fehler: ") + error.message); return; }
