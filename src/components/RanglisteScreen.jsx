@@ -37,13 +37,24 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
 
   return (
     <div className="screen">
-      <div className="ov-layout">
-      <div className="ov-main">
       <header className="screen-head">
         <h2>{t("Übersicht")}</h2>
         <span className="head-note">{t("Fargo-Skala - 100 Punkte = 2:1")}</span>
       </header>
 
+      <div className="ov-layout">
+      <aside className="ov-side">
+        <MyStatusCard nickname={me.nickname} rating={ratingOf(me.nickname)} stats={myStats}
+          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
+        <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
+          onOpenProfile={onOpenProfile} nickname={me.nickname} />
+        <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
+          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+        <RecordsCard extras={myExtras} />
+      </aside>
+
+      <div className="ov-main">
       {pending.map((m) => {
         if (isDoubles(m)) {
           return (
@@ -120,17 +131,6 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
         {t("Ratings werden nach jedem bestaetigten Match ueber die gesamte Historie neu berechnet. Juengere Matches zaehlen staerker. Unter 10 Spielen gilt ein Rating als vorlaeufig, ohne Match seit 180 Tagen als inaktiv.")}
       </p>
       </div>
-
-      <aside className="ov-side">
-        <MyStatusCard nickname={me.nickname} rating={ratingOf(me.nickname)} stats={myStats}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
-        <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
-          onOpenProfile={onOpenProfile} nickname={me.nickname} />
-        <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-        <RecordsCard extras={myExtras} />
-      </aside>
       </div>
     </div>
   );

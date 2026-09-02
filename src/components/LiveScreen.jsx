@@ -67,6 +67,7 @@ export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, ph
         <span className="head-note">{t("Wer ist gerade am Tisch oder sucht ein Match?")}</span>
       </header>
 
+      <div className="live-split">
       <div className="live-section duelle">
         <button className="live-section-head" onClick={() => toggleSec("duelle")}>
           <Swords size={17} />
@@ -149,6 +150,7 @@ export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, ph
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );

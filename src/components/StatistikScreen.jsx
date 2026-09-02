@@ -95,7 +95,11 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
   return (
     <div className="screen">
       <header className="screen-head"><h2>{t("Statistik")}</h2><span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span></header>
+      <div className="stat-split">
+      <div className="stat-chart-col">
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} />
+      </div>
+      <div className="stat-rest-col">
       <div className="stat-grid">
         <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins}
           fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
@@ -174,6 +178,8 @@ export default function StatistikScreen({ matches, onOpenProfile, colorOf, badge
           <p className="hint">{filtersActive ? t("Keine Matches fuer diese Filter.") : t("Noch keine bestaetigten Matches.")}</p>
         )}
       </section>
+      </div>
+      </div>
     </div>
   );
 }

@@ -500,6 +500,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .p-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; font-weight: 800;
   display: flex; align-items: center; gap: 10px; }
 .p-motto { color: var(--ivory-dim); font-size: 13px; font-style: italic; margin-top: 4px; }
+.p-since { color: var(--ivory-dim); font-size: 12px; margin-top: 3px; }
 .prov-badge { font-family: 'Archivo', sans-serif; font-size: 11px; font-weight: 600; color: var(--gold);
   border: 1px solid var(--gold); border-radius: 999px; padding: 3px 9px; }
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
@@ -697,6 +698,19 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 .records-grid b { font-size: 15px; }
 .records-grid span { font-size: 10px; color: var(--ivory-dim); line-height: 1.25; }
 
+/* Profil: Foto + Kernzahlen links, Rest rechts - gleiches Prinzip wie
+   .ov-layout (immer sichtbar, am Handy untereinander). */
+.pf-layout { display: flex; flex-direction: column; gap: 22px; }
+.pf-right { display: flex; flex-direction: column; }
+.pf-right > * { margin-bottom: 14px; }
+
+/* Live: Duelle + Live-Liste; Statistik: Chart + Rest; Neues Match (Schritt
+   "Gegner waehlen"): Auswahl-Elemente + Spieler-Raster. Alle drei nach
+   demselben Prinzip - am Handy untereinander (Quelltext-Reihenfolge),
+   ab 900px zweispaltig. */
+.live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: 20px; }
+.stat-chart-col, .stat-rest-col, .match-selectors, .match-players { min-width: 0; }
+
 /* ===== Desktop: breitere Flaeche, Uebersicht/Statistik zweispaltig =====
    Nur aktiv, wenn eingeloggt (.phone.app) - Login/Ladebildschirm bleiben
    schmal/zentriert. Die Tabbar bleibt bewusst unten und unveraendert wie
@@ -711,7 +725,27 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .stat-grid .stat-block { margin-bottom: 0; }
   .phone.app .screen:has(.stat-grid) { max-width: 1160px; }
 
-  /* Uebersicht: rechte Spalte mit den Dashboard-Modulen statt darunter */
+  /* Uebersicht: Spieler-Module links, Rangliste rechts */
   .phone.app .screen:has(.ov-layout) { max-width: 1160px; }
-  .ov-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+  .ov-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+
+  /* Profil: Foto/Kernzahlen links (bleibt beim Scrollen sichtbar), Rest rechts */
+  .phone.app .screen:has(.pf-layout) { max-width: 1000px; }
+  .pf-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
+  .pf-left { position: sticky; top: 28px; }
+
+  /* Live: Duelle links, Live-Liste rechts */
+  .phone.app .screen:has(.live-split) { max-width: 1000px; }
+  .live-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+
+  /* Statistik: Trendverlauf links, Bestenlisten + Letzte Matches rechts.
+     Die 3er-Bestenlisten-Reihe faellt in der schmaleren rechten Spalte
+     auf eine Spalte zurueck statt gequetschter 3 Mini-Karten. */
+  .phone.app .screen:has(.stat-split) { max-width: 1160px; }
+  .stat-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .stat-split .stat-grid { grid-template-columns: 1fr; }
+
+  /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
+  .phone.app .screen:has(.match-split) { max-width: 1160px; }
+  .match-split { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
 }

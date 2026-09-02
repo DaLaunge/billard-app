@@ -758,6 +758,7 @@ const TRANSLATIONS = {
     "Meiste an 1 Tag": "Most in 1 day",
     "Geworben": "Recruited",
     "Übersicht": "Overview",
+    "Dabei seit {date}": "Member since {date}",
   },
 };
 export function setLangGlobal(l) {

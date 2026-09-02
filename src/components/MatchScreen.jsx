@@ -195,6 +195,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       {step === 0 && (
         <>
           <p className="q">{t("Gegen wen trittst du an?")}</p>
+          <div className="match-split">
+          <div className="match-selectors">
           <div className="mode-row">
             <button className={"mode-btn" + (mode === "single" ? " active" : "")}
               onClick={() => { setMode("single"); setPartner(null); setOpp2(null); }}>{t("Einzel")}</button>
@@ -241,6 +243,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             <input placeholder={t("Spieler suchen …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
             {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
           </div>
+          </div>
+
+          <div className="match-players">
           {opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
           {mode === "single" && !oppQuery && suggestions.length > 0 && (
             <div className="suggest-card">
@@ -286,6 +291,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <button className="btn ghost" onClick={() => setShowInvite(true)}>
             <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
           </button>
+          </div>
+          </div>
         </>
       )}
 

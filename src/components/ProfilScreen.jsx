@@ -4,7 +4,7 @@ import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
-import { initials, hashColor, BALL_PALETTE } from "../lib/format";
+import { initials, hashColor, BALL_PALETTE, fmtDate } from "../lib/format";
 import { APP_VERSION } from "../lib/constants";
 import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
 import Ball from "./Ball";
@@ -13,6 +13,7 @@ import LegalModal from "./LegalModal";
 import AvatarPhotoField from "./AvatarPhotoField";
 import MyFeedbackTickets from "./MyFeedbackTickets";
 import HeadToHeadCard from "./widgets/HeadToHeadCard";
+import RecordsCard from "./widgets/RecordsCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
@@ -238,6 +239,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
       </header>
 
+      <div className="pf-layout">
+      <div className="pf-left">
       <div className="profile-hero">
         {heroPhoto ? (
           <button className="avatar-tap" onClick={() => setPhotoViewerOpen(true)} aria-label={t("Foto ansehen")}>
@@ -253,11 +256,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
           </div>
           {playerObj?.motto && <p className="p-motto">"{playerObj.motto}"</p>}
+          {playerObj?.created_at && <p className="p-since">{t("Dabei seit {date}", { date: fmtDate(playerObj.created_at) })}</p>}
         </div>
       </div>
 
       {!isMe && playerObj && !challengeForm && (
-        <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => setChallengeForm(true)}>
+        <button className="btn primary" style={{ marginBottom: 14 }} onClick={() => setChallengeForm(true)}>
           <Swords size={15} /> {t("Herausfordern")}
         </button>
       )}
@@ -288,7 +292,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </button>
       )}
 
-
       <div className="kpis">
         <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
         <div className="kpi"><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
@@ -308,6 +311,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
       </section>
 
+      <RecordsCard extras={liveExtras} />
+      </div>
+
+      <div className="pf-right">
       <section className="stat-block">
         <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
         {isMe && achievementHint && (
@@ -509,6 +516,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </button>
         </section>
       )}
+      </div>
+      </div>
 
       {deleteStep === 1 && (
         <div className="modal-overlay" onClick={() => setDeleteStep(0)}>
