@@ -19,10 +19,12 @@ export default function LiveScreen({ me, pings, challenges, matches, rangliste, 
   const challengesFromMe = openChallenges.filter((c) => c.challenger_id === me.id);
 
   // Zwei einklappbare Bereiche (Duelle / Live), Zustand gemerkt wie bei den
-  // Erfolgs-Kategorien im Profil. Standard: beide aufgeklappt.
+  // Erfolgs-Kategorien im Profil. Standard: Duelle (erfordert Reaktion)
+  // aufgeklappt, die Live-Liste (reine Info, aendert sich staendig) erstmal
+  // zugeklappt - laesst sich aber jederzeit wieder aufklappen.
   const [openSecs, setOpenSecs] = useState(() => {
     try { const s = localStorage.getItem("liveSections"); if (s) return new Set(JSON.parse(s)); } catch { /* ignore */ }
-    return new Set(["duelle", "live"]);
+    return new Set(["duelle"]);
   });
   useEffect(() => {
     try { localStorage.setItem("liveSections", JSON.stringify([...openSecs])); } catch { /* ignore */ }

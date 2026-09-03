@@ -711,10 +711,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 button.id-card-head { cursor: pointer; }
 .id-card-name { font-size: 18px; margin-top: 8px; overflow-wrap: anywhere; }
 .id-card-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; }
-.id-card-rating-label { font-family: 'Archivo', sans-serif; font-size: 13px; font-weight: 500; color: var(--ivory-dim); }
 .id-card-motto { color: var(--ivory-dim); font-size: 13px; font-style: italic; margin-top: 4px; }
 .id-card-since { color: var(--ivory-dim); font-size: 12px; margin-top: 2px; }
 .id-card-kpis { margin-top: 14px; }
+.id-card-kpis + * { margin-top: 14px; }
 .dash-live { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; width: 100%;
   background: color-mix(in srgb, var(--loss) 20%, transparent);
   border: 1px solid color-mix(in srgb, var(--loss) 45%, transparent);
@@ -756,7 +756,12 @@ button.id-card-head { cursor: pointer; }
    am Handy (gleiche Bedienung, kein Umlernen). */
 @media (min-width: 900px) {
   .phone.app { max-width: 1500px; margin: 0 auto; }
-  .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; }
+  /* margin: auto zentriert JEDEN Screen standardmaessig innerhalb der
+     breiten Desktop-Flaeche - ohne das wuerde z.B. die Verwaltung (kein
+     eigenes :has()-Layout unten) am linken Rand kleben bleiben. Screens
+     mit eigenem Layout unten setzen nur noch max-width, die Zentrierung
+     erben sie von hier. */
+  .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; margin: 0 auto; }
   .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
 
   .stat-grid .stat-block { margin-bottom: 0; }
@@ -818,6 +823,16 @@ button.id-card-head { cursor: pointer; }
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }
   .match-split { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+
+  /* Verwaltung: keine Identitaets-Spalte noetig (kein "eigener" Fokus wie
+     bei Uebersicht/Live/Statistik/Profil), stattdessen ein lockeres
+     Dashboard aus den einzelnen Modulen (offene Matches, Feedback, Match
+     nachtragen, ...) - per CSS-Mehrspaltensatz, damit unterschiedlich
+     hohe Karten den Platz gut ausnutzen statt stur in einer Spalte
+     untereinander zu stehen. */
+  .phone.app .screen:has(.admin-grid) { max-width: 1300px; }
+  .admin-grid { columns: 2; column-gap: 24px; }
+  .admin-grid > .stat-block { break-inside: avoid; }
 
   /* Neues Match, uebrige Schritte (Disziplin/Pruefen/Bestaetigung):
      nur zentrieren, keine besondere Breite/Groesse noetig. */

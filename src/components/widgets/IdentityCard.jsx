@@ -20,7 +20,6 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       <div className="id-card-rating">
         {gesamt ? gesamt.rating : "-"}
         {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
-        <span className="id-card-rating-label"> · {t("Rating")}</span>
       </div>
       {motto && <p className="id-card-motto">"{motto}"</p>}
       {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
@@ -33,13 +32,13 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       ) : (
         <div className="id-card-head">{head}</div>
       )}
-      {actions}
       <div className="dash-stats id-card-kpis">
         <div><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
         <div><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
         <div><b>{stats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
         <div><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>{t("Serie")}</span></div>
       </div>
+      {actions}
     </section>
   );
 }
