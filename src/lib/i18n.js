@@ -22,6 +22,7 @@ const TRANSLATIONS = {
     "7 Siege in Folge": "7 wins in a row",
     "Keine Verbindung": "No connection",
     "Kein Internet": "No internet",
+    "Keine Verbindung – zeige die zuletzt geladenen Daten.": "No connection – showing the last loaded data.",
     "Dein Ergebnis ({s1} : {s2}) ist auf diesem Gerät gespeichert und wird automatisch gemeldet, sobald wieder eine Verbindung besteht.": "Your result ({s1} : {s2}) is saved on this device and will be reported automatically once you're back online.",
     "Bitte die App bis dahin nicht deinstallieren oder den Speicher leeren.": "Please don't uninstall the app or clear its storage until then.",
     "Nachgemeldetes Match uebertragen.": "Queued match reported successfully.",

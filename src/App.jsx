@@ -8,7 +8,7 @@ import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
 import { hashColor } from "./lib/format";
-import { getPendingReport, sendPendingReport } from "./lib/offlineReport";
+import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 
@@ -243,7 +243,7 @@ export default function App() {
       .order("snap_date", { ascending: true })
       .range(from, to));
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || snap.error;
-    if (err) toast(t("Fehler beim Laden: ") + err.message);
+    if (err) toast(isNetworkError(err) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
     setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
