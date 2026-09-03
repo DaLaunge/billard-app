@@ -822,14 +822,16 @@ button.id-card-head { cursor: pointer; }
      bestimmt allein ihre eigene Hoehe den Abstand, statt dass CSS Grid
      Zeile 1/2 anhand der viel hoeheren Erfolge-Spalte in der Mitte
      aufteilt (das erzeugte vorher eine grosse Luecke vor dem zweiten
-     Modul). */
-  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
+     Modul). Sticky gehoert auf die ganze .pf-left-col (wie bei
+     .ov-side/UserPanel auf Uebersicht/Statistik), NICHT nur auf
+     .pf-identity - sonst bleibt nur die Identitaetskarte kleben, waehrend
+     .pf-stats-a darunter/dahinter wegscrollt und von ihr verdeckt wird
+     (das sah aus wie "Spielerinfo bleibt beim Scrollen immer oben"). */
+  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; position: sticky; top: 28px; }
   .pf-identity, .pf-stats-a { order: 0; }
-  .pf-identity { position: sticky; top: 28px; }
   .pf-achievements { grid-column: 2; grid-row: 1 / span 2; order: 0; }
   .pf-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
-  .pf-stats-b { position: sticky; top: 28px; order: 0; }
-  .pf-account { order: 0; }
+  .pf-stats-b, .pf-account { order: 0; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
