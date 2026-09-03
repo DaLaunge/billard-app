@@ -374,6 +374,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
       </section>
 
+      <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
+
       <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
         colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
       </div>
@@ -445,11 +447,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </section>
       </div>
 
-      {/* Rekorde + Spielgeschwindigkeit bilden am PC die rechte Spalte
-          (zusammen mit pf-account darunter). */}
+      {/* Spielgeschwindigkeit bildet am PC die rechte Spalte (zusammen mit
+          pf-account darunter). */}
       <div className="pf-stats-b">
-      <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
-
       {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
         <section className="stat-block">
           <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>

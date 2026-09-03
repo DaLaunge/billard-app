@@ -694,10 +694,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
    Info, sondern eine Handlungsaufforderung, und bleibt daher auch am Handy
    sichtbar. */
 .ov-layout { display: flex; flex-direction: column; gap: 22px; }
-.ov-side { display: flex; flex-direction: column; gap: 16px; order: 2; }
 .ov-main { order: 1; }
+.ov-live { order: 2; }
+.ov-side { display: flex; flex-direction: column; gap: 16px; order: 3; }
 .ov-side-extra { display: none; }
-.ov-side-right { display: none; flex-direction: column; gap: 16px; order: 3; }
+.ov-side-right { display: none; flex-direction: column; gap: 16px; order: 4; }
 .ov-side .stat-block, .ov-side-right .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .side-row:last-of-type { border-bottom: none; }
@@ -757,21 +758,22 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; }
   .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
 
-  /* Statistik: die drei kleinen Bestenlisten nebeneinander statt gestapelt */
-  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
   .stat-grid .stat-block { margin-bottom: 0; }
-  .phone.app .screen:has(.stat-grid) { max-width: 1160px; }
 
-  /* Uebersicht: duenn-breit-duenn wie das Profil - Module links/rechts,
-     Ranking-Tabelle zentral/breit (das Wichtigste auf dieser Seite). Hier
-     wieder die natuerliche Quelltext-Reihenfolge (kein "Ranking zuerst" wie
-     am Handy) und alle Module inkl. der am Handy ausgeblendeten Profil-
-     Duplikate. */
+  /* Uebersicht: duenn-breit-duenn wie das Profil - UserPanel links (voller
+     Hoehe), Ranking-Tabelle zentral/breit (das Wichtigste dieser Seite,
+     ebenfalls volle Hoehe), rechts Live-Status oben + Erfolge-Fortschritt
+     darunter (analog Profil: pf-stats-b + pf-account teilen sich die
+     rechte Spalte). 4 Elemente fuer 3 Spalten -> explizite grid-column/
+     -row, die "order"-Werte von der Handy-Ansicht werden hier
+     bedeutungslos. */
   .phone.app .screen:has(.ov-layout) { max-width: 1440px; }
   .ov-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .ov-side, .ov-main, .ov-side-right { order: 0; }
+  .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; position: sticky; top: 28px; }
+  .ov-main { grid-column: 2; grid-row: 1 / span 2; order: 0; }
+  .ov-live { grid-column: 3; grid-row: 1; order: 0; }
+  .ov-side-right { grid-column: 3; grid-row: 2; order: 0; display: flex; }
   .ov-side-extra { display: flex; flex-direction: column; gap: 16px; }
-  .ov-side-right { display: flex; }
 
   /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Uebersicht/
      Statistik) - Erfolge sind ein zentrales Element der App und stehen
@@ -797,12 +799,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .phone.app .screen:has(.live-split) { max-width: 1000px; }
   .live-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 
-  /* Statistik: Trendverlauf links, Bestenlisten + Letzte Matches rechts.
-     Die 3er-Bestenlisten-Reihe faellt in der schmaleren rechten Spalte
-     auf eine Spalte zurueck statt gequetschter 3 Mini-Karten. */
-  .phone.app .screen:has(.stat-split) { max-width: 1160px; }
-  .stat-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  .stat-split .stat-grid { grid-template-columns: 1fr; }
+  /* Statistik: duenn-breit-duenn wie Uebersicht/Profil - UserPanel links
+     (dieselbe Konstante), Trendverlauf + Letzte Matches zentral/breit (der
+     eigentliche Fokus dieser Seite), die drei Bestenlisten rechts
+     ("alles andere") gestapelt statt gequetscht nebeneinander. */
+  .phone.app .screen:has(.stat-split) { max-width: 1440px; }
+  .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  .stat-split .ov-side { position: sticky; top: 28px; }
+  .stat-grid { display: flex; flex-direction: column; gap: 16px; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }

@@ -417,8 +417,9 @@ export default function App() {
               )}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
                 onOpenProtokoll={openProtokoll}
-                colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
-                rangliste={rangliste} me={player} />}
+                colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf} snapshots={snapshots} players={players}
+                rangliste={rangliste} me={player} challenges={challenges}
+                catalog={catalog} earnedBadges={badgesOfId(player.id)} />}
               {tab === "protokoll" && protokollMatch && (
                 <MatchProtokollScreen match={protokollMatch} onBack={() => setTab(protokollBackTab)} />
               )}

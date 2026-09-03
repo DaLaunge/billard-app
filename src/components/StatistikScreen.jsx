@@ -6,6 +6,7 @@ import { initials, fmtDateTime, sideNames, isDoubles } from "../lib/format";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
+import UserPanel from "./widgets/UserPanel";
 
 const COUNT_OPTIONS = [3, 10, "all"];
 const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
@@ -43,7 +44,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
   );
 }
 
-export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me }) {
+export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, ratingOf, snapshots, players, rangliste, me, challenges, catalog, earnedBadges }) {
   const stats = useMemo(() => computeStats(matches), [matches]);
   const topWins = useMemo(() => Object.values(stats).sort((a, b) => b.siege - a.siege), [stats]);
   const topQuote = useMemo(
@@ -96,18 +97,21 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     <div className="screen">
       <header className="screen-head"><h2>{t("Statistik")}</h2><span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span></header>
       <div className="stat-split">
+      <aside className="ov-side">
+        {/* Wie auf Uebersicht/Profil: dieselbe UserPanel-Konstante - am
+            Handy ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px
+            sichtbar. */}
+        <div className="ov-side-extra">
+          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} ratingOf={ratingOf}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+        </div>
+      </aside>
+
+      {/* Mittlere Spalte: der Graph und darunter die zuletzt gespielten
+          Matches - der eigentliche Fokus dieser Seite. */}
       <div className="stat-chart-col">
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} />
-      </div>
-      <div className="stat-rest-col">
-      <div className="stat-grid">
-        <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins}
-          fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote}
-          fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak}
-          fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-      </div>
 
       <section className="stat-block">
         <h3><Swords size={17} /> {t("Letzte Matches")}</h3>
@@ -183,6 +187,18 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           <p className="hint">{filtersActive ? t("Keine Matches fuer diese Filter.") : t("Noch keine bestaetigten Matches.")}</p>
         )}
       </section>
+      </div>
+
+      {/* Rechte Spalte: die drei Bestenlisten ("alles andere"). */}
+      <div className="stat-rest-col">
+      <div className="stat-grid">
+        <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins}
+          fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+        <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote}
+          fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+        <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak}
+          fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+      </div>
       </div>
       </div>
     </div>

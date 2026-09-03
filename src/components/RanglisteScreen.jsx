@@ -2,23 +2,19 @@ import { useState, useMemo } from "react";
 import { Check, X, Clock, FileText } from "lucide-react";
 import { t } from "../lib/i18n";
 import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
-import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import Ball from "./Ball";
-import MyStatusCard from "./widgets/MyStatusCard";
 import LiveStatusCard from "./widgets/LiveStatusCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
-import HeadToHeadCard from "./widgets/HeadToHeadCard";
-import RecordsCard from "./widgets/RecordsCard";
+import UserPanel from "./widgets/UserPanel";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 
 /* Die "Uebersicht" (frueher "Rangliste"): die Tabelle bleibt das
-   Wichtigste und steht immer zuerst, ergaenzt um modulare Dashboard-
-   Karten (eigener Status, Live-Stand, Erfolge, Head-to-Head, Rekorde) -
-   dieselben Karten sind auch anderswo wiederverwendbar (z.B. Head-to-
-   Head im Profil). Ab 900px zweispaltig, darunter alles untereinander -
-   die Zusatzinfos sind also auf jedem Geraet sichtbar, nicht nur Desktop. */
+   Wichtigste und steht zentral/breit. Links die immer gleiche UserPanel-
+   Konstante (siehe widgets/UserPanel - dieselbe Spalte auch auf Statistik
+   und im eigenen Profil), rechts Erfolge-Fortschritt + Live-Stand. Ab 900px
+   dreispaltig, darunter alles untereinander (Ranking zuerst). */
 export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, onOpenProtokoll, myOpenReports, colorOf, badgeOf, photoOf,
   matches, players, challenges, catalog, earnedBadges, ratingOf, pings, openChallengesToMe, onGoToLive }) {
   const [disc, setDisc] = useState("Gesamt");
@@ -29,7 +25,6 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
     .filter((r) => showAll || (r.aktiv && !r.vorlaeufig));
   const hidden = rangliste.filter((r) => r.discipline === disc).length - rows.length;
 
-  const myStats = useMemo(() => computeStats(matches)[me.nickname], [matches, me.nickname]);
   const myExtras = useMemo(
     () => computeAchievementExtras(me.nickname, matches, players, challenges),
     [matches, players, challenges, me.nickname]
@@ -44,12 +39,12 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
 
       <div className="ov-layout">
       <aside className="ov-side">
-        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
-        {/* Diese Karte steht inhaltsgleich schon im eigenen Profil - am
+        {/* Diese Karten stehen inhaltsgleich schon im eigenen Profil - am
             Handy reine Redundanz, die nur Scroll-Weg vor dem Ranking kostet.
-            Ab 900px (Dashboard-Look) bleibt sie sichtbar. */}
+            Ab 900px (Dashboard-Look) bleiben sie sichtbar. */}
         <div className="ov-side-extra">
-          <MyStatusCard nickname={me.nickname} rating={ratingOf(me.nickname)} stats={myStats}
+          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} ratingOf={ratingOf}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
         </div>
       </aside>
@@ -153,14 +148,18 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
       </p>
       </div>
 
+      {/* Live-Status ist keine Profil-Info, sondern eine Handlungsauf-
+          forderung (offene Pings/Herausforderungen) - bleibt daher, anders
+          als die restlichen rechten Module, auch am Handy sichtbar. */}
+      <div className="ov-live">
+        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
+      </div>
+
       {/* Rechte Spalte (duenn-breit-duenn, analog Profil): am Handy wie
           .ov-side-extra ausgeblendet, ab 900px sichtbar. */}
       <aside className="ov-side-right">
-        <RecordsCard extras={myExtras} catalog={catalog} earnedBadges={earnedBadges} />
         <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
           onOpenProfile={onOpenProfile} nickname={me.nickname} />
-        <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
       </aside>
       </div>
     </div>
