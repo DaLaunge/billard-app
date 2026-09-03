@@ -397,7 +397,8 @@ export default function App() {
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf}
                   matches={matches} players={players} challenges={challenges}
                   catalog={catalog} earnedBadges={badgesOfId(player.id)}
-                  pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => setTab("live")} />
+                  pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => setTab("live")}
+                  onInvite={() => setTab("invite")} />
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} matches={matches} rangliste={rangliste}
@@ -406,7 +407,8 @@ export default function App() {
                   onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
-                  onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge} />
+                  onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
+                  onInvite={() => setTab("invite")} />
               )}
               {tab === "match" && (
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
@@ -421,7 +423,8 @@ export default function App() {
                 onOpenProtokoll={openProtokoll}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
                 rangliste={rangliste} me={player} challenges={challenges}
-                catalog={catalog} earnedBadges={badgesOfId(player.id)} />}
+                catalog={catalog} earnedBadges={badgesOfId(player.id)}
+                onInvite={() => setTab("invite")} />}
               {tab === "protokoll" && protokollMatch && (
                 <MatchProtokollScreen match={protokollMatch} onBack={() => setTab(protokollBackTab)} />
               )}

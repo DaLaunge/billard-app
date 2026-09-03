@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
@@ -291,7 +291,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     <div className="screen">
       <header className="screen-head with-back">
         {onBack && <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>}
-        <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
+        <div>
+          <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
+          <span className="head-note">{isMe ? t("Deine Erfolge, Statistiken und Einstellungen") : t("Erfolge und Statistiken dieses Spielers")}</span>
+        </div>
       </header>
 
       <div className="pf-layout">
@@ -304,6 +307,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
         onHeadClick={heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
+        onInvite={isMe ? onInvite : undefined}
         actions={<>
           {!isMe && playerObj && !challengeForm && (
             <div className="sp-controls" style={{ marginBottom: 14 }}>
@@ -476,9 +480,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       {isMe && <PasswordSection toast={toast} />}
 
-      {isMe && (
-        <button className="btn ghost" onClick={onInvite}><QrCode size={16} /> {t("Freund einladen")}</button>
-      )}
+      {/* "Freund einladen" ist jetzt prominent als QR-Symbol direkt in der
+          Identitaets-Karte oben - kein zweiter, weniger sichtbarer Button
+          hier noetig. */}
       {isMe && meRow?.role === "admin" && (
         <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
       )}

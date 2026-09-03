@@ -714,6 +714,10 @@ button.id-card-head { cursor: pointer; }
 .id-card-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; }
 .id-card-motto { color: var(--ivory-dim); font-size: 13px; font-style: italic; margin-top: 4px; }
 .id-card-since { color: var(--ivory-dim); font-size: 12px; margin-top: 2px; }
+.id-card-invite { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  margin: 10px auto 0; border-radius: 50%; background: var(--felt-3); border: 1px solid var(--gold);
+  color: var(--gold); cursor: pointer; }
+.id-card-invite:hover { background: var(--felt); }
 .id-card-kpis { margin-top: 14px; }
 .id-card-kpis + * { margin-top: 14px; }
 .dash-live { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; width: 100%;

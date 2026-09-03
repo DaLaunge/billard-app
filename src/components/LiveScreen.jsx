@@ -7,7 +7,7 @@ import UserPanel from "./widgets/UserPanel";
 
 export default function LiveScreen({ me, pings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
-  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile }) {
+  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
   const [loc, setLoc] = useState("");
@@ -76,7 +76,7 @@ export default function LiveScreen({ me, pings, challenges, matches, rangliste, 
         <div className="ov-side-extra">
           <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
             challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
         </div>
       </aside>
 

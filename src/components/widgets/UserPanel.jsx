@@ -16,7 +16,7 @@ import HeadToHeadCard from "./HeadToHeadCard";
    Statistik ist das immer "me", auf einem fremden Profil aber die
    betrachtete Person, damit dort weiterhin deren eigene Werte stehen. */
 export default function UserPanel({ nickname, matches, rangliste, players, challenges, catalog, earnedBadges,
-  colorOf, badgeOf, photoOf, onOpenProfile }) {
+  colorOf, badgeOf, photoOf, onOpenProfile, onInvite }) {
   const stats = useMemo(() => computeStats(matches)[nickname], [matches, nickname]);
   const extras = useMemo(
     () => computeAchievementExtras(nickname, matches, players, challenges),
@@ -29,7 +29,8 @@ export default function UserPanel({ nickname, matches, rangliste, players, chall
   return (
     <>
       <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
-        stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHeadClick={() => onOpenProfile(nickname)} />
+        stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHeadClick={() => onOpenProfile(nickname)}
+        onInvite={onInvite} />
 
       <section className="stat-block">
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>

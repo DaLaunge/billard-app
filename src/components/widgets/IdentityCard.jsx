@@ -1,3 +1,4 @@
+import { QrCode } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { initials, fmtDate } from "../../lib/format";
 import Ball from "../Ball";
@@ -10,9 +11,13 @@ import Ball from "../Ball";
    Statistik fuehrt das zum vollen Profil, auf der Profilseite selbst
    (schon dort) stattdessen zur Foto-Vergroesserung. Seiten-spezifische
    Aktionen (Profil bearbeiten / Match starten / Herausfordern) reicht die
-   aufrufende Seite als "actions" rein, damit diese Karte generisch bleibt. */
+   aufrufende Seite als "actions" rein, damit diese Karte generisch bleibt.
+   onInvite nur gesetzt fuer den eigenen Account (nie auf einem fremden
+   Profil) - das QR-Symbol steht bewusst NICHT im "head"-Button/-Div (das
+   waere ein ungueltiges verschachteltes <button>), sondern als eigenes
+   Element direkt danach. */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
-  onHeadClick, actions, photoSize = 88 }) {
+  onHeadClick, onInvite, actions, photoSize = 88 }) {
   const head = (
     <>
       <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
@@ -31,6 +36,11 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
         <button className="id-card-head" onClick={onHeadClick}>{head}</button>
       ) : (
         <div className="id-card-head">{head}</div>
+      )}
+      {onInvite && (
+        <button className="id-card-invite" onClick={onInvite} aria-label={t("Freund einladen")} title={t("Freund einladen")}>
+          <QrCode size={18} />
+        </button>
       )}
       <div className="dash-stats id-card-kpis">
         <div><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>

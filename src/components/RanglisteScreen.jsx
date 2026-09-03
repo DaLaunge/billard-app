@@ -16,7 +16,7 @@ const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
    und im eigenen Profil), rechts Erfolge-Fortschritt + Live-Stand. Ab 900px
    dreispaltig, darunter alles untereinander (Ranking zuerst). */
 export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, onOpenProtokoll, myOpenReports, colorOf, badgeOf, photoOf,
-  matches, players, challenges, catalog, earnedBadges, pings, openChallengesToMe, onGoToLive }) {
+  matches, players, challenges, catalog, earnedBadges, pings, openChallengesToMe, onGoToLive, onInvite }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
 
@@ -45,7 +45,7 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
         <div className="ov-side-extra">
           <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
             challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
         </div>
       </aside>
 
