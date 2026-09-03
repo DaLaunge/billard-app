@@ -152,8 +152,7 @@ export default function App() {
     ]);
     // Snapshots seitenweise laden (können > 1000 Zeilen sein: Wochen x Spieler)
     const snap = await fetchAllRows((from, to) => supabase.from("rating_snapshots")
-      .select("player_id, snap_date, iso_week, rating, rank, provisional")
-      .eq("discipline", "Gesamt")
+      .select("player_id, snap_date, iso_week, discipline, rating, rank, provisional")
       .order("snap_date", { ascending: true })
       .range(from, to));
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || snap.error;
@@ -398,7 +397,7 @@ export default function App() {
                   matches={matches} players={players} challenges={challenges}
                   catalog={catalog} earnedBadges={badgesOfId(player.id)}
                   pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => setTab("live")}
-                  onInvite={() => setTab("invite")} />
+                  onInvite={() => setTab("invite")} snapshots={snapshots} />
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} matches={matches} rangliste={rangliste}
