@@ -791,10 +791,14 @@ button.id-card-head { cursor: pointer; }
      selbst ein Flexbox-Stapel, KEIN Grid mit eigenen Zeilen - die
      "order"-Werte von der Handy-Ansicht wirken hier also weiterhin und
      muessen fuer beide Kinder explizit auf 0 zurueckgesetzt werden, sonst
-     bringt Handy-"order" die Reihenfolge durcheinander. */
+     bringt Handy-"order" die Reihenfolge durcheinander. .ov-side ist
+     bewusst NICHT sticky (anders als frueher) - UserPanel ist hier oft
+     hoeher als der Viewport, ein sticky-Block der nie vollstaendig ins
+     Bild passt wirkt beim Scrollen wie haengengeblieben statt wie
+     "bleibt sichtbar". Scrollt jetzt normal mit wie jede andere Spalte. */
   .phone.app .screen:has(.ov-layout) { max-width: 1440px; }
   .ov-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; position: sticky; top: 28px; }
+  .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; }
   .ov-main { grid-column: 2; grid-row: 1 / span 2; order: 0; }
   /* EIN Grid-Feld fuer beide rechten Module (siehe Kommentar in
      RanglisteScreen.jsx) - sie stapeln sich per Flexbox anhand ihrer
@@ -822,14 +826,16 @@ button.id-card-head { cursor: pointer; }
      bestimmt allein ihre eigene Hoehe den Abstand, statt dass CSS Grid
      Zeile 1/2 anhand der viel hoeheren Erfolge-Spalte in der Mitte
      aufteilt (das erzeugte vorher eine grosse Luecke vor dem zweiten
-     Modul). */
-  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
+     Modul). Sticky gehoert auf die ganze .pf-left-col (wie bei
+     .ov-side/UserPanel auf Uebersicht/Statistik), NICHT nur auf
+     .pf-identity - sonst bleibt nur die Identitaetskarte kleben, waehrend
+     .pf-stats-a darunter/dahinter wegscrollt und von ihr verdeckt wird
+     (das sah aus wie "Spielerinfo bleibt beim Scrollen immer oben"). */
+  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; position: sticky; top: 28px; }
   .pf-identity, .pf-stats-a { order: 0; }
-  .pf-identity { position: sticky; top: 28px; }
   .pf-achievements { grid-column: 2; grid-row: 1 / span 2; order: 0; }
   .pf-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
-  .pf-stats-b { position: sticky; top: 28px; order: 0; }
-  .pf-account { order: 0; }
+  .pf-stats-b, .pf-account { order: 0; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
@@ -852,7 +858,6 @@ button.id-card-head { cursor: pointer; }
      ("alles andere") gestapelt statt gequetscht nebeneinander. */
   .phone.app .screen:has(.stat-split) { max-width: 1440px; }
   .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .stat-split .ov-side { position: sticky; top: 28px; }
   .stat-grid { display: flex; flex-direction: column; gap: 16px; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
