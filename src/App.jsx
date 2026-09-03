@@ -400,7 +400,9 @@ export default function App() {
                   pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => setTab("live")} />
               )}
               {tab === "live" && (
-                <LiveScreen me={player} pings={pings} challenges={challenges} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                <LiveScreen me={player} pings={pings} challenges={challenges} matches={matches} rangliste={rangliste}
+                  players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
@@ -417,7 +419,7 @@ export default function App() {
               )}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
                 onOpenProtokoll={openProtokoll}
-                colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf} snapshots={snapshots} players={players}
+                colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
                 rangliste={rangliste} me={player} challenges={challenges}
                 catalog={catalog} earnedBadges={badgesOfId(player.id)} />}
               {tab === "protokoll" && protokollMatch && (

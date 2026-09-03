@@ -44,7 +44,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
   );
 }
 
-export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, ratingOf, snapshots, players, rangliste, me, challenges, catalog, earnedBadges }) {
+export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me, challenges, catalog, earnedBadges }) {
   const stats = useMemo(() => computeStats(matches), [matches]);
   const topWins = useMemo(() => Object.values(stats).sort((a, b) => b.siege - a.siege), [stats]);
   const topQuote = useMemo(
@@ -103,7 +103,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
             sichtbar. */}
         <div className="ov-side-extra">
           <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
-            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} ratingOf={ratingOf}
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
         </div>
       </aside>

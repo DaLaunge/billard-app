@@ -15,6 +15,7 @@ import AvatarPhotoField from "./AvatarPhotoField";
 import MyFeedbackTickets from "./MyFeedbackTickets";
 import HeadToHeadCard from "./widgets/HeadToHeadCard";
 import RecordsCard from "./widgets/RecordsCard";
+import IdentityCard from "./widgets/IdentityCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
@@ -295,68 +296,46 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <div className="pf-layout">
       <div className="pf-identity">
-      <div className="profile-hero">
-        {heroPhoto ? (
-          <button className="avatar-tap" onClick={() => setPhotoViewerOpen(true)} aria-label={t("Foto ansehen")}>
-            <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={heroPhoto} size={72} />
-          </button>
-        ) : (
-          <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} size={72} />
-        )}
-        <div style={{ minWidth: 0 }}>
-          <h3 className="p-name">{nickname}</h3>
-          <div className="p-rating">
-            {gesamt ? gesamt.rating : "-"}
-            {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
-          </div>
-          {playerObj?.motto && <p className="p-motto">"{playerObj.motto}"</p>}
-          {playerObj?.created_at && <p className="p-since">{t("Dabei seit {date}", { date: fmtDate(playerObj.created_at) })}</p>}
-        </div>
-      </div>
-
-      {!isMe && playerObj && !challengeForm && (
-        <div className="sp-controls" style={{ marginBottom: 14 }}>
-          <button className="btn primary" onClick={() => onStartMatch(playerObj)}>
-            <Play size={15} /> {t("Match starten")}
-          </button>
-          <button className="btn primary" onClick={() => setChallengeForm(true)}>
-            <Swords size={15} /> {t("Herausfordern")}
-          </button>
-        </div>
-      )}
-      {!isMe && playerObj && challengeForm && (
-        <div className="challenge-form">
-          <div className="search-row" style={{ marginBottom: 8 }}>
-            <input placeholder={t("z. B. 'Hast du heute Abend Zeit?'")} value={challengeMsg}
-              maxLength={200} onChange={(e) => setChallengeMsg(e.target.value)} />
-          </div>
-          <div className="sp-controls">
-            <button className="btn ghost" onClick={() => { setChallengeForm(false); setChallengeMsg(""); }}>
-              {t("Abbrechen")}
-            </button>
-            <button className="btn primary" onClick={() => {
-              onChallenge(playerObj.id, challengeMsg); setChallengeForm(false); setChallengeMsg("");
+      <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
+        stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+        onHeadClick={heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
+        actions={<>
+          {!isMe && playerObj && !challengeForm && (
+            <div className="sp-controls" style={{ marginBottom: 14 }}>
+              <button className="btn primary" onClick={() => onStartMatch(playerObj)}>
+                <Play size={15} /> {t("Match starten")}
+              </button>
+              <button className="btn primary" onClick={() => setChallengeForm(true)}>
+                <Swords size={15} /> {t("Herausfordern")}
+              </button>
+            </div>
+          )}
+          {!isMe && playerObj && challengeForm && (
+            <div className="challenge-form">
+              <div className="search-row" style={{ marginBottom: 8 }}>
+                <input placeholder={t("z. B. 'Hast du heute Abend Zeit?'")} value={challengeMsg}
+                  maxLength={200} onChange={(e) => setChallengeMsg(e.target.value)} />
+              </div>
+              <div className="sp-controls">
+                <button className="btn ghost" onClick={() => { setChallengeForm(false); setChallengeMsg(""); }}>
+                  {t("Abbrechen")}
+                </button>
+                <button className="btn primary" onClick={() => {
+                  onChallenge(playerObj.id, challengeMsg); setChallengeForm(false); setChallengeMsg("");
+                }}>
+                  <Swords size={15} /> {t("Herausfordern")}
+                </button>
+              </div>
+            </div>
+          )}
+          {isMe && (
+            <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
+              setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
             }}>
-              <Swords size={15} /> {t("Herausfordern")}
+              <Pencil size={15} /> {t("Profil bearbeiten")}
             </button>
-          </div>
-        </div>
-      )}
-
-      {isMe && (
-        <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
-          setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
-        }}>
-          <Pencil size={15} /> {t("Profil bearbeiten")}
-        </button>
-      )}
-
-      <div className="kpis">
-        <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
-        <div className="kpi"><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
-        <div className="kpi"><b>{stats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
-        <div className="kpi"><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>{t("Serie")}</span></div>
-      </div>
+          )}
+        </>} />
       </div>
 
       {/* Ratings + Head-to-Head bilden am PC die linke Spalte (zusammen mit

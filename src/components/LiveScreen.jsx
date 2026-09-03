@@ -3,8 +3,10 @@ import { Radio, MapPin, Pencil, X, Swords, ChevronDown } from "lucide-react";
 import { t } from "../lib/i18n";
 import PingCard from "./PingCard";
 import ChallengeCard from "./ChallengeCard";
+import UserPanel from "./widgets/UserPanel";
 
-export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
+export default function LiveScreen({ me, pings, challenges, matches, rangliste, players, catalog, earnedBadges,
+  colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
   onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
@@ -68,6 +70,14 @@ export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, ph
       </header>
 
       <div className="live-split">
+      <aside className="ov-side">
+        <div className="ov-side-extra">
+          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+        </div>
+      </aside>
+
       <div className="live-section duelle">
         <button className="live-section-head" onClick={() => toggleSec("duelle")}>
           <Swords size={17} />
@@ -96,7 +106,7 @@ export default function LiveScreen({ me, pings, challenges, colorOf, badgeOf, ph
         )}
       </div>
 
-      <div className="live-section">
+      <div className="live-section pings">
         <button className="live-section-head" onClick={() => toggleSec("live")}>
           <Radio size={17} />
           <span className="live-section-title">{t("Live")}</span>
