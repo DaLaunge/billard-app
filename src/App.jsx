@@ -52,15 +52,17 @@ export default function App() {
   // --- Browser-Verlauf ("Zurueck"/"Vor" nicht die App verlassen lassen) --
   // Bisher war "tab" reiner React-State ohne History-Eintrag - jeder Klick
   // auf Zurueck/Vor im Browser hatte daher nichts zum Zurueckgehen und
-  // verliess die App komplett. navReplace() aktualisiert den AKTUELLEN
-  // Verlaufseintrag (fuer die 4 Haupt-Tabs - Wechsel dort soll nicht bei
-  // jedem Tab-Klick einen neuen Zurueck-Schritt erzeugen, wie bei den
-  // meisten Apps mit Tab-Leiste). navPush() legt einen NEUEN Eintrag an
-  // (fuer "Hineinklicken" in Unterseiten: fremdes Profil, Match-Protokoll,
-  // Verwaltung, Einladen, neues Match) - von dort bringt sowohl der
-  // Browser-Zurueck-Button als auch der eigene "Zurueck"-Pfeil in der App
-  // (per window.history.back(), siehe onBack-Props unten) zur vorherigen
-  // Ansicht zurueck, statt die App zu verlassen.
+  // verliess die App komplett. navPush() legt fuer JEDE Navigation (auch
+  // simple Tab-Wechsel in der unteren Leiste) einen neuen Verlaufseintrag
+  // an - die erste Version hatte Tab-Wechsel bewusst per replaceState OHNE
+  // eigenen Schritt gemacht (wie bei manchen Tab-Leisten-Apps), das fuehlte
+  // sich aber genau wie das urspruengliche Problem an ("Klicks werden nicht
+  // gespeichert"), also jetzt: wirklich jeder Klick zaehlt. navReplace()
+  // bleibt nur fuer echte Session-Resets (Logout, Konto loeschen) - da soll
+  // "Zurueck" nicht in den abgemeldeten Zustand zurueckfuehren koennen.
+  // Sowohl der Browser-Zurueck-Button als auch die eigenen "Zurueck"-Pfeile
+  // in der App (per window.history.back(), siehe onBack-Props unten)
+  // bringen zur vorherigen Ansicht zurueck.
   const applyNavState = useCallback((s) => {
     setTab(s.tab);
     setProfileName(s.profileName ?? null);
@@ -430,7 +432,7 @@ export default function App() {
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf}
                   matches={matches} players={players} challenges={challenges}
                   catalog={catalog} earnedBadges={badgesOfId(player.id)}
-                  pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => navReplace({ tab: "live" })}
+                  pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => navPush({ tab: "live" })}
                   onInvite={() => navPush({ tab: "invite" })} snapshots={snapshots} />
               )}
               {tab === "live" && (
@@ -500,11 +502,11 @@ export default function App() {
 
             {tab !== "match" && (
             <nav className="tabbar">
-              <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => navReplace({ tab: "rang" })}>
+              <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "rang" })}>
                 <Trophy size={21} /><span>{t("Übersicht")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
-              <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navReplace({ tab: "live" })}>
+              <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
                 <Radio size={21} /><span>{t("Live")}</span>
                 {pings.length + openChallengesToMe.length > 0 && (
                   <span className="badge live">{pings.length + openChallengesToMe.length}</span>
@@ -514,10 +516,10 @@ export default function App() {
                 <span className="fab-shine" />
                 <Plus size={26} className="fab-plus" />
               </button>
-              <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => navReplace({ tab: "stats" })}>
+              <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
               </button>
-              <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navReplace({ tab: "profil" })}>
+              <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
                 <User size={21} /><span>{t("Profil")}</span>
                 {player?.role === "admin" && unconfirmed.length > 0 && <span className="badge">{unconfirmed.length}</span>}
               </button>
