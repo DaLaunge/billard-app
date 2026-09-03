@@ -87,9 +87,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   };
 
   const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "rang");
+  const [startTabBusy, setStartTabBusy] = useState(false);
   const pickStartTab = async (value) => {
     setStartTabLocal(value);
+    setStartTabBusy(true);
     await onSetStartTab(value);
+    setStartTabBusy(false);
   };
 
   const sendFeedback = async () => {
@@ -287,6 +290,40 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               </div>
             )}
           </section>
+
+          <section className="stat-block">
+            <h3><Play size={17} /> {t("Startseite")}</h3>
+            <p className="hint" style={{ marginTop: 0 }}>{t("Was soll beim Starten der App zuerst angezeigt werden?")}</p>
+            <div className="chips">
+              {[
+                ["rang", t("Übersicht")],
+                ["live", t("Live")],
+                ["stats", t("Statistik")],
+                ["profil", t("Profil")],
+                ["last", t("Zuletzt geöffnet")],
+              ].map(([v, label]) => (
+                <button key={v} className={"chip" + (startTab === v ? " active" : "")}
+                  disabled={startTabBusy} onClick={() => pickStartTab(v)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="stat-block">
+            <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
+            <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
+            <select id="updateInterval" className="settings-select" value={updateInterval}
+              onChange={(e) => onSetUpdateInterval(e.target.value)}>
+              <option value="open">{t("Bei jedem Aufruf")}</option>
+              <option value="30">{t("Alle 30 Minuten")}</option>
+              <option value="60">{t("Alle 60 Minuten")}</option>
+              <option value="manual">{t("Manuell")}</option>
+            </select>
+            <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
+              <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
+            </button>
+          </section>
         </div>
         </div>
       </div>
@@ -467,37 +504,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
 
       <div className="pf-account">
-      {isMe && (
-        <section className="stat-block">
-          <h3><Play size={17} /> {t("Startseite")}</h3>
-          <label className="field-label" htmlFor="startTab">{t("Was soll beim Starten der App zuerst angezeigt werden?")}</label>
-          <select id="startTab" className="settings-select" value={startTab}
-            onChange={(e) => pickStartTab(e.target.value)}>
-            <option value="rang">{t("Übersicht")}</option>
-            <option value="live">{t("Live")}</option>
-            <option value="stats">{t("Statistik")}</option>
-            <option value="profil">{t("Profil")}</option>
-          </select>
-        </section>
-      )}
-
-      {isMe && (
-        <section className="stat-block">
-          <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
-          <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
-          <select id="updateInterval" className="settings-select" value={updateInterval}
-            onChange={(e) => onSetUpdateInterval(e.target.value)}>
-            <option value="open">{t("Bei jedem Aufruf")}</option>
-            <option value="30">{t("Alle 30 Minuten")}</option>
-            <option value="60">{t("Alle 60 Minuten")}</option>
-            <option value="manual">{t("Manuell")}</option>
-          </select>
-          <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
-            <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
-          </button>
-        </section>
-      )}
-
       {isMe && <PasswordSection toast={toast} />}
 
       {/* "Freund einladen" ist jetzt prominent als QR-Symbol direkt in der

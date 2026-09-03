@@ -48,6 +48,13 @@ export default function App() {
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
   const [vsOpp, setVsOpp] = useState(null);
+  // Fuer Startseite "Zuletzt geoeffnet": den zuletzt gespeicherten Tab EINMAL
+  // beim allerersten Rendern sichern, bevor der Persistenz-Effekt weiter
+  // unten den initialen "rang"-Default hineinschreibt und den echten Wert
+  // ueberschreiben wuerde.
+  const [lastMainTabAtStart] = useState(() => {
+    try { return localStorage.getItem("lastMainTab"); } catch { return null; }
+  });
 
   // --- Browser-Verlauf ("Zurueck"/"Vor" nicht die App verlassen lassen) --
   // Bisher war "tab" reiner React-State ohne History-Eintrag - jeder Klick
@@ -179,6 +186,15 @@ export default function App() {
     }
   }, [player, badgesByPlayer]);
 
+  // Fuer die Startseiten-Option "Zuletzt geoeffnet": merkt sich den zuletzt
+  // besuchten Hauptmenuepunkt geraeteweise (nicht Unterseiten wie Match/
+  // Protokoll/Admin/Einladen - die sollen beim Neustart nicht "Startseite" sein).
+  useEffect(() => {
+    if (["rang", "live", "stats", "profil"].includes(tab)) {
+      try { localStorage.setItem("lastMainTab", tab); } catch { /* ignore */ }
+    }
+  }, [tab]);
+
   useEffect(() => {
     if (!session) { setPlayer(null); setPlayerChecked(false); return; }
     (async () => {
@@ -190,7 +206,9 @@ export default function App() {
       setPlayerChecked(true);
       if (data && !startTabAppliedRef.current) {
         startTabAppliedRef.current = true;
-        if (data.start_tab && data.start_tab !== "rang") navReplace({ tab: data.start_tab });
+        let target = data.start_tab;
+        if (target === "last") target = lastMainTabAtStart || "rang";
+        if (target && target !== "rang") navReplace({ tab: target });
       }
       const { data: all } = await supabase.from("players")
         .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by, created_at");
@@ -534,7 +552,7 @@ export default function App() {
               {tab === "invite" && (
                 <InviteScreen me={player} onBack={() => window.history.back()} toast={toast} />
               )}
-              <button className="refresh-btn" onClick={loadData} aria-label={t("Aktualisieren")}>
+              <button className="refresh-btn" onClick={() => { loadData(); checkForUpdate(); }} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
               </button>
             </main>
