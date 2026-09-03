@@ -16,6 +16,14 @@
 -- In Supabase SQL-Editor ausfuehren. Test und Produktion sind getrennte
 -- Supabase-Projekte (Test: hadamdvpnwslztsxmwdr, Produktion: wofsutwidaitloeiwnma)
 -- - dieses Skript muss in BEIDEN separat laufen.
+--
+-- Fix (nach einem fehlgeschlagenen ersten Versuch): der neue Constraint
+-- auf elo_anchors ist jetzt UNIQUE statt PRIMARY KEY - die Tabelle hat
+-- offenbar einen eigenen Surrogat-Primaerschluessel (z.B. "id"), ein
+-- zweiter PRIMARY KEY ist in Postgres nicht erlaubt ("multiple primary
+-- keys"). Ein SQL-Editor-Lauf ist eine Transaktion - bei einem Fehler
+-- wird alles zurueckgerollt, ein Fehlschlag hinterlaesst also keine
+-- halb angewendete Aenderung.
 
 -- 1) elo_anchors um discipline erweitern. Bestehende Zeilen sind alle
 --    Gesamt (bisher einzige geschriebene Disziplin), daher als Default
@@ -53,8 +61,12 @@ end $$;
 
 do $$
 begin
+  -- UNIQUE statt PRIMARY KEY: elo_anchors hat vermutlich einen eigenen
+  -- Surrogat-Primärschlüssel (z.B. "id") - ein zweiter PRIMARY KEY ist in
+  -- Postgres nicht erlaubt ("multiple primary keys"). UNIQUE reicht fuer
+  -- ON CONFLICT (player_id, discipline, anchor_at) völlig aus.
   alter table public.elo_anchors
-    add constraint elo_anchors_player_disc_anchor_key primary key (player_id, discipline, anchor_at);
+    add constraint elo_anchors_player_disc_anchor_key unique (player_id, discipline, anchor_at);
 exception when duplicate_object then
   null; -- existiert schon (z.B. bei erneutem Ausfuehren dieses Skripts)
 end $$;
