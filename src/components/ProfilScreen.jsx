@@ -294,7 +294,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </header>
 
       <div className="pf-layout">
-      <div className="pf-left">
+      <div className="pf-identity">
       <div className="profile-hero">
         {heroPhoto ? (
           <button className="avatar-tap" onClick={() => setPhotoViewerOpen(true)} aria-label={t("Foto ansehen")}>
@@ -359,10 +359,116 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
       </div>
 
-      {/* Eigener Block statt Teil von pf-left: am Handy sollen die
-          Statistiken (pf-mid/pf-right) VOR den Konto-Einstellungen kommen,
-          waehrend am PC beides gemeinsam in der linken Spalte steht - per
-          CSS order bzw. grid-row unabhaengig steuerbar. */}
+      {/* Ratings + Head-to-Head bilden am PC die linke Spalte (zusammen mit
+          pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
+      <div className="pf-stats-a">
+      <section className="stat-block">
+        <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
+        {myRows.map((r) => (
+          <div key={r.discipline} className="stat-row">
+            <span className="stat-name">{t(r.discipline)}</span>
+            <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
+            <span className="stat-val">{r.rating}</span>
+          </div>
+        ))}
+        {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
+      </section>
+
+      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
+        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+      </div>
+
+      {/* Erfolge sind ein zentrales Element der App - stehen deshalb in der
+          Mitte und bekommen die meiste Breite (Kachel-Raster). */}
+      <div className="pf-achievements">
+      <section className="stat-block">
+        <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
+        {isMe && achievementHint && (
+          <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
+        )}
+        {isMe && (
+          <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
+            {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
+          </p>
+        )}
+        <div className="badge-tools">
+          <button className="badge-tool-btn" onClick={expandAll}>{t("Alles aufklappen")}</button>
+          <button className="badge-tool-btn" onClick={collapseAll}>{t("Alles zuklappen")}</button>
+        </div>
+        {catalogByCategory.map(([cat, items]) => {
+          // eigenes Profil: ALLE Erfolge zeigen (gesperrte gedimmt) -> Symbole + korrekte Gesamtzahl.
+          // fremde Profile: nur erreichte zeigen.
+          const visible = items.filter((b) => {
+            if (!isMe) return earnedBadges.has(b.badge_key);
+            return true;
+          });
+          if (visible.length === 0) return null;
+          // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
+          const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
+          const open = openCats.has(cat);
+          const liveStat = isMe ? catLiveStat(items, liveExtras) : null;
+          return (
+            <div key={cat} className="badge-cat">
+              <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
+                <div className="badge-cat-head-row">
+                  <span className="badge-cat-title">{t(cat)}</span>
+                  <span className="badge-cat-count">{earnedCount} / {items.length}</span>
+                  <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
+                </div>
+                {liveStat && <span className="badge-cat-live">{liveStat}</span>}
+              </button>
+              {open && (
+                <div className="badge-grid">
+                  {visible.map((b) => {
+                    const key = b.badge_key;
+                    const earned = earnedBadges.has(key);
+                    const selected = meRow?.selected_badge === key && isMe;
+                    return (
+                      <button key={key}
+                        className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
+                        disabled={!isMe || !earned}
+                        onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
+                        title={t(b.description)}>
+                        <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
+                        <span className="badge-name">{t(b.name)}</span>
+                        <span className="badge-desc">{t(b.description)}</span>
+                        {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
+      </section>
+      </div>
+
+      {/* Rekorde + Spielgeschwindigkeit bilden am PC die rechte Spalte
+          (zusammen mit pf-account darunter). */}
+      <div className="pf-stats-b">
+      <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
+
+      {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
+        <section className="stat-block">
+          <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
+          {speedStats.avgGameMs != null && (
+            <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
+              <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
+          )}
+          {speedStats.avgBallMs != null && (
+            <>
+              <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Kugel (14/1)")}</span>
+                <span className="stat-val">{fmtDuration(speedStats.avgBallMs)}</span></div>
+              <div className="stat-row"><span className="stat-name">{t("Hochgerechnet pro Rack")}</span>
+                <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
+            </>
+          )}
+        </section>
+      )}
+      </div>
+
       <div className="pf-account">
       {isMe && (
         <section className="stat-block">
@@ -452,108 +558,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </button>
         </section>
       )}
-      </div>
-
-      <div className="pf-mid">
-      <section className="stat-block">
-        <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
-        {myRows.map((r) => (
-          <div key={r.discipline} className="stat-row">
-            <span className="stat-name">{t(r.discipline)}</span>
-            <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
-            <span className="stat-val">{r.rating}</span>
-          </div>
-        ))}
-        {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
-      </section>
-
-      <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
-
-      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
-        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-
-      {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
-        <section className="stat-block">
-          <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
-          {speedStats.avgGameMs != null && (
-            <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
-              <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
-          )}
-          {speedStats.avgBallMs != null && (
-            <>
-              <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Kugel (14/1)")}</span>
-                <span className="stat-val">{fmtDuration(speedStats.avgBallMs)}</span></div>
-              <div className="stat-row"><span className="stat-name">{t("Hochgerechnet pro Rack")}</span>
-                <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
-            </>
-          )}
-        </section>
-      )}
-      </div>
-
-      <div className="pf-right">
-      <section className="stat-block">
-        <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
-        {isMe && achievementHint && (
-          <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
-        )}
-        {isMe && (
-          <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
-            {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
-          </p>
-        )}
-        <div className="badge-tools">
-          <button className="badge-tool-btn" onClick={expandAll}>{t("Alles aufklappen")}</button>
-          <button className="badge-tool-btn" onClick={collapseAll}>{t("Alles zuklappen")}</button>
-        </div>
-        {catalogByCategory.map(([cat, items]) => {
-          // eigenes Profil: ALLE Erfolge zeigen (gesperrte gedimmt) -> Symbole + korrekte Gesamtzahl.
-          // fremde Profile: nur erreichte zeigen.
-          const visible = items.filter((b) => {
-            if (!isMe) return earnedBadges.has(b.badge_key);
-            return true;
-          });
-          if (visible.length === 0) return null;
-          // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
-          const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
-          const open = openCats.has(cat);
-          const liveStat = isMe ? catLiveStat(items, liveExtras) : null;
-          return (
-            <div key={cat} className="badge-cat">
-              <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
-                <div className="badge-cat-head-row">
-                  <span className="badge-cat-title">{t(cat)}</span>
-                  <span className="badge-cat-count">{earnedCount} / {items.length}</span>
-                  <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
-                </div>
-                {liveStat && <span className="badge-cat-live">{liveStat}</span>}
-              </button>
-              {open && (
-                <div className="badge-grid">
-                  {visible.map((b) => {
-                    const key = b.badge_key;
-                    const earned = earnedBadges.has(key);
-                    const selected = meRow?.selected_badge === key && isMe;
-                    return (
-                      <button key={key}
-                        className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
-                        disabled={!isMe || !earned}
-                        onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
-                        title={t(b.description)}>
-                        <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
-                        <span className="badge-name">{t(b.name)}</span>
-                        <span className="badge-desc">{t(b.description)}</span>
-                        {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
-      </section>
       </div>
       </div>
 

@@ -721,18 +721,21 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 .records-grid span { font-size: 10px; color: var(--ivory-dim); line-height: 1.25; }
 .record-emoji { margin-right: 4px; }
 
-/* Profil: am Handy Foto+Kennzahlen, dann die eigenen Statistiken, dann
-   Erfolge - die Konto-Einstellungen (Login, Feedback, Konto loeschen, ...)
-   kommen bewusst zuletzt (per order), damit sie das Wichtige nicht nach
-   unten verdraengen. Ab 900px drei Spalten (siehe Desktop-Block weiter
-   unten): dort stehen Identitaet UND Konto gemeinsam in der linken Spalte,
-   die Reihenfolge dort spielt keine Rolle mehr. */
+/* Profil: am Handy Foto+Kennzahlen, dann alle eigenen Statistiken
+   zusammen, dann Erfolge - die Konto-Einstellungen (Login, Feedback, Konto
+   loeschen, ...) kommen bewusst zuletzt (per order), damit sie das
+   Wichtige nicht nach unten verdraengen. Ab 900px drei Spalten (siehe
+   Desktop-Block weiter unten): dort teilen sich Identitaet+Statistiken die
+   linke Spalte, Erfolge stehen als zentrales Element breiter in der Mitte,
+   Statistiken+Konto teilen sich die rechte Spalte - die Reihenfolge hier
+   spielt dort keine Rolle mehr. */
 .pf-layout { display: flex; flex-direction: column; gap: 22px; }
-.pf-left { order: 1; }
-.pf-mid { order: 2; }
-.pf-right { order: 3; display: flex; flex-direction: column; }
-.pf-right > * { margin-bottom: 14px; }
-.pf-account { order: 4; }
+.pf-identity { order: 1; }
+.pf-stats-a { order: 2; }
+.pf-stats-b { order: 3; }
+.pf-achievements { order: 4; display: flex; flex-direction: column; }
+.pf-achievements > * { margin-bottom: 14px; }
+.pf-account { order: 5; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
 
@@ -765,21 +768,20 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .ov-side, .ov-main { order: 0; }
   .ov-side-extra { display: flex; flex-direction: column; gap: 16px; }
 
-  /* Profil: drei Spalten statt zwei, damit moeglichst wenig gescrollt werden
-     muss - Identitaet + Konto-Einstellungen gemeinsam links (bleibt beim
-     Scrollen sichtbar), eigene Statistiken (Ratings/Rekorde/Head-to-Head/
-     Tempo) in der Mitte, Erfolge rechts (brauchen als Kachel-Raster am
-     meisten Breite). Explizite grid-column/-row noetig, weil es hier 4
-     Elemente fuer nur 3 Spalten sind (pf-left + pf-account teilen sich die
-     linke Spalte uebereinander) - die "order"-Werte von der Handy-Ansicht
-     werden hier bedeutungslos, da grid-row die tatsaechliche Position
-     bestimmt. */
+  /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Uebersicht/
+     Statistik) - Erfolge sind ein zentrales Element der App und stehen
+     deshalb breiter in der Mitte, Statistiken flankieren links/rechts.
+     Links: Identitaet + Ratings/Head-to-Head (bleibt beim Scrollen
+     sichtbar). Rechts: Rekorde/Tempo + Konto-Einstellungen. 5 Elemente
+     fuer 3 Spalten -> explizite grid-column/-row, die "order"-Werte von
+     der Handy-Ansicht werden hier bedeutungslos. */
   .phone.app .screen:has(.pf-layout) { max-width: 1160px; }
-  .pf-layout { display: grid; grid-template-columns: 280px 320px 1fr; gap: 24px 24px; align-items: start; }
-  .pf-left { grid-column: 1; grid-row: 1; position: sticky; top: 28px; }
-  .pf-account { grid-column: 1; grid-row: 2; order: 0; }
-  .pf-mid { grid-column: 2; grid-row: 1 / span 2; order: 0; }
-  .pf-right { grid-column: 3; grid-row: 1 / span 2; order: 0; }
+  .pf-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  .pf-identity { grid-column: 1; grid-row: 1; position: sticky; top: 28px; }
+  .pf-stats-a { grid-column: 1; grid-row: 2; order: 0; }
+  .pf-achievements { grid-column: 2; grid-row: 1 / span 2; order: 0; }
+  .pf-stats-b { grid-column: 3; grid-row: 1; position: sticky; top: 28px; order: 0; }
+  .pf-account { grid-column: 3; grid-row: 2; order: 0; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
