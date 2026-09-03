@@ -78,9 +78,31 @@ export default function App() {
     applyNavState(s);
     try { window.history.replaceState(s, ""); } catch { /* ignore */ }
   }, [applyNavState]);
+  // Match-Eingabe ist heikel (Ergebnis, Aufnahme-Protokoll, ...) - ein
+  // Fehlklick auf Zurueck/Vor darf sie nicht wegreissen. tabRef/vsOppRef
+  // halten den JEWEILS aktuellen Wert fuer den Popstate-Handler bereit
+  // (ohne dass der Listener bei jedem Tab-Wechsel neu angehaengt werden
+  // muss - reine Lesehilfe, kein Trigger fuer irgendwelche Effekte).
+  // allowLeaveMatchRef wird NUR von "Beenden"/"Abbrechen" (siehe
+  // onDone/onCancel unten) kurz vor ihrem eigenen window.history.back()
+  // gesetzt - so unterscheidet der Handler "gewollt verlassen" von einem
+  // Zurueck/Vor-Klick mitten in der Eingabe (dann: einfach den Match-
+  // Stand erneut pushen, tab bleibt "match", nichts geht verloren).
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  const vsOppRef = useRef(vsOpp);
+  vsOppRef.current = vsOpp;
+  const allowLeaveMatchRef = useRef(false);
   useEffect(() => {
     try { window.history.replaceState({ tab: "rang" }, ""); } catch { /* ignore */ }
-    const onPop = (e) => applyNavState(e.state || { tab: "rang" });
+    const onPop = (e) => {
+      if (tabRef.current === "match" && !allowLeaveMatchRef.current) {
+        try { window.history.pushState({ tab: "match", vsOpp: vsOppRef.current }, ""); } catch { /* ignore */ }
+        return;
+      }
+      allowLeaveMatchRef.current = false;
+      applyNavState(e.state || { tab: "rang" });
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [applyNavState]);
@@ -451,8 +473,8 @@ export default function App() {
                   onReload={loadData} initialOpp={vsOpp} onChallenge={createChallenge}
                   catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
                   onOpenProtokoll={openProtokoll}
-                  onDone={() => { loadData(); window.history.back(); }}
-                  onCancel={() => window.history.back()} />
+                  onDone={() => { loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}
+                  onCancel={() => { allowLeaveMatchRef.current = true; window.history.back(); }} />
               )}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
                 onOpenProtokoll={openProtokoll}
