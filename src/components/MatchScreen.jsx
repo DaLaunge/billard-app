@@ -7,6 +7,7 @@ import { winProb, initials } from "../lib/format";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import { recentOpponentFreq } from "../lib/frequency";
 import { minGhostSeconds } from "../lib/ghostTiming";
+import { savePendingReport, isNetworkError } from "../lib/offlineReport";
 import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
@@ -34,6 +35,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [abortAsk, setAbortAsk] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [offlineQueued, setOfflineQueued] = useState(false); // Match konnte mangels Verbindung nicht gemeldet werden, wartet lokal
   const [ghostStartedAt, setGhostStartedAt] = useState(null); // gegen "Durchklicken" beim Ghost-Training
   const [nowTick, setNowTick] = useState(Date.now());
 
@@ -124,13 +126,20 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const save = async () => {
     if (mode === "double") {
       setBusy(true);
-      const { data, error } = await supabase.rpc("report_doubles", {
+      const params = {
         p_partner_id: partner.id, p_opp1_id: opp.id, p_opp2_id: opp2.id,
         p_my_score: s1, p_opp_score: s2, p_discipline: disc,
         p_run_log: scoreLog.length > 1 ? scoreLog : null,
-      });
+      };
+      const { data, error } = await supabase.rpc("report_doubles", params);
       setBusy(false);
-      if (error) { toast(t("Fehler: ") + error.message); return; }
+      if (error) {
+        if (isNetworkError(error)) {
+          savePendingReport({ type: "double", params });
+          setOfflineQueued(true); setStep(4); return;
+        }
+        toast(t("Fehler: ") + error.message); return;
+      }
       const row = Array.isArray(data) ? data[0] : data;
       setSavedMatch({ ...row, p1: { nickname: me.nickname }, p1b: { nickname: partner.nickname },
         p2: { nickname: opp.nickname }, p2b: { nickname: opp2.nickname } });
@@ -144,16 +153,23 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       setStep(4); return;
     }
     setBusy(true);
-    const { data, error } = await supabase.rpc("report_match", {
+    const params = {
       p_opponent_id: opp.id, p_my_score: s1, p_opp_score: s2, p_discipline: disc,
       p_high_run_me: is141 ? hr[0] : null, p_high_run_opp: is141 ? hr[1] : null,
       p_deficit_me: is141 ? def[0] : null, p_deficit_opp: is141 ? def[1] : null,
       p_avg_me: is141 ? avg[0] : null, p_avg_opp: is141 ? avg[1] : null,
       p_twoball_me: is141 ? tb[0] : null, p_twoball_opp: is141 ? tb[1] : null,
       p_run_log: is141 ? runLog : (scoreLog.length > 1 ? scoreLog : null),
-    });
+    };
+    const { data, error } = await supabase.rpc("report_match", params);
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) {
+      if (isNetworkError(error)) {
+        savePendingReport({ type: "single", params });
+        setOfflineQueued(true); setStep(4); return;
+      }
+      toast(t("Fehler: ") + error.message); return;
+    }
     const row = Array.isArray(data) ? data[0] : data;
     setSavedMatch({ ...row, p1: { nickname: me.nickname }, p2: { nickname: opp.nickname } });
     setStep(4);
@@ -464,7 +480,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       {step === 4 && opp && (
         <div className="saved match-center-step">
           <div className="sent-check big"><Check size={34} /></div>
-          {isGhost ? (
+          {offlineQueued ? (
+            <>
+              <h3>{t("Kein Internet")}</h3>
+              <p>{t("Dein Ergebnis ({s1} : {s2}) ist auf diesem Gerät gespeichert und wird automatisch gemeldet, sobald wieder eine Verbindung besteht.", { s1, s2 })}<br />
+                <b>{t("Bitte die App bis dahin nicht deinstallieren oder den Speicher leeren.")}</b></p>
+            </>
+          ) : isGhost ? (
             <>
               <h3>{t("Training beendet!")}</h3>
               <p>{t("Ergebnis gegen den Ghost:")} <b>{s1} : {s2}</b>.<br />
