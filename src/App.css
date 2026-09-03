@@ -55,9 +55,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .cat-chev { color: var(--ivory-dim); transition: transform 0.18s ease; }
 .cat-chev.open { transform: rotate(180deg); }
 .badge-cat .badge-grid { padding-top: 10px; }
-.badge-tools { display: flex; gap: 8px; margin-bottom: 6px; }
+.badge-tools { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
 .badge-tool-btn { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
-  border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  border-radius: 10px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .badge-tool-btn:active { background: var(--felt); }
 .login-list { display: flex; flex-direction: column; gap: 2px; }
 .login-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;

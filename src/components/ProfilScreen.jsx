@@ -177,6 +177,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </div>
           <p className="hint">{t("Ohne Foto zeigt deine Kugel Initialen in deiner gewählten Farbe.")}</p>
 
+          {meRow?.selected_badge && (
+            <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => onSelectBadge(null)}>
+              {t("Wieder meine Kugel zeigen")}
+            </button>
+          )}
+
           <label className="field-label">{t("Deine Kugel")}</label>
           <div className="swatch-row">
             <button className={"swatch auto" + (color === null ? " sel" : "")}
@@ -546,11 +552,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </div>
           );
         })}
-        {isMe && meRow?.selected_badge && (
-          <button className="btn ghost" onClick={() => onSelectBadge(null)}>
-            {t("Wieder meine Kugel zeigen")}
-          </button>
-        )}
         {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
       </div>
