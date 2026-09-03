@@ -366,6 +366,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
 
+      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
+        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+
       {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
         <section className="stat-block">
           <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
@@ -453,9 +456,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         )}
         {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
-
-      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
-        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
 
       {isMe && (
         <section className="stat-block">
