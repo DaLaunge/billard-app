@@ -21,7 +21,7 @@ export default function HeadToHeadCard({ nickname, matches, onOpenProfile, color
       map[opp] ||= { opp, w: 0, l: 0 };
       map[opp].w += w; map[opp].l += l;
     });
-    return Object.values(map).sort((a, b) => (b.w + b.l) - (a.w + a.l));
+    return Object.values(map).sort((a, b) => (b.w / (b.w + b.l)) - (a.w / (a.w + a.l)));
   }, [matches, nickname]);
   const [count, setCount] = useState(3);
   const visible = count === "all" ? h2h : h2h.slice(0, count);
