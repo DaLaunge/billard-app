@@ -81,9 +81,15 @@ export function buildCustomTheme(bgHex, accentHex) {
   // gilt daher nur, wenn die Farbe ueberhaupt einen erkennbaren Farbton hat.
   const bSat = bs < 6 ? bs : Math.max(28, bs);
   const aSat = as_ < 6 ? as_ : Math.max(40, as_);
-  const felt = hslToHex(bh, bSat, 12);
-  const felt2 = hslToHex(bh, bSat, 17);
-  const felt3 = hslToHex(bh, bSat, 23);
+  // Ein farbloser (schwarz/grauer) Hintergrund braucht deutlich weniger
+  // Helligkeit als ein farbiger, sonst wirkt "Schwarz" wie ein mittleres
+  // Grau statt wie das eigene Schwarz-Preset (das bewusst 5/9/14% statt
+  // 12/17/23% nutzt) - Saettigung kann bei Grautoenen die fehlende
+  // "Dunkelheit" nicht kompensieren, wie sie es bei Farben tut.
+  const [feltL, felt2L, felt3L] = bSat < 6 ? [5, 9, 14] : [12, 17, 23];
+  const felt = hslToHex(bh, bSat, feltL);
+  const felt2 = hslToHex(bh, bSat, felt2L);
+  const felt3 = hslToHex(bh, bSat, felt3L);
   const chalk = hslToHex(ah, aSat, 72);
   const chalkDeep = hslToHex(ah, aSat, 48);
   return {
