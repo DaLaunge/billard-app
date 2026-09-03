@@ -758,6 +758,7 @@ button.id-card-head { cursor: pointer; }
 .pf-account { order: 5; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
+.pf-edit-save { margin-top: 20px; }
 
 /* Live: Duelle + Live-Liste; Statistik: Chart + Rest; Neues Match (Schritt
    "Gegner waehlen"): Auswahl-Elemente + Spieler-Raster. Alle drei nach

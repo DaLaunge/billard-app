@@ -19,7 +19,7 @@ import IdentityCard from "./widgets/IdentityCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme }) {
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -84,6 +84,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     setThemeBusy(true);
     await onSetTheme("custom", { bg: customBg, accent: customAccent });
     setThemeBusy(false);
+  };
+
+  const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "rang");
+  const [startTabBusy, setStartTabBusy] = useState(false);
+  const pickStartTab = async (value) => {
+    setStartTabLocal(value);
+    setStartTabBusy(true);
+    await onSetStartTab(value);
+    setStartTabBusy(false);
   };
 
   const sendFeedback = async () => {
@@ -220,13 +229,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <input id="pmotto" value={motto} maxLength={80}
               placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)} />
           </div>
-
-          <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
-            {busy ? t("Speichere ...") : <>{t("Speichern")} <Check size={18} /></>}
-          </button>
-          {cleanNick !== nickname && (
-            <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
-          )}
         </section>
 
         <div className="pf-edit-side">
@@ -281,7 +283,50 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               </div>
             )}
           </section>
+
+          <section className="stat-block">
+            <h3><Play size={17} /> {t("Startseite")}</h3>
+            <p className="hint" style={{ marginTop: 0 }}>{t("Was soll beim Starten der App zuerst angezeigt werden?")}</p>
+            <div className="chips">
+              {[
+                ["rang", t("Übersicht")],
+                ["live", t("Live")],
+                ["stats", t("Statistik")],
+                ["profil", t("Profil")],
+                ["last", t("Zuletzt geöffnet")],
+              ].map(([v, label]) => (
+                <button key={v} className={"chip" + (startTab === v ? " active" : "")}
+                  disabled={startTabBusy} onClick={() => pickStartTab(v)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="stat-block">
+            <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
+            <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
+            <select id="updateInterval" className="settings-select" value={updateInterval}
+              onChange={(e) => onSetUpdateInterval(e.target.value)}>
+              <option value="open">{t("Bei jedem Aufruf")}</option>
+              <option value="30">{t("Alle 30 Minuten")}</option>
+              <option value="60">{t("Alle 60 Minuten")}</option>
+              <option value="manual">{t("Manuell")}</option>
+            </select>
+            <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
+              <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
+            </button>
+          </section>
         </div>
+        </div>
+
+        <div className="pf-edit-save">
+          <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
+            {busy ? t("Speichere ...") : <>{t("Speichern")} <Check size={18} /></>}
+          </button>
+          {cleanNick !== nickname && (
+            <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
+          )}
         </div>
       </div>
     );
@@ -461,23 +506,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
 
       <div className="pf-account">
-      {isMe && (
-        <section className="stat-block">
-          <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
-          <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
-          <select id="updateInterval" className="settings-select" value={updateInterval}
-            onChange={(e) => onSetUpdateInterval(e.target.value)}>
-            <option value="open">{t("Bei jedem Aufruf")}</option>
-            <option value="30">{t("Alle 30 Minuten")}</option>
-            <option value="60">{t("Alle 60 Minuten")}</option>
-            <option value="manual">{t("Manuell")}</option>
-          </select>
-          <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
-            <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
-          </button>
-        </section>
-      )}
-
       {isMe && <PasswordSection toast={toast} />}
 
       {/* "Freund einladen" ist jetzt prominent als QR-Symbol direkt in der
