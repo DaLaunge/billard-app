@@ -2,25 +2,21 @@ import { useState, useMemo } from "react";
 import { Check, X, Clock, FileText } from "lucide-react";
 import { t } from "../lib/i18n";
 import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
-import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import Ball from "./Ball";
-import MyStatusCard from "./widgets/MyStatusCard";
 import LiveStatusCard from "./widgets/LiveStatusCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
-import HeadToHeadCard from "./widgets/HeadToHeadCard";
-import RecordsCard from "./widgets/RecordsCard";
+import UserPanel from "./widgets/UserPanel";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 
 /* Die "Uebersicht" (frueher "Rangliste"): die Tabelle bleibt das
-   Wichtigste und steht immer zuerst, ergaenzt um modulare Dashboard-
-   Karten (eigener Status, Live-Stand, Erfolge, Head-to-Head, Rekorde) -
-   dieselben Karten sind auch anderswo wiederverwendbar (z.B. Head-to-
-   Head im Profil). Ab 900px zweispaltig, darunter alles untereinander -
-   die Zusatzinfos sind also auf jedem Geraet sichtbar, nicht nur Desktop. */
+   Wichtigste und steht zentral/breit. Links die immer gleiche UserPanel-
+   Konstante (siehe widgets/UserPanel - dieselbe Spalte auch auf Statistik
+   und im eigenen Profil), rechts Erfolge-Fortschritt + Live-Stand. Ab 900px
+   dreispaltig, darunter alles untereinander (Ranking zuerst). */
 export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, onOpenProtokoll, myOpenReports, colorOf, badgeOf, photoOf,
-  matches, players, challenges, catalog, earnedBadges, ratingOf, pings, openChallengesToMe, onGoToLive }) {
+  matches, players, challenges, catalog, earnedBadges, pings, openChallengesToMe, onGoToLive, onInvite }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
 
@@ -29,7 +25,6 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
     .filter((r) => showAll || (r.aktiv && !r.vorlaeufig));
   const hidden = rangliste.filter((r) => r.discipline === disc).length - rows.length;
 
-  const myStats = useMemo(() => computeStats(matches)[me.nickname], [matches, me.nickname]);
   const myExtras = useMemo(
     () => computeAchievementExtras(me.nickname, matches, players, challenges),
     [matches, players, challenges, me.nickname]
@@ -44,14 +39,14 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
 
       <div className="ov-layout">
       <aside className="ov-side">
-        <MyStatusCard nickname={me.nickname} rating={ratingOf(me.nickname)} stats={myStats}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
-        <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
-          onOpenProfile={onOpenProfile} nickname={me.nickname} />
-        <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-        <RecordsCard extras={myExtras} catalog={catalog} earnedBadges={earnedBadges} />
+        {/* Diese Karten stehen inhaltsgleich schon im eigenen Profil - am
+            Handy reine Redundanz, die nur Scroll-Weg vor dem Ranking kostet.
+            Ab 900px (Dashboard-Look) bleiben sie sichtbar. */}
+        <div className="ov-side-extra">
+          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
+        </div>
       </aside>
 
       <div className="ov-main">
@@ -151,6 +146,28 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
       <p className="footnote">
         {t("Ratings werden nach jedem bestaetigten Match ueber die gesamte Historie neu berechnet. Juengere Matches zaehlen staerker. Unter 10 Spielen gilt ein Rating als vorlaeufig, ohne Match seit 180 Tagen als inaktiv.")}
       </p>
+      </div>
+
+      {/* Beide rechten Module stecken ab 900px in EINEM Grid-Feld (siehe
+          .ov-right-col), das sie per Flexbox stapelt - so bestimmt allein
+          ihre eigene Hoehe den Abstand zwischen ihnen, statt dass CSS Grid
+          Zeile 1/2 anhand der viel hoeheren linken/mittleren Spalte
+          aufteilt (das erzeugte vorher eine grosse Luecke). Am Handy bleibt
+          .ov-right-col unsichtbar (display: contents) - beide Module
+          behalten dort ihre eigene order/display-Regel. */}
+      <div className="ov-right-col">
+      {/* Live-Status ist keine Profil-Info, sondern eine Handlungsauf-
+          forderung (offene Pings/Herausforderungen) - bleibt daher, anders
+          als das Erfolge-Modul, auch am Handy sichtbar. */}
+      <div className="ov-live">
+        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
+      </div>
+
+      {/* Am Handy wie .ov-side-extra ausgeblendet, ab 900px sichtbar. */}
+      <aside className="ov-side-right">
+        <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
+          onOpenProfile={onOpenProfile} nickname={me.nickname} />
+      </aside>
       </div>
       </div>
     </div>

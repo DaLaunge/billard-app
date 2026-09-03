@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, QrCode, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
@@ -15,6 +15,7 @@ import AvatarPhotoField from "./AvatarPhotoField";
 import MyFeedbackTickets from "./MyFeedbackTickets";
 import HeadToHeadCard from "./widgets/HeadToHeadCard";
 import RecordsCard from "./widgets/RecordsCard";
+import IdentityCard from "./widgets/IdentityCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
@@ -177,6 +178,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </div>
           <p className="hint">{t("Ohne Foto zeigt deine Kugel Initialen in deiner gewählten Farbe.")}</p>
 
+          {meRow?.selected_badge && (
+            <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => onSelectBadge(null)}>
+              {t("Wieder meine Kugel zeigen")}
+            </button>
+          )}
+
           <label className="field-label">{t("Deine Kugel")}</label>
           <div className="swatch-row">
             <button className={"swatch auto" + (color === null ? " sel" : "")}
@@ -284,74 +291,65 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     <div className="screen">
       <header className="screen-head with-back">
         {onBack && <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>}
-        <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
+        <div>
+          <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
+          <span className="head-note">{isMe ? t("Deine Erfolge, Statistiken und Einstellungen") : t("Erfolge und Statistiken dieses Spielers")}</span>
+        </div>
       </header>
 
       <div className="pf-layout">
-      <div className="pf-left">
-      <div className="profile-hero">
-        {heroPhoto ? (
-          <button className="avatar-tap" onClick={() => setPhotoViewerOpen(true)} aria-label={t("Foto ansehen")}>
-            <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={heroPhoto} size={72} />
-          </button>
-        ) : (
-          <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} size={72} />
-        )}
-        <div style={{ minWidth: 0 }}>
-          <h3 className="p-name">{nickname}</h3>
-          <div className="p-rating">
-            {gesamt ? gesamt.rating : "-"}
-            {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
-          </div>
-          {playerObj?.motto && <p className="p-motto">"{playerObj.motto}"</p>}
-          {playerObj?.created_at && <p className="p-since">{t("Dabei seit {date}", { date: fmtDate(playerObj.created_at) })}</p>}
-        </div>
-      </div>
-
-      {!isMe && playerObj && !challengeForm && (
-        <div className="sp-controls" style={{ marginBottom: 14 }}>
-          <button className="btn primary" onClick={() => onStartMatch(playerObj)}>
-            <Play size={15} /> {t("Match starten")}
-          </button>
-          <button className="btn primary" onClick={() => setChallengeForm(true)}>
-            <Swords size={15} /> {t("Herausfordern")}
-          </button>
-        </div>
-      )}
-      {!isMe && playerObj && challengeForm && (
-        <div className="challenge-form">
-          <div className="search-row" style={{ marginBottom: 8 }}>
-            <input placeholder={t("z. B. 'Hast du heute Abend Zeit?'")} value={challengeMsg}
-              maxLength={200} onChange={(e) => setChallengeMsg(e.target.value)} />
-          </div>
-          <div className="sp-controls">
-            <button className="btn ghost" onClick={() => { setChallengeForm(false); setChallengeMsg(""); }}>
-              {t("Abbrechen")}
-            </button>
-            <button className="btn primary" onClick={() => {
-              onChallenge(playerObj.id, challengeMsg); setChallengeForm(false); setChallengeMsg("");
+      {/* Identitaet + Ratings/Rekorde/Head-to-Head stecken ab 900px in EINEM
+          Grid-Feld (.pf-left-col), das sie per Flexbox stapelt - so
+          bestimmt allein ihre eigene Hoehe den Abstand, statt dass CSS
+          Grid Zeile 1/2 anhand der Erfolge-Spalte in der Mitte aufteilt. */}
+      <div className="pf-left-col">
+      <div className="pf-identity">
+      <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
+        stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+        onHeadClick={heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
+        onInvite={isMe ? onInvite : undefined}
+        actions={<>
+          {!isMe && playerObj && !challengeForm && (
+            <div className="sp-controls" style={{ marginBottom: 14 }}>
+              <button className="btn primary" onClick={() => onStartMatch(playerObj)}>
+                <Play size={15} /> {t("Match starten")}
+              </button>
+              <button className="btn primary" onClick={() => setChallengeForm(true)}>
+                <Swords size={15} /> {t("Herausfordern")}
+              </button>
+            </div>
+          )}
+          {!isMe && playerObj && challengeForm && (
+            <div className="challenge-form">
+              <div className="search-row" style={{ marginBottom: 8 }}>
+                <input placeholder={t("z. B. 'Hast du heute Abend Zeit?'")} value={challengeMsg}
+                  maxLength={200} onChange={(e) => setChallengeMsg(e.target.value)} />
+              </div>
+              <div className="sp-controls">
+                <button className="btn ghost" onClick={() => { setChallengeForm(false); setChallengeMsg(""); }}>
+                  {t("Abbrechen")}
+                </button>
+                <button className="btn primary" onClick={() => {
+                  onChallenge(playerObj.id, challengeMsg); setChallengeForm(false); setChallengeMsg("");
+                }}>
+                  <Swords size={15} /> {t("Herausfordern")}
+                </button>
+              </div>
+            </div>
+          )}
+          {isMe && (
+            <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
+              setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
             }}>
-              <Swords size={15} /> {t("Herausfordern")}
+              <Pencil size={15} /> {t("Profil bearbeiten")}
             </button>
-          </div>
-        </div>
-      )}
-
-      {isMe && (
-        <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
-          setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
-        }}>
-          <Pencil size={15} /> {t("Profil bearbeiten")}
-        </button>
-      )}
-
-      <div className="kpis">
-        <div className="kpi"><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
-        <div className="kpi"><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
-        <div className="kpi"><b>{stats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
-        <div className="kpi"><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>{t("Serie")}</span></div>
+          )}
+        </>} />
       </div>
 
+      {/* Ratings + Head-to-Head bilden am PC die linke Spalte (zusammen mit
+          pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
+      <div className="pf-stats-a">
       <section className="stat-block">
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
         {myRows.map((r) => (
@@ -366,26 +364,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
 
-      {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
-        <section className="stat-block">
-          <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
-          {speedStats.avgGameMs != null && (
-            <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
-              <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
-          )}
-          {speedStats.avgBallMs != null && (
-            <>
-              <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Kugel (14/1)")}</span>
-                <span className="stat-val">{fmtDuration(speedStats.avgBallMs)}</span></div>
-              <div className="stat-row"><span className="stat-name">{t("Hochgerechnet pro Rack")}</span>
-                <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
-            </>
-          )}
-        </section>
-      )}
+      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
+        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+      </div>
       </div>
 
-      <div className="pf-right">
+      {/* Erfolge sind ein zentrales Element der App - stehen deshalb in der
+          Mitte und bekommen die meiste Breite (Kachel-Raster). */}
+      <div className="pf-achievements">
       <section className="stat-block">
         <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
         {isMe && achievementHint && (
@@ -446,17 +432,35 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </div>
           );
         })}
-        {isMe && meRow?.selected_badge && (
-          <button className="btn ghost" onClick={() => onSelectBadge(null)}>
-            {t("Wieder meine Kugel zeigen")}
-          </button>
-        )}
         {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
+      </div>
 
-      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
-        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+      {/* Spielgeschwindigkeit + Konto-Einstellungen stecken ab 900px in
+          EINEM Grid-Feld (.pf-right-col, gleiches Prinzip wie
+          .pf-left-col oben). */}
+      <div className="pf-right-col">
+      <div className="pf-stats-b">
+      {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
+        <section className="stat-block">
+          <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
+          {speedStats.avgGameMs != null && (
+            <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
+              <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
+          )}
+          {speedStats.avgBallMs != null && (
+            <>
+              <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Kugel (14/1)")}</span>
+                <span className="stat-val">{fmtDuration(speedStats.avgBallMs)}</span></div>
+              <div className="stat-row"><span className="stat-name">{t("Hochgerechnet pro Rack")}</span>
+                <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
+            </>
+          )}
+        </section>
+      )}
+      </div>
 
+      <div className="pf-account">
       {isMe && (
         <section className="stat-block">
           <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
@@ -476,9 +480,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       {isMe && <PasswordSection toast={toast} />}
 
-      {isMe && (
-        <button className="btn ghost" onClick={onInvite}><QrCode size={16} /> {t("Freund einladen")}</button>
-      )}
+      {/* "Freund einladen" ist jetzt prominent als QR-Symbol direkt in der
+          Identitaets-Karte oben - kein zweiter, weniger sichtbarer Button
+          hier noetig. */}
       {isMe && meRow?.role === "admin" && (
         <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
       )}
@@ -545,6 +549,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </button>
         </section>
       )}
+      </div>
       </div>
       </div>
 

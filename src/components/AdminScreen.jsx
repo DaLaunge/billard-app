@@ -160,6 +160,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         <h2>{t("Verwaltung")}</h2>
       </header>
 
+      <div className="admin-grid">
       <section className="stat-block">
         <h3><Check size={17} /> {t("Offene Matches")} ({allPending.length})</h3>
         {allPending.length === 0 && <p className="hint">{t("Alles erledigt - keine offenen Matches.")}</p>}
@@ -342,6 +343,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         <div className="diag-row"><span>{t("Datenbank")}</span><code>{DB_REF}</code></div>
         <p className="hint" style={{ marginTop: 6 }}>{t("Diese Kennung muss sich zwischen Test und Produktion unterscheiden. Ist sie gleich, greifen beide auf dieselbe Datenbank zu.")}</p>
       </section>
+      </div>
 
     </div>
   );

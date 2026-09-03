@@ -55,9 +55,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .cat-chev { color: var(--ivory-dim); transition: transform 0.18s ease; }
 .cat-chev.open { transform: rotate(180deg); }
 .badge-cat .badge-grid { padding-top: 10px; }
-.badge-tools { display: flex; gap: 8px; margin-bottom: 6px; }
+.badge-tools { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
 .badge-tool-btn { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
-  border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  border-radius: 10px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .badge-tool-btn:active { background: var(--felt); }
 .login-list { display: flex; flex-direction: column; gap: 2px; }
 .login-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
@@ -447,7 +447,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .chat-bubble-text { font-size: 13.5px; color: var(--ivory); line-height: 1.4;
   white-space: pre-wrap; overflow-wrap: anywhere; }
 .chat-bubble-time { font-size: 10px; color: var(--ivory-dim); align-self: flex-end; }
-.avatar-tap { background: none; border: none; padding: 0; cursor: pointer; border-radius: 50%; }
 .photo-viewer { background: #000000dd; padding: 24px; }
 .photo-viewer-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 14px;
   box-shadow: 0 8px 30px #00000080; }
@@ -512,12 +511,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .h2h-bar { flex: 1; height: 8px; border-radius: 99px; background: #D9614C55; overflow: hidden; }
 .h2h-w { height: 100%; background: var(--win); }
 .h2h-score { font-weight: 700; width: 42px; text-align: right; font-family: 'Bricolage Grotesque', sans-serif; }
-.profile-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-.p-name { font-size: 22px; overflow-wrap: anywhere; }
-.p-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; font-weight: 800;
-  display: flex; align-items: center; gap: 10px; }
-.p-motto { color: var(--ivory-dim); font-size: 13px; font-style: italic; margin-top: 4px; }
-.p-since { color: var(--ivory-dim); font-size: 12px; margin-top: 3px; }
 .prov-badge { font-family: 'Archivo', sans-serif; font-size: 11px; font-weight: 600; color: var(--gold);
   border: 1px solid var(--gold); border-radius: 999px; padding: 3px 9px; }
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
@@ -685,27 +678,52 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 }
 
 /* ===== Uebersicht-Dashboard: Module (siehe src/components/widgets) =====
-   Immer sichtbar, auf jeder Groesse - am Handy einfach untereinander
-   (.ov-layout ist von Haus aus eine Spalte), ab 900px zweispaltig neben
-   der Tabelle. So sieht man dieselben Infos auf jedem Geraet, nur anders
-   angeordnet - keine Inhalte, die am Handy verschwinden. */
+   Ab 900px duenn-breit-duenn wie das Profil (Dashboard-Look, alle Module
+   sichtbar, Ranking-Tabelle zentral/breit). Am Handy soll das Ranking
+   dominieren: die Tabelle steht per "order" ganz oben, und die Profil-
+   Duplikate (Mein Status/Erfolge/Head-to-Head/Rekorde - stehen inhaltsgleich
+   schon im Profil-Tab) sind ausgeblendet, um Scroll-Weg vor dem Ranking zu
+   sparen. Live-Status (offene Pings/Herausforderungen) ist keine Profil-
+   Info, sondern eine Handlungsaufforderung, und bleibt daher auch am Handy
+   sichtbar. */
 .ov-layout { display: flex; flex-direction: column; gap: 22px; }
-.ov-side { display: flex; flex-direction: column; gap: 16px; }
-.ov-side .stat-block { margin-bottom: 0; }
+.ov-main { order: 1; }
+.ov-live { order: 2; }
+.ov-side { display: flex; flex-direction: column; gap: 16px; order: 3; }
+.ov-side-extra { display: none; }
+.ov-right-col { display: contents; }
+.ov-side-right { display: none; flex-direction: column; gap: 16px; order: 4; }
+.ov-side .stat-block, .ov-side-right .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .side-row:last-of-type { border-bottom: none; }
 .side-row-emoji { font-size: 16px; line-height: 1; }
 .side-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .side-row-gap { color: var(--ivory-dim); font-size: 12px; white-space: nowrap; }
 
-.dash-photo { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
-  width: 100%; background: none; border: none; color: inherit; font-family: inherit; cursor: pointer; padding: 0 0 14px; }
-.dash-photo b { font-size: 15px; }
-.dash-photo span { font-size: 12.5px; color: var(--ivory-dim); }
 .dash-stats { display: flex; justify-content: space-between; text-align: center; }
 .dash-stats div { display: flex; flex-direction: column; }
 .dash-stats b { font-size: 16px; }
 .dash-stats span { font-size: 10.5px; color: var(--ivory-dim); }
+
+/* Vereinheitlichte Identitaets-Karte (widgets/IdentityCard) - grosses,
+   zentriertes Foto im Fokus, dieselbe Struktur auf allen vier Hauptseiten.
+   .id-card ist der Positionierungs-Kontext fuer das absolut platzierte
+   Einladen-Symbol (siehe .id-card-invite), damit der zentrierte Text
+   darunter (Name/Rating/Motto/"Dabei seit") davon unbeeinflusst bleibt. */
+.id-card { position: relative; }
+.id-card-head { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  width: 100%; background: none; border: none; color: inherit; font-family: inherit; padding: 0; }
+button.id-card-head { cursor: pointer; }
+.id-card-name { font-size: 18px; margin-top: 8px; overflow-wrap: anywhere; }
+.id-card-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; }
+.id-card-motto { color: var(--ivory-dim); font-size: 13px; font-style: italic; margin-top: 4px; }
+.id-card-since { color: var(--ivory-dim); font-size: 12px; margin-top: 2px; }
+.id-card-invite { position: absolute; top: 16px; right: 14px; display: flex; align-items: center;
+  justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--felt-3);
+  border: 1px solid var(--gold); color: var(--gold); cursor: pointer; }
+.id-card-invite:hover { background: var(--felt); }
+.id-card-kpis { margin-top: 14px; }
+.id-card-kpis + * { margin-top: 14px; }
 .dash-live { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; width: 100%;
   background: color-mix(in srgb, var(--loss) 20%, transparent);
   border: 1px solid color-mix(in srgb, var(--loss) 45%, transparent);
@@ -716,11 +734,22 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 .records-grid span { font-size: 10px; color: var(--ivory-dim); line-height: 1.25; }
 .record-emoji { margin-right: 4px; }
 
-/* Profil: Foto + Kernzahlen links, Rest rechts - gleiches Prinzip wie
-   .ov-layout (immer sichtbar, am Handy untereinander). */
+/* Profil: am Handy Foto+Kennzahlen, dann alle eigenen Statistiken
+   zusammen, dann Erfolge - die Konto-Einstellungen (Login, Feedback, Konto
+   loeschen, ...) kommen bewusst zuletzt (per order), damit sie das
+   Wichtige nicht nach unten verdraengen. Ab 900px drei Spalten (siehe
+   Desktop-Block weiter unten): dort teilen sich Identitaet+Statistiken die
+   linke Spalte, Erfolge stehen als zentrales Element breiter in der Mitte,
+   Statistiken+Konto teilen sich die rechte Spalte - die Reihenfolge hier
+   spielt dort keine Rolle mehr. */
 .pf-layout { display: flex; flex-direction: column; gap: 22px; }
-.pf-right { display: flex; flex-direction: column; }
-.pf-right > * { margin-bottom: 14px; }
+.pf-left-col, .pf-right-col { display: contents; }
+.pf-identity { order: 1; }
+.pf-stats-a { order: 2; }
+.pf-stats-b { order: 3; }
+.pf-achievements { order: 4; display: flex; flex-direction: column; }
+.pf-achievements > * { margin-bottom: 14px; }
+.pf-account { order: 5; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
 
@@ -736,43 +765,102 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
    schmal/zentriert. Die Tabbar bleibt bewusst unten und unveraendert wie
    am Handy (gleiche Bedienung, kein Umlernen). */
 @media (min-width: 900px) {
-  .phone.app { max-width: 1240px; margin: 0 auto; }
-  .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; }
+  .phone.app { max-width: 1500px; margin: 0 auto; }
+  /* margin: auto zentriert JEDEN Screen standardmaessig innerhalb der
+     breiten Desktop-Flaeche - ohne das wuerde z.B. die Verwaltung (kein
+     eigenes :has()-Layout unten) am linken Rand kleben bleiben. Screens
+     mit eigenem Layout unten setzen nur noch max-width, die Zentrierung
+     erben sie von hier. */
+  .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; margin: 0 auto; }
   .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
 
-  /* Statistik: die drei kleinen Bestenlisten nebeneinander statt gestapelt */
-  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
   .stat-grid .stat-block { margin-bottom: 0; }
-  .phone.app .screen:has(.stat-grid) { max-width: 1160px; }
 
-  /* Uebersicht: Spieler-Module links, Rangliste rechts */
-  .phone.app .screen:has(.ov-layout) { max-width: 1160px; }
-  .ov-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+  /* Uebersicht: duenn-breit-duenn wie das Profil - UserPanel links (voller
+     Hoehe), Ranking-Tabelle zentral/breit (das Wichtigste dieser Seite,
+     ebenfalls volle Hoehe), rechts Live-Status oben + Erfolge-Fortschritt
+     darunter (analog Profil: pf-stats-b + pf-account teilen sich die
+     rechte Spalte, siehe .ov-right-col unten). Achtung: .ov-right-col ist
+     selbst ein Flexbox-Stapel, KEIN Grid mit eigenen Zeilen - die
+     "order"-Werte von der Handy-Ansicht wirken hier also weiterhin und
+     muessen fuer beide Kinder explizit auf 0 zurueckgesetzt werden, sonst
+     bringt Handy-"order" die Reihenfolge durcheinander. */
+  .phone.app .screen:has(.ov-layout) { max-width: 1440px; }
+  .ov-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; position: sticky; top: 28px; }
+  .ov-main { grid-column: 2; grid-row: 1 / span 2; order: 0; }
+  /* EIN Grid-Feld fuer beide rechten Module (siehe Kommentar in
+     RanglisteScreen.jsx) - sie stapeln sich per Flexbox anhand ihrer
+     eigenen Hoehe, statt dass Grid Zeile 1/2 anhand der linken/mittleren
+     Spalte aufteilt. */
+  .ov-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 16px; }
+  .ov-live, .ov-side-right { order: 0; }
+  .ov-side-right { display: flex; }
+  .ov-side-extra { display: flex; flex-direction: column; gap: 16px; }
 
-  /* Profil: Foto/Kernzahlen links (bleibt beim Scrollen sichtbar), Rest rechts */
-  .phone.app .screen:has(.pf-layout) { max-width: 1000px; }
-  .pf-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
-  .pf-left { position: sticky; top: 28px; }
+  /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Uebersicht/
+     Statistik) - Erfolge sind ein zentrales Element der App und stehen
+     deshalb breiter in der Mitte, Statistiken flankieren links/rechts.
+     Links: Identitaet + Ratings/Head-to-Head (bleibt beim Scrollen
+     sichtbar, siehe .pf-left-col). Rechts: Tempo + Konto-Einstellungen
+     (siehe .pf-right-col). Beide Seiten-Spalten sind selbst Flexbox-
+     Stapel, KEIN Grid mit eigenen Zeilen - die "order"-Werte von der
+     Handy-Ansicht wirken hier also weiterhin und muessen fuer alle 4
+     Kinder explizit auf 0 zurueckgesetzt werden, sonst bringt Handy-
+     "order" die Reihenfolge durcheinander. */
+  .phone.app .screen:has(.pf-layout) { max-width: 1440px; }
+  .pf-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  /* Links und rechts steckt jeweils EIN Grid-Feld (.pf-left-col /
+     .pf-right-col), das seine zwei Module per Flexbox stapelt - so
+     bestimmt allein ihre eigene Hoehe den Abstand, statt dass CSS Grid
+     Zeile 1/2 anhand der viel hoeheren Erfolge-Spalte in der Mitte
+     aufteilt (das erzeugte vorher eine grosse Luecke vor dem zweiten
+     Modul). */
+  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
+  .pf-identity, .pf-stats-a { order: 0; }
+  .pf-identity { position: sticky; top: 28px; }
+  .pf-achievements { grid-column: 2; grid-row: 1 / span 2; order: 0; }
+  .pf-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
+  .pf-stats-b { position: sticky; top: 28px; order: 0; }
+  .pf-account { order: 0; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
   .phone.app .screen:has(.pf-edit-layout) { max-width: 900px; }
   .pf-edit-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
 
-  /* Live: Duelle links, Live-Liste rechts */
-  .phone.app .screen:has(.live-split) { max-width: 1000px; }
-  .live-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  /* Live: duenn-breit-duenn wie Uebersicht/Statistik/Profil - UserPanel
+     links (dieselbe Konstante), Duelle zentral/breit (der Fokus dieser
+     Seite - offene Herausforderungen brauchen mehr Platz fuer Nachricht/
+     Antwort), Live-Pings rechts (kompakte Liste, wie die Bestenlisten in
+     der Statistik). */
+  .phone.app .screen:has(.live-split) { max-width: 1440px; }
+  .live-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  .live-section.duelle { grid-column: 2; }
+  .live-section.pings { grid-column: 3; }
 
-  /* Statistik: Trendverlauf links, Bestenlisten + Letzte Matches rechts.
-     Die 3er-Bestenlisten-Reihe faellt in der schmaleren rechten Spalte
-     auf eine Spalte zurueck statt gequetschter 3 Mini-Karten. */
-  .phone.app .screen:has(.stat-split) { max-width: 1160px; }
-  .stat-split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  .stat-split .stat-grid { grid-template-columns: 1fr; }
+  /* Statistik: duenn-breit-duenn wie Uebersicht/Profil - UserPanel links
+     (dieselbe Konstante), Trendverlauf + Letzte Matches zentral/breit (der
+     eigentliche Fokus dieser Seite), die drei Bestenlisten rechts
+     ("alles andere") gestapelt statt gequetscht nebeneinander. */
+  .phone.app .screen:has(.stat-split) { max-width: 1440px; }
+  .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  .stat-split .ov-side { position: sticky; top: 28px; }
+  .stat-grid { display: flex; flex-direction: column; gap: 16px; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }
   .match-split { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+
+  /* Verwaltung: keine Identitaets-Spalte noetig (kein "eigener" Fokus wie
+     bei Uebersicht/Live/Statistik/Profil), stattdessen ein lockeres
+     Dashboard aus den einzelnen Modulen (offene Matches, Feedback, Match
+     nachtragen, ...) - per CSS-Mehrspaltensatz, damit unterschiedlich
+     hohe Karten den Platz gut ausnutzen statt stur in einer Spalte
+     untereinander zu stehen. */
+  .phone.app .screen:has(.admin-grid) { max-width: 1300px; }
+  .admin-grid { columns: 2; column-gap: 24px; }
+  .admin-grid > .stat-block { break-inside: avoid; }
 
   /* Neues Match, uebrige Schritte (Disziplin/Pruefen/Bestaetigung):
      nur zentrieren, keine besondere Breite/Groesse noetig. */
