@@ -791,10 +791,14 @@ button.id-card-head { cursor: pointer; }
      selbst ein Flexbox-Stapel, KEIN Grid mit eigenen Zeilen - die
      "order"-Werte von der Handy-Ansicht wirken hier also weiterhin und
      muessen fuer beide Kinder explizit auf 0 zurueckgesetzt werden, sonst
-     bringt Handy-"order" die Reihenfolge durcheinander. */
+     bringt Handy-"order" die Reihenfolge durcheinander. .ov-side ist
+     bewusst NICHT sticky (anders als frueher) - UserPanel ist hier oft
+     hoeher als der Viewport, ein sticky-Block der nie vollstaendig ins
+     Bild passt wirkt beim Scrollen wie haengengeblieben statt wie
+     "bleibt sichtbar". Scrollt jetzt normal mit wie jede andere Spalte. */
   .phone.app .screen:has(.ov-layout) { max-width: 1440px; }
   .ov-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; position: sticky; top: 28px; }
+  .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; }
   .ov-main { grid-column: 2; grid-row: 1 / span 2; order: 0; }
   /* EIN Grid-Feld fuer beide rechten Module (siehe Kommentar in
      RanglisteScreen.jsx) - sie stapeln sich per Flexbox anhand ihrer
@@ -854,7 +858,6 @@ button.id-card-head { cursor: pointer; }
      ("alles andere") gestapelt statt gequetscht nebeneinander. */
   .phone.app .screen:has(.stat-split) { max-width: 1440px; }
   .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .stat-split .ov-side { position: sticky; top: 28px; }
   .stat-grid { display: flex; flex-direction: column; gap: 16px; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
