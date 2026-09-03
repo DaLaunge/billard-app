@@ -12,21 +12,26 @@ const RANGES = [
   { key: "ALL", label: "Alles", days: null },
 ];
 
+// Wie bei Uebersicht/Statistik-Filtern: "Doppel" gehoert dazu, ist aber
+// keine "echte" Disziplin in DEFAULT_DISCIPLINES (die ist nur fuer
+// Einzel-Matches gedacht).
+const GRAPH_DISCIPLINES = ["Gesamt", "8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
+
 export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
 
-  const gesamt = useMemo(() => rangliste.filter((r) => r.discipline === "Gesamt"), [rangliste]);
-
-  // snapshots enthaelt inzwischen auch die anderen Disziplinen (siehe
-  // App.jsx) - dieser Graph zeigt bewusst weiterhin nur Gesamt, sonst
-  // wuerden sich die Linien verschiedener Disziplinen vermischen.
-  const gesamtSnapshots = useMemo(() => snapshots.filter((r) => r.discipline === "Gesamt"), [snapshots]);
+  // Standardmaessig Gesamt, waehlbar auf eine Einzeldisziplin - siehe
+  // GRAPH_DISCIPLINES. Alle folgenden Werte (Spieler-Reihenfolge,
+  // Kurven, verfuegbare Daten) haengen von der gewaehlten Disziplin ab.
+  const [selDisc, setSelDisc] = useState("Gesamt");
+  const discRangliste = useMemo(() => rangliste.filter((r) => r.discipline === selDisc), [rangliste, selDisc]);
+  const discSnapshots = useMemo(() => snapshots.filter((r) => r.discipline === selDisc), [snapshots, selDisc]);
 
   const seriesByNick = useMemo(() => {
     const s = {};
-    gesamtSnapshots.forEach((r) => {
+    discSnapshots.forEach((r) => {
       const nick = nickById[r.player_id];
       if (!nick || !r.snap_date) return;
       (s[nick] ||= {})[r.snap_date] = r.rating;
@@ -34,18 +39,18 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     // Kein Live-Overlay mehr: der Verlauf enthält den heutigen Tagespunkt bereits
     // aus dem Backfill. So läuft die Linie glatt (inkl. Inaktivitäts-Verfall) ohne Knick.
     return s;
-  }, [gesamtSnapshots, nickById]);
+  }, [discSnapshots, nickById]);
 
   const allDates = useMemo(() => {
-    return [...new Set(gesamtSnapshots.map((r) => r.snap_date).filter(Boolean))].sort();
-  }, [gesamtSnapshots]);
+    return [...new Set(discSnapshots.map((r) => r.snap_date).filter(Boolean))].sort();
+  }, [discSnapshots]);
   const defaultSel = useMemo(() => {
-    const names = gesamt.map((r) => r.nickname);
+    const names = discRangliste.map((r) => r.nickname);
     const idx = names.indexOf(me.nickname);
     if (idx === -1) return names.slice(0, 5);
     const from = Math.max(0, idx - 2);
     return names.slice(from, from + 5);
-  }, [gesamt, me]);
+  }, [discRangliste, me]);
 
   // Wie oft habe ich gegen wen gespielt? (für Vorschläge)
   const freqByNick = useMemo(() => {
@@ -104,6 +109,11 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   return (
     <section className="stat-block">
       <h3><TrendingUp size={17} /> {t("Entwicklung über die Zeit")}</h3>
+      <div className="chips">
+        {GRAPH_DISCIPLINES.map((d) => (
+          <button key={d} className={"chip" + (selDisc === d ? " active" : "")} onClick={() => setSelDisc(d)}>{t(d)}</button>
+        ))}
+      </div>
       {allDates.length === 0 ? (
         <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
