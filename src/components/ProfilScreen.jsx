@@ -61,39 +61,23 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [ticketsRefresh, setTicketsRefresh] = useState(0);
   const heroPhoto = photoOf(nickname);
 
-  // Farbthema: sofort live vorschauen (applyTheme), Speichern separat -
-  // bei Presets zusammen mit der Auswahl, bei "Eigenes" ueber den
-  // Uebernehmen-Button (sonst wuerde jeder Klick im Farbwaehler einen
-  // eigenen Server-Request ausloesen).
+  // Farbthema und Startseite: nur noch live vorschauen (applyTheme) bzw.
+  // lokal markieren - gespeichert wird alles zusammen erst ueber den
+  // "Speichern"-Button unten (siehe save()), damit nicht jeder Klick im
+  // Farbwaehler oder bei der Startseite einen eigenen Server-Request ausloest.
   const [themeKey, setThemeKey] = useState(meRow?.theme_key || "green");
   const [customBg, setCustomBg] = useState(meRow?.theme_custom?.bg || "#0A2B21");
   const [customAccent, setCustomAccent] = useState(meRow?.theme_custom?.accent || "#7CC1E8");
-  const [themeBusy, setThemeBusy] = useState(false);
-  const pickPresetTheme = async (key) => {
+  const pickPresetTheme = (key) => {
     setThemeKey(key);
     applyTheme(key);
-    setThemeBusy(true);
-    await onSetTheme(key, null);
-    setThemeBusy(false);
   };
   const previewCustomTheme = (bg, accent) => {
     setCustomBg(bg); setCustomAccent(accent); setThemeKey("custom");
     applyTheme("custom", { bg, accent });
   };
-  const saveCustomTheme = async () => {
-    setThemeBusy(true);
-    await onSetTheme("custom", { bg: customBg, accent: customAccent });
-    setThemeBusy(false);
-  };
 
   const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "rang");
-  const [startTabBusy, setStartTabBusy] = useState(false);
-  const pickStartTab = async (value) => {
-    setStartTabLocal(value);
-    setStartTabBusy(true);
-    await onSetStartTab(value);
-    setStartTabBusy(false);
-  };
 
   const sendFeedback = async () => {
     if (!feedbackMsg.trim()) return;
@@ -154,16 +138,34 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
   const save = async () => {
     setBusy(true);
-    const ok = await onSaveProfile(cleanNick, color, motto);
+    const tasks = [onSaveProfile(cleanNick, color, motto)];
+    const themeChanged = themeKey !== (meRow?.theme_key || "green")
+      || (themeKey === "custom" && (customBg !== (meRow?.theme_custom?.bg || "#0A2B21") || customAccent !== (meRow?.theme_custom?.accent || "#7CC1E8")));
+    if (themeChanged) tasks.push(onSetTheme(themeKey, themeKey === "custom" ? { bg: customBg, accent: customAccent } : null));
+    if (startTab !== (meRow?.start_tab || "rang")) tasks.push(onSetStartTab(startTab));
+    const [ok] = await Promise.all(tasks);
     setBusy(false);
     if (ok) setEdit(false);
+  };
+
+  // Design/Startseite werden beim Aufklappen nur live vorgeschaut (siehe oben) -
+  // bei "Zurueck" ohne Speichern muss die Vorschau wieder auf den echten
+  // gespeicherten Stand zurueckgesetzt werden, sonst bleibt z.B. ein
+  // probiertes Farbthema optisch haengen, obwohl es nie gespeichert wurde.
+  const cancelEdit = () => {
+    applyTheme(meRow?.theme_key || "green", meRow?.theme_custom);
+    setThemeKey(meRow?.theme_key || "green");
+    setCustomBg(meRow?.theme_custom?.bg || "#0A2B21");
+    setCustomAccent(meRow?.theme_custom?.accent || "#7CC1E8");
+    setStartTabLocal(meRow?.start_tab || "rang");
+    setEdit(false);
   };
 
   if (edit) {
     return (
       <div className="screen">
         <header className="screen-head with-back">
-          <button className="back-btn" onClick={() => setEdit(false)} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
+          <button className="back-btn" onClick={cancelEdit} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
           <h2>{t("Profil bearbeiten")}</h2>
         </header>
 
@@ -246,13 +248,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
           <section className="stat-block">
             <h3><Palette size={17} /> {t("Design")}</h3>
+            <p className="hint" style={{ marginTop: 0 }}>{t("Wird zusammen mit den anderen Einstellungen ueber 'Speichern' uebernommen.")}</p>
             <div className="theme-grid">
               {THEME_KEYS.map((key) => {
                 const th = THEME_CATALOG[key];
                 return (
                   <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
                     style={{ background: th.felt, borderColor: themeKey === key ? th.chalk : "transparent" }}
-                    onClick={() => pickPresetTheme(key)} disabled={themeBusy}>
+                    onClick={() => pickPresetTheme(key)} disabled={busy}>
                     <span className="theme-dot" style={{ background: th.chalk }} />
                     {t(th.name)}
                     {themeKey === key && <Check size={14} />}
@@ -261,7 +264,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               })}
               <button className={"theme-swatch" + (themeKey === "custom" ? " sel" : "")}
                 style={{ background: customBg, borderColor: themeKey === "custom" ? customAccent : "transparent" }}
-                onClick={() => previewCustomTheme(customBg, customAccent)} disabled={themeBusy}>
+                onClick={() => previewCustomTheme(customBg, customAccent)} disabled={busy}>
                 <span className="theme-dot" style={{ background: customAccent }} />
                 {t("Eigenes")}
                 {themeKey === "custom" && <Check size={14} />}
@@ -277,16 +280,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                   {t("Akzent")}
                   <input type="color" value={customAccent} onChange={(e) => previewCustomTheme(customBg, e.target.value)} />
                 </label>
-                <button className="btn primary small" disabled={themeBusy} onClick={saveCustomTheme}>
-                  {themeBusy ? t("Speichere ...") : t("Übernehmen")}
-                </button>
               </div>
             )}
           </section>
 
           <section className="stat-block">
             <h3><Play size={17} /> {t("Startseite")}</h3>
-            <p className="hint" style={{ marginTop: 0 }}>{t("Was soll beim Starten der App zuerst angezeigt werden?")}</p>
+            <p className="hint" style={{ marginTop: 0 }}>{t("Was soll beim Starten der App zuerst angezeigt werden? Wird mit 'Speichern' uebernommen.")}</p>
             <div className="chips">
               {[
                 ["rang", t("Übersicht")],
@@ -296,7 +296,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 ["last", t("Zuletzt geöffnet")],
               ].map(([v, label]) => (
                 <button key={v} className={"chip" + (startTab === v ? " active" : "")}
-                  disabled={startTabBusy} onClick={() => pickStartTab(v)}>
+                  disabled={busy} onClick={() => setStartTabLocal(v)}>
                   {label}
                 </button>
               ))}
