@@ -45,17 +45,12 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
       <div className="ov-layout">
       <aside className="ov-side">
         <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
-        {/* Diese Karten stehen inhaltsgleich schon im eigenen Profil - am
+        {/* Diese Karte steht inhaltsgleich schon im eigenen Profil - am
             Handy reine Redundanz, die nur Scroll-Weg vor dem Ranking kostet.
-            Ab 900px (Dashboard-Look) bleiben sie sichtbar. */}
+            Ab 900px (Dashboard-Look) bleibt sie sichtbar. */}
         <div className="ov-side-extra">
           <MyStatusCard nickname={me.nickname} rating={ratingOf(me.nickname)} stats={myStats}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-          <RecordsCard extras={myExtras} catalog={catalog} earnedBadges={earnedBadges} />
-          <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
-            onOpenProfile={onOpenProfile} nickname={me.nickname} />
-          <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
         </div>
       </aside>
 
@@ -157,6 +152,16 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
         {t("Ratings werden nach jedem bestaetigten Match ueber die gesamte Historie neu berechnet. Juengere Matches zaehlen staerker. Unter 10 Spielen gilt ein Rating als vorlaeufig, ohne Match seit 180 Tagen als inaktiv.")}
       </p>
       </div>
+
+      {/* Rechte Spalte (duenn-breit-duenn, analog Profil): am Handy wie
+          .ov-side-extra ausgeblendet, ab 900px sichtbar. */}
+      <aside className="ov-side-right">
+        <RecordsCard extras={myExtras} catalog={catalog} earnedBadges={earnedBadges} />
+        <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
+          onOpenProfile={onOpenProfile} nickname={me.nickname} />
+        <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
+          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+      </aside>
       </div>
     </div>
   );

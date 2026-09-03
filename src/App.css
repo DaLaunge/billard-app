@@ -685,18 +685,20 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 }
 
 /* ===== Uebersicht-Dashboard: Module (siehe src/components/widgets) =====
-   Ab 900px zweispaltig neben der Tabelle (Dashboard-Look, alle Module
-   sichtbar). Am Handy soll das Ranking dominieren: die Tabelle steht per
-   "order" ganz oben, und die Profil-Duplikate (Mein Status/Erfolge/Head-
-   to-Head/Rekorde - stehen inhaltsgleich schon im Profil-Tab) sind
-   ausgeblendet, um Scroll-Weg vor dem Ranking zu sparen. Live-Status
-   (offene Pings/Herausforderungen) ist keine Profil-Info, sondern eine
-   Handlungsaufforderung, und bleibt daher auch am Handy sichtbar. */
+   Ab 900px duenn-breit-duenn wie das Profil (Dashboard-Look, alle Module
+   sichtbar, Ranking-Tabelle zentral/breit). Am Handy soll das Ranking
+   dominieren: die Tabelle steht per "order" ganz oben, und die Profil-
+   Duplikate (Mein Status/Erfolge/Head-to-Head/Rekorde - stehen inhaltsgleich
+   schon im Profil-Tab) sind ausgeblendet, um Scroll-Weg vor dem Ranking zu
+   sparen. Live-Status (offene Pings/Herausforderungen) ist keine Profil-
+   Info, sondern eine Handlungsaufforderung, und bleibt daher auch am Handy
+   sichtbar. */
 .ov-layout { display: flex; flex-direction: column; gap: 22px; }
 .ov-side { display: flex; flex-direction: column; gap: 16px; order: 2; }
 .ov-main { order: 1; }
 .ov-side-extra { display: none; }
-.ov-side .stat-block { margin-bottom: 0; }
+.ov-side-right { display: none; flex-direction: column; gap: 16px; order: 3; }
+.ov-side .stat-block, .ov-side-right .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .side-row:last-of-type { border-bottom: none; }
 .side-row-emoji { font-size: 16px; line-height: 1; }
@@ -751,7 +753,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
    schmal/zentriert. Die Tabbar bleibt bewusst unten und unveraendert wie
    am Handy (gleiche Bedienung, kein Umlernen). */
 @media (min-width: 900px) {
-  .phone.app { max-width: 1240px; margin: 0 auto; }
+  .phone.app { max-width: 1500px; margin: 0 auto; }
   .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; }
   .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
 
@@ -760,13 +762,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .stat-grid .stat-block { margin-bottom: 0; }
   .phone.app .screen:has(.stat-grid) { max-width: 1160px; }
 
-  /* Uebersicht: Spieler-Module links, Rangliste rechts - hier wieder die
-     natuerliche Quelltext-Reihenfolge (kein "Ranking zuerst" wie am Handy)
-     und alle Module inkl. der am Handy ausgeblendeten Profil-Duplikate. */
-  .phone.app .screen:has(.ov-layout) { max-width: 1160px; }
-  .ov-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
-  .ov-side, .ov-main { order: 0; }
+  /* Uebersicht: duenn-breit-duenn wie das Profil - Module links/rechts,
+     Ranking-Tabelle zentral/breit (das Wichtigste auf dieser Seite). Hier
+     wieder die natuerliche Quelltext-Reihenfolge (kein "Ranking zuerst" wie
+     am Handy) und alle Module inkl. der am Handy ausgeblendeten Profil-
+     Duplikate. */
+  .phone.app .screen:has(.ov-layout) { max-width: 1440px; }
+  .ov-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  .ov-side, .ov-main, .ov-side-right { order: 0; }
   .ov-side-extra { display: flex; flex-direction: column; gap: 16px; }
+  .ov-side-right { display: flex; }
 
   /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Uebersicht/
      Statistik) - Erfolge sind ein zentrales Element der App und stehen
@@ -775,7 +780,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
      sichtbar). Rechts: Rekorde/Tempo + Konto-Einstellungen. 5 Elemente
      fuer 3 Spalten -> explizite grid-column/-row, die "order"-Werte von
      der Handy-Ansicht werden hier bedeutungslos. */
-  .phone.app .screen:has(.pf-layout) { max-width: 1160px; }
+  .phone.app .screen:has(.pf-layout) { max-width: 1440px; }
   .pf-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
   .pf-identity { grid-column: 1; grid-row: 1; position: sticky; top: 28px; }
   .pf-stats-a { grid-column: 1; grid-row: 2; order: 0; }
