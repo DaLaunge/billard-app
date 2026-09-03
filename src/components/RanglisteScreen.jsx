@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Check, X, Clock, FileText } from "lucide-react";
+import { Check, X, Clock, FileText, ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { t } from "../lib/i18n";
 import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
 import { computeAchievementExtras } from "../lib/achievements";
@@ -16,7 +16,7 @@ const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
    und im eigenen Profil), rechts Erfolge-Fortschritt + Live-Stand. Ab 900px
    dreispaltig, darunter alles untereinander (Ranking zuerst). */
 export default function RanglisteScreen({ rangliste, disciplines, pending, me, onConfirm, onOpenProfile, onOpenProtokoll, myOpenReports, colorOf, badgeOf, photoOf,
-  matches, players, challenges, catalog, earnedBadges, pings, openChallengesToMe, onGoToLive, onInvite }) {
+  matches, players, challenges, catalog, earnedBadges, pings, openChallengesToMe, onGoToLive, onInvite, snapshots }) {
   const [disc, setDisc] = useState("Gesamt");
   const [showAll, setShowAll] = useState(false);
 
@@ -29,6 +29,29 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
     () => computeAchievementExtras(me.nickname, matches, players, challenges),
     [matches, players, challenges, me.nickname]
   );
+
+  // Rangverschiebung seit dem letzten Tages-Snapshot VOR heute
+  // (rating_snapshots, taeglich befuellt, von App.jsx schon auf
+  // discipline="Gesamt" gefiltert geladen) - daher nur auf dem
+  // "Gesamt"-Tab verfuegbar, fuer Einzeldisziplinen gibt es keine
+  // historischen Raenge. Der juengste vorhandene snap_date ist immer
+  // "heute" (der heutige Tagespunkt ist schon im Backfill enthalten,
+  // siehe EntwicklungBlock) - der Vergleich braucht daher explizit den
+  // Tag DAVOR, nicht einfach den letzten Eintrag. snapshots kommt
+  // aufsteigend nach snap_date sortiert rein, das letzte Vorkommen pro
+  // Spieler VOR dem heutigen Datum ist also automatisch ihr Rang von
+  // gestern (oder vom letzten Tag mit Daten, falls ein Tag fehlt).
+  const prevRankByPlayerId = useMemo(() => {
+    const list = snapshots || [];
+    if (list.length === 0) return {};
+    const latestDate = list.reduce((max, s) => (s.snap_date > max ? s.snap_date : max), list[0].snap_date);
+    const m = {};
+    list.forEach((s) => { if (s.snap_date < latestDate) m[s.player_id] = s.rank; });
+    return m;
+  }, [snapshots]);
+  const idByNick = useMemo(() => {
+    const m = {}; players.forEach((p) => { m[p.nickname] = p.id; }); return m;
+  }, [players]);
 
   return (
     <div className="screen">
@@ -115,10 +138,27 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
       <ol className="ranking">
         {rows.map((r, i) => {
           const medalEmoji = i < 3 && !r.vorlaeufig && r.aktiv ? MEDAL_EMOJI[i] : null;
+          const currentRank = i + 1;
+          const prevRank = disc === "Gesamt" ? prevRankByPlayerId[idByNick[r.nickname]] : null;
+          const move = prevRank == null ? null : prevRank > currentRank ? "up" : prevRank < currentRank ? "down" : "same";
           return (
           <li key={r.nickname + r.discipline}>
             <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
               <span className="rank-pos">{medalEmoji || i + 1}</span>
+              {/* Auf "Gesamt" immer reserviert (auch leer), damit Zeilen ohne
+                  Verlaufsdaten (z.B. ganz neue Spieler) die Spalten der
+                  anderen Zeilen nicht verschieben. Auf Einzeldisziplinen
+                  ganz weggelassen, da es dort nie Bewegungsdaten gibt. */}
+              {disc === "Gesamt" && (
+                <span className={"rank-move" + (move ? " " + move : "")} title={
+                  move === "up" ? t("Aufgestiegen seit gestern")
+                    : move === "down" ? t("Abgestiegen seit gestern")
+                    : move === "same" ? t("Unveraendert seit gestern")
+                    : undefined
+                }>
+                  {move === "up" ? <ArrowUp size={14} /> : move === "down" ? <ArrowDown size={14} /> : move === "same" ? <Minus size={14} /> : null}
+                </span>
+              )}
               <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} photo={photoOf(r.nickname)} />
               <span className="rank-name">
                 {r.nickname}

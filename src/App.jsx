@@ -398,7 +398,7 @@ export default function App() {
                   matches={matches} players={players} challenges={challenges}
                   catalog={catalog} earnedBadges={badgesOfId(player.id)}
                   pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => setTab("live")}
-                  onInvite={() => setTab("invite")} />
+                  onInvite={() => setTab("invite")} snapshots={snapshots} />
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} matches={matches} rangliste={rangliste}
