@@ -691,6 +691,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 .ov-live { order: 2; }
 .ov-side { display: flex; flex-direction: column; gap: 16px; order: 3; }
 .ov-side-extra { display: none; }
+.ov-right-col { display: contents; }
 .ov-side-right { display: none; flex-direction: column; gap: 16px; order: 4; }
 .ov-side .stat-block, .ov-side-right .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
@@ -734,6 +735,7 @@ button.id-card-head { cursor: pointer; }
    Statistiken+Konto teilen sich die rechte Spalte - die Reihenfolge hier
    spielt dort keine Rolle mehr. */
 .pf-layout { display: flex; flex-direction: column; gap: 22px; }
+.pf-left-col, .pf-right-col { display: contents; }
 .pf-identity { order: 1; }
 .pf-stats-a { order: 2; }
 .pf-stats-b { order: 3; }
@@ -770,31 +772,49 @@ button.id-card-head { cursor: pointer; }
      Hoehe), Ranking-Tabelle zentral/breit (das Wichtigste dieser Seite,
      ebenfalls volle Hoehe), rechts Live-Status oben + Erfolge-Fortschritt
      darunter (analog Profil: pf-stats-b + pf-account teilen sich die
-     rechte Spalte). 4 Elemente fuer 3 Spalten -> explizite grid-column/
-     -row, die "order"-Werte von der Handy-Ansicht werden hier
-     bedeutungslos. */
+     rechte Spalte, siehe .ov-right-col unten). Achtung: .ov-right-col ist
+     selbst ein Flexbox-Stapel, KEIN Grid mit eigenen Zeilen - die
+     "order"-Werte von der Handy-Ansicht wirken hier also weiterhin und
+     muessen fuer beide Kinder explizit auf 0 zurueckgesetzt werden, sonst
+     bringt Handy-"order" die Reihenfolge durcheinander. */
   .phone.app .screen:has(.ov-layout) { max-width: 1440px; }
   .ov-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
   .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; position: sticky; top: 28px; }
   .ov-main { grid-column: 2; grid-row: 1 / span 2; order: 0; }
-  .ov-live { grid-column: 3; grid-row: 1; order: 0; }
-  .ov-side-right { grid-column: 3; grid-row: 2; order: 0; display: flex; }
+  /* EIN Grid-Feld fuer beide rechten Module (siehe Kommentar in
+     RanglisteScreen.jsx) - sie stapeln sich per Flexbox anhand ihrer
+     eigenen Hoehe, statt dass Grid Zeile 1/2 anhand der linken/mittleren
+     Spalte aufteilt. */
+  .ov-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 16px; }
+  .ov-live, .ov-side-right { order: 0; }
+  .ov-side-right { display: flex; }
   .ov-side-extra { display: flex; flex-direction: column; gap: 16px; }
 
   /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Uebersicht/
      Statistik) - Erfolge sind ein zentrales Element der App und stehen
      deshalb breiter in der Mitte, Statistiken flankieren links/rechts.
      Links: Identitaet + Ratings/Head-to-Head (bleibt beim Scrollen
-     sichtbar). Rechts: Rekorde/Tempo + Konto-Einstellungen. 5 Elemente
-     fuer 3 Spalten -> explizite grid-column/-row, die "order"-Werte von
-     der Handy-Ansicht werden hier bedeutungslos. */
+     sichtbar, siehe .pf-left-col). Rechts: Tempo + Konto-Einstellungen
+     (siehe .pf-right-col). Beide Seiten-Spalten sind selbst Flexbox-
+     Stapel, KEIN Grid mit eigenen Zeilen - die "order"-Werte von der
+     Handy-Ansicht wirken hier also weiterhin und muessen fuer alle 4
+     Kinder explizit auf 0 zurueckgesetzt werden, sonst bringt Handy-
+     "order" die Reihenfolge durcheinander. */
   .phone.app .screen:has(.pf-layout) { max-width: 1440px; }
   .pf-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .pf-identity { grid-column: 1; grid-row: 1; position: sticky; top: 28px; }
-  .pf-stats-a { grid-column: 1; grid-row: 2; order: 0; }
+  /* Links und rechts steckt jeweils EIN Grid-Feld (.pf-left-col /
+     .pf-right-col), das seine zwei Module per Flexbox stapelt - so
+     bestimmt allein ihre eigene Hoehe den Abstand, statt dass CSS Grid
+     Zeile 1/2 anhand der viel hoeheren Erfolge-Spalte in der Mitte
+     aufteilt (das erzeugte vorher eine grosse Luecke vor dem zweiten
+     Modul). */
+  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
+  .pf-identity, .pf-stats-a { order: 0; }
+  .pf-identity { position: sticky; top: 28px; }
   .pf-achievements { grid-column: 2; grid-row: 1 / span 2; order: 0; }
-  .pf-stats-b { grid-column: 3; grid-row: 1; position: sticky; top: 28px; order: 0; }
-  .pf-account { grid-column: 3; grid-row: 2; order: 0; }
+  .pf-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
+  .pf-stats-b { position: sticky; top: 28px; order: 0; }
+  .pf-account { order: 0; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */

@@ -295,6 +295,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </header>
 
       <div className="pf-layout">
+      {/* Identitaet + Ratings/Rekorde/Head-to-Head stecken ab 900px in EINEM
+          Grid-Feld (.pf-left-col), das sie per Flexbox stapelt - so
+          bestimmt allein ihre eigene Hoehe den Abstand, statt dass CSS
+          Grid Zeile 1/2 anhand der Erfolge-Spalte in der Mitte aufteilt. */}
+      <div className="pf-left-col">
       <div className="pf-identity">
       <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
@@ -357,6 +362,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
         colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+      </div>
       </div>
 
       {/* Erfolge sind ein zentrales Element der App - stehen deshalb in der
@@ -426,8 +432,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </section>
       </div>
 
-      {/* Spielgeschwindigkeit bildet am PC die rechte Spalte (zusammen mit
-          pf-account darunter). */}
+      {/* Spielgeschwindigkeit + Konto-Einstellungen stecken ab 900px in
+          EINEM Grid-Feld (.pf-right-col, gleiches Prinzip wie
+          .pf-left-col oben). */}
+      <div className="pf-right-col">
       <div className="pf-stats-b">
       {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
         <section className="stat-block">
@@ -537,6 +545,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </button>
         </section>
       )}
+      </div>
       </div>
       </div>
 

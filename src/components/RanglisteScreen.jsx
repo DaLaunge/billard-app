@@ -148,19 +148,27 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
       </p>
       </div>
 
+      {/* Beide rechten Module stecken ab 900px in EINEM Grid-Feld (siehe
+          .ov-right-col), das sie per Flexbox stapelt - so bestimmt allein
+          ihre eigene Hoehe den Abstand zwischen ihnen, statt dass CSS Grid
+          Zeile 1/2 anhand der viel hoeheren linken/mittleren Spalte
+          aufteilt (das erzeugte vorher eine grosse Luecke). Am Handy bleibt
+          .ov-right-col unsichtbar (display: contents) - beide Module
+          behalten dort ihre eigene order/display-Regel. */}
+      <div className="ov-right-col">
       {/* Live-Status ist keine Profil-Info, sondern eine Handlungsauf-
           forderung (offene Pings/Herausforderungen) - bleibt daher, anders
-          als die restlichen rechten Module, auch am Handy sichtbar. */}
+          als das Erfolge-Modul, auch am Handy sichtbar. */}
       <div className="ov-live">
         <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
       </div>
 
-      {/* Rechte Spalte (duenn-breit-duenn, analog Profil): am Handy wie
-          .ov-side-extra ausgeblendet, ab 900px sichtbar. */}
+      {/* Am Handy wie .ov-side-extra ausgeblendet, ab 900px sichtbar. */}
       <aside className="ov-side-right">
         <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
           onOpenProfile={onOpenProfile} nickname={me.nickname} />
       </aside>
+      </div>
       </div>
     </div>
   );
