@@ -100,12 +100,29 @@ export function matchUnitCount(log) {
   return collapseRunLog(log).length;
 }
 
-export function avgUnitDurationMs(log) {
-  const dur = matchDurationMs(log);
-  const n = matchUnitCount(log);
-  if (dur == null || !n) return null;
-  return dur / n;
+// Wie matchDurationMs/matchUnitCount, aber gefiltert um die Plausibilitaets-
+// grenze (siehe MIN_MS_PER_BALL unten) - schliesst nachtraeglich in Sekunden
+// durchgeklickte Matches aus statt eine falsche Pro-Stueck-Dauer zu zeigen.
+export function avgUnitDurationMs(log, discipline) {
+  if (isSimpleScoreLog(log)) {
+    const { timeMs, count } = gameSpeedSums(log, discipline);
+    return count > 0 ? timeMs / count : null;
+  }
+  const { timeMs, count } = inningSpeedSums(log);
+  return count > 0 ? timeMs / count : null;
 }
+
+// Plausibilitaets-Untergrenze fuer die Geschwindigkeits-Statistik: schneller
+// als 3s/Kugel ist physikalisch praktisch unmoeglich (selbst ein 3:0-Sieg im
+// 8-Ball mit 1s/Kugel waere nur 24s - reale Bestzeiten liegen deutlich
+// darueber). Zeitspannen, die diese Grenze unterschreiten, stammen so gut
+// wie sicher von nachtraeglich (nach dem eigentlichen Spiel) durchgeklickten
+// Matches und nicht von echtem Live-Tempo - sie werden aus den Summen
+// ausgeschlossen statt die Statistik zu verfaelschen.
+const MIN_MS_PER_BALL = 3000;
+// Objektkugeln pro Spiel/Rack je Disziplin, fuer dieselbe Plausibilitaets-
+// pruefung bei den einfachen Punktestand-Protokollen (8/9/10 Ball).
+const BALLS_PER_GAME = { "8 Ball": 8, "9 Ball": 9, "10 Ball": 10 };
 
 // Zeit- und Kugel-Summen je Spieler aus dem chronologischen 14/1-Rohprotokoll
 // (auch einzelne Racks innerhalb derselben Aufnahme zaehlen separat) - fuer
@@ -121,12 +138,67 @@ export function ballSpeedSums(log) {
     if (isMarker(e)) { prevTs = ts; continue; }
     if (typeof ts === "number" && typeof prevTs === "number" && e.potted > 0
         && (e.type === "rack" || e.type === "miss" || e.type === "safe")) {
-      sums[e.player].timeMs += ts - prevTs;
-      sums[e.player].balls += e.potted;
+      const delta = ts - prevTs;
+      if (delta >= e.potted * MIN_MS_PER_BALL) {
+        sums[e.player].timeMs += delta;
+        sums[e.player].balls += e.potted;
+      }
     }
     prevTs = ts;
   }
   return sums;
+}
+
+// Analog zu ballSpeedSums, aber fuer die einfachen Punktestand-Protokolle
+// (8/9/10 Ball): jeder Log-Eintrag markiert ein gewonnenes Spiel, die Zeit-
+// spanne zum vorigen Eintrag ist dessen Dauer. Selbe Plausibilitaetsgrenze
+// wie bei 14/1, nur mit den Objektkugeln der jeweiligen Disziplin.
+export function gameSpeedSums(log, discipline) {
+  let timeMs = 0, count = 0;
+  if (!log || !isSimpleScoreLog(log)) return { timeMs, count };
+  const minMs = (BALLS_PER_GAME[discipline] || 8) * MIN_MS_PER_BALL;
+  let prevTs = null;
+  for (const e of log) {
+    const ts = entryTs(e);
+    if (typeof ts === "number" && typeof prevTs === "number") {
+      const delta = ts - prevTs;
+      if (delta >= minMs) { timeMs += delta; count += 1; }
+    }
+    prevTs = ts;
+  }
+  return { timeMs, count };
+}
+
+// Analog zu ballSpeedSums, aber pro Aufnahme statt pro Log-Eintrag gruppiert
+// (eine Aufnahme kann mehrere Racks/Eintraege umfassen, siehe collapseRunLog).
+// Dauer einer Aufnahme = Zeit vom Ende der vorigen Aufnahme (bzw. Start-
+// Marker) bis zum letzten Eintrag DIESER Aufnahme, geprueft gegen die darin
+// insgesamt versenkten Kugeln - fuer "Ø pro Aufnahme" im Match-Protokoll.
+export function inningSpeedSums(log) {
+  let timeMs = 0, count = 0;
+  if (!log || isSimpleScoreLog(log)) return { timeMs, count };
+  let groupEndTs = null; // Ende der vorigen Aufnahme = Start der naechsten
+  let curPlayer = null, curInning = null, curPotted = 0, curEndTs = null;
+  const flush = () => {
+    if (curEndTs == null || groupEndTs == null) return;
+    const delta = curEndTs - groupEndTs;
+    if (delta >= curPotted * MIN_MS_PER_BALL) { timeMs += delta; count += 1; }
+  };
+  for (const e of log) {
+    const ts = entryTs(e);
+    if (isMarker(e)) { groupEndTs = ts; continue; }
+    if (typeof ts !== "number") continue;
+    if (curPlayer === e.player && curInning === e.inning) {
+      curPotted += e.potted || 0;
+      curEndTs = ts;
+    } else {
+      flush();
+      groupEndTs = curEndTs ?? groupEndTs;
+      curPlayer = e.player; curInning = e.inning; curPotted = e.potted || 0; curEndTs = ts;
+    }
+  }
+  flush();
+  return { timeMs, count };
 }
 
 // Aggregiert Spielgeschwindigkeit fuer einen Spieler ueber alle seine
@@ -145,9 +217,8 @@ export function computeSpeedStats(matches, playerId) {
       : (m.player2_id === playerId || m.player2b_id === playerId) ? 1 : null;
     if (mySide == null) continue;
     if (isSimpleScoreLog(m.run_log)) {
-      const dur = matchDurationMs(m.run_log);
-      const n = matchUnitCount(m.run_log);
-      if (dur != null && n > 0) { gameMs += dur; gameCount += n; matchesWithGames += 1; }
+      const { timeMs, count } = gameSpeedSums(m.run_log, m.discipline);
+      if (count > 0) { gameMs += timeMs; gameCount += count; matchesWithGames += 1; }
     } else {
       const sums = ballSpeedSums(m.run_log)[mySide];
       if (sums.balls > 0) { ballMs += sums.timeMs; ballCount += sums.balls; matches141 += 1; }
