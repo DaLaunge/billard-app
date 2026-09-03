@@ -31,15 +31,16 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
   );
 
   // Rang- UND Rating-Verschiebung, kombiniert zu einem einzigen Symbol -
-  // basiert auf rating_snapshots (taeglich befuellt, von App.jsx schon
-  // auf discipline="Gesamt" gefiltert geladen), daher nur auf dem
-  // "Gesamt"-Tab verfuegbar. Vergleichsanker ist der letzte gespeicherte
-  // Tag VOR dem letzten Match der Person - nicht einfach "gestern" -
-  // damit ein Match auch dann noch als "das war der Grund" sichtbar
-  // bleibt, wenn seither ein paar ruhige Tage vergangen sind. Wer laenger
-  // nicht spielt, verliert trotzdem taeglich leise Punkte (Inaktivitaets-
-  // Verfall, siehe rebuild_elo() in Supabase) - deshalb faellt der Anker
-  // ohne verwertbaren Match-Tag (oder wenn das Match vor dem Beginn der
+  // basiert auf rating_snapshots (taeglich befuellt). App.jsx laedt
+  // inzwischen alle Disziplinen (fuer die Statistik-Seite), hier wird
+  // bewusst auf "Gesamt" gefiltert - daher nur auf dem "Gesamt"-Tab
+  // verfuegbar. Vergleichsanker ist der letzte gespeicherte Tag VOR dem
+  // letzten Match der Person - nicht einfach "gestern" - damit ein Match
+  // auch dann noch als "das war der Grund" sichtbar bleibt, wenn seither
+  // ein paar ruhige Tage vergangen sind. Wer laenger nicht spielt,
+  // verliert trotzdem taeglich leise Punkte (Inaktivitaets-Verfall, siehe
+  // rebuild_elo() in Supabase) - deshalb faellt der Anker ohne
+  // verwertbaren Match-Tag (oder wenn das Match vor dem Beginn der
   // Snapshot-Historie liegt) auf "gestern" zurueck, damit dieser Verfall
   // trotzdem taeglich sichtbar bleibt statt monatelang eingefroren zu sein.
   const idByNick = useMemo(() => {
@@ -57,11 +58,11 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
   }, [matches]);
   const snapshotsByPlayer = useMemo(() => {
     const m = {};
-    (snapshots || []).forEach((s) => { (m[s.player_id] ||= []).push(s); }); // kommt bereits aufsteigend nach snap_date
+    (snapshots || []).forEach((s) => { if (s.discipline === "Gesamt") (m[s.player_id] ||= []).push(s); }); // kommt bereits aufsteigend nach snap_date
     return m;
   }, [snapshots]);
   const latestSnapDate = useMemo(
-    () => (snapshots || []).reduce((max, s) => (s.snap_date > max ? s.snap_date : max), ""),
+    () => (snapshots || []).reduce((max, s) => (s.discipline === "Gesamt" && s.snap_date > max ? s.snap_date : max), ""),
     [snapshots]
   );
   const referenceFor = (nick) => {

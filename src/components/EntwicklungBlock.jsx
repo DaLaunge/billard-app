@@ -19,9 +19,14 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
 
   const gesamt = useMemo(() => rangliste.filter((r) => r.discipline === "Gesamt"), [rangliste]);
 
+  // snapshots enthaelt inzwischen auch die anderen Disziplinen (siehe
+  // App.jsx) - dieser Graph zeigt bewusst weiterhin nur Gesamt, sonst
+  // wuerden sich die Linien verschiedener Disziplinen vermischen.
+  const gesamtSnapshots = useMemo(() => snapshots.filter((r) => r.discipline === "Gesamt"), [snapshots]);
+
   const seriesByNick = useMemo(() => {
     const s = {};
-    snapshots.forEach((r) => {
+    gesamtSnapshots.forEach((r) => {
       const nick = nickById[r.player_id];
       if (!nick || !r.snap_date) return;
       (s[nick] ||= {})[r.snap_date] = r.rating;
@@ -29,11 +34,11 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     // Kein Live-Overlay mehr: der Verlauf enthält den heutigen Tagespunkt bereits
     // aus dem Backfill. So läuft die Linie glatt (inkl. Inaktivitäts-Verfall) ohne Knick.
     return s;
-  }, [snapshots, nickById]);
+  }, [gesamtSnapshots, nickById]);
 
   const allDates = useMemo(() => {
-    return [...new Set(snapshots.map((r) => r.snap_date).filter(Boolean))].sort();
-  }, [snapshots]);
+    return [...new Set(gesamtSnapshots.map((r) => r.snap_date).filter(Boolean))].sort();
+  }, [gesamtSnapshots]);
   const defaultSel = useMemo(() => {
     const names = gesamt.map((r) => r.nickname);
     const idx = names.indexOf(me.nickname);
