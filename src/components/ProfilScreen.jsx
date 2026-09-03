@@ -19,7 +19,7 @@ import IdentityCard from "./widgets/IdentityCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme }) {
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -84,6 +84,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     setThemeBusy(true);
     await onSetTheme("custom", { bg: customBg, accent: customAccent });
     setThemeBusy(false);
+  };
+
+  const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "rang");
+  const pickStartTab = async (value) => {
+    setStartTabLocal(value);
+    await onSetStartTab(value);
   };
 
   const sendFeedback = async () => {
@@ -461,6 +467,20 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
 
       <div className="pf-account">
+      {isMe && (
+        <section className="stat-block">
+          <h3><Play size={17} /> {t("Startseite")}</h3>
+          <label className="field-label" htmlFor="startTab">{t("Was soll beim Starten der App zuerst angezeigt werden?")}</label>
+          <select id="startTab" className="settings-select" value={startTab}
+            onChange={(e) => pickStartTab(e.target.value)}>
+            <option value="rang">{t("Übersicht")}</option>
+            <option value="live">{t("Live")}</option>
+            <option value="stats">{t("Statistik")}</option>
+            <option value="profil">{t("Profil")}</option>
+          </select>
+        </section>
+      )}
+
       {isMe && (
         <section className="stat-block">
           <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>

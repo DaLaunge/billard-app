@@ -93,6 +93,12 @@ export default function App() {
   const vsOppRef = useRef(vsOpp);
   vsOppRef.current = vsOpp;
   const allowLeaveMatchRef = useRef(false);
+  // Startseite: beim allerersten Player-Laden nach App-Start (nicht bei
+  // jedem Session-Refresh, siehe unten) auf die in den Profileinstellungen
+  // gespeicherte Startseite springen. Der Ref sorgt dafuer, dass spaetere
+  // Token-Refreshs (die denselben useEffect erneut auslösen) die laufende
+  // Navigation nicht zurueck auf die Startseite reissen.
+  const startTabAppliedRef = useRef(false);
   useEffect(() => {
     try { window.history.replaceState({ tab: "rang" }, ""); } catch { /* ignore */ }
     const onPop = (e) => {
@@ -182,6 +188,10 @@ export default function App() {
       setLoadErr(false);
       setPlayer(data ?? null);
       setPlayerChecked(true);
+      if (data && !startTabAppliedRef.current) {
+        startTabAppliedRef.current = true;
+        if (data.start_tab && data.start_tab !== "rang") navReplace({ tab: data.start_tab });
+      }
       const { data: all } = await supabase.from("players")
         .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by, created_at");
       setPlayers(all ?? []);
@@ -312,6 +322,12 @@ export default function App() {
 
   const setTheme = async (themeKey, themeCustom) => {
     const { data, error } = await supabase.rpc("set_theme", { p_theme_key: themeKey, p_theme_custom: themeCustom ?? null });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setPlayer(data);
+  };
+
+  const setStartTab = async (startTab) => {
+    const { data, error } = await supabase.rpc("set_start_tab", { p_start_tab: startTab });
     if (error) { toast(t("Fehler: ") + error.message); return; }
     setPlayer(data);
   };
@@ -495,6 +511,7 @@ export default function App() {
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
+                  onSetStartTab={setStartTab}
                   onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (

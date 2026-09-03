@@ -417,6 +417,8 @@ const TRANSLATIONS = {
     "Ablehnen": "Decline",
     "Zurückziehen": "Withdraw",
     "Duelle": "Duels",
+    "Startseite": "Home screen",
+    "Was soll beim Starten der App zuerst angezeigt werden?": "What should be shown first when the app starts?",
     "App-Updates": "App updates",
     "Wie oft auf neue Version pruefen?": "How often to check for a new version?",
     "Bei jedem Aufruf": "Every time I open the app",
