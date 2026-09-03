@@ -224,8 +224,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .rank-row:active { background: var(--felt-3); }
 .rank-pos { width: 22px; font-weight: 700; color: var(--ivory-dim); font-size: 15px; }
 .rank-move { width: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--ivory-dim); opacity: 0.5; }
-.rank-move.up { color: var(--win); opacity: 1; }
-.rank-move.down { color: var(--loss); opacity: 1; }
+.rank-move.rating-up, .rank-move.rank-up, .rank-move.both-up { color: var(--win); }
+.rank-move.rating-down, .rank-move.rank-down, .rank-move.both-down { color: var(--loss); }
+.rank-move.rating-up, .rank-move.rating-down { opacity: 0.6; }
+.rank-move.rank-up, .rank-move.rank-down { opacity: 0.85; }
+.rank-move.both-up, .rank-move.both-down { opacity: 1; }
 .rank-name { flex: 1; font-weight: 600; font-size: 15.5px; display: flex; flex-direction: column; min-width: 0; }
 .rank-meta { font-weight: 400; font-size: 12px; color: var(--ivory-dim); }
 .prov { color: var(--gold); font-style: normal; }

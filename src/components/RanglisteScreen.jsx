@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Check, X, Clock, FileText, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { Check, X, Clock, FileText, ArrowUp, ArrowDown, Minus, ChevronsUp, ChevronsDown, TrendingUp, TrendingDown } from "lucide-react";
 import { t } from "../lib/i18n";
 import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
 import { computeAchievementExtras } from "../lib/achievements";
@@ -30,28 +30,74 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
     [matches, players, challenges, me.nickname]
   );
 
-  // Rangverschiebung seit dem letzten Tages-Snapshot VOR heute
-  // (rating_snapshots, taeglich befuellt, von App.jsx schon auf
-  // discipline="Gesamt" gefiltert geladen) - daher nur auf dem
-  // "Gesamt"-Tab verfuegbar, fuer Einzeldisziplinen gibt es keine
-  // historischen Raenge. Der juengste vorhandene snap_date ist immer
-  // "heute" (der heutige Tagespunkt ist schon im Backfill enthalten,
-  // siehe EntwicklungBlock) - der Vergleich braucht daher explizit den
-  // Tag DAVOR, nicht einfach den letzten Eintrag. snapshots kommt
-  // aufsteigend nach snap_date sortiert rein, das letzte Vorkommen pro
-  // Spieler VOR dem heutigen Datum ist also automatisch ihr Rang von
-  // gestern (oder vom letzten Tag mit Daten, falls ein Tag fehlt).
-  const prevRankByPlayerId = useMemo(() => {
-    const list = snapshots || [];
-    if (list.length === 0) return {};
-    const latestDate = list.reduce((max, s) => (s.snap_date > max ? s.snap_date : max), list[0].snap_date);
-    const m = {};
-    list.forEach((s) => { if (s.snap_date < latestDate) m[s.player_id] = s.rank; });
-    return m;
-  }, [snapshots]);
+  // Rang- UND Rating-Verschiebung, kombiniert zu einem einzigen Symbol -
+  // basiert auf rating_snapshots (taeglich befuellt, von App.jsx schon
+  // auf discipline="Gesamt" gefiltert geladen), daher nur auf dem
+  // "Gesamt"-Tab verfuegbar. Vergleichsanker ist der letzte gespeicherte
+  // Tag VOR dem letzten Match der Person - nicht einfach "gestern" -
+  // damit ein Match auch dann noch als "das war der Grund" sichtbar
+  // bleibt, wenn seither ein paar ruhige Tage vergangen sind. Wer laenger
+  // nicht spielt, verliert trotzdem taeglich leise Punkte (Inaktivitaets-
+  // Verfall, siehe rebuild_elo() in Supabase) - deshalb faellt der Anker
+  // ohne verwertbaren Match-Tag (oder wenn das Match vor dem Beginn der
+  // Snapshot-Historie liegt) auf "gestern" zurueck, damit dieser Verfall
+  // trotzdem taeglich sichtbar bleibt statt monatelang eingefroren zu sein.
   const idByNick = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.nickname] = p.id; }); return m;
   }, [players]);
+  const lastMatchDayByNick = useMemo(() => {
+    const m = {};
+    (matches || []).forEach((mt) => {
+      const day = mt.played_at.slice(0, 10);
+      [mt.p1?.nickname, mt.p2?.nickname, mt.p1b?.nickname, mt.p2b?.nickname].forEach((nick) => {
+        if (nick && (!m[nick] || day > m[nick])) m[nick] = day;
+      });
+    });
+    return m;
+  }, [matches]);
+  const snapshotsByPlayer = useMemo(() => {
+    const m = {};
+    (snapshots || []).forEach((s) => { (m[s.player_id] ||= []).push(s); }); // kommt bereits aufsteigend nach snap_date
+    return m;
+  }, [snapshots]);
+  const latestSnapDate = useMemo(
+    () => (snapshots || []).reduce((max, s) => (s.snap_date > max ? s.snap_date : max), ""),
+    [snapshots]
+  );
+  const referenceFor = (nick) => {
+    const list = snapshotsByPlayer[idByNick[nick]];
+    if (!list || !latestSnapDate) return null;
+    const lastBefore = (d) => { let ref = null; for (const s of list) { if (s.snap_date < d) ref = s; else break; } return ref; };
+    const matchDay = lastMatchDayByNick[nick];
+    if (matchDay) {
+      const ref = lastBefore(matchDay <= latestSnapDate ? matchDay : latestSnapDate);
+      if (ref) return ref;
+    }
+    return lastBefore(latestSnapDate);
+  };
+  // 7 Zustaende: bei Uneinigkeit (z.B. Rang rauf, Rating aber nicht mit -
+  // passiert, wenn v.a. andere sich bewegt haben) gewinnt die Rang-
+  // Richtung, da sie das eigentliche "Ranking" ist.
+  const moveKindFor = (r, currentRank) => {
+    const ref = referenceFor(r.nickname);
+    if (!ref) return null;
+    const rankDir = currentRank < ref.rank ? "up" : currentRank > ref.rank ? "down" : "same";
+    const prevRating = Math.round(ref.rating);
+    const ratingDir = r.rating > prevRating ? "up" : r.rating < prevRating ? "down" : "same";
+    if (rankDir === "up") return ratingDir === "up" ? "both-up" : "rank-up";
+    if (rankDir === "down") return ratingDir === "down" ? "both-down" : "rank-down";
+    return ratingDir === "up" ? "rating-up" : ratingDir === "down" ? "rating-down" : "same";
+  };
+  const MOVE_ICON = {
+    "both-up": ChevronsUp, "rank-up": ArrowUp, "rating-up": TrendingUp,
+    same: Minus,
+    "rating-down": TrendingDown, "rank-down": ArrowDown, "both-down": ChevronsDown,
+  };
+  const MOVE_LABEL = {
+    "both-up": t("Rang und Rating gestiegen"), "rank-up": t("Rang gestiegen"), "rating-up": t("Rating gestiegen"),
+    same: t("Unveraendert seit letztem Match"),
+    "rating-down": t("Rating gesunken"), "rank-down": t("Rang gesunken"), "both-down": t("Rang und Rating gesunken"),
+  };
 
   return (
     <div className="screen">
@@ -139,8 +185,8 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
         {rows.map((r, i) => {
           const medalEmoji = i < 3 && !r.vorlaeufig && r.aktiv ? MEDAL_EMOJI[i] : null;
           const currentRank = i + 1;
-          const prevRank = disc === "Gesamt" ? prevRankByPlayerId[idByNick[r.nickname]] : null;
-          const move = prevRank == null ? null : prevRank > currentRank ? "up" : prevRank < currentRank ? "down" : "same";
+          const moveKind = disc === "Gesamt" ? moveKindFor(r, currentRank) : null;
+          const MoveIcon = moveKind ? MOVE_ICON[moveKind] : null;
           return (
           <li key={r.nickname + r.discipline}>
             <button className="rank-row" onClick={() => onOpenProfile(r.nickname)}>
@@ -150,13 +196,8 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
                   anderen Zeilen nicht verschieben. Auf Einzeldisziplinen
                   ganz weggelassen, da es dort nie Bewegungsdaten gibt. */}
               {disc === "Gesamt" && (
-                <span className={"rank-move" + (move ? " " + move : "")} title={
-                  move === "up" ? t("Aufgestiegen seit gestern")
-                    : move === "down" ? t("Abgestiegen seit gestern")
-                    : move === "same" ? t("Unveraendert seit gestern")
-                    : undefined
-                }>
-                  {move === "up" ? <ArrowUp size={14} /> : move === "down" ? <ArrowDown size={14} /> : move === "same" ? <Minus size={14} /> : null}
+                <span className={"rank-move" + (moveKind ? " " + moveKind : "")} title={moveKind ? MOVE_LABEL[moveKind] : undefined}>
+                  {MoveIcon && <MoveIcon size={14} />}
                 </span>
               )}
               <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} photo={photoOf(r.nickname)} />
