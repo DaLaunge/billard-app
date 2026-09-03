@@ -38,7 +38,7 @@ export default function MatchProtokollScreen({ match: m, onBack }) {
   const hasTime = simple ? m.run_log?.[0]?.[2] != null : m.run_log?.[0]?.ts != null;
   const duration = hasTime ? matchDurationMs(m.run_log) : null;
   const units = hasTime ? matchUnitCount(m.run_log) : null;
-  const avgUnit = hasTime ? avgUnitDurationMs(m.run_log) : null;
+  const avgUnit = hasTime ? avgUnitDurationMs(m.run_log, m.discipline) : null;
 
   return (
     <div className="screen protokoll-screen">
