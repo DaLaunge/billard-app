@@ -61,38 +61,32 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [ticketsRefresh, setTicketsRefresh] = useState(0);
   const heroPhoto = photoOf(nickname);
 
-  // Farbthema: sofort live vorschauen (applyTheme), Speichern separat -
-  // bei Presets zusammen mit der Auswahl, bei "Eigenes" ueber den
-  // Uebernehmen-Button (sonst wuerde jeder Klick im Farbwaehler einen
-  // eigenen Server-Request ausloesen).
+  // Farbthema und Startseite: jede Auswahl wird sofort live angewendet
+  // (applyTheme) UND sofort gespeichert - kein separater Speichern-Schritt.
   const [themeKey, setThemeKey] = useState(meRow?.theme_key || "green");
   const [customBg, setCustomBg] = useState(meRow?.theme_custom?.bg || "#0A2B21");
   const [customAccent, setCustomAccent] = useState(meRow?.theme_custom?.accent || "#7CC1E8");
-  const [themeBusy, setThemeBusy] = useState(false);
   const pickPresetTheme = async (key) => {
     setThemeKey(key);
     applyTheme(key);
-    setThemeBusy(true);
+    setBusy(true);
     await onSetTheme(key, null);
-    setThemeBusy(false);
+    setBusy(false);
   };
-  const previewCustomTheme = (bg, accent) => {
+  const pickCustomTheme = async (bg, accent) => {
     setCustomBg(bg); setCustomAccent(accent); setThemeKey("custom");
     applyTheme("custom", { bg, accent });
-  };
-  const saveCustomTheme = async () => {
-    setThemeBusy(true);
-    await onSetTheme("custom", { bg: customBg, accent: customAccent });
-    setThemeBusy(false);
+    setBusy(true);
+    await onSetTheme("custom", { bg, accent });
+    setBusy(false);
   };
 
   const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "rang");
-  const [startTabBusy, setStartTabBusy] = useState(false);
   const pickStartTab = async (value) => {
     setStartTabLocal(value);
-    setStartTabBusy(true);
+    setBusy(true);
     await onSetStartTab(value);
-    setStartTabBusy(false);
+    setBusy(false);
   };
 
   const sendFeedback = async () => {
@@ -152,11 +146,36 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   );
   const nickValid = cleanNick.length >= 2 && cleanNick.length <= 30 && !taken;
 
-  const save = async () => {
+  // Nickname/Kugelfarbe/Motto haengen an derselben RPC (update_profile nimmt
+  // alle drei zusammen) - persist() schreibt daher bei jeder einzelnen
+  // Aenderung (Farbklick, Verlassen des Nickname-/Motto-Felds) den aktuellen
+  // Stand aller drei Felder. Ist der Nickname-Entwurf gerade ungueltig (zu
+  // kurz, vergeben), wird stattdessen der zuletzt gespeicherte Name
+  // mitgeschickt, damit z.B. ein Farbklick waehrend des Tippens nicht an
+  // einem noch unfertigen Nickname scheitert.
+  const persist = async (overrides = {}) => {
+    const n = nickValid ? cleanNick : nickname;
+    const c = overrides.color !== undefined ? overrides.color : color;
+    const m = overrides.motto !== undefined ? overrides.motto : motto;
     setBusy(true);
-    const ok = await onSaveProfile(cleanNick, color, motto);
+    await onSaveProfile(n, c, m);
     setBusy(false);
-    if (ok) setEdit(false);
+  };
+  const pickColor = (c) => { setColor(c); persist({ color: c }); };
+
+  const resetDefaults = async () => {
+    setBusy(true);
+    await Promise.all([
+      onSaveProfile(nickValid ? cleanNick : nickname, null, motto),
+      onSetTheme("green", null),
+      onSetStartTab("rang"),
+    ]);
+    setColor(null);
+    setThemeKey("green");
+    applyTheme("green");
+    setStartTabLocal("rang");
+    setBusy(false);
+    toast(t("Standardeinstellungen wiederhergestellt."));
   };
 
   if (edit) {
@@ -172,11 +191,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <label className="field-label" htmlFor="pnick">{t("Nickname")}</label>
           <div className="mail-row">
             <User size={18} className="mail-ico" />
-            <input id="pnick" value={nick} maxLength={30} onChange={(e) => setNick(e.target.value)} />
+            <input id="pnick" value={nick} maxLength={30} onChange={(e) => setNick(e.target.value)}
+              onBlur={() => { if (nickValid && cleanNick !== nickname) persist(); }} />
           </div>
           {taken && <p className="nick-status err"><X size={14} /> {t("Dieser Name ist schon vergeben.")}</p>}
           {!taken && cleanNick !== nickname && nickValid && (
             <p className="nick-status ok"><Check size={14} /> "{cleanNick}" {t("ist verfügbar.")}</p>
+          )}
+          {cleanNick !== nickname && nickValid && (
+            <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
           )}
 
           <label className="field-label">{t("Profilfoto")}</label>
@@ -196,10 +219,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <label className="field-label">{t("Deine Kugel")}</label>
           <div className="swatch-row">
             <button className={"swatch auto" + (color === null ? " sel" : "")}
-              onClick={() => setColor(null)} aria-label={t("Automatische Farbe")}>{t("Auto")}</button>
+              onClick={() => pickColor(null)} aria-label={t("Automatische Farbe")}>{t("Auto")}</button>
             {BALL_PALETTE.map((c) => (
               <button key={c} className={"swatch" + (color === c ? " sel" : "")}
-                style={{ background: c }} onClick={() => setColor(c)} aria-label={t("Farbe {c}", { c })}>
+                style={{ background: c }} onClick={() => pickColor(c)} aria-label={t("Farbe {c}", { c })}>
                 {color === c && <Check size={16} />}
               </button>
             ))}
@@ -212,7 +235,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 : <Pencil size={15} />}
               <input type="color" className="color-input"
                 value={color && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : hashColor(cleanNick || nickname)}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={(e) => pickColor(e.target.value)}
                 aria-label={t("Eigene Kugelfarbe wählen")} />
             </label>
           </div>
@@ -227,7 +250,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <div className="mail-row">
             <Pencil size={18} className="mail-ico" />
             <input id="pmotto" value={motto} maxLength={80}
-              placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)} />
+              placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)}
+              onBlur={() => { if (motto !== (meRow?.motto || "")) persist(); }} />
           </div>
         </section>
 
@@ -252,7 +276,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 return (
                   <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
                     style={{ background: th.felt, borderColor: themeKey === key ? th.chalk : "transparent" }}
-                    onClick={() => pickPresetTheme(key)} disabled={themeBusy}>
+                    onClick={() => pickPresetTheme(key)} disabled={busy}>
                     <span className="theme-dot" style={{ background: th.chalk }} />
                     {t(th.name)}
                     {themeKey === key && <Check size={14} />}
@@ -261,7 +285,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               })}
               <button className={"theme-swatch" + (themeKey === "custom" ? " sel" : "")}
                 style={{ background: customBg, borderColor: themeKey === "custom" ? customAccent : "transparent" }}
-                onClick={() => previewCustomTheme(customBg, customAccent)} disabled={themeBusy}>
+                onClick={() => pickCustomTheme(customBg, customAccent)} disabled={busy}>
                 <span className="theme-dot" style={{ background: customAccent }} />
                 {t("Eigenes")}
                 {themeKey === "custom" && <Check size={14} />}
@@ -271,15 +295,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               <div className="theme-custom-row">
                 <label className="theme-color-field">
                   {t("Hintergrund")}
-                  <input type="color" value={customBg} onChange={(e) => previewCustomTheme(e.target.value, customAccent)} />
+                  <input type="color" value={customBg} onChange={(e) => pickCustomTheme(e.target.value, customAccent)} />
                 </label>
                 <label className="theme-color-field">
                   {t("Akzent")}
-                  <input type="color" value={customAccent} onChange={(e) => previewCustomTheme(customBg, e.target.value)} />
+                  <input type="color" value={customAccent} onChange={(e) => pickCustomTheme(customBg, e.target.value)} />
                 </label>
-                <button className="btn primary small" disabled={themeBusy} onClick={saveCustomTheme}>
-                  {themeBusy ? t("Speichere ...") : t("Übernehmen")}
-                </button>
               </div>
             )}
           </section>
@@ -296,7 +317,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 ["last", t("Zuletzt geöffnet")],
               ].map(([v, label]) => (
                 <button key={v} className={"chip" + (startTab === v ? " active" : "")}
-                  disabled={startTabBusy} onClick={() => pickStartTab(v)}>
+                  disabled={busy} onClick={() => pickStartTab(v)}>
                   {label}
                 </button>
               ))}
@@ -321,12 +342,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </div>
 
         <div className="pf-edit-save">
-          <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
-            {busy ? t("Speichere ...") : <>{t("Speichern")} <Check size={18} /></>}
+          <button className="btn ghost" disabled={busy} onClick={resetDefaults}>
+            {t("Zurücksetzen")}
           </button>
-          {cleanNick !== nickname && (
-            <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
-          )}
+          <p className="hint">{t("Setzt Kugelfarbe, Design und Startseite auf die Standardeinstellungen zurück.")}</p>
         </div>
       </div>
     );
