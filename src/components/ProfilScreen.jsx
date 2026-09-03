@@ -229,13 +229,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <input id="pmotto" value={motto} maxLength={80}
               placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)} />
           </div>
-
-          <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
-            {busy ? t("Speichere ...") : <>{t("Speichern")} <Check size={18} /></>}
-          </button>
-          {cleanNick !== nickname && (
-            <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
-          )}
         </section>
 
         <div className="pf-edit-side">
@@ -325,6 +318,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </button>
           </section>
         </div>
+        </div>
+
+        <div className="pf-edit-save">
+          <button className="btn primary" disabled={!nickValid || busy} onClick={save}>
+            {busy ? t("Speichere ...") : <>{t("Speichern")} <Check size={18} /></>}
+          </button>
+          {cleanNick !== nickname && (
+            <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
+          )}
         </div>
       </div>
     );
