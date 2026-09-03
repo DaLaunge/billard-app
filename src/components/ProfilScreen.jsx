@@ -351,7 +351,104 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <div className="kpi"><b>{stats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
         <div className="kpi"><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>{t("Serie")}</span></div>
       </div>
+      </div>
 
+      {/* Eigener Block statt Teil von pf-left: am Handy sollen die
+          Statistiken (pf-mid/pf-right) VOR den Konto-Einstellungen kommen,
+          waehrend am PC beides gemeinsam in der linken Spalte steht - per
+          CSS order bzw. grid-row unabhaengig steuerbar. */}
+      <div className="pf-account">
+      {isMe && (
+        <section className="stat-block">
+          <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
+          <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
+          <select id="updateInterval" className="settings-select" value={updateInterval}
+            onChange={(e) => onSetUpdateInterval(e.target.value)}>
+            <option value="open">{t("Bei jedem Aufruf")}</option>
+            <option value="30">{t("Alle 30 Minuten")}</option>
+            <option value="60">{t("Alle 60 Minuten")}</option>
+            <option value="manual">{t("Manuell")}</option>
+          </select>
+          <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
+            <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
+          </button>
+        </section>
+      )}
+
+      {isMe && <PasswordSection toast={toast} />}
+
+      {isMe && (
+        <button className="btn ghost" onClick={onInvite}><QrCode size={16} /> {t("Freund einladen")}</button>
+      )}
+      {isMe && meRow?.role === "admin" && (
+        <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
+      )}
+      {isMe && (
+        <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
+      )}
+
+      {isMe && (
+        <section className="stat-block">
+          <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
+          {!feedbackOpen ? (
+            <>
+              <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
+              <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
+                <MessageCircle size={15} /> {t("Feedback geben")}
+              </button>
+            </>
+          ) : feedbackSent ? (
+            <>
+              <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
+              <div className="sp-controls">
+                <a className="btn ghost" href="https://t.me/+vG8sWgH_utJlODRk" target="_blank" rel="noopener noreferrer">
+                  {t("Per Telegram")}
+                </a>
+                <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
+              </div>
+              <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
+            </>
+          ) : (
+            <div className="challenge-form">
+              <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
+                {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
+                  <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="search-row" style={{ marginBottom: 8 }}>
+                <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
+                  style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
+                  onChange={(e) => setFeedbackMsg(e.target.value)} />
+              </div>
+              <div className="sp-controls">
+                <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
+                <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
+                  {feedbackBusy ? t("Speichere ...") : t("Absenden")}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {isMe && <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />}
+
+      {isMe && (
+        <section className="stat-block danger-zone">
+          <h3><AlertTriangle size={17} /> {t("Konto löschen")}</h3>
+          <p className="hint" style={{ marginTop: 0 }}>
+            {t("Entfernt unwiderruflich all deine persönlichen Daten (Login, Name, Profilfarbe, Motto, Nachrichten). Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt.")}
+          </p>
+          <button className="btn ghost warn" onClick={() => setDeleteStep(1)}>
+            <AlertTriangle size={15} /> {t("Meine Daten löschen")}
+          </button>
+        </section>
+      )}
+      </div>
+
+      <div className="pf-mid">
       <section className="stat-block">
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
         {myRows.map((r) => (
@@ -456,95 +553,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         )}
         {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
-
-      {isMe && (
-        <section className="stat-block">
-          <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
-          <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
-          <select id="updateInterval" className="settings-select" value={updateInterval}
-            onChange={(e) => onSetUpdateInterval(e.target.value)}>
-            <option value="open">{t("Bei jedem Aufruf")}</option>
-            <option value="30">{t("Alle 30 Minuten")}</option>
-            <option value="60">{t("Alle 60 Minuten")}</option>
-            <option value="manual">{t("Manuell")}</option>
-          </select>
-          <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
-            <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
-          </button>
-        </section>
-      )}
-
-      {isMe && <PasswordSection toast={toast} />}
-
-      {isMe && (
-        <button className="btn ghost" onClick={onInvite}><QrCode size={16} /> {t("Freund einladen")}</button>
-      )}
-      {isMe && meRow?.role === "admin" && (
-        <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
-      )}
-      {isMe && (
-        <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
-      )}
-
-      {isMe && (
-        <section className="stat-block">
-          <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
-          {!feedbackOpen ? (
-            <>
-              <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
-              <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
-                <MessageCircle size={15} /> {t("Feedback geben")}
-              </button>
-            </>
-          ) : feedbackSent ? (
-            <>
-              <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
-              <div className="sp-controls">
-                <a className="btn ghost" href="https://t.me/+vG8sWgH_utJlODRk" target="_blank" rel="noopener noreferrer">
-                  {t("Per Telegram")}
-                </a>
-                <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
-              </div>
-              <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
-            </>
-          ) : (
-            <div className="challenge-form">
-              <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
-                {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
-                  <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="search-row" style={{ marginBottom: 8 }}>
-                <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
-                  style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
-                  onChange={(e) => setFeedbackMsg(e.target.value)} />
-              </div>
-              <div className="sp-controls">
-                <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
-                <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
-                  {feedbackBusy ? t("Speichere ...") : t("Absenden")}
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {isMe && <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />}
-
-      {isMe && (
-        <section className="stat-block danger-zone">
-          <h3><AlertTriangle size={17} /> {t("Konto löschen")}</h3>
-          <p className="hint" style={{ marginTop: 0 }}>
-            {t("Entfernt unwiderruflich all deine persönlichen Daten (Login, Name, Profilfarbe, Motto, Nachrichten). Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt.")}
-          </p>
-          <button className="btn ghost warn" onClick={() => setDeleteStep(1)}>
-            <AlertTriangle size={15} /> {t("Meine Daten löschen")}
-          </button>
-        </section>
-      )}
       </div>
       </div>
 
