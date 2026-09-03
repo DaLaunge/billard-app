@@ -44,14 +44,19 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
 
       <div className="ov-layout">
       <aside className="ov-side">
-        <MyStatusCard nickname={me.nickname} rating={ratingOf(me.nickname)} stats={myStats}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
         <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
-        <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
-          onOpenProfile={onOpenProfile} nickname={me.nickname} />
-        <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-        <RecordsCard extras={myExtras} catalog={catalog} earnedBadges={earnedBadges} />
+        {/* Diese Karten stehen inhaltsgleich schon im eigenen Profil - am
+            Handy reine Redundanz, die nur Scroll-Weg vor dem Ranking kostet.
+            Ab 900px (Dashboard-Look) bleiben sie sichtbar. */}
+        <div className="ov-side-extra">
+          <MyStatusCard nickname={me.nickname} rating={ratingOf(me.nickname)} stats={myStats}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+          <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
+            onOpenProfile={onOpenProfile} nickname={me.nickname} />
+          <HeadToHeadCard nickname={me.nickname} matches={matches} onOpenProfile={onOpenProfile}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+          <RecordsCard extras={myExtras} catalog={catalog} earnedBadges={earnedBadges} />
+        </div>
       </aside>
 
       <div className="ov-main">

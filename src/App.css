@@ -685,12 +685,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
 }
 
 /* ===== Uebersicht-Dashboard: Module (siehe src/components/widgets) =====
-   Immer sichtbar, auf jeder Groesse - am Handy einfach untereinander
-   (.ov-layout ist von Haus aus eine Spalte), ab 900px zweispaltig neben
-   der Tabelle. So sieht man dieselben Infos auf jedem Geraet, nur anders
-   angeordnet - keine Inhalte, die am Handy verschwinden. */
+   Ab 900px zweispaltig neben der Tabelle (Dashboard-Look, alle Module
+   sichtbar). Am Handy soll das Ranking dominieren: die Tabelle steht per
+   "order" ganz oben, und die Profil-Duplikate (Mein Status/Erfolge/Head-
+   to-Head/Rekorde - stehen inhaltsgleich schon im Profil-Tab) sind
+   ausgeblendet, um Scroll-Weg vor dem Ranking zu sparen. Live-Status
+   (offene Pings/Herausforderungen) ist keine Profil-Info, sondern eine
+   Handlungsaufforderung, und bleibt daher auch am Handy sichtbar. */
 .ov-layout { display: flex; flex-direction: column; gap: 22px; }
-.ov-side { display: flex; flex-direction: column; gap: 16px; }
+.ov-side { display: flex; flex-direction: column; gap: 16px; order: 2; }
+.ov-main { order: 1; }
+.ov-side-extra { display: none; }
 .ov-side .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .side-row:last-of-type { border-bottom: none; }
@@ -745,9 +750,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .stat-grid .stat-block { margin-bottom: 0; }
   .phone.app .screen:has(.stat-grid) { max-width: 1160px; }
 
-  /* Uebersicht: Spieler-Module links, Rangliste rechts */
+  /* Uebersicht: Spieler-Module links, Rangliste rechts - hier wieder die
+     natuerliche Quelltext-Reihenfolge (kein "Ranking zuerst" wie am Handy)
+     und alle Module inkl. der am Handy ausgeblendeten Profil-Duplikate. */
   .phone.app .screen:has(.ov-layout) { max-width: 1160px; }
   .ov-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+  .ov-side, .ov-main { order: 0; }
+  .ov-side-extra { display: flex; flex-direction: column; gap: 16px; }
 
   /* Profil: Foto/Kernzahlen links (bleibt beim Scrollen sichtbar), Rest rechts */
   .phone.app .screen:has(.pf-layout) { max-width: 1000px; }
