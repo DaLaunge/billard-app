@@ -713,9 +713,12 @@ button.id-card-head { cursor: pointer; }
 .id-card-name { font-size: 18px; margin-top: 8px; overflow-wrap: anywhere; }
 .id-card-rating { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; }
 .id-card-motto { color: var(--ivory-dim); font-size: 13px; font-style: italic; margin-top: 4px; }
-.id-card-since { color: var(--ivory-dim); font-size: 12px; margin-top: 2px; }
+.id-card-since { color: var(--ivory-dim); font-size: 12px; margin: 0; }
+.id-card-meta-row { display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 2px; text-align: center; }
+.id-card-meta-row.with-invite { justify-content: flex-start; text-align: left; }
 .id-card-invite { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
-  margin: 10px auto 0; border-radius: 50%; background: var(--felt-3); border: 1px solid var(--gold);
+  flex-shrink: 0; margin-left: auto; border-radius: 50%; background: var(--felt-3); border: 1px solid var(--gold);
   color: var(--gold); cursor: pointer; }
 .id-card-invite:hover { background: var(--felt); }
 .id-card-kpis { margin-top: 14px; }

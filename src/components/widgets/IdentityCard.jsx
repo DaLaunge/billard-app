@@ -14,8 +14,9 @@ import Ball from "../Ball";
    aufrufende Seite als "actions" rein, damit diese Karte generisch bleibt.
    onInvite nur gesetzt fuer den eigenen Account (nie auf einem fremden
    Profil) - das QR-Symbol steht bewusst NICHT im "head"-Button/-Div (das
-   waere ein ungueltiges verschachteltes <button>), sondern als eigenes
-   Element direkt danach. */
+   waere ein ungueltiges verschachteltes <button>), sondern rechts neben
+   der "Dabei seit"-Zeile in einer eigenen Reihe direkt danach (spart die
+   eigene Zeile, die es vorher gekostet hat). */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
   onHeadClick, onInvite, actions, photoSize = 88 }) {
   const head = (
@@ -27,7 +28,6 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
         {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
       </div>
       {motto && <p className="id-card-motto">"{motto}"</p>}
-      {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
     </>
   );
   return (
@@ -37,10 +37,15 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       ) : (
         <div className="id-card-head">{head}</div>
       )}
-      {onInvite && (
-        <button className="id-card-invite" onClick={onInvite} aria-label={t("Freund einladen")} title={t("Freund einladen")}>
-          <QrCode size={18} />
-        </button>
+      {(since || onInvite) && (
+        <div className={"id-card-meta-row" + (onInvite ? " with-invite" : "")}>
+          {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
+          {onInvite && (
+            <button className="id-card-invite" onClick={onInvite} aria-label={t("Freund einladen")} title={t("Freund einladen")}>
+              <QrCode size={18} />
+            </button>
+          )}
+        </div>
       )}
       <div className="dash-stats id-card-kpis">
         <div><b>{stats?.spiele ?? 0}</b><span>{t("Spiele")}</span></div>
