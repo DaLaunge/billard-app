@@ -4,6 +4,7 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
+import PlayerMultiPicker from "./PlayerMultiPicker";
 
 const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
 const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
@@ -13,14 +14,13 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "cancelled" 
 // Missbrauchsvermeidung, solange der Modus in der Erprobung ist - siehe
 // supabase/2026-09-04_tournament_admin_only.sql, gilt bis er es widerruft).
 // Ansehen/Mitspielen bleibt fuer alle offen.
-export default function TurniereScreen({ me, players, toast, onOpenTournament, onBack }) {
+export default function TurniereScreen({ me, players, matches, colorOf, badgeOf, photoOf, toast, onOpenTournament, onBack }) {
   const [tournaments, setTournaments] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [format, setFormat] = useState("ko");
   const [discipline, setDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
   const [selected, setSelected] = useState([]);
-  const [query, setQuery] = useState("");
   const [tableMode, setTableMode] = useState("range");
   const [tableFrom, setTableFrom] = useState("");
   const [tableTo, setTableTo] = useState("");
@@ -70,13 +70,10 @@ export default function TurniereScreen({ me, players, toast, onOpenTournament, o
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Turnier erstellt – Raster wird ausgelost."));
     setShowForm(false);
-    setName(""); setSelected([]); setTableFrom(""); setTableTo(""); setTableList(""); setQuery("");
+    setName(""); setSelected([]); setTableFrom(""); setTableTo(""); setTableList("");
     await load();
     onOpenTournament(data.id);
   };
-
-  const filteredPlayers = players.filter((p) => !p.is_ghost && !p.blocked &&
-    p.nickname.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
     <div className="screen">
@@ -129,16 +126,8 @@ export default function TurniereScreen({ me, players, toast, onOpenTournament, o
             )}
 
             <p className="hint" style={{ marginBottom: 4, marginTop: 10 }}>{t("Teilnehmer")} ({selected.length})</p>
-            <input type="text" placeholder={t("Spieler suchen …")} value={query} onChange={(e) => setQuery(e.target.value)} />
-            <div className="turnier-player-grid">
-              {filteredPlayers.map((p) => (
-                <label key={p.id}>
-                  <input type="checkbox" checked={selected.includes(p.id)} onChange={() => togglePlayer(p.id)} />
-                  <span>{p.nickname}</span>
-                </label>
-              ))}
-              {filteredPlayers.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
-            </div>
+            <PlayerMultiPicker players={players} matches={matches} me={me} selected={selected} onToggle={togglePlayer}
+              colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
 
             <button className="btn primary" disabled={busy} onClick={create}>
               {busy ? t("Lege an …") : <><Trophy size={16} /> {t("Turnier auslosen")}</>}
