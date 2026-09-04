@@ -112,12 +112,6 @@ export default function TurniereScreen({ me, players, toast, onOpenTournament, o
                 {DEFAULT_DISCIPLINES.map((d) => <option key={d} value={d}>{t(d)}</option>)}
               </select>
             </div>
-            {format === "double_ko" && (
-              <p className="hint" style={{ marginTop: 0 }}>
-                {t("Doppel-K.O. braucht aktuell eine Teilnehmerzahl in 2er-Potenz (4, 8, 16, ...).")}
-              </p>
-            )}
-
             <p className="hint" style={{ marginBottom: 4 }}>{t("Tische")}</p>
             <div className="chips small">
               <button className={"chip" + (tableMode === "range" ? " active" : "")} onClick={() => setTableMode("range")}>{t("Von–Bis")}</button>

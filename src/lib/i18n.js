@@ -842,8 +842,6 @@ const TRANSLATIONS = {
     "K.O.": "Knockout",
     "Doppel-K.O.": "Double elimination",
     "Jeder gegen jeden": "Round robin",
-    "Doppel-K.O. braucht aktuell eine Teilnehmerzahl in 2er-Potenz (4, 8, 16, ...).":
-      "Double elimination currently needs a participant count that's a power of two (4, 8, 16, ...).",
     "Tische": "Tables",
     "Von–Bis": "From–to",
     "Liste": "List",
