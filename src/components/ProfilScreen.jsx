@@ -428,7 +428,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
 
-      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
+      <HeadToHeadCard nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
         colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
       </div>
       </div>
