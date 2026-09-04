@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Trophy, Check, X, ShieldAlert, Flag, Trash2, List, GitBranch } from "lucide-react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
 import TurnierGraph from "./TurnierGraph";
+import TurnierMatchActions from "./TurnierMatchActions";
 
 const POLL_MS = 8000;
 
@@ -156,14 +157,6 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
 
   const renderMatch = (tm) => {
     const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
-    const confirmed = tm.match?.confirmed;
-    const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
-    const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && !tm.match_id && tour.status === "running";
-    const canReport = openSlot && isMyMatch;
-    const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
-    const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
-    const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
-    const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
     return (
       <div key={tm.id} className="turnier-match-card">
         <div className="turnier-match-meta">
@@ -180,32 +173,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           </span>
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
-        {tm.match_id && !confirmed && <span className="hint" style={{ margin: 0 }}>{t("Wartet auf Bestätigung ...")}</span>}
-        {manuallyEntered && <span className="hint" style={{ margin: 0 }}>{t("Manuell nachgetragen")}</span>}
-        {(canReport || canOrganizerReport) && (
-          <div className="turnier-score-inputs">
-            <input type="number" inputMode="numeric" min="0" placeholder="0"
-              value={scores[tm.id]?.s1 || ""} onChange={(e) => setScores({ ...scores, [tm.id]: { ...scores[tm.id], s1: e.target.value } })} />
-            <span>:</span>
-            <input type="number" inputMode="numeric" min="0" placeholder="0"
-              value={scores[tm.id]?.s2 || ""} onChange={(e) => setScores({ ...scores, [tm.id]: { ...scores[tm.id], s2: e.target.value } })} />
-            <button className="btn primary" disabled={busyId === tm.id}
-              onClick={() => (canReport ? report(tm) : organizerReport(tm))}>
-              {canReport ? t("Melden") : t("Als Turnierleitung eintragen")}
-            </button>
-          </div>
-        )}
-        {canConfirm && (
-          <div className="confirm-actions">
-            <button className="chip-btn ok" disabled={busyId === tm.id} onClick={() => confirm(tm, true)}><Check size={15} /> {t("Bestätigen")}</button>
-            <button className="chip-btn no" disabled={busyId === tm.id} onClick={() => confirm(tm, false)}><X size={15} /> {t("Ablehnen")}</button>
-          </div>
-        )}
-        {canForce && (
-          <button className="btn ghost" disabled={busyId === tm.id} onClick={() => forceConfirm(tm)}>
-            <ShieldAlert size={15} /> {t("Als Turnierleitung erzwingen")}
-          </button>
-        )}
+        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+          busyId={busyId} scores={scores} setScores={setScores}
+          onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
       </div>
     );
   };
@@ -269,7 +239,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
             return (
               <section key={b} className="stat-block">
                 <h3><Trophy size={17} /> {bracketOrder.length > 1 ? bracketLabel(b) : t("Raster")}</h3>
-                <TurnierGraph matches={list} nameOf={nameOf} />
+                <TurnierGraph matches={list} nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+                  busyId={busyId} scores={scores} setScores={setScores}
+                  onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
               </section>
             );
           }

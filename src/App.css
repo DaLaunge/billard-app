@@ -1036,12 +1036,20 @@ button.id-card-head { cursor: pointer; }
    eine Karte zum Erkunden (auch per Pinch-Zoom) als Karten zum Durchwischen. */
 .turnier-view-toggle { margin-bottom: 10px; }
 .turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
-  border: 1px solid var(--line); padding: 16px; -webkit-overflow-scrolling: touch; }
+  border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch; }
 .turnier-graph { position: relative; }
 .turnier-graph-svg { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
-.turnier-graph-edge { fill: none; stroke: var(--line); stroke-width: 2; }
+/* Offene Verbindungen dezent, bereits entschiedene (Sieger steht fest)
+   deutlich heller/dicker - macht den tatsaechlichen Turnierverlauf auf den
+   ersten Blick erkennbar statt eines gleichfoermigen Liniengewirrs. Weiche
+   Kurve statt rechtwinkliger Ecke liest sich klarer als "A fliesst zu B". */
+.turnier-graph-edge { fill: none; stroke: var(--ivory-dim); stroke-width: 2; opacity: 0.35; }
+.turnier-graph-edge.decided { stroke: var(--gold); stroke-width: 3; opacity: 0.85; }
 .turnier-graph-box { position: absolute; background: var(--felt-3); border: 1px solid var(--line);
-  border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+  border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center;
+  padding: 0; font-family: inherit; color: inherit; text-align: left; cursor: default; }
+.turnier-graph-box.actionable { border: 2px solid var(--gold); cursor: pointer; box-shadow: 0 0 0 3px #D6A42522; }
+.turnier-graph-box.selected { background: var(--felt); }
 .turnier-graph-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 5px 10px; font-size: 13px; overflow: hidden; }
 .turnier-graph-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1051,6 +1059,15 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-row.won { color: var(--gold); font-weight: 700; }
 .turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
 .turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
+
+/* Detail-Panel oberhalb des Baums fuer die per Klick ausgewaehlte Box -
+   bewusst im normalen Dokumentfluss (nicht als Pop-over ueber der Box),
+   damit es beim Scrollen/Zoomen im Baum nicht mitwandern muss. */
+.turnier-graph-detail { background: var(--felt-3); border: 1px solid var(--gold); border-radius: 14px;
+  padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+.turnier-graph-detail-close { background: none; border: none; color: var(--ivory-dim); cursor: pointer;
+  padding: 4px; border-radius: 8px; flex-shrink: 0; }
+.turnier-graph-detail-close:hover { color: var(--ivory); background: var(--felt); }
 
 /* ============================================================
    MATCH-PROTOKOLL (nachtraegliche Ansicht + Druck/PDF)
