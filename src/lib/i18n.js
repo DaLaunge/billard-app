@@ -889,6 +889,8 @@ const TRANSLATIONS = {
     "Turnier gelöscht.": "Tournament deleted.",
     "Manuell nachgetragen": "Manually added afterward",
     "Grafik": "Graph",
+    "Format": "Format",
+    "Disziplin": "Discipline",
   },
 };
 export function setLangGlobal(l) {

@@ -100,16 +100,21 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
         {showForm && me?.role === "admin" && (
           <div className="turnier-form" style={{ marginBottom: 16 }}>
             <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
-            <div className="am-row">
-              <select value={format} onChange={(e) => setFormat(e.target.value)}>
-                <option value="ko">{t("K.O.")}</option>
-                <option value="double_ko">{t("Doppel-K.O.")}</option>
-                <option value="round_robin">{t("Jeder gegen jeden")}</option>
-              </select>
-              <select value={discipline} onChange={(e) => setDiscipline(e.target.value)}>
-                {DEFAULT_DISCIPLINES.map((d) => <option key={d} value={d}>{t(d)}</option>)}
-              </select>
+
+            <p className="hint" style={{ marginBottom: 4 }}>{t("Format")}</p>
+            <div className="chips small">
+              <button className={"chip" + (format === "ko" ? " active" : "")} onClick={() => setFormat("ko")}>{t("K.O.")}</button>
+              <button className={"chip" + (format === "double_ko" ? " active" : "")} onClick={() => setFormat("double_ko")}>{t("Doppel-K.O.")}</button>
+              <button className={"chip" + (format === "round_robin" ? " active" : "")} onClick={() => setFormat("round_robin")}>{t("Jeder gegen jeden")}</button>
             </div>
+
+            <p className="hint" style={{ marginBottom: 4 }}>{t("Disziplin")}</p>
+            <div className="chips small">
+              {DEFAULT_DISCIPLINES.map((d) => (
+                <button key={d} className={"chip" + (discipline === d ? " active" : "")} onClick={() => setDiscipline(d)}>{t(d)}</button>
+              ))}
+            </div>
+
             <p className="hint" style={{ marginBottom: 4 }}>{t("Tische")}</p>
             <div className="chips small">
               <button className={"chip" + (tableMode === "range" ? " active" : "")} onClick={() => setTableMode("range")}>{t("Von–Bis")}</button>
