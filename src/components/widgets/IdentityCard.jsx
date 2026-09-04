@@ -1,15 +1,8 @@
 import { useState } from "react";
 import { QrCode, AlertTriangle } from "lucide-react";
 import { t } from "../../lib/i18n";
-import { initials, fmtDate } from "../../lib/format";
+import { initials, fmtDate, isDecaying } from "../../lib/format";
 import Ball from "../Ball";
-
-/* Punkteverfall (rebuild_elo() in Postgres): ohne Match verfaellt das
-   Gesamt-Rating erst nach GRACE=30 Tagen Richtung 500 - siehe letzte_partie
-   in der rangliste-View, die "gesamt" hier mitbringt. Muss exakt zu diesem
-   Grace-Zeitraum in der SQL-Funktion passen, sonst zeigt die Karte den
-   Verfall zu frueh oder zu spaet an. */
-const DECAY_GRACE_DAYS = 30;
 
 /* Vereinheitlichte Identitaets-Karte: grosses, zentriertes Foto im Fokus,
    dann Name, Rating, Motto, "Dabei seit", die 4 Kernzahlen - exakt dieselbe
@@ -35,10 +28,7 @@ const DECAY_GRACE_DAYS = 30;
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
   onHeadClick, onInvite, actions, photoSize = 88 }) {
   const [decayInfoOpen, setDecayInfoOpen] = useState(false);
-  const daysSinceLastMatch = gesamt?.letzte_partie
-    ? Math.floor((Date.now() - new Date(gesamt.letzte_partie)) / 86400000)
-    : null;
-  const decaying = daysSinceLastMatch != null && daysSinceLastMatch > DECAY_GRACE_DAYS;
+  const decaying = isDecaying(gesamt?.letzte_partie);
   const head = (
     <>
       <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
