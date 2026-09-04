@@ -1021,6 +1021,29 @@ button.id-card-head { cursor: pointer; }
   .turnier-player-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); max-height: 420px; }
 }
 
+/* Baumgrafik (zweite Ansicht neben der Liste oben, umschaltbar) - Boxen als
+   normale divs (absolut positioniert, siehe TurnierGraph.jsx), Verbinder-
+   linien als ein einzelnes SVG-Overlay darunter. Eigener horizontal UND
+   vertikal scrollbarer Rahmen statt scroll-snap - ein Turnierbaum ist eher
+   eine Karte zum Erkunden (auch per Pinch-Zoom) als Karten zum Durchwischen. */
+.turnier-view-toggle { margin-bottom: 10px; }
+.turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
+  border: 1px solid var(--line); padding: 16px; -webkit-overflow-scrolling: touch; }
+.turnier-graph { position: relative; }
+.turnier-graph-svg { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+.turnier-graph-edge { fill: none; stroke: var(--line); stroke-width: 2; }
+.turnier-graph-box { position: absolute; background: var(--felt-3); border: 1px solid var(--line);
+  border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+.turnier-graph-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 5px 10px; font-size: 13px; overflow: hidden; }
+.turnier-graph-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turnier-graph-row span:last-child { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
+  flex-shrink: 0; }
+.turnier-graph-row + .turnier-graph-row { border-top: 1px solid var(--line); }
+.turnier-graph-row.won { color: var(--gold); font-weight: 700; }
+.turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
+.turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
+
 /* ============================================================
    MATCH-PROTOKOLL (nachtraegliche Ansicht + Druck/PDF)
    Echte <table> statt Fliesstext: jede Spalte bedeutet immer

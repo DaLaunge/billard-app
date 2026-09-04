@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Trophy, Check, X, ShieldAlert, Flag, Trash2 } from "lucide-react";
+import { ChevronLeft, Trophy, Check, X, ShieldAlert, Flag, Trash2, List, GitBranch } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
+import TurnierGraph from "./TurnierGraph";
 
 const POLL_MS = 8000;
 
@@ -20,12 +21,13 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const [roster, setRoster] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [scores, setScores] = useState({});
+  const [viewMode, setViewMode] = useState("list"); // list | graph - Jeder-gegen-jeden hat keinen Baum, bleibt bei list
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
@@ -248,10 +250,29 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </section>
       )}
 
+      {tour.format !== "round_robin" && (
+        <div className="chips small turnier-view-toggle">
+          <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
+            <List size={14} /> {t("Liste")}
+          </button>
+          <button className={"chip" + (viewMode === "graph" ? " active" : "")} onClick={() => setViewMode("graph")}>
+            <GitBranch size={14} /> {t("Grafik")}
+          </button>
+        </div>
+      )}
+
       <div className="turnier-brackets">
         {bracketOrder.map((b) => {
           const list = groups[b] || [];
           if (list.length === 0) return null;
+          if (viewMode === "graph" && tour.format !== "round_robin") {
+            return (
+              <section key={b} className="stat-block">
+                <h3><Trophy size={17} /> {bracketOrder.length > 1 ? bracketLabel(b) : t("Raster")}</h3>
+                <TurnierGraph matches={list} nameOf={nameOf} />
+              </section>
+            );
+          }
           const byRound = {};
           list.forEach((tm) => { (byRound[tm.round] ||= []).push(tm); });
           return (
