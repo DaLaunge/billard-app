@@ -22,6 +22,8 @@ import ProfilScreen from "./components/ProfilScreen";
 import AdminScreen from "./components/AdminScreen";
 import InviteScreen from "./components/InviteScreen";
 import MatchProtokollScreen from "./components/MatchProtokollScreen";
+import TurniereScreen from "./components/TurniereScreen";
+import TurnierRasterScreen from "./components/TurnierRasterScreen";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -43,6 +45,7 @@ export default function App() {
   const [profileName, setProfileName] = useState(null);
   const [protokollMatch, setProtokollMatch] = useState(null);
   const [protokollBackTab, setProtokollBackTab] = useState("stats");
+  const [tournamentId, setTournamentId] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   // Wird einmalig true, sobald der allererste loadData()-Durchlauf steht -
@@ -81,6 +84,7 @@ export default function App() {
     setProtokollMatch(s.protokollMatch ?? null);
     setProtokollBackTab(s.protokollBackTab ?? "stats");
     setVsOpp(s.vsOpp ?? null);
+    setTournamentId(s.tournamentId ?? null);
   }, []);
   const navPush = useCallback((s) => {
     applyNavState(s);
@@ -241,7 +245,7 @@ export default function App() {
     const [rang, m, pl, pi, bg, ct, mc, ch] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
-        .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, run_log, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
+        .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, run_log, tournament_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
         .order("played_at", { ascending: false })
         .range(from, to)),
       supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by, created_at"),
@@ -566,6 +570,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
+                  onOpenTurniere={() => navPush({ tab: "turnier" })}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
@@ -592,6 +597,15 @@ export default function App() {
               )}
               {tab === "invite" && (
                 <InviteScreen me={player} onBack={() => window.history.back()} toast={toast} />
+              )}
+              {tab === "turnier" && (
+                <TurniereScreen players={players} toast={toast}
+                  onOpenTournament={(id) => navPush({ tab: "turnierdetail", tournamentId: id })}
+                  onBack={() => window.history.back()} />
+              )}
+              {tab === "turnierdetail" && tournamentId && (
+                <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} toast={toast}
+                  colorOf={colorOf} onReload={loadData} onBack={() => window.history.back()} />
               )}
               <button className="refresh-btn" onClick={() => { loadData(); checkForUpdate(); }} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
