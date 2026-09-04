@@ -783,12 +783,30 @@ const TRANSLATIONS = {
     "Übersicht": "Overview",
     "Dabei seit {date}": "Member since {date}",
     "Punkteverfall - mehr erfahren": "Rating decay - learn more",
-    "Punkteverfall - lange kein Match, Rating sinkt Richtung 500": "Rating decay - no match in a while, rating is drifting toward 500",
+    "Punkteverfall bald - mehr erfahren": "Rating decay coming up - learn more",
+    "Laenger inaktiv - mehr erfahren": "Inactive for a while - learn more",
+    "Vorlaeufiges Rating - mehr erfahren": "Provisional rating - learn more",
     "Punkteverfall": "Rating decay",
-    "Ohne bestaetigte Matches sinkt ein Rating mit der Zeit wieder Richtung 500 (Startwert) - so bleibt die Rangliste auch bei laengeren Pausen aussagekraeftig.":
-      "Without confirmed matches, a rating gradually drifts back toward 500 (the starting value) - this keeps the ranking meaningful even after longer breaks.",
+    "Punkteverfall bald": "Rating decay coming up",
+    "Laenger inaktiv": "Inactive for a while",
+    "Vorlaeufiges Rating": "Provisional rating",
+    "Ohne bestaetigte Matches bewegt sich ein Rating mit der Zeit wieder Richtung 500 (Startwert) - so bleibt die Rangliste auch bei laengeren Pausen aussagekraeftig.":
+      "Without confirmed matches, a rating gradually drifts back toward 500 (the starting value) over time - this keeps the ranking meaningful even after longer breaks.",
+    "Aktuell {richtung} das Rating dadurch.": "Right now that means the rating {richtung}.",
     "Einfach ein Match spielen und bestaetigen lassen, um den Verfall zu stoppen.":
       "Just play a match and get it confirmed to stop the decay.",
+    "Noch {n} Tage, dann bewegt sich das Rating ohne ein neues Match wieder Richtung 500 (Startwert).":
+      "{n} days left before the rating starts drifting back toward 500 (the starting value) without a new match.",
+    "Spiel rechtzeitig ein Match, um das zu verhindern.": "Play a match in time to prevent that.",
+    "Seit ueber 180 Tagen kein bestaetigtes Match - dieser Spieler wird in der Rangliste standardmaessig ausgeblendet.":
+      "No confirmed match for over 180 days - this player is hidden from the ranking by default.",
+    "Ein neues Match holt den Spieler zurueck in die aktive Rangliste.":
+      "A new match brings the player back into the active ranking.",
+    "Mit weniger als 10 gewerteten Spielen gilt ein Rating noch als vorlaeufig - es kann sich pro Match noch deutlich staerker veraendern.":
+      "With fewer than 10 rated games, a rating still counts as provisional - it can still change much more per match.",
+    "Noch {n} Spiele bis das Rating als gefestigt gilt.": "{n} more games until the rating counts as settled.",
+    "sinkt": "drops",
+    "steigt": "rises",
     "Verstanden": "Got it",
     "Match starten": "Start match",
     "Aufnahme {n}": "Inning {n}",
