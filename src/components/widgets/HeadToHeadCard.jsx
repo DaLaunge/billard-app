@@ -7,9 +7,11 @@ import Ball from "../Ball";
 const COUNT_OPTIONS = [3, 10, 20, "all"];
 
 /* Eigenstaendiges Modul: Head-to-Head-Bilanz eines Spielers gegen alle
-   bisherigen Gegner, mit 3/10/20/Alle-Filter. Ueberall gleich verwendbar
-   (Profil, Uebersicht, ...) - braucht nur matches + den Namen. */
-export default function HeadToHeadCard({ nickname, matches, onOpenProfile, colorOf, badgeOf, photoOf, title }) {
+   bisherigen Gegner, mit 3/10/20/Alle-Filter sowie einem Aktiv-Filter
+   (per Default nur aktive Gegner, analog zur Rangliste). Ueberall gleich
+   verwendbar (Profil, Uebersicht, ...) - braucht nur matches + den Namen;
+   rangliste ist optional und liefert dafuer die "aktiv"-Flags. */
+export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenProfile, colorOf, badgeOf, photoOf, title }) {
   const h2h = useMemo(() => {
     const map = {};
     matches.forEach((m) => {
@@ -23,8 +25,22 @@ export default function HeadToHeadCard({ nickname, matches, onOpenProfile, color
     });
     return Object.values(map).sort((a, b) => (b.w / (b.w + b.l)) - (a.w / (a.w + a.l)));
   }, [matches, nickname]);
+
+  // Gesamt-Zeile der Rangliste bestimmt "aktiv" (kein Match seit 180 Tagen).
+  // Ohne rangliste-Prop (bzw. ohne passende Zeile, z.B. Spieler ganz ohne
+  // Gesamt-Rating) gilt jemand als aktiv, damit nichts faelschlich verschwindet.
+  const activeSet = useMemo(() => {
+    const s = new Set();
+    (rangliste || []).forEach((r) => { if (r.discipline === "Gesamt" && r.aktiv) s.add(r.nickname); });
+    return s;
+  }, [rangliste]);
+  const isActive = (opp) => !rangliste || !rangliste.some((r) => r.discipline === "Gesamt" && r.nickname === opp) || activeSet.has(opp);
+
   const [count, setCount] = useState(3);
-  const visible = count === "all" ? h2h : h2h.slice(0, count);
+  const [showInactive, setShowInactive] = useState(false);
+  const filtered = showInactive ? h2h : h2h.filter(({ opp }) => isActive(opp));
+  const hiddenCount = h2h.length - filtered.length;
+  const visible = count === "all" ? filtered : filtered.slice(0, count);
 
   return (
     <section className="stat-block">
@@ -49,6 +65,14 @@ export default function HeadToHeadCard({ nickname, matches, onOpenProfile, color
         </button>
       ))}
       {h2h.length === 0 && <p className="hint">{t("Noch keine Matches.")}</p>}
+      {hiddenCount > 0 && !showInactive && (
+        <button className="btn ghost small" onClick={() => setShowInactive(true)}>
+          {hiddenCount} {t("inaktive Gegner einblenden")}
+        </button>
+      )}
+      {showInactive && h2h.some(({ opp }) => !isActive(opp)) && (
+        <button className="btn ghost small" onClick={() => setShowInactive(false)}>{t("Nur aktive Gegner zeigen")}</button>
+      )}
     </section>
   );
 }

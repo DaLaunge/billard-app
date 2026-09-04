@@ -46,7 +46,7 @@ export default function UserPanel({ nickname, matches, rangliste, players, chall
 
       <RecordsCard extras={extras} catalog={catalog} earnedBadges={earnedBadges} />
 
-      <HeadToHeadCard nickname={nickname} matches={matches} onOpenProfile={onOpenProfile}
+      <HeadToHeadCard nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
         colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
     </>
   );
