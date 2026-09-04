@@ -80,6 +80,7 @@ export default function TurniereScreen({ me, players, toast, onOpenTournament, o
 
   return (
     <div className="screen">
+      <div className="turnier-layout">
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{t("Turniere")}</h2>
@@ -100,7 +101,7 @@ export default function TurniereScreen({ me, players, toast, onOpenTournament, o
         )}
 
         {showForm && me?.role === "admin" && (
-          <div className="add-match" style={{ marginBottom: 16 }}>
+          <div className="turnier-form" style={{ marginBottom: 16 }}>
             <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
             <div className="am-row">
               <select value={format} onChange={(e) => setFormat(e.target.value)}>
@@ -118,7 +119,7 @@ export default function TurniereScreen({ me, players, toast, onOpenTournament, o
               <button className={"chip" + (tableMode === "list" ? " active" : "")} onClick={() => setTableMode("list")}>{t("Liste")}</button>
             </div>
             {tableMode === "range" ? (
-              <div className="am-scores" style={{ justifyContent: "flex-start" }}>
+              <div className="turnier-score-inputs">
                 <input type="number" inputMode="numeric" min="1" placeholder={t("von")} value={tableFrom} onChange={(e) => setTableFrom(e.target.value)} />
                 <span>–</span>
                 <input type="number" inputMode="numeric" min="1" placeholder={t("bis")} value={tableTo} onChange={(e) => setTableTo(e.target.value)} />
@@ -129,13 +130,11 @@ export default function TurniereScreen({ me, players, toast, onOpenTournament, o
 
             <p className="hint" style={{ marginBottom: 4, marginTop: 10 }}>{t("Teilnehmer")} ({selected.length})</p>
             <input type="text" placeholder={t("Spieler suchen …")} value={query} onChange={(e) => setQuery(e.target.value)} />
-            <div className="mem-list" style={{ maxHeight: 220, overflowY: "auto" }}>
+            <div className="turnier-player-grid">
               {filteredPlayers.map((p) => (
-                <label key={p.id} className="mem-row" style={{ cursor: "pointer", display: "block", padding: "7px 0" }}>
-                  <div className="mem-line">
-                    <input type="checkbox" checked={selected.includes(p.id)} onChange={() => togglePlayer(p.id)} />
-                    <span className="mem-nick">{p.nickname}</span>
-                  </div>
+                <label key={p.id}>
+                  <input type="checkbox" checked={selected.includes(p.id)} onChange={() => togglePlayer(p.id)} />
+                  <span>{p.nickname}</span>
                 </label>
               ))}
               {filteredPlayers.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
@@ -162,6 +161,7 @@ export default function TurniereScreen({ me, players, toast, onOpenTournament, o
           ))
         )}
       </section>
+      </div>
     </div>
   );
 }

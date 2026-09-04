@@ -163,25 +163,25 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
     const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
     return (
-      <div key={tm.id} className="pending-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="m-txt">
+      <div key={tm.id} className="turnier-match-card">
+        <div className="turnier-match-meta">
+          <span className="turnier-match-players">
             {tm.is_bye ? (
-              <><b>{n1 || "?"}</b> {" "}{t("(Freilos)")}</>
+              <><b>{n1 || "?"}</b>&nbsp;{t("(Freilos)")}</>
             ) : (
               <>
-                <b>{n1 || t("TBD")}</b>{" "}
-                {tm.match ? <b>{tm.match.score1}:{tm.match.score2}</b> : "–"}{" "}
+                <b>{n1 || t("TBD")}</b>
+                <span className="turnier-match-score">{tm.match ? `${tm.match.score1}:${tm.match.score2}` : "–"}</span>
                 <b>{n2 || t("TBD")}</b>
               </>
             )}
           </span>
-          {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
         </div>
+        {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
         {tm.match_id && !confirmed && <span className="hint" style={{ margin: 0 }}>{t("Wartet auf Bestätigung ...")}</span>}
         {manuallyEntered && <span className="hint" style={{ margin: 0 }}>{t("Manuell nachgetragen")}</span>}
         {(canReport || canOrganizerReport) && (
-          <div className="am-scores" style={{ justifyContent: "flex-start" }}>
+          <div className="turnier-score-inputs">
             <input type="number" inputMode="numeric" min="0" placeholder="0"
               value={scores[tm.id]?.s1 || ""} onChange={(e) => setScores({ ...scores, [tm.id]: { ...scores[tm.id], s1: e.target.value } })} />
             <span>:</span>
@@ -210,6 +210,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
 
   return (
     <div className="screen">
+      <div className="turnier-layout">
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{tour.name}</h2>
@@ -237,7 +238,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         <section className="stat-block">
           <h3><Trophy size={17} /> {t("Tabelle")}</h3>
           {standings.map((s, i) => (
-            <div key={s.id} className="stat-row">
+            <div key={s.id} className="stat-row turnier-standings-row">
               <span className="medal">{i + 1}.</span>
               <Ball color={colorOf(s.name)} label={initials(s.name)} size={28} />
               <span className="stat-name">{s.name}</span>
@@ -247,25 +248,28 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </section>
       )}
 
-      {bracketOrder.map((b) => {
-        const list = groups[b] || [];
-        if (list.length === 0) return null;
-        const byRound = {};
-        list.forEach((tm) => { (byRound[tm.round] ||= []).push(tm); });
-        return (
-          <section key={b} className="stat-block">
-            <h3><Trophy size={17} /> {bracketOrder.length > 1 ? bracketLabel(b) : t("Raster")}</h3>
-            <div style={{ display: "flex", gap: 16, overflowX: "auto" }}>
-              {Object.keys(byRound).sort((a, c) => a - c).map((r) => (
-                <div key={r} style={{ minWidth: 220, flex: "0 0 auto" }}>
-                  <p className="hint" style={{ marginTop: 0 }}>{t("Runde")} {r}</p>
-                  {byRound[r].sort((a, c) => a.bracket_position - c.bracket_position).map(renderMatch)}
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      <div className="turnier-brackets">
+        {bracketOrder.map((b) => {
+          const list = groups[b] || [];
+          if (list.length === 0) return null;
+          const byRound = {};
+          list.forEach((tm) => { (byRound[tm.round] ||= []).push(tm); });
+          return (
+            <section key={b} className="stat-block">
+              <h3><Trophy size={17} /> {bracketOrder.length > 1 ? bracketLabel(b) : t("Raster")}</h3>
+              <div className="turnier-rounds">
+                {Object.keys(byRound).sort((a, c) => a - c).map((r) => (
+                  <div key={r} className="turnier-round-col">
+                    <p className="turnier-round-title">{t("Runde")} {r}</p>
+                    {byRound[r].sort((a, c) => a.bracket_position - c.bracket_position).map(renderMatch)}
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+      </div>
     </div>
   );
 }
