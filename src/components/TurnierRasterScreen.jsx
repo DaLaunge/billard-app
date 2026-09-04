@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Trophy, Check, X, ShieldAlert } from "lucide-react";
+import { ChevronLeft, Trophy, Check, X, ShieldAlert, Flag, Trash2 } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
@@ -97,6 +97,43 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     if (onReload) onReload();
   };
 
+  const organizerReport = async (tm) => {
+    const s = scores[tm.id] || {};
+    const s1 = parseInt(s.s1, 10), s2 = parseInt(s.s2, 10);
+    if (!Number.isFinite(s1) || !Number.isFinite(s2) || s1 < 0 || s2 < 0 || s1 === s2) {
+      toast(t("Ungültiges Ergebnis.")); return;
+    }
+    setBusyId(tm.id);
+    const { error } = await supabase.rpc("tournament_organizer_report_match", {
+      p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Ergebnis als Turnierleitung eingetragen."));
+    await load();
+    if (onReload) onReload();
+  };
+
+  const endEarly = async () => {
+    if (!window.confirm(t("Turnier jetzt vorzeitig beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste."))) return;
+    setBusyId("end");
+    const { error } = await supabase.rpc("tournament_end_early", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Turnier beendet."));
+    await load();
+  };
+
+  const deleteTournament = async () => {
+    if (!window.confirm(t("Dieses Turnier wirklich unwiderruflich löschen?"))) return;
+    setBusyId("delete");
+    const { error } = await supabase.rpc("tournament_delete", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Turnier gelöscht."));
+    onBack();
+  };
+
   if (!tour || !tms) {
     return (
       <div className="screen">
@@ -110,6 +147,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   }
 
   const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
+  const canDeleteTournament = isOrganizer && !tms.some((tm) => tm.match_id);
   const groups = {};
   tms.forEach((tm) => { (groups[tm.bracket] ||= []).push(tm); });
   const bracketOrder = tour.format === "double_ko" ? ["winners", "losers", "final"] : ["main"];
@@ -117,11 +155,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const renderMatch = (tm) => {
     const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
     const confirmed = tm.match?.confirmed;
-    const canReport = !tm.is_bye && tm.player1_id && tm.player2_id && !tm.match_id &&
-      (me.id === tm.player1_id || me.id === tm.player2_id);
-    const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id &&
-      (me.id === tm.player1_id || me.id === tm.player2_id);
-    const canForce = tm.match_id && !confirmed && isOrganizer && me.id !== tm.player1_id && me.id !== tm.player2_id;
+    const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
+    const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && !tm.match_id && tour.status === "running";
+    const canReport = openSlot && isMyMatch;
+    const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
+    const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
+    const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
     return (
       <div key={tm.id} className="pending-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -139,14 +178,17 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
         </div>
         {tm.match_id && !confirmed && <span className="hint" style={{ margin: 0 }}>{t("Wartet auf Bestätigung ...")}</span>}
-        {canReport && (
+        {(canReport || canOrganizerReport) && (
           <div className="am-scores" style={{ justifyContent: "flex-start" }}>
             <input type="number" inputMode="numeric" min="0" placeholder="0"
               value={scores[tm.id]?.s1 || ""} onChange={(e) => setScores({ ...scores, [tm.id]: { ...scores[tm.id], s1: e.target.value } })} />
             <span>:</span>
             <input type="number" inputMode="numeric" min="0" placeholder="0"
               value={scores[tm.id]?.s2 || ""} onChange={(e) => setScores({ ...scores, [tm.id]: { ...scores[tm.id], s2: e.target.value } })} />
-            <button className="btn primary" disabled={busyId === tm.id} onClick={() => report(tm)}>{t("Melden")}</button>
+            <button className="btn primary" disabled={busyId === tm.id}
+              onClick={() => (canReport ? report(tm) : organizerReport(tm))}>
+              {canReport ? t("Melden") : t("Als Turnierleitung eintragen")}
+            </button>
           </div>
         )}
         {canConfirm && (
@@ -173,6 +215,21 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       <p className="hint" style={{ marginTop: -6 }}>
         {formatLabel(tour.format)} · {t(tour.discipline)} · {tour.status === "finished" ? t("beendet") : t("läuft")}
       </p>
+
+      {isOrganizer && (tour.status === "running" || canDeleteTournament) && (
+        <div className="chips small" style={{ marginBottom: 10 }}>
+          {tour.status === "running" && (
+            <button className="btn ghost" disabled={busyId === "end"} onClick={endEarly}>
+              <Flag size={15} /> {t("Turnier vorzeitig beenden")}
+            </button>
+          )}
+          {canDeleteTournament && (
+            <button className="btn ghost" disabled={busyId === "delete"} onClick={deleteTournament}>
+              <Trash2 size={15} /> {t("Turnier löschen")}
+            </button>
+          )}
+        </div>
+      )}
 
       {standings && (
         <section className="stat-block">

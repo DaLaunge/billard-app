@@ -878,6 +878,15 @@ const TRANSLATIONS = {
     "Tabelle": "Standings",
     "Turniermatches ausblenden": "Hide tournament matches",
     "Turniere anlegen ist aktuell nur für Admins möglich.": "Creating tournaments is currently admin-only.",
+    "Als Turnierleitung eintragen": "Enter as organizer",
+    "Ergebnis als Turnierleitung eingetragen.": "Result entered as organizer.",
+    "Turnier vorzeitig beenden": "End tournament early",
+    "Turnier jetzt vorzeitig beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste.": "End this tournament early now? Matches already played stay in the standings as tournament matches.",
+    "Turnier beendet.": "Tournament ended.",
+    "Turnier läuft nicht (mehr).": "This tournament isn't running (anymore).",
+    "Turnier löschen": "Delete tournament",
+    "Dieses Turnier wirklich unwiderruflich löschen?": "Really delete this tournament permanently?",
+    "Turnier gelöscht.": "Tournament deleted.",
   },
 };
 export function setLangGlobal(l) {
