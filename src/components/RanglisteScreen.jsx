@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Check, X, Clock, FileText, ArrowUp, ArrowDown, Minus, ChevronsUp, ChevronsDown, TrendingUp, TrendingDown } from "lucide-react";
 import { t } from "../lib/i18n";
-import { isDoubles, mSide, fmtDate, initials, decayStatus } from "../lib/format";
+import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
 import { computeAchievementExtras } from "../lib/achievements";
 import Ball from "./Ball";
 import LiveStatusCard from "./widgets/LiveStatusCard";
@@ -212,7 +212,7 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
                 </span>
               </span>
               <span className="rank-rating">{r.rating}</span>
-              <DecayBadge status={decayStatus(r.letzte_partie)} letztePartie={r.letzte_partie} className="rank-decay-warn" iconSize={16} />
+              <DecayBadge player={r} className="rank-decay-warn" iconSize={16} />
             </button>
           </li>
           );

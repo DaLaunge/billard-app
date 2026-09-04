@@ -60,8 +60,15 @@ export const fmtAgo = (d) => {
 // verloren gehen - nicht erst, wenn es schon passiert.
 export const DECAY_GRACE_DAYS = 30;
 export const DECAY_WARN_DAYS = 5;
+// Unter dieser Spielanzahl gilt ein Rating als "vorlaeufig" (siehe
+// "vorlaeufig"-Flag der rangliste-View bzw. den Footnote-Text auf der
+// Uebersicht) - nur fuer die "noch X Spiele"-Anzeige hier gebraucht, das
+// Flag selbst kommt fertig aus der DB.
+export const PROVISIONAL_GAMES = 10;
 // null = kein Hinweis noetig, "soon" = Frist laeuft bald ab (noch kein
-// Verfall), "decaying" = Rating sinkt bereits aktiv Richtung 500.
+// Verfall), "decaying" = Rating bewegt sich bereits aktiv Richtung 500.
+// Wichtig: das ist KEIN reines Sinken - ein Rating UNTER 500 steigt beim
+// Verfall (siehe playerBadgeStatus()/DecayBadge.jsx fuer die Richtung).
 export const decayStatus = (letztePartie) => {
   if (!letztePartie) return null;
   const days = Math.floor((Date.now() - new Date(letztePartie)) / 86400000);
@@ -73,6 +80,21 @@ export const decayStatus = (letztePartie) => {
 export const decayDaysLeft = (letztePartie) => {
   const days = Math.floor((Date.now() - new Date(letztePartie)) / 86400000);
   return Math.max(0, DECAY_GRACE_DAYS - days);
+};
+// Ein einziger Hinweis-Status pro Spieler - Prioritaet nach Dringlichkeit,
+// weil Karte/Rangliste nur einen Icon-Platz dafuer haben (siehe
+// widgets/DecayBadge.jsx). "inactive" gewinnt vor "decaying"/"soon", obwohl
+// 180 Tage Inaktivitaet praktisch immer auch schon aktiven Verfall bedeuten
+// (180 > 30) - der eigentliche Grund (laengst kein Match mehr, aus der
+// Standard-Rangliste ausgeblendet) ist die relevantere Info. "provisional"
+// ist am wenigsten dringend (reine Kalibrierungs-Info) und kommt nur zum
+// Zug, wenn sonst nichts zutrifft.
+export const playerBadgeStatus = ({ aktiv, letzte_partie, vorlaeufig } = {}) => {
+  if (aktiv === false) return "inactive";
+  const decay = decayStatus(letzte_partie);
+  if (decay) return decay;
+  if (vorlaeufig) return "provisional";
+  return null;
 };
 export const isDoubles = (m) => !!m.player1b_id;
 // Wie mSide, aber als Namens-Array statt fertigem String - fuer Stellen, an
