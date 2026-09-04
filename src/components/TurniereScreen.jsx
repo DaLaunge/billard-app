@@ -9,10 +9,11 @@ const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Dopp
 const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
 
 // Turnierverwaltung: Liste laufender/vergangener Turniere + Formular zum
-// Anlegen. Jeder eingeloggte Spieler darf ein Turnier anlegen (wird
-// automatisch Organisator) - siehe create_tournament()/tournament_force_confirm_match()
-// in supabase/2026-09-04_tournament_mode.sql fuers Sicherheitsmodell.
-export default function TurniereScreen({ players, toast, onOpenTournament, onBack }) {
+// Anlegen. Anlegen ist aktuell auf Admins beschraenkt (Stefans Vorgabe zur
+// Missbrauchsvermeidung, solange der Modus in der Erprobung ist - siehe
+// supabase/2026-09-04_tournament_admin_only.sql, gilt bis er es widerruft).
+// Ansehen/Mitspielen bleibt fuer alle offen.
+export default function TurniereScreen({ me, players, toast, onOpenTournament, onBack }) {
   const [tournaments, setTournaments] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -87,12 +88,18 @@ export default function TurniereScreen({ players, toast, onOpenTournament, onBac
       <section className="stat-block">
         <div className="stat-block-head">
           <h3><Trophy size={17} /> {t("Turniere")}</h3>
-          <button className="btn ghost" onClick={() => setShowForm((s) => !s)}>
-            {showForm ? <><X size={15} /> {t("Abbrechen")}</> : <><Plus size={15} /> {t("Neues Turnier")}</>}
-          </button>
+          {me?.role === "admin" && (
+            <button className="btn ghost" onClick={() => setShowForm((s) => !s)}>
+              {showForm ? <><X size={15} /> {t("Abbrechen")}</> : <><Plus size={15} /> {t("Neues Turnier")}</>}
+            </button>
+          )}
         </div>
 
-        {showForm && (
+        {me?.role !== "admin" && (
+          <p className="hint" style={{ marginTop: 0 }}>{t("Turniere anlegen ist aktuell nur für Admins möglich.")}</p>
+        )}
+
+        {showForm && me?.role === "admin" && (
           <div className="add-match" style={{ marginBottom: 16 }}>
             <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
             <div className="am-row">

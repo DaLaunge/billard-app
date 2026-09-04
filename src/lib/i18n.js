@@ -879,6 +879,7 @@ const TRANSLATIONS = {
     "Runde": "Round",
     "Tabelle": "Standings",
     "Turniermatches ausblenden": "Hide tournament matches",
+    "Turniere anlegen ist aktuell nur für Admins möglich.": "Creating tournaments is currently admin-only.",
   },
 };
 export function setLangGlobal(l) {
