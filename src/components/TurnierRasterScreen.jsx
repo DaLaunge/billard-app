@@ -25,7 +25,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, match:matches(id, score1, score2, confirmed, reported_by)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
@@ -60,8 +60,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
 
   const report = async (tm) => {
     const s = scores[tm.id] || {};
-    const s1 = parseInt(s.s1, 10), s2 = parseInt(s.s2, 10);
-    if (!Number.isFinite(s1) || !Number.isFinite(s2) || s1 < 0 || s2 < 0 || s1 === s2) {
+    const s1 = parseInt(s.s1, 10) || 0, s2 = parseInt(s.s2, 10) || 0;
+    if (s1 < 0 || s2 < 0 || s1 === s2) {
       toast(t("Ungültiges Ergebnis.")); return;
     }
     setBusyId(tm.id);
@@ -99,8 +99,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
 
   const organizerReport = async (tm) => {
     const s = scores[tm.id] || {};
-    const s1 = parseInt(s.s1, 10), s2 = parseInt(s.s2, 10);
-    if (!Number.isFinite(s1) || !Number.isFinite(s2) || s1 < 0 || s2 < 0 || s1 === s2) {
+    const s1 = parseInt(s.s1, 10) || 0, s2 = parseInt(s.s2, 10) || 0;
+    if (s1 < 0 || s2 < 0 || s1 === s2) {
       toast(t("Ungültiges Ergebnis.")); return;
     }
     setBusyId(tm.id);
@@ -161,6 +161,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
     const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
     const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
+    const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
     return (
       <div key={tm.id} className="pending-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -178,6 +179,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
         </div>
         {tm.match_id && !confirmed && <span className="hint" style={{ margin: 0 }}>{t("Wartet auf Bestätigung ...")}</span>}
+        {manuallyEntered && <span className="hint" style={{ margin: 0 }}>{t("Manuell nachgetragen")}</span>}
         {(canReport || canOrganizerReport) && (
           <div className="am-scores" style={{ justifyContent: "flex-start" }}>
             <input type="number" inputMode="numeric" min="0" placeholder="0"

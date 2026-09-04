@@ -887,6 +887,7 @@ const TRANSLATIONS = {
     "Turnier löschen": "Delete tournament",
     "Dieses Turnier wirklich unwiderruflich löschen?": "Really delete this tournament permanently?",
     "Turnier gelöscht.": "Tournament deleted.",
+    "Manuell nachgetragen": "Manually added afterward",
   },
 };
 export function setLangGlobal(l) {
