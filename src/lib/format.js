@@ -53,13 +53,26 @@ export const fmtAgo = (d) => {
 // Punkteverfall (rebuild_elo() in Postgres): ohne Match verfaellt ein Rating
 // erst nach GRACE=30 Tagen Richtung 500. Muss exakt zu diesem Grace-Zeitraum
 // in der SQL-Funktion passen, sonst zeigt die App den Verfall zu frueh/spaet
-// an. Einzige Quelle fuer diese Schwelle - von IdentityCard und Rangliste
+// an. Einzige Quelle fuer diese Schwellen - von IdentityCard und Rangliste
 // gleichermassen genutzt, damit beide immer denselben Stand zeigen.
+// WARN_DAYS: ab wie vielen Tagen VOR Ablauf der Frist schon (ruhig) gewarnt
+// wird, damit ein Spieler noch reagieren kann, bevor tatsaechlich Punkte
+// verloren gehen - nicht erst, wenn es schon passiert.
 export const DECAY_GRACE_DAYS = 30;
-export const isDecaying = (letztePartie) => {
-  if (!letztePartie) return false;
+export const DECAY_WARN_DAYS = 5;
+// null = kein Hinweis noetig, "soon" = Frist laeuft bald ab (noch kein
+// Verfall), "decaying" = Rating sinkt bereits aktiv Richtung 500.
+export const decayStatus = (letztePartie) => {
+  if (!letztePartie) return null;
   const days = Math.floor((Date.now() - new Date(letztePartie)) / 86400000);
-  return days > DECAY_GRACE_DAYS;
+  if (days > DECAY_GRACE_DAYS) return "decaying";
+  if (days > DECAY_GRACE_DAYS - DECAY_WARN_DAYS) return "soon";
+  return null;
+};
+// Nur sinnvoll/aufgerufen im "soon"-Status - Resttage bis der Verfall beginnt.
+export const decayDaysLeft = (letztePartie) => {
+  const days = Math.floor((Date.now() - new Date(letztePartie)) / 86400000);
+  return Math.max(0, DECAY_GRACE_DAYS - days);
 };
 export const isDoubles = (m) => !!m.player1b_id;
 // Wie mSide, aber als Namens-Array statt fertigem String - fuer Stellen, an

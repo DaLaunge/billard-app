@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
-import { Check, X, Clock, FileText, ArrowUp, ArrowDown, Minus, ChevronsUp, ChevronsDown, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { Check, X, Clock, FileText, ArrowUp, ArrowDown, Minus, ChevronsUp, ChevronsDown, TrendingUp, TrendingDown } from "lucide-react";
 import { t } from "../lib/i18n";
-import { isDoubles, mSide, fmtDate, initials, isDecaying } from "../lib/format";
+import { isDoubles, mSide, fmtDate, initials, decayStatus } from "../lib/format";
 import { computeAchievementExtras } from "../lib/achievements";
 import Ball from "./Ball";
 import LiveStatusCard from "./widgets/LiveStatusCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import UserPanel from "./widgets/UserPanel";
+import DecayBadge from "./widgets/DecayBadge";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 
@@ -211,11 +212,7 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
                 </span>
               </span>
               <span className="rank-rating">{r.rating}</span>
-              {isDecaying(r.letzte_partie) && (
-                <span className="rank-decay-warn" title={t("Punkteverfall - lange kein Match, Rating sinkt Richtung 500")}>
-                  <AlertTriangle size={16} />
-                </span>
-              )}
+              <DecayBadge status={decayStatus(r.letzte_partie)} letztePartie={r.letzte_partie} className="rank-decay-warn" iconSize={16} />
             </button>
           </li>
           );

@@ -783,12 +783,15 @@ const TRANSLATIONS = {
     "Übersicht": "Overview",
     "Dabei seit {date}": "Member since {date}",
     "Punkteverfall - mehr erfahren": "Rating decay - learn more",
-    "Punkteverfall - lange kein Match, Rating sinkt Richtung 500": "Rating decay - no match in a while, rating is drifting toward 500",
     "Punkteverfall": "Rating decay",
+    "Punkteverfall bald": "Rating decay coming up",
     "Ohne bestaetigte Matches sinkt ein Rating mit der Zeit wieder Richtung 500 (Startwert) - so bleibt die Rangliste auch bei laengeren Pausen aussagekraeftig.":
       "Without confirmed matches, a rating gradually drifts back toward 500 (the starting value) - this keeps the ranking meaningful even after longer breaks.",
     "Einfach ein Match spielen und bestaetigen lassen, um den Verfall zu stoppen.":
       "Just play a match and get it confirmed to stop the decay.",
+    "Noch {n} Tage, dann beginnt das Rating ohne ein neues Match Richtung 500 zu sinken.":
+      "{n} days left before the rating starts drifting toward 500 without a new match.",
+    "Spiel rechtzeitig ein Match, um das zu verhindern.": "Play a match in time to prevent that.",
     "Verstanden": "Got it",
     "Match starten": "Start match",
     "Aufnahme {n}": "Inning {n}",
