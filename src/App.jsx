@@ -124,15 +124,23 @@ export default function App() {
   // --- App-Updates (Service Worker) --------------------------------------
   // "bei jedem Aufruf" = kein Timer, stattdessen bei jedem Sichtbarwerden der
   // App pruefen; sonst alle 30/60 Min per Timer; "manual" = nur per Klick in
-  // den Profileinstellungen. Ein gefundenes Update wird sofort angewendet
-  // (Reload), ausser waehrend einer laufenden Matcheingabe - dann erst,
-  // sobald der Match-Bildschirm verlassen wird (siehe Effekt unten).
+  // den Profileinstellungen. Ein gefundenes Update wird per Reload angewendet,
+  // aber erst NACHDEM die Uebersicht einmal fertig geladen hat (initialLoadDone)
+  // und nie waehrend einer laufenden Matcheingabe oder des Erfolgs-Popups
+  // (siehe Effekt unten). Wichtig: registerType "autoUpdate" (vite.config.js)
+  // ruft bei gefundenem Update intern SOFORT window.location.reload() auf,
+  // sobald keine eigene onNeedReload-Callback uebergeben wird - darum hier
+  // NICHT ohne onNeedReload arbeiten, sonst reisst ein Update-Check die gerade
+  // ladende Seite ungebremst weg.
   const [updateInterval, setUpdateInterval] = useState(() => {
     try { return localStorage.getItem("updateCheckInterval") || "30"; } catch { return "30"; }
   });
+  const [needReload, setNeedReload] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const swRegistration = useRef(null);
-  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW({
+  useRegisterSW({
     onRegisteredSW(_url, reg) { swRegistration.current = reg || null; },
+    onNeedReload() { setNeedReload(true); },
   });
   const checkForUpdate = useCallback(() => { swRegistration.current?.update(); }, []);
   const setUpdateCheckInterval = useCallback((v) => {
@@ -153,8 +161,8 @@ export default function App() {
   useEffect(() => {
     // Auch das Erfolgs-Popup nicht durch einen Reload wegreissen - sobald es
     // geschlossen wird, greift dieser Effekt erneut und holt das Update nach.
-    if (needRefresh && tab !== "match" && !celebrate) updateServiceWorker(true);
-  }, [needRefresh, tab, celebrate, updateServiceWorker]);
+    if (needReload && initialLoadDone && tab !== "match" && !celebrate) window.location.reload();
+  }, [needReload, initialLoadDone, tab, celebrate]);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
@@ -263,6 +271,7 @@ export default function App() {
     setConfirmations(mc.data ?? []);
     setSnapshots(snap.data ?? []);
     setLoadingData(false);
+    setInitialLoadDone(true);
   }, [toast]);
 
   useEffect(() => { if (player) loadData(); }, [player, loadData]);
