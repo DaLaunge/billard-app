@@ -7,17 +7,25 @@ const BOX_W = 220;
 const BOX_H = 62;
 const COL_GAP = 84;
 const ROW_GAP = 26;
+const SECTION_GAP = 56;
+const LABEL_H = 26;
 
-// Baumgrafik fuer EINEN Bracket-Abschnitt (Gewinnerbaum/Verliererbaum/Finale/
-// K.O.-Raster). Boxen als normale, absolut positionierte divs (Spielernamen/
-// Score wie ueberall sonst in der App gerendert) - nur die Verbinderlinien
-// sind ein SVG-Overlay. Positionierung: Runde 1 nacheinander gestapelt, jede
-// weitere Runde auf der mittleren Hoehe ihrer tatsaechlichen Vorgaenger (ueber
-// next_match_id zurueckverfolgt) - das ergibt bei einem sauberen (freilos-
-// losen) Baum die klassische "zusammenlaufende" Turnierform. Verbinder als
-// weiche Kurven statt rechtwinkliger Ecken und in zwei Staerken (bereits
-// entschiedene Matches heller/dicker als noch offene) - reine rechtwinklige
-// duenne Linien in der urspruenglichen Fassung gingen im Hintergrund unter.
+const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers" ? t("Verliererbaum") : b === "final" ? t("Finale") : t("Raster"));
+
+// Baumgrafik fuer ein ganzes Turnier (alle Bracket-Abschnitte in EINEM
+// zusammenhaengenden Bild statt getrennter Grafiken pro Abschnitt - bei
+// Doppel-K.O. war die Verliererbaum-Grafik dadurch bisher fuer sich isoliert
+// unverstaendlich: Spieler, die aus dem Gewinnerbaum absteigen, tauchten in
+// der Verliererbaum-Box scheinbar aus dem Nichts auf, weil die dafuer
+// zustaendige Verknuepfung (loser_next_match_id, ein WB-Match zu einem LB-
+// Match) beim Zeichnen schlicht ignoriert wurde). Abschnitte werden
+// uebereinander gestapelt (Gewinnerbaum, Verliererbaum, Finale), jeweils mit
+// eigener Spalten-/Zeilenrechnung; Sieger-Pfade (next_match_id) werden als
+// weiche horizontale Kurve gezeichnet, Abstiegs-Pfade (loser_next_match_id,
+// i.d.R. abwaerts in die naechste Sektion) gestrichelt und in Verlustfarbe,
+// sobald der Verlierer feststeht - sonst gedaempft. Boxen als normale,
+// absolut positionierte divs (Spielernamen/Score wie ueberall sonst in der
+// App gerendert), nur die Verbinder sind ein SVG-Overlay.
 //
 // Turnierleitung/Spieler koennen direkt in der Grafik agieren: eine Box mit
 // verfuegbarer Aktion (Ergebnis melden/eintragen, bestaetigen, erzwingen)
@@ -29,31 +37,50 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   const [selectedId, setSelectedId] = useState(null);
 
   const layout = useMemo(() => {
-    const rounds = [...new Set(matches.map((m) => m.round))].sort((a, b) => a - b);
+    const sectionOrder = ["main", "winners", "losers", "final"].filter((b) => matches.some((m) => m.bracket === b));
+    const labelOffset = sectionOrder.length > 1 ? LABEL_H : 0;
     const pos = {};
+    const sections = [];
+    let yOffset = 0;
 
-    rounds.forEach((r, colIdx) => {
-      const inCol = matches.filter((m) => m.round === r).sort((a, b) => a.bracket_position - b.bracket_position);
-      inCol.forEach((m, i) => {
-        const feeders = matches.filter((f) => f.next_match_id === m.id && pos[f.id]);
-        const y = feeders.length
-          ? feeders.reduce((s, f) => s + pos[f.id].y, 0) / feeders.length
-          : i * (BOX_H + ROW_GAP);
-        pos[m.id] = { x: colIdx * (BOX_W + COL_GAP), y };
+    sectionOrder.forEach((bracket) => {
+      const bracketMatches = matches.filter((m) => m.bracket === bracket);
+      const rounds = [...new Set(bracketMatches.map((m) => m.round))].sort((a, b) => a - b);
+      const boxesTop = yOffset + labelOffset;
+      let sectionMaxY = 0;
+
+      rounds.forEach((r, colIdx) => {
+        const inCol = bracketMatches.filter((m) => m.round === r).sort((a, b) => a.bracket_position - b.bracket_position);
+        inCol.forEach((m, i) => {
+          const feeders = bracketMatches.filter((f) => f.next_match_id === m.id && pos[f.id]);
+          const localY = feeders.length
+            ? feeders.reduce((s, f) => s + (pos[f.id].y - boxesTop), 0) / feeders.length
+            : i * (BOX_H + ROW_GAP);
+          pos[m.id] = { x: colIdx * (BOX_W + COL_GAP), y: boxesTop + localY };
+          sectionMaxY = Math.max(sectionMaxY, localY);
+        });
       });
+
+      sections.push({ bracket, top: yOffset, cols: rounds.length });
+      yOffset = boxesTop + sectionMaxY + BOX_H + SECTION_GAP;
     });
 
-    const totalWidth = rounds.length * BOX_W + Math.max(0, rounds.length - 1) * COL_GAP;
-    const maxY = Object.values(pos).reduce((mx, p) => Math.max(mx, p.y), 0);
-    const totalHeight = maxY + BOX_H;
+    const totalWidth = Math.max(BOX_W, ...Object.values(pos).map((p) => p.x + BOX_W));
+    const totalHeight = Math.max(0, yOffset - SECTION_GAP);
 
     const byId = {};
     matches.forEach((m) => { byId[m.id] = m; });
-    const edges = matches
-      .filter((m) => m.next_match_id && pos[m.id] && pos[m.next_match_id])
-      .map((m) => ({ from: pos[m.id], to: pos[m.next_match_id], decided: !!m.winner_id }));
+    const edges = [];
+    matches.forEach((m) => {
+      if (m.next_match_id && pos[m.id] && pos[m.next_match_id]) {
+        edges.push({ from: pos[m.id], to: pos[m.next_match_id], decided: !!m.winner_id, kind: "advance" });
+      }
+      if (m.loser_next_match_id && pos[m.id] && pos[m.loser_next_match_id]) {
+        edges.push({ from: pos[m.id], to: pos[m.loser_next_match_id], decided: !!m.winner_id, kind: "drop" });
+      }
+    });
 
-    return { pos, edges, totalWidth, totalHeight, byId };
+    return { pos, edges, totalWidth, totalHeight, byId, sections, showSectionLabels: sections.length > 1 };
   }, [matches]);
 
   const selected = selectedId ? layout.byId[selectedId] : null;
@@ -87,11 +114,16 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               const x2 = e.to.x, y2 = e.to.y + BOX_H / 2;
               const midX = (x1 + x2) / 2;
               return (
-                <path key={i} className={"turnier-graph-edge" + (e.decided ? " decided" : "")}
+                <path key={i} className={"turnier-graph-edge" + (e.decided ? " decided" : "") + (e.kind === "drop" ? " drop" : "")}
                   d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`} />
               );
             })}
           </svg>
+          {layout.showSectionLabels && layout.sections.map((s) => (
+            <div key={s.bracket} className="turnier-graph-section-label" style={{ top: s.top }}>
+              {bracketLabel(s.bracket)}
+            </div>
+          ))}
           {matches.map((m) => {
             const p = layout.pos[m.id];
             if (!p) return null;

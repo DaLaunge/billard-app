@@ -1045,6 +1045,14 @@ button.id-card-head { cursor: pointer; }
    Kurve statt rechtwinkliger Ecke liest sich klarer als "A fliesst zu B". */
 .turnier-graph-edge { fill: none; stroke: var(--ivory-dim); stroke-width: 2; opacity: 0.35; }
 .turnier-graph-edge.decided { stroke: var(--gold); stroke-width: 3; opacity: 0.85; }
+/* Abstiegs-Pfad (Verlierer eines Gewinnerbaum-Matches faellt in den
+   Verliererbaum) - gestrichelt, damit er sich von den "normalen"
+   Weiterkommen-Pfaden unterscheidet; rot statt gold sobald der Verlierer
+   feststeht, analog zur Sieg/Niederlage-Faerbung im Rest der App. */
+.turnier-graph-edge.drop { stroke-dasharray: 5 4; opacity: 0.25; }
+.turnier-graph-edge.drop.decided { stroke: var(--loss); stroke-width: 2.5; opacity: 0.7; }
+.turnier-graph-section-label { position: absolute; left: 0; font-size: 12px; font-weight: 700;
+  color: var(--ivory-dim); text-transform: uppercase; letter-spacing: 0.03em; }
 .turnier-graph-box { position: absolute; background: var(--felt-3); border: 1px solid var(--line);
   border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center;
   padding: 0; font-family: inherit; color: inherit; text-align: left; cursor: default; }

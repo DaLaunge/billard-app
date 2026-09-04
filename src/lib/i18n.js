@@ -891,6 +891,7 @@ const TRANSLATIONS = {
     "Grafik": "Graph",
     "Format": "Format",
     "Disziplin": "Discipline",
+    "Turnierbaum": "Tournament bracket",
   },
 };
 export function setLangGlobal(l) {

@@ -28,7 +28,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
@@ -231,37 +231,36 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </div>
       )}
 
-      <div className="turnier-brackets">
-        {bracketOrder.map((b) => {
-          const list = groups[b] || [];
-          if (list.length === 0) return null;
-          if (viewMode === "graph" && tour.format !== "round_robin") {
+      {viewMode === "graph" && tour.format !== "round_robin" ? (
+        <section className="stat-block">
+          <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
+          <TurnierGraph matches={tms} nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+            busyId={busyId} scores={scores} setScores={setScores}
+            onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
+        </section>
+      ) : (
+        <div className="turnier-brackets">
+          {bracketOrder.map((b) => {
+            const list = groups[b] || [];
+            if (list.length === 0) return null;
+            const byRound = {};
+            list.forEach((tm) => { (byRound[tm.round] ||= []).push(tm); });
             return (
               <section key={b} className="stat-block">
                 <h3><Trophy size={17} /> {bracketOrder.length > 1 ? bracketLabel(b) : t("Raster")}</h3>
-                <TurnierGraph matches={list} nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
-                  busyId={busyId} scores={scores} setScores={setScores}
-                  onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
+                <div className="turnier-rounds">
+                  {Object.keys(byRound).sort((a, c) => a - c).map((r) => (
+                    <div key={r} className="turnier-round-col">
+                      <p className="turnier-round-title">{t("Runde")} {r}</p>
+                      {byRound[r].sort((a, c) => a.bracket_position - c.bracket_position).map(renderMatch)}
+                    </div>
+                  ))}
+                </div>
               </section>
             );
-          }
-          const byRound = {};
-          list.forEach((tm) => { (byRound[tm.round] ||= []).push(tm); });
-          return (
-            <section key={b} className="stat-block">
-              <h3><Trophy size={17} /> {bracketOrder.length > 1 ? bracketLabel(b) : t("Raster")}</h3>
-              <div className="turnier-rounds">
-                {Object.keys(byRound).sort((a, c) => a - c).map((r) => (
-                  <div key={r} className="turnier-round-col">
-                    <p className="turnier-round-title">{t("Runde")} {r}</p>
-                    {byRound[r].sort((a, c) => a.bracket_position - c.bracket_position).map(renderMatch)}
-                  </div>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+          })}
+        </div>
+      )}
       </div>
     </div>
   );
