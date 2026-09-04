@@ -41,20 +41,33 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
     const labelOffset = sectionOrder.length > 1 ? LABEL_H : 0;
     const pos = {};
     const sections = [];
+    const sectionTopByBracket = {};
     let yOffset = 0;
 
     sectionOrder.forEach((bracket) => {
       const bracketMatches = matches.filter((m) => m.bracket === bracket);
       const rounds = [...new Set(bracketMatches.map((m) => m.round))].sort((a, b) => a - b);
       const boxesTop = yOffset + labelOffset;
+      sectionTopByBracket[bracket] = boxesTop;
       let sectionMaxY = 0;
 
       rounds.forEach((r, colIdx) => {
         const inCol = bracketMatches.filter((m) => m.round === r).sort((a, b) => a.bracket_position - b.bracket_position);
         inCol.forEach((m, i) => {
-          const feeders = bracketMatches.filter((f) => f.next_match_id === m.id && pos[f.id]);
+          // Ueber ALLE Matches suchen (nicht nur diesen Abschnitt) und BEIDE
+          // Verknuepfungsarten pruefen: next_match_id (Sieger-Weg) UND
+          // loser_next_match_id (Abstieg aus dem Gewinnerbaum) - eine
+          // Verliererbaum-Partie hat i.d.R. GENAU EINEN Vorgaenger von jeder
+          // Art. Nur next_match_id zu beruecksichtigen liess den
+          // Verliererbaum wie zwei parallele, nie zusammenlaufende Spuren
+          // aussehen, obwohl er strukturell ein echter Baum ist. Jeder
+          // Vorgaenger wird auf seine EIGENE (lokale) Position innerhalb
+          // SEINES Abschnitts normiert, bevor gemittelt wird - sonst wuerden
+          // Boxen mit nur einem abschnittsfremden Vorgaenger exakt auf
+          // dessen absolute Position "springen" und andere Boxen ueberdecken.
+          const feeders = matches.filter((f) => (f.next_match_id === m.id || f.loser_next_match_id === m.id) && pos[f.id]);
           const localY = feeders.length
-            ? feeders.reduce((s, f) => s + (pos[f.id].y - boxesTop), 0) / feeders.length
+            ? feeders.reduce((s, f) => s + (pos[f.id].y - sectionTopByBracket[f.bracket]), 0) / feeders.length
             : i * (BOX_H + ROW_GAP);
           pos[m.id] = { x: colIdx * (BOX_W + COL_GAP), y: boxesTop + localY };
           sectionMaxY = Math.max(sectionMaxY, localY);
