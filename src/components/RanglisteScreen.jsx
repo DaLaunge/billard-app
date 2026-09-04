@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { Check, X, Clock, FileText, ArrowUp, ArrowDown, Minus, ChevronsUp, ChevronsDown, TrendingUp, TrendingDown } from "lucide-react";
+import { Check, X, Clock, FileText, ArrowUp, ArrowDown, Minus, ChevronsUp, ChevronsDown, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import { t } from "../lib/i18n";
-import { isDoubles, mSide, fmtDate, initials } from "../lib/format";
+import { isDoubles, mSide, fmtDate, initials, isDecaying } from "../lib/format";
 import { computeAchievementExtras } from "../lib/achievements";
 import Ball from "./Ball";
 import LiveStatusCard from "./widgets/LiveStatusCard";
@@ -211,6 +211,11 @@ export default function RanglisteScreen({ rangliste, disciplines, pending, me, o
                 </span>
               </span>
               <span className="rank-rating">{r.rating}</span>
+              {isDecaying(r.letzte_partie) && (
+                <span className="rank-decay-warn" title={t("Punkteverfall - lange kein Match, Rating sinkt Richtung 500")}>
+                  <AlertTriangle size={16} />
+                </span>
+              )}
             </button>
           </li>
           );

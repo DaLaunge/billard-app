@@ -50,6 +50,17 @@ export const fmtAgo = (d) => {
   if (days === 2) return t("vorgestern");
   return t("vor {n} Tagen", { n: days });
 };
+// Punkteverfall (rebuild_elo() in Postgres): ohne Match verfaellt ein Rating
+// erst nach GRACE=30 Tagen Richtung 500. Muss exakt zu diesem Grace-Zeitraum
+// in der SQL-Funktion passen, sonst zeigt die App den Verfall zu frueh/spaet
+// an. Einzige Quelle fuer diese Schwelle - von IdentityCard und Rangliste
+// gleichermassen genutzt, damit beide immer denselben Stand zeigen.
+export const DECAY_GRACE_DAYS = 30;
+export const isDecaying = (letztePartie) => {
+  if (!letztePartie) return false;
+  const days = Math.floor((Date.now() - new Date(letztePartie)) / 86400000);
+  return days > DECAY_GRACE_DAYS;
+};
 export const isDoubles = (m) => !!m.player1b_id;
 // Wie mSide, aber als Namens-Array statt fertigem String - fuer Stellen, an
 // denen jeder Name einzeln anklickbar sein soll (z. B. Letzte Matches).

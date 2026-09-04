@@ -235,6 +235,14 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .inactive { color: var(--loss); font-style: normal; }
 .rank-rating { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 21px;
   min-width: 46px; text-align: right; }
+/* Punkteverfall-Symbol in der Rangliste (siehe isDecaying() in format.js) -
+   sichtbar direkt neben dem Rating, damit man verfallende Spieler auf einen
+   Blick als Herausforderungs-Ziel erkennt. Bewusst OHNE Puls-Animation (im
+   Unterschied zu .id-card-decay-warn) - in einer Liste mit mehreren
+   Treffern waere das zu unruhig; das Pulsieren bleibt der Identitaets-
+   Karte vorbehalten, wo es um genau eine (die betroffene) Person geht. */
+.rank-decay-warn { flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  color: #E8B923; }
 .footnote { margin-top: 14px; font-size: 12px; color: var(--ivory-dim); line-height: 1.5; }
 .open-note { display: flex; align-items: center; gap: 6px; font-size: 12.5px;
   color: var(--ivory-dim); margin-bottom: 12px; }
@@ -680,7 +688,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); out
   .rank-row, .opp-card, .btn, .tab, .chip-btn { transition: background .15s, border-color .15s, opacity .15s; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .live-dot { animation: none; } .spin { animation: none; }
+  .live-dot { animation: none; } .spin { animation: none; } .id-card-decay-warn { animation: none; }
 }
 
 /* ===== Uebersicht-Dashboard: Module (siehe src/components/widgets) =====
@@ -728,6 +736,15 @@ button.id-card-head { cursor: pointer; }
   justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--felt-3);
   border: 1px solid var(--gold); color: var(--gold); cursor: pointer; }
 .id-card-invite:hover { background: var(--felt); }
+/* Punkteverfall-Symbol spiegelbildlich zum Einladen-Symbol (siehe
+   IdentityCard.jsx) - bewusst auffaellig (kraeftige Warnfarbe, Puls-Animation
+   wie .live-dot) statt eines dezenten Hinweistons, weil der Punkteverfall
+   sonst leicht uebersehen wird. */
+.id-card-decay-warn { position: absolute; top: 16px; left: 14px; display: flex; align-items: center;
+  justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #E8B923;
+  border: 1px solid #E8B923; color: #241800; cursor: pointer; box-shadow: 0 0 0 4px #E8B92330;
+  animation: pulse 1.6s ease-in-out infinite; }
+.id-card-decay-warn:hover { background: #F5C543; }
 .id-card-kpis { margin-top: 14px; }
 .id-card-kpis + * { margin-top: 14px; }
 .dash-live { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; width: 100%;
