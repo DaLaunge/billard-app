@@ -45,6 +45,10 @@ export default function App() {
   const [protokollBackTab, setProtokollBackTab] = useState("stats");
   const [toastMsg, setToastMsg] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
+  // Wird einmalig true, sobald der allererste loadData()-Durchlauf steht -
+  // haelt den Tab-Inhalt bis dahin auf einem einheitlichen "Lade ..." statt
+  // Screens mit noch leeren Arrays (z.B. Rangliste) kurz aufblitzen zu lassen.
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [celebrate, setCelebrate] = useState(null);  // neue Erfolge fürs Popup
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
@@ -124,15 +128,22 @@ export default function App() {
   // --- App-Updates (Service Worker) --------------------------------------
   // "bei jedem Aufruf" = kein Timer, stattdessen bei jedem Sichtbarwerden der
   // App pruefen; sonst alle 30/60 Min per Timer; "manual" = nur per Klick in
-  // den Profileinstellungen. Ein gefundenes Update wird sofort angewendet
-  // (Reload), ausser waehrend einer laufenden Matcheingabe - dann erst,
-  // sobald der Match-Bildschirm verlassen wird (siehe Effekt unten).
+  // den Profileinstellungen. Ein gefundenes Update wird per Reload angewendet,
+  // aber erst NACHDEM die Uebersicht einmal fertig geladen hat (initialLoadDone)
+  // und nie waehrend einer laufenden Matcheingabe oder des Erfolgs-Popups
+  // (siehe Effekt unten). Wichtig: registerType "autoUpdate" (vite.config.js)
+  // ruft bei gefundenem Update intern SOFORT window.location.reload() auf,
+  // sobald keine eigene onNeedReload-Callback uebergeben wird - darum hier
+  // NICHT ohne onNeedReload arbeiten, sonst reisst ein Update-Check die gerade
+  // ladende Seite ungebremst weg.
   const [updateInterval, setUpdateInterval] = useState(() => {
     try { return localStorage.getItem("updateCheckInterval") || "30"; } catch { return "30"; }
   });
+  const [needReload, setNeedReload] = useState(false);
   const swRegistration = useRef(null);
-  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW({
+  useRegisterSW({
     onRegisteredSW(_url, reg) { swRegistration.current = reg || null; },
+    onNeedReload() { setNeedReload(true); },
   });
   const checkForUpdate = useCallback(() => { swRegistration.current?.update(); }, []);
   const setUpdateCheckInterval = useCallback((v) => {
@@ -153,8 +164,8 @@ export default function App() {
   useEffect(() => {
     // Auch das Erfolgs-Popup nicht durch einen Reload wegreissen - sobald es
     // geschlossen wird, greift dieser Effekt erneut und holt das Update nach.
-    if (needRefresh && tab !== "match" && !celebrate) updateServiceWorker(true);
-  }, [needRefresh, tab, celebrate, updateServiceWorker]);
+    if (needReload && initialLoadDone && tab !== "match" && !celebrate) window.location.reload();
+  }, [needReload, initialLoadDone, tab, celebrate]);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
@@ -219,6 +230,14 @@ export default function App() {
 
   const loadData = useCallback(async () => {
     setLoadingData(true);
+    // Snapshots (koennen >1000 Zeilen sein: Wochen x Spieler) parallel zum
+    // Rest anstossen statt hinterher - sonst wartet die ganze Uebersicht auf
+    // die langsamste Abfrage, obwohl sie fuer die Rangliste selbst gar nicht
+    // gebraucht wird (nur fuer die Rang/Rating-Pfeile und die Statistik-Seite).
+    const snapPromise = fetchAllRows((from, to) => supabase.from("rating_snapshots")
+      .select("player_id, snap_date, iso_week, discipline, rating, rank, provisional")
+      .order("snap_date", { ascending: true })
+      .range(from, to));
     const [rang, m, pl, pi, bg, ct, mc, ch] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
@@ -237,12 +256,7 @@ export default function App() {
         .select("id, challenger_id, challenged_id, status, created_at, expires_at, resolved_match_id, message, message_updated_at, reply, reply_updated_at, challenger:players!challenges_challenger_id_fkey(nickname), challenged:players!challenges_challenged_id_fkey(nickname)")
         .order("created_at", { ascending: false }),
     ]);
-    // Snapshots seitenweise laden (können > 1000 Zeilen sein: Wochen x Spieler)
-    const snap = await fetchAllRows((from, to) => supabase.from("rating_snapshots")
-      .select("player_id, snap_date, iso_week, discipline, rating, rank, provisional")
-      .order("snap_date", { ascending: true })
-      .range(from, to));
-    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || snap.error;
+    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error;
     if (err) toast(isNetworkError(err) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
@@ -261,8 +275,11 @@ export default function App() {
     Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
     cat.forEach((b) => { BADGE_INFO[b.badge_key] = { emoji: b.emoji, name: b.name, description: b.description }; });
     setConfirmations(mc.data ?? []);
-    setSnapshots(snap.data ?? []);
     setLoadingData(false);
+    setInitialLoadDone(true);
+    const snap = await snapPromise;
+    if (snap.error && !err) toast(isNetworkError(snap.error) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + snap.error.message);
+    setSnapshots(snap.data ?? []);
   }, [toast]);
 
   useEffect(() => { if (player) loadData(); }, [player, loadData]);
@@ -478,7 +495,9 @@ export default function App() {
             onRegistered={(p) => { setPlayer(p); toast(t("Willkommen, {name}!", { name: p.nickname })); }} />
         )}
 
-        {session && player && (
+        {session && player && !initialLoadDone && <div className="center-load">{t("Lade ...")}</div>}
+
+        {session && player && initialLoadDone && (
           <>
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
