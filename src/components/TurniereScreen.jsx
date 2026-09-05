@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Plus, Trophy, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trophy, X } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
@@ -16,6 +16,7 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "cancelled" 
 // Ansehen/Mitspielen bleibt fuer alle offen.
 export default function TurniereScreen({ me, players, matches, colorOf, badgeOf, photoOf, toast, onOpenTournament, onBack }) {
   const [tournaments, setTournaments] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all"); // all | running | done - schnelles Finden bereits gespielter Turniere
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [format, setFormat] = useState("ko");
@@ -182,20 +183,33 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
           </div>
         )}
 
+        {tournaments != null && tournaments.length > 0 && (
+          <div className="chips small" style={{ marginBottom: 10 }}>
+            <button className={"chip" + (statusFilter === "all" ? " active" : "")} onClick={() => setStatusFilter("all")}>{t("Alle")}</button>
+            <button className={"chip" + (statusFilter === "running" ? " active" : "")} onClick={() => setStatusFilter("running")}>{t("Läuft")}</button>
+            <button className={"chip" + (statusFilter === "done" ? " active" : "")} onClick={() => setStatusFilter("done")}>{t("Beendet")}</button>
+          </div>
+        )}
+
         {tournaments == null ? (
           <p className="hint">{t("Lade ...")}</p>
         ) : tournaments.length === 0 ? (
           <p className="hint">{t("Noch keine Turniere.")}</p>
-        ) : (
-          tournaments.map((tr) => (
-            <button key={tr.id} className="stat-row as-btn" onClick={() => onOpenTournament(tr.id)}>
-              <span className="m-txt">
-                <b>{tr.name}</b> · {formatLabel(tr.format)} · {t(tr.discipline)} · {statusLabel(tr.status)}
+        ) : (() => {
+          const filtered = tournaments.filter((tr) =>
+            statusFilter === "all" ? true : statusFilter === "running" ? tr.status === "running" : tr.status !== "running");
+          return filtered.length === 0 ? (
+            <p className="hint">{t("Keine Turniere in diesem Filter.")}</p>
+          ) : filtered.map((tr) => (
+            <button key={tr.id} className="turnier-list-row" onClick={() => onOpenTournament(tr.id)}>
+              <span className="turnier-list-row-main">
+                <b>{tr.name}</b>
+                <span className="turnier-list-row-meta">{formatLabel(tr.format)} · {t(tr.discipline)} · {statusLabel(tr.status)} · {fmtDate(tr.created_at)}</span>
               </span>
-              <span className="m-date">{fmtDate(tr.created_at)}</span>
+              <ChevronRight size={20} className="turnier-list-row-chevron" />
             </button>
-          ))
-        )}
+          ));
+        })()}
       </section>
       </div>
     </div>

@@ -879,6 +879,8 @@ const TRANSLATIONS = {
     "Turniermatches ausblenden": "Hide tournament matches",
     "Turniere anlegen ist aktuell nur für Admins möglich.": "Creating tournaments is currently admin-only.",
     "Ergebnis als Turnierleitung eingetragen.": "Result entered as organizer.",
+    "Läuft": "Running",
+    "Keine Turniere in diesem Filter.": "No tournaments match this filter.",
     "Ergebnis korrigieren": "Correct result",
     "Eintragen": "Enter",
     "Bestätigtes Ergebnis wirklich auf {s1} : {s2} korrigieren?": "Really correct the confirmed result to {s1} : {s2}?",

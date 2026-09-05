@@ -1002,6 +1002,18 @@ button.id-card-head { cursor: pointer; }
 .pmp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .pmp-check { color: var(--gold); flex-shrink: 0; }
 
+/* Turnier-Uebersicht: deutlich groesseres Tap-Ziel als die generische
+   .stat-row (die ist auf kompakte Listen wie Statistik-Bestenlisten
+   ausgelegt und war hier zu klein zum sicheren Antippen). */
+.turnier-list-row { width: 100%; display: flex; align-items: center; gap: 10px;
+  background: var(--felt-2); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px; margin-bottom: 10px; color: inherit; font-family: inherit; text-align: left; cursor: pointer; }
+.turnier-list-row:active { background: var(--felt-3); border-color: var(--chalk); }
+.turnier-list-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 16px; }
+.turnier-list-row-main b { overflow-wrap: anywhere; }
+.turnier-list-row-meta { color: var(--ivory-dim); font-size: 13px; }
+.turnier-list-row-chevron { color: var(--ivory-dim); flex-shrink: 0; }
+
 .turnier-brackets { display: flex; flex-direction: column; gap: 18px; }
 .turnier-rounds { display: flex; gap: 14px; overflow-x: auto; padding: 4px 4px 14px;
   scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
