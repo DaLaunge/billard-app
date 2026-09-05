@@ -43,7 +43,11 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
   const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
   const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
   const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
-  const canEdit = tm.match_id && confirmed && isOrganizer && !isMyMatch;
+  // bewusst OHNE "!isMyMatch" - anders als bei Erzwingen/Turnierleitungs-Meldung
+  // darf die Turnierleitung ein bereits bestaetigtes Ergebnis auch bei einem
+  // eigenen Match korrigieren (kleiner Verein, oft selbst Turnierteilnehmer -
+  // sonst gaebe es fuer einen Tippfehler im eigenen Match niemanden zum Fixen).
+  const canEdit = tm.match_id && confirmed && isOrganizer;
   const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
 
   const startEdit = () => {
