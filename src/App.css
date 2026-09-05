@@ -1037,13 +1037,23 @@ button.id-card-head { cursor: pointer; }
 .turnier-view-toggle { margin-bottom: 10px; }
 .turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
   border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch; }
-.turnier-graph { position: relative; }
+.turnier-graph { position: relative; transform-origin: 0 0; }
 .turnier-graph-svg { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+/* Zoom-Regler oberhalb des Baums - eigener Regler statt nur Pinch-Zoom des
+   ganzen Bildschirms, der auch Kopfzeile/Navigation mitzoomen wuerde statt
+   nur den Baum selbst. */
+.turnier-graph-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.turnier-graph-toolbar button { background: var(--felt-3); border: 1px solid var(--line); color: var(--ivory);
+  border-radius: 8px; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.turnier-graph-toolbar button:hover:not(:disabled) { background: var(--felt); }
+.turnier-graph-toolbar button:disabled { opacity: 0.4; cursor: default; }
+.turnier-graph-zoom-level { font-size: 13px; color: var(--ivory-dim); min-width: 40px; text-align: center; }
+.turnier-graph-zoom-reset { width: auto !important; padding: 0 10px; font-size: 12px; }
 /* Offene Verbindungen dezent, bereits entschiedene (Sieger steht fest)
    deutlich heller/dicker - macht den tatsaechlichen Turnierverlauf auf den
    ersten Blick erkennbar statt eines gleichfoermigen Liniengewirrs. Weiche
    Kurve statt rechtwinkliger Ecke liest sich klarer als "A fliesst zu B". */
-.turnier-graph-edge { fill: none; stroke: var(--ivory-dim); stroke-width: 2; opacity: 0.35; }
+.turnier-graph-edge { fill: none; stroke: var(--ivory-dim); stroke-width: 2; opacity: 0.35; transition: opacity .15s; }
 .turnier-graph-edge.decided { stroke: var(--gold); stroke-width: 3; opacity: 0.85; }
 /* Abstiegs-Pfad (Verlierer eines Gewinnerbaum-Matches faellt in den
    Verliererbaum) - gestrichelt, damit er sich von den "normalen"
@@ -1051,13 +1061,29 @@ button.id-card-head { cursor: pointer; }
    feststeht, analog zur Sieg/Niederlage-Faerbung im Rest der App. */
 .turnier-graph-edge.drop { stroke-dasharray: 5 4; opacity: 0.25; }
 .turnier-graph-edge.drop.decided { stroke: var(--loss); stroke-width: 2.5; opacity: 0.7; }
+/* Klick auf eine Box: ihre direkten Verbinder leuchten hell auf, alles
+   andere tritt zurueck - bei vielen kreuzenden Linien sonst kaum
+   auseinanderzuhalten, welche Linie zu welcher Box gehoert. */
+.turnier-graph-edge.highlighted { stroke: var(--ivory); stroke-width: 3.5; opacity: 1; }
+.turnier-graph-edge.dim { opacity: 0.06; }
 .turnier-graph-section-label { position: absolute; left: 0; font-size: 12px; font-weight: 700;
-  color: var(--ivory-dim); text-transform: uppercase; letter-spacing: 0.03em; }
+  text-transform: uppercase; letter-spacing: 0.03em; }
+.turnier-graph-section-label.section--winners { color: var(--win); }
+.turnier-graph-section-label.section--losers { color: var(--loss); }
+.turnier-graph-section-label.section--final { color: var(--gold); }
 .turnier-graph-box { position: absolute; background: var(--felt-3); border: 1px solid var(--line);
   border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center;
-  padding: 0; font-family: inherit; color: inherit; text-align: left; cursor: default; }
-.turnier-graph-box.actionable { border: 2px solid var(--gold); cursor: pointer; box-shadow: 0 0 0 3px #D6A42522; }
-.turnier-graph-box.selected { background: var(--felt); }
+  padding: 0; font-family: inherit; color: inherit; text-align: left; cursor: pointer; transition: opacity .15s; }
+/* Abschnittsfarbe als linker Streifen - Gewinnerbaum/Verliererbaum/Finale
+   auf einen Blick unterscheidbar, ohne die eigentliche Box-Farbe (Sieger-
+   Hervorhebung, "aktionsfaehig") zu ueberdecken. */
+.turnier-graph-box--winners { border-left: 4px solid var(--win); }
+.turnier-graph-box--losers { border-left: 4px solid var(--loss); }
+.turnier-graph-box--final { border-left: 4px solid var(--gold); }
+.turnier-graph-box.actionable { border: 2px solid var(--gold); box-shadow: 0 0 0 3px #D6A42522; }
+.turnier-graph-box.selected { background: var(--felt); border-color: var(--ivory); }
+.turnier-graph-box.connected { border-color: var(--ivory); box-shadow: 0 0 0 2px #F2EDE044; }
+.turnier-graph-box.dim { opacity: 0.3; }
 .turnier-graph-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 5px 10px; font-size: 13px; overflow: hidden; }
 .turnier-graph-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -892,6 +892,9 @@ const TRANSLATIONS = {
     "Format": "Format",
     "Disziplin": "Discipline",
     "Turnierbaum": "Tournament bracket",
+    "Verkleinern": "Zoom out",
+    "Vergrößern": "Zoom in",
+    "Zoom zurücksetzen": "Reset zoom",
   },
 };
 export function setLangGlobal(l) {
