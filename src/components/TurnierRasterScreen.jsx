@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch } from "lucide-react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { initials } from "../lib/format";
+import { initials, fmtDuration } from "../lib/format";
 import Ball from "./Ball";
 import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions from "./TurnierMatchActions";
@@ -11,24 +11,26 @@ const POLL_MS = 8000;
 
 const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
 const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers" ? t("Verliererbaum") : b === "final" ? t("Finale") : t("Raster"));
+const bracketRank = { main: 0, winners: 0, losers: 1, final: 2 };
 
 // Turnierraster: zeigt ein einzelnes Turnier an, laedt seine Daten selbst
 // und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
 // bewusste Ausnahme vom sonstigen "alles ueber App.jsx loadData()"-Muster,
 // weil das nur aktiv ist waehrend diese Seite offen ist.
-export default function TurnierRasterScreen({ tournamentId, me, players, toast, onBack, colorOf, onReload }) {
+export default function TurnierRasterScreen({ tournamentId, me, players, toast, onBack, colorOf, badgeOf, photoOf, onReload }) {
   const [tour, setTour] = useState(null);
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [scores, setScores] = useState({});
-  const [viewMode, setViewMode] = useState("list"); // list | graph - Jeder-gegen-jeden hat keinen Baum, bleibt bei list
+  const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
+  const [journeyPlayerId, setJourneyPlayerId] = useState(null);
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by, played_at)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
@@ -60,6 +62,30 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       .map(([id, v]) => ({ id, name: nameOf(id), ...v }))
       .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
   }, [tour, roster, tms, nameOf]);
+
+  // Wartezeit einer Paarung = Zeit zwischen "beide Spieler stehen fest"
+  // (tournament_matches.ready_at) und tatsaechlicher Ergebnismeldung
+  // (matches.played_at) - zeigt, welche Paarungen am laengsten auf ihr
+  // Match warten mussten (z.B. weil sie auf einen Tisch/Gegner-Ergebnis
+  // warten mussten), absteigend sortiert.
+  const waitRanked = useMemo(() => {
+    if (!tms) return [];
+    return tms
+      .filter((tm) => tm.ready_at && tm.match?.played_at)
+      .map((tm) => ({ tm, waitMs: new Date(tm.match.played_at) - new Date(tm.ready_at) }))
+      .filter((x) => x.waitMs > 0)
+      .sort((a, b) => b.waitMs - a.waitMs);
+  }, [tms]);
+
+  // Verlauf eines Spielers: alle Rasterplaetze, an denen er beteiligt ist,
+  // in Lese-Reihenfolge durch den Baum (Gewinnerbaum vor Verliererbaum vor
+  // Finale, je Abschnitt nach Runde) - erzaehlt seinen Weg durchs Turnier.
+  const journeyFor = useCallback((playerId) => {
+    if (!tms) return [];
+    return tms
+      .filter((tm) => tm.player1_id === playerId || tm.player2_id === playerId)
+      .sort((a, b) => (bracketRank[a.bracket] - bracketRank[b.bracket]) || (a.round - b.round));
+  }, [tms]);
 
   const report = async (tm) => {
     const s = scores[tm.id] || {};
@@ -162,12 +188,17 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         <div className="turnier-match-meta">
           <span className="turnier-match-players">
             {tm.is_bye ? (
-              <><b>{n1 || "?"}</b>&nbsp;{t("(Freilos)")}</>
+              <>
+                {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={22} />}
+                <b>{n1 || "?"}</b>&nbsp;{t("(Freilos)")}
+              </>
             ) : (
               <>
+                {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={22} />}
                 <b>{n1 || t("TBD")}</b>
                 <span className="turnier-match-score">{tm.match ? `${tm.match.score1}:${tm.match.score2}` : "–"}</span>
                 <b>{n2 || t("TBD")}</b>
+                {n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={22} />}
               </>
             )}
           </span>
@@ -220,22 +251,103 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </section>
       )}
 
-      {tour.format !== "round_robin" && (
-        <div className="chips small turnier-view-toggle">
-          <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
-            <List size={14} /> {t("Liste")}
-          </button>
+      {waitRanked.length > 0 && (
+        <section className="stat-block">
+          <h3><Timer size={17} /> {t("Längste Wartezeiten")}</h3>
+          <p className="hint" style={{ marginTop: 0 }}>{t("Zeit zwischen feststehender Paarung und gemeldetem Ergebnis.")}</p>
+          {waitRanked.slice(0, 5).map(({ tm, waitMs }) => {
+            const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
+            return (
+              <div key={tm.id} className="stat-row turnier-standings-row">
+                <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={26} />
+                <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={26} />
+                <span className="stat-name">{n1} – {n2}</span>
+                <span className="stat-val">{fmtDuration(waitMs)}</span>
+              </div>
+            );
+          })}
+          {waitRanked.length > 5 && <p className="hint">{t("+{n} weitere", { n: waitRanked.length - 5 })}</p>}
+        </section>
+      )}
+
+      <div className="chips small turnier-view-toggle">
+        <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
+          <List size={14} /> {t("Liste")}
+        </button>
+        {tour.format !== "round_robin" && (
           <button className={"chip" + (viewMode === "graph" ? " active" : "")} onClick={() => setViewMode("graph")}>
             <GitBranch size={14} /> {t("Grafik")}
           </button>
-        </div>
-      )}
+        )}
+        <button className={"chip" + (viewMode === "players" ? " active" : "")} onClick={() => setViewMode("players")}>
+          <Users size={14} /> {t("Teilnehmer")}
+        </button>
+      </div>
 
-      {viewMode === "graph" && tour.format !== "round_robin" ? (
+      {viewMode === "players" ? (
+        <section className="stat-block">
+          <h3><Users size={17} /> {t("Teilnehmer")}</h3>
+          {journeyPlayerId && (() => {
+            const jName = nameOf(journeyPlayerId);
+            const path = journeyFor(journeyPlayerId);
+            return (
+              <div className="turnier-graph-detail">
+                <div className="turnier-match-meta">
+                  <span className="turnier-match-players">
+                    <Ball color={colorOf(jName)} label={initials(jName)} badge={badgeOf(jName)} photo={photoOf(jName)} size={28} />
+                    <b>{jName}</b>
+                  </span>
+                  <button className="turnier-graph-detail-close" onClick={() => setJourneyPlayerId(null)} aria-label={t("Schliessen")}>
+                    <X size={16} />
+                  </button>
+                </div>
+                {path.length === 0 && <p className="hint">{t("Noch keine Partie in diesem Turnier.")}</p>}
+                {path.map((tm) => {
+                  const isP1 = tm.player1_id === journeyPlayerId;
+                  const oppName = nameOf(isP1 ? tm.player2_id : tm.player1_id);
+                  const myScore = tm.match ? (isP1 ? tm.match.score1 : tm.match.score2) : null;
+                  const oppScore = tm.match ? (isP1 ? tm.match.score2 : tm.match.score1) : null;
+                  const won = tm.winner_id === journeyPlayerId;
+                  let statusText;
+                  if (tm.is_bye) statusText = t("Freilos");
+                  else if (!tm.match_id) statusText = oppName ? t("Ausstehend") : t("Wartet auf Gegner …");
+                  else if (!tm.match.confirmed) statusText = t("Wartet auf Bestätigung ...");
+                  else statusText = won ? t("Sieg") : t("Niederlage");
+                  return (
+                    <div key={tm.id} className="stat-row turnier-standings-row">
+                      <span className="stat-name">
+                        {bracketOrder.length > 1 ? bracketLabel(tm.bracket) : t("Raster")} · {t("Runde")} {tm.round}
+                        {oppName ? ` · vs ${oppName}` : ""}
+                      </span>
+                      <span className="stat-val" style={won ? { color: "var(--win)" } : (tm.match?.confirmed && !won ? { color: "var(--loss)" } : undefined)}>
+                        {myScore != null ? `${myScore}:${oppScore}` : statusText}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+          <div className="pmp-grid">
+            {(roster || []).map((r) => {
+              const nick = nameOf(r.player_id);
+              if (!nick) return null;
+              return (
+                <button key={r.player_id} type="button"
+                  className={"pmp-chip" + (journeyPlayerId === r.player_id ? " sel" : "")}
+                  onClick={() => setJourneyPlayerId(r.player_id === journeyPlayerId ? null : r.player_id)}>
+                  <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={32} />
+                  <span className="pmp-name">{nick}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : viewMode === "graph" && tour.format !== "round_robin" ? (
         <section className="stat-block">
           <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
           <TurnierGraph matches={tms} nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
-            busyId={busyId} scores={scores} setScores={setScores}
+            busyId={busyId} scores={scores} setScores={setScores} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
             onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
         </section>
       ) : (

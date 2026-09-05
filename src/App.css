@@ -1095,8 +1095,12 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-box.dim { opacity: 0.3; }
 .turnier-graph-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 5px 10px; font-size: 13px; overflow: hidden; }
-.turnier-graph-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.turnier-graph-row span:last-child { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
+/* Avatar + Name gemeinsam als ein Flex-Kind, damit "justify-content:
+   space-between" weiterhin nur zwischen Name (links) und Score (rechts)
+   aufteilt statt den Avatar dazwischenzuquetschen. */
+.turnier-graph-name { display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; }
+.turnier-graph-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turnier-graph-row > span:last-child { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
   flex-shrink: 0; }
 .turnier-graph-row + .turnier-graph-row { border-top: 1px solid var(--line); }
 .turnier-graph-row.won { color: var(--gold); font-weight: 700; }

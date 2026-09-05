@@ -1,9 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { X, ZoomIn, ZoomOut } from "lucide-react";
 import { t } from "../lib/i18n";
+import { initials } from "../lib/format";
+import Ball from "./Ball";
 import TurnierMatchActions, { hasTurnierAction } from "./TurnierMatchActions";
 
-const BOX_W = 220;
+const BOX_W = 240;
 const BOX_H = 62;
 const COL_GAP = 84;
 const ROW_GAP = 26;
@@ -28,7 +30,7 @@ const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers
 //   damit verbundenen Boxen hervor, alles andere wird gedaempft.
 // - Ein Zoom-Regler (Buttons, nicht nur Pinch-Zoom des ganzen Bildschirms -
 //   der wuerde auch Kopfzeile/Navigation mitzoomen statt nur den Baum).
-export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, scores, setScores, onReport, onOrganizerReport, onConfirm, onForceConfirm }) {
+export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, scores, setScores, onReport, onOrganizerReport, onConfirm, onForceConfirm, colorOf, badgeOf, photoOf }) {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(zoom);
@@ -156,9 +158,11 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         <div className="turnier-graph-detail">
           <div className="turnier-match-meta">
             <span className="turnier-match-players">
+              {nameOf(selected.player1_id) && <Ball color={colorOf(nameOf(selected.player1_id))} label={initials(nameOf(selected.player1_id))} badge={badgeOf(nameOf(selected.player1_id))} photo={photoOf(nameOf(selected.player1_id))} size={24} />}
               <b>{nameOf(selected.player1_id) || t("TBD")}</b>
               <span className="turnier-match-score">{selected.match ? `${selected.match.score1}:${selected.match.score2}` : "–"}</span>
               <b>{nameOf(selected.player2_id) || t("TBD")}</b>
+              {nameOf(selected.player2_id) && <Ball color={colorOf(nameOf(selected.player2_id))} label={initials(nameOf(selected.player2_id))} badge={badgeOf(nameOf(selected.player2_id))} photo={photoOf(nameOf(selected.player2_id))} size={24} />}
             </span>
             <button className="turnier-graph-detail-close" onClick={() => setSelectedId(null)} aria-label={t("Schliessen")}>
               <X size={16} />
@@ -221,11 +225,17 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                   {m.table_number != null && <span className="turnier-graph-table">{t("Tisch")} {m.table_number}</span>}
                   {pending && <span className="turnier-graph-pending" title={t("Wartet auf Bestätigung ...")}>•</span>}
                   <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player1_id ? " won" : "")}>
-                    <span>{n1 || t("TBD")}</span>
+                    <span className="turnier-graph-name">
+                      {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={20} />}
+                      <span>{n1 || t("TBD")}</span>
+                    </span>
                     {s1 != null && <span>{s1}</span>}
                   </div>
                   <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player2_id ? " won" : "")}>
-                    <span>{m.is_bye ? t("(Freilos)") : (n2 || t("TBD"))}</span>
+                    <span className="turnier-graph-name">
+                      {!m.is_bye && n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={20} />}
+                      <span>{m.is_bye ? t("(Freilos)") : (n2 || t("TBD"))}</span>
+                    </span>
                     {s2 != null && <span>{s2}</span>}
                   </div>
                 </button>
