@@ -26,6 +26,11 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
   const [tableTo, setTableTo] = useState("");
   const [tableList, setTableList] = useState("");
   const [busy, setBusy] = useState(false);
+  // Playoff-Groesse: bei round_robin optional (null = wie bisher nur
+  // Tabelle, kein Finale), bei double_ko immer gesetzt (2 = heutiges
+  // Standardverhalten: Gewinner-/Verliererbaum laufen komplett durch).
+  const [playoffSize, setPlayoffSize] = useState(null);
+  const [doubleRoundRobin, setDoubleRoundRobin] = useState(false);
 
   const load = async () => {
     const { data, error } = await supabase.from("tournaments")
@@ -37,6 +42,12 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
 
   const togglePlayer = (id) => {
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  };
+
+  const chooseFormat = (f) => {
+    setFormat(f);
+    setDoubleRoundRobin(false);
+    setPlayoffSize(f === "double_ko" ? 2 : null);
   };
 
   const parseTables = () => {
@@ -61,10 +72,17 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
     }
     const tables = parseTables();
     if (!tables) { toast(t("Bitte gültige Tischnummern angeben.")); return; }
+    if (playoffSize != null && playoffSize > selected.length) {
+      toast(t("Playoff-Größe darf nicht größer als die Teilnehmerzahl sein.")); return;
+    }
+    if (format === "double_ko" && playoffSize > 2 && selected.length < playoffSize * 2) {
+      toast(t("Für diese Playoff-Größe werden mindestens {n} Teilnehmer benötigt.", { n: playoffSize * 2 })); return;
+    }
     setBusy(true);
     const { data, error } = await supabase.rpc("create_tournament", {
       p_name: name.trim(), p_format: format, p_discipline: discipline,
       p_player_ids: selected, p_table_numbers: tables,
+      p_playoff_size: playoffSize, p_double_round_robin: doubleRoundRobin,
     });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
@@ -103,10 +121,34 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
 
             <p className="hint" style={{ marginBottom: 4 }}>{t("Format")}</p>
             <div className="chips small">
-              <button className={"chip" + (format === "ko" ? " active" : "")} onClick={() => setFormat("ko")}>{t("K.O.")}</button>
-              <button className={"chip" + (format === "double_ko" ? " active" : "")} onClick={() => setFormat("double_ko")}>{t("Doppel-K.O.")}</button>
-              <button className={"chip" + (format === "round_robin" ? " active" : "")} onClick={() => setFormat("round_robin")}>{t("Jeder gegen jeden")}</button>
+              <button className={"chip" + (format === "ko" ? " active" : "")} onClick={() => chooseFormat("ko")}>{t("K.O.")}</button>
+              <button className={"chip" + (format === "double_ko" ? " active" : "")} onClick={() => chooseFormat("double_ko")}>{t("Doppel-K.O.")}</button>
+              <button className={"chip" + (format === "round_robin" ? " active" : "")} onClick={() => chooseFormat("round_robin")}>{t("Jeder gegen jeden")}</button>
             </div>
+
+            {format === "round_robin" && (
+              <>
+                <p className="hint" style={{ marginBottom: 4 }}>{t("Spielrunden")}</p>
+                <div className="chips small">
+                  <button className={"chip" + (!doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(false)}>{t("Einfach")}</button>
+                  <button className={"chip" + (doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(true)}>{t("Hin & Rück")}</button>
+                </div>
+              </>
+            )}
+
+            {format !== "ko" && (
+              <>
+                <p className="hint" style={{ marginBottom: 4 }}>{format === "double_ko" ? t("Finalrunde") : t("Abschluss")}</p>
+                <div className="chips small">
+                  {format === "round_robin" && (
+                    <button className={"chip" + (playoffSize == null ? " active" : "")} onClick={() => setPlayoffSize(null)}>{t("Nur Tabelle")}</button>
+                  )}
+                  <button className={"chip" + (playoffSize === 2 ? " active" : "")} onClick={() => setPlayoffSize(2)}>{t("Finale (Top 2)")}</button>
+                  <button className={"chip" + (playoffSize === 4 ? " active" : "")} onClick={() => setPlayoffSize(4)}>{t("Halbfinale (Top 4)")}</button>
+                  <button className={"chip" + (playoffSize === 8 ? " active" : "")} onClick={() => setPlayoffSize(8)}>{t("Viertelfinale (Top 8)")}</button>
+                </div>
+              </>
+            )}
 
             <p className="hint" style={{ marginBottom: 4 }}>{t("Disziplin")}</p>
             <div className="chips small">

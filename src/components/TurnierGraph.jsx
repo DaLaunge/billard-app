@@ -92,13 +92,21 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
 
   const layout = useMemo(() => {
     // Gewinner-/Verliererbaum (bzw. "main" bei K.O./Jeder-gegen-jeden) werden
-    // wie bisher senkrecht gestapelt. Das Finale wird bewusst NICHT mit
-    // gestapelt, sondern separat ganz rechts neben beiden platziert und
-    // vertikal zwischen ihnen zentriert - das wichtigste Match soll wie ein
-    // Zielpunkt wirken, auf den beide Baeume zulaufen, nicht wie ein drittes,
-    // unscheinbares Feld unter dem Verliererbaum.
-    const hasFinal = matches.some((m) => m.bracket === "final");
-    const stackedOrder = ["main", "winners", "losers"].filter((b) => matches.some((m) => m.bracket === b));
+    // wie bisher senkrecht gestapelt. Ein EINRUNDIGES Finale (der Normalfall)
+    // wird bewusst NICHT mitgestapelt, sondern separat ganz rechts neben
+    // beiden platziert und vertikal zwischen ihnen zentriert - das wichtigste
+    // Match soll wie ein Zielpunkt wirken. Hat die Playoff-Stufe dagegen
+    // MEHRERE Runden (Halbfinale/Viertelfinale vor dem eigentlichen Finale -
+    // siehe Migration 2026-09-06_tournament_playoff_stage.sql), wird sie
+    // stattdessen wie Gewinner-/Verliererbaum als eigener gestapelter
+    // Abschnitt gerendert (einheitliche Boxgroesse durchgehend) - die
+    // Sonder-Box fuers Finale waere in einer Mehrrunden-Spalte inkonsistent.
+    const finalMatches = matches.filter((m) => m.bracket === "final");
+    const finalMaxRound = finalMatches.length ? Math.max(...finalMatches.map((m) => m.round)) : 0;
+    const hasFinal = finalMaxRound > 0;
+    const finalMultiRound = finalMaxRound > 1;
+    const stackedOrder = ["main", "winners", "losers"].filter((b) => matches.some((m) => m.bracket === b))
+      .concat(finalMultiRound ? ["final"] : []);
     const labelOffset = (stackedOrder.length > 1 || hasFinal) ? LABEL_H : 0;
     const pos = {};
     const sections = [];
@@ -162,8 +170,8 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
     let totalWidth = Math.max(BOX_W, stackedRight);
     let totalHeight = stackedBottom;
 
-    if (hasFinal) {
-      const finalMatch = matches.find((m) => m.bracket === "final");
+    if (hasFinal && !finalMultiRound) {
+      const finalMatch = finalMatches[0];
       const finalX = stackedRight + FINAL_GAP;
       const finalY = Math.max(labelOffset, (stackedBottom - FINAL_BOX_H) / 2);
       pos[finalMatch.id] = { x: finalX, y: finalY };
@@ -174,14 +182,18 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
 
     const byId = {};
     matches.forEach((m) => { byId[m.id] = m; });
+    // Die groessere Sonder-Box gilt nur fuer ein einrundiges Finale - bei
+    // mehreren Playoff-Runden ist bracket='final' ein normaler gestapelter
+    // Abschnitt mit einheitlicher Boxgroesse (siehe oben).
+    const bigFinalBox = hasFinal && !finalMultiRound;
     const edges = [];
     matches.forEach((m) => {
       if (m.next_match_id && pos[m.id] && pos[m.next_match_id]) {
-        const toH = byId[m.next_match_id]?.bracket === "final" ? FINAL_BOX_H : BOX_H;
+        const toH = bigFinalBox && byId[m.next_match_id]?.bracket === "final" ? FINAL_BOX_H : BOX_H;
         edges.push({ from: pos[m.id], to: pos[m.next_match_id], toH, decided: !!m.winner_id, kind: "advance", fromId: m.id, toId: m.next_match_id });
       }
       if (m.loser_next_match_id && pos[m.id] && pos[m.loser_next_match_id]) {
-        const toH = byId[m.loser_next_match_id]?.bracket === "final" ? FINAL_BOX_H : BOX_H;
+        const toH = bigFinalBox && byId[m.loser_next_match_id]?.bracket === "final" ? FINAL_BOX_H : BOX_H;
         edges.push({ from: pos[m.id], to: pos[m.loser_next_match_id], toH, decided: !!m.winner_id, kind: "drop", fromId: m.id, toId: m.loser_next_match_id });
       }
     });
@@ -195,7 +207,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
       .filter((s) => s.bracket !== "final")
       .map((s) => ({ bracket: s.bracket, top: s.top, height: s.bottom - s.top, width: Math.max(BOX_W, stackedRight) }));
 
-    return { pos, edges, totalWidth, totalHeight, byId, sections, bands, showSectionLabels: sections.length > 1 };
+    return { pos, edges, totalWidth, totalHeight, byId, sections, bands, bigFinalBox, showSectionLabels: sections.length > 1 };
   }, [matches]);
 
   const selected = selectedId ? layout.byId[selectedId] : null;
@@ -275,7 +287,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
             {matches.map((m) => {
               const p = layout.pos[m.id];
               if (!p) return null;
-              const isFinal = m.bracket === "final";
+              const isFinal = m.bracket === "final" && layout.bigFinalBox;
               const boxW = isFinal ? FINAL_BOX_W : BOX_W;
               const boxH = isFinal ? FINAL_BOX_H : BOX_H;
               const n1 = nameOf(m.player1_id), n2 = nameOf(m.player2_id);

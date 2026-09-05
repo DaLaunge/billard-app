@@ -13,6 +13,18 @@ const POLL_MS = 8000;
 const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
 const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers" ? t("Verliererbaum") : b === "final" ? t("Finale") : t("Raster"));
 const bracketRank = { main: 0, winners: 0, losers: 1, final: 2 };
+// Die 'final'-Sektion kann jetzt mehrere Runden haben (Playoff-Stufe nach
+// Jeder-gegen-jeden bzw. verkuerztes Doppel-K.O. mit bis zu 8 Finalisten,
+// siehe Migration 2026-09-06) - Runden werden nach Abstand zum eigentlichen
+// Finale benannt statt generisch "Runde n".
+const finalRoundLabel = (round, totalRounds) => {
+  const fromEnd = totalRounds - round;
+  if (fromEnd <= 0) return t("Finale");
+  if (fromEnd === 1) return t("Halbfinale");
+  if (fromEnd === 2) return t("Viertelfinale");
+  if (fromEnd === 3) return t("Achtelfinale");
+  return `${t("Runde")} ${round}`;
+};
 
 // Turnierraster: zeigt ein einzelnes Turnier an, laedt seine Daten selbst
 // und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
@@ -229,7 +241,13 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const canDeleteTournament = isOrganizer && !tms.some((tm) => tm.match_id);
   const groups = {};
   tms.forEach((tm) => { (groups[tm.bracket] ||= []).push(tm); });
-  const bracketOrder = tour.format === "double_ko" ? ["winners", "losers", "final"] : ["main"];
+  // Aus den TATSAECHLICH vorhandenen bracket-Werten ableiten statt aus einer
+  // festen Formats-Tabelle - ein Jeder-gegen-jeden-Turnier mit Playoff hat
+  // sowohl 'main' (Tabelle) als auch 'final' (Playoff-Baum), ein Doppel-K.O.
+  // mit fruehem Cutover weiterhin winners/losers/final wie gehabt.
+  const bracketOrder = ["main", "winners", "losers", "final"].filter((b) => groups[b]?.length);
+  const finalTotalRounds = groups.final ? Math.max(...groups.final.map((m) => m.round)) : 0;
+  const hasTreeSections = bracketOrder.some((b) => b !== "main");
 
   const renderMatch = (tm) => {
     const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
@@ -353,7 +371,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
           <List size={14} /> {t("Liste")}
         </button>
-        {tour.format !== "round_robin" && (
+        {hasTreeSections && (
           <button className={"chip" + (viewMode === "graph" ? " active" : "")} onClick={() => setViewMode("graph")}>
             <GitBranch size={14} /> {t("Grafik")}
           </button>
@@ -392,10 +410,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
                   else if (!tm.match_id) statusText = oppName ? t("Ausstehend") : t("Wartet auf Gegner …");
                   else if (!tm.match.confirmed) statusText = t("Wartet auf Bestätigung ...");
                   else statusText = won ? t("Sieg") : t("Niederlage");
+                  const roundLabel = tm.bracket === "final" ? finalRoundLabel(tm.round, finalTotalRounds) : `${t("Runde")} ${tm.round}`;
                   return (
                     <div key={tm.id} className="stat-row turnier-standings-row">
                       <span className="stat-name">
-                        {bracketOrder.length > 1 ? bracketLabel(tm.bracket) : t("Raster")} · {t("Runde")} {tm.round}
+                        {bracketOrder.length > 1 ? bracketLabel(tm.bracket) : t("Raster")} · {roundLabel}
                         {oppName ? ` · vs ${oppName}` : ""}
                       </span>
                       <span className="stat-val" style={won ? { color: "var(--win)" } : (tm.match?.confirmed && !won ? { color: "var(--loss)" } : undefined)}>
@@ -422,10 +441,14 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
             })}
           </div>
         </section>
-      ) : viewMode === "graph" && tour.format !== "round_robin" ? (
+      ) : viewMode === "graph" && hasTreeSections ? (
         <section className="stat-block">
           <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
-          <TurnierGraph matches={tms} nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+          {/* Bei Jeder-gegen-jeden mit Playoff hat die Gruppenphase ('main')
+              keine next_match_id-Struktur - nur die Playoff-Stufe ('final')
+              gehoert in den Baum, die Gruppentabelle steht schon oben. */}
+          <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
+            nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
             busyId={busyId} scores={scores} setScores={setScores} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
             onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
         </section>
@@ -442,7 +465,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
                 <div className="turnier-rounds">
                   {Object.keys(byRound).sort((a, c) => a - c).map((r) => (
                     <div key={r} className="turnier-round-col">
-                      <p className="turnier-round-title">{t("Runde")} {r}</p>
+                      <p className="turnier-round-title">
+                        {b === "final" ? finalRoundLabel(Number(r), finalTotalRounds) : `${t("Runde")} ${r}`}
+                      </p>
                       {byRound[r].sort((a, c) => a.bracket_position - c.bracket_position).map(renderMatch)}
                     </div>
                   ))}
