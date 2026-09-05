@@ -288,22 +288,28 @@ begin
 
   -- Dynamisches Paaren der Finalrunde-1 bei Doppel-K.O.-Cutover mit
   -- playoff_size > 2: eine Qualifikanten-Quelle (Gewinner-/Verliererbaum-
-  -- Match ganz ohne Weiterverdrahtung) ist gerade entschieden - pruefen, ob
-  -- damit ALLE Quellen feststehen, und falls ja, die Finalrunde-1 jetzt mit
-  -- einer wiederholungsfreien Paarung befuellen.
-  if v_tm.bracket in ('winners', 'losers') and v_tm.next_match_id is null and v_tm.loser_next_match_id is null
+  -- Match ohne next_match_id, d.h. die letzte Runde ihres jeweiligen Baums)
+  -- ist gerade entschieden - pruefen, ob damit ALLE Quellen feststehen, und
+  -- falls ja, die Finalrunde-1 jetzt mit einer wiederholungsfreien Paarung
+  -- befuellen. WICHTIG: nur next_match_id ist das richtige Merkmal - eine
+  -- Gewinnerbaum-Qualifikanten-Quelle hat i.d.R. TROTZDEM ein gesetztes
+  -- loser_next_match_id (ihr Verlierer faellt ja weiterhin in den
+  -- Verliererbaum), das darf die Erkennung nicht ausschliessen (frueherer
+  -- Bug: die zusaetzliche "loser_next_match_id is null"-Bedingung liess genau
+  -- die Gewinnerbaum-Qualifikanten unter den Tisch fallen).
+  if v_tm.bracket in ('winners', 'losers') and v_tm.next_match_id is null
      and v_tour.format = 'double_ko' and v_tour.playoff_size is not null and v_tour.playoff_size > 2
      and not exists (select 1 from tournament_matches where tournament_id = v_tour.id and bracket = 'final' and player1_id is not null)
   then
     if not exists (
       select 1 from tournament_matches
       where tournament_id = v_tour.id and bracket in ('winners', 'losers')
-        and next_match_id is null and loser_next_match_id is null and winner_id is null
+        and next_match_id is null and winner_id is null
     ) then
       select array_agg(winner_id) into v_qualified
         from tournament_matches
         where tournament_id = v_tour.id and bracket in ('winners', 'losers')
-          and next_match_id is null and loser_next_match_id is null;
+          and next_match_id is null;
       v_paired := tournament_no_rematch_pairing(v_tour.id, v_qualified);
       select array_agg(id order by bracket_position) into v_slots
         from tournament_matches where tournament_id = v_tour.id and bracket = 'final' and round = 1;
