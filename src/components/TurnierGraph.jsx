@@ -109,7 +109,10 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
 
       rounds.forEach((r, colIdx) => {
         const inCol = bracketMatches.filter((m) => m.round === r).sort((a, b) => a.bracket_position - b.bracket_position);
-        inCol.forEach((m, i) => {
+        // 1) Rohe Y-Position je Box: Durchschnitt der (auf den eigenen
+        //    Abschnitt normierten) Vorgaenger-Positionen - siehe Kommentar
+        //    zu "feeders" unten fuer den Grund der Normierung.
+        const raw = inCol.map((m, i) => {
           // Ueber ALLE Matches suchen (nicht nur diesen Abschnitt) und BEIDE
           // Verknuepfungsarten pruefen: next_match_id (Sieger-Weg) UND
           // loser_next_match_id (Abstieg aus dem Gewinnerbaum) - jeder
@@ -118,11 +121,29 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
           // Boxen mit nur einem abschnittsfremden Vorgaenger exakt auf
           // dessen absolute Position "springen" und andere Boxen ueberdecken.
           const feeders = matches.filter((f) => (f.next_match_id === m.id || f.loser_next_match_id === m.id) && pos[f.id]);
-          const localY = feeders.length
+          return feeders.length
             ? feeders.reduce((s, f) => s + (pos[f.id].y - sectionTopByBracket[f.bracket]), 0) / feeders.length
             : i * (BOX_H + ROW_GAP);
-          pos[m.id] = { x: colIdx * (BOX_W + COL_GAP), y: boxesTop + localY };
-          sectionMaxY = Math.max(sectionMaxY, localY);
+        });
+        // 2) Kollisionsaufloesung: der reine Durchschnitt kann bei manchen
+        //    Verliererbaum-Formen (z.B. wenn eine Box von einem "aeusseren"
+        //    und die andere von einem "inneren" Vorrunden-Paar gespeist
+        //    wird) fuer zwei VERSCHIEDENE Boxen denselben Y-Wert ergeben -
+        //    sie laegen dann exakt uebereinander und saehen wie eine
+        //    einzelne Box mit zwei widerspruechlichen Linien aus (siehe
+        //    Nutzer-Screenshot: zwei Verliererbaum-Erstrunden-Felder auf
+        //    identischer Position). Deshalb hier in bracket_position-
+        //    Reihenfolge einen Mindestabstand erzwingen, ohne die
+        //    Reihenfolge selbst zu vertauschen.
+        let prevBottom = -Infinity;
+        const resolved = raw.map((y) => {
+          const finalY = Math.max(y, prevBottom);
+          prevBottom = finalY + BOX_H + ROW_GAP;
+          return finalY;
+        });
+        inCol.forEach((m, i) => {
+          pos[m.id] = { x: colIdx * (BOX_W + COL_GAP), y: boxesTop + resolved[i] };
+          sectionMaxY = Math.max(sectionMaxY, resolved[i]);
           stackedRight = Math.max(stackedRight, colIdx * (BOX_W + COL_GAP) + BOX_W);
         });
       });
