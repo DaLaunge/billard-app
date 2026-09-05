@@ -30,7 +30,21 @@ export default function LoginScreen() {
     setBusy(true); setError("");
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    if (error) setError("Anmeldung fehlgeschlagen – Passwort falsch oder noch keins gesetzt. Nutze den Magic-Link.");
+    if (!error) return;
+    // Vorher wurde hier IMMER dieselbe generische Meldung gezeigt, egal was
+    // Supabase tatsaechlich zurueckgab - das hat "Email not confirmed" (z.B.
+    // bei admin-angelegten Accounts, wenn dort was nicht stimmt) genauso
+    // aussehen lassen wie ein simples Tippfehler-Passwort. Bekannte Faelle
+    // bekommen eine klare deutsche Meldung, alles andere zeigt den
+    // Original-Fehlertext (wie beim Magic-Link oben), damit unerwartete
+    // Fehler nicht mehr unsichtbar bleiben.
+    if (error.message === "Email not confirmed") {
+      setError(t("Diese E-Mail-Adresse ist noch nicht bestätigt."));
+    } else if (error.message === "Invalid login credentials") {
+      setError(t("Anmeldung fehlgeschlagen – Passwort falsch oder noch keins gesetzt. Nutze den Magic-Link."));
+    } else {
+      setError(error.message);
+    }
   };
 
   return (

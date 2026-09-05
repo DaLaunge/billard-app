@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
@@ -111,6 +111,35 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     await loadLogins();
     if (onReload) await onReload();
     toast(t("Login angelegt – muss beim ersten Login geändert werden."));
+  };
+  const [emailPlayerId, setEmailPlayerId] = useState(null);
+  const [newEmail, setNewEmail] = useState("");
+  const [busyEmail, setBusyEmail] = useState(false);
+  const setPlayerEmail = async (p) => {
+    if (!newEmail.includes("@")) { toast(t("Ungültige E-Mail-Adresse.")); return; }
+    if (!window.confirm(t("E-Mail für {name} auf {email} ändern? Der Spieler muss sich künftig damit anmelden.", { name: p.nickname, email: newEmail.trim() }))) return;
+    setBusyEmail(true);
+    const { error } = await supabase.rpc("admin_set_email", { p_player: p.player_id, p_new_email: newEmail.trim() });
+    setBusyEmail(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setNewEmail(""); setEmailPlayerId(null);
+    await loadLogins();
+    toast(t("E-Mail geändert."));
+  };
+  const [deletePlayerId, setDeletePlayerId] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [busyDelete, setBusyDelete] = useState(false);
+  const deletePlayer = async (p) => {
+    if (deleteConfirmText.trim() !== p.nickname) { toast(t("Spielername stimmt nicht überein.")); return; }
+    if (!window.confirm(t("Bist du sicher? {name} wird UNWIDERRUFLICH mit der kompletten Historie (Matches, Erfolge, Ratings, Turnierteilnahmen, ...) gelöscht.", { name: p.nickname }))) return;
+    setBusyDelete(true);
+    const { error } = await supabase.rpc("admin_delete_player", { p_player: p.player_id, p_confirm_nickname: deleteConfirmText.trim() });
+    setBusyDelete(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setDeletePlayerId(null); setDeleteConfirmText("");
+    await loadLogins();
+    if (onReload) await onReload();
+    toast(t("Spieler und komplette Historie gelöscht."));
   };
   const setBlocked = async (p, blocked) => {
     const msg = blocked ? t("{name} blockieren?", { name: p.nickname }) : t("{name} entsperren?", { name: p.nickname });
@@ -346,6 +375,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                       <div className="mem-info">
                         {p.last_seen ? fmtDate(p.last_seen) : t("nie")}{noLogin ? " · " + t("ohne Login") : ""}
                         {p.must_change_password ? " · " + t("Passwort-Reset ausstehend") : ""}
+                        {p.email && <><br />{t("Login-Mail")}: {p.email}</>}
                         {inviter && <><br />{t("Eingeladen von {name}", { name: inviter.nickname })}</>}
                       </div>
                       {isSelf ? (
@@ -361,9 +391,14 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                             ? <button className="user-act danger" onClick={() => setBlocked(p, true)}>{t("Blockieren")}</button>
                             : <button className="user-act" onClick={() => setBlocked(p, false)}>{t("Entsperren")}</button>}
                           {!noLogin ? (
-                            <button className="user-act" onClick={() => {
-                              setPwPlayerId(pwPlayerId === p.player_id ? null : p.player_id); setNewPw("");
-                            }}><Lock size={13} /> {t("Neues Passwort setzen")}</button>
+                            <>
+                              <button className="user-act" onClick={() => {
+                                setPwPlayerId(pwPlayerId === p.player_id ? null : p.player_id); setNewPw("");
+                              }}><Lock size={13} /> {t("Neues Passwort setzen")}</button>
+                              <button className="user-act" onClick={() => {
+                                setEmailPlayerId(emailPlayerId === p.player_id ? null : p.player_id); setNewEmail("");
+                              }}><Mail size={13} /> {t("E-Mail ändern")}</button>
+                            </>
                           ) : (
                             <button className="user-act" onClick={() => {
                               setLoginPlayerId(loginPlayerId === p.player_id ? null : p.player_id);
@@ -390,6 +425,33 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                                 {busyLogin ? t("Lege an …") : t("Login anlegen")}
                               </button>
                               <p className="hint">{t("Übersteuert bewusst \"ohne Login\" – der Spieler muss dieses Passwort beim ersten Login sofort durch ein eigenes ersetzen.")}</p>
+                            </div>
+                          )}
+                          {emailPlayerId === p.player_id && (
+                            <div className="pw-box">
+                              <input type="email" placeholder="E-Mail" value={newEmail} autoComplete="off"
+                                onChange={(e) => setNewEmail(e.target.value)} />
+                              <button className="btn primary" disabled={busyEmail} onClick={() => setPlayerEmail(p)}>
+                                {busyEmail ? t("Speichere ...") : t("E-Mail speichern")}
+                              </button>
+                              <p className="hint">{t("Der Spieler muss sich künftig mit dieser E-Mail anmelden. Muss nicht echt/erreichbar sein.")}</p>
+                            </div>
+                          )}
+                          <button className="user-act danger" onClick={() => {
+                            setDeletePlayerId(deletePlayerId === p.player_id ? null : p.player_id); setDeleteConfirmText("");
+                          }}><X size={13} /> {t("Spieler löschen")}</button>
+                          {deletePlayerId === p.player_id && (
+                            <div className="pw-box danger-box">
+                              <p className="hint">
+                                {t("Löscht {name} UNWIDERRUFLICH samt kompletter Historie (Matches, Erfolge, Ratings, Turnierteilnahmen, Nachrichten, ...) - anders als Blockieren gibt es danach kein Zurück.", { name: p.nickname })}
+                              </p>
+                              <label className="field-label">{t("Zum Bestätigen Spielername eintippen: {name}", { name: p.nickname })}</label>
+                              <input type="text" placeholder={p.nickname} value={deleteConfirmText} autoComplete="off"
+                                onChange={(e) => setDeleteConfirmText(e.target.value)} />
+                              <button className="btn danger" disabled={busyDelete || deleteConfirmText.trim() !== p.nickname}
+                                onClick={() => deletePlayer(p)}>
+                                {busyDelete ? t("Lösche ...") : t("Endgültig löschen")}
+                              </button>
                             </div>
                           )}
                         </>
