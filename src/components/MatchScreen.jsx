@@ -12,8 +12,8 @@ import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll }) {
-  const [step, setStep] = useState(initialOpp ? 1 : 0);
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx }) {
+  const [step, setStep] = useState(tournamentCtx ? 2 : (initialOpp ? 1 : 0));
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
   const [mode, setMode] = useState("single");
@@ -21,7 +21,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [opp2, setOpp2] = useState(null);
   const [s1, setS1] = useState(0);
   const [s2, setS2] = useState(0);
-  const [disc, setDisc] = useState(null);
+  const [disc, setDisc] = useState(tournamentCtx ? tournamentCtx.discipline : null);
   const [hr, setHr] = useState([null, null]);   // Höchstserie [ich, Gegner] (nur 14/1)
   const [def, setDef] = useState([null, null]); // aufgeholter Rückstand (nur 14/1)
   const [avg, setAvg] = useState([null, null]); // Offensivschnitt (nur 14/1)
@@ -152,6 +152,31 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       if (error) { toast(t("Fehler: ") + error.message); return; }
       setStep(4); return;
     }
+    if (tournamentCtx) {
+      setBusy(true);
+      const rpc = tournamentCtx.reportAs === "organizer" ? "tournament_organizer_report_match" : "tournament_report_match";
+      const params = {
+        p_tournament_match_id: tournamentCtx.tournamentMatchId,
+        ...(tournamentCtx.reportAs === "organizer" ? { p_score1: s1, p_score2: s2 } : { p_my_score: s1, p_opp_score: s2 }),
+        p_high_run_me: is141 ? hr[0] : null, p_high_run_opp: is141 ? hr[1] : null,
+        p_deficit_me: is141 ? def[0] : null, p_deficit_opp: is141 ? def[1] : null,
+        p_avg_me: is141 ? avg[0] : null, p_avg_opp: is141 ? avg[1] : null,
+        p_twoball_me: is141 ? tb[0] : null, p_twoball_opp: is141 ? tb[1] : null,
+        p_run_log: is141 ? runLog : (scoreLog.length > 1 ? scoreLog : null),
+      };
+      const { data, error } = await supabase.rpc(rpc, params);
+      setBusy(false);
+      if (error) {
+        if (isNetworkError(error)) {
+          savePendingReport({ type: "tournament", rpc, params });
+          setOfflineQueued(true); setStep(4); return;
+        }
+        toast(t("Fehler: ") + error.message); return;
+      }
+      const tRow = Array.isArray(data) ? data[0] : data;
+      setSavedMatch({ ...tRow, p1: { nickname: me.nickname }, p2: { nickname: opp.nickname } });
+      setStep(4); return;
+    }
     setBusy(true);
     const params = {
       p_opponent_id: opp.id, p_my_score: s1, p_opp_score: s2, p_discipline: disc,
@@ -176,9 +201,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   };
 
   const DiscChip = () => (
-    <button className="disc-chip" onClick={() => { if (is141) setLeaveWarn(true); else setStep(1); }}>
-      <span>{t(disc)}</span><Pencil size={15} />
-    </button>
+    tournamentCtx ? (
+      <span className="disc-chip disc-chip-locked"><span>{t(disc)}</span></span>
+    ) : (
+      <button className="disc-chip" onClick={() => { if (is141) setLeaveWarn(true); else setStep(1); }}>
+        <span>{t(disc)}</span><Pencil size={15} />
+      </button>
+    )
   );
 
   if (showInvite) {
@@ -192,7 +221,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
         <button className="back-btn" onClick={() => { if (step === 0 || step === 4) onCancel(); else setAbortAsk(true); }} aria-label={t("Zurueck")}>
           <ChevronLeft size={22} />
         </button>
-        <h2>{t("Neues Match")}</h2>
+        <h2>{t(tournamentCtx ? "Turnier-Ergebnis" : "Neues Match")}</h2>
       </header>
 
       {abortAsk && (
@@ -471,9 +500,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {isGhost && !ghostReady && (
             <p className="hint center">{t("Ein echtes Training dauert länger – bitte warte, bis der Timer abgelaufen ist.")}</p>
           )}
-          {!isGhost && <p className="hint center">{mode === "double"
-            ? t("Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.")
-            : t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
+          {!isGhost && <p className="hint center">{tournamentCtx?.reportAs === "organizer"
+            ? t("Als Turnierleitung eingetragen – gilt sofort als bestätigt.")
+            : mode === "double"
+              ? t("Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.")
+              : t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
         </div>
       )}
 
@@ -492,6 +523,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <p>{t("Ergebnis gegen den Ghost:")} <b>{s1} : {s2}</b>.<br />
                 {t("Trainingsmatches werden nicht gespeichert und beeinflussen dein Rating nicht.")}</p>
             </>
+          ) : tournamentCtx?.reportAs === "organizer" ? (
+            <>
+              <h3>{t("Eingetragen!")}</h3>
+              <p>{t("Als Turnierleitung eingetragen – gilt sofort als bestätigt.")}</p>
+            </>
           ) : (
             <>
               <h3>{t("Gespeichert!")}</h3>
@@ -507,7 +543,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {savedMatch?.run_log?.length > 0 && (
             <button className="btn ghost" onClick={() => onOpenProtokoll(savedMatch)}>{t("Protokoll ansehen")}</button>
           )}
-          <button className="btn primary" onClick={onDone}>{t("Zur Rangliste")}</button>
+          <button className="btn primary" onClick={onDone}>{t(tournamentCtx ? "Zurück zum Turnier" : "Zur Rangliste")}</button>
         </div>
       )}
     </div>

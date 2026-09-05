@@ -41,7 +41,7 @@ const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers
 //   damit verbundenen Boxen hervor, alles andere wird gedaempft.
 // - Ein Zoom-Regler (Buttons, nicht nur Pinch-Zoom des ganzen Bildschirms -
 //   der wuerde auch Kopfzeile/Navigation mitzoomen statt nur den Baum).
-export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, scores, setScores, onReport, onOrganizerReport, onConfirm, onForceConfirm, colorOf, badgeOf, photoOf }) {
+export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onConfirm, onForceConfirm, colorOf, badgeOf, photoOf }) {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(zoom);
@@ -245,8 +245,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
           </div>
           {selected.table_number != null && <span className="m-disc">{t("Tisch")} {selected.table_number}</span>}
           <TurnierMatchActions tm={selected} me={me} isOrganizer={isOrganizer} tourStatus={tourStatus}
-            busyId={busyId} scores={scores} setScores={setScores}
-            onReport={onReport} onOrganizerReport={onOrganizerReport} onConfirm={onConfirm} onForceConfirm={onForceConfirm} />
+            busyId={busyId} onOpenMatchScreen={onOpenMatchScreen} onConfirm={onConfirm} onForceConfirm={onForceConfirm} />
         </div>
       )}
 

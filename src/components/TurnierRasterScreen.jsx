@@ -30,12 +30,11 @@ const finalRoundLabel = (round, totalRounds) => {
 // und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
 // bewusste Ausnahme vom sonstigen "alles ueber App.jsx loadData()"-Muster,
 // weil das nur aktiv ist waehrend diese Seite offen ist.
-export default function TurnierRasterScreen({ tournamentId, me, players, toast, onBack, colorOf, badgeOf, photoOf, onReload }) {
+export default function TurnierRasterScreen({ tournamentId, me, players, toast, onBack, colorOf, badgeOf, photoOf, onReload, onReportTournamentMatch }) {
   const [tour, setTour] = useState(null);
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [scores, setScores] = useState({});
   const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
 
@@ -152,22 +151,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       .sort((a, b) => (bracketRank[a.bracket] - bracketRank[b.bracket]) || (a.round - b.round));
   }, [tms]);
 
-  const report = async (tm) => {
-    const s = scores[tm.id] || {};
-    const s1 = parseInt(s.s1, 10) || 0, s2 = parseInt(s.s2, 10) || 0;
-    if (s1 < 0 || s2 < 0 || s1 === s2) {
-      toast(t("Ungültiges Ergebnis.")); return;
-    }
-    setBusyId(tm.id);
-    const isP1 = tm.player1_id === me.id;
-    const { error } = await supabase.rpc("tournament_report_match", {
-      p_tournament_match_id: tm.id, p_my_score: isP1 ? s1 : s2, p_opp_score: isP1 ? s2 : s1,
+  const openMatchScreen = (tm, asOrganizer) => {
+    onReportTournamentMatch({
+      tournamentMatchId: tm.id, discipline: tour.discipline,
+      reportAs: asOrganizer ? "organizer" : "self",
+      player1Id: tm.player1_id, player2Id: tm.player2_id, tableNumber: tm.table_number,
     });
-    setBusyId(null);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Ergebnis gemeldet – wartet auf Bestätigung."));
-    await load();
-    if (onReload) onReload();
   };
 
   const confirm = async (tm, ok) => {
@@ -187,23 +176,6 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Erzwungen bestätigt."));
-    await load();
-    if (onReload) onReload();
-  };
-
-  const organizerReport = async (tm) => {
-    const s = scores[tm.id] || {};
-    const s1 = parseInt(s.s1, 10) || 0, s2 = parseInt(s.s2, 10) || 0;
-    if (s1 < 0 || s2 < 0 || s1 === s2) {
-      toast(t("Ungültiges Ergebnis.")); return;
-    }
-    setBusyId(tm.id);
-    const { error } = await supabase.rpc("tournament_organizer_report_match", {
-      p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
-    });
-    setBusyId(null);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Ergebnis als Turnierleitung eingetragen."));
     await load();
     if (onReload) onReload();
   };
@@ -276,8 +248,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
         <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
-          busyId={busyId} scores={scores} setScores={setScores}
-          onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
+          busyId={busyId} onOpenMatchScreen={openMatchScreen} onConfirm={confirm} onForceConfirm={forceConfirm} />
       </div>
     );
   };
@@ -452,8 +423,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
               gehoert in den Baum, die Gruppentabelle steht schon oben. */}
           <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
             nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
-            busyId={busyId} scores={scores} setScores={setScores} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
+            busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+            onOpenMatchScreen={openMatchScreen} onConfirm={confirm} onForceConfirm={forceConfirm} />
         </section>
       ) : (
         <div className="turnier-brackets">

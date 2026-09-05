@@ -19,7 +19,7 @@ export function hasTurnierAction(tm, me, isOrganizer, tourStatus) {
 // eintragen, bestaetigen/ablehnen, erzwingen) - aus TurnierRasterScreen.jsx
 // herausgezogen, damit Listen- und Grafikansicht (TurnierGraph.jsx) exakt
 // dieselben Regeln und Buttons verwenden statt zweier gepflegter Kopien.
-export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, busyId, scores, setScores, onReport, onOrganizerReport, onConfirm, onForceConfirm }) {
+export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onConfirm, onForceConfirm }) {
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
   const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && !tm.match_id && tourStatus === "running";
@@ -34,17 +34,9 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
       {tm.match_id && !confirmed && <span className="hint" style={{ margin: 0 }}>{t("Wartet auf Bestätigung ...")}</span>}
       {manuallyEntered && <span className="hint" style={{ margin: 0 }}>{t("Manuell nachgetragen")}</span>}
       {(canReport || canOrganizerReport) && (
-        <div className="turnier-score-inputs">
-          <input type="number" inputMode="numeric" min="0" placeholder="0"
-            value={scores[tm.id]?.s1 || ""} onChange={(e) => setScores({ ...scores, [tm.id]: { ...scores[tm.id], s1: e.target.value } })} />
-          <span>:</span>
-          <input type="number" inputMode="numeric" min="0" placeholder="0"
-            value={scores[tm.id]?.s2 || ""} onChange={(e) => setScores({ ...scores, [tm.id]: { ...scores[tm.id], s2: e.target.value } })} />
-          <button className="btn primary" disabled={busyId === tm.id}
-            onClick={() => (canReport ? onReport(tm) : onOrganizerReport(tm))}>
-            {canReport ? t("Melden") : t("Als Turnierleitung eintragen")}
-          </button>
-        </div>
+        <button className="btn primary" disabled={busyId === tm.id} onClick={() => onOpenMatchScreen(tm, canOrganizerReport)}>
+          {canReport ? t("Melden") : t("Als Turnierleitung eintragen")}
+        </button>
       )}
       {canConfirm && (
         <div className="confirm-actions">

@@ -59,6 +59,7 @@ export default function App() {
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
   const [vsOpp, setVsOpp] = useState(null);
+  const [matchTournamentCtx, setMatchTournamentCtx] = useState(null); // Turnier-Kontext fuers Melden ueber MatchScreen (siehe TurnierRasterScreen)
   // Fuer Startseite "Zuletzt geoeffnet": den zuletzt gespeicherten Tab EINMAL
   // beim allerersten Rendern sichern, bevor der Persistenz-Effekt weiter
   // unten den initialen "rang"-Default hineinschreibt und den echten Wert
@@ -88,6 +89,7 @@ export default function App() {
     setProtokollBackTab(s.protokollBackTab ?? "stats");
     setVsOpp(s.vsOpp ?? null);
     setTournamentId(s.tournamentId ?? null);
+    setMatchTournamentCtx(s.matchTournamentCtx ?? null);
   }, []);
   const navPush = useCallback((s) => {
     applyNavState(s);
@@ -111,6 +113,8 @@ export default function App() {
   tabRef.current = tab;
   const vsOppRef = useRef(vsOpp);
   vsOppRef.current = vsOpp;
+  const matchTournamentCtxRef = useRef(matchTournamentCtx);
+  matchTournamentCtxRef.current = matchTournamentCtx;
   const allowLeaveMatchRef = useRef(false);
   // Startseite: beim allerersten Player-Laden nach App-Start (nicht bei
   // jedem Session-Refresh, siehe unten) auf die in den Profileinstellungen
@@ -122,7 +126,7 @@ export default function App() {
     try { window.history.replaceState({ tab: "rang" }, ""); } catch { /* ignore */ }
     const onPop = (e) => {
       if (tabRef.current === "match" && !allowLeaveMatchRef.current) {
-        try { window.history.pushState({ tab: "match", vsOpp: vsOppRef.current }, ""); } catch { /* ignore */ }
+        try { window.history.pushState({ tab: "match", vsOpp: vsOppRef.current, matchTournamentCtx: matchTournamentCtxRef.current }, ""); } catch { /* ignore */ }
         return;
       }
       allowLeaveMatchRef.current = false;
@@ -629,15 +633,29 @@ export default function App() {
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
                   onInvite={() => navPush({ tab: "invite" })} />
               )}
-              {tab === "match" && (
-                <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
+              {tab === "match" && (() => {
+                // Turnier-Kontext: bei Selbst-Meldung bin "ich" weiterhin der echte
+                // Nutzer (Gegner = der jeweils andere Turnierspieler). Bei einer
+                // Turnierleitungs-Meldung ist keiner der beiden Spieler "ich" - dort
+                // wird player1 als "me" durchgereicht (rein fuers Anzeigen/Vorschau,
+                // die RPC selbst prueft die echte Berechtigung serverseitig), damit
+                // derselbe MatchScreen-Flow ohne Sonderfall funktioniert.
+                const tourOpp = matchTournamentCtx ? players.find((p) => p.id === (
+                  matchTournamentCtx.reportAs === "organizer" ? matchTournamentCtx.player2Id
+                    : (matchTournamentCtx.player1Id === player.id ? matchTournamentCtx.player2Id : matchTournamentCtx.player1Id)
+                )) : null;
+                const tourMe = matchTournamentCtx?.reportAs === "organizer"
+                  ? (players.find((p) => p.id === matchTournamentCtx.player1Id) || player) : player;
+                return (
+                <MatchScreen me={tourMe} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                  onReload={loadData} initialOpp={vsOpp} onChallenge={createChallenge}
+                  onReload={loadData} initialOpp={matchTournamentCtx ? tourOpp : vsOpp} onChallenge={createChallenge}
                   catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
-                  onOpenProtokoll={openProtokoll}
+                  onOpenProtokoll={openProtokoll} tournamentCtx={matchTournamentCtx}
                   onDone={() => { loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}
                   onCancel={() => { allowLeaveMatchRef.current = true; window.history.back(); }} />
-              )}
+                );
+              })()}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
                 onOpenProtokoll={openProtokoll}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
@@ -688,7 +706,8 @@ export default function App() {
               )}
               {tab === "turnierdetail" && tournamentId && (
                 <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} toast={toast}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => window.history.back()} />
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => window.history.back()}
+                  onReportTournamentMatch={(ctx) => navPush({ tab: "match", matchTournamentCtx: ctx })} />
               )}
               <button className="refresh-btn" onClick={() => { loadData(); checkForUpdate(); }} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
