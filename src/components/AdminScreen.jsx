@@ -126,6 +126,21 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     await loadLogins();
     toast(t("E-Mail geändert."));
   };
+  const [deletePlayerId, setDeletePlayerId] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [busyDelete, setBusyDelete] = useState(false);
+  const deletePlayer = async (p) => {
+    if (deleteConfirmText.trim() !== p.nickname) { toast(t("Spielername stimmt nicht überein.")); return; }
+    if (!window.confirm(t("Bist du sicher? {name} wird UNWIDERRUFLICH mit der kompletten Historie (Matches, Erfolge, Ratings, Turnierteilnahmen, ...) gelöscht.", { name: p.nickname }))) return;
+    setBusyDelete(true);
+    const { error } = await supabase.rpc("admin_delete_player", { p_player: p.player_id, p_confirm_nickname: deleteConfirmText.trim() });
+    setBusyDelete(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setDeletePlayerId(null); setDeleteConfirmText("");
+    await loadLogins();
+    if (onReload) await onReload();
+    toast(t("Spieler und komplette Historie gelöscht."));
+  };
   const setBlocked = async (p, blocked) => {
     const msg = blocked ? t("{name} blockieren?", { name: p.nickname }) : t("{name} entsperren?", { name: p.nickname });
     if (!window.confirm(msg)) return;
@@ -420,6 +435,23 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                                 {busyEmail ? t("Speichere ...") : t("E-Mail speichern")}
                               </button>
                               <p className="hint">{t("Der Spieler muss sich künftig mit dieser E-Mail anmelden. Muss nicht echt/erreichbar sein.")}</p>
+                            </div>
+                          )}
+                          <button className="user-act danger" onClick={() => {
+                            setDeletePlayerId(deletePlayerId === p.player_id ? null : p.player_id); setDeleteConfirmText("");
+                          }}><X size={13} /> {t("Spieler löschen")}</button>
+                          {deletePlayerId === p.player_id && (
+                            <div className="pw-box danger-box">
+                              <p className="hint">
+                                {t("Löscht {name} UNWIDERRUFLICH samt kompletter Historie (Matches, Erfolge, Ratings, Turnierteilnahmen, Nachrichten, ...) - anders als Blockieren gibt es danach kein Zurück.", { name: p.nickname })}
+                              </p>
+                              <label className="field-label">{t("Zum Bestätigen Spielername eintippen: {name}", { name: p.nickname })}</label>
+                              <input type="text" placeholder={p.nickname} value={deleteConfirmText} autoComplete="off"
+                                onChange={(e) => setDeleteConfirmText(e.target.value)} />
+                              <button className="btn danger" disabled={busyDelete || deleteConfirmText.trim() !== p.nickname}
+                                onClick={() => deletePlayer(p)}>
+                                {busyDelete ? t("Lösche ...") : t("Endgültig löschen")}
+                              </button>
                             </div>
                           )}
                         </>
