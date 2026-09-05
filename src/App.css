@@ -1036,19 +1036,25 @@ button.id-card-head { cursor: pointer; }
    eine Karte zum Erkunden (auch per Pinch-Zoom) als Karten zum Durchwischen. */
 .turnier-view-toggle { margin-bottom: 10px; }
 .turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
-  border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch; }
+  border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch;
+  /* Einfingriges Scrollen/Wischen bleibt erlaubt, die native Zweifinger-
+     Pinch-Zoom-Geste des Browsers auf diesem Element aber nicht - die
+     uebernimmt TurnierGraph.jsx selbst per touchmove-Handler, siehe dort. */
+  touch-action: pan-x pan-y; }
 .turnier-graph { position: relative; transform-origin: 0 0; }
 .turnier-graph-svg { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
-/* Zoom-Regler oberhalb des Baums - eigener Regler statt nur Pinch-Zoom des
-   ganzen Bildschirms, der auch Kopfzeile/Navigation mitzoomen wuerde statt
-   nur den Baum selbst. */
-.turnier-graph-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.turnier-graph-toolbar button { background: var(--felt-3); border: 1px solid var(--line); color: var(--ivory);
-  border-radius: 8px; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+/* Zoom-Regler oberhalb des Baums - eigener, bewusst grosser/kontrastreicher
+   Regler (nicht nur Pinch-Zoom des ganzen Bildschirms, der auch Kopfzeile/
+   Navigation mitzoomen wuerde statt nur den Baum selbst) - Gold-Rahmen wie
+   die anderen interaktiven Elemente in dieser Ansicht, damit die Buttons
+   neben den vielen Boxen/Linien nicht untergehen. */
+.turnier-graph-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.turnier-graph-toolbar button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
+  border-radius: 10px; width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
 .turnier-graph-toolbar button:hover:not(:disabled) { background: var(--felt); }
-.turnier-graph-toolbar button:disabled { opacity: 0.4; cursor: default; }
-.turnier-graph-zoom-level { font-size: 13px; color: var(--ivory-dim); min-width: 40px; text-align: center; }
-.turnier-graph-zoom-reset { width: auto !important; padding: 0 10px; font-size: 12px; }
+.turnier-graph-toolbar button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
+.turnier-graph-zoom-level { font-size: 14.5px; font-weight: 700; color: var(--ivory); min-width: 46px; text-align: center; }
+.turnier-graph-zoom-reset { width: auto !important; height: 44px; padding: 0 14px; font-size: 13px; font-weight: 600; }
 /* Offene Verbindungen dezent, bereits entschiedene (Sieger steht fest)
    deutlich heller/dicker - macht den tatsaechlichen Turnierverlauf auf den
    ersten Blick erkennbar statt eines gleichfoermigen Liniengewirrs. Weiche

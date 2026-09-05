@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { X, ZoomIn, ZoomOut } from "lucide-react";
 import { t } from "../lib/i18n";
 import TurnierMatchActions, { hasTurnierAction } from "./TurnierMatchActions";
@@ -31,6 +31,51 @@ const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers
 export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, scores, setScores, onReport, onOrganizerReport, onConfirm, onForceConfirm }) {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const wrapRef = useRef(null);
+  const pinchRef = useRef(null);
+
+  // Pinch-to-Zoom mit zwei Fingern + Trackpad-Kneifen (Ctrl+Wheel, so
+  // melden Browser das Trackpad-Pinch) direkt im Baum - nativ per
+  // addEventListener statt React-Touch-Handlern, weil touchmove nur mit
+  // { passive: false } preventDefault() erlaubt (sonst scrollt/zoomt die
+  // ganze Seite mit statt nur der Baum). touch-action: pan-x pan-y im CSS
+  // unterbindet zusaetzlich die native Pinch-Zoom-Geste des Browsers auf
+  // diesem Element, laesst einfingriges Scrollen aber unangetastet.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const dist = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+    const clamp = (z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +z.toFixed(2)));
+
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) pinchRef.current = { startDist: dist(e.touches), startZoom: zoomRef.current };
+    };
+    const onTouchMove = (e) => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+        setZoom(clamp(pinchRef.current.startZoom * (dist(e.touches) / pinchRef.current.startDist)));
+      }
+    };
+    const onTouchEnd = (e) => { if (e.touches.length < 2) pinchRef.current = null; };
+    const onWheel = (e) => {
+      if (!e.ctrlKey) return; // Trackpad-Kneifen kommt als Ctrl+Wheel, normales Scrollen soll unberuehrt bleiben
+      e.preventDefault();
+      setZoom(clamp(zoomRef.current - e.deltaY * 0.01));
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, []);
 
   const layout = useMemo(() => {
     const sectionOrder = ["main", "winners", "losers", "final"].filter((b) => matches.some((m) => m.bracket === b));
@@ -127,13 +172,13 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
       )}
 
       <div className="turnier-graph-toolbar">
-        <button type="button" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={16} /></button>
+        <button type="button" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={20} /></button>
         <span className="turnier-graph-zoom-level">{Math.round(zoom * 100)}%</span>
-        <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={16} /></button>
+        <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={20} /></button>
         {zoom !== 1 && <button type="button" className="turnier-graph-zoom-reset" onClick={() => setZoom(1)}>{t("Zoom zurücksetzen")}</button>}
       </div>
 
-      <div className="turnier-graph-wrap">
+      <div className="turnier-graph-wrap" ref={wrapRef}>
         <div style={{ width: layout.totalWidth * zoom, height: layout.totalHeight * zoom }}>
           <div className="turnier-graph" style={{ width: layout.totalWidth, height: layout.totalHeight, transform: `scale(${zoom})` }}>
             <svg className="turnier-graph-svg" width={layout.totalWidth} height={layout.totalHeight}>
