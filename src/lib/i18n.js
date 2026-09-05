@@ -903,6 +903,11 @@ const TRANSLATIONS = {
     "Neues Passwort": "New password",
     "Ein Admin hat dir ein neues Passwort vergeben. Lege jetzt dein eigenes fest, um fortzufahren.": "An admin has assigned you a new password. Set your own now to continue.",
     "Passwort speichern": "Save password",
+    "Login einrichten": "Set up login",
+    "Login für {name} mit {email} anlegen? Muss beim ersten Login das Passwort ändern.": "Create a login for {name} with {email}? Must change the password at first login.",
+    "Login angelegt – muss beim ersten Login geändert werden.": "Login created – must be changed at first login.",
+    "Login anlegen": "Create login",
+    "Übersteuert bewusst \"ohne Login\" – der Spieler muss dieses Passwort beim ersten Login sofort durch ein eigenes ersetzen.": "Deliberately overrides \"no login\" – the player must replace this password with their own immediately at their first login.",
   },
 };
 export function setLangGlobal(l) {

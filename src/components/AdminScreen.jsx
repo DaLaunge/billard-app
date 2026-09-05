@@ -92,6 +92,26 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     await loadLogins();
     toast(t("Neues Passwort gesetzt – muss beim nächsten Login geändert werden."));
   };
+  const [loginPlayerId, setLoginPlayerId] = useState(null);
+  const [newLoginEmail, setNewLoginEmail] = useState("");
+  const [newLoginPw, setNewLoginPw] = useState("");
+  const [busyLogin, setBusyLogin] = useState(false);
+  const createLogin = async (p) => {
+    if (!newLoginEmail.includes("@") || newLoginPw.length < 6) {
+      toast(t("E-Mail und Passwort (min. 6 Zeichen) nötig.")); return;
+    }
+    if (!window.confirm(t("Login für {name} mit {email} anlegen? Muss beim ersten Login das Passwort ändern.", { name: p.nickname, email: newLoginEmail.trim() }))) return;
+    setBusyLogin(true);
+    const { error } = await supabase.rpc("admin_create_login", {
+      p_player: p.player_id, p_email: newLoginEmail.trim(), p_new_password: newLoginPw,
+    });
+    setBusyLogin(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setNewLoginEmail(""); setNewLoginPw(""); setLoginPlayerId(null);
+    await loadLogins();
+    if (onReload) await onReload();
+    toast(t("Login angelegt – muss beim ersten Login geändert werden."));
+  };
   const setBlocked = async (p, blocked) => {
     const msg = blocked ? t("{name} blockieren?", { name: p.nickname }) : t("{name} entsperren?", { name: p.nickname });
     if (!window.confirm(msg)) return;
@@ -341,10 +361,15 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                           {!p.blocked
                             ? <button className="user-act danger" onClick={() => setBlocked(p, true)}>{t("Blockieren")}</button>
                             : <button className="user-act" onClick={() => setBlocked(p, false)}>{t("Entsperren")}</button>}
-                          {!noLogin && (
+                          {!noLogin ? (
                             <button className="user-act" onClick={() => {
                               setPwPlayerId(pwPlayerId === p.player_id ? null : p.player_id); setNewPw("");
                             }}><Lock size={13} /> {t("Neues Passwort setzen")}</button>
+                          ) : (
+                            <button className="user-act" onClick={() => {
+                              setLoginPlayerId(loginPlayerId === p.player_id ? null : p.player_id);
+                              setNewLoginEmail(""); setNewLoginPw("");
+                            }}><Lock size={13} /> {t("Login einrichten")}</button>
                           )}
                           {pwPlayerId === p.player_id && (
                             <div className="pw-box">
@@ -354,6 +379,18 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                                 {busyPw ? t("Speichere ...") : t("Passwort speichern")}
                               </button>
                               <p className="hint">{t("Der Spieler muss dieses Passwort beim nächsten Login sofort durch ein eigenes ersetzen.")}</p>
+                            </div>
+                          )}
+                          {loginPlayerId === p.player_id && (
+                            <div className="pw-box">
+                              <input type="email" placeholder="E-Mail" value={newLoginEmail} autoComplete="off"
+                                onChange={(e) => setNewLoginEmail(e.target.value)} />
+                              <input type="text" placeholder={t("Passwort (min. 6 Zeichen)")} value={newLoginPw} autoComplete="off"
+                                onChange={(e) => setNewLoginPw(e.target.value)} />
+                              <button className="btn primary" disabled={busyLogin} onClick={() => createLogin(p)}>
+                                {busyLogin ? t("Lege an …") : t("Login anlegen")}
+                              </button>
+                              <p className="hint">{t("Übersteuert bewusst \"ohne Login\" – der Spieler muss dieses Passwort beim ersten Login sofort durch ein eigenes ersetzen.")}</p>
                             </div>
                           )}
                         </>
