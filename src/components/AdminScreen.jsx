@@ -172,17 +172,16 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     toast(t("Erfolge neu berechnet."));
   };
   const createUser = async () => {
-    if (!nu.email.includes("@") || nu.password.length < 6) {
-      toast(t("E-Mail und Passwort (min. 6 Zeichen) nötig.")); return;
+    if (!nu.email.includes("@") || nu.password.length < 6 || nu.nickname.trim().length < 2) {
+      toast(t("E-Mail, Passwort (min. 6 Zeichen) und Spielername (min. 2 Zeichen) nötig.")); return;
     }
     setBusyUser(true);
-    const { data, error } = await supabase.functions.invoke("admin-create-user", {
-      body: { email: nu.email.trim(), password: nu.password, nickname: nu.nickname.trim() },
+    const { error } = await supabase.rpc("admin_create_user", {
+      p_email: nu.email.trim(), p_password: nu.password, p_nickname: nu.nickname.trim(),
     });
     setBusyUser(false);
-    if (error) { toast(t("Fehler: ") + (error.message || "Anlage fehlgeschlagen")); return; }
-    if (data?.error) { toast(t("Fehler: ") + data.error); return; }
-    if (data?.warning) { toast(data.warning); } else { toast(t("Nutzer angelegt.")); }
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Nutzer angelegt – muss beim ersten Login das Passwort ändern."));
     setNu({ email: "", password: "", nickname: "" });
     if (onReload) await onReload();
   };
@@ -294,13 +293,13 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
 
       <section className="stat-block">
         <h3><User size={17} /> {t("Neuen Nutzer anlegen")}</h3>
-        <p className="hint" style={{ marginTop: 0 }}>{t("Legt einen Login mit E-Mail + Passwort an (sofort nutzbar). Spielername optional – sonst wählt ihn die Person beim ersten Login selbst.")}</p>
+        <p className="hint" style={{ marginTop: 0 }}>{t("Legt einen Login mit E-Mail, Passwort und Spielername an – sofort nutzbar, ohne dass eine Mail verschickt wird. Muss beim ersten Login das Passwort ändern.")}</p>
         <div className="pw-box">
           <input type="email" placeholder="E-Mail" value={nu.email} autoComplete="off"
             onChange={(e) => setNu({ ...nu, email: e.target.value })} />
           <input type="text" placeholder={t("Passwort (min. 6 Zeichen)")} value={nu.password} autoComplete="off"
             onChange={(e) => setNu({ ...nu, password: e.target.value })} />
-          <input type="text" placeholder={t("Spielername (optional)")} value={nu.nickname} autoComplete="off"
+          <input type="text" placeholder={t("Spielername")} value={nu.nickname} autoComplete="off"
             onChange={(e) => setNu({ ...nu, nickname: e.target.value })} />
           <button className="btn primary" disabled={busyUser} onClick={createUser}>
             {busyUser ? t("Lege an …") : t("Nutzer anlegen")}

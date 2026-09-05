@@ -908,6 +908,10 @@ const TRANSLATIONS = {
     "Login angelegt – muss beim ersten Login geändert werden.": "Login created – must be changed at first login.",
     "Login anlegen": "Create login",
     "Übersteuert bewusst \"ohne Login\" – der Spieler muss dieses Passwort beim ersten Login sofort durch ein eigenes ersetzen.": "Deliberately overrides \"no login\" – the player must replace this password with their own immediately at their first login.",
+    "Spielername": "Player name",
+    "E-Mail, Passwort (min. 6 Zeichen) und Spielername (min. 2 Zeichen) nötig.": "Email, password (min. 6 characters) and player name (min. 2 characters) required.",
+    "Nutzer angelegt – muss beim ersten Login das Passwort ändern.": "User created – must change the password at first login.",
+    "Legt einen Login mit E-Mail, Passwort und Spielername an – sofort nutzbar, ohne dass eine Mail verschickt wird. Muss beim ersten Login das Passwort ändern.": "Creates a login with email, password and player name – usable immediately, no email sent. Must change the password at first login.",
   },
 };
 export function setLangGlobal(l) {
