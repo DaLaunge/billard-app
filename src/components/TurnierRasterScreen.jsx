@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer } from "lucide-react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download } from "lucide-react";
+import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { initials, fmtDuration } from "../lib/format";
+import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
 import Ball from "./Ball";
 import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions from "./TurnierMatchActions";
@@ -76,6 +77,55 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       .filter((x) => x.waitMs > 0)
       .sort((a, b) => b.waitMs - a.waitMs);
   }, [tms]);
+
+  // Spielprotokoll: alle bestaetigten Partien in der Reihenfolge, in der sie
+  // tatsaechlich gespielt/gemeldet wurden (matches.played_at) - unabhaengig
+  // vom Baum-Layout, damit man den zeitlichen Ablauf des Turniertages
+  // nachvollziehen kann. Erst am Ende des Turniers relevant, siehe Gating in
+  // der JSX unten (tour.status === "finished").
+  const timeline = useMemo(() => {
+    if (!tms) return [];
+    return tms
+      .filter((tm) => tm.match?.confirmed && tm.match?.played_at)
+      .sort((a, b) => new Date(a.match.played_at) - new Date(b.match.played_at));
+  }, [tms]);
+
+  const downloadProtocolPdf = () => {
+    const doc = new jsPDF();
+    const marginX = 14;
+    const pageH = doc.internal.pageSize.getHeight();
+    const pageW = doc.internal.pageSize.getWidth();
+    let y = 20;
+    doc.setFontSize(16);
+    doc.text(tour.name, marginX, y);
+    y += 7;
+    doc.setFontSize(10);
+    doc.setTextColor(90);
+    doc.text(`${formatLabel(tour.format)} · ${t(tour.discipline)} · ${fmtDate(tour.created_at)}`, marginX, y);
+    y += 10;
+    doc.setTextColor(0);
+    doc.setFontSize(11);
+    doc.setFont(undefined, "bold");
+    doc.text(t("Zeit"), marginX, y);
+    doc.text(t("Partie"), marginX + 32, y);
+    doc.text(t("Ergebnis"), pageW - marginX - 28, y);
+    doc.setFont(undefined, "normal");
+    y += 2;
+    doc.setDrawColor(180);
+    doc.line(marginX, y, pageW - marginX, y);
+    y += 7;
+    doc.setFontSize(10);
+    timeline.forEach((tm) => {
+      if (y > pageH - 20) { doc.addPage(); y = 20; }
+      const n1 = nameOf(tm.player1_id) || "?", n2 = nameOf(tm.player2_id) || "?";
+      doc.text(fmtDateTime(tm.match.played_at), marginX, y);
+      doc.text(`${n1} – ${n2}`, marginX + 32, y, { maxWidth: pageW - marginX * 2 - 32 - 32 });
+      doc.text(`${tm.match.score1}:${tm.match.score2}`, pageW - marginX - 28, y);
+      y += 7;
+    });
+    if (timeline.length === 0) doc.text(t("Noch keine Partie in diesem Turnier."), marginX, y);
+    doc.save(`${tour.name.replace(/[^\w\-]+/g, "_")}_protokoll.pdf`);
+  };
 
   // Verlauf eines Spielers: alle Rasterplaetze, an denen er beteiligt ist,
   // in Lese-Reihenfolge durch den Baum (Gewinnerbaum vor Verliererbaum vor
@@ -267,6 +317,35 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
             );
           })}
           {waitRanked.length > 5 && <p className="hint">{t("+{n} weitere", { n: waitRanked.length - 5 })}</p>}
+        </section>
+      )}
+
+      {tour.status === "finished" && (
+        <section className="stat-block">
+          <div className="stat-block-head">
+            <h3><ScrollText size={17} /> {t("Spielprotokoll")}</h3>
+            <button className="btn ghost" onClick={downloadProtocolPdf}>
+              <Download size={15} /> {t("Als PDF herunterladen")}
+            </button>
+          </div>
+          <p className="hint" style={{ marginTop: 0 }}>{t("Zeitlicher Ablauf aller gespielten Partien.")}</p>
+          {timeline.length === 0 && <p className="hint">{t("Noch keine Partie in diesem Turnier.")}</p>}
+          {timeline.map((tm) => {
+            const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
+            const won1 = tm.winner_id === tm.player1_id;
+            return (
+              <div key={tm.id} className="stat-row turnier-standings-row">
+                <span className="m-date m-datetime">{fmtDateTime(tm.match.played_at)}</span>
+                <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={24} />
+                <span className="stat-name">
+                  {n1} <b style={won1 ? { color: "var(--win)" } : undefined}>{tm.match.score1}</b>
+                  {" : "}
+                  <b style={!won1 ? { color: "var(--win)" } : undefined}>{tm.match.score2}</b> {n2}
+                </span>
+                <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={24} />
+              </div>
+            );
+          })}
         </section>
       )}
 
