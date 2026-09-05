@@ -5,12 +5,15 @@ import { t } from "../lib/i18n";
 // Kompakter +/- Zaehler fuer die schnelle Turnierleitungs-Eingabe (Melden/
 // Korrigieren) - bewusst kein grosser Zaehler wie im normalen MatchScreen,
 // der ist fuer die Spieler selbst gedacht (Siegchance-Vorschau, 14/1-
-// Protokoll). Die Turnierleitung soll nur schnell einen Endstand eintragen.
+// Protokoll). Der Wert ist direkt eintippbar (nicht nur per +/-), da bei
+// 14/1 Endlos ueblich dreistellige Ergebnisse (z.B. 100:98) vorkommen -
+// ueber +/- allein waere das viel zu umstaendlich.
 function ScoreStepper({ value, onChange }) {
   return (
     <div className="turnier-stepper">
       <button type="button" className="turnier-stepper-btn" onClick={() => onChange(Math.max(0, value - 1))} aria-label="minus"><Minus size={14} /></button>
-      <span className="turnier-stepper-val">{value}</span>
+      <input type="number" inputMode="numeric" min="0" className="turnier-stepper-val-input" value={value}
+        onChange={(e) => { const v = parseInt(e.target.value, 10); onChange(Number.isNaN(v) ? 0 : Math.max(0, v)); }} />
       <button type="button" className="turnier-stepper-btn plus" onClick={() => onChange(value + 1)} aria-label="plus"><Plus size={14} /></button>
     </div>
   );

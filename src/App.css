@@ -1026,8 +1026,9 @@ button.id-card-head { cursor: pointer; }
    Spieler selbst gedacht. */
 .turnier-quick-score { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .turnier-stepper { display: flex; align-items: center; gap: 6px; }
-.turnier-stepper-val { min-width: 22px; text-align: center; font-size: 18px; font-weight: 800;
-  font-family: 'Bricolage Grotesque', sans-serif; }
+.turnier-stepper-val-input { width: 40px; min-width: 40px; text-align: center; font-size: 18px; font-weight: 800;
+  font-family: 'Bricolage Grotesque', sans-serif; background: var(--felt); color: var(--ivory);
+  border: 1px solid var(--line); border-radius: 8px; height: 32px; padding: 0; }
 .turnier-stepper-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line);
   background: var(--felt); color: var(--ivory); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .turnier-stepper-btn.plus { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
@@ -1132,11 +1133,18 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
 .turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
 
-/* Detail-Panel oberhalb des Baums fuer die per Klick ausgewaehlte Box -
-   bewusst im normalen Dokumentfluss (nicht als Pop-over ueber der Box),
-   damit es beim Scrollen/Zoomen im Baum nicht mitwandern muss. */
+/* Detail-Panel fuer den per Klick ausgewaehlten Spielerverlauf (Teilnehmer-
+   Tab, TurnierRasterScreen.jsx) - im normalen Dokumentfluss. */
 .turnier-graph-detail { background: var(--felt-3); border: 1px solid var(--gold); border-radius: 14px;
   padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+/* Aktions-Popover direkt unter der per Klick ausgewaehlten Box im Baum -
+   Kind desselben skalierten/positionierten .turnier-graph-Containers wie
+   die Boxen selbst, wandert/skaliert beim Scrollen/Zoomen also automatisch
+   mit (kein separates Nachfuehren der Position noetig). Eingabe soll direkt
+   im Graphen stattfinden statt in einem Menue losgeloest davon. */
+.turnier-graph-popover { position: absolute; z-index: 5; min-width: 260px; max-width: 320px;
+  background: var(--felt-3); border: 1px solid var(--gold); border-radius: 14px;
+  padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 24px #00000055; }
 .turnier-graph-detail-close { background: none; border: none; color: var(--ivory-dim); cursor: pointer;
   padding: 4px; border-radius: 8px; flex-shrink: 0; }
 .turnier-graph-detail-close:hover { color: var(--ivory); background: var(--felt); }
