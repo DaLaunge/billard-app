@@ -18,7 +18,7 @@ import RecordsCard from "./widgets/RecordsCard";
 import IdentityCard from "./widgets/IdentityCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
-  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
+  players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
@@ -530,6 +530,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       {/* "Freund einladen" ist jetzt prominent als QR-Symbol direkt in der
           Identitaets-Karte oben - kein zweiter, weniger sichtbarer Button
           hier noetig. */}
+      {isMe && (
+        <button className="btn ghost" onClick={onOpenTurniere}><Trophy size={16} /> {t("Turniere")}</button>
+      )}
       {isMe && meRow?.role === "admin" && (
         <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
       )}

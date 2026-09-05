@@ -1,0 +1,267 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch } from "lucide-react";
+import { supabase } from "../supabase";
+import { t } from "../lib/i18n";
+import { initials } from "../lib/format";
+import Ball from "./Ball";
+import TurnierGraph from "./TurnierGraph";
+import TurnierMatchActions from "./TurnierMatchActions";
+
+const POLL_MS = 8000;
+
+const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
+const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers" ? t("Verliererbaum") : b === "final" ? t("Finale") : t("Raster"));
+
+// Turnierraster: zeigt ein einzelnes Turnier an, laedt seine Daten selbst
+// und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
+// bewusste Ausnahme vom sonstigen "alles ueber App.jsx loadData()"-Muster,
+// weil das nur aktiv ist waehrend diese Seite offen ist.
+export default function TurnierRasterScreen({ tournamentId, me, players, toast, onBack, colorOf, onReload }) {
+  const [tour, setTour] = useState(null);
+  const [tms, setTms] = useState(null);
+  const [roster, setRoster] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [scores, setScores] = useState({});
+  const [viewMode, setViewMode] = useState("list"); // list | graph - Jeder-gegen-jeden hat keinen Baum, bleibt bei list
+
+  const load = useCallback(async () => {
+    const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
+      supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
+      supabase.from("tournament_matches")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by)")
+        .eq("tournament_id", tournamentId)
+        .order("bracket").order("round").order("bracket_position"),
+      supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
+    ]);
+    setTour(tr || null);
+    setTms(matches || []);
+    setRoster(ros || []);
+  }, [tournamentId]);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, POLL_MS);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const nameOf = useCallback((id) => players.find((p) => p.id === id)?.nickname || null, [players]);
+
+  const standings = useMemo(() => {
+    if (!tour || tour.format !== "round_robin" || !roster || !tms) return null;
+    const tally = {};
+    roster.forEach((r) => { tally[r.player_id] = { wins: 0, losses: 0 }; });
+    tms.forEach((tm) => {
+      if (!tm.winner_id) return;
+      const loser = tm.player1_id === tm.winner_id ? tm.player2_id : tm.player1_id;
+      if (tally[tm.winner_id]) tally[tm.winner_id].wins += 1;
+      if (loser && tally[loser]) tally[loser].losses += 1;
+    });
+    return Object.entries(tally)
+      .map(([id, v]) => ({ id, name: nameOf(id), ...v }))
+      .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+  }, [tour, roster, tms, nameOf]);
+
+  const report = async (tm) => {
+    const s = scores[tm.id] || {};
+    const s1 = parseInt(s.s1, 10) || 0, s2 = parseInt(s.s2, 10) || 0;
+    if (s1 < 0 || s2 < 0 || s1 === s2) {
+      toast(t("Ungültiges Ergebnis.")); return;
+    }
+    setBusyId(tm.id);
+    const isP1 = tm.player1_id === me.id;
+    const { error } = await supabase.rpc("tournament_report_match", {
+      p_tournament_match_id: tm.id, p_my_score: isP1 ? s1 : s2, p_opp_score: isP1 ? s2 : s1,
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Ergebnis gemeldet – wartet auf Bestätigung."));
+    await load();
+    if (onReload) onReload();
+  };
+
+  const confirm = async (tm, ok) => {
+    setBusyId(tm.id);
+    const { error } = await supabase.rpc("confirm_match", { p_match_id: tm.match.id, p_ok: ok });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen."));
+    await load();
+    if (onReload) onReload();
+  };
+
+  const forceConfirm = async (tm) => {
+    if (!window.confirm(t("Dieses Ergebnis als Turnierleitung erzwungen bestätigen?"))) return;
+    setBusyId(tm.id);
+    const { error } = await supabase.rpc("tournament_force_confirm_match", { p_tournament_match_id: tm.id });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Erzwungen bestätigt."));
+    await load();
+    if (onReload) onReload();
+  };
+
+  const organizerReport = async (tm) => {
+    const s = scores[tm.id] || {};
+    const s1 = parseInt(s.s1, 10) || 0, s2 = parseInt(s.s2, 10) || 0;
+    if (s1 < 0 || s2 < 0 || s1 === s2) {
+      toast(t("Ungültiges Ergebnis.")); return;
+    }
+    setBusyId(tm.id);
+    const { error } = await supabase.rpc("tournament_organizer_report_match", {
+      p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Ergebnis als Turnierleitung eingetragen."));
+    await load();
+    if (onReload) onReload();
+  };
+
+  const endEarly = async () => {
+    if (!window.confirm(t("Turnier jetzt vorzeitig beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste."))) return;
+    setBusyId("end");
+    const { error } = await supabase.rpc("tournament_end_early", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Turnier beendet."));
+    await load();
+  };
+
+  const deleteTournament = async () => {
+    if (!window.confirm(t("Dieses Turnier wirklich unwiderruflich löschen?"))) return;
+    setBusyId("delete");
+    const { error } = await supabase.rpc("tournament_delete", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Turnier gelöscht."));
+    onBack();
+  };
+
+  if (!tour || !tms) {
+    return (
+      <div className="screen">
+        <header className="screen-head with-back">
+          <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
+          <h2>{t("Turnier")}</h2>
+        </header>
+        <p className="hint">{t("Lade ...")}</p>
+      </div>
+    );
+  }
+
+  const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
+  const canDeleteTournament = isOrganizer && !tms.some((tm) => tm.match_id);
+  const groups = {};
+  tms.forEach((tm) => { (groups[tm.bracket] ||= []).push(tm); });
+  const bracketOrder = tour.format === "double_ko" ? ["winners", "losers", "final"] : ["main"];
+
+  const renderMatch = (tm) => {
+    const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
+    return (
+      <div key={tm.id} className="turnier-match-card">
+        <div className="turnier-match-meta">
+          <span className="turnier-match-players">
+            {tm.is_bye ? (
+              <><b>{n1 || "?"}</b>&nbsp;{t("(Freilos)")}</>
+            ) : (
+              <>
+                <b>{n1 || t("TBD")}</b>
+                <span className="turnier-match-score">{tm.match ? `${tm.match.score1}:${tm.match.score2}` : "–"}</span>
+                <b>{n2 || t("TBD")}</b>
+              </>
+            )}
+          </span>
+        </div>
+        {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
+        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+          busyId={busyId} scores={scores} setScores={setScores}
+          onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
+      </div>
+    );
+  };
+
+  return (
+    <div className="screen">
+      <div className="turnier-layout">
+      <header className="screen-head with-back">
+        <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
+        <h2>{tour.name}</h2>
+      </header>
+      <p className="hint" style={{ marginTop: -6 }}>
+        {formatLabel(tour.format)} · {t(tour.discipline)} · {tour.status === "finished" ? t("beendet") : t("läuft")}
+      </p>
+
+      {isOrganizer && (tour.status === "running" || canDeleteTournament) && (
+        <div className="chips small" style={{ marginBottom: 10 }}>
+          {tour.status === "running" && (
+            <button className="btn ghost" disabled={busyId === "end"} onClick={endEarly}>
+              <Flag size={15} /> {t("Turnier vorzeitig beenden")}
+            </button>
+          )}
+          {canDeleteTournament && (
+            <button className="btn ghost" disabled={busyId === "delete"} onClick={deleteTournament}>
+              <Trash2 size={15} /> {t("Turnier löschen")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {standings && (
+        <section className="stat-block">
+          <h3><Trophy size={17} /> {t("Tabelle")}</h3>
+          {standings.map((s, i) => (
+            <div key={s.id} className="stat-row turnier-standings-row">
+              <span className="medal">{i + 1}.</span>
+              <Ball color={colorOf(s.name)} label={initials(s.name)} size={28} />
+              <span className="stat-name">{s.name}</span>
+              <span className="stat-val">{s.wins}S / {s.losses}N</span>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {tour.format !== "round_robin" && (
+        <div className="chips small turnier-view-toggle">
+          <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
+            <List size={14} /> {t("Liste")}
+          </button>
+          <button className={"chip" + (viewMode === "graph" ? " active" : "")} onClick={() => setViewMode("graph")}>
+            <GitBranch size={14} /> {t("Grafik")}
+          </button>
+        </div>
+      )}
+
+      {viewMode === "graph" && tour.format !== "round_robin" ? (
+        <section className="stat-block">
+          <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
+          <TurnierGraph matches={tms} nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+            busyId={busyId} scores={scores} setScores={setScores}
+            onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
+        </section>
+      ) : (
+        <div className="turnier-brackets">
+          {bracketOrder.map((b) => {
+            const list = groups[b] || [];
+            if (list.length === 0) return null;
+            const byRound = {};
+            list.forEach((tm) => { (byRound[tm.round] ||= []).push(tm); });
+            return (
+              <section key={b} className="stat-block">
+                <h3><Trophy size={17} /> {bracketOrder.length > 1 ? bracketLabel(b) : t("Raster")}</h3>
+                <div className="turnier-rounds">
+                  {Object.keys(byRound).sort((a, c) => a - c).map((r) => (
+                    <div key={r} className="turnier-round-col">
+                      <p className="turnier-round-title">{t("Runde")} {r}</p>
+                      {byRound[r].sort((a, c) => a.bracket_position - c.bracket_position).map(renderMatch)}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+      </div>
+    </div>
+  );
+}

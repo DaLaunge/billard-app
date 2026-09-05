@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
@@ -78,6 +78,40 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     toast(role === "admin" ? t("Zum Admin gemacht.") : t("Admin-Rolle entfernt."));
   };
   const [editId, setEditId] = useState(null);
+  const [pwPlayerId, setPwPlayerId] = useState(null);
+  const [newPw, setNewPw] = useState("");
+  const [busyPw, setBusyPw] = useState(false);
+  const setPlayerPassword = async (p) => {
+    if (newPw.length < 6) { toast(t("Mindestens 6 Zeichen.")); return; }
+    if (!window.confirm(t("Neues Passwort für {name} setzen? Muss beim nächsten Login sofort geändert werden.", { name: p.nickname }))) return;
+    setBusyPw(true);
+    const { error } = await supabase.rpc("admin_set_password", { p_player: p.player_id, p_new_password: newPw });
+    setBusyPw(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setNewPw(""); setPwPlayerId(null);
+    await loadLogins();
+    toast(t("Neues Passwort gesetzt – muss beim nächsten Login geändert werden."));
+  };
+  const [loginPlayerId, setLoginPlayerId] = useState(null);
+  const [newLoginEmail, setNewLoginEmail] = useState("");
+  const [newLoginPw, setNewLoginPw] = useState("");
+  const [busyLogin, setBusyLogin] = useState(false);
+  const createLogin = async (p) => {
+    if (!newLoginEmail.includes("@") || newLoginPw.length < 6) {
+      toast(t("E-Mail und Passwort (min. 6 Zeichen) nötig.")); return;
+    }
+    if (!window.confirm(t("Login für {name} mit {email} anlegen? Muss beim ersten Login das Passwort ändern.", { name: p.nickname, email: newLoginEmail.trim() }))) return;
+    setBusyLogin(true);
+    const { error } = await supabase.rpc("admin_create_login", {
+      p_player: p.player_id, p_email: newLoginEmail.trim(), p_new_password: newLoginPw,
+    });
+    setBusyLogin(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setNewLoginEmail(""); setNewLoginPw(""); setLoginPlayerId(null);
+    await loadLogins();
+    if (onReload) await onReload();
+    toast(t("Login angelegt – muss beim ersten Login geändert werden."));
+  };
   const setBlocked = async (p, blocked) => {
     const msg = blocked ? t("{name} blockieren?", { name: p.nickname }) : t("{name} entsperren?", { name: p.nickname });
     if (!window.confirm(msg)) return;
@@ -312,6 +346,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                     <div className="mem-panel">
                       <div className="mem-info">
                         {p.last_seen ? fmtDate(p.last_seen) : t("nie")}{noLogin ? " · " + t("ohne Login") : ""}
+                        {p.must_change_password ? " · " + t("Passwort-Reset ausstehend") : ""}
                         {inviter && <><br />{t("Eingeladen von {name}", { name: inviter.nickname })}</>}
                       </div>
                       {isSelf ? (
@@ -326,6 +361,38 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                           {!p.blocked
                             ? <button className="user-act danger" onClick={() => setBlocked(p, true)}>{t("Blockieren")}</button>
                             : <button className="user-act" onClick={() => setBlocked(p, false)}>{t("Entsperren")}</button>}
+                          {!noLogin ? (
+                            <button className="user-act" onClick={() => {
+                              setPwPlayerId(pwPlayerId === p.player_id ? null : p.player_id); setNewPw("");
+                            }}><Lock size={13} /> {t("Neues Passwort setzen")}</button>
+                          ) : (
+                            <button className="user-act" onClick={() => {
+                              setLoginPlayerId(loginPlayerId === p.player_id ? null : p.player_id);
+                              setNewLoginEmail(""); setNewLoginPw("");
+                            }}><Lock size={13} /> {t("Login einrichten")}</button>
+                          )}
+                          {pwPlayerId === p.player_id && (
+                            <div className="pw-box">
+                              <input type="text" placeholder={t("Neues Passwort (min. 6 Zeichen)")} value={newPw} autoComplete="off"
+                                onChange={(e) => setNewPw(e.target.value)} />
+                              <button className="btn primary" disabled={busyPw} onClick={() => setPlayerPassword(p)}>
+                                {busyPw ? t("Speichere ...") : t("Passwort speichern")}
+                              </button>
+                              <p className="hint">{t("Der Spieler muss dieses Passwort beim nächsten Login sofort durch ein eigenes ersetzen.")}</p>
+                            </div>
+                          )}
+                          {loginPlayerId === p.player_id && (
+                            <div className="pw-box">
+                              <input type="email" placeholder="E-Mail" value={newLoginEmail} autoComplete="off"
+                                onChange={(e) => setNewLoginEmail(e.target.value)} />
+                              <input type="text" placeholder={t("Passwort (min. 6 Zeichen)")} value={newLoginPw} autoComplete="off"
+                                onChange={(e) => setNewLoginPw(e.target.value)} />
+                              <button className="btn primary" disabled={busyLogin} onClick={() => createLogin(p)}>
+                                {busyLogin ? t("Lege an …") : t("Login anlegen")}
+                              </button>
+                              <p className="hint">{t("Übersteuert bewusst \"ohne Login\" – der Spieler muss dieses Passwort beim ersten Login sofort durch ein eigenes ersetzen.")}</p>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>

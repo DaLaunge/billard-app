@@ -62,10 +62,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [matchCount, setMatchCount] = useState(10);
+  const [hideTournament, setHideTournament] = useState(false);
 
   const filteredMatches = useMemo(() => {
     return [...matches]
       .filter((m) => {
+        if (hideTournament && m.tournament_id) return false;
         if (filterPlayer) {
           const isP1 = m.p1?.nickname === filterPlayer || m.p1b?.nickname === filterPlayer;
           const isP2 = m.p2?.nickname === filterPlayer || m.p2b?.nickname === filterPlayer;
@@ -84,13 +86,13 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         return true;
       })
       .sort((a, b) => new Date(b.played_at) - new Date(a.played_at));
-  }, [matches, filterPlayer, filterResult, filterDisc, dateFrom, dateTo]);
+  }, [matches, hideTournament, filterPlayer, filterResult, filterDisc, dateFrom, dateTo]);
 
   const visibleMatches = matchCount === "all" ? filteredMatches : filteredMatches.slice(0, matchCount);
-  const filtersActive = !!(filterPlayer || filterDisc !== "all" || dateFrom || dateTo);
+  const filtersActive = !!(filterPlayer || filterDisc !== "all" || dateFrom || dateTo || hideTournament);
   const resetFilters = () => {
     setFilterPlayer(""); setFilterResult("all"); setFilterDisc("all"); setDateFrom(""); setDateTo("");
-    setMatchCount(10);
+    setMatchCount(10); setHideTournament(false);
   };
 
   return (
@@ -138,6 +140,11 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
               </button>
             ))}
           </div>
+          <div className="chips small" style={{ marginBottom: 0 }}>
+            <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
+              {t("Turniermatches ausblenden")}
+            </button>
+          </div>
           <div className="date-range">
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label={t("Von")} />
             <span>{t("bis")}</span>
@@ -175,7 +182,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
                 <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
               ))}
             </span>
-            <span className="m-disc">{t(m.discipline)}</span>
+            <span className="m-disc">{t(m.discipline)}{m.tournament_id ? " · 🏆" : ""}</span>
             {m.run_log?.length > 0 && (
               <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
                 <FileText size={15} />

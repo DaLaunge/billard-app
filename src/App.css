@@ -965,7 +965,149 @@ button.id-card-head { cursor: pointer; }
   .match-score-step .sp-mini-log-label { flex: 1; }
   .match-score-step .sp-mini-log-score { flex: 0 0 auto; min-width: 32px; text-align: right;
     font-weight: 700; color: var(--ivory); font-variant-numeric: tabular-nums; }
+
+  /* Turniermodus: auf grossen Bildschirmen so breit wie moeglich (das
+     komplette Raster mit mehreren Runden nebeneinander braucht Platz) -
+     .turnier-layout ist nur ein Marker fuer :has(), kein eigenes Element. */
+  .phone.app .screen:has(.turnier-layout) { max-width: 1500px; }
 }
+
+/* ============================================================
+   TURNIERMODUS (Erstellen-Formular + Raster/Bracket-Ansicht)
+   Bewusst grosszuegige Touch-Ziele und viel Platz - Turniere werden oft
+   live am Spielfeld auf dem Handy bedient, oefter unter Zeitdruck als
+   der Rest der App. Am Handy scrollt jede Runde als eigene, per
+   scroll-snap einrastende Spalte horizontal durch (statt freiem
+   Scrollen) - fuehlt sich wie Wischen durch Karten an. Pinch-Zoom ist
+   nirgends in der App blockiert (kein user-scalable=no im viewport-Meta),
+   funktioniert hier also nativ mit.
+   ============================================================ */
+.turnier-form { display: flex; flex-direction: column; gap: 14px; }
+.turnier-form input[type="text"], .turnier-form select { font-size: 15px; padding: 12px 14px; }
+
+/* Teilnehmerauswahl (PlayerMultiPicker.jsx) - derselbe Suchfeld+Chips-Stil
+   wie PlayerPicker (.search-row/.cand-chip, siehe dort), aber als
+   Dauerhaft-offenes Raster mit Avataren statt eines zuklappenden Dropdowns -
+   man waehlt hier typischerweise viele Spieler nacheinander. */
+.pmp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px; max-height: 360px; overflow-y: auto; padding: 2px; }
+.pmp-chip { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--felt); cursor: pointer; text-align: left;
+  font-family: inherit; color: var(--ivory); }
+.pmp-chip:hover { background: var(--felt-3); }
+.pmp-chip.sel { border-color: var(--gold); background: var(--felt-3); }
+.pmp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.pmp-check { color: var(--gold); flex-shrink: 0; }
+
+.turnier-brackets { display: flex; flex-direction: column; gap: 18px; }
+.turnier-rounds { display: flex; gap: 14px; overflow-x: auto; padding: 4px 4px 14px;
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.turnier-round-col { flex: 0 0 82vw; max-width: 340px; scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: 10px; }
+.turnier-round-title { font-size: 13px; color: var(--ivory-dim); font-weight: 600; }
+
+.turnier-match-card { background: var(--felt-2); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.turnier-match-players { display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; font-size: 15.5px; }
+.turnier-match-players b { overflow-wrap: anywhere; }
+.turnier-match-score { font-size: 19px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif;
+  flex-shrink: 0; }
+.turnier-match-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.turnier-score-inputs { display: flex; align-items: center; gap: 10px; }
+.turnier-score-inputs input { width: 68px; height: 46px; font-size: 20px; text-align: center;
+  background: var(--felt); color: var(--ivory); border: 1px solid var(--line); border-radius: 10px;
+  font-family: 'Bricolage Grotesque', sans-serif; }
+.turnier-match-card .btn, .turnier-match-card .chip-btn { min-height: 42px; font-size: 14px; }
+.turnier-standings-row { padding: 9px 0; }
+
+@media (min-width: 900px) {
+  /* Ab Desktop-Breite lohnt sich kein Wisch-Scrollen mehr - alle Runden
+     einer Turnierphase nebeneinander, gleichmaessig auf die Breite verteilt. */
+  .turnier-rounds { overflow-x: visible; flex-wrap: wrap; padding: 4px 4px 4px; }
+  .turnier-round-col { flex: 1 1 260px; max-width: none; }
+  .pmp-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); max-height: 420px; }
+}
+
+/* Baumgrafik (zweite Ansicht neben der Liste oben, umschaltbar) - Boxen als
+   normale divs (absolut positioniert, siehe TurnierGraph.jsx), Verbinder-
+   linien als ein einzelnes SVG-Overlay darunter. Eigener horizontal UND
+   vertikal scrollbarer Rahmen statt scroll-snap - ein Turnierbaum ist eher
+   eine Karte zum Erkunden (auch per Pinch-Zoom) als Karten zum Durchwischen. */
+.turnier-view-toggle { margin-bottom: 10px; }
+.turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
+  border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch;
+  /* Einfingriges Scrollen/Wischen bleibt erlaubt, die native Zweifinger-
+     Pinch-Zoom-Geste des Browsers auf diesem Element aber nicht - die
+     uebernimmt TurnierGraph.jsx selbst per touchmove-Handler, siehe dort. */
+  touch-action: pan-x pan-y; }
+.turnier-graph { position: relative; transform-origin: 0 0; }
+.turnier-graph-svg { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+/* Zoom-Regler oberhalb des Baums - eigener, bewusst grosser/kontrastreicher
+   Regler (nicht nur Pinch-Zoom des ganzen Bildschirms, der auch Kopfzeile/
+   Navigation mitzoomen wuerde statt nur den Baum selbst) - Gold-Rahmen wie
+   die anderen interaktiven Elemente in dieser Ansicht, damit die Buttons
+   neben den vielen Boxen/Linien nicht untergehen. */
+.turnier-graph-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.turnier-graph-toolbar button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
+  border-radius: 10px; width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.turnier-graph-toolbar button:hover:not(:disabled) { background: var(--felt); }
+.turnier-graph-toolbar button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
+.turnier-graph-zoom-level { font-size: 14.5px; font-weight: 700; color: var(--ivory); min-width: 46px; text-align: center; }
+.turnier-graph-zoom-reset { width: auto !important; height: 44px; padding: 0 14px; font-size: 13px; font-weight: 600; }
+/* Offene Verbindungen dezent, bereits entschiedene (Sieger steht fest)
+   deutlich heller/dicker - macht den tatsaechlichen Turnierverlauf auf den
+   ersten Blick erkennbar statt eines gleichfoermigen Liniengewirrs. Weiche
+   Kurve statt rechtwinkliger Ecke liest sich klarer als "A fliesst zu B". */
+.turnier-graph-edge { fill: none; stroke: var(--ivory-dim); stroke-width: 2; opacity: 0.35; transition: opacity .15s; }
+.turnier-graph-edge.decided { stroke: var(--gold); stroke-width: 3; opacity: 0.85; }
+/* Abstiegs-Pfad (Verlierer eines Gewinnerbaum-Matches faellt in den
+   Verliererbaum) - gestrichelt, damit er sich von den "normalen"
+   Weiterkommen-Pfaden unterscheidet; rot statt gold sobald der Verlierer
+   feststeht, analog zur Sieg/Niederlage-Faerbung im Rest der App. */
+.turnier-graph-edge.drop { stroke-dasharray: 5 4; opacity: 0.25; }
+.turnier-graph-edge.drop.decided { stroke: var(--loss); stroke-width: 2.5; opacity: 0.7; }
+/* Klick auf eine Box: ihre direkten Verbinder leuchten hell auf, alles
+   andere tritt zurueck - bei vielen kreuzenden Linien sonst kaum
+   auseinanderzuhalten, welche Linie zu welcher Box gehoert. */
+.turnier-graph-edge.highlighted { stroke: var(--ivory); stroke-width: 3.5; opacity: 1; }
+.turnier-graph-edge.dim { opacity: 0.06; }
+.turnier-graph-section-label { position: absolute; left: 0; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.03em; }
+.turnier-graph-section-label.section--winners { color: var(--win); }
+.turnier-graph-section-label.section--losers { color: var(--loss); }
+.turnier-graph-section-label.section--final { color: var(--gold); }
+.turnier-graph-box { position: absolute; background: var(--felt-3); border: 1px solid var(--line);
+  border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center;
+  padding: 0; font-family: inherit; color: inherit; text-align: left; cursor: pointer; transition: opacity .15s; }
+/* Abschnittsfarbe als linker Streifen - Gewinnerbaum/Verliererbaum/Finale
+   auf einen Blick unterscheidbar, ohne die eigentliche Box-Farbe (Sieger-
+   Hervorhebung, "aktionsfaehig") zu ueberdecken. */
+.turnier-graph-box--winners { border-left: 4px solid var(--win); }
+.turnier-graph-box--losers { border-left: 4px solid var(--loss); }
+.turnier-graph-box--final { border-left: 4px solid var(--gold); }
+.turnier-graph-box.actionable { border: 2px solid var(--gold); box-shadow: 0 0 0 3px #D6A42522; }
+.turnier-graph-box.selected { background: var(--felt); border-color: var(--ivory); }
+.turnier-graph-box.connected { border-color: var(--ivory); box-shadow: 0 0 0 2px #F2EDE044; }
+.turnier-graph-box.dim { opacity: 0.3; }
+.turnier-graph-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 5px 10px; font-size: 13px; overflow: hidden; }
+.turnier-graph-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turnier-graph-row span:last-child { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
+  flex-shrink: 0; }
+.turnier-graph-row + .turnier-graph-row { border-top: 1px solid var(--line); }
+.turnier-graph-row.won { color: var(--gold); font-weight: 700; }
+.turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
+.turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
+
+/* Detail-Panel oberhalb des Baums fuer die per Klick ausgewaehlte Box -
+   bewusst im normalen Dokumentfluss (nicht als Pop-over ueber der Box),
+   damit es beim Scrollen/Zoomen im Baum nicht mitwandern muss. */
+.turnier-graph-detail { background: var(--felt-3); border: 1px solid var(--gold); border-radius: 14px;
+  padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+.turnier-graph-detail-close { background: none; border: none; color: var(--ivory-dim); cursor: pointer;
+  padding: 4px; border-radius: 8px; flex-shrink: 0; }
+.turnier-graph-detail-close:hover { color: var(--ivory); background: var(--felt); }
 
 /* ============================================================
    MATCH-PROTOKOLL (nachtraegliche Ansicht + Druck/PDF)
