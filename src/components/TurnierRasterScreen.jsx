@@ -152,12 +152,28 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       .sort((a, b) => (bracketRank[a.bracket] - bracketRank[b.bracket]) || (a.round - b.round));
   }, [tms]);
 
-  const openMatchScreen = (tm, asOrganizer) => {
+  // Nur fuer die Selbst-Meldung eines Spielers - die geht ueber den vollen
+  // MatchScreen-Flow (Siegchance-Vorschau, 14/1-Rechner). Die Turnierleitung
+  // meldet/korrigiert stattdessen direkt inline (organizerReport/editMatch
+  // unten) - schnelle Zaehler statt Navigation, siehe TurnierMatchActions.jsx.
+  const openMatchScreen = (tm) => {
     onReportTournamentMatch({
       tournamentMatchId: tm.id, discipline: tour.discipline,
-      reportAs: asOrganizer ? "organizer" : "self",
-      player1Id: tm.player1_id, player2Id: tm.player2_id, tableNumber: tm.table_number,
+      player1Id: tm.player1_id, player2Id: tm.player2_id,
     });
+  };
+
+  const organizerReport = async (tm, s1, s2, onDone) => {
+    setBusyId(tm.id);
+    const { error } = await supabase.rpc("tournament_organizer_report_match", {
+      p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Ergebnis als Turnierleitung eingetragen."));
+    onDone();
+    await load();
+    if (onReload) onReload();
   };
 
   const confirm = async (tm, ok) => {
@@ -264,7 +280,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
         <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
-          busyId={busyId} onOpenMatchScreen={openMatchScreen} onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
+          busyId={busyId} onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
+          onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
       </div>
     );
   };
@@ -442,7 +459,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
             nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
             busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onOpenMatchScreen={openMatchScreen} onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
+            onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
+            onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
         </section>
       ) : (
         <div className="turnier-brackets">

@@ -154,10 +154,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     }
     if (tournamentCtx) {
       setBusy(true);
-      const rpc = tournamentCtx.reportAs === "organizer" ? "tournament_organizer_report_match" : "tournament_report_match";
+      const rpc = "tournament_report_match";
       const params = {
-        p_tournament_match_id: tournamentCtx.tournamentMatchId,
-        ...(tournamentCtx.reportAs === "organizer" ? { p_score1: s1, p_score2: s2 } : { p_my_score: s1, p_opp_score: s2 }),
+        p_tournament_match_id: tournamentCtx.tournamentMatchId, p_my_score: s1, p_opp_score: s2,
         p_high_run_me: is141 ? hr[0] : null, p_high_run_opp: is141 ? hr[1] : null,
         p_deficit_me: is141 ? def[0] : null, p_deficit_opp: is141 ? def[1] : null,
         p_avg_me: is141 ? avg[0] : null, p_avg_opp: is141 ? avg[1] : null,
@@ -500,11 +499,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {isGhost && !ghostReady && (
             <p className="hint center">{t("Ein echtes Training dauert länger – bitte warte, bis der Timer abgelaufen ist.")}</p>
           )}
-          {!isGhost && <p className="hint center">{tournamentCtx?.reportAs === "organizer"
-            ? t("Als Turnierleitung eingetragen – gilt sofort als bestätigt.")
-            : mode === "double"
-              ? t("Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.")
-              : t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
+          {!isGhost && <p className="hint center">{mode === "double"
+            ? t("Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.")
+            : t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
         </div>
       )}
 
@@ -522,11 +519,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <h3>{t("Training beendet!")}</h3>
               <p>{t("Ergebnis gegen den Ghost:")} <b>{s1} : {s2}</b>.<br />
                 {t("Trainingsmatches werden nicht gespeichert und beeinflussen dein Rating nicht.")}</p>
-            </>
-          ) : tournamentCtx?.reportAs === "organizer" ? (
-            <>
-              <h3>{t("Eingetragen!")}</h3>
-              <p>{t("Als Turnierleitung eingetragen – gilt sofort als bestätigt.")}</p>
             </>
           ) : (
             <>

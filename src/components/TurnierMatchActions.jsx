@@ -1,6 +1,20 @@
 import { useState } from "react";
-import { Check, X, ShieldAlert, Pencil } from "lucide-react";
+import { Check, X, ShieldAlert, Pencil, Minus, Plus } from "lucide-react";
 import { t } from "../lib/i18n";
+
+// Kompakter +/- Zaehler fuer die schnelle Turnierleitungs-Eingabe (Melden/
+// Korrigieren) - bewusst kein grosser Zaehler wie im normalen MatchScreen,
+// der ist fuer die Spieler selbst gedacht (Siegchance-Vorschau, 14/1-
+// Protokoll). Die Turnierleitung soll nur schnell einen Endstand eintragen.
+function ScoreStepper({ value, onChange }) {
+  return (
+    <div className="turnier-stepper">
+      <button type="button" className="turnier-stepper-btn" onClick={() => onChange(Math.max(0, value - 1))} aria-label="minus"><Minus size={14} /></button>
+      <span className="turnier-stepper-val">{value}</span>
+      <button type="button" className="turnier-stepper-btn plus" onClick={() => onChange(value + 1)} aria-label="plus"><Plus size={14} /></button>
+    </div>
+  );
+}
 
 // Ermittelt, ob es fuer DIESEN Nutzer bei diesem Turniermatch ueberhaupt
 // etwas zu tun gibt - von der Grafikansicht genutzt, um nur tatsaechlich
@@ -32,10 +46,12 @@ export function tmScores(tm) {
 // eintragen, bestaetigen/ablehnen, erzwingen) - aus TurnierRasterScreen.jsx
 // herausgezogen, damit Listen- und Grafikansicht (TurnierGraph.jsx) exakt
 // dieselben Regeln und Buttons verwenden statt zweier gepflegter Kopien.
-export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onConfirm, onForceConfirm, onEditMatch }) {
+export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch }) {
   const [editing, setEditing] = useState(false);
-  const [es1, setEs1] = useState("");
-  const [es2, setEs2] = useState("");
+  const [es1, setEs1] = useState(0);
+  const [es2, setEs2] = useState(0);
+  const [os1, setOs1] = useState(0);
+  const [os2, setOs2] = useState(0);
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
   const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && !tm.match_id && tourStatus === "running";
@@ -52,23 +68,29 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
 
   const startEdit = () => {
     const sc = tmScores(tm);
-    setEs1(String(sc?.s1 ?? "")); setEs2(String(sc?.s2 ?? ""));
+    setEs1(sc?.s1 ?? 0); setEs2(sc?.s2 ?? 0);
     setEditing(true);
-  };
-  const saveEdit = () => {
-    const s1 = parseInt(es1, 10), s2 = parseInt(es2, 10);
-    if (Number.isNaN(s1) || Number.isNaN(s2) || s1 < 0 || s2 < 0 || s1 === s2) return;
-    onEditMatch(tm, s1, s2, () => setEditing(false));
   };
 
   return (
     <>
       {tm.match_id && !confirmed && <span className="hint" style={{ margin: 0 }}>{t("Wartet auf Bestätigung ...")}</span>}
       {manuallyEntered && <span className="hint" style={{ margin: 0 }}>{t("Manuell nachgetragen")}</span>}
-      {(canReport || canOrganizerReport) && (
-        <button className="btn primary" disabled={busyId === tm.id} onClick={() => onOpenMatchScreen(tm, canOrganizerReport)}>
-          {canReport ? t("Melden") : t("Als Turnierleitung eintragen")}
+      {canReport && (
+        <button className="btn primary" disabled={busyId === tm.id} onClick={() => onOpenMatchScreen(tm)}>
+          {t("Melden")}
         </button>
+      )}
+      {canOrganizerReport && (
+        <div className="turnier-quick-score">
+          <ScoreStepper value={os1} onChange={setOs1} />
+          <span>:</span>
+          <ScoreStepper value={os2} onChange={setOs2} />
+          <button className="btn primary" disabled={busyId === tm.id || os1 === os2}
+            onClick={() => onOrganizerReport(tm, os1, os2, () => { setOs1(0); setOs2(0); })}>
+            {t("Eintragen")}
+          </button>
+        </div>
       )}
       {canConfirm && (
         <div className="confirm-actions">
@@ -87,11 +109,14 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
         </button>
       )}
       {canEdit && editing && (
-        <div className="turnier-score-inputs">
-          <input type="number" inputMode="numeric" min="0" value={es1} onChange={(e) => setEs1(e.target.value)} />
+        <div className="turnier-quick-score">
+          <ScoreStepper value={es1} onChange={setEs1} />
           <span>:</span>
-          <input type="number" inputMode="numeric" min="0" value={es2} onChange={(e) => setEs2(e.target.value)} />
-          <button className="btn primary" disabled={busyId === tm.id} onClick={saveEdit}>{t("Speichern")}</button>
+          <ScoreStepper value={es2} onChange={setEs2} />
+          <button className="btn primary" disabled={busyId === tm.id || es1 === es2}
+            onClick={() => onEditMatch(tm, es1, es2, () => setEditing(false))}>
+            {t("Speichern")}
+          </button>
           <button className="btn ghost" disabled={busyId === tm.id} onClick={() => setEditing(false)}>{t("Abbrechen")}</button>
         </div>
       )}

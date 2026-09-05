@@ -634,20 +634,16 @@ export default function App() {
                   onInvite={() => navPush({ tab: "invite" })} />
               )}
               {tab === "match" && (() => {
-                // Turnier-Kontext: bei Selbst-Meldung bin "ich" weiterhin der echte
-                // Nutzer (Gegner = der jeweils andere Turnierspieler). Bei einer
-                // Turnierleitungs-Meldung ist keiner der beiden Spieler "ich" - dort
-                // wird player1 als "me" durchgereicht (rein fuers Anzeigen/Vorschau,
-                // die RPC selbst prueft die echte Berechtigung serverseitig), damit
-                // derselbe MatchScreen-Flow ohne Sonderfall funktioniert.
-                const tourOpp = matchTournamentCtx ? players.find((p) => p.id === (
-                  matchTournamentCtx.reportAs === "organizer" ? matchTournamentCtx.player2Id
-                    : (matchTournamentCtx.player1Id === player.id ? matchTournamentCtx.player2Id : matchTournamentCtx.player1Id)
-                )) : null;
-                const tourMe = matchTournamentCtx?.reportAs === "organizer"
-                  ? (players.find((p) => p.id === matchTournamentCtx.player1Id) || player) : player;
+                // Turnier-Kontext (Selbst-Meldung eines Spielers über den normalen
+                // MatchScreen-Flow) - Gegner ist der jeweils andere Turnierspieler.
+                // Die Turnierleitung meldet/korrigiert dagegen direkt inline im
+                // Turnierraster (schnelle Zähler statt vollem Match-Flow, siehe
+                // TurnierMatchActions.jsx) und landet nie hier.
+                const tourOpp = matchTournamentCtx
+                  ? players.find((p) => p.id === (matchTournamentCtx.player1Id === player.id ? matchTournamentCtx.player2Id : matchTournamentCtx.player1Id))
+                  : null;
                 return (
-                <MatchScreen me={tourMe} players={players} matches={matches} disciplines={disciplines}
+                <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onReload={loadData} initialOpp={matchTournamentCtx ? tourOpp : vsOpp} onChallenge={createChallenge}
                   catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}

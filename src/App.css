@@ -1021,6 +1021,16 @@ button.id-card-head { cursor: pointer; }
 .turnier-score-inputs input { width: 68px; height: 46px; font-size: 20px; text-align: center;
   background: var(--felt); color: var(--ivory); border: 1px solid var(--line); border-radius: 10px;
   font-family: 'Bricolage Grotesque', sans-serif; }
+/* Schnelle +/- Eingabe fuer die Turnierleitung (Melden/Korrigieren) - bewusst
+   kompakter als der grosse Zaehler im normalen MatchScreen, der ist fuer die
+   Spieler selbst gedacht. */
+.turnier-quick-score { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.turnier-stepper { display: flex; align-items: center; gap: 6px; }
+.turnier-stepper-val { min-width: 22px; text-align: center; font-size: 18px; font-weight: 800;
+  font-family: 'Bricolage Grotesque', sans-serif; }
+.turnier-stepper-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--felt); color: var(--ivory); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.turnier-stepper-btn.plus { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
 .turnier-match-card .btn, .turnier-match-card .chip-btn { min-height: 42px; font-size: 14px; }
 .turnier-standings-row { padding: 9px 0; }
 
