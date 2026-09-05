@@ -880,6 +880,7 @@ const TRANSLATIONS = {
     "Turniere anlegen ist aktuell nur für Admins möglich.": "Creating tournaments is currently admin-only.",
     "Ergebnis als Turnierleitung eingetragen.": "Result entered as organizer.",
     "Läuft": "Running",
+    "Turnier suchen …": "Search tournaments …",
     "Keine Turniere in diesem Filter.": "No tournaments match this filter.",
     "Ergebnis korrigieren": "Correct result",
     "Eintragen": "Enter",

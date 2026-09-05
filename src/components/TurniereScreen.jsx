@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Plus, Trophy, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Search, Trophy, X } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
@@ -17,6 +17,7 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "cancelled" 
 export default function TurniereScreen({ me, players, matches, colorOf, badgeOf, photoOf, toast, onOpenTournament, onBack }) {
   const [tournaments, setTournaments] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all"); // all | running | done - schnelles Finden bereits gespielter Turniere
+  const [query, setQuery] = useState(""); // Suche nach Turniername
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [format, setFormat] = useState("ko");
@@ -184,11 +185,18 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
         )}
 
         {tournaments != null && tournaments.length > 0 && (
-          <div className="chips small" style={{ marginBottom: 10 }}>
-            <button className={"chip" + (statusFilter === "all" ? " active" : "")} onClick={() => setStatusFilter("all")}>{t("Alle")}</button>
-            <button className={"chip" + (statusFilter === "running" ? " active" : "")} onClick={() => setStatusFilter("running")}>{t("Läuft")}</button>
-            <button className={"chip" + (statusFilter === "done" ? " active" : "")} onClick={() => setStatusFilter("done")}>{t("Beendet")}</button>
-          </div>
+          <>
+            <div className="search-row" style={{ marginBottom: 10 }}>
+              <Search size={16} className="mail-ico" />
+              <input placeholder={t("Turnier suchen …")} value={query} onChange={(e) => setQuery(e.target.value)} />
+              {query && <button className="clear-btn" onClick={() => setQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
+            </div>
+            <div className="chips small" style={{ marginBottom: 10 }}>
+              <button className={"chip" + (statusFilter === "all" ? " active" : "")} onClick={() => setStatusFilter("all")}>{t("Alle")}</button>
+              <button className={"chip" + (statusFilter === "running" ? " active" : "")} onClick={() => setStatusFilter("running")}>{t("Läuft")}</button>
+              <button className={"chip" + (statusFilter === "done" ? " active" : "")} onClick={() => setStatusFilter("done")}>{t("Beendet")}</button>
+            </div>
+          </>
         )}
 
         {tournaments == null ? (
@@ -196,8 +204,10 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
         ) : tournaments.length === 0 ? (
           <p className="hint">{t("Noch keine Turniere.")}</p>
         ) : (() => {
-          const filtered = tournaments.filter((tr) =>
-            statusFilter === "all" ? true : statusFilter === "running" ? tr.status === "running" : tr.status !== "running");
+          const q = query.trim().toLowerCase();
+          const filtered = tournaments
+            .filter((tr) => statusFilter === "all" ? true : statusFilter === "running" ? tr.status === "running" : tr.status !== "running")
+            .filter((tr) => !q || tr.name.toLowerCase().includes(q));
           return filtered.length === 0 ? (
             <p className="hint">{t("Keine Turniere in diesem Filter.")}</p>
           ) : filtered.map((tr) => (
