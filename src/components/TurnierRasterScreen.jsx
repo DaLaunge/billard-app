@@ -66,7 +66,10 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     const tally = {};
     roster.forEach((r) => { tally[r.player_id] = { wins: 0, losses: 0 }; });
     tms.forEach((tm) => {
-      if (!tm.winner_id) return;
+      // Nur die Gruppenphase zaehlt fuer die Tabelle - bei einem Turnier mit
+      // Playoff-Stufe (bracket='final') sollen dessen Ergebnisse hier nicht
+      // mit einfliessen, die Tabelle bildet nur die Gruppenphase ab.
+      if (tm.bracket !== "main" || !tm.winner_id) return;
       const loser = tm.player1_id === tm.winner_id ? tm.player2_id : tm.player1_id;
       if (tally[tm.winner_id]) tally[tm.winner_id].wins += 1;
       if (loser && tally[loser]) tally[loser].losses += 1;
