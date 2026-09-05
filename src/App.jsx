@@ -7,7 +7,7 @@ import "./App.css";
 import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
-import { hashColor } from "./lib/format";
+import { hashColor, initials } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
@@ -25,6 +25,7 @@ import InviteScreen from "./components/InviteScreen";
 import MatchProtokollScreen from "./components/MatchProtokollScreen";
 import TurniereScreen from "./components/TurniereScreen";
 import TurnierRasterScreen from "./components/TurnierRasterScreen";
+import Ball from "./components/Ball";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -54,6 +55,7 @@ export default function App() {
   // Screens mit noch leeren Arrays (z.B. Rangliste) kurz aufblitzen zu lassen.
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [celebrate, setCelebrate] = useState(null);  // neue Erfolge fürs Popup
+  const [tourneyReady, setTourneyReady] = useState(null); // bereite Turnierpaarung fürs Popup
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
   const [vsOpp, setVsOpp] = useState(null);
@@ -202,6 +204,54 @@ export default function App() {
       try { localStorage.setItem(key, JSON.stringify(earned)); } catch {}
     }
   }, [player, badgesByPlayer]);
+
+  // Turnier "du bist dran"-Popup: pollt (kein Realtime, siehe CLAUDE.md),
+  // ob fuer mich irgendwo eine Turnierpaarung bereitsteht (beide Spieler
+  // feststehen, noch kein Ergebnis gemeldet) - damit die Turnierleitung
+  // Spielpartien nicht manuell zuteilen/ankuendigen muss. Einmal gezeigte
+  // Paarungen merkt sich der Client geraeteweise in localStorage (wie
+  // seenBadges oben), damit das Popup nicht bei jedem Poll erneut aufploppt,
+  // solange noch kein Ergebnis gemeldet wurde.
+  const checkTourneyReady = useCallback(async () => {
+    if (!player) return;
+    const { data } = await supabase.from("tournament_matches")
+      .select("id, tournament_id, table_number, player1_id, player2_id, tournament:tournaments!tournament_matches_tournament_id_fkey(name, status), player1:players!tournament_matches_player1_id_fkey(nickname), player2:players!tournament_matches_player2_id_fkey(nickname)")
+      .eq("is_bye", false)
+      .is("match_id", null)
+      .or(`player1_id.eq.${player.id},player2_id.eq.${player.id}`);
+    const candidates = (data ?? []).filter((tm) => tm.player1_id && tm.player2_id && tm.tournament?.status === "running");
+    if (candidates.length === 0) return;
+    let dismissed = [];
+    try { dismissed = JSON.parse(localStorage.getItem("dismissedTourneyMatches:" + player.id) || "[]"); } catch { /* ignore */ }
+    const next = candidates.find((tm) => !dismissed.includes(tm.id));
+    if (!next) return;
+    setTourneyReady((prev) => prev || next);
+  }, [player]);
+
+  useEffect(() => {
+    if (!player) return;
+    checkTourneyReady();
+    const id = setInterval(checkTourneyReady, 20000);
+    const onVis = () => { if (document.visibilityState === "visible") checkTourneyReady(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+  }, [player, checkTourneyReady]);
+
+  const dismissTourneyReady = useCallback(() => {
+    if (!tourneyReady || !player) return;
+    try {
+      const key = "dismissedTourneyMatches:" + player.id;
+      const cur = JSON.parse(localStorage.getItem(key) || "[]");
+      localStorage.setItem(key, JSON.stringify([...cur, tourneyReady.id]));
+    } catch { /* ignore */ }
+    setTourneyReady(null);
+  }, [tourneyReady, player]);
+
+  const goToTourneyReady = useCallback(() => {
+    if (!tourneyReady) return;
+    navPush({ tab: "turnierdetail", tournamentId: tourneyReady.tournament_id });
+    dismissTourneyReady();
+  }, [tourneyReady, dismissTourneyReady, navPush]);
 
   // Fuer die Startseiten-Option "Zuletzt geoeffnet": merkt sich den zuletzt
   // besuchten Hauptmenuepunkt geraeteweise (nicht Unterseiten wie Match/
@@ -533,6 +583,31 @@ export default function App() {
                 </div>
               </div>
             )}
+            {tourneyReady && tab !== "match" && !celebrate && (() => {
+              const iAmP1 = tourneyReady.player1_id === player.id;
+              const oppName = (iAmP1 ? tourneyReady.player2 : tourneyReady.player1)?.nickname;
+              return (
+                <div className="celebrate-overlay" onClick={dismissTourneyReady}>
+                  <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
+                    <div className="celebrate-head">🎱 {t("Du bist dran!")}</div>
+                    <p className="hint" style={{ marginTop: -6, marginBottom: 14 }}>{tourneyReady.tournament?.name}</p>
+                    <div className="celebrate-item">
+                      <Ball color={colorOf(oppName)} label={initials(oppName)} badge={badgeOf(oppName)} photo={photoOf(oppName)} size={40} />
+                      <div className="celebrate-txt">
+                        <span className="celebrate-name">{t("gegen {name}", { name: oppName || "?" })}</span>
+                        <span className="celebrate-desc">
+                          {tourneyReady.table_number != null ? `${t("Tisch")} ${tourneyReady.table_number}` : t("Tisch wird noch zugeteilt")}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                      <button className="btn ghost" style={{ width: "auto", flex: 1, marginTop: 0 }} onClick={dismissTourneyReady}>{t("Später")}</button>
+                      <button className="btn primary" style={{ width: "auto", flex: 1 }} onClick={goToTourneyReady}>{t("Zum Turnier")}</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
             <main className={"content" + (tab === "match" ? " no-tabbar" : "")}>
               {tab === "rang" && (
                 <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
@@ -613,7 +688,7 @@ export default function App() {
               )}
               {tab === "turnierdetail" && tournamentId && (
                 <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} toast={toast}
-                  colorOf={colorOf} onReload={loadData} onBack={() => window.history.back()} />
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => window.history.back()} />
               )}
               <button className="refresh-btn" onClick={() => { loadData(); checkForUpdate(); }} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
