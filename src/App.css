@@ -1076,10 +1076,18 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-edge.highlighted { stroke: var(--ivory); stroke-width: 3.5; opacity: 1; }
 .turnier-graph-edge.dim { opacity: 0.06; }
 .turnier-graph-section-label { position: absolute; left: 0; font-size: 12px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.03em; }
+  text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; gap: 5px; }
 .turnier-graph-section-label.section--winners { color: var(--win); }
 .turnier-graph-section-label.section--losers { color: var(--loss); }
 .turnier-graph-section-label.section--final { color: var(--gold); }
+/* Vollflaechige, dezent eingefaerbte Zonen hinter Gewinner-/Verliererbaum -
+   der farbige Randstreifen an jeder einzelnen Box allein macht die Trennung
+   zwischen beiden Baeumen nicht deutlich genug, vor allem bei viel Abstand
+   zwischen den Boxen. Liegt hinter SVG+Boxen (siehe DOM-Reihenfolge) und
+   blockiert keine Klicks. Das Finale bekommt bewusst keine solche Flaeche. */
+.turnier-graph-band { position: absolute; left: 0; border-radius: 12px; pointer-events: none; }
+.turnier-graph-band.section--winners { background: #4CAF6E14; }
+.turnier-graph-band.section--losers { background: #D9614C14; }
 .turnier-graph-box { position: absolute; background: var(--felt-3); border: 1px solid var(--line);
   border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; justify-content: center;
   padding: 0; font-family: inherit; color: inherit; text-align: left; cursor: pointer; transition: opacity .15s; }
@@ -1088,7 +1096,14 @@ button.id-card-head { cursor: pointer; }
    Hervorhebung, "aktionsfaehig") zu ueberdecken. */
 .turnier-graph-box--winners { border-left: 4px solid var(--win); }
 .turnier-graph-box--losers { border-left: 4px solid var(--loss); }
-.turnier-graph-box--final { border-left: 4px solid var(--gold); }
+/* Finale bewusst als eigener Blickfang: groesser (Groesse kommt inline aus
+   dem Layout), dickerer Gold-Rahmen + sanftes Gluehen + warmer Hintergrund
+   statt nur dem duennen Streifen der anderen Boxen - siehe Nutzer-Feedback,
+   das Feld wirkte fuer das wichtigste Match zu unscheinbar. */
+.turnier-graph-box--final { border: 2px solid var(--gold); background: #D6A42518;
+  box-shadow: 0 0 0 4px #D6A4250F, 0 4px 18px #00000040; }
+.turnier-graph-box--final .turnier-graph-row { font-size: 15px; padding: 8px 14px; }
+.turnier-graph-final-icon { position: absolute; top: 6px; right: 8px; color: var(--gold); opacity: 0.55; }
 .turnier-graph-box.actionable { border: 2px solid var(--gold); box-shadow: 0 0 0 3px #D6A42522; }
 .turnier-graph-box.selected { background: var(--felt); border-color: var(--ivory); }
 .turnier-graph-box.connected { border-color: var(--ivory); box-shadow: 0 0 0 2px #F2EDE044; }
