@@ -13,8 +13,14 @@ const FINAL_BOX_W = 260;
 const FINAL_BOX_H = 100;
 const COL_GAP = 84;
 const FINAL_GAP = COL_GAP * 1.7;
-const ROW_GAP = 26;
-const SECTION_GAP = 56;
+// Bewusst knapper als frueher (war 26/56) - die Kollisionsaufloesung im
+// Layout (siehe unten) kann ueber mehrere Runden hinweg Luft aufsummieren,
+// vor allem im Verliererbaum mit seinen bis zu 6 Runden bei 8 Spielern.
+// Kleinere Werte halten den Baum kompakter, ohne dass Boxen/Linien enger
+// werden als sie selbst sind - die Kollisionsaufloesung verhindert
+// weiterhin jede Ueberlappung.
+const ROW_GAP = 14;
+const SECTION_GAP = 26;
 const LABEL_H = 26;
 const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 2;
