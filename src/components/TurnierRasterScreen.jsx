@@ -6,7 +6,7 @@ import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
 import Ball from "./Ball";
 import TurnierGraph from "./TurnierGraph";
-import TurnierMatchActions from "./TurnierMatchActions";
+import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
 
 const POLL_MS = 8000;
 
@@ -42,7 +42,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by, played_at)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, player1_id, player2_id, score1, score2, confirmed, reported_by, confirmed_by, played_at)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
@@ -132,9 +132,10 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     timeline.forEach((tm) => {
       if (y > pageH - 20) { doc.addPage(); y = 20; }
       const n1 = nameOf(tm.player1_id) || "?", n2 = nameOf(tm.player2_id) || "?";
+      const sc = tmScores(tm);
       doc.text(fmtDateTime(tm.match.played_at), marginX, y);
       doc.text(`${n1} – ${n2}`, marginX + 32, y, { maxWidth: pageW - marginX * 2 - 32 - 32 });
-      doc.text(`${tm.match.score1}:${tm.match.score2}`, pageW - marginX - 28, y);
+      doc.text(`${sc.s1}:${sc.s2}`, pageW - marginX - 28, y);
       y += 7;
     });
     if (timeline.length === 0) doc.text(t("Noch keine Partie in diesem Turnier."), marginX, y);
@@ -176,6 +177,20 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Erzwungen bestätigt."));
+    await load();
+    if (onReload) onReload();
+  };
+
+  const editMatch = async (tm, s1, s2, onDone) => {
+    if (!window.confirm(t("Bestätigtes Ergebnis wirklich auf {s1} : {s2} korrigieren?", { s1, s2 }))) return;
+    setBusyId(tm.id);
+    const { error } = await supabase.rpc("tournament_organizer_edit_match", {
+      p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Ergebnis korrigiert."));
+    onDone();
     await load();
     if (onReload) onReload();
   };
@@ -226,6 +241,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
 
   const renderMatch = (tm) => {
     const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
+    const sc = tmScores(tm);
     return (
       <div key={tm.id} className="turnier-match-card">
         <div className="turnier-match-meta">
@@ -239,7 +255,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
               <>
                 {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={22} />}
                 <b>{n1 || t("TBD")}</b>
-                <span className="turnier-match-score">{tm.match ? `${tm.match.score1}:${tm.match.score2}` : "–"}</span>
+                <span className="turnier-match-score">{sc ? `${sc.s1}:${sc.s2}` : "–"}</span>
                 <b>{n2 || t("TBD")}</b>
                 {n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={22} />}
               </>
@@ -248,7 +264,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
         <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
-          busyId={busyId} onOpenMatchScreen={openMatchScreen} onConfirm={confirm} onForceConfirm={forceConfirm} />
+          busyId={busyId} onOpenMatchScreen={openMatchScreen} onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
       </div>
     );
   };
@@ -325,14 +341,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           {timeline.map((tm) => {
             const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
             const won1 = tm.winner_id === tm.player1_id;
+            const sc = tmScores(tm);
             return (
               <div key={tm.id} className="stat-row turnier-standings-row">
                 <span className="m-date m-datetime">{fmtDateTime(tm.match.played_at)}</span>
                 <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={24} />
                 <span className="stat-name">
-                  {n1} <b style={won1 ? { color: "var(--win)" } : undefined}>{tm.match.score1}</b>
+                  {n1} <b style={won1 ? { color: "var(--win)" } : undefined}>{sc.s1}</b>
                   {" : "}
-                  <b style={!won1 ? { color: "var(--win)" } : undefined}>{tm.match.score2}</b> {n2}
+                  <b style={!won1 ? { color: "var(--win)" } : undefined}>{sc.s2}</b> {n2}
                 </span>
                 <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={24} />
               </div>
@@ -376,8 +393,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
                 {path.map((tm) => {
                   const isP1 = tm.player1_id === journeyPlayerId;
                   const oppName = nameOf(isP1 ? tm.player2_id : tm.player1_id);
-                  const myScore = tm.match ? (isP1 ? tm.match.score1 : tm.match.score2) : null;
-                  const oppScore = tm.match ? (isP1 ? tm.match.score2 : tm.match.score1) : null;
+                  const sc = tmScores(tm);
+                  const myScore = sc ? (isP1 ? sc.s1 : sc.s2) : null;
+                  const oppScore = sc ? (isP1 ? sc.s2 : sc.s1) : null;
                   const won = tm.winner_id === journeyPlayerId;
                   let statusText;
                   if (tm.is_bye) statusText = t("Freilos");
@@ -424,7 +442,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
             nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
             busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onOpenMatchScreen={openMatchScreen} onConfirm={confirm} onForceConfirm={forceConfirm} />
+            onOpenMatchScreen={openMatchScreen} onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
         </section>
       ) : (
         <div className="turnier-brackets">

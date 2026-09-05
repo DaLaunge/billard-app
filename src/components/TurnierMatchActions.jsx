@@ -1,4 +1,5 @@
-import { Check, X, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { Check, X, ShieldAlert, Pencil } from "lucide-react";
 import { t } from "../lib/i18n";
 
 // Ermittelt, ob es fuer DIESEN Nutzer bei diesem Turniermatch ueberhaupt
@@ -15,11 +16,26 @@ export function hasTurnierAction(tm, me, isOrganizer, tourStatus) {
   return canReport || canOrganizerReport || canConfirm || canForce;
 }
 
+// tm.match.score1/score2 stehen in der Reihenfolge von matches.player1_id/
+// player2_id - die kann von tournament_matches.player1_id/player2_id
+// abweichen (tournament_report_match traegt den Melder immer als player1
+// in matches ein, unabhaengig von seiner Rolle im Turnier). Diese Funktion
+// liefert die Punkte immer in tm.player1/tm.player2-Reihenfolge, damit
+// Anzeige und Korrektur-Formular nicht die Spieler vertauschen.
+export function tmScores(tm) {
+  if (!tm.match) return null;
+  const isP1 = tm.match.player1_id === tm.player1_id;
+  return isP1 ? { s1: tm.match.score1, s2: tm.match.score2 } : { s1: tm.match.score2, s2: tm.match.score1 };
+}
+
 // Aktionen fuer EIN Turniermatch (Ergebnis melden/als Turnierleitung
 // eintragen, bestaetigen/ablehnen, erzwingen) - aus TurnierRasterScreen.jsx
 // herausgezogen, damit Listen- und Grafikansicht (TurnierGraph.jsx) exakt
 // dieselben Regeln und Buttons verwenden statt zweier gepflegter Kopien.
-export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onConfirm, onForceConfirm }) {
+export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onConfirm, onForceConfirm, onEditMatch }) {
+  const [editing, setEditing] = useState(false);
+  const [es1, setEs1] = useState("");
+  const [es2, setEs2] = useState("");
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
   const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && !tm.match_id && tourStatus === "running";
@@ -27,7 +43,19 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
   const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
   const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
   const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
+  const canEdit = tm.match_id && confirmed && isOrganizer && !isMyMatch;
   const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
+
+  const startEdit = () => {
+    const sc = tmScores(tm);
+    setEs1(String(sc?.s1 ?? "")); setEs2(String(sc?.s2 ?? ""));
+    setEditing(true);
+  };
+  const saveEdit = () => {
+    const s1 = parseInt(es1, 10), s2 = parseInt(es2, 10);
+    if (Number.isNaN(s1) || Number.isNaN(s2) || s1 < 0 || s2 < 0 || s1 === s2) return;
+    onEditMatch(tm, s1, s2, () => setEditing(false));
+  };
 
   return (
     <>
@@ -48,6 +76,20 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
         <button className="btn ghost" disabled={busyId === tm.id} onClick={() => onForceConfirm(tm)}>
           <ShieldAlert size={15} /> {t("Als Turnierleitung erzwingen")}
         </button>
+      )}
+      {canEdit && !editing && (
+        <button className="btn ghost" disabled={busyId === tm.id} onClick={startEdit}>
+          <Pencil size={15} /> {t("Ergebnis korrigieren")}
+        </button>
+      )}
+      {canEdit && editing && (
+        <div className="turnier-score-inputs">
+          <input type="number" inputMode="numeric" min="0" value={es1} onChange={(e) => setEs1(e.target.value)} />
+          <span>:</span>
+          <input type="number" inputMode="numeric" min="0" value={es2} onChange={(e) => setEs2(e.target.value)} />
+          <button className="btn primary" disabled={busyId === tm.id} onClick={saveEdit}>{t("Speichern")}</button>
+          <button className="btn ghost" disabled={busyId === tm.id} onClick={() => setEditing(false)}>{t("Abbrechen")}</button>
+        </div>
       )}
     </>
   );
