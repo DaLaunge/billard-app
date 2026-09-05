@@ -13,6 +13,7 @@ import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 
 import LoginScreen from "./components/LoginScreen";
+import ForcePasswordScreen from "./components/ForcePasswordScreen";
 import NicknameScreen from "./components/NicknameScreen";
 import RanglisteScreen from "./components/RanglisteScreen";
 import LiveScreen from "./components/LiveScreen";
@@ -481,7 +482,7 @@ export default function App() {
 
   return (
     <div className="stage">
-      <div className={"phone" + (session && player ? " app" : "")}>
+      <div className={"phone" + (session && player && !player.must_change_password ? " app" : "")}>
         {!session && <LoginScreen />}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
@@ -499,9 +500,16 @@ export default function App() {
             onRegistered={(p) => { setPlayer(p); toast(t("Willkommen, {name}!", { name: p.nickname })); }} />
         )}
 
-        {session && player && !initialLoadDone && <div className="center-load">{t("Lade ...")}</div>}
+        {session && player && player.must_change_password && (
+          <ForcePasswordScreen
+            onDone={() => setPlayer({ ...player, must_change_password: false })}
+            onLogout={logout}
+          />
+        )}
 
-        {session && player && initialLoadDone && (
+        {session && player && !player.must_change_password && !initialLoadDone && <div className="center-load">{t("Lade ...")}</div>}
+
+        {session && player && !player.must_change_password && initialLoadDone && (
           <>
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>

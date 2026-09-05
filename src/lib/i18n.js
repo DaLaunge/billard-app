@@ -895,6 +895,14 @@ const TRANSLATIONS = {
     "Verkleinern": "Zoom out",
     "Vergrößern": "Zoom in",
     "Zoom zurücksetzen": "Reset zoom",
+    "Neues Passwort setzen": "Set new password",
+    "Neues Passwort für {name} setzen? Muss beim nächsten Login sofort geändert werden.": "Set a new password for {name}? Must be changed immediately at the next login.",
+    "Neues Passwort gesetzt – muss beim nächsten Login geändert werden.": "New password set – must be changed at the next login.",
+    "Passwort-Reset ausstehend": "Password reset pending",
+    "Der Spieler muss dieses Passwort beim nächsten Login sofort durch ein eigenes ersetzen.": "The player must replace this password with their own immediately at the next login.",
+    "Neues Passwort": "New password",
+    "Ein Admin hat dir ein neues Passwort vergeben. Lege jetzt dein eigenes fest, um fortzufahren.": "An admin has assigned you a new password. Set your own now to continue.",
+    "Passwort speichern": "Save password",
   },
 };
 export function setLangGlobal(l) {
