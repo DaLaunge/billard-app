@@ -912,6 +912,8 @@ const TRANSLATIONS = {
     "E-Mail, Passwort (min. 6 Zeichen) und Spielername (min. 2 Zeichen) nötig.": "Email, password (min. 6 characters) and player name (min. 2 characters) required.",
     "Nutzer angelegt – muss beim ersten Login das Passwort ändern.": "User created – must change the password at first login.",
     "Legt einen Login mit E-Mail, Passwort und Spielername an – sofort nutzbar, ohne dass eine Mail verschickt wird. Muss beim ersten Login das Passwort ändern.": "Creates a login with email, password and player name – usable immediately, no email sent. Must change the password at first login.",
+    "Diese E-Mail-Adresse ist noch nicht bestätigt.": "This email address hasn't been confirmed yet.",
+    "Anmeldung fehlgeschlagen – Passwort falsch oder noch keins gesetzt. Nutze den Magic-Link.": "Sign-in failed – wrong password or none set yet. Use the magic link instead.",
   },
 };
 export function setLangGlobal(l) {
