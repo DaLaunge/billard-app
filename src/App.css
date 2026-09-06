@@ -973,6 +973,11 @@ button.id-card-head { cursor: pointer; }
      komplette Raster mit mehreren Runden nebeneinander braucht Platz) -
      .turnier-layout ist nur ein Marker fuer :has(), kein eigenes Element. */
   .phone.app .screen:has(.turnier-layout) { max-width: 1500px; }
+  /* Turnierbericht: dieselbe Breite wie das Turnierraster selbst (Nutzer-
+     Feedback: die generische .screen-Deckelung bei 660px liess die
+     Bestenliste/den Baum viel zu schmal wirken) - .turnier-bericht-doc ist
+     wieder nur ein :has()-Marker. */
+  .phone.app .screen:has(.turnier-bericht-doc) { max-width: 1500px; }
 }
 
 /* ============================================================
@@ -1361,6 +1366,13 @@ button.id-card-head { cursor: pointer; }
 
 @media print {
   .no-print, .tabbar, .refresh-btn { display: none !important; }
+  /* .stage/.phone/.content sind fuers Bildschirm auf 100vh + overflow-y:auto
+     festgenagelt (die "Handy in der Mitte des Bildschirms"-Optik) - beim
+     Drucken darf das NICHT so bleiben, sonst wird nur der gerade sichtbare
+     gescrollte Ausschnitt gedruckt statt des kompletten Protokolls (Nutzer-
+     Feedback). height:auto + overflow:visible lassen den Inhalt auf seine
+     tatsaechliche Gesamthoehe wachsen, damit der Druckdialog alles erfasst. */
+  .stage, .phone, .content { height: auto !important; overflow: visible !important; }
   body, .phone.app, .screen, .protokoll-doc { background: #fff !important; color: #111 !important; max-width: none !important; }
   .protokoll-meta { color: #555 !important; }
   .protokoll-table-wrap { border-color: #ccc !important; overflow: visible; }
@@ -1385,11 +1397,14 @@ button.id-card-head { cursor: pointer; }
 /* Kompletter Turnierbericht (TurnierBerichtScreen.jsx) - baut auf dem
    .protokoll-doc-Grundgeruest auf, braucht aber mehr Breite als ein
    Einzelmatch-Protokoll (Bestenliste hat 6 Spalten, der Baum ist teils
-   sehr breit) - Nachfahren-Selektor mit zwei Klassen statt .protokoll-doc
-   allein zu ueberschreiben, damit die Spezifitaet unabhaengig von der
-   Regel-Reihenfolge im Stylesheet gewinnt (derselbe Bug-Typ wie schon bei
-   den Turniergraph-Mobile-Buttons, siehe Kommentare weiter oben). */
-.protokoll-doc.turnier-bericht-doc { max-width: 1100px; }
+   sehr breit) - die eigentliche Breitenbegrenzung kommt jetzt vom
+   .screen:has()-Override oben (wie beim Turnierraster selbst), hier nur
+   noch ein grosszuegiger Deckel gegen ausuferende Zeilenlaenge auf sehr
+   breiten Monitoren. Nachfahren-Selektor mit zwei Klassen statt
+   .protokoll-doc allein, damit die Spezifitaet unabhaengig von der Regel-
+   Reihenfolge im Stylesheet gewinnt (derselbe Bug-Typ wie schon bei den
+   Turniergraph-Mobile-Buttons, siehe Kommentare weiter oben). */
+.protokoll-doc.turnier-bericht-doc { max-width: 1440px; }
 .tb-section { margin-bottom: 28px; }
 .tb-section h3 { display: flex; align-items: center; gap: 7px; font-size: 15px; margin-bottom: 10px; }
 .tb-player-cell { display: flex; align-items: center; gap: 8px; }
