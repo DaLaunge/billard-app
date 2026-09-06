@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download, Maximize2, Minimize2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -37,6 +37,34 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const [busyId, setBusyId] = useState(null);
   const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
+  // Maximieren-Modus fuer die Liste/Grafik-Ansicht des Turnierrasters (nicht
+  // fuer Teilnehmer) - eigener CSS-Zustand (position:fixed ueber die ganze
+  // Seite) statt allein auf die native Fullscreen-API zu setzen, weil iOS
+  // Safari requestFullscreen() fuer normale Elemente NICHT unterstuetzt (nur
+  // fuer <video>) - ohne CSS-Fallback wuerde "Maximieren" am iPhone schlicht
+  // nichts tun. Versucht zusaetzlich best-effort echtes Vollbild (kein
+  // Browser-Chrome) dort, wo es geht (Desktop/Android) - fuers "auf einem
+  // Bildschirm/Beamer anzeigen" aus dem Nutzer-Feedback.
+  const viewContainerRef = useRef(null);
+  const [isMaximized, setIsMaximized] = useState(false);
+  useEffect(() => {
+    // Falls echtes Vollbild aktiv war und per Esc/System-UI verlassen wird,
+    // auch den maximierten CSS-Zustand zuruecksetzen.
+    const onChange = () => {
+      if (!document.fullscreenElement) setIsMaximized(false);
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  const toggleMaximize = () => {
+    if (isMaximized) {
+      if (document.fullscreenElement) document.exitFullscreen();
+      setIsMaximized(false);
+    } else {
+      setIsMaximized(true);
+      viewContainerRef.current?.requestFullscreen?.().catch(() => {});
+    }
+  };
   // Sicherheitsabfrage vor der ERSTEN Ergebnis-Erfassung (siehe organizerReport
   // unten) - eigenes Overlay im App-Layout statt window.confirm() (Nutzer-
   // Feedback), nach demselben modal-overlay/modal-box-Muster wie anderswo im
@@ -407,8 +435,24 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         <button className={"chip" + (viewMode === "players" ? " active" : "")} onClick={() => setViewMode("players")}>
           <Users size={14} /> {t("Teilnehmer")}
         </button>
+        {viewMode !== "players" && (
+          <button className="chip turnier-maximize-btn" onClick={toggleMaximize}
+            aria-label={t(isMaximized ? "Minimieren" : "Maximieren")}>
+            {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        )}
       </div>
 
+      <div ref={viewContainerRef} className={"turnier-view-container" + (isMaximized ? " is-maximized" : "")}>
+      {/* Der maximierte Zustand deckt per position:fixed die ganze Seite ab,
+          also auch die Umschalt-Chips oben mit dem "Minimieren"-Button darin -
+          ohne diesen schwebenden Extra-Button gaebe es keinen Weg mehr
+          zurueck. */}
+      {isMaximized && (
+        <button className="turnier-view-exit-btn" onClick={toggleMaximize} aria-label={t("Minimieren")}>
+          <Minimize2 size={18} />
+        </button>
+      )}
       {viewMode === "players" ? (
         <section className="stat-block">
           <h3><Users size={17} /> {t("Teilnehmer")}</h3>
@@ -509,6 +553,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           })}
         </div>
       )}
+      </div>
       </div>
       {pendingReport && (
         <div className="modal-overlay" onClick={() => setPendingReport(null)}>

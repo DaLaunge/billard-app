@@ -1070,6 +1070,25 @@ button.id-card-head { cursor: pointer; }
    vertikal scrollbarer Rahmen statt scroll-snap - ein Turnierbaum ist eher
    eine Karte zum Erkunden (auch per Pinch-Zoom) als Karten zum Durchwischen. */
 .turnier-view-toggle { margin-bottom: 10px; }
+.turnier-maximize-btn { margin-left: auto; }
+/* Maximieren-Modus (Liste/Grafik-Ansicht) - eigener CSS-Zustand statt
+   allein auf :fullscreen zu setzen, weil iOS Safari die Fullscreen-API fuer
+   normale Elemente nicht unterstuetzt (siehe TurnierRasterScreen.jsx) - so
+   funktioniert "Maximieren" ueberall, echtes chromeloses Vollbild kommt dort
+   als Bonus obendrauf, wo der Browser es unterstuetzt. position:fixed statt
+   nur groesser zu skalieren, damit auch der Rest der Seite (Kopfzeile,
+   andere Turnier-Abschnitte) wirklich verschwindet und der volle
+   Bildschirm fuers Raster/den Graphen zur Verfuegung steht. */
+.turnier-view-container.is-maximized { position: fixed; inset: 0; z-index: 200;
+  background: var(--felt); padding: 20px; overflow-y: auto; }
+.turnier-view-container.is-maximized .turnier-graph-wrap { max-height: calc(100vh - 170px); }
+/* Schwebender Ausstiegs-Button - der Rest der Seite (inkl. der Umschalt-
+   Chips mit dem eigentlichen Minimieren-Button) liegt im maximierten
+   Zustand unter dieser Flaeche und waere sonst nicht erreichbar. */
+.turnier-view-exit-btn { position: fixed; top: 16px; right: 16px; z-index: 5;
+  background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
+  border-radius: 10px; width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer; }
+.turnier-view-exit-btn:hover { background: var(--felt); }
 .turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
   border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch;
   /* Ohne Hoehenbegrenzung waechst dieser Bereich immer genau so hoch wie sein

@@ -904,6 +904,8 @@ const TRANSLATIONS = {
     "Disziplin": "Discipline",
     "Turnierbaum": "Tournament bracket",
     "Verkleinern": "Zoom out",
+    "Maximieren": "Maximize",
+    "Minimieren": "Minimize",
     "Vergrößern": "Zoom in",
     "Zoom zurücksetzen": "Reset zoom",
     "Längste Wartezeiten": "Longest wait times",
