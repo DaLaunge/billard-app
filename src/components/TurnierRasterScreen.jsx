@@ -198,7 +198,6 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   };
 
   const editMatch = async (tm, s1, s2, onDone) => {
-    if (!window.confirm(t("Bestätigtes Ergebnis wirklich auf {s1} : {s2} korrigieren?", { s1, s2 }))) return;
     setBusyId(tm.id);
     const { error } = await supabase.rpc("tournament_organizer_edit_match", {
       p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,

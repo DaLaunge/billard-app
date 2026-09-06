@@ -884,7 +884,6 @@ const TRANSLATIONS = {
     "Keine Turniere in diesem Filter.": "No tournaments match this filter.",
     "Ergebnis korrigieren": "Correct result",
     "Eintragen": "Enter",
-    "Bestätigtes Ergebnis wirklich auf {s1} : {s2} korrigieren?": "Really correct the confirmed result to {s1} : {s2}?",
     "Ergebnis korrigiert.": "Result corrected.",
     "Turnier-Ergebnis": "Tournament result",
     "Zurück zum Turnier": "Back to tournament",
