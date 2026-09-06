@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download, Maximize2, Minimize2 } from "lucide-react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -291,6 +291,22 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     await load();
   };
 
+  // Schranke (Nutzer-Feedback): erst mit dieser expliziten Bestaetigung durch
+  // Turnierleitung/Admin werden Ergebnis-Korrekturen gesperrt (siehe
+  // resultsLocked/tournament_confirm_results) - bis dahin bleiben Tippfehler
+  // jederzeit korrigierbar. Bewusst window.confirm() wie bei endEarly/
+  // deleteTournament (gleiche Kategorie: einmalige, irreversible Aktion ohne
+  // weitere Dateneingabe) statt eines eigenen Overlays.
+  const confirmResults = async () => {
+    if (!window.confirm(t("Turnier endgültig bestätigen? Danach sind keine Ergebnis-Korrekturen mehr möglich."))) return;
+    setBusyId("confirmResults");
+    const { error } = await supabase.rpc("tournament_confirm_results", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Turnier bestätigt - Korrekturen sind jetzt gesperrt."));
+    await load();
+  };
+
   const deleteTournament = async () => {
     if (!window.confirm(t("Dieses Turnier wirklich unwiderruflich löschen?"))) return;
     setBusyId("delete");
@@ -315,6 +331,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
 
   const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
   const canDeleteTournament = isOrganizer && !tms.some((tm) => tm.match_id);
+  const resultsLocked = !!tour.results_confirmed_at;
+  const canConfirmResults = isOrganizer && tour.status === "finished" && !resultsLocked;
   const groups = {};
   tms.forEach((tm) => { (groups[tm.bracket] ||= []).push(tm); });
   // Aus den TATSAECHLICH vorhandenen bracket-Werten ableiten statt aus einer
@@ -349,7 +367,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           </span>
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
-        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked}
           busyId={busyId} onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
           onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
       </div>
@@ -365,13 +383,21 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
         {formatLabel(tour.format)} · {t(tour.discipline)} · {tour.status === "finished" ? t("beendet") : t("läuft")}
+        {tour.status === "finished" && (resultsLocked
+          ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
+          : <> · {t("Korrekturen noch möglich")}</>)}
       </p>
 
-      {isOrganizer && (tour.status === "running" || canDeleteTournament) && (
+      {isOrganizer && (tour.status === "running" || canDeleteTournament || canConfirmResults) && (
         <div className="chips small" style={{ marginBottom: 10 }}>
           {tour.status === "running" && (
             <button className="btn ghost" disabled={busyId === "end"} onClick={endEarly}>
               <Flag size={15} /> {t("Turnier vorzeitig beenden")}
+            </button>
+          )}
+          {canConfirmResults && (
+            <button className="btn ghost" disabled={busyId === "confirmResults"} onClick={confirmResults}>
+              <ShieldCheck size={15} /> {t("Turnier bestätigen")}
             </button>
           )}
           {canDeleteTournament && (
@@ -573,7 +599,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
               next_match_id-Struktur - nur die Playoff-Stufe ('final') gehoert
               in den Baum, die Gruppentabelle steht schon oben. */}
           <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
-            nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+            nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked}
             busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
             onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
             onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch}

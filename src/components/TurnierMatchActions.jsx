@@ -27,7 +27,7 @@ export function ScoreStepper({ value, onChange, compact }) {
 // eintragen/bestaetigen/erzwingen/korrigieren) - von hasTurnierAction(), der
 // Komponente selbst UND TurnierGraph.jsx (Inline-Eingabe direkt in der Box)
 // genutzt, damit es nur eine einzige gepflegte Kopie dieser Bedingungen gibt.
-export function turnierActions(tm, me, isOrganizer, tourStatus) {
+export function turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked) {
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
   const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number != null && !tm.match_id && tourStatus === "running";
@@ -40,15 +40,19 @@ export function turnierActions(tm, me, isOrganizer, tourStatus) {
   // darf die Turnierleitung ein bereits bestaetigtes Ergebnis auch bei einem
   // eigenen Match korrigieren (kleiner Verein, oft selbst Turnierteilnehmer -
   // sonst gaebe es fuer einen Tippfehler im eigenen Match niemanden zum Fixen).
-  const canEdit = tm.match_id && confirmed && isOrganizer;
+  // resultsLocked: Turnierleitung/Admin hat den Turnierabschluss bestaetigt
+  // (siehe tournament_confirm_results/results_confirmed_at) - danach serverseitig
+  // ohnehin von tournament_organizer_edit_match abgelehnt, hier zusaetzlich
+  // ausgeblendet, damit der Button gar nicht erst als bedienbar erscheint.
+  const canEdit = tm.match_id && confirmed && isOrganizer && !resultsLocked;
   return { confirmed, isMyMatch, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit };
 }
 
 // Ermittelt, ob es fuer DIESEN Nutzer bei diesem Turniermatch ueberhaupt
 // etwas zu tun gibt - von der Grafikansicht genutzt, um nur tatsaechlich
 // bedienbare Boxen klickbar/hervorgehoben zu machen.
-export function hasTurnierAction(tm, me, isOrganizer, tourStatus) {
-  const a = turnierActions(tm, me, isOrganizer, tourStatus);
+export function hasTurnierAction(tm, me, isOrganizer, tourStatus, resultsLocked) {
+  const a = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked);
   return a.canReport || a.canOrganizerReport || a.canConfirm || a.canForce;
 }
 
@@ -68,13 +72,13 @@ export function tmScores(tm) {
 // eintragen, bestaetigen/ablehnen, erzwingen) - aus TurnierRasterScreen.jsx
 // herausgezogen, damit Listen- und Grafikansicht (TurnierGraph.jsx) exakt
 // dieselben Regeln und Buttons verwenden statt zweier gepflegter Kopien.
-export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch }) {
+export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, resultsLocked, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch }) {
   const [editing, setEditing] = useState(false);
   const [es1, setEs1] = useState(0);
   const [es2, setEs2] = useState(0);
   const [os1, setOs1] = useState(0);
   const [os2, setOs2] = useState(0);
-  const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit } = turnierActions(tm, me, isOrganizer, tourStatus);
+  const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit } = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked);
   const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
 
   const startEdit = () => {

@@ -41,7 +41,7 @@ const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers
 //   damit verbundenen Boxen hervor, alles andere wird gedaempft.
 // - Ein Zoom-Regler (Buttons, nicht nur Pinch-Zoom des ganzen Bildschirms -
 //   der wuerde auch Kopfzeile/Navigation mitzoomen statt nur den Baum).
-export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, colorOf, badgeOf, photoOf, isMaximized, onToggleMaximize }) {
+export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, resultsLocked, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, colorOf, badgeOf, photoOf, isMaximized, onToggleMaximize }) {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(zoom);
@@ -66,7 +66,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   const originalScoreRef = useRef(null);
   useEffect(() => {
     const m = selectedId ? matches.find((mm) => mm.id === selectedId) : null;
-    if (m && turnierActions(m, me, isOrganizer, tourStatus).canEdit) {
+    if (m && turnierActions(m, me, isOrganizer, tourStatus, resultsLocked).canEdit) {
       const sc = tmScores(m);
       originalScoreRef.current = { s1: sc?.s1 ?? 0, s2: sc?.s2 ?? 0 };
       setDraft(originalScoreRef.current);
@@ -93,7 +93,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
       if (!m) return;
       const d = draftRef.current;
       if (d.s1 === d.s2) return;
-      const a = turnierActions(m, me, isOrganizer, tourStatus);
+      const a = turnierActions(m, me, isOrganizer, tourStatus, resultsLocked);
       if (a.canOrganizerReport) {
         onOrganizerReport(m, d.s1, d.s2, () => {});
       } else if (a.canEdit) {
@@ -309,7 +309,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   // Gegner steht noch nicht fest), waere das Popover nur eine leere Huelle
   // mit denselben Namen, die schon in der Box selbst stehen - dann lieber
   // gar kein Popover statt eines nutzlosen Menues (Nutzer-Feedback).
-  const selectedActions = selected ? turnierActions(selected, me, isOrganizer, tourStatus) : null;
+  const selectedActions = selected ? turnierActions(selected, me, isOrganizer, tourStatus, resultsLocked) : null;
   const selectedInline = !!(selectedActions?.canOrganizerReport || selectedActions?.canEdit);
   const selectedHasPopoverContent = !!(selectedActions && !selectedInline && (
     selectedActions.waitingForTable || (selected.match_id && !selected.match?.confirmed)
@@ -477,7 +477,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               const boxW = isFinal ? FINAL_BOX_W : BOX_W;
               const baseBoxH = isFinal ? FINAL_BOX_H : BOX_H;
               const isSelected = selectedId === m.id;
-              const actions = turnierActions(m, me, isOrganizer, tourStatus);
+              const actions = turnierActions(m, me, isOrganizer, tourStatus, resultsLocked);
               const actionable = actions.canReport || actions.canOrganizerReport || actions.canConfirm || actions.canForce;
               // Turnierleitungs-Eingabe (Melden ODER Korrigieren) passiert direkt
               // in der Box selbst statt in einem zusaetzlichen Menue darunter
@@ -522,7 +522,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                   </button>
                 </div>
                 {selected.table_number != null && <span className="m-disc">{t("Tisch")} {selected.table_number}</span>}
-                <TurnierMatchActions tm={selected} me={me} isOrganizer={isOrganizer} tourStatus={tourStatus}
+                <TurnierMatchActions tm={selected} me={me} isOrganizer={isOrganizer} tourStatus={tourStatus} resultsLocked={resultsLocked}
                   busyId={busyId} onOpenMatchScreen={onOpenMatchScreen} onOrganizerReport={onOrganizerReport}
                   onConfirm={onConfirm} onForceConfirm={onForceConfirm} onEditMatch={onEditMatch} />
               </div>
