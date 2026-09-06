@@ -1373,6 +1373,11 @@ button.id-card-head { cursor: pointer; }
      Feedback). height:auto + overflow:visible lassen den Inhalt auf seine
      tatsaechliche Gesamthoehe wachsen, damit der Druckdialog alles erfasst. */
   .stage, .phone, .content { height: auto !important; overflow: visible !important; }
+  /* .content reserviert normalerweise 92px Platz fuer die (jetzt versteckte)
+     Tabbar - bleibt das stehen, zeigt der Ausdruck einen leeren weissen
+     Bereich mit dem .phone-Schlagschatten am Seitenende (Nutzer-Feedback:
+     sah wie eine leere Box auf Seite 2 aus). */
+  .content { padding-bottom: 0 !important; }
   body, .phone.app, .screen, .protokoll-doc { background: #fff !important; color: #111 !important; max-width: none !important; }
   .protokoll-meta { color: #555 !important; }
   .protokoll-table-wrap { border-color: #ccc !important; overflow: visible; }
@@ -1410,7 +1415,24 @@ button.id-card-head { cursor: pointer; }
 .tb-player-cell { display: flex; align-items: center; gap: 8px; }
 .tb-log-toggle { display: flex; gap: 8px; }
 .chip-btn.sel { border-color: var(--gold); color: var(--gold); background: #D6A42518; }
-.tb-log-match { margin-bottom: 22px; padding-bottom: 6px; break-inside: avoid; page-break-inside: avoid; }
+/* Zebra-Streifen + Podium-Hervorhebung (Nutzer-Feedback: "muss auch optisch
+   ansprechend sein") - Zeilen abwechselnd leicht abgesetzt, damit lange
+   Tabellen (Bestenliste, Match-Log) auch auf Papier auf einen Blick lesbar
+   bleiben, statt einer reinen Linien-Wueste. */
+.tb-standings-table tbody tr:nth-child(even) td,
+.tb-log-table tbody tr:nth-child(even) td { background: var(--felt-2); }
+.tb-podium-row td { background: #D6A42512; }
+.tb-podium-row:nth-child(even) td { background: #D6A4251E; }
+/* Platz-Abzeichen: Gold/Silber/Bronze fuer die ersten drei Plaetze, sonst
+   schlichter Text - macht das Ergebnis auf einen Blick erfassbar statt nur
+   "1./2./3." im Fliesstext. */
+.tb-rank { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+.tb-rank--1 { background: #D6A42530; color: #D6A425; }
+.tb-rank--2 { background: #C7CDD630; color: #C7CDD6; }
+.tb-rank--3 { background: #CD7F3230; color: #CD7F32; }
+.tb-log-match { margin-bottom: 18px; padding: 14px 16px 8px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--felt-2); break-inside: avoid; page-break-inside: avoid; }
 .tb-log-match-head { font-size: 14px; margin-bottom: 6px; }
 .tb-log-match-head b { color: var(--gold); }
 .tb-bracket-section { break-inside: avoid; }
@@ -1450,4 +1472,15 @@ button.id-card-head { cursor: pointer; }
   .tb-edge.drop.decided { stroke: #6B1F24 !important; }
   .tb-section-label { fill: #555 !important; }
   .tb-section-label.section--final { fill: #8A6200 !important; }
+  .tb-standings-table tbody tr:nth-child(even) td,
+  .tb-log-table tbody tr:nth-child(even) td { background: #f7f7f7 !important; }
+  .tb-podium-row td { background: #FBF3DF !important; }
+  .tb-podium-row:nth-child(even) td { background: #F7ECD2 !important; }
+  .tb-rank, .tb-standings-table thead th, .tb-log-table thead th, .tb-log-match {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .tb-rank--1 { background: #F5E3B3 !important; color: #8A6200 !important; }
+  .tb-rank--2 { background: #E3E6EA !important; color: #55606B !important; }
+  .tb-rank--3 { background: #EBD2B8 !important; color: #8A4E1E !important; }
+  .tb-log-match { background: #fafafa !important; border-color: #ddd !important; }
 }

@@ -178,8 +178,14 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
                     const n = nameOf(row.player_id);
                     const a = aggByPlayer[row.player_id] || { wins: 0, losses: 0, gamesFor: 0, gamesAgainst: 0, tableMs: 0 };
                     return (
-                      <tr key={row.player_id}>
-                        <td>{i === 0 ? `${placement}.` : ""}{row.tied_count > 1 && i === 0 ? ` (${t("geteilt")})` : ""}</td>
+                      <tr key={row.player_id} className={placement <= 3 ? "tb-podium-row" : undefined}>
+                        <td>
+                          {i === 0 && (
+                            <span className={"tb-rank" + (placement <= 3 ? ` tb-rank--${placement}` : "")}>
+                              {placement}.{row.tied_count > 1 ? ` ${t("geteilt")}` : ""}
+                            </span>
+                          )}
+                        </td>
                         <td className="tb-player-cell">
                           {n && <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={22} />}
                           {n || "?"}
