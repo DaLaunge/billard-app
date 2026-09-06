@@ -1146,16 +1146,21 @@ button.id-card-head { cursor: pointer; }
    eigenen, breiten Toolbar-Zeile darunter - schafft dort Platz fuer die
    angepinnte Box (Nutzer-Feedback). Nur 3 kleine Icon-Buttons ohne
    Beschriftung (auch keine Prozentzahl mehr). */
-/* Ueberschrift und Minimieren-Button werden aus dem normalen Fluss
-   herausgenommen (absolut an den Raendern), damit die Zoom-Buttons als
-   einziges verbleibendes Flex-Kind ECHT mittig sitzen (Nutzer-Feedback) -
-   unabhaengig davon, ob rechts gerade ein Minimieren-Button steht oder
-   nicht (nur im maximierten Zustand vorhanden, siehe TurnierGraph.jsx). */
-.turnier-graph-header { position: relative; display: flex; justify-content: center;
-  align-items: center; min-height: 34px; gap: 10px; }
-.turnier-graph-header h3 { position: absolute; left: 0; top: 50%; transform: translateY(-50%); margin: 0; }
-.turnier-graph-header-end { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
-.turnier-graph-zoom-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+/* Grid statt absoluter Positionierung: Ueberschrift/Minimieren bekommen
+   gleich grosse Aussenspalten (1fr), die Zoom-Buttons sitzen dazwischen
+   (auto-Spalte, ueber justify-self:center). Echte Grid-Spalten reservieren
+   dabei automatisch Platz nach tatsaechlicher Inhaltsbreite (dynamisch fuer
+   jede Bildschirmgroesse) statt wie bei position:absolute komplett zu
+   ignorieren, wie breit die Ueberschrift ist - eine reine Zentrierung ohne
+   Ruecksicht darauf ueberlappte auf schmalen Handy-Breiten mit dem
+   Schriftzug "Turnierbaum" (Nutzer-Feedback, per Test bei 320px bestaetigt).
+   min-width:0 + Ellipsis auf der Ueberschrift als letzte Absicherung, falls
+   selbst die eigene Spalte auf sehr schmalen Geraeten noch zu knapp ist. */
+.turnier-graph-header { display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; min-height: 34px; gap: 8px; }
+.turnier-graph-header h3 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turnier-graph-header-end { justify-self: end; min-width: 0; }
+.turnier-graph-zoom-controls { justify-self: center; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .turnier-graph-zoom-controls button, .turnier-graph-minimize-btn {
   background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
   border-radius: 9px; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
