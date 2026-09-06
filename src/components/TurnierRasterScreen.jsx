@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock } from "lucide-react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -7,24 +7,12 @@ import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
 import Ball from "./Ball";
 import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
+import TurnierBerichtScreen from "./TurnierBerichtScreen";
+import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout";
 
 const POLL_MS = 8000;
 
-const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
-const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers" ? t("Verliererbaum") : b === "final" ? t("Finale") : t("Raster"));
 const bracketRank = { main: 0, winners: 0, losers: 1, final: 2 };
-// Die 'final'-Sektion kann jetzt mehrere Runden haben (Playoff-Stufe nach
-// Jeder-gegen-jeden bzw. verkuerztes Doppel-K.O. mit bis zu 8 Finalisten,
-// siehe Migration 2026-09-06) - Runden werden nach Abstand zum eigentlichen
-// Finale benannt statt generisch "Runde n".
-const finalRoundLabel = (round, totalRounds) => {
-  const fromEnd = totalRounds - round;
-  if (fromEnd <= 0) return t("Finale");
-  if (fromEnd === 1) return t("Halbfinale");
-  if (fromEnd === 2) return t("Viertelfinale");
-  if (fromEnd === 3) return t("Achtelfinale");
-  return `${t("Runde")} ${round}`;
-};
 
 // Turnierraster: zeigt ein einzelnes Turnier an, laedt seine Daten selbst
 // und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
@@ -62,12 +50,16 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   // standings() in der DB) - nur relevant/geladen, sobald das Turnier
   // beendet ist, siehe load() unten.
   const [finalStandings, setFinalStandings] = useState(null);
+  // Kompletter Turnierbericht (PDF/Druck, Nutzer-Feedback) - lokaler
+  // Screen-Swap statt eigenem App.jsx-Tab (wie beim Maximieren-Modus oben),
+  // da der Bericht rein aus bereits geladenen tms/finalStandings besteht.
+  const [showReport, setShowReport] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, player1_id, player2_id, score1, score2, confirmed, reported_by, confirmed_by, played_at)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, player1_id, player2_id, score1, score2, confirmed, reported_by, confirmed_by, played_at, discipline, run_log, high_run1, high_run2, avg1, avg2)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
@@ -329,6 +321,14 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     );
   }
 
+  if (showReport) {
+    return (
+      <TurnierBerichtScreen tour={tour} tms={tms} finalStandings={finalStandings}
+        nameOf={nameOf} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+        onBack={() => setShowReport(false)} />
+    );
+  }
+
   const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
   const canDeleteTournament = isOrganizer && !tms.some((tm) => tm.match_id);
   const resultsLocked = !!tour.results_confirmed_at;
@@ -405,6 +405,14 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
               <Trash2 size={15} /> {t("Turnier löschen")}
             </button>
           )}
+        </div>
+      )}
+
+      {tour.status === "finished" && (
+        <div className="chips small" style={{ marginBottom: 10 }}>
+          <button className="btn ghost" onClick={() => setShowReport(true)}>
+            <FileText size={15} /> {t("Kompletter Turnierbericht")}
+          </button>
         </div>
       )}
 

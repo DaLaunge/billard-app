@@ -1381,3 +1381,58 @@ button.id-card-head { cursor: pointer; }
   .protokoll-tag.t-foul, .protokoll-tag.t-breakfoul { background: #F8DCDC !important; color: #6B1F24 !important; }
   .protokoll-tag.t-miss { background: #EAEAEA !important; color: #444 !important; }
 }
+
+/* Kompletter Turnierbericht (TurnierBerichtScreen.jsx) - baut auf dem
+   .protokoll-doc-Grundgeruest auf, braucht aber mehr Breite als ein
+   Einzelmatch-Protokoll (Bestenliste hat 6 Spalten, der Baum ist teils
+   sehr breit) - Nachfahren-Selektor mit zwei Klassen statt .protokoll-doc
+   allein zu ueberschreiben, damit die Spezifitaet unabhaengig von der
+   Regel-Reihenfolge im Stylesheet gewinnt (derselbe Bug-Typ wie schon bei
+   den Turniergraph-Mobile-Buttons, siehe Kommentare weiter oben). */
+.protokoll-doc.turnier-bericht-doc { max-width: 1100px; }
+.tb-section { margin-bottom: 28px; }
+.tb-section h3 { display: flex; align-items: center; gap: 7px; font-size: 15px; margin-bottom: 10px; }
+.tb-player-cell { display: flex; align-items: center; gap: 8px; }
+.tb-log-toggle { display: flex; gap: 8px; }
+.chip-btn.sel { border-color: var(--gold); color: var(--gold); background: #D6A42518; }
+.tb-log-match { margin-bottom: 22px; padding-bottom: 6px; break-inside: avoid; page-break-inside: avoid; }
+.tb-log-match-head { font-size: 14px; margin-bottom: 6px; }
+.tb-log-match-head b { color: var(--gold); }
+.tb-bracket-section { break-inside: avoid; }
+.tb-bracket-svg { width: 100%; height: auto; overflow: visible; }
+.tb-band { fill: transparent; }
+.tb-band--winners { fill: #4CAF6E14; }
+.tb-band--losers { fill: #D9614C14; }
+.tb-edge { fill: none; stroke: var(--ivory-dim); stroke-width: 2; opacity: 0.35; }
+.tb-edge.decided { stroke: var(--gold); stroke-width: 3; opacity: 0.85; }
+.tb-edge.drop { stroke-dasharray: 5 4; opacity: 0.25; }
+.tb-edge.drop.decided { stroke: var(--loss); stroke-width: 2.5; opacity: 0.7; }
+.tb-section-label { fill: var(--ivory-dim); font-size: 12px; }
+.tb-section-label.section--final { fill: var(--gold); }
+.tb-box { fill: var(--felt-3); stroke: var(--line); stroke-width: 1; }
+.tb-box--winners { stroke: var(--win); stroke-width: 2; }
+.tb-box--losers { stroke: var(--loss); stroke-width: 2; }
+.tb-box--final { stroke: var(--gold); stroke-width: 2; }
+.tb-box-divider { stroke: var(--line); stroke-width: 1; }
+.tb-name { fill: var(--ivory); font-size: 13px; dominant-baseline: middle; }
+.tb-score { fill: var(--ivory-dim); font-size: 13px; font-weight: 700; dominant-baseline: middle; }
+.tb-name.tb-won, .tb-score.tb-won { fill: var(--gold); font-weight: 700; }
+
+@media print {
+  .protokoll-doc.turnier-bericht-doc { max-width: none !important; }
+  .tb-band--winners { fill: #DCF5E4 !important; }
+  .tb-band--losers { fill: #F8DCDC !important; }
+  .tb-box { fill: #fff !important; stroke: #ccc !important; }
+  .tb-box--winners { stroke: #1E5B3A !important; }
+  .tb-box--losers { stroke: #6B1F24 !important; }
+  .tb-box--final { stroke: #B8860B !important; }
+  .tb-box-divider { stroke: #ddd !important; }
+  .tb-name { fill: #111 !important; }
+  .tb-score { fill: #333 !important; }
+  .tb-name.tb-won, .tb-score.tb-won { fill: #8A6200 !important; }
+  .tb-edge { stroke: #999 !important; }
+  .tb-edge.decided { stroke: #B8860B !important; }
+  .tb-edge.drop.decided { stroke: #6B1F24 !important; }
+  .tb-section-label { fill: #555 !important; }
+  .tb-section-label.section--final { fill: #8A6200 !important; }
+}
