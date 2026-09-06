@@ -93,6 +93,22 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
   // (Nutzer-Wunsch: beide Detailgrade zur Wahl stellen, mit Erklaerung).
   const [logDetail, setLogDetail] = useState("kompakt"); // "kompakt" | "voll"
 
+  // Browser schlagen im Druckdialog (Ziel "Als PDF speichern") den
+  // Dateinamen aus document.title vor - der ist sonst ueberall einfach
+  // "Break & Rank" (siehe index.html), Nutzer-Feedback wollte stattdessen
+  // Datum + Turniername. Wird NUR fuers Drucken kurz umgesetzt und danach
+  // wieder zurueckgesetzt (afterprint statt festem Timeout, damit es auch
+  // bei einem langsamen/abgebrochenen Druckdialog zuverlaessig zurueckspringt).
+  const printReport = () => {
+    const prevTitle = document.title;
+    const d = new Date(tour.finished_at || tour.created_at);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    document.title = `${iso}_${tour.name.replace(/[^\w\-]+/g, "_")}`;
+    const restore = () => { document.title = prevTitle; window.removeEventListener("afterprint", restore); };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  };
+
   // Pro Spieler ueber alle bestaetigten Turniermatches aggregiert - Games
   // gewonnen/verloren aus tmScores() (bereits in tm.player1/2-Reihenfolge),
   // Zeit am Tisch aus tableTimeMs() oben.
@@ -247,7 +263,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
           </section>
         )}
 
-        <button className="btn primary no-print" onClick={() => window.print()}>
+        <button className="btn primary no-print" onClick={printReport}>
           <Printer size={16} /> {t("Als PDF speichern")}
         </button>
       </div>
