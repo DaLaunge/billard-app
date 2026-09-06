@@ -304,9 +304,18 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
 
   const selected = selectedId ? layout.byId[selectedId] : null;
   // Fuer canOrganizerReport/canEdit zeigt die Box die Eingabe inline in sich
-  // selbst (siehe unten) - das Popover ist in diesem Fall ueberfluessig.
+  // selbst (siehe unten) - das Popover ist in diesem Fall ueberfluessig. Und
+  // wenn es fuer diesen Nutzer ueberhaupt nichts zu tun/anzuzeigen gibt (z.B.
+  // Gegner steht noch nicht fest), waere das Popover nur eine leere Huelle
+  // mit denselben Namen, die schon in der Box selbst stehen - dann lieber
+  // gar kein Popover statt eines nutzlosen Menues (Nutzer-Feedback).
   const selectedActions = selected ? turnierActions(selected, me, isOrganizer, tourStatus) : null;
   const selectedInline = !!(selectedActions?.canOrganizerReport || selectedActions?.canEdit);
+  const selectedHasPopoverContent = !!(selectedActions && !selectedInline && (
+    selectedActions.waitingForTable || (selected.match_id && !selected.match?.confirmed)
+    || (selected.match?.reported_by && selected.match.reported_by === selected.match.confirmed_by)
+    || selectedActions.canReport || selectedActions.canConfirm || selectedActions.canForce
+  ));
 
   // Direkt an die Auswahl angeschlossene Verbinder + die damit verbundenen
   // Boxen - alles ausserhalb davon wird gedaempft (siehe .dim in App.css),
@@ -339,7 +348,15 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         {zoom !== 1 && <button type="button" className="turnier-graph-zoom-reset" onClick={() => setZoom(1)}>{t("Zoom zurücksetzen")}</button>}
       </div>
 
-      <div className="turnier-graph-wrap" ref={wrapRef}>
+      <div className="turnier-graph-wrap" ref={wrapRef}
+        onClick={(e) => {
+          // Klick auf ein freies Feld im Graphen (nicht auf eine Box/das
+          // Popover) deselektiert die aktuelle Auswahl - speichert dabei
+          // automatisch eine laufende Turnierleitungs-Eingabe, siehe den
+          // Cleanup-Effekt oben (Nutzer-Feedback: Speichern soll auch per
+          // Klick daneben funktionieren, nicht nur durch eine andere Box).
+          if (!e.target.closest(".turnier-graph-box, .turnier-graph-popover")) setSelectedId(null);
+        }}>
         <div style={{ width: layout.totalWidth * zoom, height: layout.totalHeight * zoom }}>
           <div className="turnier-graph" style={{ width: layout.totalWidth, height: layout.totalHeight, transform: `scale(${zoom})` }}>
             {layout.bands.map((b) => (
@@ -431,7 +448,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                 </div>
               );
             })}
-            {selected && selPos && !selectedInline && (
+            {selected && selPos && selectedHasPopoverContent && (
               <div className="turnier-graph-popover" style={{ left: selPos.x, top: selPos.y + selBoxH + 8 }}>
                 <div className="turnier-match-meta">
                   <span className="turnier-match-players">
