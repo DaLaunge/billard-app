@@ -1046,9 +1046,12 @@ button.id-card-head { cursor: pointer; }
 .turnier-stepper-btn.plus { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
 /* Kompakte Variante fuer die Inline-Eingabe direkt in einer Turniergraph-Box
    (TurnierGraph.jsx) - muss in dieselbe Zeilenhoehe passen wie Name/Ergebnis
-   sonst, damit die Box beim Editieren nicht groesser wird als sonst. */
+   sonst, damit die Box beim Editieren nicht groesser wird als sonst. Bewusst
+   deutlich BREITER als hoch (Rechteck statt Kreis) - die Boxhoehe laesst nur
+   ~18px zu, ein Finger braucht aber mehr Trefferflaeche in der Breite
+   (Nutzer-Feedback), und die Box selbst hat dafuer genug Platz. */
 .turnier-stepper--compact { gap: 3px; }
-.turnier-stepper--compact .turnier-stepper-btn { width: 18px; height: 18px; }
+.turnier-stepper--compact .turnier-stepper-btn { width: 36px; height: 18px; border-radius: 6px; }
 .turnier-stepper--compact .turnier-stepper-val-input { width: 24px; min-width: 24px; height: 18px; font-size: 12px; border-radius: 5px; }
 .turnier-match-card .btn, .turnier-match-card .chip-btn { min-height: 42px; font-size: 14px; }
 .turnier-standings-row { padding: 9px 0; }

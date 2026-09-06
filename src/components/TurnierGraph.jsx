@@ -53,20 +53,38 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   // naechsten Zoom-Commit angewendet und danach sofort verworfen wird.
   const zoomAnchorRef = useRef(null);
   // Entwurfswerte fuer die Turnierleitungs-Inline-Eingabe (siehe unten) -
-  // zurueckgesetzt, sobald eine andere/keine Box mehr ausgewaehlt ist. Ref
-  // fuer den Cleanup-Effekt unten (der braucht den JEWEILS aktuellen Wert,
-  // ohne dass der Effekt bei jeder Zaehler-Aenderung neu binden muss).
+  // zurueckgesetzt (bzw. bei einer Korrektur mit dem bestaetigten Ergebnis
+  // vorbefuellt), sobald eine andere/keine Box mehr ausgewaehlt ist. Refs
+  // fuer den Cleanup-Effekt darunter (der braucht die JEWEILS aktuellen
+  // Werte, ohne dass der Effekt bei jeder Zaehler-Aenderung neu binden muss).
   const [draft, setDraft] = useState({ s1: 0, s2: 0 });
   const draftRef = useRef(draft);
   draftRef.current = draft;
-  useEffect(() => { setDraft({ s1: 0, s2: 0 }); }, [selectedId]);
+  // Nur bei einer Korrektur gesetzt (Ausgangswert zum Vergleich, ob sich
+  // beim Deselektieren ueberhaupt etwas geaendert hat) - bei einer frischen
+  // Meldung bleibt es null, dort zaehlt stattdessen "s1 !== s2" als Signal.
+  const originalScoreRef = useRef(null);
+  useEffect(() => {
+    const m = selectedId ? matches.find((mm) => mm.id === selectedId) : null;
+    if (m && turnierActions(m, me, isOrganizer, tourStatus).canEdit) {
+      const sc = tmScores(m);
+      originalScoreRef.current = { s1: sc?.s1 ?? 0, s2: sc?.s2 ?? 0 };
+      setDraft(originalScoreRef.current);
+    } else {
+      originalScoreRef.current = null;
+      setDraft({ s1: 0, s2: 0 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
-  // Speichert die Turnierleitungs-Inline-Eingabe automatisch, sobald die Box
-  // deselektiert wird (anderes Match gewaehlt, abgewaehlt oder die Ansicht
-  // verlassen) - kein Eintragen-Button noetig (Nutzer-Feedback). Der Cleanup
-  // einer auf [selectedId] reagierenden Effekt-Instanz laeuft genau in dem
-  // Moment, in dem die ZUVOR ausgewaehlte Box ihre Auswahl verliert. Ein
-  // Unentschieden (s1 === s2) gilt als "nichts eingetippt" und wird verworfen.
+  // Speichert die Turnierleitungs-Inline-Eingabe (Melden ODER Korrigieren)
+  // automatisch, sobald die Box deselektiert wird (anderes Match gewaehlt,
+  // abgewaehlt oder die Ansicht verlassen) - kein Button noetig (Nutzer-
+  // Feedback). Der Cleanup einer auf [selectedId] reagierenden Effekt-
+  // Instanz laeuft genau in dem Moment, in dem die ZUVOR ausgewaehlte Box
+  // ihre Auswahl verliert. Ein Unentschieden (s1 === s2) gilt als "nichts
+  // eingetippt" und wird verworfen; bei einer Korrektur zusaetzlich: bleibt
+  // der Wert unveraendert, wird gar nichts geschickt.
   useEffect(() => {
     const id = selectedId;
     return () => {
@@ -75,8 +93,14 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
       if (!m) return;
       const d = draftRef.current;
       if (d.s1 === d.s2) return;
-      if (!turnierActions(m, me, isOrganizer, tourStatus).canOrganizerReport) return;
-      onOrganizerReport(m, d.s1, d.s2, () => {});
+      const a = turnierActions(m, me, isOrganizer, tourStatus);
+      if (a.canOrganizerReport) {
+        onOrganizerReport(m, d.s1, d.s2, () => {});
+      } else if (a.canEdit) {
+        const orig = originalScoreRef.current;
+        if (orig && d.s1 === orig.s1 && d.s2 === orig.s2) return;
+        onEditMatch(m, d.s1, d.s2, () => {});
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
@@ -279,6 +303,10 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   }, [matches]);
 
   const selected = selectedId ? layout.byId[selectedId] : null;
+  // Fuer canOrganizerReport/canEdit zeigt die Box die Eingabe inline in sich
+  // selbst (siehe unten) - das Popover ist in diesem Fall ueberfluessig.
+  const selectedActions = selected ? turnierActions(selected, me, isOrganizer, tourStatus) : null;
+  const selectedInline = !!(selectedActions?.canOrganizerReport || selectedActions?.canEdit);
 
   // Direkt an die Auswahl angeschlossene Verbinder + die damit verbundenen
   // Boxen - alles ausserhalb davon wird gedaempft (siehe .dim in App.css),
@@ -351,13 +379,16 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               const isSelected = selectedId === m.id;
               const actions = turnierActions(m, me, isOrganizer, tourStatus);
               const actionable = actions.canReport || actions.canOrganizerReport || actions.canConfirm || actions.canForce;
-              // Turnierleitungs-Eingabe passiert direkt in der Box selbst statt in
-              // einem zusaetzlichen Menue darunter (Nutzer-Feedback: das Popup nahm
-              // zu viel Platz weg) - kompakte Zaehler statt der groesseren Variante
-              // im Popover, damit die Box dabei genauso gross bleibt wie sonst.
-              // Gespeichert wird automatisch beim Deselektieren (siehe Cleanup-
-              // Effekt oben), kein Eintragen-Button noetig.
-              const inlineReport = isSelected && actions.canOrganizerReport;
+              // Turnierleitungs-Eingabe (Melden ODER Korrigieren) passiert direkt
+              // in der Box selbst statt in einem zusaetzlichen Menue darunter
+              // (Nutzer-Feedback: das Popup nahm zu viel Platz weg, Korrektur soll
+              // optisch genauso aussehen wie eine frische Meldung - beides ohnehin
+              // nur fuer Turnierleitung/Admin sichtbar, siehe canEdit oben) -
+              // kompakte Zaehler statt der groesseren Popover-Variante, damit die
+              // Box dabei genauso gross bleibt wie sonst. Gespeichert wird
+              // automatisch beim Deselektieren (siehe Cleanup-Effekt oben), kein
+              // Button noetig.
+              const inlineEdit = isSelected && (actions.canOrganizerReport || actions.canEdit);
               const isConnected = highlightIds && highlightIds.has(m.id) && !isSelected;
               const isDim = highlightIds && !highlightIds.has(m.id);
               const toggleSelect = () => setSelectedId(m.id === selectedId ? null : m.id);
@@ -380,7 +411,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                       {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={isFinal ? 26 : 20} />}
                       <span>{n1 || t("TBD")}</span>
                     </span>
-                    {inlineReport ? (
+                    {inlineEdit ? (
                       <span onClick={(e) => e.stopPropagation()}>
                         <ScoreStepper compact value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
                       </span>
@@ -391,7 +422,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                       {!m.is_bye && n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={isFinal ? 26 : 20} />}
                       <span>{m.is_bye ? t("(Freilos)") : (n2 || t("TBD"))}</span>
                     </span>
-                    {inlineReport ? (
+                    {inlineEdit ? (
                       <span onClick={(e) => e.stopPropagation()}>
                         <ScoreStepper compact value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
                       </span>
@@ -400,7 +431,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                 </div>
               );
             })}
-            {selected && selPos && !turnierActions(selected, me, isOrganizer, tourStatus).canOrganizerReport && (
+            {selected && selPos && !selectedInline && (
               <div className="turnier-graph-popover" style={{ left: selPos.x, top: selPos.y + selBoxH + 8 }}>
                 <div className="turnier-match-meta">
                   <span className="turnier-match-players">
