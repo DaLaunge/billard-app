@@ -25,7 +25,7 @@ function ScoreStepper({ value, onChange }) {
 export function hasTurnierAction(tm, me, isOrganizer, tourStatus) {
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
-  const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && !tm.match_id && tourStatus === "running";
+  const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number != null && !tm.match_id && tourStatus === "running";
   const canReport = openSlot && isMyMatch;
   const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
   const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
@@ -57,7 +57,7 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
   const [os2, setOs2] = useState(0);
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
-  const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && !tm.match_id && tourStatus === "running";
+  const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number != null && !tm.match_id && tourStatus === "running";
   const canReport = openSlot && isMyMatch;
   const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
   const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
@@ -75,8 +75,11 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
     setEditing(true);
   };
 
+  const waitingForTable = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number == null && !tm.match_id && tourStatus === "running";
+
   return (
     <>
+      {waitingForTable && <span className="hint" style={{ margin: 0 }}>{t("Tisch wird noch zugeteilt")}</span>}
       {tm.match_id && !confirmed && <span className="hint" style={{ margin: 0 }}>{t("Wartet auf Bestätigung ...")}</span>}
       {manuallyEntered && <span className="hint" style={{ margin: 0 }}>{t("Manuell nachgetragen")}</span>}
       {canReport && (
