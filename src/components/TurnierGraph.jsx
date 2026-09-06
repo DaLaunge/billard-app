@@ -350,19 +350,24 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
             ausgewaehlten Box - bei starkem Herauszoomen sind die Zaehler in
             der Box selbst zu klein zum Treffen (Nutzer-Feedback). Teilt sich
             denselben draft-State wie die Box, beide Bedienelemente sind also
-            immer synchron und schreiben dasselbe Ergebnis. */}
+            immer synchron und schreiben dasselbe Ergebnis. Bewusst im selben
+            Look wie die Box selbst (zwei Zeilen, kompakte Zaehler, farbiger
+            Rahmenstreifen je Abschnitt) statt einer breiten Extra-Zeile -
+            Platzbedarf/Optik sollen zur Box passen statt eigenes Layout
+            (Nutzer-Feedback: sah anders aus, verschob auf dem Handy die
+            ganze Ansicht durch die vorherige breite Ein-Zeilen-Variante). */}
         {selected && selectedInline && (
-          <div className="turnier-graph-toolbar-editor">
-            <span className="turnier-graph-toolbar-editor-row">
-              {nameOf(selected.player1_id) && <Ball color={colorOf(nameOf(selected.player1_id))} label={initials(nameOf(selected.player1_id))} badge={badgeOf(nameOf(selected.player1_id))} photo={photoOf(nameOf(selected.player1_id))} size={22} />}
+          <div className={"turnier-graph-toolbar-editor turnier-graph-box--" + selected.bracket}>
+            <div className="turnier-graph-toolbar-editor-row">
+              {nameOf(selected.player1_id) && <Ball color={colorOf(nameOf(selected.player1_id))} label={initials(nameOf(selected.player1_id))} badge={badgeOf(nameOf(selected.player1_id))} photo={photoOf(nameOf(selected.player1_id))} size={20} />}
               <span>{nameOf(selected.player1_id) || t("TBD")}</span>
-              <ScoreStepper value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
-            </span>
-            <span className="turnier-graph-toolbar-editor-row">
-              {nameOf(selected.player2_id) && <Ball color={colorOf(nameOf(selected.player2_id))} label={initials(nameOf(selected.player2_id))} badge={badgeOf(nameOf(selected.player2_id))} photo={photoOf(nameOf(selected.player2_id))} size={22} />}
+              <ScoreStepper compact value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
+            </div>
+            <div className="turnier-graph-toolbar-editor-row">
+              {nameOf(selected.player2_id) && <Ball color={colorOf(nameOf(selected.player2_id))} label={initials(nameOf(selected.player2_id))} badge={badgeOf(nameOf(selected.player2_id))} photo={photoOf(nameOf(selected.player2_id))} size={20} />}
               <span>{nameOf(selected.player2_id) || t("TBD")}</span>
-              <ScoreStepper value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
-            </span>
+              <ScoreStepper compact value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
+            </div>
           </div>
         )}
       </div>

@@ -1096,15 +1096,30 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-toolbar button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
 .turnier-graph-zoom-level { font-size: 14.5px; font-weight: 700; color: var(--ivory); min-width: 46px; text-align: center; }
 .turnier-graph-zoom-reset { width: auto !important; height: 44px; padding: 0 14px; font-size: 13px; font-weight: 600; }
+/* Auf schmalen Handy-Breiten die Prozentzahl ausblenden, um Platz fuer die
+   Inline-Eingabe (siehe unten) in derselben Zeile zu gewinnen, statt dass
+   die Toolbar dafuer eine zweite Zeile aufmacht und der Graph darunter
+   sichtbar springt (Nutzer-Feedback). */
+@media (max-width: 480px) {
+  .turnier-graph-zoom-level { display: none; }
+}
 /* Immer unskalierte Zweit-Eingabe der gerade ausgewaehlten Box (siehe
    TurnierGraph.jsx) - wichtig beim starken Herauszoomen, wo die Zaehler in
-   der Box selbst zu klein zum Treffen werden (Nutzer-Feedback). Eigene
-   Zeile bei wenig Platz (flex-wrap oben), normale (nicht kompakte)
-   Stepper-Groesse, da hier keine Boxhoehe einschraenkt. */
-.turnier-graph-toolbar-editor { display: flex; align-items: center; gap: 16px; flex: 1 1 280px; min-width: 0;
-  padding: 6px 16px; border: 1.5px solid var(--gold); border-radius: 10px; background: var(--felt-3); }
-.turnier-graph-toolbar-editor-row { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; }
-.turnier-graph-toolbar-editor-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+   der Box selbst zu klein zum Treffen werden (Nutzer-Feedback). Bewusst im
+   selben zweizeiligen Look wie die Box selbst (statt einer breiten
+   Ein-Zeilen-Variante) - kompakter, sieht wie ein Ausschnitt aus dem
+   Graphen aus UND nimmt am Handy deutlich weniger Platz weg, damit der
+   Rest der Toolbar/der Graph darunter beim Ein-/Ausblenden nicht spuerbar
+   springt (Nutzer-Feedback). flex: 0 0 auto statt flex-grow, damit die
+   Breite nur vom Inhalt abhaengt statt vom verbleibenden Platz - macht die
+   Groesse vorhersehbar unabhaengig davon, ob z.B. "Zoom zuruecksetzen"
+   gerade angezeigt wird. Die turnier-graph-box--winners/--losers-Klassen
+   liefern denselben farbigen Rahmenstreifen wie im Graphen. */
+.turnier-graph-toolbar-editor { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; max-width: 100%;
+  padding: 5px 10px; border: 1.5px solid var(--ivory); border-radius: 10px; background: var(--felt); }
+.turnier-graph-toolbar-editor-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.turnier-graph-toolbar-editor-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 600; font-size: 13px; max-width: 84px; }
 /* Offene Verbindungen dezent, bereits entschiedene (Sieger steht fest)
    deutlich heller/dicker - macht den tatsaechlichen Turnierverlauf auf den
    ersten Blick erkennbar statt eines gleichfoermigen Liniengewirrs. Weiche
