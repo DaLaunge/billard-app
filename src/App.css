@@ -1055,6 +1055,10 @@ button.id-card-head { cursor: pointer; }
 .turnier-stepper--compact .turnier-stepper-val-input { width: 24px; min-width: 24px; height: 18px; font-size: 12px; border-radius: 5px; }
 .turnier-match-card .btn, .turnier-match-card .chip-btn { min-height: 42px; font-size: 14px; }
 .turnier-standings-row { padding: 9px 0; }
+/* Bestenliste (Endplatzierung, siehe TurnierRasterScreen.jsx) - bei einem
+   geteilten Platz stehen mehrere Spieler in derselben Zeile. */
+.turnier-tied-names { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.turnier-tied-player { display: flex; align-items: center; gap: 6px; }
 
 @media (min-width: 900px) {
   /* Ab Desktop-Breite lohnt sich kein Wisch-Scrollen mehr - alle Runden

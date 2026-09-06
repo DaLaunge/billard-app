@@ -70,6 +70,10 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   // Feedback), nach demselben modal-overlay/modal-box-Muster wie anderswo im
   // Code (z.B. MatchScreen.jsx "Match abbrechen?").
   const [pendingReport, setPendingReport] = useState(null); // { tm, s1, s2, onDone } | null
+  // Turnier-Endplatzierung inkl. geteilter Plaetze (siehe tournament_final_
+  // standings() in der DB) - nur relevant/geladen, sobald das Turnier
+  // beendet ist, siehe load() unten.
+  const [finalStandings, setFinalStandings] = useState(null);
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
@@ -83,6 +87,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     setTour(tr || null);
     setTms(matches || []);
     setRoster(ros || []);
+    if (tr?.status === "finished") {
+      const { data: fs } = await supabase.rpc("tournament_final_standings", { p_tournament_id: tournamentId });
+      setFinalStandings(fs || null);
+    } else {
+      setFinalStandings(null);
+    }
   }, [tournamentId]);
 
   useEffect(() => {
@@ -92,6 +102,18 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   }, [load]);
 
   const nameOf = useCallback((id) => players.find((p) => p.id === id)?.nickname || null, [players]);
+
+  // Nach Platz gruppiert (mehrere Eintraege = geteilter Platz), sortiert
+  // aufsteigend - finalStandings kommt bereits mit korrektem placement/
+  // tied_count aus tournament_final_standings(), hier nur zur Anzeige
+  // gruppiert.
+  const finalStandingsGrouped = useMemo(() => {
+    if (!finalStandings || finalStandings.length === 0) return null;
+    const byPlacement = {};
+    finalStandings.forEach((row) => { (byPlacement[row.placement] ||= []).push(row.player_id); });
+    return Object.keys(byPlacement).map(Number).sort((a, b) => a - b)
+      .map((placement) => ({ placement, playerIds: byPlacement[placement] }));
+  }, [finalStandings]);
 
   const standings = useMemo(() => {
     if (!tour || tour.format !== "round_robin" || !roster || !tms) return null;
@@ -358,6 +380,29 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
             </button>
           )}
         </div>
+      )}
+
+      {finalStandingsGrouped && (
+        <section className="stat-block">
+          <h3><Trophy size={17} /> {t("Bestenliste")}</h3>
+          {finalStandingsGrouped.map(({ placement, playerIds }) => (
+            <div key={placement} className="stat-row turnier-standings-row">
+              <span className="medal">{placement}.</span>
+              <span className="stat-name turnier-tied-names">
+                {playerIds.map((pid) => {
+                  const n = nameOf(pid);
+                  return n ? (
+                    <span key={pid} className="turnier-tied-player">
+                      <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={24} />
+                      {n}
+                    </span>
+                  ) : null;
+                })}
+              </span>
+              {playerIds.length > 1 && <span className="hint" style={{ margin: 0 }}>{t("geteilt")}</span>}
+            </div>
+          ))}
+        </section>
       )}
 
       {standings && (

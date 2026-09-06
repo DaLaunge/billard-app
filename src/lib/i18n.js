@@ -876,6 +876,8 @@ const TRANSLATIONS = {
     "Finale": "Final",
     "Runde": "Round",
     "Tabelle": "Standings",
+    "Bestenliste": "Final standings",
+    "geteilt": "tied",
     "Turniermatches ausblenden": "Hide tournament matches",
     "Turniere anlegen ist aktuell nur für Admins möglich.": "Creating tournaments is currently admin-only.",
     "Ergebnis als Turnierleitung eingetragen.": "Result entered as organizer.",
