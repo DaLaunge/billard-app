@@ -479,11 +479,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       <div ref={viewContainerRef} className={"turnier-view-container" + (isMaximized ? " is-maximized" : "")}>
       {/* Der maximierte Zustand deckt per position:fixed die ganze Seite ab,
           also auch die Umschalt-Chips oben mit dem "Minimieren"-Button darin -
-          ohne diese Zeile gaebe es keinen Weg mehr zurueck. Bewusst eine
-          normale (sticky statt fixed) Zeile im Fluss statt eines schwebenden
-          Eck-Buttons - der ueberlappte sich mit der eigenen Kopfzeile/den
-          Zoom-Buttons des Turniergraphen (Nutzer-Feedback). */}
-      {isMaximized && (
+          ohne diese Zeile gaebe es keinen Weg mehr zurueck. Fuer die Grafik-
+          Ansicht sitzt das Minimieren stattdessen IN TurnierGraph.jsx' eigener
+          Kopfzeile (spart die ganze Zeile hier, Nutzer-Feedback: "es wird
+          immer noch Platz verschenkt") - diese separate Zeile ist deshalb nur
+          fuer Liste/Teilnehmer noetig, die keine eigene Kopfzeile haben. */}
+      {isMaximized && viewMode !== "graph" && (
         <div className="turnier-maximize-exit-row">
           <button className="chip" onClick={toggleMaximize} aria-label={t("Minimieren")}>
             <Minimize2 size={14} /> {t("Minimieren")}
@@ -563,7 +564,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
             nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
             busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
             onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
-            onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
+            onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch}
+            isMaximized={isMaximized} onToggleMaximize={toggleMaximize} />
         </section>
       ) : (
         <div className="turnier-brackets">

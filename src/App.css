@@ -1101,6 +1101,11 @@ button.id-card-head { cursor: pointer; }
 .turnier-view-container.is-maximized > .stat-block,
 .turnier-view-container.is-maximized .turnier-graph-block {
   display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+/* .stat-block hat sonst ueberall margin-bottom:14px fuer den Abstand
+   zwischen gestapelten Karten - hier bleibt dadurch trotz flex:1 1 auto
+   unten ungenutzter Platz uebrig (Nutzer-Feedback: "es wird immer noch
+   Platz verschenkt"). */
+.turnier-view-container.is-maximized > .stat-block { margin-bottom: 0; }
 .turnier-view-container.is-maximized .turnier-graph-wrap { flex: 1 1 auto; max-height: none; min-height: 0; }
 /* Ausstiegs-Zeile im normalen Fluss (sticky statt fixed) - ein schwebender
    Eck-Button ueberlappte sich mit der eigenen Kopfzeile/den Zoom-Buttons
@@ -1141,12 +1146,38 @@ button.id-card-head { cursor: pointer; }
    eigenen, breiten Toolbar-Zeile darunter - schafft dort Platz fuer die
    angepinnte Box (Nutzer-Feedback). Nur 3 kleine Icon-Buttons ohne
    Beschriftung (auch keine Prozentzahl mehr). */
-.turnier-graph-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* Ueberschrift und Minimieren-Button werden aus dem normalen Fluss
+   herausgenommen (absolut an den Raendern), damit die Zoom-Buttons als
+   einziges verbleibendes Flex-Kind ECHT mittig sitzen (Nutzer-Feedback) -
+   unabhaengig davon, ob rechts gerade ein Minimieren-Button steht oder
+   nicht (nur im maximierten Zustand vorhanden, siehe TurnierGraph.jsx). */
+.turnier-graph-header { position: relative; display: flex; justify-content: center;
+  align-items: center; min-height: 34px; gap: 10px; }
+.turnier-graph-header h3 { position: absolute; left: 0; top: 50%; transform: translateY(-50%); margin: 0; }
+.turnier-graph-header-end { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .turnier-graph-zoom-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.turnier-graph-zoom-controls button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
+.turnier-graph-zoom-controls button, .turnier-graph-minimize-btn {
+  background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
   border-radius: 9px; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
-.turnier-graph-zoom-controls button:hover:not(:disabled) { background: var(--felt); }
+.turnier-graph-zoom-controls button:hover:not(:disabled), .turnier-graph-minimize-btn:hover { background: var(--felt); }
 .turnier-graph-zoom-controls button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
+/* Am PC (echte Maus mit Hover) sind die Zoom-Buttons im Ruhezustand
+   gedaempft statt permanent goldumrandet - erst beim Ueberfahren werden sie
+   voll sichtbar/gold, als Bestaetigung "hier trifft die Maus tatsaechlich
+   einen Button" (Nutzer-Feedback). Am Handy im maximierten Zustand ganz
+   ausgeblendet, da dort Pinch-to-Zoom die uebliche Geste ist (Nutzer-
+   Feedback: "benötige ich im maximize modus gar keine zoom-Buttons"). */
+@media (hover: hover) and (pointer: fine) {
+  .turnier-graph-zoom-controls { opacity: 0.45; transition: opacity .15s; }
+  .turnier-graph-zoom-controls:hover, .turnier-graph-zoom-controls:focus-within { opacity: 1; }
+  .turnier-graph-zoom-controls button { border-color: var(--line); color: var(--ivory-dim);
+    transition: border-color .15s, color .15s, background-color .15s; }
+  .turnier-graph-zoom-controls:hover button:not(:disabled),
+  .turnier-graph-zoom-controls button:focus-visible { border-color: var(--gold); color: var(--gold); }
+}
+@media (pointer: coarse) {
+  .turnier-view-container.is-maximized .turnier-graph-zoom-controls { display: none; }
+}
 /* Immer unskalierte Kopie der gerade ausgewaehlten Box - wichtig beim
    starken Herauszoomen, wo die Zaehler in der Box selbst zu klein zum
    Treffen werden (Nutzer-Feedback). Nutzt in TurnierGraph.jsx dieselben

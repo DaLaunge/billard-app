@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { X, ZoomIn, ZoomOut, RotateCcw, Trophy } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, Trophy, Minimize2 } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
@@ -41,7 +41,7 @@ const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers
 //   damit verbundenen Boxen hervor, alles andere wird gedaempft.
 // - Ein Zoom-Regler (Buttons, nicht nur Pinch-Zoom des ganzen Bildschirms -
 //   der wuerde auch Kopfzeile/Navigation mitzoomen statt nur den Baum).
-export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, colorOf, badgeOf, photoOf }) {
+export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, colorOf, badgeOf, photoOf, isMaximized, onToggleMaximize }) {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(zoom);
@@ -395,14 +395,25 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
       }}>
       <div className="turnier-graph-header">
         <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
-        {/* Nur 3 Icon-Buttons ohne Beschriftung, direkt neben der
-            Ueberschrift - der Platzbedarf hier war zuvor der groesste
-            Platzfresser in der eigentlichen Toolbar-Zeile darunter, die
-            dadurch jetzt frei fuer die angepinnte Box ist (Nutzer-Feedback). */}
+        {/* Zentriert statt rechtsbuendig (Nutzer-Feedback) - 3-Spalten-Grid
+            mit Ueberschrift/Minimieren als gleich breite Aussenspalten haelt
+            die Zoom-Buttons unabhaengig von deren Breite mittig. Auf
+            Touch-Geraeten im maximierten Zustand komplett ausgeblendet, da
+            dort Pinch-to-Zoom die uebliche Geste ist; am PC erst beim
+            Hover ueber diesen Bereich voll sichtbar/gold eingefaerbt, sonst
+            dezent gedaempft (siehe CSS) - weniger visueller Ballast, ohne
+            die Buttons ganz zu verstecken. */}
         <div className="turnier-graph-zoom-controls">
           <button type="button" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={18} /></button>
           <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={18} /></button>
           <button type="button" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
+        </div>
+        <div className="turnier-graph-header-end">
+          {isMaximized && onToggleMaximize && (
+            <button type="button" className="turnier-graph-minimize-btn" onClick={onToggleMaximize} aria-label={t("Minimieren")}>
+              <Minimize2 size={18} />
+            </button>
+          )}
         </div>
       </div>
 
