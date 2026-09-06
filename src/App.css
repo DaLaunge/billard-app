@@ -1082,8 +1082,12 @@ button.id-card-head { cursor: pointer; }
    als Bonus obendrauf, wo der Browser es unterstuetzt. position:fixed statt
    nur groesser zu skalieren, damit auch der Rest der Seite (Kopfzeile,
    andere Turnier-Abschnitte) wirklich verschwindet und der volle
-   Bildschirm fuers Raster/den Graphen zur Verfuegung steht. */
-.turnier-view-container.is-maximized { position: fixed; inset: 0; z-index: 200;
+   Bildschirm fuers Raster/den Graphen zur Verfuegung steht. z-index bewusst
+   UNTER .modal-overlay (100)/.celebrate-overlay (120, siehe weiter oben) -
+   sonst legt sich die maximierte Ansicht ueber den Bestaetigen-Dialog fuer
+   neu eingegebene Ergebnisse und der ist nicht mehr erreichbar (Nutzer-
+   Feedback: "Bestätigen"-Dialog in der Max-Ansicht nicht verfuegbar). */
+.turnier-view-container.is-maximized { position: fixed; inset: 0; z-index: 90;
   background: var(--felt); padding: 20px; overflow-y: auto; }
 .turnier-view-container.is-maximized .turnier-graph-wrap { max-height: calc(100vh - 170px); }
 /* Schwebender Ausstiegs-Button - der Rest der Seite (inkl. der Umschalt-
