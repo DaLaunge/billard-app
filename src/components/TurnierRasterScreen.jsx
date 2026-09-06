@@ -37,6 +37,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const [busyId, setBusyId] = useState(null);
   const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
+  // Sicherheitsabfrage vor der ERSTEN Ergebnis-Erfassung (siehe organizerReport
+  // unten) - eigenes Overlay im App-Layout statt window.confirm() (Nutzer-
+  // Feedback), nach demselben modal-overlay/modal-box-Muster wie anderswo im
+  // Code (z.B. MatchScreen.jsx "Match abbrechen?").
+  const [pendingReport, setPendingReport] = useState(null); // { tm, s1, s2, onDone } | null
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
@@ -169,10 +174,17 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   // ist danach evtl. gar nicht mehr korrigierbar (siehe Schutz in
   // tournament_organizer_edit_match, der eine Sieger-aendernde Korrektur
   // ablehnt, sobald der Sieger schon weitergezogen ist) - deshalb hier eine
-  // explizite Sicherheitsabfrage MIT Sieger-Namen (Nutzer-Feedback).
-  const organizerReport = async (tm, s1, s2, onDone) => {
-    const winner = s1 > s2 ? nameOf(tm.player1_id) : nameOf(tm.player2_id);
-    if (!window.confirm(t("{winner} gewinnt {s1}:{s2} - Ergebnis so eintragen?", { winner, s1, s2 }))) return;
+  // explizite Sicherheitsabfrage MIT Sieger-Namen (Nutzer-Feedback). Stoesst
+  // nur noch das Overlay an (siehe pendingReport/confirmPendingReport unten)
+  // statt selbst zu blockieren - die eigentliche RPC laeuft erst nach
+  // Bestaetigung im Overlay.
+  const organizerReport = (tm, s1, s2, onDone) => {
+    setPendingReport({ tm, s1, s2, onDone });
+  };
+
+  const confirmPendingReport = async () => {
+    const { tm, s1, s2, onDone } = pendingReport;
+    setPendingReport(null);
     setBusyId(tm.id);
     const { error } = await supabase.rpc("tournament_organizer_report_match", {
       p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
@@ -498,6 +510,21 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </div>
       )}
       </div>
+      {pendingReport && (
+        <div className="modal-overlay" onClick={() => setPendingReport(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3>{t("Ergebnis eintragen?")}</h3>
+            <p>{t("{winner} gewinnt {s1}:{s2}.", {
+              winner: pendingReport.s1 > pendingReport.s2 ? nameOf(pendingReport.tm.player1_id) : nameOf(pendingReport.tm.player2_id),
+              s1: pendingReport.s1, s2: pendingReport.s2,
+            })}</p>
+            <div className="sp-controls">
+              <button className="btn ghost" onClick={() => setPendingReport(null)}>{t("Abbrechen")}</button>
+              <button className="btn primary" onClick={confirmPendingReport}>{t("Eintragen")}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

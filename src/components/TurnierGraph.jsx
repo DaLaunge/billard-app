@@ -22,7 +22,7 @@ const FINAL_GAP = COL_GAP * 1.7;
 const ROW_GAP = 14;
 const SECTION_GAP = 26;
 const LABEL_H = 26;
-const ZOOM_MIN = 0.4;
+const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 2;
 const ZOOM_STEP = 0.2;
 
