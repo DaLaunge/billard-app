@@ -38,33 +38,21 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
   // Maximieren-Modus fuer die Liste/Grafik-Ansicht des Turnierrasters (nicht
-  // fuer Teilnehmer) - eigener CSS-Zustand (position:fixed ueber die ganze
-  // Seite) statt allein auf die native Fullscreen-API zu setzen, weil iOS
-  // Safari requestFullscreen() fuer normale Elemente NICHT unterstuetzt (nur
-  // fuer <video>) - ohne CSS-Fallback wuerde "Maximieren" am iPhone schlicht
-  // nichts tun. Versucht zusaetzlich best-effort echtes Vollbild (kein
-  // Browser-Chrome) dort, wo es geht (Desktop/Android) - fuers "auf einem
-  // Bildschirm/Beamer anzeigen" aus dem Nutzer-Feedback.
+  // fuer Teilnehmer) - rein CSS-basiert (position:fixed ueber die ganze
+  // Seite), bewusst OHNE die native Fullscreen-API: iOS Safari unterstuetzt
+  // requestFullscreen() fuer normale Elemente ohnehin nicht (nur <video>),
+  // und auf Browsern, die es unterstuetzen, rendert die Fullscreen-API NUR
+  // das angeforderte Element selbst (den "Top Layer") - jeder Dialog, der
+  // als Geschwister-Element danebenliegt (z.B. der Bestaetigen-Dialog fuer
+  // neu eingegebene Ergebnisse, oder globale Popups wie "Du bist dran" aus
+  // App.jsx), wird dabei komplett unsichtbar, unabhaengig vom z-index
+  // (Nutzer-Feedback: Bestaetigen-Dialog im maximierten Zustand nicht
+  // erreichbar - trat nur im echten Browser auf, nicht in der Vorschau, weil
+  // requestFullscreen() dort mangels echter Nutzer-Geste stillschweigend
+  // fehlschlug). Deshalb kein Versuch mehr, echtes Vollbild zu nutzen.
   const viewContainerRef = useRef(null);
   const [isMaximized, setIsMaximized] = useState(false);
-  useEffect(() => {
-    // Falls echtes Vollbild aktiv war und per Esc/System-UI verlassen wird,
-    // auch den maximierten CSS-Zustand zuruecksetzen.
-    const onChange = () => {
-      if (!document.fullscreenElement) setIsMaximized(false);
-    };
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
-  }, []);
-  const toggleMaximize = () => {
-    if (isMaximized) {
-      if (document.fullscreenElement) document.exitFullscreen();
-      setIsMaximized(false);
-    } else {
-      setIsMaximized(true);
-      viewContainerRef.current?.requestFullscreen?.().catch(() => {});
-    }
-  };
+  const toggleMaximize = () => setIsMaximized((m) => !m);
   // Sicherheitsabfrage vor der ERSTEN Ergebnis-Erfassung (siehe organizerReport
   // unten) - eigenes Overlay im App-Layout statt window.confirm() (Nutzer-
   // Feedback), nach demselben modal-overlay/modal-box-Muster wie anderswo im
