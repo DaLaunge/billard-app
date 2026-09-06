@@ -479,12 +479,16 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       <div ref={viewContainerRef} className={"turnier-view-container" + (isMaximized ? " is-maximized" : "")}>
       {/* Der maximierte Zustand deckt per position:fixed die ganze Seite ab,
           also auch die Umschalt-Chips oben mit dem "Minimieren"-Button darin -
-          ohne diesen schwebenden Extra-Button gaebe es keinen Weg mehr
-          zurueck. */}
+          ohne diese Zeile gaebe es keinen Weg mehr zurueck. Bewusst eine
+          normale (sticky statt fixed) Zeile im Fluss statt eines schwebenden
+          Eck-Buttons - der ueberlappte sich mit der eigenen Kopfzeile/den
+          Zoom-Buttons des Turniergraphen (Nutzer-Feedback). */}
       {isMaximized && (
-        <button className="turnier-view-exit-btn" onClick={toggleMaximize} aria-label={t("Minimieren")}>
-          <Minimize2 size={18} />
-        </button>
+        <div className="turnier-maximize-exit-row">
+          <button className="chip" onClick={toggleMaximize} aria-label={t("Minimieren")}>
+            <Minimize2 size={14} /> {t("Minimieren")}
+          </button>
+        </div>
       )}
       {viewMode === "players" ? (
         <section className="stat-block">

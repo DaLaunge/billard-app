@@ -1087,16 +1087,42 @@ button.id-card-head { cursor: pointer; }
    sonst legt sich die maximierte Ansicht ueber den Bestaetigen-Dialog fuer
    neu eingegebene Ergebnisse und der ist nicht mehr erreichbar (Nutzer-
    Feedback: "Bestätigen"-Dialog in der Max-Ansicht nicht verfuegbar). */
+/* Flex-Spalte statt nur Block-Fluss: so kann der Turniergraph (siehe Kette
+   unten) den WIRKLICH verfuegbaren Platz ausfuellen, statt mit einer fixen
+   calc(100vh - Npx)-Hoehe zu raten, die je nach vorhandener Kopfzeile/
+   angepinnter Box zu viel leeren Platz uebrig liess (Nutzer-Feedback:
+   "verlorener leerer Platz trotz Maximierung"). overflow-y:auto greift bei
+   der Liste (kein Flex-Kind mit flex-grow, waechst natuerlich und scrollt
+   dann als Ganzes) genauso wie beim Graphen (dessen eigener Wrap-Bereich
+   intern scrollt, siehe Kette unten). */
 .turnier-view-container.is-maximized { position: fixed; inset: 0; z-index: 90;
-  background: var(--felt); padding: 20px; overflow-y: auto; }
-.turnier-view-container.is-maximized .turnier-graph-wrap { max-height: calc(100vh - 170px); }
-/* Schwebender Ausstiegs-Button - der Rest der Seite (inkl. der Umschalt-
-   Chips mit dem eigentlichen Minimieren-Button) liegt im maximierten
-   Zustand unter dieser Flaeche und waere sonst nicht erreichbar. */
-.turnier-view-exit-btn { position: fixed; top: 16px; right: 16px; z-index: 5;
-  background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
-  border-radius: 10px; width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer; }
-.turnier-view-exit-btn:hover { background: var(--felt); }
+  background: var(--felt); padding: 20px; overflow-y: auto;
+  display: flex; flex-direction: column; }
+.turnier-view-container.is-maximized > .stat-block,
+.turnier-view-container.is-maximized .turnier-graph-block {
+  display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.turnier-view-container.is-maximized .turnier-graph-wrap { flex: 1 1 auto; max-height: none; min-height: 0; }
+/* Ausstiegs-Zeile im normalen Fluss (sticky statt fixed) - ein schwebender
+   Eck-Button ueberlappte sich mit der eigenen Kopfzeile/den Zoom-Buttons
+   des Turniergraphen, die ebenfalls oben rechts sitzen (Nutzer-Feedback:
+   "Max-Button überlappt"). */
+.turnier-maximize-exit-row { display: flex; justify-content: flex-end;
+  position: sticky; top: 0; z-index: 10; flex-shrink: 0; margin-bottom: 10px; }
+/* Dunkel eingefaerbter Scrollbalken statt des hellen Browser-Standards, der
+   im dunklen Design stoerend auffiel (Nutzer-Feedback: "Scrollbalken passt
+   nicht ins Design") - Firefox (scrollbar-color) und WebKit/Chromium
+   getrennt, da es dafuer keine gemeinsame Eigenschaft gibt. */
+.turnier-view-container.is-maximized,
+.turnier-graph-wrap {
+  scrollbar-width: thin; scrollbar-color: var(--felt-3) var(--felt-2); }
+.turnier-view-container.is-maximized::-webkit-scrollbar,
+.turnier-graph-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+.turnier-view-container.is-maximized::-webkit-scrollbar-track,
+.turnier-graph-wrap::-webkit-scrollbar-track { background: var(--felt-2); }
+.turnier-view-container.is-maximized::-webkit-scrollbar-thumb,
+.turnier-graph-wrap::-webkit-scrollbar-thumb { background: var(--felt-3); border-radius: 8px; border: 2px solid var(--felt-2); }
+.turnier-view-container.is-maximized::-webkit-scrollbar-thumb:hover,
+.turnier-graph-wrap::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 .turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
   border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch;
   /* Ohne Hoehenbegrenzung waechst dieser Bereich immer genau so hoch wie sein
