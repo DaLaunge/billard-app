@@ -395,18 +395,19 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
       }}>
       <div className="turnier-graph-header">
         <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
-        {/* Zentriert statt rechtsbuendig (Nutzer-Feedback) - 3-Spalten-Grid
-            mit Ueberschrift/Minimieren als gleich breite Aussenspalten haelt
-            die Zoom-Buttons unabhaengig von deren Breite mittig. Auf
-            Touch-Geraeten im maximierten Zustand komplett ausgeblendet, da
-            dort Pinch-to-Zoom die uebliche Geste ist; am PC erst beim
-            Hover ueber diesen Bereich voll sichtbar/gold eingefaerbt, sonst
-            dezent gedaempft (siehe CSS) - weniger visueller Ballast, ohne
-            die Buttons ganz zu verstecken. */}
+        {/* Zentriert statt rechtsbuendig (Nutzer-Feedback) - Ueberschrift/
+            Minimieren per position:absolute aus dem Fluss genommen (siehe
+            CSS), haelt die Zoom-Buttons als einziges verbleibendes Flex-Kind
+            unabhaengig von deren Breite mittig. Auf Touch-Geraeten im
+            maximierten Zustand bleibt nur noch "Zoom zuruecksetzen" sichtbar
+            (Rein-/Rauszoomen entfaellt, dort ist Pinch-to-Zoom die uebliche
+            Geste, siehe CSS); am PC erst beim Hover ueber diesen Bereich voll
+            sichtbar/gold eingefaerbt, sonst dezent gedaempft - weniger
+            visueller Ballast, ohne die Buttons ganz zu verstecken. */}
         <div className="turnier-graph-zoom-controls">
-          <button type="button" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={18} /></button>
-          <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={18} /></button>
-          <button type="button" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
+          <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={18} /></button>
+          <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={18} /></button>
+          <button type="button" className="turnier-graph-zoom-reset-btn" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
         </div>
         <div className="turnier-graph-header-end">
           {isMaximized && onToggleMaximize && (

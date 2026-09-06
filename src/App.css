@@ -1175,8 +1175,13 @@ button.id-card-head { cursor: pointer; }
   .turnier-graph-zoom-controls:hover button:not(:disabled),
   .turnier-graph-zoom-controls button:focus-visible { border-color: var(--gold); color: var(--gold); }
 }
+/* Auf Touch-Geraeten im maximierten Zustand nur "Zoom zuruecksetzen"
+   behalten (Rein-/Rauszoomen entfaellt, dort ist Pinch-to-Zoom die uebliche
+   Geste, siehe TurnierGraph.jsx) - Kopfzeile zeigt dann "Turnierbaum ---
+   [Zoom zuruecksetzen] --- [Minimieren]" in einer einzigen Zeile statt der
+   vorherigen zusaetzlichen, leeren Reihe (Nutzer-Feedback mit Screenshot). */
 @media (pointer: coarse) {
-  .turnier-view-container.is-maximized .turnier-graph-zoom-controls { display: none; }
+  .turnier-view-container.is-maximized .turnier-graph-zoom-btn { display: none; }
 }
 /* Immer unskalierte Kopie der gerade ausgewaehlten Box - wichtig beim
    starken Herauszoomen, wo die Zaehler in der Box selbst zu klein zum
