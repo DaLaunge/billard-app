@@ -1,9 +1,9 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { X, ZoomIn, ZoomOut, Trophy } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
-import TurnierMatchActions, { hasTurnierAction, tmScores } from "./TurnierMatchActions";
+import TurnierMatchActions, { tmScores, turnierActions, ScoreStepper } from "./TurnierMatchActions";
 
 const BOX_W = 240;
 const BOX_H = 62;
@@ -22,6 +22,10 @@ const FINAL_GAP = COL_GAP * 1.7;
 const ROW_GAP = 14;
 const SECTION_GAP = 26;
 const LABEL_H = 26;
+// Zusaetzliche Boxhoehe, wenn die Turnierleitungs-Eingabe INNERHALB der Box
+// selbst erscheint (statt in einem separaten Menue darunter, siehe Nutzer-
+// Feedback) - Platz fuer zwei Zaehler-Zeilen + Eintragen-Button.
+const INLINE_REPORT_EXTRA_H = 74;
 const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 2;
 const ZOOM_STEP = 0.2;
@@ -48,6 +52,28 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   zoomRef.current = zoom;
   const wrapRef = useRef(null);
   const pinchRef = useRef(null);
+  // Ziel-Scrollposition fuers Zoomen-um-einen-Punkt (siehe zoomAt/Layout-
+  // Effekt unten) - ein Ref statt State, weil sie nur einmalig nach dem
+  // naechsten Zoom-Commit angewendet und danach sofort verworfen wird.
+  const zoomAnchorRef = useRef(null);
+  // Entwurfswerte fuer die Turnierleitungs-Inline-Eingabe (siehe unten) -
+  // zurueckgesetzt, sobald eine andere/keine Box mehr ausgewaehlt ist.
+  const [draft, setDraft] = useState({ s1: 0, s2: 0 });
+  useEffect(() => { setDraft({ s1: 0, s2: 0 }); }, [selectedId]);
+
+  // Wendet die in zoomAt() hinterlegte Ziel-Scrollposition an, NACHDEM React
+  // die neue Zoomstufe committet hat (useLayoutEffect laeuft synchron nach
+  // dem DOM-Update, aber vor dem naechsten Bildschirm-Paint) - ein simples
+  // requestAnimationFrame nach setZoom() war nicht zuverlaessig synchron mit
+  // dem Re-Render (der Scroll-Bereich hatte teils noch die alte Groesse).
+  useLayoutEffect(() => {
+    const anchor = zoomAnchorRef.current;
+    const el = wrapRef.current;
+    if (!anchor || !el) return;
+    el.scrollLeft = anchor.layoutX * zoom - anchor.viewportX;
+    el.scrollTop = anchor.layoutY * zoom - anchor.viewportY;
+    zoomAnchorRef.current = null;
+  }, [zoom]);
 
   // Pinch-to-Zoom mit zwei Fingern + Trackpad-Kneifen (Ctrl+Wheel, so
   // melden Browser das Trackpad-Pinch) direkt im Baum - nativ per
@@ -61,6 +87,26 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
     if (!el) return;
     const dist = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
     const clamp = (z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +z.toFixed(2)));
+    // Zoomt so, dass der Punkt unter den Fingern (bzw. dem Mauszeiger beim
+    // Trackpad-Kneifen) auf dem Bildschirm stehen bleibt - wie Pinch-Zoom im
+    // Browser/auf Karten, statt immer von der Ecke oben links aus zu
+    // skalieren (Nutzer-Feedback). Berechnet dazu die Layout-Koordinate unter
+    // dem Zeiger VOR dem Zoom und verschiebt danach den Scroll-Bereich so,
+    // dass genau diese Koordinate wieder unter dem Zeiger liegt.
+    const zoomAt = (newZoomRaw, clientX, clientY) => {
+      const newZoom = clamp(newZoomRaw);
+      const oldZoom = zoomRef.current;
+      if (newZoom === oldZoom) return;
+      const rect = el.getBoundingClientRect();
+      const viewportX = clientX - rect.left;
+      const viewportY = clientY - rect.top;
+      zoomAnchorRef.current = {
+        layoutX: (el.scrollLeft + viewportX) / oldZoom,
+        layoutY: (el.scrollTop + viewportY) / oldZoom,
+        viewportX, viewportY,
+      };
+      setZoom(newZoom);
+    };
 
     const onTouchStart = (e) => {
       if (e.touches.length === 2) pinchRef.current = { startDist: dist(e.touches), startZoom: zoomRef.current };
@@ -68,14 +114,16 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
     const onTouchMove = (e) => {
       if (e.touches.length === 2 && pinchRef.current) {
         e.preventDefault();
-        setZoom(clamp(pinchRef.current.startZoom * (dist(e.touches) / pinchRef.current.startDist)));
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        zoomAt(pinchRef.current.startZoom * (dist(e.touches) / pinchRef.current.startDist), midX, midY);
       }
     };
     const onTouchEnd = (e) => { if (e.touches.length < 2) pinchRef.current = null; };
     const onWheel = (e) => {
       if (!e.ctrlKey) return; // Trackpad-Kneifen kommt als Ctrl+Wheel, normales Scrollen soll unberuehrt bleiben
       e.preventDefault();
-      setZoom(clamp(zoomRef.current - e.deltaY * 0.01));
+      zoomAt(zoomRef.current - e.deltaY * 0.01, e.clientX, e.clientY);
     };
 
     el.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -275,22 +323,34 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               if (!p) return null;
               const isFinal = m.bracket === "final" && layout.bigFinalBox;
               const boxW = isFinal ? FINAL_BOX_W : BOX_W;
-              const boxH = isFinal ? FINAL_BOX_H : BOX_H;
+              const baseBoxH = isFinal ? FINAL_BOX_H : BOX_H;
               const n1 = nameOf(m.player1_id), n2 = nameOf(m.player2_id);
               const msc = tmScores(m);
               const s1 = msc?.s1, s2 = msc?.s2;
               const pending = m.match_id && !m.match?.confirmed;
-              const actionable = hasTurnierAction(m, me, isOrganizer, tourStatus);
               const isSelected = selectedId === m.id;
+              const actions = turnierActions(m, me, isOrganizer, tourStatus);
+              const actionable = actions.canReport || actions.canOrganizerReport || actions.canConfirm || actions.canForce;
+              // Turnierleitungs-Eingabe passiert direkt in der Box selbst statt in
+              // einem zusaetzlichen Menue darunter (Nutzer-Feedback: das Popup nahm
+              // zu viel Platz weg) - die Box waechst dafuer voruebergehend.
+              const inlineReport = isSelected && actions.canOrganizerReport;
+              const boxH = inlineReport ? baseBoxH + INLINE_REPORT_EXTRA_H : baseBoxH;
               const isConnected = highlightIds && highlightIds.has(m.id) && !isSelected;
               const isDim = highlightIds && !highlightIds.has(m.id);
+              const toggleSelect = () => setSelectedId(m.id === selectedId ? null : m.id);
               return (
-                <button key={m.id} type="button"
+                <div key={m.id} role="button" tabIndex={0}
                   className={"turnier-graph-box turnier-graph-box--" + m.bracket
                     + (actionable ? " actionable" : "") + (isSelected ? " selected" : "")
+                    + (inlineReport ? " turnier-graph-box--reporting" : "")
                     + (isConnected ? " connected" : "") + (isDim ? " dim" : "")}
-                  style={{ left: p.x, top: p.y, width: boxW, height: boxH }}
-                  onClick={() => setSelectedId(m.id === selectedId ? null : m.id)}>
+                  style={{ left: p.x, top: p.y, width: boxW, height: boxH, zIndex: isSelected ? 4 : undefined }}
+                  onClick={toggleSelect}
+                  onKeyDown={(e) => {
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSelect(); }
+                  }}>
                   {isFinal && <Trophy className="turnier-graph-final-icon" size={17} />}
                   {m.table_number != null && <span className="turnier-graph-table">{t("Tisch")} {m.table_number}</span>}
                   {pending && <span className="turnier-graph-pending" title={t("Wartet auf Bestätigung ...")}>•</span>}
@@ -299,19 +359,37 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                       {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={isFinal ? 26 : 20} />}
                       <span>{n1 || t("TBD")}</span>
                     </span>
-                    {s1 != null && <span>{s1}</span>}
+                    {inlineReport ? (
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <ScoreStepper value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
+                      </span>
+                    ) : (s1 != null && <span>{s1}</span>)}
                   </div>
                   <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player2_id ? " won" : "")}>
                     <span className="turnier-graph-name">
                       {!m.is_bye && n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={isFinal ? 26 : 20} />}
                       <span>{m.is_bye ? t("(Freilos)") : (n2 || t("TBD"))}</span>
                     </span>
-                    {s2 != null && <span>{s2}</span>}
+                    {inlineReport ? (
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <ScoreStepper value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
+                      </span>
+                    ) : (s2 != null && <span>{s2}</span>)}
                   </div>
-                </button>
+                  {inlineReport && (
+                    <button type="button" className="turnier-graph-inline-submit"
+                      disabled={busyId === m.id || draft.s1 === draft.s2}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOrganizerReport(m, draft.s1, draft.s2, () => setDraft({ s1: 0, s2: 0 }));
+                      }}>
+                      {t("Eintragen")}
+                    </button>
+                  )}
+                </div>
               );
             })}
-            {selected && selPos && (
+            {selected && selPos && !turnierActions(selected, me, isOrganizer, tourStatus).canOrganizerReport && (
               <div className="turnier-graph-popover" style={{ left: selPos.x, top: selPos.y + selBoxH + 8 }}>
                 <div className="turnier-match-meta">
                   <span className="turnier-match-players">

@@ -1098,6 +1098,12 @@ button.id-card-head { cursor: pointer; }
    auseinanderzuhalten, welche Linie zu welcher Box gehoert. */
 .turnier-graph-edge.highlighted { stroke: var(--ivory); stroke-width: 3.5; opacity: 1; }
 .turnier-graph-edge.dim { opacity: 0.06; }
+/* .drop.decided (3 Klassen) ist spezifischer als .highlighted/.dim allein (2
+   Klassen) und gewinnt daher sonst IMMER gegen die Hervorhebung/Abdunklung -
+   ein bereits entschiedener Abstiegs-Pfad blieb beim Anklicken der Box optisch
+   unveraendert (Nutzer-Feedback). Eigene, noch spezifischere Regeln noetig. */
+.turnier-graph-edge.drop.decided.highlighted { stroke: var(--ivory); stroke-width: 3.5; opacity: 1; }
+.turnier-graph-edge.drop.decided.dim { opacity: 0.06; }
 .turnier-graph-section-label { position: absolute; left: 0; font-size: 12px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; gap: 5px; }
 .turnier-graph-section-label.section--winners { color: var(--win); }
@@ -1144,6 +1150,14 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-row.won { color: var(--gold); font-weight: 700; }
 .turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
 .turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
+/* Turnierleitungs-Inline-Eingabe direkt in der Box (siehe TurnierGraph.jsx) -
+   Inhalt bleibt oben (statt wie sonst vertikal zentriert), damit die beiden
+   Spielerzeilen an ihrer Position bleiben und der Eintragen-Button darunter
+   Platz hat. */
+.turnier-graph-box--reporting { justify-content: flex-start; padding-bottom: 6px; }
+.turnier-graph-inline-submit { margin: 4px 10px 0; padding: 7px 10px; border-radius: 8px; border: none;
+  background: var(--chalk); color: #08251C; font-weight: 700; font-size: 13px; cursor: pointer; }
+.turnier-graph-inline-submit:disabled { opacity: 0.4; cursor: default; }
 
 /* Detail-Panel fuer den per Klick ausgewaehlten Spielerverlauf (Teilnehmer-
    Tab, TurnierRasterScreen.jsx) - im normalen Dokumentfluss. */

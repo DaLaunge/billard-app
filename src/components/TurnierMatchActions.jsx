@@ -8,7 +8,7 @@ import { t } from "../lib/i18n";
 // Protokoll). Der Wert ist direkt eintippbar (nicht nur per +/-), da bei
 // 14/1 Endlos ueblich dreistellige Ergebnisse (z.B. 100:98) vorkommen -
 // ueber +/- allein waere das viel zu umstaendlich.
-function ScoreStepper({ value, onChange }) {
+export function ScoreStepper({ value, onChange }) {
   return (
     <div className="turnier-stepper">
       <button type="button" className="turnier-stepper-btn" onClick={() => onChange(Math.max(0, value - 1))} aria-label="minus"><Minus size={14} /></button>
@@ -19,18 +19,33 @@ function ScoreStepper({ value, onChange }) {
   );
 }
 
-// Ermittelt, ob es fuer DIESEN Nutzer bei diesem Turniermatch ueberhaupt
-// etwas zu tun gibt - von der Grafikansicht genutzt, um nur tatsaechlich
-// bedienbare Boxen klickbar/hervorgehoben zu machen.
-export function hasTurnierAction(tm, me, isOrganizer, tourStatus) {
+// Zentrale Regel-Berechnung fuer EIN Turniermatch (melden/als Turnierleitung
+// eintragen/bestaetigen/erzwingen/korrigieren) - von hasTurnierAction(), der
+// Komponente selbst UND TurnierGraph.jsx (Inline-Eingabe direkt in der Box)
+// genutzt, damit es nur eine einzige gepflegte Kopie dieser Bedingungen gibt.
+export function turnierActions(tm, me, isOrganizer, tourStatus) {
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
   const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number != null && !tm.match_id && tourStatus === "running";
+  const waitingForTable = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number == null && !tm.match_id && tourStatus === "running";
   const canReport = openSlot && isMyMatch;
   const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
   const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
   const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
-  return canReport || canOrganizerReport || canConfirm || canForce;
+  // bewusst OHNE "!isMyMatch" - anders als bei Erzwingen/Turnierleitungs-Meldung
+  // darf die Turnierleitung ein bereits bestaetigtes Ergebnis auch bei einem
+  // eigenen Match korrigieren (kleiner Verein, oft selbst Turnierteilnehmer -
+  // sonst gaebe es fuer einen Tippfehler im eigenen Match niemanden zum Fixen).
+  const canEdit = tm.match_id && confirmed && isOrganizer;
+  return { confirmed, isMyMatch, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit };
+}
+
+// Ermittelt, ob es fuer DIESEN Nutzer bei diesem Turniermatch ueberhaupt
+// etwas zu tun gibt - von der Grafikansicht genutzt, um nur tatsaechlich
+// bedienbare Boxen klickbar/hervorgehoben zu machen.
+export function hasTurnierAction(tm, me, isOrganizer, tourStatus) {
+  const a = turnierActions(tm, me, isOrganizer, tourStatus);
+  return a.canReport || a.canOrganizerReport || a.canConfirm || a.canForce;
 }
 
 // tm.match.score1/score2 stehen in der Reihenfolge von matches.player1_id/
@@ -55,18 +70,7 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
   const [es2, setEs2] = useState(0);
   const [os1, setOs1] = useState(0);
   const [os2, setOs2] = useState(0);
-  const confirmed = tm.match?.confirmed;
-  const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
-  const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number != null && !tm.match_id && tourStatus === "running";
-  const canReport = openSlot && isMyMatch;
-  const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
-  const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
-  const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
-  // bewusst OHNE "!isMyMatch" - anders als bei Erzwingen/Turnierleitungs-Meldung
-  // darf die Turnierleitung ein bereits bestaetigtes Ergebnis auch bei einem
-  // eigenen Match korrigieren (kleiner Verein, oft selbst Turnierteilnehmer -
-  // sonst gaebe es fuer einen Tippfehler im eigenen Match niemanden zum Fixen).
-  const canEdit = tm.match_id && confirmed && isOrganizer;
+  const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit } = turnierActions(tm, me, isOrganizer, tourStatus);
   const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
 
   const startEdit = () => {
@@ -74,8 +78,6 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, b
     setEs1(sc?.s1 ?? 0); setEs2(sc?.s2 ?? 0);
     setEditing(true);
   };
-
-  const waitingForTable = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number == null && !tm.match_id && tourStatus === "running";
 
   return (
     <>
