@@ -382,7 +382,17 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   };
 
   return (
-    <div className="turnier-graph-block">
+    <div className="turnier-graph-block"
+      onClick={(e) => {
+        // Klick auf ein freies Feld IRGENDWO in diesem Bereich (Kopfzeile,
+        // Platz neben der angepinnten Box, freies Feld im Graphen) - nicht
+        // auf eine Box/das Popover/die Zoom-Buttons - deselektiert die
+        // aktuelle Auswahl und speichert dabei automatisch eine laufende
+        // Turnierleitungs-Eingabe, siehe den Cleanup-Effekt oben (Nutzer-
+        // Feedback: galt bisher nur innerhalb des Graphen selbst, nicht in
+        // der Kopfzeile/neben der angepinnten Box).
+        if (!e.target.closest(".turnier-graph-box, .turnier-graph-popover, .turnier-graph-zoom-controls")) setSelectedId(null);
+      }}>
       <div className="turnier-graph-header">
         <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
         {/* Nur 3 Icon-Buttons ohne Beschriftung, direkt neben der
@@ -413,15 +423,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         </div>
       )}
 
-      <div className="turnier-graph-wrap" ref={wrapRef}
-        onClick={(e) => {
-          // Klick auf ein freies Feld im Graphen (nicht auf eine Box/das
-          // Popover) deselektiert die aktuelle Auswahl - speichert dabei
-          // automatisch eine laufende Turnierleitungs-Eingabe, siehe den
-          // Cleanup-Effekt oben (Nutzer-Feedback: Speichern soll auch per
-          // Klick daneben funktionieren, nicht nur durch eine andere Box).
-          if (!e.target.closest(".turnier-graph-box, .turnier-graph-popover")) setSelectedId(null);
-        }}>
+      <div className="turnier-graph-wrap" ref={wrapRef}>
         <div style={{ width: layout.totalWidth * zoom, height: layout.totalHeight * zoom }}>
           <div className="turnier-graph" style={{ width: layout.totalWidth, height: layout.totalHeight, transform: `scale(${zoom})` }}>
             {layout.bands.map((b) => (
