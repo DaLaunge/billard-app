@@ -163,7 +163,16 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     });
   };
 
+  // Anders als bei einer spaeteren Korrektur (siehe editMatch) ist dies die
+  // ERSTE Erfassung des Ergebnisses - bestaetigt sofort und bestimmt den
+  // Sieger, der im Turnierbaum weiterkommt. Eine falsche Sieger-Eintragung
+  // ist danach evtl. gar nicht mehr korrigierbar (siehe Schutz in
+  // tournament_organizer_edit_match, der eine Sieger-aendernde Korrektur
+  // ablehnt, sobald der Sieger schon weitergezogen ist) - deshalb hier eine
+  // explizite Sicherheitsabfrage MIT Sieger-Namen (Nutzer-Feedback).
   const organizerReport = async (tm, s1, s2, onDone) => {
+    const winner = s1 > s2 ? nameOf(tm.player1_id) : nameOf(tm.player2_id);
+    if (!window.confirm(t("{winner} gewinnt {s1}:{s2} - Ergebnis so eintragen?", { winner, s1, s2 }))) return;
     setBusyId(tm.id);
     const { error } = await supabase.rpc("tournament_organizer_report_match", {
       p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,

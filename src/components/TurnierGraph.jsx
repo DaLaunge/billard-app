@@ -346,6 +346,25 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         <span className="turnier-graph-zoom-level">{Math.round(zoom * 100)}%</span>
         <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={20} /></button>
         {zoom !== 1 && <button type="button" className="turnier-graph-zoom-reset" onClick={() => setZoom(1)}>{t("Zoom zurücksetzen")}</button>}
+        {/* Zweite, IMMER unskalierte Kopie der Inline-Eingabe der gerade
+            ausgewaehlten Box - bei starkem Herauszoomen sind die Zaehler in
+            der Box selbst zu klein zum Treffen (Nutzer-Feedback). Teilt sich
+            denselben draft-State wie die Box, beide Bedienelemente sind also
+            immer synchron und schreiben dasselbe Ergebnis. */}
+        {selected && selectedInline && (
+          <div className="turnier-graph-toolbar-editor">
+            <span className="turnier-graph-toolbar-editor-row">
+              {nameOf(selected.player1_id) && <Ball color={colorOf(nameOf(selected.player1_id))} label={initials(nameOf(selected.player1_id))} badge={badgeOf(nameOf(selected.player1_id))} photo={photoOf(nameOf(selected.player1_id))} size={22} />}
+              <span>{nameOf(selected.player1_id) || t("TBD")}</span>
+              <ScoreStepper value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
+            </span>
+            <span className="turnier-graph-toolbar-editor-row">
+              {nameOf(selected.player2_id) && <Ball color={colorOf(nameOf(selected.player2_id))} label={initials(nameOf(selected.player2_id))} badge={badgeOf(nameOf(selected.player2_id))} photo={photoOf(nameOf(selected.player2_id))} size={22} />}
+              <span>{nameOf(selected.player2_id) || t("TBD")}</span>
+              <ScoreStepper value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="turnier-graph-wrap" ref={wrapRef}

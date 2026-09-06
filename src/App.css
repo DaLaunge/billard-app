@@ -1089,13 +1089,22 @@ button.id-card-head { cursor: pointer; }
    Navigation mitzoomen wuerde statt nur den Baum selbst) - Gold-Rahmen wie
    die anderen interaktiven Elemente in dieser Ansicht, damit die Buttons
    neben den vielen Boxen/Linien nicht untergehen. */
-.turnier-graph-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.turnier-graph-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .turnier-graph-toolbar button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
   border-radius: 10px; width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
 .turnier-graph-toolbar button:hover:not(:disabled) { background: var(--felt); }
 .turnier-graph-toolbar button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
 .turnier-graph-zoom-level { font-size: 14.5px; font-weight: 700; color: var(--ivory); min-width: 46px; text-align: center; }
 .turnier-graph-zoom-reset { width: auto !important; height: 44px; padding: 0 14px; font-size: 13px; font-weight: 600; }
+/* Immer unskalierte Zweit-Eingabe der gerade ausgewaehlten Box (siehe
+   TurnierGraph.jsx) - wichtig beim starken Herauszoomen, wo die Zaehler in
+   der Box selbst zu klein zum Treffen werden (Nutzer-Feedback). Eigene
+   Zeile bei wenig Platz (flex-wrap oben), normale (nicht kompakte)
+   Stepper-Groesse, da hier keine Boxhoehe einschraenkt. */
+.turnier-graph-toolbar-editor { display: flex; align-items: center; gap: 16px; flex: 1 1 280px; min-width: 0;
+  padding: 6px 16px; border: 1.5px solid var(--gold); border-radius: 10px; background: var(--felt-3); }
+.turnier-graph-toolbar-editor-row { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; }
+.turnier-graph-toolbar-editor-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 /* Offene Verbindungen dezent, bereits entschiedene (Sieger steht fest)
    deutlich heller/dicker - macht den tatsaechlichen Turnierverlauf auf den
    ersten Blick erkennbar statt eines gleichfoermigen Liniengewirrs. Weiche
