@@ -460,10 +460,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </section>
       ) : viewMode === "graph" && hasTreeSections ? (
         <section className="stat-block">
-          <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
-          {/* Bei Jeder-gegen-jeden mit Playoff hat die Gruppenphase ('main')
-              keine next_match_id-Struktur - nur die Playoff-Stufe ('final')
-              gehoert in den Baum, die Gruppentabelle steht schon oben. */}
+          {/* Die Ueberschrift + Zoom-Icons rendert TurnierGraph.jsx jetzt selbst
+              (eigene Kopfzeile), damit die Zoom-Buttons direkt daneben Platz
+              finden statt in der Toolbar darunter (Nutzer-Feedback). Bei
+              Jeder-gegen-jeden mit Playoff hat die Gruppenphase ('main') keine
+              next_match_id-Struktur - nur die Playoff-Stufe ('final') gehoert
+              in den Baum, die Gruppentabelle steht schon oben. */}
           <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
             nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
             busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}

@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { X, ZoomIn, ZoomOut, Trophy } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, Trophy } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
@@ -339,38 +339,79 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   const selIsFinal = selected?.bracket === "final" && layout.bigFinalBox;
   const selBoxH = selIsFinal ? FINAL_BOX_H : BOX_H;
 
+  // Innerer Inhalt EINER Box (Trophy/Tisch/Wartepunkt + zwei Spielerzeilen) -
+  // gemeinsam genutzt von der absolut positionierten Box im Baum UND ihrer
+  // angepinnten Kopie oben in der Kopfzeile (siehe unten), damit beide
+  // GARANTIERT exakt gleich aussehen (dieselben Klassen/Layout) statt zweier
+  // separat gepflegter, potenziell auseinanderlaufender Varianten (Nutzer-
+  // Feedback: die angepinnte Kopie sah bisher anders aus als die echte Box).
+  const renderBoxInner = (m, isFinal, editable) => {
+    const n1 = nameOf(m.player1_id), n2 = nameOf(m.player2_id);
+    const msc = tmScores(m);
+    const s1 = msc?.s1, s2 = msc?.s2;
+    const pending = m.match_id && !m.match?.confirmed;
+    return (
+      <>
+        {isFinal && <Trophy className="turnier-graph-final-icon" size={17} />}
+        {m.table_number != null && <span className="turnier-graph-table">{t("Tisch")} {m.table_number}</span>}
+        {pending && <span className="turnier-graph-pending" title={t("Wartet auf Bestätigung ...")}>•</span>}
+        <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player1_id ? " won" : "")}>
+          <span className="turnier-graph-name">
+            {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={isFinal ? 26 : 20} />}
+            <span>{n1 || t("TBD")}</span>
+          </span>
+          {editable ? (
+            <span onClick={(e) => e.stopPropagation()}>
+              <ScoreStepper compact value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
+            </span>
+          ) : (s1 != null && <span>{s1}</span>)}
+        </div>
+        <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player2_id ? " won" : "")}>
+          <span className="turnier-graph-name">
+            {!m.is_bye && n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={isFinal ? 26 : 20} />}
+            <span>{m.is_bye ? t("(Freilos)") : (n2 || t("TBD"))}</span>
+          </span>
+          {editable ? (
+            <span onClick={(e) => e.stopPropagation()}>
+              <ScoreStepper compact value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
+            </span>
+          ) : (s2 != null && <span>{s2}</span>)}
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="turnier-graph-block">
-      <div className="turnier-graph-toolbar">
-        <button type="button" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={20} /></button>
-        <span className="turnier-graph-zoom-level">{Math.round(zoom * 100)}%</span>
-        <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={20} /></button>
-        {zoom !== 1 && <button type="button" className="turnier-graph-zoom-reset" onClick={() => setZoom(1)}>{t("Zoom zurücksetzen")}</button>}
-        {/* Zweite, IMMER unskalierte Kopie der Inline-Eingabe der gerade
-            ausgewaehlten Box - bei starkem Herauszoomen sind die Zaehler in
-            der Box selbst zu klein zum Treffen (Nutzer-Feedback). Teilt sich
-            denselben draft-State wie die Box, beide Bedienelemente sind also
-            immer synchron und schreiben dasselbe Ergebnis. Bewusst im selben
-            Look wie die Box selbst (zwei Zeilen, kompakte Zaehler, farbiger
-            Rahmenstreifen je Abschnitt) statt einer breiten Extra-Zeile -
-            Platzbedarf/Optik sollen zur Box passen statt eigenes Layout
-            (Nutzer-Feedback: sah anders aus, verschob auf dem Handy die
-            ganze Ansicht durch die vorherige breite Ein-Zeilen-Variante). */}
-        {selected && selectedInline && (
-          <div className={"turnier-graph-toolbar-editor turnier-graph-box--" + selected.bracket}>
-            <div className="turnier-graph-toolbar-editor-row">
-              {nameOf(selected.player1_id) && <Ball color={colorOf(nameOf(selected.player1_id))} label={initials(nameOf(selected.player1_id))} badge={badgeOf(nameOf(selected.player1_id))} photo={photoOf(nameOf(selected.player1_id))} size={20} />}
-              <span>{nameOf(selected.player1_id) || t("TBD")}</span>
-              <ScoreStepper compact value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
-            </div>
-            <div className="turnier-graph-toolbar-editor-row">
-              {nameOf(selected.player2_id) && <Ball color={colorOf(nameOf(selected.player2_id))} label={initials(nameOf(selected.player2_id))} badge={badgeOf(nameOf(selected.player2_id))} photo={photoOf(nameOf(selected.player2_id))} size={20} />}
-              <span>{nameOf(selected.player2_id) || t("TBD")}</span>
-              <ScoreStepper compact value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
-            </div>
-          </div>
-        )}
+      <div className="turnier-graph-header">
+        <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
+        {/* Nur 3 Icon-Buttons ohne Beschriftung, direkt neben der
+            Ueberschrift - der Platzbedarf hier war zuvor der groesste
+            Platzfresser in der eigentlichen Toolbar-Zeile darunter, die
+            dadurch jetzt frei fuer die angepinnte Box ist (Nutzer-Feedback). */}
+        <div className="turnier-graph-zoom-controls">
+          <button type="button" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={18} /></button>
+          <button type="button" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={18} /></button>
+          <button type="button" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
+        </div>
       </div>
+
+      {/* Immer unskalierte Kopie der gerade ausgewaehlten Box - bei starkem
+          Herauszoomen sind die Zaehler in der Box selbst zu klein zum
+          Treffen (Nutzer-Feedback). Exakt dieselben Klassen/derselbe
+          renderBoxInner()-Inhalt wie die echte Box im Baum (siehe oben) -
+          garantiert identisches Layout/Ausrichtung statt eines eigenen,
+          leicht abweichenden Nachbaus. Teilt sich denselben draft-State wie
+          die Box, beide Bedienelemente sind also immer synchron. */}
+      {selected && selectedInline && (
+        <div className="turnier-graph-pinned-row">
+          <div className={"turnier-graph-box turnier-graph-box--" + selected.bracket + " selected"
+            + (selIsFinal ? " turnier-graph-box--final" : "")}
+            style={{ width: selIsFinal ? FINAL_BOX_W : BOX_W, height: selBoxH }}>
+            {renderBoxInner(selected, selIsFinal, true)}
+          </div>
+        </div>
+      )}
 
       <div className="turnier-graph-wrap" ref={wrapRef}
         onClick={(e) => {
@@ -413,10 +454,6 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               const isFinal = m.bracket === "final" && layout.bigFinalBox;
               const boxW = isFinal ? FINAL_BOX_W : BOX_W;
               const baseBoxH = isFinal ? FINAL_BOX_H : BOX_H;
-              const n1 = nameOf(m.player1_id), n2 = nameOf(m.player2_id);
-              const msc = tmScores(m);
-              const s1 = msc?.s1, s2 = msc?.s2;
-              const pending = m.match_id && !m.match?.confirmed;
               const isSelected = selectedId === m.id;
               const actions = turnierActions(m, me, isOrganizer, tourStatus);
               const actionable = actions.canReport || actions.canOrganizerReport || actions.canConfirm || actions.canForce;
@@ -444,31 +481,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                     if (e.target !== e.currentTarget) return;
                     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSelect(); }
                   }}>
-                  {isFinal && <Trophy className="turnier-graph-final-icon" size={17} />}
-                  {m.table_number != null && <span className="turnier-graph-table">{t("Tisch")} {m.table_number}</span>}
-                  {pending && <span className="turnier-graph-pending" title={t("Wartet auf Bestätigung ...")}>•</span>}
-                  <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player1_id ? " won" : "")}>
-                    <span className="turnier-graph-name">
-                      {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={isFinal ? 26 : 20} />}
-                      <span>{n1 || t("TBD")}</span>
-                    </span>
-                    {inlineEdit ? (
-                      <span onClick={(e) => e.stopPropagation()}>
-                        <ScoreStepper compact value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
-                      </span>
-                    ) : (s1 != null && <span>{s1}</span>)}
-                  </div>
-                  <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player2_id ? " won" : "")}>
-                    <span className="turnier-graph-name">
-                      {!m.is_bye && n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={isFinal ? 26 : 20} />}
-                      <span>{m.is_bye ? t("(Freilos)") : (n2 || t("TBD"))}</span>
-                    </span>
-                    {inlineEdit ? (
-                      <span onClick={(e) => e.stopPropagation()}>
-                        <ScoreStepper compact value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
-                      </span>
-                    ) : (s2 != null && <span>{s2}</span>)}
-                  </div>
+                  {renderBoxInner(m, isFinal, inlineEdit)}
                 </div>
               );
             })}

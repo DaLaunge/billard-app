@@ -1084,42 +1084,31 @@ button.id-card-head { cursor: pointer; }
   touch-action: pan-x pan-y; }
 .turnier-graph { position: relative; transform-origin: 0 0; }
 .turnier-graph-svg { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
-/* Zoom-Regler oberhalb des Baums - eigener, bewusst grosser/kontrastreicher
-   Regler (nicht nur Pinch-Zoom des ganzen Bildschirms, der auch Kopfzeile/
-   Navigation mitzoomen wuerde statt nur den Baum selbst) - Gold-Rahmen wie
-   die anderen interaktiven Elemente in dieser Ansicht, damit die Buttons
-   neben den vielen Boxen/Linien nicht untergehen. */
-.turnier-graph-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-.turnier-graph-toolbar button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
-  border-radius: 10px; width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
-.turnier-graph-toolbar button:hover:not(:disabled) { background: var(--felt); }
-.turnier-graph-toolbar button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
-.turnier-graph-zoom-level { font-size: 14.5px; font-weight: 700; color: var(--ivory); min-width: 46px; text-align: center; }
-.turnier-graph-zoom-reset { width: auto !important; height: 44px; padding: 0 14px; font-size: 13px; font-weight: 600; }
-/* Auf schmalen Handy-Breiten die Prozentzahl ausblenden, um Platz fuer die
-   Inline-Eingabe (siehe unten) in derselben Zeile zu gewinnen, statt dass
-   die Toolbar dafuer eine zweite Zeile aufmacht und der Graph darunter
-   sichtbar springt (Nutzer-Feedback). */
-@media (max-width: 480px) {
-  .turnier-graph-zoom-level { display: none; }
-}
-/* Immer unskalierte Zweit-Eingabe der gerade ausgewaehlten Box (siehe
-   TurnierGraph.jsx) - wichtig beim starken Herauszoomen, wo die Zaehler in
-   der Box selbst zu klein zum Treffen werden (Nutzer-Feedback). Bewusst im
-   selben zweizeiligen Look wie die Box selbst (statt einer breiten
-   Ein-Zeilen-Variante) - kompakter, sieht wie ein Ausschnitt aus dem
-   Graphen aus UND nimmt am Handy deutlich weniger Platz weg, damit der
-   Rest der Toolbar/der Graph darunter beim Ein-/Ausblenden nicht spuerbar
-   springt (Nutzer-Feedback). flex: 0 0 auto statt flex-grow, damit die
-   Breite nur vom Inhalt abhaengt statt vom verbleibenden Platz - macht die
-   Groesse vorhersehbar unabhaengig davon, ob z.B. "Zoom zuruecksetzen"
-   gerade angezeigt wird. Die turnier-graph-box--winners/--losers-Klassen
-   liefern denselben farbigen Rahmenstreifen wie im Graphen. */
-.turnier-graph-toolbar-editor { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; max-width: 100%;
-  padding: 5px 10px; border: 1.5px solid var(--ivory); border-radius: 10px; background: var(--felt); }
-.turnier-graph-toolbar-editor-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.turnier-graph-toolbar-editor-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-weight: 600; font-size: 13px; max-width: 84px; }
+/* Kopfzeile: Ueberschrift + Zoom-Icons direkt daneben statt in einer
+   eigenen, breiten Toolbar-Zeile darunter - schafft dort Platz fuer die
+   angepinnte Box (Nutzer-Feedback). Nur 3 kleine Icon-Buttons ohne
+   Beschriftung (auch keine Prozentzahl mehr). */
+.turnier-graph-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.turnier-graph-zoom-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.turnier-graph-zoom-controls button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
+  border-radius: 9px; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.turnier-graph-zoom-controls button:hover:not(:disabled) { background: var(--felt); }
+.turnier-graph-zoom-controls button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
+/* Immer unskalierte Kopie der gerade ausgewaehlten Box - wichtig beim
+   starken Herauszoomen, wo die Zaehler in der Box selbst zu klein zum
+   Treffen werden (Nutzer-Feedback). Nutzt in TurnierGraph.jsx dieselben
+   turnier-graph-box(--winners/--losers/--final)-Klassen wie die echte Box
+   im Baum, nur mit position:static statt absolut - garantiert exakt
+   dasselbe Aussehen/Ausrichtung statt eines eigenen, leicht abweichenden
+   Nachbaus (Nutzer-Feedback: sah bisher anders aus). */
+.turnier-graph-pinned-row { margin-bottom: 10px; }
+/* Nachfahren-Selektor statt .turnier-graph-box--pinned allein, da diese
+   Regel sonst dieselbe Spezifitaet wie .turnier-graph-box (position:
+   absolute, weiter unten definiert) haette und je nach Reihenfolge im
+   Stylesheet verlieren wuerde - die Box blieb dann absolut positioniert,
+   ihre Zeile kollabierte auf Hoehe 0 und die Box ueberlappte sichtbar den
+   Graphen darunter (Nutzer-Feedback/eigener Test). */
+.turnier-graph-pinned-row .turnier-graph-box { position: static; cursor: default; }
 /* Offene Verbindungen dezent, bereits entschiedene (Sieger steht fest)
    deutlich heller/dicker - macht den tatsaechlichen Turnierverlauf auf den
    ersten Blick erkennbar statt eines gleichfoermigen Liniengewirrs. Weiche
