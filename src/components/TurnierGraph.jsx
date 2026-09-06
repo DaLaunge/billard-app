@@ -22,10 +22,6 @@ const FINAL_GAP = COL_GAP * 1.7;
 const ROW_GAP = 14;
 const SECTION_GAP = 26;
 const LABEL_H = 26;
-// Zusaetzliche Boxhoehe, wenn die Turnierleitungs-Eingabe INNERHALB der Box
-// selbst erscheint (statt in einem separaten Menue darunter, siehe Nutzer-
-// Feedback) - Platz fuer zwei Zaehler-Zeilen + Eintragen-Button.
-const INLINE_REPORT_EXTRA_H = 74;
 const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 2;
 const ZOOM_STEP = 0.2;
@@ -57,9 +53,33 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   // naechsten Zoom-Commit angewendet und danach sofort verworfen wird.
   const zoomAnchorRef = useRef(null);
   // Entwurfswerte fuer die Turnierleitungs-Inline-Eingabe (siehe unten) -
-  // zurueckgesetzt, sobald eine andere/keine Box mehr ausgewaehlt ist.
+  // zurueckgesetzt, sobald eine andere/keine Box mehr ausgewaehlt ist. Ref
+  // fuer den Cleanup-Effekt unten (der braucht den JEWEILS aktuellen Wert,
+  // ohne dass der Effekt bei jeder Zaehler-Aenderung neu binden muss).
   const [draft, setDraft] = useState({ s1: 0, s2: 0 });
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
   useEffect(() => { setDraft({ s1: 0, s2: 0 }); }, [selectedId]);
+
+  // Speichert die Turnierleitungs-Inline-Eingabe automatisch, sobald die Box
+  // deselektiert wird (anderes Match gewaehlt, abgewaehlt oder die Ansicht
+  // verlassen) - kein Eintragen-Button noetig (Nutzer-Feedback). Der Cleanup
+  // einer auf [selectedId] reagierenden Effekt-Instanz laeuft genau in dem
+  // Moment, in dem die ZUVOR ausgewaehlte Box ihre Auswahl verliert. Ein
+  // Unentschieden (s1 === s2) gilt als "nichts eingetippt" und wird verworfen.
+  useEffect(() => {
+    const id = selectedId;
+    return () => {
+      if (!id) return;
+      const m = matches.find((mm) => mm.id === id);
+      if (!m) return;
+      const d = draftRef.current;
+      if (d.s1 === d.s2) return;
+      if (!turnierActions(m, me, isOrganizer, tourStatus).canOrganizerReport) return;
+      onOrganizerReport(m, d.s1, d.s2, () => {});
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   // Wendet die in zoomAt() hinterlegte Ziel-Scrollposition an, NACHDEM React
   // die neue Zoomstufe committet hat (useLayoutEffect laeuft synchron nach
@@ -333,9 +353,11 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               const actionable = actions.canReport || actions.canOrganizerReport || actions.canConfirm || actions.canForce;
               // Turnierleitungs-Eingabe passiert direkt in der Box selbst statt in
               // einem zusaetzlichen Menue darunter (Nutzer-Feedback: das Popup nahm
-              // zu viel Platz weg) - die Box waechst dafuer voruebergehend.
+              // zu viel Platz weg) - kompakte Zaehler statt der groesseren Variante
+              // im Popover, damit die Box dabei genauso gross bleibt wie sonst.
+              // Gespeichert wird automatisch beim Deselektieren (siehe Cleanup-
+              // Effekt oben), kein Eintragen-Button noetig.
               const inlineReport = isSelected && actions.canOrganizerReport;
-              const boxH = inlineReport ? baseBoxH + INLINE_REPORT_EXTRA_H : baseBoxH;
               const isConnected = highlightIds && highlightIds.has(m.id) && !isSelected;
               const isDim = highlightIds && !highlightIds.has(m.id);
               const toggleSelect = () => setSelectedId(m.id === selectedId ? null : m.id);
@@ -343,9 +365,8 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                 <div key={m.id} role="button" tabIndex={0}
                   className={"turnier-graph-box turnier-graph-box--" + m.bracket
                     + (actionable ? " actionable" : "") + (isSelected ? " selected" : "")
-                    + (inlineReport ? " turnier-graph-box--reporting" : "")
                     + (isConnected ? " connected" : "") + (isDim ? " dim" : "")}
-                  style={{ left: p.x, top: p.y, width: boxW, height: boxH, zIndex: isSelected ? 4 : undefined }}
+                  style={{ left: p.x, top: p.y, width: boxW, height: baseBoxH, zIndex: isSelected ? 4 : undefined }}
                   onClick={toggleSelect}
                   onKeyDown={(e) => {
                     if (e.target !== e.currentTarget) return;
@@ -361,7 +382,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                     </span>
                     {inlineReport ? (
                       <span onClick={(e) => e.stopPropagation()}>
-                        <ScoreStepper value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
+                        <ScoreStepper compact value={draft.s1} onChange={(v) => setDraft((d) => ({ ...d, s1: v }))} />
                       </span>
                     ) : (s1 != null && <span>{s1}</span>)}
                   </div>
@@ -372,20 +393,10 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                     </span>
                     {inlineReport ? (
                       <span onClick={(e) => e.stopPropagation()}>
-                        <ScoreStepper value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
+                        <ScoreStepper compact value={draft.s2} onChange={(v) => setDraft((d) => ({ ...d, s2: v }))} />
                       </span>
                     ) : (s2 != null && <span>{s2}</span>)}
                   </div>
-                  {inlineReport && (
-                    <button type="button" className="turnier-graph-inline-submit"
-                      disabled={busyId === m.id || draft.s1 === draft.s2}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOrganizerReport(m, draft.s1, draft.s2, () => setDraft({ s1: 0, s2: 0 }));
-                      }}>
-                      {t("Eintragen")}
-                    </button>
-                  )}
                 </div>
               );
             })}

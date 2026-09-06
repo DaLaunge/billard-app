@@ -8,13 +8,17 @@ import { t } from "../lib/i18n";
 // Protokoll). Der Wert ist direkt eintippbar (nicht nur per +/-), da bei
 // 14/1 Endlos ueblich dreistellige Ergebnisse (z.B. 100:98) vorkommen -
 // ueber +/- allein waere das viel zu umstaendlich.
-export function ScoreStepper({ value, onChange }) {
+// compact: fuer die Inline-Eingabe direkt in einer Turniergraph-Box gedacht
+// (TurnierGraph.jsx) - dort muss der Zaehler in dieselbe Boxhoehe passen wie
+// die normale Namen-/Ergebnis-Zeile, sonst waechst die Box beim Editieren.
+export function ScoreStepper({ value, onChange, compact }) {
+  const iconSize = compact ? 11 : 14;
   return (
-    <div className="turnier-stepper">
-      <button type="button" className="turnier-stepper-btn" onClick={() => onChange(Math.max(0, value - 1))} aria-label="minus"><Minus size={14} /></button>
+    <div className={"turnier-stepper" + (compact ? " turnier-stepper--compact" : "")}>
+      <button type="button" className="turnier-stepper-btn" onClick={() => onChange(Math.max(0, value - 1))} aria-label="minus"><Minus size={iconSize} /></button>
       <input type="number" inputMode="numeric" min="0" className="turnier-stepper-val-input" value={value}
         onChange={(e) => { const v = parseInt(e.target.value, 10); onChange(Number.isNaN(v) ? 0 : Math.max(0, v)); }} />
-      <button type="button" className="turnier-stepper-btn plus" onClick={() => onChange(value + 1)} aria-label="plus"><Plus size={14} /></button>
+      <button type="button" className="turnier-stepper-btn plus" onClick={() => onChange(value + 1)} aria-label="plus"><Plus size={iconSize} /></button>
     </div>
   );
 }
