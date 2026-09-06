@@ -1055,6 +1055,10 @@ button.id-card-head { cursor: pointer; }
 .turnier-stepper--compact .turnier-stepper-val-input { width: 24px; min-width: 24px; height: 18px; font-size: 12px; border-radius: 5px; }
 .turnier-match-card .btn, .turnier-match-card .chip-btn { min-height: 42px; font-size: 14px; }
 .turnier-standings-row { padding: 9px 0; }
+/* Bestenliste (Endplatzierung, siehe TurnierRasterScreen.jsx) - bei einem
+   geteilten Platz stehen mehrere Spieler in derselben Zeile. */
+.turnier-tied-names { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.turnier-tied-player { display: flex; align-items: center; gap: 6px; }
 
 @media (min-width: 900px) {
   /* Ab Desktop-Breite lohnt sich kein Wisch-Scrollen mehr - alle Runden
@@ -1070,6 +1074,60 @@ button.id-card-head { cursor: pointer; }
    vertikal scrollbarer Rahmen statt scroll-snap - ein Turnierbaum ist eher
    eine Karte zum Erkunden (auch per Pinch-Zoom) als Karten zum Durchwischen. */
 .turnier-view-toggle { margin-bottom: 10px; }
+.turnier-maximize-btn { margin-left: auto; }
+/* Maximieren-Modus (Liste/Grafik-Ansicht) - eigener CSS-Zustand statt
+   allein auf :fullscreen zu setzen, weil iOS Safari die Fullscreen-API fuer
+   normale Elemente nicht unterstuetzt (siehe TurnierRasterScreen.jsx) - so
+   funktioniert "Maximieren" ueberall, echtes chromeloses Vollbild kommt dort
+   als Bonus obendrauf, wo der Browser es unterstuetzt. position:fixed statt
+   nur groesser zu skalieren, damit auch der Rest der Seite (Kopfzeile,
+   andere Turnier-Abschnitte) wirklich verschwindet und der volle
+   Bildschirm fuers Raster/den Graphen zur Verfuegung steht. z-index bewusst
+   UNTER .modal-overlay (100)/.celebrate-overlay (120, siehe weiter oben) -
+   sonst legt sich die maximierte Ansicht ueber den Bestaetigen-Dialog fuer
+   neu eingegebene Ergebnisse und der ist nicht mehr erreichbar (Nutzer-
+   Feedback: "Bestätigen"-Dialog in der Max-Ansicht nicht verfuegbar). */
+/* Flex-Spalte statt nur Block-Fluss: so kann der Turniergraph (siehe Kette
+   unten) den WIRKLICH verfuegbaren Platz ausfuellen, statt mit einer fixen
+   calc(100vh - Npx)-Hoehe zu raten, die je nach vorhandener Kopfzeile/
+   angepinnter Box zu viel leeren Platz uebrig liess (Nutzer-Feedback:
+   "verlorener leerer Platz trotz Maximierung"). overflow-y:auto greift bei
+   der Liste (kein Flex-Kind mit flex-grow, waechst natuerlich und scrollt
+   dann als Ganzes) genauso wie beim Graphen (dessen eigener Wrap-Bereich
+   intern scrollt, siehe Kette unten). */
+.turnier-view-container.is-maximized { position: fixed; inset: 0; z-index: 90;
+  background: var(--felt); padding: 20px; overflow-y: auto;
+  display: flex; flex-direction: column; }
+.turnier-view-container.is-maximized > .stat-block,
+.turnier-view-container.is-maximized .turnier-graph-block {
+  display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+/* .stat-block hat sonst ueberall margin-bottom:14px fuer den Abstand
+   zwischen gestapelten Karten - hier bleibt dadurch trotz flex:1 1 auto
+   unten ungenutzter Platz uebrig (Nutzer-Feedback: "es wird immer noch
+   Platz verschenkt"). */
+.turnier-view-container.is-maximized > .stat-block { margin-bottom: 0; }
+.turnier-view-container.is-maximized .turnier-graph-wrap { flex: 1 1 auto; max-height: none; min-height: 0; }
+/* Ausstiegs-Zeile im normalen Fluss (sticky statt fixed) - ein schwebender
+   Eck-Button ueberlappte sich mit der eigenen Kopfzeile/den Zoom-Buttons
+   des Turniergraphen, die ebenfalls oben rechts sitzen (Nutzer-Feedback:
+   "Max-Button überlappt"). */
+.turnier-maximize-exit-row { display: flex; justify-content: flex-end;
+  position: sticky; top: 0; z-index: 10; flex-shrink: 0; margin-bottom: 10px; }
+/* Dunkel eingefaerbter Scrollbalken statt des hellen Browser-Standards, der
+   im dunklen Design stoerend auffiel (Nutzer-Feedback: "Scrollbalken passt
+   nicht ins Design") - Firefox (scrollbar-color) und WebKit/Chromium
+   getrennt, da es dafuer keine gemeinsame Eigenschaft gibt. */
+.turnier-view-container.is-maximized,
+.turnier-graph-wrap {
+  scrollbar-width: thin; scrollbar-color: var(--felt-3) var(--felt-2); }
+.turnier-view-container.is-maximized::-webkit-scrollbar,
+.turnier-graph-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+.turnier-view-container.is-maximized::-webkit-scrollbar-track,
+.turnier-graph-wrap::-webkit-scrollbar-track { background: var(--felt-2); }
+.turnier-view-container.is-maximized::-webkit-scrollbar-thumb,
+.turnier-graph-wrap::-webkit-scrollbar-thumb { background: var(--felt-3); border-radius: 8px; border: 2px solid var(--felt-2); }
+.turnier-view-container.is-maximized::-webkit-scrollbar-thumb:hover,
+.turnier-graph-wrap::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 .turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
   border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch;
   /* Ohne Hoehenbegrenzung waechst dieser Bereich immer genau so hoch wie sein
@@ -1088,12 +1146,66 @@ button.id-card-head { cursor: pointer; }
    eigenen, breiten Toolbar-Zeile darunter - schafft dort Platz fuer die
    angepinnte Box (Nutzer-Feedback). Nur 3 kleine Icon-Buttons ohne
    Beschriftung (auch keine Prozentzahl mehr). */
-.turnier-graph-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.turnier-graph-zoom-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.turnier-graph-zoom-controls button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
+/* Grid statt absoluter Positionierung: Ueberschrift/Minimieren bekommen
+   gleich grosse Aussenspalten (1fr), die Zoom-Buttons sitzen dazwischen
+   (auto-Spalte, ueber justify-self:center). Echte Grid-Spalten reservieren
+   dabei automatisch Platz nach tatsaechlicher Inhaltsbreite (dynamisch fuer
+   jede Bildschirmgroesse) statt wie bei position:absolute komplett zu
+   ignorieren, wie breit die Ueberschrift ist - eine reine Zentrierung ohne
+   Ruecksicht darauf ueberlappte auf schmalen Handy-Breiten mit dem
+   Schriftzug "Turnierbaum" (Nutzer-Feedback, per Test bei 320px bestaetigt).
+   min-width:0 + Ellipsis auf der Ueberschrift als letzte Absicherung, falls
+   selbst die eigene Spalte auf sehr schmalen Geraeten noch zu knapp ist. */
+.turnier-graph-header { display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; min-height: 34px; gap: 8px; }
+/* Explizite Spaltenzuweisung noetig: auf Touch-Geraeten faellt die mittlere
+   Spalte (Zoom-Buttons) per display:none komplett aus dem Grid-Fluss, ohne
+   grid-column wuerde die automatische Platzierung turnier-graph-header-end
+   dann faelschlich in die (jetzt freie) mittlere statt der rechten Spalte
+   schieben (Nutzer-Feedback/eigener Test: Buttons standen ploetzlich in der
+   Mitte statt rechts). */
+.turnier-graph-header h3 { grid-column: 1; margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turnier-graph-zoom-controls { grid-column: 2; }
+.turnier-graph-header-end { grid-column: 3; justify-self: end; min-width: 0; display: flex; align-items: center; gap: 6px; }
+/* Mobile-Reset-Duplikat (siehe unten/TurnierGraph.jsx) ist per Default
+   ausgeblendet - nur am PC bleibt die zentrierte 3-Buttons-Gruppe die
+   einzige Zoom-Bedienung. Nachfahren-Selektor (2 Klassen) statt der Klasse
+   allein, da .turnier-graph-minimize-btn (display:grid, weiter unten
+   definiert) sonst gleiche Spezifitaet haette und je nach Reihenfolge im
+   Stylesheet gewinnen wuerde (derselbe Bug wie zuvor schon bei position:
+   static/absolute) - der Button blieb dadurch faelschlich auch am PC
+   sichtbar (eigener Test). */
+.turnier-graph-header-end .turnier-graph-mobile-reset-btn { display: none; }
+.turnier-graph-zoom-controls { justify-self: center; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.turnier-graph-zoom-controls button, .turnier-graph-minimize-btn {
+  background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
   border-radius: 9px; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
-.turnier-graph-zoom-controls button:hover:not(:disabled) { background: var(--felt); }
+.turnier-graph-zoom-controls button:hover:not(:disabled), .turnier-graph-minimize-btn:hover { background: var(--felt); }
 .turnier-graph-zoom-controls button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
+/* Am PC (echte Maus mit Hover) sind die Zoom-Buttons im Ruhezustand
+   gedaempft statt permanent goldumrandet - erst beim Ueberfahren werden sie
+   voll sichtbar/gold, als Bestaetigung "hier trifft die Maus tatsaechlich
+   einen Button" (Nutzer-Feedback). Am Handy im maximierten Zustand ganz
+   ausgeblendet, da dort Pinch-to-Zoom die uebliche Geste ist (Nutzer-
+   Feedback: "benötige ich im maximize modus gar keine zoom-Buttons"). */
+@media (hover: hover) and (pointer: fine) {
+  .turnier-graph-zoom-controls { opacity: 0.45; transition: opacity .15s; }
+  .turnier-graph-zoom-controls:hover, .turnier-graph-zoom-controls:focus-within { opacity: 1; }
+  .turnier-graph-zoom-controls button { border-color: var(--line); color: var(--ivory-dim);
+    transition: border-color .15s, color .15s, background-color .15s; }
+  .turnier-graph-zoom-controls:hover button:not(:disabled),
+  .turnier-graph-zoom-controls button:focus-visible { border-color: var(--gold); color: var(--gold); }
+}
+/* Auf Touch-Geraeten die zentrierte 3-Buttons-Gruppe komplett durch das
+   Reset-Duplikat rechts neben Minimieren ersetzen (Rein-/Rauszoomen
+   entfaellt, dort ist Pinch-to-Zoom die uebliche Geste) - beide Buttons
+   stehen dadurch als EINE Gruppe rechts zusammen statt eines mittig
+   stehenden Einzelbuttons, der optisch verloren wirkte (Nutzer-Feedback).
+   Kopfzeile zeigt "Turnierbaum --- [Zoom zuruecksetzen][Minimieren]". */
+@media (pointer: coarse) {
+  .turnier-graph-zoom-controls { display: none; }
+  .turnier-graph-header-end .turnier-graph-mobile-reset-btn { display: grid; }
+}
 /* Immer unskalierte Kopie der gerade ausgewaehlten Box - wichtig beim
    starken Herauszoomen, wo die Zaehler in der Box selbst zu klein zum
    Treffen werden (Nutzer-Feedback). Nutzt in TurnierGraph.jsx dieselben
@@ -1268,4 +1380,59 @@ button.id-card-head { cursor: pointer; }
   .protokoll-tag.t-safe { background: #DCEAF5 !important; color: #1F4A66 !important; }
   .protokoll-tag.t-foul, .protokoll-tag.t-breakfoul { background: #F8DCDC !important; color: #6B1F24 !important; }
   .protokoll-tag.t-miss { background: #EAEAEA !important; color: #444 !important; }
+}
+
+/* Kompletter Turnierbericht (TurnierBerichtScreen.jsx) - baut auf dem
+   .protokoll-doc-Grundgeruest auf, braucht aber mehr Breite als ein
+   Einzelmatch-Protokoll (Bestenliste hat 6 Spalten, der Baum ist teils
+   sehr breit) - Nachfahren-Selektor mit zwei Klassen statt .protokoll-doc
+   allein zu ueberschreiben, damit die Spezifitaet unabhaengig von der
+   Regel-Reihenfolge im Stylesheet gewinnt (derselbe Bug-Typ wie schon bei
+   den Turniergraph-Mobile-Buttons, siehe Kommentare weiter oben). */
+.protokoll-doc.turnier-bericht-doc { max-width: 1100px; }
+.tb-section { margin-bottom: 28px; }
+.tb-section h3 { display: flex; align-items: center; gap: 7px; font-size: 15px; margin-bottom: 10px; }
+.tb-player-cell { display: flex; align-items: center; gap: 8px; }
+.tb-log-toggle { display: flex; gap: 8px; }
+.chip-btn.sel { border-color: var(--gold); color: var(--gold); background: #D6A42518; }
+.tb-log-match { margin-bottom: 22px; padding-bottom: 6px; break-inside: avoid; page-break-inside: avoid; }
+.tb-log-match-head { font-size: 14px; margin-bottom: 6px; }
+.tb-log-match-head b { color: var(--gold); }
+.tb-bracket-section { break-inside: avoid; }
+.tb-bracket-svg { width: 100%; height: auto; overflow: visible; }
+.tb-band { fill: transparent; }
+.tb-band--winners { fill: #4CAF6E14; }
+.tb-band--losers { fill: #D9614C14; }
+.tb-edge { fill: none; stroke: var(--ivory-dim); stroke-width: 2; opacity: 0.35; }
+.tb-edge.decided { stroke: var(--gold); stroke-width: 3; opacity: 0.85; }
+.tb-edge.drop { stroke-dasharray: 5 4; opacity: 0.25; }
+.tb-edge.drop.decided { stroke: var(--loss); stroke-width: 2.5; opacity: 0.7; }
+.tb-section-label { fill: var(--ivory-dim); font-size: 12px; }
+.tb-section-label.section--final { fill: var(--gold); }
+.tb-box { fill: var(--felt-3); stroke: var(--line); stroke-width: 1; }
+.tb-box--winners { stroke: var(--win); stroke-width: 2; }
+.tb-box--losers { stroke: var(--loss); stroke-width: 2; }
+.tb-box--final { stroke: var(--gold); stroke-width: 2; }
+.tb-box-divider { stroke: var(--line); stroke-width: 1; }
+.tb-name { fill: var(--ivory); font-size: 13px; dominant-baseline: middle; }
+.tb-score { fill: var(--ivory-dim); font-size: 13px; font-weight: 700; dominant-baseline: middle; }
+.tb-name.tb-won, .tb-score.tb-won { fill: var(--gold); font-weight: 700; }
+
+@media print {
+  .protokoll-doc.turnier-bericht-doc { max-width: none !important; }
+  .tb-band--winners { fill: #DCF5E4 !important; }
+  .tb-band--losers { fill: #F8DCDC !important; }
+  .tb-box { fill: #fff !important; stroke: #ccc !important; }
+  .tb-box--winners { stroke: #1E5B3A !important; }
+  .tb-box--losers { stroke: #6B1F24 !important; }
+  .tb-box--final { stroke: #B8860B !important; }
+  .tb-box-divider { stroke: #ddd !important; }
+  .tb-name { fill: #111 !important; }
+  .tb-score { fill: #333 !important; }
+  .tb-name.tb-won, .tb-score.tb-won { fill: #8A6200 !important; }
+  .tb-edge { stroke: #999 !important; }
+  .tb-edge.decided { stroke: #B8860B !important; }
+  .tb-edge.drop.decided { stroke: #6B1F24 !important; }
+  .tb-section-label { fill: #555 !important; }
+  .tb-section-label.section--final { fill: #8A6200 !important; }
 }

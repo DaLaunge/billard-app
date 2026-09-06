@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -7,24 +7,12 @@ import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
 import Ball from "./Ball";
 import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
+import TurnierBerichtScreen from "./TurnierBerichtScreen";
+import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout";
 
 const POLL_MS = 8000;
 
-const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
-const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers" ? t("Verliererbaum") : b === "final" ? t("Finale") : t("Raster"));
 const bracketRank = { main: 0, winners: 0, losers: 1, final: 2 };
-// Die 'final'-Sektion kann jetzt mehrere Runden haben (Playoff-Stufe nach
-// Jeder-gegen-jeden bzw. verkuerztes Doppel-K.O. mit bis zu 8 Finalisten,
-// siehe Migration 2026-09-06) - Runden werden nach Abstand zum eigentlichen
-// Finale benannt statt generisch "Runde n".
-const finalRoundLabel = (round, totalRounds) => {
-  const fromEnd = totalRounds - round;
-  if (fromEnd <= 0) return t("Finale");
-  if (fromEnd === 1) return t("Halbfinale");
-  if (fromEnd === 2) return t("Viertelfinale");
-  if (fromEnd === 3) return t("Achtelfinale");
-  return `${t("Runde")} ${round}`;
-};
 
 // Turnierraster: zeigt ein einzelnes Turnier an, laedt seine Daten selbst
 // und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
@@ -35,19 +23,43 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
+  const [viewMode, setViewMode] = useState("graph"); // list | graph | players - Grafik ist die Standardansicht (Nutzer-Feedback), Jeder-gegen-jeden ohne Playoff hat aber keinen Baum, siehe Fallback-Effekt unten
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
+  // Maximieren-Modus fuer die Liste/Grafik-Ansicht des Turnierrasters (nicht
+  // fuer Teilnehmer) - rein CSS-basiert (position:fixed ueber die ganze
+  // Seite), bewusst OHNE die native Fullscreen-API: iOS Safari unterstuetzt
+  // requestFullscreen() fuer normale Elemente ohnehin nicht (nur <video>),
+  // und auf Browsern, die es unterstuetzen, rendert die Fullscreen-API NUR
+  // das angeforderte Element selbst (den "Top Layer") - jeder Dialog, der
+  // als Geschwister-Element danebenliegt (z.B. der Bestaetigen-Dialog fuer
+  // neu eingegebene Ergebnisse, oder globale Popups wie "Du bist dran" aus
+  // App.jsx), wird dabei komplett unsichtbar, unabhaengig vom z-index
+  // (Nutzer-Feedback: Bestaetigen-Dialog im maximierten Zustand nicht
+  // erreichbar - trat nur im echten Browser auf, nicht in der Vorschau, weil
+  // requestFullscreen() dort mangels echter Nutzer-Geste stillschweigend
+  // fehlschlug). Deshalb kein Versuch mehr, echtes Vollbild zu nutzen.
+  const viewContainerRef = useRef(null);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const toggleMaximize = () => setIsMaximized((m) => !m);
   // Sicherheitsabfrage vor der ERSTEN Ergebnis-Erfassung (siehe organizerReport
   // unten) - eigenes Overlay im App-Layout statt window.confirm() (Nutzer-
   // Feedback), nach demselben modal-overlay/modal-box-Muster wie anderswo im
   // Code (z.B. MatchScreen.jsx "Match abbrechen?").
   const [pendingReport, setPendingReport] = useState(null); // { tm, s1, s2, onDone } | null
+  // Turnier-Endplatzierung inkl. geteilter Plaetze (siehe tournament_final_
+  // standings() in der DB) - nur relevant/geladen, sobald das Turnier
+  // beendet ist, siehe load() unten.
+  const [finalStandings, setFinalStandings] = useState(null);
+  // Kompletter Turnierbericht (PDF/Druck, Nutzer-Feedback) - lokaler
+  // Screen-Swap statt eigenem App.jsx-Tab (wie beim Maximieren-Modus oben),
+  // da der Bericht rein aus bereits geladenen tms/finalStandings besteht.
+  const [showReport, setShowReport] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, player1_id, player2_id, score1, score2, confirmed, reported_by, confirmed_by, played_at)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, player1_id, player2_id, score1, score2, confirmed, reported_by, confirmed_by, played_at, discipline, run_log, high_run1, high_run2, avg1, avg2)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
@@ -55,6 +67,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     setTour(tr || null);
     setTms(matches || []);
     setRoster(ros || []);
+    if (tr?.status === "finished") {
+      const { data: fs } = await supabase.rpc("tournament_final_standings", { p_tournament_id: tournamentId });
+      setFinalStandings(fs || null);
+    } else {
+      setFinalStandings(null);
+    }
   }, [tournamentId]);
 
   useEffect(() => {
@@ -63,7 +81,31 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     return () => clearInterval(id);
   }, [load]);
 
+  // Grafik ist die Standardansicht (Nutzer-Feedback) - bei Jeder-gegen-jeden
+  // OHNE Playoff gibt es aber keinen Baum; erst sobald tms geladen ist,
+  // koennen wir das wissen, deshalb hier statt direkt im useState-Default.
+  // Bewusst nur "abwaerts" (graph -> list), niemals umgekehrt - falls waehrend
+  // des Betrachtens nachtraeglich ein Playoff-Baum entsteht, bleibt eine
+  // manuell gewaehlte Ansicht unangetastet.
+  useEffect(() => {
+    if (!tms) return;
+    if (viewMode === "graph" && !tms.some((tm) => tm.bracket !== "main")) setViewMode("list");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tms]);
+
   const nameOf = useCallback((id) => players.find((p) => p.id === id)?.nickname || null, [players]);
+
+  // Nach Platz gruppiert (mehrere Eintraege = geteilter Platz), sortiert
+  // aufsteigend - finalStandings kommt bereits mit korrektem placement/
+  // tied_count aus tournament_final_standings(), hier nur zur Anzeige
+  // gruppiert.
+  const finalStandingsGrouped = useMemo(() => {
+    if (!finalStandings || finalStandings.length === 0) return null;
+    const byPlacement = {};
+    finalStandings.forEach((row) => { (byPlacement[row.placement] ||= []).push(row.player_id); });
+    return Object.keys(byPlacement).map(Number).sort((a, b) => a - b)
+      .map((placement) => ({ placement, playerIds: byPlacement[placement] }));
+  }, [finalStandings]);
 
   const standings = useMemo(() => {
     if (!tour || tour.format !== "round_robin" || !roster || !tms) return null;
@@ -241,6 +283,22 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     await load();
   };
 
+  // Schranke (Nutzer-Feedback): erst mit dieser expliziten Bestaetigung durch
+  // Turnierleitung/Admin werden Ergebnis-Korrekturen gesperrt (siehe
+  // resultsLocked/tournament_confirm_results) - bis dahin bleiben Tippfehler
+  // jederzeit korrigierbar. Bewusst window.confirm() wie bei endEarly/
+  // deleteTournament (gleiche Kategorie: einmalige, irreversible Aktion ohne
+  // weitere Dateneingabe) statt eines eigenen Overlays.
+  const confirmResults = async () => {
+    if (!window.confirm(t("Turnier endgültig bestätigen? Danach sind keine Ergebnis-Korrekturen mehr möglich."))) return;
+    setBusyId("confirmResults");
+    const { error } = await supabase.rpc("tournament_confirm_results", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Turnier bestätigt - Korrekturen sind jetzt gesperrt."));
+    await load();
+  };
+
   const deleteTournament = async () => {
     if (!window.confirm(t("Dieses Turnier wirklich unwiderruflich löschen?"))) return;
     setBusyId("delete");
@@ -263,8 +321,18 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     );
   }
 
+  if (showReport) {
+    return (
+      <TurnierBerichtScreen tour={tour} tms={tms} finalStandings={finalStandings}
+        nameOf={nameOf} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+        onBack={() => setShowReport(false)} />
+    );
+  }
+
   const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
   const canDeleteTournament = isOrganizer && !tms.some((tm) => tm.match_id);
+  const resultsLocked = !!tour.results_confirmed_at;
+  const canConfirmResults = isOrganizer && tour.status === "finished" && !resultsLocked;
   const groups = {};
   tms.forEach((tm) => { (groups[tm.bracket] ||= []).push(tm); });
   // Aus den TATSAECHLICH vorhandenen bracket-Werten ableiten statt aus einer
@@ -299,7 +367,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           </span>
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
-        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked}
           busyId={busyId} onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
           onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
       </div>
@@ -315,13 +383,21 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
         {formatLabel(tour.format)} · {t(tour.discipline)} · {tour.status === "finished" ? t("beendet") : t("läuft")}
+        {tour.status === "finished" && (resultsLocked
+          ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
+          : <> · {t("Korrekturen noch möglich")}</>)}
       </p>
 
-      {isOrganizer && (tour.status === "running" || canDeleteTournament) && (
+      {isOrganizer && (tour.status === "running" || canDeleteTournament || canConfirmResults) && (
         <div className="chips small" style={{ marginBottom: 10 }}>
           {tour.status === "running" && (
             <button className="btn ghost" disabled={busyId === "end"} onClick={endEarly}>
               <Flag size={15} /> {t("Turnier vorzeitig beenden")}
+            </button>
+          )}
+          {canConfirmResults && (
+            <button className="btn ghost" disabled={busyId === "confirmResults"} onClick={confirmResults}>
+              <ShieldCheck size={15} /> {t("Turnier bestätigen")}
             </button>
           )}
           {canDeleteTournament && (
@@ -330,6 +406,37 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
             </button>
           )}
         </div>
+      )}
+
+      {tour.status === "finished" && (
+        <div className="chips small" style={{ marginBottom: 10 }}>
+          <button className="btn ghost" onClick={() => setShowReport(true)}>
+            <FileText size={15} /> {t("Kompletter Turnierbericht")}
+          </button>
+        </div>
+      )}
+
+      {finalStandingsGrouped && (
+        <section className="stat-block">
+          <h3><Trophy size={17} /> {t("Bestenliste")}</h3>
+          {finalStandingsGrouped.map(({ placement, playerIds }) => (
+            <div key={placement} className="stat-row turnier-standings-row">
+              <span className="medal">{placement}.</span>
+              <span className="stat-name turnier-tied-names">
+                {playerIds.map((pid) => {
+                  const n = nameOf(pid);
+                  return n ? (
+                    <span key={pid} className="turnier-tied-player">
+                      <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={24} />
+                      {n}
+                    </span>
+                  ) : null;
+                })}
+              </span>
+              {playerIds.length > 1 && <span className="hint" style={{ margin: 0 }}>{t("geteilt")}</span>}
+            </div>
+          ))}
+        </section>
       )}
 
       {standings && (
@@ -396,19 +503,40 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       )}
 
       <div className="chips small turnier-view-toggle">
-        <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
-          <List size={14} /> {t("Liste")}
-        </button>
         {hasTreeSections && (
           <button className={"chip" + (viewMode === "graph" ? " active" : "")} onClick={() => setViewMode("graph")}>
             <GitBranch size={14} /> {t("Grafik")}
           </button>
         )}
+        <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
+          <List size={14} /> {t("Liste")}
+        </button>
         <button className={"chip" + (viewMode === "players" ? " active" : "")} onClick={() => setViewMode("players")}>
           <Users size={14} /> {t("Teilnehmer")}
         </button>
+        {viewMode !== "players" && (
+          <button className="chip turnier-maximize-btn" onClick={toggleMaximize}
+            aria-label={t(isMaximized ? "Minimieren" : "Maximieren")}>
+            {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        )}
       </div>
 
+      <div ref={viewContainerRef} className={"turnier-view-container" + (isMaximized ? " is-maximized" : "")}>
+      {/* Der maximierte Zustand deckt per position:fixed die ganze Seite ab,
+          also auch die Umschalt-Chips oben mit dem "Minimieren"-Button darin -
+          ohne diese Zeile gaebe es keinen Weg mehr zurueck. Fuer die Grafik-
+          Ansicht sitzt das Minimieren stattdessen IN TurnierGraph.jsx' eigener
+          Kopfzeile (spart die ganze Zeile hier, Nutzer-Feedback: "es wird
+          immer noch Platz verschenkt") - diese separate Zeile ist deshalb nur
+          fuer Liste/Teilnehmer noetig, die keine eigene Kopfzeile haben. */}
+      {isMaximized && viewMode !== "graph" && (
+        <div className="turnier-maximize-exit-row">
+          <button className="chip" onClick={toggleMaximize} aria-label={t("Minimieren")}>
+            <Minimize2 size={14} /> {t("Minimieren")}
+          </button>
+        </div>
+      )}
       {viewMode === "players" ? (
         <section className="stat-block">
           <h3><Users size={17} /> {t("Teilnehmer")}</h3>
@@ -479,10 +607,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
               next_match_id-Struktur - nur die Playoff-Stufe ('final') gehoert
               in den Baum, die Gruppentabelle steht schon oben. */}
           <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
-            nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
+            nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked}
             busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
             onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
-            onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
+            onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch}
+            isMaximized={isMaximized} onToggleMaximize={toggleMaximize} />
         </section>
       ) : (
         <div className="turnier-brackets">
@@ -509,6 +638,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           })}
         </div>
       )}
+      </div>
       </div>
       {pendingReport && (
         <div className="modal-overlay" onClick={() => setPendingReport(null)}>
