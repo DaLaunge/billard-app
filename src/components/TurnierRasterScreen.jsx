@@ -37,6 +37,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const [busyId, setBusyId] = useState(null);
   const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
+  // Sicherheitsabfrage vor der ERSTEN Ergebnis-Erfassung (siehe organizerReport
+  // unten) - eigenes Overlay im App-Layout statt window.confirm() (Nutzer-
+  // Feedback), nach demselben modal-overlay/modal-box-Muster wie anderswo im
+  // Code (z.B. MatchScreen.jsx "Match abbrechen?").
+  const [pendingReport, setPendingReport] = useState(null); // { tm, s1, s2, onDone } | null
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
@@ -163,7 +168,23 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     });
   };
 
-  const organizerReport = async (tm, s1, s2, onDone) => {
+  // Anders als bei einer spaeteren Korrektur (siehe editMatch) ist dies die
+  // ERSTE Erfassung des Ergebnisses - bestaetigt sofort und bestimmt den
+  // Sieger, der im Turnierbaum weiterkommt. Eine falsche Sieger-Eintragung
+  // ist danach evtl. gar nicht mehr korrigierbar (siehe Schutz in
+  // tournament_organizer_edit_match, der eine Sieger-aendernde Korrektur
+  // ablehnt, sobald der Sieger schon weitergezogen ist) - deshalb hier eine
+  // explizite Sicherheitsabfrage MIT Sieger-Namen (Nutzer-Feedback). Stoesst
+  // nur noch das Overlay an (siehe pendingReport/confirmPendingReport unten)
+  // statt selbst zu blockieren - die eigentliche RPC laeuft erst nach
+  // Bestaetigung im Overlay.
+  const organizerReport = (tm, s1, s2, onDone) => {
+    setPendingReport({ tm, s1, s2, onDone });
+  };
+
+  const confirmPendingReport = async () => {
+    const { tm, s1, s2, onDone } = pendingReport;
+    setPendingReport(null);
     setBusyId(tm.id);
     const { error } = await supabase.rpc("tournament_organizer_report_match", {
       p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
@@ -198,7 +219,6 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   };
 
   const editMatch = async (tm, s1, s2, onDone) => {
-    if (!window.confirm(t("Bestätigtes Ergebnis wirklich auf {s1} : {s2} korrigieren?", { s1, s2 }))) return;
     setBusyId(tm.id);
     const { error } = await supabase.rpc("tournament_organizer_edit_match", {
       p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
@@ -452,10 +472,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </section>
       ) : viewMode === "graph" && hasTreeSections ? (
         <section className="stat-block">
-          <h3><Trophy size={17} /> {t("Turnierbaum")}</h3>
-          {/* Bei Jeder-gegen-jeden mit Playoff hat die Gruppenphase ('main')
-              keine next_match_id-Struktur - nur die Playoff-Stufe ('final')
-              gehoert in den Baum, die Gruppentabelle steht schon oben. */}
+          {/* Die Ueberschrift + Zoom-Icons rendert TurnierGraph.jsx jetzt selbst
+              (eigene Kopfzeile), damit die Zoom-Buttons direkt daneben Platz
+              finden statt in der Toolbar darunter (Nutzer-Feedback). Bei
+              Jeder-gegen-jeden mit Playoff hat die Gruppenphase ('main') keine
+              next_match_id-Struktur - nur die Playoff-Stufe ('final') gehoert
+              in den Baum, die Gruppentabelle steht schon oben. */}
           <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
             nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
             busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
@@ -488,6 +510,21 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </div>
       )}
       </div>
+      {pendingReport && (
+        <div className="modal-overlay" onClick={() => setPendingReport(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3>{t("Ergebnis eintragen?")}</h3>
+            <p>{t("{winner} gewinnt {s1}:{s2}.", {
+              winner: pendingReport.s1 > pendingReport.s2 ? nameOf(pendingReport.tm.player1_id) : nameOf(pendingReport.tm.player2_id),
+              s1: pendingReport.s1, s2: pendingReport.s2,
+            })}</p>
+            <div className="sp-controls">
+              <button className="btn ghost" onClick={() => setPendingReport(null)}>{t("Abbrechen")}</button>
+              <button className="btn primary" onClick={confirmPendingReport}>{t("Eintragen")}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

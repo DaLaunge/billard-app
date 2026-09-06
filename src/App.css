@@ -1044,6 +1044,15 @@ button.id-card-head { cursor: pointer; }
 .turnier-stepper-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line);
   background: var(--felt); color: var(--ivory); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .turnier-stepper-btn.plus { background: var(--chalk); color: #08251C; border-color: var(--chalk); }
+/* Kompakte Variante fuer die Inline-Eingabe direkt in einer Turniergraph-Box
+   (TurnierGraph.jsx) - muss in dieselbe Zeilenhoehe passen wie Name/Ergebnis
+   sonst, damit die Box beim Editieren nicht groesser wird als sonst. Bewusst
+   deutlich BREITER als hoch (Rechteck statt Kreis) - die Boxhoehe laesst nur
+   ~18px zu, ein Finger braucht aber mehr Trefferflaeche in der Breite
+   (Nutzer-Feedback), und die Box selbst hat dafuer genug Platz. */
+.turnier-stepper--compact { gap: 3px; }
+.turnier-stepper--compact .turnier-stepper-btn { width: 36px; height: 18px; border-radius: 6px; }
+.turnier-stepper--compact .turnier-stepper-val-input { width: 24px; min-width: 24px; height: 18px; font-size: 12px; border-radius: 5px; }
 .turnier-match-card .btn, .turnier-match-card .chip-btn { min-height: 42px; font-size: 14px; }
 .turnier-standings-row { padding: 9px 0; }
 
@@ -1063,24 +1072,43 @@ button.id-card-head { cursor: pointer; }
 .turnier-view-toggle { margin-bottom: 10px; }
 .turnier-graph-wrap { overflow: auto; border-radius: 14px; background: var(--felt-2);
   border: 1px solid var(--line); padding: 16px 16px 20px; -webkit-overflow-scrolling: touch;
+  /* Ohne Hoehenbegrenzung waechst dieser Bereich immer genau so hoch wie sein
+     Inhalt - es gibt dann NIE etwas zum vertikal Scrollen (nur horizontal,
+     wo die Breite durch das umgebende Layout begrenzt ist). Zoomen-um-den-
+     Finger auf der Y-Achse klebte dadurch immer oben fest (Nutzer-Feedback) -
+     erst diese Begrenzung macht vertikales Scrollen/Zoomen ueberhaupt moeglich. */
+  max-height: 65vh;
   /* Einfingriges Scrollen/Wischen bleibt erlaubt, die native Zweifinger-
      Pinch-Zoom-Geste des Browsers auf diesem Element aber nicht - die
      uebernimmt TurnierGraph.jsx selbst per touchmove-Handler, siehe dort. */
   touch-action: pan-x pan-y; }
 .turnier-graph { position: relative; transform-origin: 0 0; }
 .turnier-graph-svg { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
-/* Zoom-Regler oberhalb des Baums - eigener, bewusst grosser/kontrastreicher
-   Regler (nicht nur Pinch-Zoom des ganzen Bildschirms, der auch Kopfzeile/
-   Navigation mitzoomen wuerde statt nur den Baum selbst) - Gold-Rahmen wie
-   die anderen interaktiven Elemente in dieser Ansicht, damit die Buttons
-   neben den vielen Boxen/Linien nicht untergehen. */
-.turnier-graph-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.turnier-graph-toolbar button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
-  border-radius: 10px; width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
-.turnier-graph-toolbar button:hover:not(:disabled) { background: var(--felt); }
-.turnier-graph-toolbar button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
-.turnier-graph-zoom-level { font-size: 14.5px; font-weight: 700; color: var(--ivory); min-width: 46px; text-align: center; }
-.turnier-graph-zoom-reset { width: auto !important; height: 44px; padding: 0 14px; font-size: 13px; font-weight: 600; }
+/* Kopfzeile: Ueberschrift + Zoom-Icons direkt daneben statt in einer
+   eigenen, breiten Toolbar-Zeile darunter - schafft dort Platz fuer die
+   angepinnte Box (Nutzer-Feedback). Nur 3 kleine Icon-Buttons ohne
+   Beschriftung (auch keine Prozentzahl mehr). */
+.turnier-graph-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.turnier-graph-zoom-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.turnier-graph-zoom-controls button { background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
+  border-radius: 9px; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.turnier-graph-zoom-controls button:hover:not(:disabled) { background: var(--felt); }
+.turnier-graph-zoom-controls button:disabled { opacity: 0.35; cursor: default; border-color: var(--line); color: var(--ivory-dim); }
+/* Immer unskalierte Kopie der gerade ausgewaehlten Box - wichtig beim
+   starken Herauszoomen, wo die Zaehler in der Box selbst zu klein zum
+   Treffen werden (Nutzer-Feedback). Nutzt in TurnierGraph.jsx dieselben
+   turnier-graph-box(--winners/--losers/--final)-Klassen wie die echte Box
+   im Baum, nur mit position:static statt absolut - garantiert exakt
+   dasselbe Aussehen/Ausrichtung statt eines eigenen, leicht abweichenden
+   Nachbaus (Nutzer-Feedback: sah bisher anders aus). */
+.turnier-graph-pinned-row { margin-bottom: 10px; }
+/* Nachfahren-Selektor statt .turnier-graph-box--pinned allein, da diese
+   Regel sonst dieselbe Spezifitaet wie .turnier-graph-box (position:
+   absolute, weiter unten definiert) haette und je nach Reihenfolge im
+   Stylesheet verlieren wuerde - die Box blieb dann absolut positioniert,
+   ihre Zeile kollabierte auf Hoehe 0 und die Box ueberlappte sichtbar den
+   Graphen darunter (Nutzer-Feedback/eigener Test). */
+.turnier-graph-pinned-row .turnier-graph-box { position: static; cursor: default; }
 /* Offene Verbindungen dezent, bereits entschiedene (Sieger steht fest)
    deutlich heller/dicker - macht den tatsaechlichen Turnierverlauf auf den
    ersten Blick erkennbar statt eines gleichfoermigen Liniengewirrs. Weiche
@@ -1098,6 +1126,15 @@ button.id-card-head { cursor: pointer; }
    auseinanderzuhalten, welche Linie zu welcher Box gehoert. */
 .turnier-graph-edge.highlighted { stroke: var(--ivory); stroke-width: 3.5; opacity: 1; }
 .turnier-graph-edge.dim { opacity: 0.06; }
+/* .drop.decided (3 Klassen) ist spezifischer als .highlighted/.dim allein (2
+   Klassen) und gewinnt daher sonst IMMER gegen die Hervorhebung/Abdunklung -
+   ein bereits entschiedener Abstiegs-Pfad blieb beim Anklicken der Box optisch
+   unveraendert (Nutzer-Feedback). Eigene, noch spezifischere Regeln noetig.
+   Bleibt dabei bewusst ROT (var(--loss)) statt wie normale Verbinder weiss -
+   die Farbe zeigt "Verlierer-Pfad" an, auch wenn hervorgehoben (Nutzer-
+   Feedback: nicht alle hervorgehobenen Linien sollen gleich aussehen). */
+.turnier-graph-edge.drop.decided.highlighted { stroke: var(--loss); stroke-width: 4; opacity: 1; }
+.turnier-graph-edge.drop.decided.dim { opacity: 0.06; }
 .turnier-graph-section-label { position: absolute; left: 0; font-size: 12px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; gap: 5px; }
 .turnier-graph-section-label.section--winners { color: var(--win); }
@@ -1144,7 +1181,6 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-row.won { color: var(--gold); font-weight: 700; }
 .turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
 .turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
-
 /* Detail-Panel fuer den per Klick ausgewaehlten Spielerverlauf (Teilnehmer-
    Tab, TurnierRasterScreen.jsx) - im normalen Dokumentfluss. */
 .turnier-graph-detail { background: var(--felt-3); border: 1px solid var(--gold); border-radius: 14px;
