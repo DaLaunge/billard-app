@@ -1158,8 +1158,24 @@ button.id-card-head { cursor: pointer; }
    selbst die eigene Spalte auf sehr schmalen Geraeten noch zu knapp ist. */
 .turnier-graph-header { display: grid; grid-template-columns: 1fr auto 1fr;
   align-items: center; min-height: 34px; gap: 8px; }
-.turnier-graph-header h3 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.turnier-graph-header-end { justify-self: end; min-width: 0; }
+/* Explizite Spaltenzuweisung noetig: auf Touch-Geraeten faellt die mittlere
+   Spalte (Zoom-Buttons) per display:none komplett aus dem Grid-Fluss, ohne
+   grid-column wuerde die automatische Platzierung turnier-graph-header-end
+   dann faelschlich in die (jetzt freie) mittlere statt der rechten Spalte
+   schieben (Nutzer-Feedback/eigener Test: Buttons standen ploetzlich in der
+   Mitte statt rechts). */
+.turnier-graph-header h3 { grid-column: 1; margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turnier-graph-zoom-controls { grid-column: 2; }
+.turnier-graph-header-end { grid-column: 3; justify-self: end; min-width: 0; display: flex; align-items: center; gap: 6px; }
+/* Mobile-Reset-Duplikat (siehe unten/TurnierGraph.jsx) ist per Default
+   ausgeblendet - nur am PC bleibt die zentrierte 3-Buttons-Gruppe die
+   einzige Zoom-Bedienung. Nachfahren-Selektor (2 Klassen) statt der Klasse
+   allein, da .turnier-graph-minimize-btn (display:grid, weiter unten
+   definiert) sonst gleiche Spezifitaet haette und je nach Reihenfolge im
+   Stylesheet gewinnen wuerde (derselbe Bug wie zuvor schon bei position:
+   static/absolute) - der Button blieb dadurch faelschlich auch am PC
+   sichtbar (eigener Test). */
+.turnier-graph-header-end .turnier-graph-mobile-reset-btn { display: none; }
 .turnier-graph-zoom-controls { justify-self: center; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .turnier-graph-zoom-controls button, .turnier-graph-minimize-btn {
   background: var(--felt-3); border: 1.5px solid var(--gold); color: var(--gold);
@@ -1180,13 +1196,15 @@ button.id-card-head { cursor: pointer; }
   .turnier-graph-zoom-controls:hover button:not(:disabled),
   .turnier-graph-zoom-controls button:focus-visible { border-color: var(--gold); color: var(--gold); }
 }
-/* Auf Touch-Geraeten im maximierten Zustand nur "Zoom zuruecksetzen"
-   behalten (Rein-/Rauszoomen entfaellt, dort ist Pinch-to-Zoom die uebliche
-   Geste, siehe TurnierGraph.jsx) - Kopfzeile zeigt dann "Turnierbaum ---
-   [Zoom zuruecksetzen] --- [Minimieren]" in einer einzigen Zeile statt der
-   vorherigen zusaetzlichen, leeren Reihe (Nutzer-Feedback mit Screenshot). */
+/* Auf Touch-Geraeten die zentrierte 3-Buttons-Gruppe komplett durch das
+   Reset-Duplikat rechts neben Minimieren ersetzen (Rein-/Rauszoomen
+   entfaellt, dort ist Pinch-to-Zoom die uebliche Geste) - beide Buttons
+   stehen dadurch als EINE Gruppe rechts zusammen statt eines mittig
+   stehenden Einzelbuttons, der optisch verloren wirkte (Nutzer-Feedback).
+   Kopfzeile zeigt "Turnierbaum --- [Zoom zuruecksetzen][Minimieren]". */
 @media (pointer: coarse) {
-  .turnier-view-container.is-maximized .turnier-graph-zoom-btn { display: none; }
+  .turnier-graph-zoom-controls { display: none; }
+  .turnier-graph-header-end .turnier-graph-mobile-reset-btn { display: grid; }
 }
 /* Immer unskalierte Kopie der gerade ausgewaehlten Box - wichtig beim
    starken Herauszoomen, wo die Zaehler in der Box selbst zu klein zum

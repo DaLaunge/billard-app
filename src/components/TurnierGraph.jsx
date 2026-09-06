@@ -398,18 +398,26 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         {/* Zentriert statt rechtsbuendig (Nutzer-Feedback) - Ueberschrift/
             Minimieren per position:absolute aus dem Fluss genommen (siehe
             CSS), haelt die Zoom-Buttons als einziges verbleibendes Flex-Kind
-            unabhaengig von deren Breite mittig. Auf Touch-Geraeten im
-            maximierten Zustand bleibt nur noch "Zoom zuruecksetzen" sichtbar
-            (Rein-/Rauszoomen entfaellt, dort ist Pinch-to-Zoom die uebliche
-            Geste, siehe CSS); am PC erst beim Hover ueber diesen Bereich voll
-            sichtbar/gold eingefaerbt, sonst dezent gedaempft - weniger
-            visueller Ballast, ohne die Buttons ganz zu verstecken. */}
+            unabhaengig von deren Breite mittig. Nur am PC sichtbar (siehe
+            CSS) - auf Touch-Geraeten ist Pinch-to-Zoom die uebliche Geste,
+            dort steht stattdessen nur "Zoom zuruecksetzen" rechts NEBEN dem
+            Minimieren-Button (nicht mittig - Nutzer-Feedback: sah dort
+            optisch nicht gut aus). Am PC erst beim Hover ueber diesen
+            Bereich voll sichtbar/gold eingefaerbt, sonst dezent gedaempft -
+            weniger visueller Ballast, ohne die Buttons ganz zu verstecken. */}
         <div className="turnier-graph-zoom-controls">
           <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={18} /></button>
           <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={18} /></button>
           <button type="button" className="turnier-graph-zoom-reset-btn" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
         </div>
         <div className="turnier-graph-header-end">
+          {/* Duplikat des Reset-Buttons NUR fuers Touch-Layout (siehe CSS) -
+              steht dort neben statt anstelle der zentrierten PC-Variante,
+              damit beide Buttons rechts als eine Gruppe zusammenstehen. */}
+          <button type="button" className="turnier-graph-minimize-btn turnier-graph-mobile-reset-btn"
+            onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}>
+            <RotateCcw size={17} />
+          </button>
           {isMaximized && onToggleMaximize && (
             <button type="button" className="turnier-graph-minimize-btn" onClick={onToggleMaximize} aria-label={t("Minimieren")}>
               <Minimize2 size={18} />

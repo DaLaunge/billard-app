@@ -35,7 +35,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
+  const [viewMode, setViewMode] = useState("graph"); // list | graph | players - Grafik ist die Standardansicht (Nutzer-Feedback), Jeder-gegen-jeden ohne Playoff hat aber keinen Baum, siehe Fallback-Effekt unten
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
   // Maximieren-Modus fuer die Liste/Grafik-Ansicht des Turnierrasters (nicht
   // fuer Teilnehmer) - rein CSS-basiert (position:fixed ueber die ganze
@@ -88,6 +88,18 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     const id = setInterval(load, POLL_MS);
     return () => clearInterval(id);
   }, [load]);
+
+  // Grafik ist die Standardansicht (Nutzer-Feedback) - bei Jeder-gegen-jeden
+  // OHNE Playoff gibt es aber keinen Baum; erst sobald tms geladen ist,
+  // koennen wir das wissen, deshalb hier statt direkt im useState-Default.
+  // Bewusst nur "abwaerts" (graph -> list), niemals umgekehrt - falls waehrend
+  // des Betrachtens nachtraeglich ein Playoff-Baum entsteht, bleibt eine
+  // manuell gewaehlte Ansicht unangetastet.
+  useEffect(() => {
+    if (!tms) return;
+    if (viewMode === "graph" && !tms.some((tm) => tm.bracket !== "main")) setViewMode("list");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tms]);
 
   const nameOf = useCallback((id) => players.find((p) => p.id === id)?.nickname || null, [players]);
 
@@ -457,14 +469,14 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       )}
 
       <div className="chips small turnier-view-toggle">
-        <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
-          <List size={14} /> {t("Liste")}
-        </button>
         {hasTreeSections && (
           <button className={"chip" + (viewMode === "graph" ? " active" : "")} onClick={() => setViewMode("graph")}>
             <GitBranch size={14} /> {t("Grafik")}
           </button>
         )}
+        <button className={"chip" + (viewMode === "list" ? " active" : "")} onClick={() => setViewMode("list")}>
+          <List size={14} /> {t("Liste")}
+        </button>
         <button className={"chip" + (viewMode === "players" ? " active" : "")} onClick={() => setViewMode("players")}>
           <Users size={14} /> {t("Teilnehmer")}
         </button>
