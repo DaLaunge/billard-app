@@ -32,7 +32,7 @@ export function clearPendingReport() {
 export async function sendPendingReport() {
   const report = getPendingReport();
   if (!report) return null;
-  const fn = report.type === "double" ? "report_doubles" : "report_match";
+  const fn = report.type === "double" ? "report_doubles" : report.type === "tournament" ? report.rpc : "report_match";
   const { data, error } = await supabase.rpc(fn, report.params);
   if (error) return { ok: false, error, report };
   clearPendingReport();

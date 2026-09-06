@@ -3,7 +3,7 @@ import { X, ZoomIn, ZoomOut, Trophy } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
-import TurnierMatchActions, { hasTurnierAction } from "./TurnierMatchActions";
+import TurnierMatchActions, { hasTurnierAction, tmScores } from "./TurnierMatchActions";
 
 const BOX_W = 240;
 const BOX_H = 62;
@@ -41,7 +41,7 @@ const bracketLabel = (b) => (b === "winners" ? t("Gewinnerbaum") : b === "losers
 //   damit verbundenen Boxen hervor, alles andere wird gedaempft.
 // - Ein Zoom-Regler (Buttons, nicht nur Pinch-Zoom des ganzen Bildschirms -
 //   der wuerde auch Kopfzeile/Navigation mitzoomen statt nur den Baum).
-export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, scores, setScores, onReport, onOrganizerReport, onConfirm, onForceConfirm, colorOf, badgeOf, photoOf }) {
+export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, colorOf, badgeOf, photoOf }) {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(zoom);
@@ -227,29 +227,15 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
 
   const zoomBy = (delta) => setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(z + delta).toFixed(2))));
 
+  // Position + Boxhoehe des ausgewaehlten Matches - fuers Andocken des
+  // Aktions-Popovers direkt an der Box (siehe unten), statt eines separaten
+  // Menuebereichs oberhalb des Graphen.
+  const selPos = selectedId ? layout.pos[selectedId] : null;
+  const selIsFinal = selected?.bracket === "final" && layout.bigFinalBox;
+  const selBoxH = selIsFinal ? FINAL_BOX_H : BOX_H;
+
   return (
     <div className="turnier-graph-block">
-      {selected && (
-        <div className="turnier-graph-detail">
-          <div className="turnier-match-meta">
-            <span className="turnier-match-players">
-              {nameOf(selected.player1_id) && <Ball color={colorOf(nameOf(selected.player1_id))} label={initials(nameOf(selected.player1_id))} badge={badgeOf(nameOf(selected.player1_id))} photo={photoOf(nameOf(selected.player1_id))} size={24} />}
-              <b>{nameOf(selected.player1_id) || t("TBD")}</b>
-              <span className="turnier-match-score">{selected.match ? `${selected.match.score1}:${selected.match.score2}` : "–"}</span>
-              <b>{nameOf(selected.player2_id) || t("TBD")}</b>
-              {nameOf(selected.player2_id) && <Ball color={colorOf(nameOf(selected.player2_id))} label={initials(nameOf(selected.player2_id))} badge={badgeOf(nameOf(selected.player2_id))} photo={photoOf(nameOf(selected.player2_id))} size={24} />}
-            </span>
-            <button className="turnier-graph-detail-close" onClick={() => setSelectedId(null)} aria-label={t("Schliessen")}>
-              <X size={16} />
-            </button>
-          </div>
-          {selected.table_number != null && <span className="m-disc">{t("Tisch")} {selected.table_number}</span>}
-          <TurnierMatchActions tm={selected} me={me} isOrganizer={isOrganizer} tourStatus={tourStatus}
-            busyId={busyId} scores={scores} setScores={setScores}
-            onReport={onReport} onOrganizerReport={onOrganizerReport} onConfirm={onConfirm} onForceConfirm={onForceConfirm} />
-        </div>
-      )}
-
       <div className="turnier-graph-toolbar">
         <button type="button" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={20} /></button>
         <span className="turnier-graph-zoom-level">{Math.round(zoom * 100)}%</span>
@@ -291,7 +277,8 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               const boxW = isFinal ? FINAL_BOX_W : BOX_W;
               const boxH = isFinal ? FINAL_BOX_H : BOX_H;
               const n1 = nameOf(m.player1_id), n2 = nameOf(m.player2_id);
-              const s1 = m.match?.score1, s2 = m.match?.score2;
+              const msc = tmScores(m);
+              const s1 = msc?.s1, s2 = msc?.s2;
               const pending = m.match_id && !m.match?.confirmed;
               const actionable = hasTurnierAction(m, me, isOrganizer, tourStatus);
               const isSelected = selectedId === m.id;
@@ -324,6 +311,26 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                 </button>
               );
             })}
+            {selected && selPos && (
+              <div className="turnier-graph-popover" style={{ left: selPos.x, top: selPos.y + selBoxH + 8 }}>
+                <div className="turnier-match-meta">
+                  <span className="turnier-match-players">
+                    {nameOf(selected.player1_id) && <Ball color={colorOf(nameOf(selected.player1_id))} label={initials(nameOf(selected.player1_id))} badge={badgeOf(nameOf(selected.player1_id))} photo={photoOf(nameOf(selected.player1_id))} size={22} />}
+                    <b>{nameOf(selected.player1_id) || t("TBD")}</b>
+                    <span className="turnier-match-score">{selected.match ? (() => { const sc = tmScores(selected); return `${sc.s1}:${sc.s2}`; })() : "–"}</span>
+                    <b>{nameOf(selected.player2_id) || t("TBD")}</b>
+                    {nameOf(selected.player2_id) && <Ball color={colorOf(nameOf(selected.player2_id))} label={initials(nameOf(selected.player2_id))} badge={badgeOf(nameOf(selected.player2_id))} photo={photoOf(nameOf(selected.player2_id))} size={22} />}
+                  </span>
+                  <button className="turnier-graph-detail-close" onClick={() => setSelectedId(null)} aria-label={t("Schliessen")}>
+                    <X size={16} />
+                  </button>
+                </div>
+                {selected.table_number != null && <span className="m-disc">{t("Tisch")} {selected.table_number}</span>}
+                <TurnierMatchActions tm={selected} me={me} isOrganizer={isOrganizer} tourStatus={tourStatus}
+                  busyId={busyId} onOpenMatchScreen={onOpenMatchScreen} onOrganizerReport={onOrganizerReport}
+                  onConfirm={onConfirm} onForceConfirm={onForceConfirm} onEditMatch={onEditMatch} />
+              </div>
+            )}
           </div>
         </div>
       </div>

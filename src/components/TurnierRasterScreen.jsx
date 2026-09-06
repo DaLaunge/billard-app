@@ -6,7 +6,7 @@ import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
 import Ball from "./Ball";
 import TurnierGraph from "./TurnierGraph";
-import TurnierMatchActions from "./TurnierMatchActions";
+import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
 
 const POLL_MS = 8000;
 
@@ -30,12 +30,11 @@ const finalRoundLabel = (round, totalRounds) => {
 // und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
 // bewusste Ausnahme vom sonstigen "alles ueber App.jsx loadData()"-Muster,
 // weil das nur aktiv ist waehrend diese Seite offen ist.
-export default function TurnierRasterScreen({ tournamentId, me, players, toast, onBack, colorOf, badgeOf, photoOf, onReload }) {
+export default function TurnierRasterScreen({ tournamentId, me, players, toast, onBack, colorOf, badgeOf, photoOf, onReload, onReportTournamentMatch }) {
   const [tour, setTour] = useState(null);
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [scores, setScores] = useState({});
   const [viewMode, setViewMode] = useState("list"); // list | graph | players - Jeder-gegen-jeden hat keinen Baum, "graph" entfaellt dort
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
 
@@ -43,7 +42,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, score1, score2, confirmed, reported_by, confirmed_by, played_at)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, player1_id, player2_id, score1, score2, confirmed, reported_by, confirmed_by, played_at)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),
@@ -133,9 +132,10 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     timeline.forEach((tm) => {
       if (y > pageH - 20) { doc.addPage(); y = 20; }
       const n1 = nameOf(tm.player1_id) || "?", n2 = nameOf(tm.player2_id) || "?";
+      const sc = tmScores(tm);
       doc.text(fmtDateTime(tm.match.played_at), marginX, y);
       doc.text(`${n1} – ${n2}`, marginX + 32, y, { maxWidth: pageW - marginX * 2 - 32 - 32 });
-      doc.text(`${tm.match.score1}:${tm.match.score2}`, pageW - marginX - 28, y);
+      doc.text(`${sc.s1}:${sc.s2}`, pageW - marginX - 28, y);
       y += 7;
     });
     if (timeline.length === 0) doc.text(t("Noch keine Partie in diesem Turnier."), marginX, y);
@@ -152,20 +152,26 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
       .sort((a, b) => (bracketRank[a.bracket] - bracketRank[b.bracket]) || (a.round - b.round));
   }, [tms]);
 
-  const report = async (tm) => {
-    const s = scores[tm.id] || {};
-    const s1 = parseInt(s.s1, 10) || 0, s2 = parseInt(s.s2, 10) || 0;
-    if (s1 < 0 || s2 < 0 || s1 === s2) {
-      toast(t("Ungültiges Ergebnis.")); return;
-    }
+  // Nur fuer die Selbst-Meldung eines Spielers - die geht ueber den vollen
+  // MatchScreen-Flow (Siegchance-Vorschau, 14/1-Rechner). Die Turnierleitung
+  // meldet/korrigiert stattdessen direkt inline (organizerReport/editMatch
+  // unten) - schnelle Zaehler statt Navigation, siehe TurnierMatchActions.jsx.
+  const openMatchScreen = (tm) => {
+    onReportTournamentMatch({
+      tournamentMatchId: tm.id, discipline: tour.discipline,
+      player1Id: tm.player1_id, player2Id: tm.player2_id,
+    });
+  };
+
+  const organizerReport = async (tm, s1, s2, onDone) => {
     setBusyId(tm.id);
-    const isP1 = tm.player1_id === me.id;
-    const { error } = await supabase.rpc("tournament_report_match", {
-      p_tournament_match_id: tm.id, p_my_score: isP1 ? s1 : s2, p_opp_score: isP1 ? s2 : s1,
+    const { error } = await supabase.rpc("tournament_organizer_report_match", {
+      p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
     });
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Ergebnis gemeldet – wartet auf Bestätigung."));
+    toast(t("Ergebnis als Turnierleitung eingetragen."));
+    onDone();
     await load();
     if (onReload) onReload();
   };
@@ -191,19 +197,16 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     if (onReload) onReload();
   };
 
-  const organizerReport = async (tm) => {
-    const s = scores[tm.id] || {};
-    const s1 = parseInt(s.s1, 10) || 0, s2 = parseInt(s.s2, 10) || 0;
-    if (s1 < 0 || s2 < 0 || s1 === s2) {
-      toast(t("Ungültiges Ergebnis.")); return;
-    }
+  const editMatch = async (tm, s1, s2, onDone) => {
+    if (!window.confirm(t("Bestätigtes Ergebnis wirklich auf {s1} : {s2} korrigieren?", { s1, s2 }))) return;
     setBusyId(tm.id);
-    const { error } = await supabase.rpc("tournament_organizer_report_match", {
+    const { error } = await supabase.rpc("tournament_organizer_edit_match", {
       p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
     });
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Ergebnis als Turnierleitung eingetragen."));
+    toast(t("Ergebnis korrigiert."));
+    onDone();
     await load();
     if (onReload) onReload();
   };
@@ -254,6 +257,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
 
   const renderMatch = (tm) => {
     const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
+    const sc = tmScores(tm);
     return (
       <div key={tm.id} className="turnier-match-card">
         <div className="turnier-match-meta">
@@ -267,7 +271,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
               <>
                 {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={22} />}
                 <b>{n1 || t("TBD")}</b>
-                <span className="turnier-match-score">{tm.match ? `${tm.match.score1}:${tm.match.score2}` : "–"}</span>
+                <span className="turnier-match-score">{sc ? `${sc.s1}:${sc.s2}` : "–"}</span>
                 <b>{n2 || t("TBD")}</b>
                 {n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={22} />}
               </>
@@ -276,8 +280,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
         <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
-          busyId={busyId} scores={scores} setScores={setScores}
-          onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
+          busyId={busyId} onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
+          onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
       </div>
     );
   };
@@ -354,14 +358,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           {timeline.map((tm) => {
             const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
             const won1 = tm.winner_id === tm.player1_id;
+            const sc = tmScores(tm);
             return (
               <div key={tm.id} className="stat-row turnier-standings-row">
                 <span className="m-date m-datetime">{fmtDateTime(tm.match.played_at)}</span>
                 <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={24} />
                 <span className="stat-name">
-                  {n1} <b style={won1 ? { color: "var(--win)" } : undefined}>{tm.match.score1}</b>
+                  {n1} <b style={won1 ? { color: "var(--win)" } : undefined}>{sc.s1}</b>
                   {" : "}
-                  <b style={!won1 ? { color: "var(--win)" } : undefined}>{tm.match.score2}</b> {n2}
+                  <b style={!won1 ? { color: "var(--win)" } : undefined}>{sc.s2}</b> {n2}
                 </span>
                 <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={24} />
               </div>
@@ -405,12 +410,13 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
                 {path.map((tm) => {
                   const isP1 = tm.player1_id === journeyPlayerId;
                   const oppName = nameOf(isP1 ? tm.player2_id : tm.player1_id);
-                  const myScore = tm.match ? (isP1 ? tm.match.score1 : tm.match.score2) : null;
-                  const oppScore = tm.match ? (isP1 ? tm.match.score2 : tm.match.score1) : null;
+                  const sc = tmScores(tm);
+                  const myScore = sc ? (isP1 ? sc.s1 : sc.s2) : null;
+                  const oppScore = sc ? (isP1 ? sc.s2 : sc.s1) : null;
                   const won = tm.winner_id === journeyPlayerId;
                   let statusText;
                   if (tm.is_bye) statusText = t("Freilos");
-                  else if (!tm.match_id) statusText = oppName ? t("Ausstehend") : t("Wartet auf Gegner …");
+                  else if (!tm.match_id) statusText = !oppName ? t("Wartet auf Gegner …") : tm.table_number == null ? t("Tisch wird noch zugeteilt") : t("Ausstehend");
                   else if (!tm.match.confirmed) statusText = t("Wartet auf Bestätigung ...");
                   else statusText = won ? t("Sieg") : t("Niederlage");
                   const roundLabel = tm.bracket === "final" ? finalRoundLabel(tm.round, finalTotalRounds) : `${t("Runde")} ${tm.round}`;
@@ -452,8 +458,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
               gehoert in den Baum, die Gruppentabelle steht schon oben. */}
           <TurnierGraph matches={tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms}
             nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status}
-            busyId={busyId} scores={scores} setScores={setScores} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onReport={report} onOrganizerReport={organizerReport} onConfirm={confirm} onForceConfirm={forceConfirm} />
+            busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+            onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
+            onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
         </section>
       ) : (
         <div className="turnier-brackets">
