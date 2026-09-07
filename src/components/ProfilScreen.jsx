@@ -16,6 +16,7 @@ import MyFeedbackTickets from "./MyFeedbackTickets";
 import HeadToHeadCard from "./widgets/HeadToHeadCard";
 import RecordsCard from "./widgets/RecordsCard";
 import IdentityCard from "./widgets/IdentityCard";
+import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
@@ -414,6 +415,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       {/* Ratings + Head-to-Head bilden am PC die linke Spalte (zusammen mit
           pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
       <div className="pf-stats-a">
+      <AchievementsProgressCard catalog={catalog} extras={liveExtras} earnedBadges={earnedBadges} nickname={nickname}
+        onOpenProfile={() => document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+
       <section className="stat-block">
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
         {myRows.map((r) => (
@@ -435,7 +439,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       {/* Erfolge sind ein zentrales Element der App - stehen deshalb in der
           Mitte und bekommen die meiste Breite (Kachel-Raster). */}
-      <div className="pf-achievements">
+      <div className="pf-achievements" id="pf-achievements-full">
       <section className="stat-block">
         <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
         {isMe && achievementHint && (

@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { Trophy, BarChart3, Flame, Swords, X, FileText, Check, Clock } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
-import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, sideNames, isDoubles, mSide } from "../lib/format";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
@@ -10,7 +9,6 @@ import PlayerPicker from "./PlayerPicker";
 import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
 import LiveStatusCard from "./widgets/LiveStatusCard";
-import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
@@ -104,11 +102,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     () => Object.values(stats).filter((p) => p.streak > 0).sort((a, b) => b.streak - a.streak),
     [stats]
   );
-  const myExtras = useMemo(
-    () => computeAchievementExtras(me.nickname, matches, players, challenges),
-    [matches, players, challenges, me.nickname]
-  );
-
   const [filterPlayer, setFilterPlayer] = useState("");
   const [filterResult, setFilterResult] = useState("all"); // all | win | loss
   const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ... | "Doppel"
@@ -305,15 +298,13 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </section>
       </div>
 
-      {/* Rechte Spalte: Rangliste ganz oben, danach Live-Status + Erfolge-
-          Fortschritt, danach die drei reinen Bestenlisten ("alles andere"). */}
+      {/* Rechte Spalte: Rangliste ganz oben, danach Live-Status, danach die
+          drei reinen Bestenlisten ("alles andere"). */}
       <div className="stat-rest-col">
       <div className="stat-grid">
         <RankingBlock rangliste={rangliste} disciplines={disciplines}
           colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
         <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
-        <AchievementsProgressCard catalog={catalog} extras={myExtras} earnedBadges={earnedBadges}
-          onOpenProfile={onOpenProfile} nickname={me.nickname} />
         <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins}
           fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
         <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote}
