@@ -18,7 +18,7 @@ import RecordsCard from "./widgets/RecordsCard";
 import IdentityCard from "./widgets/IdentityCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
-  players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
+  players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
@@ -531,7 +531,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           Identitaets-Karte oben - kein zweiter, weniger sichtbarer Button
           hier noetig. */}
       {isMe && (
-        <button className="btn ghost" onClick={onOpenTurniere}><Trophy size={16} /> {t("Turniere")}</button>
+        <button className="btn ghost tournament-ready-btn" onClick={onOpenTurniere}>
+          <Trophy size={16} /> {t("Turniere")}
+          {/* Bleibt sichtbar, bis das Match tatsaechlich gespielt/gemeldet
+              wurde (tourneyReadyCount kommt direkt aus der DB, siehe
+              checkTourneyReady in App.jsx) - anders als das "Du bist dran"-
+              Popup NICHT per "Später" wegklickbar, damit eine bereite
+              Turnierpaarung nicht in Vergessenheit geraet (Nutzer-Feedback). */}
+          {tourneyReadyCount > 0 && <span className="badge tournament-ready-badge">{tourneyReadyCount}</span>}
+        </button>
       )}
       {isMe && meRow?.role === "admin" && (
         <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>

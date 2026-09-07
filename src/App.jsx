@@ -56,6 +56,7 @@ export default function App() {
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [celebrate, setCelebrate] = useState(null);  // neue Erfolge fürs Popup
   const [tourneyReady, setTourneyReady] = useState(null); // bereite Turnierpaarung fürs Popup
+  const [tourneyReadyList, setTourneyReadyList] = useState([]); // ALLE bereiten Turnierpaarungen fuer mich - speist den Turniere-Badge (siehe checkTourneyReady unten)
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
   const [vsOpp, setVsOpp] = useState(null);
@@ -210,20 +211,29 @@ export default function App() {
   }, [player, badgesByPlayer]);
 
   // Turnier "du bist dran"-Popup: pollt (kein Realtime, siehe CLAUDE.md),
-  // ob fuer mich irgendwo eine Turnierpaarung bereitsteht (beide Spieler
-  // feststehen, noch kein Ergebnis gemeldet) - damit die Turnierleitung
-  // Spielpartien nicht manuell zuteilen/ankuendigen muss. Einmal gezeigte
-  // Paarungen merkt sich der Client geraeteweise in localStorage (wie
-  // seenBadges oben), damit das Popup nicht bei jedem Poll erneut aufploppt,
-  // solange noch kein Ergebnis gemeldet wurde.
+  // ob fuer mich irgendwo eine Turnierpaarung bereitsteht - beide Spieler
+  // UND der Tisch feststehen, noch kein Ergebnis gemeldet (Nutzer-Feedback:
+  // ohne die table_number-Pruefung feuerte der Hinweis bei Jeder-gegen-jeden
+  // sofort bei Turnierstart, weil dort ALLE Paarungen von Anfang an beide
+  // Spieler kennen, aber Tische erst nach und nach frei werden - das zeigte
+  // dann eine beliebige spaetere Paarung statt der tatsaechlich anstehenden
+  // mit zugeteiltem Tisch) - damit die Turnierleitung Spielpartien nicht
+  // manuell zuteilen/ankuendigen muss. Einmal gezeigte Paarungen merkt sich
+  // der Client geraeteweise in localStorage (wie seenBadges oben), damit das
+  // Popup nicht bei jedem Poll erneut aufploppt, solange noch kein Ergebnis
+  // gemeldet wurde - das vollstaendige tourneyReadyList (siehe unten) ist
+  // davon unabhaengig und speist stattdessen den Turniere-Badge in
+  // ProfilScreen, der erst verschwindet, wenn tatsaechlich gespielt wurde.
   const checkTourneyReady = useCallback(async () => {
     if (!player) return;
     const { data } = await supabase.from("tournament_matches")
       .select("id, tournament_id, table_number, player1_id, player2_id, tournament:tournaments!tournament_matches_tournament_id_fkey(name, status), player1:players!tournament_matches_player1_id_fkey(nickname), player2:players!tournament_matches_player2_id_fkey(nickname)")
       .eq("is_bye", false)
       .is("match_id", null)
+      .not("table_number", "is", null)
       .or(`player1_id.eq.${player.id},player2_id.eq.${player.id}`);
     const candidates = (data ?? []).filter((tm) => tm.player1_id && tm.player2_id && tm.tournament?.status === "running");
+    setTourneyReadyList(candidates);
     if (candidates.length === 0) return;
     let dismissed = [];
     try { dismissed = JSON.parse(localStorage.getItem("dismissedTourneyMatches:" + player.id) || "[]"); } catch { /* ignore */ }
@@ -667,7 +677,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
-                  onOpenTurniere={() => navPush({ tab: "turnier" })}
+                  onOpenTurniere={() => navPush({ tab: "turnier" })} tourneyReadyCount={tourneyReadyList.length}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}

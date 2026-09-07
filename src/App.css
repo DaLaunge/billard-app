@@ -678,6 +678,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 16px; height: 16px;
   display: grid; place-items: center; padding: 0 4px; }
 .badge.live { background: var(--win); color: #06231A; }
+/* Turniere-Button in ProfilScreen: ein breiter Text-Button statt eines
+   schmalen Tabbar-Icons wie oben - .badge dort ist auf eine Icon-Spalte
+   zentriert (right:18%), hier stattdessen rechtsbuendig und vertikal
+   zentriert am Button selbst. */
+.tournament-ready-btn { position: relative; }
+.tournament-ready-btn .tournament-ready-badge { top: 50%; right: 14px; transform: translateY(-50%); }
 
 .refresh-btn { position: fixed; top: 14px; right: calc(50% - 215px + 14px);
   background: var(--felt-3); border: 1px solid var(--line); color: var(--ivory-dim);
