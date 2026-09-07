@@ -15,7 +15,6 @@ import { applyTheme } from "./lib/themes";
 import LoginScreen from "./components/LoginScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
 import NicknameScreen from "./components/NicknameScreen";
-import RanglisteScreen from "./components/RanglisteScreen";
 import LiveScreen from "./components/LiveScreen";
 import MatchScreen from "./components/MatchScreen";
 import StatistikScreen from "./components/StatistikScreen";
@@ -43,7 +42,7 @@ export default function App() {
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
   const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
-  const [tab, setTab] = useState("rang");
+  const [tab, setTab] = useState("stats");
   const [profileName, setProfileName] = useState(null);
   const [protokollMatch, setProtokollMatch] = useState(null);
   const [protokollBackTab, setProtokollBackTab] = useState("stats");
@@ -63,7 +62,7 @@ export default function App() {
   const [matchTournamentCtx, setMatchTournamentCtx] = useState(null); // Turnier-Kontext fuers Melden ueber MatchScreen (siehe TurnierRasterScreen)
   // Fuer Startseite "Zuletzt geoeffnet": den zuletzt gespeicherten Tab EINMAL
   // beim allerersten Rendern sichern, bevor der Persistenz-Effekt weiter
-  // unten den initialen "rang"-Default hineinschreibt und den echten Wert
+  // unten den initialen "stats"-Default hineinschreibt und den echten Wert
   // ueberschreiben wuerde.
   const [lastMainTabAtStart] = useState(() => {
     try { return localStorage.getItem("lastMainTab"); } catch { return null; }
@@ -124,14 +123,14 @@ export default function App() {
   // Navigation nicht zurueck auf die Startseite reissen.
   const startTabAppliedRef = useRef(false);
   useEffect(() => {
-    try { window.history.replaceState({ tab: "rang" }, ""); } catch { /* ignore */ }
+    try { window.history.replaceState({ tab: "stats" }, ""); } catch { /* ignore */ }
     const onPop = (e) => {
       if (tabRef.current === "match" && !allowLeaveMatchRef.current) {
         try { window.history.pushState({ tab: "match", vsOpp: vsOppRef.current, matchTournamentCtx: matchTournamentCtxRef.current }, ""); } catch { /* ignore */ }
         return;
       }
       allowLeaveMatchRef.current = false;
-      applyNavState(e.state || { tab: "rang" });
+      applyNavState(e.state || { tab: "stats" });
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -271,7 +270,7 @@ export default function App() {
   // besuchten Hauptmenuepunkt geraeteweise (nicht Unterseiten wie Match/
   // Protokoll/Admin/Einladen - die sollen beim Neustart nicht "Startseite" sein).
   useEffect(() => {
-    if (["rang", "live", "stats", "profil"].includes(tab)) {
+    if (["stats", "turnier", "live", "profil"].includes(tab)) {
       try { localStorage.setItem("lastMainTab", tab); } catch { /* ignore */ }
     }
   }, [tab]);
@@ -288,8 +287,8 @@ export default function App() {
       if (data && !startTabAppliedRef.current) {
         startTabAppliedRef.current = true;
         let target = data.start_tab;
-        if (target === "last") target = lastMainTabAtStart || "rang";
-        if (target && target !== "rang") navReplace({ tab: target });
+        if (target === "last") target = lastMainTabAtStart || "stats";
+        if (target && target !== "stats") navReplace({ tab: target });
       }
       const { data: all } = await supabase.from("players")
         .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by, created_at");
@@ -525,7 +524,7 @@ export default function App() {
   const openProfile = (nick) => navPush({ tab: "fremdprofil", profileName: nick });
   const openProtokoll = (m) => navPush({ tab: "protokoll", protokollMatch: m, protokollBackTab: tab });
   const startMatchVs = (opponent) => navPush({ tab: "match", vsOpp: opponent });
-  const logout = async () => { await supabase.auth.signOut(); navReplace({ tab: "rang" }); };
+  const logout = async () => { await supabase.auth.signOut(); navReplace({ tab: "stats" }); };
 
   const submitFeedback = async (category, message) => {
     const { error } = await supabase.rpc("submit_feedback", { p_category: category, p_message: message });
@@ -537,7 +536,7 @@ export default function App() {
     const { error } = await supabase.rpc("self_delete_account");
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await supabase.auth.signOut();
-    navReplace({ tab: "rang" });
+    navReplace({ tab: "stats" });
   };
 
   if (!authReady) {
@@ -623,16 +622,6 @@ export default function App() {
               );
             })()}
             <main className={"content" + (tab === "match" ? " no-tabbar" : "")}>
-              {tab === "rang" && (
-                <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
-                  pending={pendingForMe} me={player} onConfirm={confirmMatch}
-                  onOpenProfile={openProfile} onOpenProtokoll={openProtokoll} myOpenReports={myOpenReports}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf}
-                  matches={matches} players={players} challenges={challenges}
-                  catalog={catalog} earnedBadges={badgesOfId(player.id)}
-                  pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => navPush({ tab: "live" })}
-                  onInvite={() => navPush({ tab: "invite" })} snapshots={snapshots} />
-              )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
@@ -667,7 +656,9 @@ export default function App() {
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
                 rangliste={rangliste} me={player} challenges={challenges}
                 catalog={catalog} earnedBadges={badgesOfId(player.id)}
-                onInvite={() => navPush({ tab: "invite" })} />}
+                onInvite={() => navPush({ tab: "invite" })} disciplines={disciplines}
+                pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports}
+                pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => navPush({ tab: "live" })} />}
               {tab === "protokoll" && protokollMatch && (
                 <MatchProtokollScreen match={protokollMatch} onBack={() => window.history.back()} />
               )}
@@ -722,22 +713,22 @@ export default function App() {
 
             {tab !== "match" && (
             <nav className="tabbar">
-              <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "rang" })}>
-                <Trophy size={21} /><span>{t("Übersicht")}</span>
+              <button className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
+                <BarChart3 size={21} /><span>{t("Statistik")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
+              </button>
+              <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" ? " on" : "")} onClick={() => navPush({ tab: "turnier" })}>
+                <Trophy size={21} /><span>{t("Turniere")}</span>
+              </button>
+              <button className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
+                <span className="fab-shine" />
+                <Plus size={26} className="fab-plus" />
               </button>
               <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
                 <Radio size={21} /><span>{t("Live")}</span>
                 {pings.length + openChallengesToMe.length > 0 && (
                   <span className="badge live">{pings.length + openChallengesToMe.length}</span>
                 )}
-              </button>
-              <button className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
-                <span className="fab-shine" />
-                <Plus size={26} className="fab-plus" />
-              </button>
-              <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
-                <BarChart3 size={21} /><span>{t("Statistik")}</span>
               </button>
               <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
                 <User size={21} /><span>{t("Profil")}</span>

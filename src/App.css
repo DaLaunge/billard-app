@@ -706,23 +706,12 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .live-dot { animation: none; } .spin { animation: none; } .warn-pulse { animation: none; }
 }
 
-/* ===== Uebersicht-Dashboard: Module (siehe src/components/widgets) =====
-   Ab 900px duenn-breit-duenn wie das Profil (Dashboard-Look, alle Module
-   sichtbar, Ranking-Tabelle zentral/breit). Am Handy soll das Ranking
-   dominieren: die Tabelle steht per "order" ganz oben, und die Profil-
-   Duplikate (Mein Status/Erfolge/Head-to-Head/Rekorde - stehen inhaltsgleich
-   schon im Profil-Tab) sind ausgeblendet, um Scroll-Weg vor dem Ranking zu
-   sparen. Live-Status (offene Pings/Herausforderungen) ist keine Profil-
-   Info, sondern eine Handlungsaufforderung, und bleibt daher auch am Handy
-   sichtbar. */
-.ov-layout { display: flex; flex-direction: column; gap: 22px; }
-.ov-main { order: 1; }
-.ov-live { order: 2; }
+/* ===== Statistik: linke UserPanel-Spalte (siehe src/components/widgets) =====
+   Am Handy ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px als
+   duenn-breit-duenn-Seitenspalte sichtbar (siehe .stat-split unten). */
 .ov-side { display: flex; flex-direction: column; gap: 16px; order: 3; }
 .ov-side-extra { display: none; }
-.ov-right-col { display: contents; }
-.ov-side-right { display: none; flex-direction: column; gap: 16px; order: 4; }
-.ov-side .stat-block, .ov-side-right .stat-block { margin-bottom: 0; }
+.ov-side .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .side-row:last-of-type { border-bottom: none; }
 .side-row-emoji { font-size: 16px; line-height: 1; }
@@ -805,7 +794,7 @@ button.id-card-head { cursor: pointer; }
 .live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: 20px; }
 .stat-chart-col, .stat-rest-col, .match-selectors, .match-players { min-width: 0; }
 
-/* ===== Desktop: breitere Flaeche, Uebersicht/Statistik zweispaltig =====
+/* ===== Desktop: breitere Flaeche, Statistik zweispaltig =====
    Nur aktiv, wenn eingeloggt (.phone.app) - Login/Ladebildschirm bleiben
    schmal/zentriert. Die Tabbar bleibt bewusst unten und unveraendert wie
    am Handy (gleiche Bedienung, kein Umlernen). */
@@ -821,34 +810,16 @@ button.id-card-head { cursor: pointer; }
 
   .stat-grid .stat-block { margin-bottom: 0; }
 
-  /* Uebersicht: duenn-breit-duenn wie das Profil - UserPanel links (voller
-     Hoehe), Ranking-Tabelle zentral/breit (das Wichtigste dieser Seite,
-     ebenfalls volle Hoehe), rechts Live-Status oben + Erfolge-Fortschritt
-     darunter (analog Profil: pf-stats-b + pf-account teilen sich die
-     rechte Spalte, siehe .ov-right-col unten). Achtung: .ov-right-col ist
-     selbst ein Flexbox-Stapel, KEIN Grid mit eigenen Zeilen - die
-     "order"-Werte von der Handy-Ansicht wirken hier also weiterhin und
-     muessen fuer beide Kinder explizit auf 0 zurueckgesetzt werden, sonst
-     bringt Handy-"order" die Reihenfolge durcheinander. .ov-side ist
-     bewusst NICHT sticky (anders als frueher) - UserPanel ist hier oft
-     hoeher als der Viewport, ein sticky-Block der nie vollstaendig ins
-     Bild passt wirkt beim Scrollen wie haengengeblieben statt wie
-     "bleibt sichtbar". Scrollt jetzt normal mit wie jede andere Spalte. */
-  .phone.app .screen:has(.ov-layout) { max-width: 1440px; }
-  .ov-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  /* .ov-side ist bewusst NICHT sticky (anders als frueher) - UserPanel ist
+     hier oft hoeher als der Viewport, ein sticky-Block der nie vollstaendig
+     ins Bild passt wirkt beim Scrollen wie haengengeblieben statt wie
+     "bleibt sichtbar". Scrollt normal mit wie jede andere Spalte
+     (siehe .stat-split weiter unten fuer die Spaltenaufteilung). */
   .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; }
-  .ov-main { grid-column: 2; grid-row: 1 / span 2; order: 0; }
-  /* EIN Grid-Feld fuer beide rechten Module (siehe Kommentar in
-     RanglisteScreen.jsx) - sie stapeln sich per Flexbox anhand ihrer
-     eigenen Hoehe, statt dass Grid Zeile 1/2 anhand der linken/mittleren
-     Spalte aufteilt. */
-  .ov-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 16px; }
-  .ov-live, .ov-side-right { order: 0; }
-  .ov-side-right { display: flex; }
   .ov-side-extra { display: flex; flex-direction: column; gap: 16px; }
 
-  /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Uebersicht/
-     Statistik) - Erfolge sind ein zentrales Element der App und stehen
+  /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Statistik) -
+     Erfolge sind ein zentrales Element der App und stehen
      deshalb breiter in der Mitte, Statistiken flankieren links/rechts.
      Links: Identitaet + Ratings/Head-to-Head (bleibt beim Scrollen
      sichtbar, siehe .pf-left-col). Rechts: Tempo + Konto-Einstellungen
@@ -865,7 +836,7 @@ button.id-card-head { cursor: pointer; }
      Zeile 1/2 anhand der viel hoeheren Erfolge-Spalte in der Mitte
      aufteilt (das erzeugte vorher eine grosse Luecke vor dem zweiten
      Modul). Sticky gehoert auf die ganze .pf-left-col (wie bei
-     .ov-side/UserPanel auf Uebersicht/Statistik), NICHT nur auf
+     .ov-side/UserPanel auf Statistik), NICHT nur auf
      .pf-identity - sonst bleibt nur die Identitaetskarte kleben, waehrend
      .pf-stats-a darunter/dahinter wegscrollt und von ihr verdeckt wird
      (das sah aus wie "Spielerinfo bleibt beim Scrollen immer oben"). */
@@ -880,7 +851,7 @@ button.id-card-head { cursor: pointer; }
   .phone.app .screen:has(.pf-edit-layout) { max-width: 900px; }
   .pf-edit-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
 
-  /* Live: duenn-breit-duenn wie Uebersicht/Statistik/Profil - UserPanel
+  /* Live: duenn-breit-duenn wie Statistik/Profil - UserPanel
      links (dieselbe Konstante), Duelle zentral/breit (der Fokus dieser
      Seite - offene Herausforderungen brauchen mehr Platz fuer Nachricht/
      Antwort), Live-Pings rechts (kompakte Liste, wie die Bestenlisten in
@@ -890,10 +861,11 @@ button.id-card-head { cursor: pointer; }
   .live-section.duelle { grid-column: 2; }
   .live-section.pings { grid-column: 3; }
 
-  /* Statistik: duenn-breit-duenn wie Uebersicht/Profil - UserPanel links
-     (dieselbe Konstante), Trendverlauf + Letzte Matches zentral/breit (der
-     eigentliche Fokus dieser Seite), die drei Bestenlisten rechts
-     ("alles andere") gestapelt statt gequetscht nebeneinander. */
+  /* Statistik: duenn-breit-duenn wie Profil - UserPanel links (dieselbe
+     Konstante), Trendverlauf + Letzte Matches zentral/breit (der
+     eigentliche Fokus dieser Seite), rechts die Rangliste, Live-Status,
+     Erfolge-Fortschritt und die reinen Bestenlisten ("alles andere")
+     gestapelt statt gequetscht nebeneinander. */
   .phone.app .screen:has(.stat-split) { max-width: 1440px; }
   .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
   .stat-grid { display: flex; flex-direction: column; gap: 16px; }
@@ -903,7 +875,7 @@ button.id-card-head { cursor: pointer; }
   .match-split { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
 
   /* Verwaltung: keine Identitaets-Spalte noetig (kein "eigener" Fokus wie
-     bei Uebersicht/Live/Statistik/Profil), stattdessen ein lockeres
+     bei Live/Statistik/Profil), stattdessen ein lockeres
      Dashboard aus den einzelnen Modulen (offene Matches, Feedback, Match
      nachtragen, ...) - per CSS-Mehrspaltensatz, damit unterschiedlich
      hohe Karten den Platz gut ausnutzen statt stur in einer Spalte

@@ -81,7 +81,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     setBusy(false);
   };
 
-  const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "rang");
+  const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "stats");
   const pickStartTab = async (value) => {
     setStartTabLocal(value);
     setBusy(true);
@@ -168,12 +168,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     await Promise.all([
       onSaveProfile(nickValid ? cleanNick : nickname, null, motto),
       onSetTheme("green", null),
-      onSetStartTab("rang"),
+      onSetStartTab("stats"),
     ]);
     setColor(null);
     setThemeKey("green");
     applyTheme("green");
-    setStartTabLocal("rang");
+    setStartTabLocal("stats");
     setBusy(false);
     toast(t("Standardeinstellungen wiederhergestellt."));
   };
@@ -310,9 +310,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <p className="hint" style={{ marginTop: 0 }}>{t("Was soll beim Starten der App zuerst angezeigt werden?")}</p>
             <div className="chips">
               {[
-                ["rang", t("Übersicht")],
-                ["live", t("Live")],
                 ["stats", t("Statistik")],
+                ["turnier", t("Turniere")],
+                ["live", t("Live")],
                 ["profil", t("Profil")],
                 ["last", t("Zuletzt geöffnet")],
               ].map(([v, label]) => (
