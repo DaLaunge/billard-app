@@ -1446,11 +1446,18 @@ button.id-card-head { cursor: pointer; }
 .tb-band { fill: transparent; }
 .tb-band--winners { fill: #4CAF6E14; }
 .tb-band--losers { fill: #D9614C14; }
-.tb-edge { fill: none; stroke: var(--ivory-dim); stroke-width: 2; opacity: 0.35; }
-.tb-edge.decided { stroke: var(--gold); stroke-width: 3; opacity: 0.85; }
-.tb-edge.drop { stroke-dasharray: 5 4; opacity: 0.25; }
-.tb-edge.drop.decided { stroke: var(--loss); stroke-width: 2.5; opacity: 0.7; }
-.tb-section-label { fill: var(--ivory-dim); font-size: 12px; }
+/* Anders als im interaktiven Baum (TurnierGraph.jsx) ist im Bericht IMMER
+   das komplette, bereits beendete Turnier zu sehen - eine decided/undecided-
+   Unterscheidung wie dort ergibt hier keinen Sinn (waere fuer JEDE Kante
+   "decided", da alles gespielt ist). Stattdessen bewusst nur zwei feste
+   Stile: Sieger-Pfade (advance) kraeftig gold als der eigentliche "rote
+   Faden" durchs Turnier, Abstiegs-Pfade (drop) durchgehend dezent/gestrichelt
+   im Hintergrund - sonst wirkt das Bild (Nutzer-Feedback "optisch nicht
+   ansprechend") schnell wie ein Gewirr aus lauter gleich kraeftigen Linien.
+*/
+.tb-edge { fill: none; stroke: var(--gold); stroke-width: 2.5; opacity: 0.8; }
+.tb-edge.drop { stroke: var(--ivory-dim); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: 0.3; }
+.tb-section-label { fill: var(--ivory-dim); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .tb-section-label.section--final { fill: var(--gold); }
 .tb-box { fill: var(--felt-3); stroke: var(--line); stroke-width: 1; }
 .tb-box--winners { stroke: var(--win); stroke-width: 2; }
@@ -1460,6 +1467,7 @@ button.id-card-head { cursor: pointer; }
 .tb-name { fill: var(--ivory); font-size: 13px; dominant-baseline: middle; }
 .tb-score { fill: var(--ivory-dim); font-size: 13px; font-weight: 700; dominant-baseline: middle; }
 .tb-name.tb-won, .tb-score.tb-won { fill: var(--gold); font-weight: 700; }
+.tb-name.tb-bye { fill: var(--ivory-dim); font-style: italic; font-size: 12px; }
 
 @media print {
   .protokoll-doc.turnier-bericht-doc { max-width: none !important; }
@@ -1471,11 +1479,11 @@ button.id-card-head { cursor: pointer; }
   .tb-box--final { stroke: #B8860B !important; }
   .tb-box-divider { stroke: #ddd !important; }
   .tb-name { fill: #111 !important; }
+  .tb-name.tb-bye { fill: #777 !important; }
   .tb-score { fill: #333 !important; }
   .tb-name.tb-won, .tb-score.tb-won { fill: #8A6200 !important; }
-  .tb-edge { stroke: #999 !important; }
-  .tb-edge.decided { stroke: #B8860B !important; }
-  .tb-edge.drop.decided { stroke: #6B1F24 !important; }
+  .tb-edge { stroke: #B8860B !important; }
+  .tb-edge.drop { stroke: #aaa !important; }
   .tb-section-label { fill: #555 !important; }
   .tb-section-label.section--final { fill: #8A6200 !important; }
   .tb-standings-table tbody tr:nth-child(even) td,
