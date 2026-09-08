@@ -34,8 +34,12 @@ export default function TurniereScreen({ toast, onOpenTournament, onBack }) {
   const [doubleRoundRobin, setDoubleRoundRobin] = useState(false);
 
   const load = async () => {
+    // organizer(nickname) per Inline-Join statt eines eigenen players-Props
+    // (Nutzer-Feedback: Turnierleitung soll gut ersichtlich sein) - dieser
+    // Screen laedt sonst keine Spielerliste, ein Join spart eine zusaetzliche
+    // Anfrage/Prop-Kette.
     const { data, error } = await supabase.from("tournaments")
-      .select("id, name, format, discipline, status, created_at")
+      .select("id, name, format, discipline, status, created_at, organizer:players!tournaments_organizer_id_fkey(nickname)")
       .order("created_at", { ascending: false });
     if (!error) setTournaments(data || []);
   };
@@ -190,6 +194,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onBack }) {
               <span className="turnier-list-row-main">
                 <b>{tr.name}</b>
                 <span className="turnier-list-row-meta">{formatLabel(tr.format)} · {t(tr.discipline)} · {statusLabel(tr.status)} · {fmtDate(tr.created_at)}</span>
+                <span className="turnier-list-row-meta">{t("Turnierleitung")}: {tr.organizer?.nickname || "?"}</span>
               </span>
               <ChevronRight size={20} className="turnier-list-row-chevron" />
             </button>

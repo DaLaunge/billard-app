@@ -19,30 +19,66 @@ const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel
 // waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
 // React wuerde sie als anderen Komponententyp behandeln und ihren
 // useState (die gewaehlte Anzahl) jedes Mal verwerfen.
-function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile }) {
+//
+// Nutzer-Feedback: in JEDER Ranglisten-/Bestenliste soll die eigene
+// Position IMMER sichtbar sein - auch bei Top-3/Top-10, nicht nur als
+// Zahl, sondern als echte Zeile mit Name/Wert (Beispiel: "wenn ich Platz
+// 40 bin, will ich das trotzdem in der Top-3-Ansicht sehen"). Der eigene
+// Rang wird deshalb IMMER aus der vollen, ungekuerzten "rows"-Liste
+// ermittelt (nicht aus "visible") - liegt er ausserhalb der gerade
+// sichtbaren Top-N, wird die eigene Zeile per Trenner angehaengt statt nur
+// als Text erwaehnt. Zusaetzlich ein "Meine Umgebung"-Umschalter (2 Plaetze
+// davor/danach) als vierte, zu Top-3/10/Alle exklusive Option - beim
+// Wechsel zurueck auf eine Top-N-Zahl wird er automatisch wieder
+// deaktiviert.
+function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile, me }) {
   const [count, setCount] = useState(3);
-  const visible = count === "all" ? rows : rows.slice(0, count);
+  const [nearby, setNearby] = useState(false);
+  const myIndex = rows.findIndex((p) => p.name === me?.nickname);
+  const showNearby = nearby && myIndex >= 0;
+  const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
+  const visible = showNearby ? rows.slice(sliceStart, myIndex + 3) : (count === "all" ? rows : rows.slice(0, count));
+  const myRowShown = showNearby || count === "all" || (myIndex >= 0 && myIndex < count);
+  const pinMyRow = myIndex >= 0 && !myRowShown;
   return (
     <section className="stat-block">
       <div className="stat-block-head">
         <h3>{icon} {title}</h3>
         <div className="chips small">
           {COUNT_OPTIONS.map((c) => (
-            <button key={c} className={"chip" + (count === c ? " active" : "")} onClick={() => setCount(c)}>
+            <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
+              onClick={() => { setCount(c); setNearby(false); }}>
               {c === "all" ? t("Alle") : `Top ${c}`}
             </button>
           ))}
+          {myIndex >= 0 && (
+            <button className={"chip" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}>
+              {t("Meine Umgebung")}
+            </button>
+          )}
         </div>
       </div>
+      {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{t("Noch keine Daten.")}</p>}
       {visible.map((p, i) => (
-        <button key={p.name} className="stat-row as-btn" onClick={() => onOpenProfile(p.name)}>
-          <span className="medal">{i + 1}.</span>
+        <button key={p.name} className={"stat-row as-btn" + (p.name === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(p.name)}>
+          <span className="medal">{sliceStart + i + 1}.</span>
           <Ball color={colorOf(p.name)} label={initials(p.name)} badge={badgeOf(p.name)} photo={photoOf(p.name)} size={34} />
           <span className="stat-name">{p.name}</span>
           <span className="stat-val">{fmt(p)}</span>
         </button>
       ))}
+      {pinMyRow && (
+        <>
+          <div className="stat-row-sep">···</div>
+          <button className="stat-row as-btn mine" onClick={() => onOpenProfile(rows[myIndex].name)}>
+            <span className="medal">{myIndex + 1}.</span>
+            <Ball color={colorOf(rows[myIndex].name)} label={initials(rows[myIndex].name)} badge={badgeOf(rows[myIndex].name)} photo={photoOf(rows[myIndex].name)} size={34} />
+            <span className="stat-name">{rows[myIndex].name}</span>
+            <span className="stat-val">{fmt(rows[myIndex])}</span>
+          </button>
+        </>
+      )}
     </section>
   );
 }
@@ -53,21 +89,33 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
 // Anders als die anderen Bloecke mit Disziplin-Auswahl, da die Rangliste
 // (im Gegensatz zu den reinen Zaehl-Statistiken) je Disziplin getrennt
 // gefuehrt wird.
-function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpenProfile }) {
+function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpenProfile, me }) {
   const [disc, setDisc] = useState("Gesamt");
   const [count, setCount] = useState(3);
+  const [nearby, setNearby] = useState(false);
   const rows = rangliste.filter((r) => r.discipline === disc && r.aktiv && !r.vorlaeufig);
-  const visible = count === "all" ? rows : rows.slice(0, count);
+  const myIndex = rows.findIndex((r) => r.nickname === me?.nickname);
+  const showNearby = nearby && myIndex >= 0;
+  const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
+  const visible = showNearby ? rows.slice(sliceStart, myIndex + 3) : (count === "all" ? rows : rows.slice(0, count));
+  const myRowShown = showNearby || count === "all" || (myIndex >= 0 && myIndex < count);
+  const pinMyRow = myIndex >= 0 && !myRowShown;
   return (
     <section className="stat-block">
       <div className="stat-block-head">
         <h3><Trophy size={17} /> {t("Rangliste")}</h3>
         <div className="chips small">
           {COUNT_OPTIONS.map((c) => (
-            <button key={c} className={"chip" + (count === c ? " active" : "")} onClick={() => setCount(c)}>
+            <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
+              onClick={() => { setCount(c); setNearby(false); }}>
               {c === "all" ? t("Alle") : `Top ${c}`}
             </button>
           ))}
+          {myIndex >= 0 && (
+            <button className={"chip" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}>
+              {t("Meine Umgebung")}
+            </button>
+          )}
         </div>
       </div>
       <p className="hint" style={{ marginTop: 0 }}>{t("Fargo-Skala - 100 Punkte = 2:1")}</p>
@@ -76,16 +124,32 @@ function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpe
           <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => setDisc(d)}>{t(d)}</button>
         ))}
       </div>
+      {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
-      {visible.map((r, i) => (
-        <button key={r.nickname + r.discipline} className="stat-row as-btn" onClick={() => onOpenProfile(r.nickname)}>
-          <span className="medal">{i < 3 ? MEDAL_EMOJI[i] : `${i + 1}.`}</span>
-          <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} photo={photoOf(r.nickname)} size={34} />
-          <span className="stat-name">{r.nickname}</span>
-          <span className="stat-val">{r.rating}</span>
-          <DecayBadge player={r} iconSize={15} />
-        </button>
-      ))}
+      {visible.map((r, i) => {
+        const rank = sliceStart + i;
+        return (
+          <button key={r.nickname + r.discipline} className={"stat-row as-btn" + (r.nickname === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(r.nickname)}>
+            <span className="medal">{rank < 3 ? MEDAL_EMOJI[rank] : `${rank + 1}.`}</span>
+            <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} photo={photoOf(r.nickname)} size={34} />
+            <span className="stat-name">{r.nickname}</span>
+            <span className="stat-val">{r.rating}</span>
+            <DecayBadge player={r} iconSize={15} />
+          </button>
+        );
+      })}
+      {pinMyRow && (
+        <>
+          <div className="stat-row-sep">···</div>
+          <button className="stat-row as-btn mine" onClick={() => onOpenProfile(rows[myIndex].nickname)}>
+            <span className="medal">{myIndex + 1}.</span>
+            <Ball color={colorOf(rows[myIndex].nickname)} label={initials(rows[myIndex].nickname)} badge={badgeOf(rows[myIndex].nickname)} photo={photoOf(rows[myIndex].nickname)} size={34} />
+            <span className="stat-name">{rows[myIndex].nickname}</span>
+            <span className="stat-val">{rows[myIndex].rating}</span>
+            <DecayBadge player={rows[myIndex]} iconSize={15} />
+          </button>
+        </>
+      )}
     </section>
   );
 }
@@ -202,6 +266,34 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       )}
 
       <div className="stat-split">
+      {/* .stat-right-col buendelt Rangliste + "Rest" (siehe unten) zu EINER
+          Huelle: am Handy per CSS unsichtbar (display:contents), dort
+          ordnen sich ihre beiden Kinder ueber "order" direkt in .stat-split
+          ein (Rangliste zuerst - Nutzer-Feedback: Gesamt-Rangliste soll am
+          Handy an erster Stelle stehen). Am Desktop wird daraus ein
+          einziges Grid-Feld mit eigenem Flex-Stapel (siehe App.css) - das
+          verhindert den Grid-Zeilen-Kopplungs-Bug (leere Luecke vor
+          "Meiste Siege", weil die viel hoehere Chart-Spalte sonst dieselbe
+          Grid-Zeile wie die kurze Rangliste aufblaeht). */}
+      <div className="stat-right-col">
+      <div className="stat-ranking-col">
+        <RankingBlock rangliste={rangliste} disciplines={disciplines} me={me}
+          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+      </div>
+
+      <div className="stat-rest-col">
+      <div className="stat-grid">
+        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
+        <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} me={me}
+          fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+        <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} me={me}
+          fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+        <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me}
+          fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+      </div>
+      </div>
+      </div>
+
       <aside className="ov-side">
         {/* Wie auf Profil: dieselbe UserPanel-Konstante - am Handy
             ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px sichtbar. */}
@@ -296,22 +388,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           <p className="hint">{filtersActive ? t("Keine Matches fuer diese Filter.") : t("Noch keine bestaetigten Matches.")}</p>
         )}
       </section>
-      </div>
-
-      {/* Rechte Spalte: Rangliste ganz oben, danach Live-Status, danach die
-          drei reinen Bestenlisten ("alles andere"). */}
-      <div className="stat-rest-col">
-      <div className="stat-grid">
-        <RankingBlock rangliste={rangliste} disciplines={disciplines}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
-        <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins}
-          fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote}
-          fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak}
-          fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-      </div>
       </div>
       </div>
     </div>

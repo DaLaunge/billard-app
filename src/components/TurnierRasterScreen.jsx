@@ -392,6 +392,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   }
 
   const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
+  // Nutzer-Feedback: die Turnierleitung war bisher nirgends sichtbar - man
+  // musste erst selbst Organisator/Admin sein, um es an den eigenen
+  // Rechten (isOrganizer) zu erahnen. tour.organizer_id ist ueber select("*")
+  // in load() bereits geladen, hier nur eine Namens-/Avatar-Anzeige.
+  const organizerName = nameOf(tour.organizer_id);
 
   if (tour.status === "setup") {
     const isRegistered = (roster || []).some((r) => r.player_id === me.id);
@@ -405,6 +410,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
         <p className="hint" style={{ marginTop: -6 }}>
           {formatLabel(tour.format)} · {t(tour.discipline)} · {t("Anmeldung offen")}
         </p>
+        <div className="turnier-organizer-line">
+          <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
+          <Ball color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
+          <b>{organizerName || "?"}</b>
+        </div>
 
         <section className="stat-block">
           <h3><Users size={17} /> {t("Angemeldet")} ({(roster || []).length})</h3>
@@ -502,6 +512,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
           : <> · {t("Korrekturen noch möglich")}</>)}
       </p>
+      <div className="turnier-organizer-line">
+        <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
+        <Ball color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
+        <b>{organizerName || "?"}</b>
+      </div>
 
       {isOrganizer && (tour.status === "running" || canDeleteTournament || canConfirmResults) && (
         <div className="chips small" style={{ marginBottom: 10 }}>

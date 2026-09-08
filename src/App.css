@@ -5,6 +5,12 @@
   --line: #24564660; --chalk: #7CC1E8; --chalk-deep: #3E82B4;
   --ivory: #F2EDE0; --ivory-dim: #9DBAAE; --gold: #D6A425;
   --win: #4CAF6E; --loss: #D9614C;
+  /* Einheitlicher Abstand zwischen gestapelten Karten (Nutzer-Feedback:
+     nach mehreren Pushes hatten Karten uneinheitliche/versehentlich zu
+     grosse Abstaende - z.B. .ov-side/.stat-grid mit 16px, .pf-left-col/
+     .pf-right-col mit 24px, .stat-block-Default mit 14px). Eine einzige
+     Variable statt verstreuter Werte macht das an EINER Stelle wartbar. */
+  --card-gap: 16px;
 }
 * { box-sizing: border-box; margin: 0; }
 html, body { background: var(--felt); }
@@ -500,7 +506,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .saved p { color: var(--ivory-dim); font-size: 14px; line-height: 1.55; margin-bottom: 22px; }
 
 .stat-block { background: var(--felt-2); border: 1px solid var(--line); border-radius: 18px;
-  padding: 16px 14px; margin-bottom: 14px; }
+  padding: 16px 14px; margin-bottom: var(--card-gap); }
 .install-block { margin-top: 16px; margin-bottom: 0; }
 .stat-block h3 { font-size: 15px; display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--chalk); }
 .stat-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
@@ -525,6 +531,18 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .medal { width: 24px; font-weight: 700; color: var(--gold); }
 .stat-name { flex: 1; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .stat-val { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; white-space: nowrap; }
+/* Eigene Zeile in einer Ranglisten-/Bestenliste (Nutzer-Feedback: "wo stehe
+   ich selbst?") - dezenter Goldrahmen + leichte Fuellung statt eines
+   kompletten Farbwechsels, damit Medaillen-Emoji/Ball-Avatar weiterhin gut
+   lesbar bleiben. */
+.stat-row.mine { background: #D6A42518; border: 1px solid #D6A42555; border-radius: 10px;
+  padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
+.stat-my-rank { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
+.stat-my-rank b { color: var(--gold); }
+/* Trenner vor der angehefteten eigenen Zeile, wenn der eigene Platz
+   ausserhalb der sichtbaren Top-N liegt (siehe LeaderboardBlock/
+   RankingBlock in StatistikScreen.jsx). */
+.stat-row-sep { text-align: center; color: var(--ivory-dim); letter-spacing: 3px; padding: 2px 0; font-size: 12px; }
 .m-date { color: var(--ivory-dim); font-size: 12.5px; width: 44px; flex-shrink: 0; }
 .m-date.m-datetime { width: 88px; font-size: 11.5px; }
 .m-txt { flex: 1; min-width: 0; } .m-disc { color: var(--ivory-dim); font-size: 12.5px; }
@@ -712,7 +730,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 /* ===== Statistik: linke UserPanel-Spalte (siehe src/components/widgets) =====
    Am Handy ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px als
    duenn-breit-duenn-Seitenspalte sichtbar (siehe .stat-split unten). */
-.ov-side { display: flex; flex-direction: column; gap: 16px; order: 3; }
+.ov-side { display: flex; flex-direction: column; gap: var(--card-gap); order: 3; }
 .ov-side-extra { display: none; }
 .ov-side .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
@@ -784,7 +802,7 @@ button.id-card-head { cursor: pointer; }
 .pf-stats-a { order: 2; }
 .pf-stats-b { order: 3; }
 .pf-achievements { order: 4; display: flex; flex-direction: column; }
-.pf-achievements > * { margin-bottom: 14px; }
+.pf-achievements > * { margin-bottom: var(--card-gap); }
 .pf-account { order: 5; }
 .pf-danger { margin-top: 20px; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
@@ -797,6 +815,18 @@ button.id-card-head { cursor: pointer; }
    ab 900px zweispaltig. */
 .live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: 20px; }
 .stat-chart-col, .stat-rest-col, .match-selectors, .match-players { min-width: 0; }
+
+/* .stat-right-col fasst Rangliste + "alles andere" (Live-Status,
+   Bestenlisten) zu EINEM Grid-Feld zusammen (wie .pf-right-col beim
+   Profil) - display:contents am Handy macht die Huelle unsichtbar, ihre
+   Kinder ordnen sich per eigenem "order" direkt in .stat-split ein (siehe
+   Desktop-Block weiter unten fuer die Gegenprobe: dort wird daraus ein
+   echter Flex-Stapel). */
+.stat-right-col { display: contents; }
+.stat-ranking-col { order: 1; }
+.stat-chart-col { order: 2; }
+.stat-rest-col { order: 3; }
+.stat-split .ov-side { order: 4; }
 
 /* ===== Desktop: breitere Flaeche, Statistik zweispaltig =====
    Nur aktiv, wenn eingeloggt (.phone.app) - Login/Ladebildschirm bleiben
@@ -820,7 +850,12 @@ button.id-card-head { cursor: pointer; }
      "bleibt sichtbar". Scrollt normal mit wie jede andere Spalte
      (siehe .stat-split weiter unten fuer die Spaltenaufteilung). */
   .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; }
-  .ov-side-extra { display: flex; flex-direction: column; gap: 16px; }
+  /* Hoehere Spezifitaet als die Handy-Regel ".stat-split .ov-side{order:4}"
+     weiter oben (zwei Klassen schlagen eine) - sonst wuerde die
+     Medienabfrage allein den order-Wert hier NICHT zuverlaessig
+     zuruecksetzen. */
+  .stat-split .ov-side { order: 0; }
+  .ov-side-extra { display: flex; flex-direction: column; gap: var(--card-gap); }
 
   /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Statistik) -
      Erfolge sind ein zentrales Element der App und stehen
@@ -844,10 +879,10 @@ button.id-card-head { cursor: pointer; }
      .pf-identity - sonst bleibt nur die Identitaetskarte kleben, waehrend
      .pf-stats-a darunter/dahinter wegscrollt und von ihr verdeckt wird
      (das sah aus wie "Spielerinfo bleibt beim Scrollen immer oben"). */
-  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; position: sticky; top: 28px; }
+  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); position: sticky; top: 28px; }
   .pf-identity, .pf-stats-a { order: 0; }
   .pf-achievements { grid-column: 2; grid-row: 1 / span 2; order: 0; }
-  .pf-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 24px; }
+  .pf-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); }
   .pf-stats-b, .pf-account { order: 0; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
@@ -876,7 +911,26 @@ button.id-card-head { cursor: pointer; }
      gestapelt statt gequetscht nebeneinander. */
   .phone.app .screen:has(.stat-split) { max-width: 1440px; }
   .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .stat-grid { display: flex; flex-direction: column; gap: 16px; }
+  .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
+  /* Rangliste und "Rest" (Live-Status+Bestenlisten) standen zunaechst als
+     ZWEI separate Grid-Kinder in Spalte 3 (Zeile 1 bzw. 2) nebeneinander
+     zur hohen .stat-chart-col (Zeile 1/span 2). Bug (Nutzer-Feedback: "nach
+     einem Push zu viel Platz zwischen den Karten"): CSS Grid bemisst eine
+     auto-Zeile anhand des hoechsten Elements, das sie beruehrt - die viel
+     hoehere .stat-chart-col (spannt beide Zeilen) blaehte dadurch Zeile 1
+     spuerbar auf, obwohl die Rangliste selbst viel kuerzer ist. Das erzeugte
+     genau die grosse leere Luecke vor "Meiste Siege". Gleicher Bug-Typ wie
+     schon einmal bei .pf-layout geloest (siehe Kommentar dort) - Fix hier
+     identisch: Rangliste + Rest teilen sich jetzt EIN Grid-Feld
+     (.stat-right-col, wie .pf-right-col), das seine zwei Module per
+     Flexbox stapelt, dadurch bestimmt nur ihre eigene Hoehe den Abstand.
+     Die Aufteilung auf mehrere DOM-Kinder bleibt trotzdem bestehen (siehe
+     .stat-right-col{display:contents} weiter oben), weil die Rangliste am
+     Handy VOR der Chart-Spalte stehen soll, waehrend der Rest danach folgt -
+     das leistet dort "order" auf den einzelnen Kindern. */
+  .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); }
+  .stat-ranking-col, .stat-chart-col, .stat-rest-col { order: 0; }
+  .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }
@@ -991,6 +1045,7 @@ button.id-card-head { cursor: pointer; }
 .pmp-chip:hover { background: var(--felt-3); }
 .pmp-chip.sel { border-color: var(--gold); background: var(--felt-3); }
 .pmp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.turnier-organizer-line { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; }
 .pmp-check { color: var(--gold); flex-shrink: 0; }
 
 /* Turnier-Uebersicht: deutlich groesseres Tap-Ziel als die generische
