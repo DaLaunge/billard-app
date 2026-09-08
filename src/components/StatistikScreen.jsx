@@ -9,6 +9,7 @@ import PlayerPicker from "./PlayerPicker";
 import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
 import LiveStatusCard from "./widgets/LiveStatusCard";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
@@ -390,6 +391,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </section>
       </div>
       </div>
+      <ImprintFooter />
     </div>
   );
 }

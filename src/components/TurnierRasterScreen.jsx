@@ -833,7 +833,18 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                       <p className="turnier-round-title">
                         {b === "final" ? finalRoundLabel(Number(r), finalTotalRounds) : `${t("Runde")} ${r}`}
                       </p>
-                      {byRound[r].sort((a, c) => a.bracket_position - c.bracket_position).map(renderMatch)}
+                      {/* Bereits gespielte/entschiedene Partien (Ergebnis
+                          gemeldet ODER Freilos) ans Ende der jeweiligen Runde
+                          - Nutzer-Feedback: oben soll auf einen Blick
+                          sichtbar sein, was noch aussteht, statt zwischen
+                          bereits erledigten Partien suchen zu muessen.
+                          .slice() vor sort() noetig, sonst wuerde das
+                          Original-Array in byRound mutiert. */}
+                      {byRound[r].slice().sort((a, c) => {
+                        const aDone = a.match_id != null || a.is_bye ? 1 : 0;
+                        const cDone = c.match_id != null || c.is_bye ? 1 : 0;
+                        return aDone - cDone || a.bracket_position - c.bracket_position;
+                      }).map(renderMatch)}
                     </div>
                   ))}
                 </div>
