@@ -1374,7 +1374,14 @@ button.id-card-head { cursor: pointer; }
   flex-shrink: 0; }
 .turnier-graph-row + .turnier-graph-row { border-top: 1px solid var(--line); }
 .turnier-graph-row.won { color: var(--gold); font-weight: 700; }
-.turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
+/* Position (left/top) kommt jetzt als Inline-Style direkt aus dem Layout
+   (siehe TurnierGraph.jsx) - das Label ist ein Geschwister der Box statt
+   ihr Kind, sonst wuerde es vom overflow:hidden der Box (fuer abgerundete
+   Ecken/Textkuerzung) unsichtbar mitabgeschnitten. */
+.turnier-graph-table { position: absolute; font-size: 10.5px; color: var(--ivory-dim); white-space: nowrap; }
+/* Variante fuer die angepinnte Kopie oben (normaler Fluss statt absoluter
+   Positionierung, siehe Kommentar dort). */
+.turnier-graph-table-pinned { font-size: 10.5px; color: var(--ivory-dim); margin-bottom: 4px; }
 .turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
 /* Doppeltes Nichterscheinen (siehe tournament_mark_no_show()) - schliesst
    sich mit .turnier-graph-pending gegenseitig aus (ein void-Match hat nie
