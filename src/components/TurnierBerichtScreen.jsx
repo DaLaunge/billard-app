@@ -167,8 +167,12 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
 
   // Wie in TurnierRasterScreen.jsx: bei Jeder-gegen-jeden ist "main" (die
   // Tabelle) kein Baum - nur eine eventuelle Playoff-Stufe wird gezeichnet.
+  // Bei normalem K.O. (nicht Doppel-K.O.) laeuft der komplette Baum dagegen
+  // selbst unter bracket='main' (generate_ko_bracket() nennt ihn nur bei
+  // Doppel-K.O. 'winners') - Nutzer-Feedback: dafuer fehlte die Grafik
+  // komplett, weil "main" sonst nur als flache Tabelle vorkommt.
   const bracketMatches = tour.format === "round_robin" ? tms.filter((tm) => tm.bracket !== "main") : tms;
-  const hasTree = bracketMatches.some((tm) => tm.bracket !== "main");
+  const hasTree = tour.format === "ko" || bracketMatches.some((tm) => tm.bracket !== "main");
 
   return (
     <div className="screen protokoll-screen">

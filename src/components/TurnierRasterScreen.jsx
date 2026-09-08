@@ -98,10 +98,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // des Betrachtens nachtraeglich ein Playoff-Baum entsteht, bleibt eine
   // manuell gewaehlte Ansicht unangetastet.
   useEffect(() => {
-    if (!tms) return;
-    if (viewMode === "graph" && !tms.some((tm) => tm.bracket !== "main")) setViewMode("list");
+    if (!tms || !tour) return;
+    // Bei normalem K.O. laeuft der Baum komplett unter bracket='main'
+    // (generate_ko_bracket() nennt ihn nur bei Doppel-K.O. 'winners') - ohne
+    // die format-Abfrage wuerde ein frisch gestartetes K.O.-Turnier hier
+    // sofort wieder auf "Liste" zurueckfallen (siehe hasTreeSections unten).
+    const hasTree = tour.format === "ko" || tms.some((tm) => tm.bracket !== "main");
+    if (viewMode === "graph" && !hasTree) setViewMode("list");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tms]);
+  }, [tms, tour]);
 
   const nameOf = useCallback((id) => players.find((p) => p.id === id)?.nickname || null, [players]);
 
@@ -525,7 +530,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // mit fruehem Cutover weiterhin winners/losers/final wie gehabt.
   const bracketOrder = ["main", "winners", "losers", "final"].filter((b) => groups[b]?.length);
   const finalTotalRounds = groups.final ? Math.max(...groups.final.map((m) => m.round)) : 0;
-  const hasTreeSections = bracketOrder.some((b) => b !== "main");
+  // Bei normalem K.O. (nicht Doppel-K.O.) laeuft der komplette Baum unter
+  // bracket='main' (generate_ko_bracket() nennt ihn nur bei Doppel-K.O.
+  // 'winners') - ohne die format-Abfrage haette ein reines K.O.-Turnier nie
+  // eine Grafik-Ansicht bekommen, da 'main' sonst nur die flache
+  // Jeder-gegen-jeden-Tabelle ohne Baumstruktur ist (Nutzer-Feedback).
+  const hasTreeSections = tour.format === "ko" || bracketOrder.some((b) => b !== "main");
 
   const renderMatch = (tm) => {
     const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
