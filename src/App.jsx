@@ -267,6 +267,22 @@ export default function App() {
     dismissTourneyReady();
   }, [tourneyReady, dismissTourneyReady, navPush]);
 
+  // Turniere-Menuepunkt (Tabbar + Profil-Button): springt bei einer
+  // bereiten Paarung direkt ins BETROFFENE Turnier statt in die allgemeine
+  // Liste - sonst sieht man zwar das Badge ("hier ist etwas zu tun"), muss
+  // aber selbst raten, in welchem der ggf. vielen Turniere (Nutzer-
+  // Feedback: "weiß ich nicht, in welches Turnier ich einsteigen muss").
+  // Bei mehreren gleichzeitig bereiten Paarungen (moeglich, wenn man in
+  // mehreren Turnieren gleichzeitig mitspielt) fuehrt das zur ERSTEN -
+  // realistischerweise ein seltener Randfall in einem kleinen Verein.
+  const openTurniereMenu = useCallback(() => {
+    if (tourneyReadyList.length > 0) {
+      navPush({ tab: "turnierdetail", tournamentId: tourneyReadyList[0].tournament_id });
+    } else {
+      navPush({ tab: "turnier" });
+    }
+  }, [tourneyReadyList, navPush]);
+
   // Fuer die Startseiten-Option "Zuletzt geoeffnet": merkt sich den zuletzt
   // besuchten Hauptmenuepunkt geraeteweise (nicht Unterseiten wie Match/
   // Protokoll/Admin/Einladen - die sollen beim Neustart nicht "Startseite" sein).
@@ -700,7 +716,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
-                  onOpenTurniere={() => navPush({ tab: "turnier" })} tourneyReadyCount={tourneyReadyList.length}
+                  onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
@@ -749,7 +765,7 @@ export default function App() {
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
-              <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" ? " on" : "")} onClick={() => navPush({ tab: "turnier" })}>
+              <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" ? " on" : "")} onClick={openTurniereMenu}>
                 <Trophy size={21} /><span>{t("Turniere")}</span>
                 {tourneyReadyList.length > 0 && <span className="badge">{tourneyReadyList.length}</span>}
               </button>

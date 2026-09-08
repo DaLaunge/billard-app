@@ -10,13 +10,14 @@ const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Dopp
 const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
 
 // Turnierverwaltung: Liste laufender/vergangener Turniere + Formular zum
-// Anlegen. Anlegen ist aktuell auf Admins beschraenkt (Stefans Vorgabe zur
-// Missbrauchsvermeidung, solange der Modus in der Erprobung ist - siehe
-// supabase/2026-09-04_tournament_admin_only.sql, gilt bis er es widerruft).
-// Ansehen/Mitspielen bleibt fuer alle offen.
+// Anlegen - seit 2026-09-07_tournament_open_creation_no_self_edit.sql fuer
+// alle Spieler offen (nicht mehr nur Admins).
 export default function TurniereScreen({ me, players, matches, colorOf, badgeOf, photoOf, toast, onOpenTournament, onBack }) {
   const [tournaments, setTournaments] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("all"); // all | running | done - schnelles Finden bereits gespielter Turniere
+  // Default "running" statt "all" (Nutzer-Feedback) - beim Oeffnen der
+  // Turnierliste sind die AKTUELL laufenden Turniere fast immer das
+  // Relevante, nicht die komplette Historie.
+  const [statusFilter, setStatusFilter] = useState("running"); // all | running | done - schnelles Finden bereits gespielter Turniere
   const [query, setQuery] = useState(""); // Suche nach Turniername
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
