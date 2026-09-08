@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { X, ZoomIn, ZoomOut, RotateCcw, Trophy, Minimize2 } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, Trophy, Minimize2, UserX } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
@@ -57,6 +57,25 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
       setDraft({ s1: 0, s2: 0 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  // Nichterscheinen melden: eigener Dialog statt des frueheren Popovers
+  // direkt an der Box (Nutzer-Feedback: das Popover kam zusaetzlich zur
+  // Inline-Ergebniseingabe zurueck, obwohl die schon genuegt - "das Eintrag-
+  // Menue ist wieder da, wird nicht benoetigt"). Ein einzelner Button oben in
+  // der Kopfzeile oeffnet stattdessen einen Bestaetigungsdialog (dasselbe
+  // modal-overlay/modal-box-Muster wie sonst im Code, z.B. "Ergebnis
+  // eintragen?" in TurnierRasterScreen.jsx) - der Button erscheint ohnehin
+  // nur bei ausgewaehlter, dafuer geeigneter Box, UND der Dialog selbst
+  // braucht danach noch mindestens eine Auswahl plus einen expliziten
+  // "Eintragen"-Klick, das schuetzt zusammen ausreichend vor einem
+  // versehentlichen Klick (Nutzer-Feedback).
+  const [noShowOpen, setNoShowOpen] = useState(false);
+  const [absent1, setAbsent1] = useState(false);
+  const [absent2, setAbsent2] = useState(false);
+  const [techWinner, setTechWinner] = useState(null);
+  useEffect(() => {
+    setNoShowOpen(false); setAbsent1(false); setAbsent2(false); setTechWinner(null);
   }, [selectedId]);
 
   // Speichert die Turnierleitungs-Inline-Eingabe (Melden ODER Korrigieren)
@@ -175,20 +194,13 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   // gar kein Popover statt eines nutzlosen Menues (Nutzer-Feedback).
   const selectedActions = selected ? turnierActions(selected, me, isOrganizer, tourStatus, resultsLocked) : null;
   const selectedInline = !!(selectedActions?.canOrganizerReport || selectedActions?.canEdit);
-  // canMarkNoShow faellt IMMER mit canOrganizerReport zusammen (gleiche
-  // Grundbedingung, siehe turnierActions()) - das Popover wird dafuer
-  // trotzdem zusaetzlich zur eingeblendeten Inline-Zeile gezeigt (statt wie
-  // sonst nur bei !selectedInline), sonst gaebe es in der Grafik-Ansicht gar
-  // keine Moeglichkeit, ein Nichterscheinen zu melden (die Inline-Zeile
-  // zeigt nur den Zaehler, keine weiteren Aktionen). Etwas doppelt (die
-  // Ergebniseingabe steht dann sowohl inline als auch nochmal im Popover),
-  // aber weniger verwirrend als die Funktion in der Grafik ganz zu verstecken.
-  const selectedHasPopoverContent = !!(selectedActions && (
-    selectedActions.canMarkNoShow || (!selectedInline && (
-      selectedActions.waitingForTable || (selected.match_id && !selected.match?.confirmed)
-      || (selected.match?.reported_by && selected.match.reported_by === selected.match.confirmed_by)
-      || selectedActions.canReport || selectedActions.canConfirm || selectedActions.canForce
-    ))
+  // Nichterscheinen melden haengt NICHT mehr am Popover (siehe eigener
+  // Dialog + Kopfzeilen-Button oben) - das Popover zeigt jetzt wieder nur
+  // die Faelle, in denen es wirklich die einzige Bedienmoeglichkeit ist.
+  const selectedHasPopoverContent = !!(selectedActions && !selectedInline && (
+    selectedActions.waitingForTable || (selected.match_id && !selected.match?.confirmed)
+    || (selected.match?.reported_by && selected.match.reported_by === selected.match.confirmed_by)
+    || selectedActions.canReport || selectedActions.canConfirm || selectedActions.canForce
   ));
 
   // Direkt an die Auswahl angeschlossene Verbinder + die damit verbundenen
@@ -205,6 +217,13 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   }, [selectedId, layout.edges]);
 
   const zoomBy = (delta) => setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(z + delta).toFixed(2))));
+
+  const closeNoShow = () => { setNoShowOpen(false); setAbsent1(false); setAbsent2(false); setTechWinner(null); };
+  const submitNoShow = () => {
+    if (!selected) return;
+    const absentIds = [absent1 && selected.player1_id, absent2 && selected.player2_id].filter(Boolean);
+    onMarkNoShow(selected, absentIds, absent1 && absent2 ? techWinner : null, closeNoShow);
+  };
 
   // Position + Boxhoehe des ausgewaehlten Matches - fuers Andocken des
   // Aktions-Popovers direkt an der Box (siehe unten), statt eines separaten
@@ -285,6 +304,17 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
           <button type="button" className="turnier-graph-zoom-reset-btn" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
         </div>
         <div className="turnier-graph-header-end">
+          {/* Erscheint nur, wenn die ausgewaehlte Box das ueberhaupt zulaesst
+              (Paarung+Tisch stehen, noch kein Ergebnis, Turnierleitung, kein
+              eigenes Match) - ohne Auswahl also gar nicht sichtbar, das ist
+              bereits die erste Huerde gegen einen versehentlichen Klick. */}
+          {selectedActions?.canMarkNoShow && (
+            <button type="button" className="turnier-graph-minimize-btn"
+              onClick={(e) => { e.stopPropagation(); setNoShowOpen(true); }}
+              aria-label={t("Nichterscheinen melden")} title={t("Nichterscheinen melden")}>
+              <UserX size={18} />
+            </button>
+          )}
           {/* Duplikat des Reset-Buttons NUR fuers Touch-Layout (siehe CSS) -
               steht dort neben statt anstelle der zentrierten PC-Variante,
               damit beide Buttons rechts als eine Gruppe zusammenstehen. */}
@@ -404,6 +434,42 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
           </div>
         </div>
       </div>
+
+      {noShowOpen && selected && (
+        <div className="modal-overlay" onClick={closeNoShow}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3><UserX size={18} /> {t("Nichterscheinen melden")}</h3>
+            <label className="turnier-no-show-check">
+              <input type="checkbox" checked={absent1} onChange={(e) => setAbsent1(e.target.checked)} />
+              {t("{name} nicht erschienen", { name: nameOf(selected.player1_id) || t("TBD") })}
+            </label>
+            <label className="turnier-no-show-check">
+              <input type="checkbox" checked={absent2} onChange={(e) => setAbsent2(e.target.checked)} />
+              {t("{name} nicht erschienen", { name: nameOf(selected.player2_id) || t("TBD") })}
+            </label>
+            {absent1 && absent2 && (
+              <>
+                <p className="hint" style={{ margin: "6px 0 4px" }}>{t("Wer kommt trotzdem weiter? (zählt nicht fürs Elo)")}</p>
+                <div className="chips small">
+                  <button type="button" className={"chip" + (techWinner === selected.player1_id ? " active" : "")} onClick={() => setTechWinner(selected.player1_id)}>
+                    {nameOf(selected.player1_id) || t("TBD")}
+                  </button>
+                  <button type="button" className={"chip" + (techWinner === selected.player2_id ? " active" : "")} onClick={() => setTechWinner(selected.player2_id)}>
+                    {nameOf(selected.player2_id) || t("TBD")}
+                  </button>
+                </div>
+              </>
+            )}
+            <div className="sp-controls">
+              <button className="btn ghost" disabled={busyId === selected.id} onClick={closeNoShow}>{t("Abbrechen")}</button>
+              <button className="btn primary" disabled={busyId === selected.id || (!absent1 && !absent2) || (absent1 && absent2 && !techWinner)}
+                onClick={submitNoShow}>
+                {t("Eintragen")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
