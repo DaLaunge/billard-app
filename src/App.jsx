@@ -38,6 +38,7 @@ export default function App() {
   const [unconfirmed, setUnconfirmed] = useState([]);
   const [confirmations, setConfirmations] = useState([]);
   const [pings, setPings] = useState([]);
+  const [plannings, setPlannings] = useState([]);
   const [challenges, setChallenges] = useState([]);
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
@@ -306,7 +307,7 @@ export default function App() {
       .select("player_id, snap_date, iso_week, discipline, rating, rank, provisional")
       .order("snap_date", { ascending: true })
       .range(from, to));
-    const [rang, m, pl, pi, bg, ct, mc, ch] = await Promise.all([
+    const [rang, m, pl, pi, bg, ct, mc, ch, pn] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
         .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, run_log, tournament_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
@@ -323,14 +324,19 @@ export default function App() {
       supabase.from("challenges")
         .select("id, challenger_id, challenged_id, status, created_at, expires_at, resolved_match_id, message, message_updated_at, reply, reply_updated_at, challenger:players!challenges_challenger_id_fkey(nickname), challenged:players!challenges_challenged_id_fkey(nickname)")
         .order("created_at", { ascending: false }),
+      supabase.from("plannings")
+        .select("id, planned_date, message, created_at, expires_at, player_id, player:players!plannings_player_id_fkey(nickname), replies:planning_replies(id, message, created_at, player_id, player:players!planning_replies_player_id_fkey(nickname))")
+        .gt("expires_at", new Date().toISOString())
+        .order("planned_date", { ascending: true }),
     ]);
-    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error;
+    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || pn.error;
     if (err) toast(isNetworkError(err) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
     setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
     setPlayers(pl.data ?? []);
     setPings(pi.data ?? []);
+    setPlannings(pn.data ?? []);
     setChallenges(ch.data ?? []);
     const byPlayer = {};
     (bg.data ?? []).forEach((r) => {
@@ -494,6 +500,30 @@ export default function App() {
     loadData();
   };
 
+  const createPlanning = async (date, msg) => {
+    const { error } = await supabase.rpc("create_planning", { p_planned_date: date, p_message: msg.trim() || null });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Planung eingetragen!"));
+    loadData();
+  };
+  const deletePlanning = async (id) => {
+    const { error } = await supabase.rpc("close_planning", { p_planning_id: id });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Planung geloescht."));
+    loadData();
+  };
+  const replyPlanning = async (id, msg) => {
+    const { error } = await supabase.rpc("reply_planning", { p_planning_id: id, p_message: msg.trim() || null });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Zusage gesendet!"));
+    loadData();
+  };
+  const unreplyPlanning = async (id) => {
+    const { error } = await supabase.rpc("unreply_planning", { p_planning_id: id });
+    if (error) toast(t("Fehler: ") + error.message);
+    loadData();
+  };
+
   const createChallenge = async (playerId, message) => {
     const { error } = await supabase.rpc("create_challenge", { p_challenged_id: playerId, p_message: message || null });
     if (error) toast(t("Fehler: ") + error.message);
@@ -623,11 +653,13 @@ export default function App() {
             })()}
             <main className={"content" + (tab === "match" ? " no-tabbar" : "")}>
               {tab === "live" && (
-                <LiveScreen me={player} pings={pings} challenges={challenges} matches={matches} rangliste={rangliste}
+                <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
+                  onCreatePlanning={createPlanning} onDeletePlanning={deletePlanning}
+                  onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
                   onInvite={() => navPush({ tab: "invite" })} />
@@ -726,8 +758,8 @@ export default function App() {
               </button>
               <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
                 <Radio size={21} /><span>{t("Live")}</span>
-                {pings.length + openChallengesToMe.length > 0 && (
-                  <span className="badge live">{pings.length + openChallengesToMe.length}</span>
+                {pings.length + openChallengesToMe.length + plannings.length > 0 && (
+                  <span className="badge live">{pings.length + openChallengesToMe.length + plannings.length}</span>
                 )}
               </button>
               <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>

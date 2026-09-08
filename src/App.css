@@ -577,6 +577,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--loss);
   animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+.plan-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px;
+  font-weight: 800; letter-spacing: 0.04em; color: var(--chalk);
+  border: 1px solid var(--chalk); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
 .ping-loc { display: flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 700;
   font-family: 'Bricolage Grotesque', sans-serif; margin-bottom: 6px; }
 .ping-msg { color: var(--ivory-dim); font-size: 13.5px; font-style: italic; margin-bottom: 10px; }
@@ -860,6 +863,10 @@ button.id-card-head { cursor: pointer; }
   .live-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
   .live-section.duelle { grid-column: 2; }
   .live-section.pings { grid-column: 3; }
+  /* Planung braucht sowohl fuers Eintragen-Formular (wie Duelle) als auch
+     fuer die Karten-Liste (wie Live-Pings) ordentlich Platz - bekommt daher
+     die volle Breite ueber beide rechten Spalten, unterhalb von Duelle/Live. */
+  .live-section.planung { grid-column: 2 / 4; grid-row: 2; }
 
   /* Statistik: duenn-breit-duenn wie Profil - UserPanel links (dieselbe
      Konstante), Trendverlauf + Letzte Matches zentral/breit (der
