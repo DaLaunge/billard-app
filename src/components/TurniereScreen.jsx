@@ -6,7 +6,7 @@ import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
 
 const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
-const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "registration" ? t("Anmeldung offen") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
+const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t("Anmeldung offen") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
 
 // Turnierverwaltung: Liste laufender/vergangener Turniere + Formular zum
 // Anlegen - seit 2026-09-07_tournament_open_creation_no_self_edit.sql fuer

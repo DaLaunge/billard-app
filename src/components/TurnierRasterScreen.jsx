@@ -393,7 +393,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
 
   const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
 
-  if (tour.status === "registration") {
+  if (tour.status === "setup") {
     const isRegistered = (roster || []).some((r) => r.player_id === me.id);
     return (
       <div className="screen">
