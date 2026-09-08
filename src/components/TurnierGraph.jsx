@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { X, ZoomIn, ZoomOut, RotateCcw, Trophy, Minimize2, UserX } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, Trophy, Minimize2, UserX, Check } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
@@ -439,24 +439,38 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         <div className="modal-overlay" onClick={closeNoShow}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <h3><UserX size={18} /> {t("Nichterscheinen melden")}</h3>
-            <label className="turnier-no-show-check">
-              <input type="checkbox" checked={absent1} onChange={(e) => setAbsent1(e.target.checked)} />
-              {t("{name} nicht erschienen", { name: nameOf(selected.player1_id) || t("TBD") })}
-            </label>
-            <label className="turnier-no-show-check">
-              <input type="checkbox" checked={absent2} onChange={(e) => setAbsent2(e.target.checked)} />
-              {t("{name} nicht erschienen", { name: nameOf(selected.player2_id) || t("TBD") })}
-            </label>
+            {/* Avatar+Name als antippbare Chips statt Checkbox+Text (Nutzer-
+                Feedback: "wuerde User+Avatar erwarten, zusaetzlicher Text
+                nicht noetig") - dieselbe .pmp-chip/.pmp-grid-Sprache wie
+                ueberall sonst im Code, wo eine Spielerauswahl getroffen wird
+                (PlayerMultiPicker, Angemeldet-Liste). Die Ueberschrift allein
+                macht schon klar, worum es hier geht. */}
+            <div className="pmp-grid">
+              {[[selected.player1_id, absent1, setAbsent1], [selected.player2_id, absent2, setAbsent2]].map(([pid, isAbsent, setAbsent]) => {
+                const n = nameOf(pid) || t("TBD");
+                return (
+                  <button key={pid || n} type="button" className={"pmp-chip" + (isAbsent ? " sel" : "")} onClick={() => setAbsent((a) => !a)}>
+                    <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={32} />
+                    <span className="pmp-name">{n}</span>
+                    {isAbsent && <Check size={15} className="pmp-check" />}
+                  </button>
+                );
+              })}
+            </div>
             {absent1 && absent2 && (
               <>
-                <p className="hint" style={{ margin: "6px 0 4px" }}>{t("Wer kommt trotzdem weiter? (zählt nicht fürs Elo)")}</p>
-                <div className="chips small">
-                  <button type="button" className={"chip" + (techWinner === selected.player1_id ? " active" : "")} onClick={() => setTechWinner(selected.player1_id)}>
-                    {nameOf(selected.player1_id) || t("TBD")}
-                  </button>
-                  <button type="button" className={"chip" + (techWinner === selected.player2_id ? " active" : "")} onClick={() => setTechWinner(selected.player2_id)}>
-                    {nameOf(selected.player2_id) || t("TBD")}
-                  </button>
+                <p className="hint" style={{ margin: "10px 0 4px" }}>{t("Wer kommt trotzdem weiter? (zählt nicht fürs Elo)")}</p>
+                <div className="pmp-grid">
+                  {[selected.player1_id, selected.player2_id].map((pid) => {
+                    const n = nameOf(pid) || t("TBD");
+                    return (
+                      <button key={pid || n} type="button" className={"pmp-chip" + (techWinner === pid ? " sel" : "")} onClick={() => setTechWinner(pid)}>
+                        <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={32} />
+                        <span className="pmp-name">{n}</span>
+                        {techWinner === pid && <Check size={15} className="pmp-check" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}
