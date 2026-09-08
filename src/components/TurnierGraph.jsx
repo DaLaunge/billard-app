@@ -23,7 +23,7 @@ const ZOOM_STEP = 0.2;
 //   damit verbundenen Boxen hervor, alles andere wird gedaempft.
 // - Ein Zoom-Regler (Buttons, nicht nur Pinch-Zoom des ganzen Bildschirms -
 //   der wuerde auch Kopfzeile/Navigation mitzoomen statt nur den Baum).
-export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, resultsLocked, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, colorOf, badgeOf, photoOf, isMaximized, onToggleMaximize }) {
+export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, resultsLocked, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, onMarkNoShow, colorOf, badgeOf, photoOf, isMaximized, onToggleMaximize }) {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(zoom);
@@ -175,10 +175,20 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   // gar kein Popover statt eines nutzlosen Menues (Nutzer-Feedback).
   const selectedActions = selected ? turnierActions(selected, me, isOrganizer, tourStatus, resultsLocked) : null;
   const selectedInline = !!(selectedActions?.canOrganizerReport || selectedActions?.canEdit);
-  const selectedHasPopoverContent = !!(selectedActions && !selectedInline && (
-    selectedActions.waitingForTable || (selected.match_id && !selected.match?.confirmed)
-    || (selected.match?.reported_by && selected.match.reported_by === selected.match.confirmed_by)
-    || selectedActions.canReport || selectedActions.canConfirm || selectedActions.canForce
+  // canMarkNoShow faellt IMMER mit canOrganizerReport zusammen (gleiche
+  // Grundbedingung, siehe turnierActions()) - das Popover wird dafuer
+  // trotzdem zusaetzlich zur eingeblendeten Inline-Zeile gezeigt (statt wie
+  // sonst nur bei !selectedInline), sonst gaebe es in der Grafik-Ansicht gar
+  // keine Moeglichkeit, ein Nichterscheinen zu melden (die Inline-Zeile
+  // zeigt nur den Zaehler, keine weiteren Aktionen). Etwas doppelt (die
+  // Ergebniseingabe steht dann sowohl inline als auch nochmal im Popover),
+  // aber weniger verwirrend als die Funktion in der Grafik ganz zu verstecken.
+  const selectedHasPopoverContent = !!(selectedActions && (
+    selectedActions.canMarkNoShow || (!selectedInline && (
+      selectedActions.waitingForTable || (selected.match_id && !selected.match?.confirmed)
+      || (selected.match?.reported_by && selected.match.reported_by === selected.match.confirmed_by)
+      || selectedActions.canReport || selectedActions.canConfirm || selectedActions.canForce
+    ))
   ));
 
   // Direkt an die Auswahl angeschlossene Verbinder + die damit verbundenen
@@ -386,9 +396,9 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                   </button>
                 </div>
                 {selected.table_number != null && <span className="m-disc">{t("Tisch")} {selected.table_number}</span>}
-                <TurnierMatchActions tm={selected} me={me} isOrganizer={isOrganizer} tourStatus={tourStatus} resultsLocked={resultsLocked}
+                <TurnierMatchActions tm={selected} me={me} isOrganizer={isOrganizer} tourStatus={tourStatus} resultsLocked={resultsLocked} nameOf={nameOf}
                   busyId={busyId} onOpenMatchScreen={onOpenMatchScreen} onOrganizerReport={onOrganizerReport}
-                  onConfirm={onConfirm} onForceConfirm={onForceConfirm} onEditMatch={onEditMatch} />
+                  onConfirm={onConfirm} onForceConfirm={onForceConfirm} onEditMatch={onEditMatch} onMarkNoShow={onMarkNoShow} />
               </div>
             )}
           </div>

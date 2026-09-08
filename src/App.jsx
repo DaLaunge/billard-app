@@ -745,7 +745,7 @@ export default function App() {
                 <InviteScreen me={player} onBack={() => window.history.back()} toast={toast} />
               )}
               {tab === "turnier" && (
-                <TurniereScreen me={player} players={players} matches={matches} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} toast={toast}
+                <TurniereScreen toast={toast}
                   onOpenTournament={(id) => navPush({ tab: "turnierdetail", tournamentId: id })}
                   onBack={() => window.history.back()} />
               )}

@@ -273,6 +273,22 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     if (onReload) onReload();
   };
 
+  // Nichterscheinen (Nutzer-Feedback): eine oder beide Parteien tauchen zum
+  // Match nicht auf - siehe tournament_mark_no_show() fuer die Kaskade auf
+  // alle weiteren offenen Partien der/des tatsaechlich Ausgeschiedenen.
+  const markNoShow = async (tm, absentPlayerIds, technicalWinnerId, onDone) => {
+    setBusyId(tm.id);
+    const { error } = await supabase.rpc("tournament_mark_no_show", {
+      p_tournament_match_id: tm.id, p_absent_player_ids: absentPlayerIds, p_technical_winner_id: technicalWinnerId,
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Nichterscheinen eingetragen."));
+    onDone();
+    await load();
+    if (onReload) onReload();
+  };
+
   const endEarly = async () => {
     if (!window.confirm(t("Turnier jetzt vorzeitig beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste."))) return;
     setBusyId("end");
@@ -309,6 +325,52 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     onBack();
   };
 
+  // Anmeldephase (Nutzer-Feedback): Turniere starten ohne Teilnehmerliste,
+  // jeder meldet sich selbst an/ab, die Turnierleitung startet erst dann
+  // explizit (generiert an dieser Stelle den Baum, siehe tournament_start).
+  const register = async () => {
+    setBusyId("register");
+    const { error } = await supabase.rpc("tournament_register", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Angemeldet."));
+    await load();
+  };
+
+  const unregister = async () => {
+    setBusyId("register");
+    const { error } = await supabase.rpc("tournament_unregister", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Abgemeldet."));
+    await load();
+  };
+
+  const startTournament = async () => {
+    if (!window.confirm(t("Turnier jetzt starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost."))) return;
+    setBusyId("start");
+    const { error } = await supabase.rpc("tournament_start", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Turnier gestartet."));
+    await load();
+  };
+
+  // Fuer den Fall, dass die Turnierleitung sich bei der Anwesenheitspruefung
+  // verzaehlt/verklickt hat (Nutzer-Feedback) - nur solange noch KEIN Match
+  // gemeldet wurde (serverseitig identisch zur canDeleteTournament-Pruefung
+  // unten durchgesetzt), loescht den ausgelosten Baum wieder und geht
+  // zurueck in die Anmeldephase - die Anmeldeliste selbst bleibt bestehen.
+  const cancelStart = async () => {
+    if (!window.confirm(t("Start rückgängig machen und zurück zur Anmeldung?"))) return;
+    setBusyId("cancelStart");
+    const { error } = await supabase.rpc("tournament_cancel_start", { p_tournament_id: tournamentId });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Start rückgängig gemacht."));
+    await load();
+  };
+
   if (!tour || !tms) {
     return (
       <div className="screen">
@@ -330,6 +392,59 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   }
 
   const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
+
+  if (tour.status === "registration") {
+    const isRegistered = (roster || []).some((r) => r.player_id === me.id);
+    return (
+      <div className="screen">
+        <div className="turnier-layout">
+        <header className="screen-head with-back">
+          <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
+          <h2>{tour.name}</h2>
+        </header>
+        <p className="hint" style={{ marginTop: -6 }}>
+          {formatLabel(tour.format)} · {t(tour.discipline)} · {t("Anmeldung offen")}
+        </p>
+
+        <section className="stat-block">
+          <h3><Users size={17} /> {t("Angemeldet")} ({(roster || []).length})</h3>
+          {(roster || []).length === 0 ? (
+            <p className="hint">{t("Noch niemand angemeldet.")}</p>
+          ) : (
+            <div className="pmp-grid">
+              {(roster || []).map((r) => {
+                const nick = nameOf(r.player_id);
+                if (!nick) return null;
+                return (
+                  <div key={r.player_id} className="pmp-chip">
+                    <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={32} />
+                    <span className="pmp-name">{nick}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <button className="btn primary" style={{ marginTop: 14 }} disabled={busyId === "register"}
+            onClick={isRegistered ? unregister : register}>
+            {isRegistered ? t("Abmelden") : t("Anmelden")}
+          </button>
+        </section>
+
+        {isOrganizer && (
+          <div className="chips small" style={{ marginBottom: 10 }}>
+            <button className="btn primary" disabled={busyId === "start"} onClick={startTournament}>
+              <Flag size={15} /> {t("Turnier starten")}
+            </button>
+            <button className="btn ghost" disabled={busyId === "delete"} onClick={deleteTournament}>
+              <Trash2 size={15} /> {t("Turnier löschen")}
+            </button>
+          </div>
+        )}
+        </div>
+      </div>
+    );
+  }
+
   const canDeleteTournament = isOrganizer && !tms.some((tm) => tm.match_id);
   const resultsLocked = !!tour.results_confirmed_at;
   const canConfirmResults = isOrganizer && tour.status === "finished" && !resultsLocked;
@@ -367,9 +482,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           </span>
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
-        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked}
+        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked} nameOf={nameOf}
           busyId={busyId} onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
-          onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} />
+          onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} onMarkNoShow={markNoShow} />
       </div>
     );
   };
@@ -393,6 +508,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
           {tour.status === "running" && (
             <button className="btn ghost" disabled={busyId === "end"} onClick={endEarly}>
               <Flag size={15} /> {t("Turnier vorzeitig beenden")}
+            </button>
+          )}
+          {tour.status === "running" && canDeleteTournament && (
+            <button className="btn ghost" disabled={busyId === "cancelStart"} onClick={cancelStart}>
+              <Users size={15} /> {t("Start rückgängig machen")}
             </button>
           )}
           {canConfirmResults && (
@@ -610,7 +730,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
             nameOf={nameOf} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked}
             busyId={busyId} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
             onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
-            onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch}
+            onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} onMarkNoShow={markNoShow}
             isMaximized={isMaximized} onToggleMaximize={toggleMaximize} />
         </section>
       ) : (

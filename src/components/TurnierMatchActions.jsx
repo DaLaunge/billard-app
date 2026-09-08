@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, X, ShieldAlert, Pencil, Minus, Plus } from "lucide-react";
+import { Check, X, ShieldAlert, Pencil, Minus, Plus, UserX } from "lucide-react";
 import { t } from "../lib/i18n";
 
 // Kompakter +/- Zaehler fuer die schnelle Turnierleitungs-Eingabe (Melden/
@@ -52,7 +52,14 @@ export function turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked) {
   // ohnehin von tournament_organizer_edit_match abgelehnt, hier zusaetzlich
   // ausgeblendet, damit der Button gar nicht erst als bedienbar erscheint.
   const canEdit = tm.match_id && confirmed && isOrganizer && !resultsLocked && (!isMyMatch || me.role === "admin");
-  return { confirmed, isMyMatch, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit };
+  // Nichterscheinen melden: wie canOrganizerReport (Paarung + Tisch stehen,
+  // noch kein Ergebnis) - bewusst AUCH ohne isMyMatch-Ausnahme (anders als
+  // canEdit), damit eine mitspielende Turnierleitung nicht einseitig
+  // behaupten kann, der eigene Gegner sei nicht erschienen, um sich selbst
+  // einen Forfeit-Sieg zu verschaffen (Nutzer-Feedback zur Missbrauchs-
+  // vermeidung, gleiche Ueberlegung wie bei canOrganizerReport/canForce).
+  const canMarkNoShow = openSlot && isOrganizer && !isMyMatch;
+  return { confirmed, isMyMatch, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit, canMarkNoShow };
 }
 
 // Ermittelt, ob es fuer DIESEN Nutzer bei diesem Turniermatch ueberhaupt
@@ -79,14 +86,24 @@ export function tmScores(tm) {
 // eintragen, bestaetigen/ablehnen, erzwingen) - aus TurnierRasterScreen.jsx
 // herausgezogen, damit Listen- und Grafikansicht (TurnierGraph.jsx) exakt
 // dieselben Regeln und Buttons verwenden statt zweier gepflegter Kopien.
-export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, resultsLocked, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch }) {
+export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, resultsLocked, busyId, nameOf, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, onMarkNoShow }) {
   const [editing, setEditing] = useState(false);
   const [es1, setEs1] = useState(0);
   const [es2, setEs2] = useState(0);
   const [os1, setOs1] = useState(0);
   const [os2, setOs2] = useState(0);
-  const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit } = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked);
+  const [noShowPicking, setNoShowPicking] = useState(false);
+  const [absent1, setAbsent1] = useState(false);
+  const [absent2, setAbsent2] = useState(false);
+  const [techWinner, setTechWinner] = useState(null);
+  const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit, canMarkNoShow } = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked);
   const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
+
+  const resetNoShow = () => { setNoShowPicking(false); setAbsent1(false); setAbsent2(false); setTechWinner(null); };
+  const submitNoShow = () => {
+    const absentIds = [absent1 && tm.player1_id, absent2 && tm.player2_id].filter(Boolean);
+    onMarkNoShow(tm, absentIds, absent1 && absent2 ? techWinner : null, resetNoShow);
+  };
 
   const startEdit = () => {
     const sc = tmScores(tm);
@@ -141,6 +158,46 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, r
             {t("Speichern")}
           </button>
           <button className="btn ghost" disabled={busyId === tm.id} onClick={() => setEditing(false)}>{t("Abbrechen")}</button>
+        </div>
+      )}
+      {canMarkNoShow && !noShowPicking && (
+        <button className="btn ghost" disabled={busyId === tm.id} onClick={() => setNoShowPicking(true)}>
+          <UserX size={15} /> {t("Nichterscheinen melden")}
+        </button>
+      )}
+      {canMarkNoShow && noShowPicking && (
+        <div className="turnier-no-show-form" onClick={(e) => e.stopPropagation()}>
+          <label className="turnier-no-show-check">
+            <input type="checkbox" checked={absent1} onChange={(e) => setAbsent1(e.target.checked)} />
+            {t("{name} nicht erschienen", { name: nameOf(tm.player1_id) || t("TBD") })}
+          </label>
+          <label className="turnier-no-show-check">
+            <input type="checkbox" checked={absent2} onChange={(e) => setAbsent2(e.target.checked)} />
+            {t("{name} nicht erschienen", { name: nameOf(tm.player2_id) || t("TBD") })}
+          </label>
+          {absent1 && absent2 && (
+            <>
+              <p className="hint" style={{ margin: "6px 0 4px" }}>{t("Wer kommt trotzdem weiter? (zählt nicht fürs Elo)")}</p>
+              <div className="chips small">
+                <button type="button" className={"chip" + (techWinner === tm.player1_id ? " active" : "")} onClick={() => setTechWinner(tm.player1_id)}>
+                  {nameOf(tm.player1_id) || t("TBD")}
+                </button>
+                <button type="button" className={"chip" + (techWinner === tm.player2_id ? " active" : "")} onClick={() => setTechWinner(tm.player2_id)}>
+                  {nameOf(tm.player2_id) || t("TBD")}
+                </button>
+              </div>
+            </>
+          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button className="btn primary" style={{ width: "auto", flex: 1 }}
+              disabled={busyId === tm.id || (!absent1 && !absent2) || (absent1 && absent2 && !techWinner)}
+              onClick={submitNoShow}>
+              {t("Eintragen")}
+            </button>
+            <button className="btn ghost" style={{ width: "auto", flex: 1 }} disabled={busyId === tm.id} onClick={resetNoShow}>
+              {t("Abbrechen")}
+            </button>
+          </div>
         </div>
       )}
     </>
