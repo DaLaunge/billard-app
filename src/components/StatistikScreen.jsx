@@ -134,7 +134,7 @@ function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpe
             <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} photo={photoOf(r.nickname)} size={34} />
             <span className="stat-name">{r.nickname}</span>
             <span className="stat-val">{r.rating}</span>
-            <DecayBadge player={r} iconSize={15} />
+            <span className="stat-decay-slot"><DecayBadge player={r} iconSize={15} /></span>
           </button>
         );
       })}
@@ -146,7 +146,7 @@ function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpe
             <Ball color={colorOf(rows[myIndex].nickname)} label={initials(rows[myIndex].nickname)} badge={badgeOf(rows[myIndex].nickname)} photo={photoOf(rows[myIndex].nickname)} size={34} />
             <span className="stat-name">{rows[myIndex].nickname}</span>
             <span className="stat-val">{rows[myIndex].rating}</span>
-            <DecayBadge player={rows[myIndex]} iconSize={15} />
+            <span className="stat-decay-slot"><DecayBadge player={rows[myIndex]} iconSize={15} /></span>
           </button>
         </>
       )}
