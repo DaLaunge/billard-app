@@ -36,15 +36,22 @@ export function turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked) {
   const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
   const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
   const canForce = tm.match_id && !confirmed && isOrganizer && !isMyMatch;
-  // bewusst OHNE "!isMyMatch" - anders als bei Erzwingen/Turnierleitungs-Meldung
-  // darf die Turnierleitung ein bereits bestaetigtes Ergebnis auch bei einem
-  // eigenen Match korrigieren (kleiner Verein, oft selbst Turnierteilnehmer -
-  // sonst gaebe es fuer einen Tippfehler im eigenen Match niemanden zum Fixen).
+  // Ausnahmsweise darf die Turnierleitung ein bereits bestaetigtes Ergebnis
+  // auch bei einem eigenen Match korrigieren (kleiner Verein, oft selbst
+  // Turnierteilnehmer) - ABER nur, wenn sie zusaetzlich Admin ist. Sonst
+  // koennte sich eine Turnierleitung, die selbst mitspielt (seit jeder ein
+  // Turnier anlegen kann, nicht mehr nur Admins), im eigenen Match die
+  // Punktedifferenz nachtraeglich schoenrechnen (der Sieger laesst sich zwar
+  // nicht mehr aendern, aber die Elo-Wirkung haengt zusaetzlich vom Punkte-
+  // abstand ab, siehe rebuild_elo()/CLAUDE.md) - ohne dass der Gegner das
+  // nochmal bestaetigen muesste (Nutzer-Feedback). Serverseitig identisch
+  // durchgesetzt in tournament_organizer_edit_match, hier zusaetzlich
+  // ausgeblendet, damit der Button gar nicht erst als bedienbar erscheint.
   // resultsLocked: Turnierleitung/Admin hat den Turnierabschluss bestaetigt
   // (siehe tournament_confirm_results/results_confirmed_at) - danach serverseitig
   // ohnehin von tournament_organizer_edit_match abgelehnt, hier zusaetzlich
   // ausgeblendet, damit der Button gar nicht erst als bedienbar erscheint.
-  const canEdit = tm.match_id && confirmed && isOrganizer && !resultsLocked;
+  const canEdit = tm.match_id && confirmed && isOrganizer && !resultsLocked && (!isMyMatch || me.role === "admin");
   return { confirmed, isMyMatch, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit };
 }
 
