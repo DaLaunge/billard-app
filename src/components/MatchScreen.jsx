@@ -29,6 +29,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [runLog, setRunLog] = useState(null);   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
   const [scoreLog, setScoreLog] = useState([[0, 0, Date.now()]]); // Punktestand + Zeitpunkt nach jedem Zaehler-Klick (alle anderen Disziplinen)
   const [savedMatch, setSavedMatch] = useState(null); // gerade gespeichertes Match, fuers direkte "Protokoll"-Ansehen
+  const [confirmedNow, setConfirmedNow] = useState(false); // Turniermatch direkt nach dem Melden auf diesem Geraet bestaetigt (siehe confirmNow unten)
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
   const [leaveWarn, setLeaveWarn] = useState(false);
@@ -197,6 +198,26 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     const row = Array.isArray(data) ? data[0] : data;
     setSavedMatch({ ...row, p1: { nickname: me.nickname }, p2: { nickname: opp.nickname } });
     setStep(4);
+  };
+
+  // Nur fuer Turniermatches (Nutzer-Feedback): direkt nach dem eigenen Melden
+  // kann auf DEMSELBEN Geraet sofort bestaetigt werden, statt auf den
+  // Gegner zu warten, der sein Handy vielleicht gar nicht dabei hat - Geraet
+  // wird dafuer an ihn weitergereicht. Laeuft technisch weiter unter dem
+  // eigenen Account (tournament_confirm_own_match() prueft serverseitig nur
+  // reported_by = current_player_id()), eine bewusst in Kauf genommene
+  // Unsicherheit zugunsten schneller/zuverlaessiger Turnier-Bestaetigungen -
+  // gilt ausdruecklich NICHT fuer normale Matches (dort weiterhin nur ueber
+  // confirm_match() durch den echten Gegner-Account).
+  const confirmNow = async () => {
+    if (!savedMatch?.id) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("tournament_confirm_own_match", { p_tournament_match_id: tournamentCtx.tournamentMatchId });
+    setBusy(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Match bestaetigt - Ranking wird neu berechnet."));
+    setConfirmedNow(true);
+    onReload && onReload();
   };
 
   const DiscChip = () => (
@@ -520,6 +541,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <p>{t("Ergebnis gegen den Ghost:")} <b>{s1} : {s2}</b>.<br />
                 {t("Trainingsmatches werden nicht gespeichert und beeinflussen dein Rating nicht.")}</p>
             </>
+          ) : confirmedNow ? (
+            <>
+              <h3>{t("Bestätigt!")}</h3>
+              <p>{t("Match bestaetigt - Ranking wird neu berechnet.")}</p>
+            </>
           ) : (
             <>
               <h3>{t("Gespeichert!")}</h3>
@@ -532,10 +558,23 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               )}
             </>
           )}
+          {/* Nur Turniermatches (Nutzer-Feedback, siehe confirmNow oben):
+              sofortige Bestaetigung auf demselben Geraet statt auf den
+              eigenen Gegner-Check spaeter zu warten. */}
+          {tournamentCtx && !offlineQueued && !confirmedNow && mode !== "double" && (
+            <>
+              <p className="hint center">{t("Ist {name} noch da? Handy weiterreichen und direkt bestätigen.", { name: opp.nickname })}</p>
+              <button className="btn primary" disabled={busy} onClick={confirmNow}>
+                {busy ? t("Bestätige ...") : <>{t("Jetzt direkt bestätigen")} <Check size={18} /></>}
+              </button>
+            </>
+          )}
           {savedMatch?.run_log?.length > 0 && (
             <button className="btn ghost" onClick={() => onOpenProtokoll(savedMatch)}>{t("Protokoll ansehen")}</button>
           )}
-          <button className="btn primary" onClick={onDone}>{t(tournamentCtx ? "Zurück zum Turnier" : "Zur Rangliste")}</button>
+          <button className={"btn " + (tournamentCtx && !offlineQueued && !confirmedNow && mode !== "double" ? "ghost" : "primary")} onClick={onDone}>
+            {t(tournamentCtx ? "Zurück zum Turnier" : "Zur Rangliste")}
+          </button>
         </div>
       )}
     </div>
