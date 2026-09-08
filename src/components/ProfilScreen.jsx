@@ -599,21 +599,30 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       )}
 
       {isMe && <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />}
+      </div>
+      </div>
+      </div>
 
+      {/* Bewusst AUSSERHALB des pf-layout-Spaltenraster: die rechte Spalte
+          (pf-account) ist meist deutlich kuerzer als die mittlere Erfolge-
+          Spalte, daher stuende "Konto loeschen" dort optisch viel zu weit
+          oben statt wirklich ganz unten - wie schon "Zuruecksetzen" im
+          Profil-bearbeiten-Screen (siehe .pf-edit-save), gehoert eine
+          niedrig priorisierte Aktion als eigener voller-Breite-Block ans
+          Seitenende, nicht in eine der drei Spalten. */}
       {isMe && (
-        <section className="stat-block danger-zone">
-          <h3><AlertTriangle size={17} /> {t("Konto löschen")}</h3>
-          <p className="hint" style={{ marginTop: 0 }}>
-            {t("Entfernt unwiderruflich all deine persönlichen Daten (Login, Name, Profilfarbe, Motto, Nachrichten). Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt.")}
-          </p>
-          <button className="btn ghost warn" onClick={() => setDeleteStep(1)}>
-            <AlertTriangle size={15} /> {t("Meine Daten löschen")}
-          </button>
-        </section>
+        <div className="pf-danger">
+          <section className="stat-block danger-zone">
+            <h3><AlertTriangle size={17} /> {t("Konto löschen")}</h3>
+            <p className="hint" style={{ marginTop: 0 }}>
+              {t("Entfernt unwiderruflich all deine persönlichen Daten (Login, Name, Profilfarbe, Motto, Nachrichten). Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt.")}
+            </p>
+            <button className="btn ghost warn" onClick={() => setDeleteStep(1)}>
+              <AlertTriangle size={15} /> {t("Meine Daten löschen")}
+            </button>
+          </section>
+        </div>
       )}
-      </div>
-      </div>
-      </div>
 
       {deleteStep === 1 && (
         <div className="modal-overlay" onClick={() => setDeleteStep(0)}>

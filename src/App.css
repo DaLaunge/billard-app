@@ -786,6 +786,7 @@ button.id-card-head { cursor: pointer; }
 .pf-achievements { order: 4; display: flex; flex-direction: column; }
 .pf-achievements > * { margin-bottom: 14px; }
 .pf-account { order: 5; }
+.pf-danger { margin-top: 20px; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-save { margin-top: 20px; }
