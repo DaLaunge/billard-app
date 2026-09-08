@@ -4,25 +4,24 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
-import PlayerMultiPicker from "./PlayerMultiPicker";
 
 const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
-const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
+const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t("Anmeldung offen") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
 
 // Turnierverwaltung: Liste laufender/vergangener Turniere + Formular zum
-// Anlegen. Anlegen ist aktuell auf Admins beschraenkt (Stefans Vorgabe zur
-// Missbrauchsvermeidung, solange der Modus in der Erprobung ist - siehe
-// supabase/2026-09-04_tournament_admin_only.sql, gilt bis er es widerruft).
-// Ansehen/Mitspielen bleibt fuer alle offen.
-export default function TurniereScreen({ me, players, matches, colorOf, badgeOf, photoOf, toast, onOpenTournament, onBack }) {
+// Anlegen - seit 2026-09-07_tournament_open_creation_no_self_edit.sql fuer
+// alle Spieler offen (nicht mehr nur Admins).
+export default function TurniereScreen({ toast, onOpenTournament, onBack }) {
   const [tournaments, setTournaments] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("all"); // all | running | done - schnelles Finden bereits gespielter Turniere
+  // Default "running" statt "all" (Nutzer-Feedback) - beim Oeffnen der
+  // Turnierliste sind die AKTUELL laufenden Turniere fast immer das
+  // Relevante, nicht die komplette Historie.
+  const [statusFilter, setStatusFilter] = useState("running"); // all | running | done - schnelles Finden bereits gespielter Turniere
   const [query, setQuery] = useState(""); // Suche nach Turniername
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [format, setFormat] = useState("ko");
   const [discipline, setDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
-  const [selected, setSelected] = useState([]);
   const [tableMode, setTableMode] = useState("range");
   const [tableFrom, setTableFrom] = useState("");
   const [tableTo, setTableTo] = useState("");
@@ -41,10 +40,6 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
     if (!error) setTournaments(data || []);
   };
   useEffect(() => { load(); }, []);
-
-  const togglePlayer = (id) => {
-    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-  };
 
   const chooseFormat = (f) => {
     setFormat(f);
@@ -66,31 +61,19 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
 
   const create = async () => {
     if (!name.trim()) { toast(t("Turniername fehlt.")); return; }
-    if (format === "round_robin" && selected.length < 3) {
-      toast(t("Jeder-gegen-jeden braucht mindestens 3 Teilnehmer.")); return;
-    }
-    if (format !== "round_robin" && selected.length < 2) {
-      toast(t("Mindestens 2 Teilnehmer nötig.")); return;
-    }
     const tables = parseTables();
     if (!tables) { toast(t("Bitte gültige Tischnummern angeben.")); return; }
-    if (playoffSize != null && playoffSize > selected.length) {
-      toast(t("Playoff-Größe darf nicht größer als die Teilnehmerzahl sein.")); return;
-    }
-    if (format === "double_ko" && playoffSize > 2 && selected.length < playoffSize * 2) {
-      toast(t("Für diese Playoff-Größe werden mindestens {n} Teilnehmer benötigt.", { n: playoffSize * 2 })); return;
-    }
     setBusy(true);
     const { data, error } = await supabase.rpc("create_tournament", {
       p_name: name.trim(), p_format: format, p_discipline: discipline,
-      p_player_ids: selected, p_table_numbers: tables,
+      p_table_numbers: tables,
       p_playoff_size: playoffSize, p_double_round_robin: doubleRoundRobin,
     });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Turnier erstellt – Raster wird ausgelost."));
+    toast(t("Turnier erstellt – Anmeldung ist jetzt offen."));
     setShowForm(false);
-    setName(""); setSelected([]); setTableFrom(""); setTableTo(""); setTableList("");
+    setName(""); setTableFrom(""); setTableTo(""); setTableList("");
     await load();
     onOpenTournament(data.id);
   };
@@ -168,12 +151,10 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
               <input type="text" placeholder={t("z. B. 1, 3, 5")} value={tableList} onChange={(e) => setTableList(e.target.value)} />
             )}
 
-            <p className="hint" style={{ marginBottom: 4, marginTop: 10 }}>{t("Teilnehmer")} ({selected.length})</p>
-            <PlayerMultiPicker players={players} matches={matches} me={me} selected={selected} onToggle={togglePlayer}
-              colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+            <p className="hint" style={{ marginTop: 10 }}>{t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")}</p>
 
             <button className="btn primary" disabled={busy} onClick={create}>
-              {busy ? t("Lege an …") : <><Trophy size={16} /> {t("Turnier auslosen")}</>}
+              {busy ? t("Lege an …") : <><Trophy size={16} /> {t("Turnier anlegen")}</>}
             </button>
           </div>
         )}
@@ -200,7 +181,7 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
         ) : (() => {
           const q = query.trim().toLowerCase();
           const filtered = tournaments
-            .filter((tr) => statusFilter === "all" ? true : statusFilter === "running" ? tr.status === "running" : tr.status !== "running")
+            .filter((tr) => statusFilter === "all" ? true : statusFilter === "running" ? tr.status !== "finished" : tr.status === "finished")
             .filter((tr) => !q || tr.name.toLowerCase().includes(q));
           return filtered.length === 0 ? (
             <p className="hint">{t("Keine Turniere in diesem Filter.")}</p>

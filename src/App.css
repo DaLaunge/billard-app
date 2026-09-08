@@ -1028,6 +1028,9 @@ button.id-card-head { cursor: pointer; }
    kompakter als der grosse Zaehler im normalen MatchScreen, der ist fuer die
    Spieler selbst gedacht. */
 .turnier-quick-score { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.turnier-no-show-form { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.turnier-no-show-check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ivory); }
+.turnier-no-show-check input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); flex-shrink: 0; }
 .turnier-stepper { display: flex; align-items: center; gap: 6px; }
 .turnier-stepper-val-input { width: 40px; min-width: 40px; text-align: center; font-size: 18px; font-weight: 800;
   font-family: 'Bricolage Grotesque', sans-serif; background: var(--felt); color: var(--ivory);
