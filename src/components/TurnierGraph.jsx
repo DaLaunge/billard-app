@@ -73,9 +73,8 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   const [noShowOpen, setNoShowOpen] = useState(false);
   const [absent1, setAbsent1] = useState(false);
   const [absent2, setAbsent2] = useState(false);
-  const [techWinner, setTechWinner] = useState(null);
   useEffect(() => {
-    setNoShowOpen(false); setAbsent1(false); setAbsent2(false); setTechWinner(null);
+    setNoShowOpen(false); setAbsent1(false); setAbsent2(false);
   }, [selectedId]);
 
   // Speichert die Turnierleitungs-Inline-Eingabe (Melden ODER Korrigieren)
@@ -218,11 +217,11 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
 
   const zoomBy = (delta) => setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(z + delta).toFixed(2))));
 
-  const closeNoShow = () => { setNoShowOpen(false); setAbsent1(false); setAbsent2(false); setTechWinner(null); };
+  const closeNoShow = () => { setNoShowOpen(false); setAbsent1(false); setAbsent2(false); };
   const submitNoShow = () => {
     if (!selected) return;
     const absentIds = [absent1 && selected.player1_id, absent2 && selected.player2_id].filter(Boolean);
-    onMarkNoShow(selected, absentIds, absent1 && absent2 ? techWinner : null, closeNoShow);
+    onMarkNoShow(selected, absentIds, closeNoShow);
   };
 
   // Position + Boxhoehe des ausgewaehlten Matches - fuers Andocken des
@@ -248,6 +247,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         {isFinal && <Trophy className="turnier-graph-final-icon" size={17} />}
         {m.table_number != null && <span className="turnier-graph-table">{t("Tisch")} {m.table_number}</span>}
         {pending && <span className="turnier-graph-pending" title={t("Wartet auf Bestätigung ...")}>•</span>}
+        {m.void && <UserX className="turnier-graph-void" size={13} title={t("Nicht gewertet - beide nicht erschienen")} />}
         <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player1_id ? " won" : "")}>
           <span className="turnier-graph-name">
             {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={isFinal ? 26 : 20} />}
@@ -458,25 +458,11 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               })}
             </div>
             {absent1 && absent2 && (
-              <>
-                <p className="hint" style={{ margin: "10px 0 4px" }}>{t("Wer kommt trotzdem weiter? (zählt nicht fürs Elo)")}</p>
-                <div className="pmp-grid">
-                  {[selected.player1_id, selected.player2_id].map((pid) => {
-                    const n = nameOf(pid) || t("TBD");
-                    return (
-                      <button key={pid || n} type="button" className={"pmp-chip" + (techWinner === pid ? " sel" : "")} onClick={() => setTechWinner(pid)}>
-                        <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={32} />
-                        <span className="pmp-name">{n}</span>
-                        {techWinner === pid && <Check size={15} className="pmp-check" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
+              <p className="hint" style={{ margin: "10px 0 0" }}>{t("Kommen beide nicht, kommt niemand von ihnen weiter - die Stelle im Baum wird zum Freilos.")}</p>
             )}
             <div className="sp-controls">
               <button className="btn ghost" disabled={busyId === selected.id} onClick={closeNoShow}>{t("Abbrechen")}</button>
-              <button className="btn primary" disabled={busyId === selected.id || (!absent1 && !absent2) || (absent1 && absent2 && !techWinner)}
+              <button className="btn primary" disabled={busyId === selected.id || (!absent1 && !absent2)}
                 onClick={submitNoShow}>
                 {t("Eintragen")}
               </button>

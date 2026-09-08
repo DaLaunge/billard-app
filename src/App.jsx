@@ -674,7 +674,7 @@ export default function App() {
                 </div>
               );
             })()}
-            <main className={"content" + (tab === "match" ? " no-tabbar" : "")}>
+            <main className={"content" + (tab === "match" ? " no-tabbar" : "") + (tourneyReadyList.length > 0 && tab !== "match" ? " has-table-banner" : "")}>
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
@@ -765,6 +765,26 @@ export default function App() {
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
               </button>
             </main>
+
+            {/* Permanenter Tisch-Hinweis (Nutzer-Feedback: "jedem Spieler muss
+                zu jeder Zeit klar sein, auf welchem Tisch gespielt wird") -
+                anders als das einmalige "Du bist dran!"-Popup oben (das sich
+                pro Partie dauerhaft wegklicken laesst, siehe dismissTourneyReady)
+                bleibt dieser Banner sichtbar, solange tourneyReadyList etwas
+                enthaelt - verschwindet von selbst, sobald das Ergebnis gemeldet
+                wurde (dieselbe Quelle wie der Turniere-Tabbar-Badge). */}
+            {tourneyReadyList.length > 0 && tab !== "match" && (() => {
+              const next = tourneyReadyList[0];
+              const iAmP1 = next.player1_id === player.id;
+              const oppName = (iAmP1 ? next.player2 : next.player1)?.nickname;
+              return (
+                <button className="tourney-table-banner"
+                  onClick={() => navPush({ tab: "turnierdetail", tournamentId: next.tournament_id })}>
+                  🎱 {t("Tisch")} {next.table_number} · {t("gegen {name}", { name: oppName || "?" })}
+                  {tourneyReadyList.length > 1 && ` · ${t("+{n} weitere", { n: tourneyReadyList.length - 1 })}`}
+                </button>
+              );
+            })()}
 
             {tab !== "match" && (
             <nav className="tabbar">

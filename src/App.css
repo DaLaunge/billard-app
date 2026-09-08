@@ -22,6 +22,7 @@ html, body { background: var(--felt); }
   display: flex; flex-direction: column; box-shadow: 0 0 60px #00000070; }
 .content { flex: 1; overflow-y: auto; padding-bottom: 92px; }
 .content.no-tabbar { padding-bottom: 24px; }
+.content.has-table-banner { padding-bottom: 148px; }
 .screen { padding: 22px 18px 28px; }
 .center-load { flex: 1; display: grid; place-items: center; color: var(--ivory-dim); min-height: 60vh; }
 
@@ -686,6 +687,16 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   color: #06231A; display: grid; place-items: center; margin: 0 auto 14px; }
 .sent-check.big { width: 68px; height: 68px; }
 .sent-text { text-align: center; margin-bottom: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Permanenter Tisch-Hinweis (siehe App.jsx) - knapp ueber der Tabbar, damit
+   er auf jedem Screen (ausser waehrend eines laufenden Matches) sichtbar
+   bleibt, solange eine Turnierpartie mit zugeteiltem Tisch ansteht. */
+.tourney-table-banner { position: fixed; bottom: calc(76px + env(safe-area-inset-bottom));
+  left: 50%; transform: translateX(-50%); width: calc(100% - 28px); max-width: 402px; z-index: 25;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 14px; border-radius: 14px; border: none; cursor: pointer;
+  background: var(--gold); color: #241800; font-weight: 700; font-size: 13px;
+  font-family: inherit; text-align: center; box-shadow: 0 4px 14px #00000045; }
 
 .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   width: 100%; max-width: 430px; display: flex; align-items: center;
@@ -1365,6 +1376,10 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-row.won { color: var(--gold); font-weight: 700; }
 .turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
 .turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
+/* Doppeltes Nichterscheinen (siehe tournament_mark_no_show()) - schliesst
+   sich mit .turnier-graph-pending gegenseitig aus (ein void-Match hat nie
+   ein zugehoeriges matches-Match), daher an derselben Stelle. */
+.turnier-graph-void { position: absolute; top: 4px; right: 6px; color: var(--ivory-dim); }
 /* Detail-Panel fuer den per Klick ausgewaehlten Spielerverlauf (Teilnehmer-
    Tab, TurnierRasterScreen.jsx) - im normalen Dokumentfluss. */
 .turnier-graph-detail { background: var(--felt-3); border: 1px solid var(--gold); border-radius: 14px;

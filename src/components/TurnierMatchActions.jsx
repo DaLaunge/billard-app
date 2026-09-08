@@ -30,8 +30,12 @@ export function ScoreStepper({ value, onChange, compact }) {
 export function turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked) {
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
-  const openSlot = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number != null && !tm.match_id && tourStatus === "running";
-  const waitingForTable = !tm.is_bye && tm.player1_id && tm.player2_id && tm.table_number == null && !tm.match_id && tourStatus === "running";
+  // !tm.void: beide Seiten haben ein doppeltes Nichterscheinen gemeldet
+  // bekommen (siehe tournament_mark_no_show()) - dieses Match ist damit
+  // endgueltig erledigt (niemand kommt weiter, die Baumstelle wird zum
+  // Freilos fuer die Gegenseite), keine weiteren Aktionen mehr moeglich.
+  const openSlot = !tm.is_bye && !tm.void && tm.player1_id && tm.player2_id && tm.table_number != null && !tm.match_id && tourStatus === "running";
+  const waitingForTable = !tm.is_bye && !tm.void && tm.player1_id && tm.player2_id && tm.table_number == null && !tm.match_id && tourStatus === "running";
   const canReport = openSlot && isMyMatch;
   const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
   const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
@@ -95,14 +99,13 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, r
   const [noShowPicking, setNoShowPicking] = useState(false);
   const [absent1, setAbsent1] = useState(false);
   const [absent2, setAbsent2] = useState(false);
-  const [techWinner, setTechWinner] = useState(null);
   const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit, canMarkNoShow } = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked);
   const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
 
-  const resetNoShow = () => { setNoShowPicking(false); setAbsent1(false); setAbsent2(false); setTechWinner(null); };
+  const resetNoShow = () => { setNoShowPicking(false); setAbsent1(false); setAbsent2(false); };
   const submitNoShow = () => {
     const absentIds = [absent1 && tm.player1_id, absent2 && tm.player2_id].filter(Boolean);
-    onMarkNoShow(tm, absentIds, absent1 && absent2 ? techWinner : null, resetNoShow);
+    onMarkNoShow(tm, absentIds, resetNoShow);
   };
 
   const startEdit = () => {
@@ -113,6 +116,7 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, r
 
   return (
     <>
+      {tm.void && <span className="hint" style={{ margin: 0 }}>{t("Nicht gewertet - beide nicht erschienen")}</span>}
       {waitingForTable && <span className="hint" style={{ margin: 0 }}>{t("Tisch wird noch zugeteilt")}</span>}
       {tm.match_id && !confirmed && <span className="hint" style={{ margin: 0 }}>{t("Wartet auf Bestätigung ...")}</span>}
       {manuallyEntered && <span className="hint" style={{ margin: 0 }}>{t("Manuell nachgetragen")}</span>}
@@ -176,21 +180,11 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, r
             {t("{name} nicht erschienen", { name: nameOf(tm.player2_id) || t("TBD") })}
           </label>
           {absent1 && absent2 && (
-            <>
-              <p className="hint" style={{ margin: "6px 0 4px" }}>{t("Wer kommt trotzdem weiter? (zählt nicht fürs Elo)")}</p>
-              <div className="chips small">
-                <button type="button" className={"chip" + (techWinner === tm.player1_id ? " active" : "")} onClick={() => setTechWinner(tm.player1_id)}>
-                  {nameOf(tm.player1_id) || t("TBD")}
-                </button>
-                <button type="button" className={"chip" + (techWinner === tm.player2_id ? " active" : "")} onClick={() => setTechWinner(tm.player2_id)}>
-                  {nameOf(tm.player2_id) || t("TBD")}
-                </button>
-              </div>
-            </>
+            <p className="hint" style={{ margin: "6px 0 4px" }}>{t("Kommen beide nicht, kommt niemand von ihnen weiter - die Stelle im Baum wird zum Freilos.")}</p>
           )}
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button className="btn primary" style={{ width: "auto", flex: 1 }}
-              disabled={busyId === tm.id || (!absent1 && !absent2) || (absent1 && absent2 && !techWinner)}
+              disabled={busyId === tm.id || (!absent1 && !absent2)}
               onClick={submitNoShow}>
               {t("Eintragen")}
             </button>
