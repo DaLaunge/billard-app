@@ -275,13 +275,20 @@ export default function App() {
   // Bei mehreren gleichzeitig bereiten Paarungen (moeglich, wenn man in
   // mehreren Turnieren gleichzeitig mitspielt) fuehrt das zur ERSTEN -
   // realistischerweise ein seltener Randfall in einem kleinen Verein.
+  // Bewusst NUR beim Wechsel AUS einem anderen Tab (Profil/Statistik/Live)
+  // - ist man BEREITS im Turnierbereich (tab "turnier"/"turnierdetail"),
+  // heisst ein Klick hier "zurueck zur Uebersicht", nicht "wieder zur
+  // bereiten Paarung springen" (Bug-Report: bei bereiter Paarung liess sich
+  // aus einem Turnier heraus gar nicht mehr zur Liste navigieren, weil
+  // dieser Klick einen immer wieder ins selbe/ein Turnier zurueckwarf).
   const openTurniereMenu = useCallback(() => {
-    if (tourneyReadyList.length > 0) {
+    const alreadyInTurnierBereich = tab === "turnier" || tab === "turnierdetail";
+    if (!alreadyInTurnierBereich && tourneyReadyList.length > 0) {
       navPush({ tab: "turnierdetail", tournamentId: tourneyReadyList[0].tournament_id });
     } else {
       navPush({ tab: "turnier" });
     }
-  }, [tourneyReadyList, navPush]);
+  }, [tab, tourneyReadyList, navPush]);
 
   // Fuer die Startseiten-Option "Zuletzt geoeffnet": merkt sich den zuletzt
   // besuchten Hauptmenuepunkt geraeteweise (nicht Unterseiten wie Match/
