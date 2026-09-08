@@ -227,7 +227,7 @@ export default function App() {
   const checkTourneyReady = useCallback(async () => {
     if (!player) return;
     const { data } = await supabase.from("tournament_matches")
-      .select("id, tournament_id, table_number, player1_id, player2_id, tournament:tournaments!tournament_matches_tournament_id_fkey(name, status), player1:players!tournament_matches_player1_id_fkey(nickname), player2:players!tournament_matches_player2_id_fkey(nickname)")
+      .select("id, tournament_id, table_number, player1_id, player2_id, tournament:tournaments!tournament_matches_tournament_id_fkey(name, status, discipline), player1:players!tournament_matches_player1_id_fkey(nickname), player2:players!tournament_matches_player2_id_fkey(nickname)")
       .eq("is_bye", false)
       .is("match_id", null)
       .not("table_number", "is", null)
@@ -779,7 +779,13 @@ export default function App() {
               const oppName = (iAmP1 ? next.player2 : next.player1)?.nickname;
               return (
                 <button className="tourney-table-banner"
-                  onClick={() => navPush({ tab: "turnierdetail", tournamentId: next.tournament_id })}>
+                  onClick={() => navPush({
+                    tab: "match",
+                    matchTournamentCtx: {
+                      tournamentMatchId: next.id, discipline: next.tournament?.discipline,
+                      player1Id: next.player1_id, player2Id: next.player2_id,
+                    },
+                  })}>
                   🎱 {t("Tisch")} {next.table_number} · {t("gegen {name}", { name: oppName || "?" })}
                   {tourneyReadyList.length > 1 && ` · ${t("+{n} weitere", { n: tourneyReadyList.length - 1 })}`}
                 </button>
