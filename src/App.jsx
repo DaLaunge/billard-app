@@ -751,6 +751,7 @@ export default function App() {
               </button>
               <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" ? " on" : "")} onClick={() => navPush({ tab: "turnier" })}>
                 <Trophy size={21} /><span>{t("Turniere")}</span>
+                {tourneyReadyList.length > 0 && <span className="badge">{tourneyReadyList.length}</span>}
               </button>
               <button className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
                 <span className="fab-shine" />

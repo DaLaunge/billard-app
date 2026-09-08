@@ -106,18 +106,12 @@ export default function TurniereScreen({ me, players, matches, colorOf, badgeOf,
       <section className="stat-block">
         <div className="stat-block-head">
           <h3><Trophy size={17} /> {t("Turniere")}</h3>
-          {me?.role === "admin" && (
-            <button className="btn ghost" onClick={() => setShowForm((s) => !s)}>
-              {showForm ? <><X size={15} /> {t("Abbrechen")}</> : <><Plus size={15} /> {t("Neues Turnier")}</>}
-            </button>
-          )}
+          <button className="btn ghost" onClick={() => setShowForm((s) => !s)}>
+            {showForm ? <><X size={15} /> {t("Abbrechen")}</> : <><Plus size={15} /> {t("Neues Turnier")}</>}
+          </button>
         </div>
 
-        {me?.role !== "admin" && (
-          <p className="hint" style={{ marginTop: 0 }}>{t("Turniere anlegen ist aktuell nur für Admins möglich.")}</p>
-        )}
-
-        {showForm && me?.role === "admin" && (
+        {showForm && (
           <div className="turnier-form" style={{ marginBottom: 16 }}>
             <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
 
