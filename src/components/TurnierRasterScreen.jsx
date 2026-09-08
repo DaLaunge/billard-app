@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
 import Ball from "./Ball";
+import PlayerMultiPicker from "./PlayerMultiPicker";
 import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
 import TurnierBerichtScreen from "./TurnierBerichtScreen";
@@ -18,7 +19,7 @@ const bracketRank = { main: 0, winners: 0, losers: 1, final: 2 };
 // und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
 // bewusste Ausnahme vom sonstigen "alles ueber App.jsx loadData()"-Muster,
 // weil das nur aktiv ist waehrend diese Seite offen ist.
-export default function TurnierRasterScreen({ tournamentId, me, players, toast, onBack, colorOf, badgeOf, photoOf, onReload, onReportTournamentMatch }) {
+export default function TurnierRasterScreen({ tournamentId, me, players, matches, toast, onBack, colorOf, badgeOf, photoOf, onReload, onReportTournamentMatch }) {
   const [tour, setTour] = useState(null);
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
@@ -54,6 +55,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
   // Screen-Swap statt eigenem App.jsx-Tab (wie beim Maximieren-Modus oben),
   // da der Bericht rein aus bereits geladenen tms/finalStandings besteht.
   const [showReport, setShowReport] = useState(false);
+  // Manuelles Hinzufuegen durch die Turnierleitung (Nutzer-Feedback: der
+  // frueher entfernte PlayerMultiPicker-Auswahlschirm soll als ERGAENZUNG
+  // zur Selbst-Anmeldung zurueckkommen, nicht als Ersatz) - eigener,
+  // ausklappbarer Auswahlzustand statt eines Formularfelds, da er nur
+  // waehrend der Anmeldephase gebraucht wird (siehe addPlayers/removePlayer
+  // unten sowie tournament_organizer_add_players()/_remove_player()).
+  const [showAddPlayers, setShowAddPlayers] = useState(false);
+  const [addSelected, setAddSelected] = useState([]);
+  const toggleAddSelected = (id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
@@ -346,6 +356,30 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
     await load();
   };
 
+  const addPlayers = async () => {
+    setBusyId("addPlayers");
+    const { error } = await supabase.rpc("tournament_organizer_add_players", {
+      p_tournament_id: tournamentId, p_player_ids: addSelected,
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Spieler hinzugefügt."));
+    setAddSelected([]);
+    setShowAddPlayers(false);
+    await load();
+  };
+
+  const removePlayer = async (playerId) => {
+    setBusyId("removePlayer");
+    const { error } = await supabase.rpc("tournament_organizer_remove_player", {
+      p_tournament_id: tournamentId, p_player_id: playerId,
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Spieler entfernt."));
+    await load();
+  };
+
   const startTournament = async () => {
     if (!window.confirm(t("Turnier jetzt starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost."))) return;
     setBusyId("start");
@@ -429,6 +463,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
                   <div key={r.player_id} className="pmp-chip">
                     <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={32} />
                     <span className="pmp-name">{nick}</span>
+                    {isOrganizer && (
+                      <button type="button" className="pmp-remove" disabled={busyId === "removePlayer"}
+                        onClick={() => removePlayer(r.player_id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
+                        <X size={14} />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -438,6 +478,25 @@ export default function TurnierRasterScreen({ tournamentId, me, players, toast, 
             onClick={isRegistered ? unregister : register}>
             {isRegistered ? t("Abmelden") : t("Anmelden")}
           </button>
+
+          {isOrganizer && (
+            <>
+              <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setShowAddPlayers((s) => !s)}>
+                {showAddPlayers ? <><X size={15} /> {t("Abbrechen")}</> : <><UserPlus size={15} /> {t("Spieler hinzufügen")}</>}
+              </button>
+              {showAddPlayers && (
+                <div style={{ marginTop: 10 }}>
+                  <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
+                    onToggle={toggleAddSelected} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                    exclude={(roster || []).map((r) => r.player_id)} />
+                  <button className="btn primary" style={{ marginTop: 10 }}
+                    disabled={addSelected.length === 0 || busyId === "addPlayers"} onClick={addPlayers}>
+                    <Check size={15} /> {t("{n} Spieler hinzufügen", { n: addSelected.length })}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </section>
 
         {isOrganizer && (

@@ -757,7 +757,7 @@ export default function App() {
                   onBack={() => window.history.back()} />
               )}
               {tab === "turnierdetail" && tournamentId && (
-                <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} toast={toast}
+                <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} matches={matches} toast={toast}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => window.history.back()}
                   onReportTournamentMatch={(ctx) => navPush({ tab: "match", matchTournamentCtx: ctx })} />
               )}

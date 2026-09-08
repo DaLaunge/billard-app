@@ -1062,6 +1062,14 @@ button.id-card-head { cursor: pointer; }
 .pmp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .turnier-organizer-line { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; }
 .pmp-check { color: var(--gold); flex-shrink: 0; }
+/* Entfernen-Button in der Angemeldet-Liste (Turnierleitung, Anmeldephase) -
+   die Roster-Chips dort sind (anders als im PlayerMultiPicker) keine
+   Buttons, deshalb ein eigenes kleines <button> am Ende statt des ganzen
+   Chips klickbar zu machen. */
+.pmp-remove { flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; background: none; border: none;
+  color: var(--ivory-dim); cursor: pointer; padding: 0; }
+.pmp-remove:hover { background: var(--felt); color: var(--loss); }
 
 /* Turnier-Uebersicht: deutlich groesseres Tap-Ziel als die generische
    .stat-row (die ist auf kompakte Listen wie Statistik-Bestenlisten
