@@ -4,6 +4,7 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
 const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t("Anmeldung offen") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
@@ -202,6 +203,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onBack }) {
         })()}
       </section>
       </div>
+      <ImprintFooter />
     </div>
   );
 }

@@ -6,17 +6,16 @@ import { computeAchievementExtras, nextAchievementHint } from "../lib/achievemen
 import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE, fmtDate, fmtDuration } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
-import { APP_VERSION } from "../lib/constants";
 import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
 import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
-import LegalModal from "./LegalModal";
 import AvatarPhotoField from "./AvatarPhotoField";
 import MyFeedbackTickets from "./MyFeedbackTickets";
 import HeadToHeadCard from "./widgets/HeadToHeadCard";
 import RecordsCard from "./widgets/RecordsCard";
 import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
@@ -49,7 +48,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [color, setColor] = useState(meRow?.avatar_color || null);
   const [motto, setMotto] = useState(meRow?.motto || "");
   const [busy, setBusy] = useState(false);
-  const [legalOpen, setLegalOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackCat, setFeedbackCat] = useState("bug");
   const [feedbackMsg, setFeedbackMsg] = useState("");
@@ -656,17 +654,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </div>
       )}
 
-      <footer className="imprint">
-        <div className="imprint-title">{t("Impressum")}</div>
-        <p>
-          Break &amp; Rank · {t("Version")} {APP_VERSION}<br />
-          © {new Date().getFullYear()} Break &amp; Rank<br />
-          {t("Kontakt")}: <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a><br />
-          {t("Diskussion im")} <a href="https://t.me/+vG8sWgH_utJlODRk" target="_blank" rel="noopener noreferrer">Telegram-Kanal</a>
-        </p>
-        <button className="legal-link" onClick={() => setLegalOpen(true)}>{t("Nutzungsbedingungen & Datenschutzerklärung")}</button>
-      </footer>
-      {legalOpen && <LegalModal onClose={() => setLegalOpen(false)} />}
+      <ImprintFooter />
       {photoViewerOpen && heroPhoto && (
         <div className="modal-overlay photo-viewer" onClick={() => setPhotoViewerOpen(false)}>
           <img src={heroPhoto} alt={nickname} className="photo-viewer-img" />

@@ -5,6 +5,7 @@ import PingCard from "./PingCard";
 import PlanungCard from "./PlanungCard";
 import ChallengeCard from "./ChallengeCard";
 import UserPanel from "./widgets/UserPanel";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
@@ -227,6 +228,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
         )}
       </div>
       </div>
+      <ImprintFooter />
     </div>
   );
 }
