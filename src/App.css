@@ -1365,6 +1365,10 @@ button.id-card-head { cursor: pointer; }
 .turnier-graph-row.won { color: var(--gold); font-weight: 700; }
 .turnier-graph-table { position: absolute; top: -18px; left: 0; font-size: 10.5px; color: var(--ivory-dim); }
 .turnier-graph-pending { position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 16px; line-height: 1; }
+/* Doppeltes Nichterscheinen (siehe tournament_mark_no_show()) - schliesst
+   sich mit .turnier-graph-pending gegenseitig aus (ein void-Match hat nie
+   ein zugehoeriges matches-Match), daher an derselben Stelle. */
+.turnier-graph-void { position: absolute; top: 4px; right: 6px; color: var(--ivory-dim); }
 /* Detail-Panel fuer den per Klick ausgewaehlten Spielerverlauf (Teilnehmer-
    Tab, TurnierRasterScreen.jsx) - im normalen Dokumentfluss. */
 .turnier-graph-detail { background: var(--felt-3); border: 1px solid var(--gold); border-radius: 14px;

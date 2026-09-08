@@ -291,10 +291,10 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // Nichterscheinen (Nutzer-Feedback): eine oder beide Parteien tauchen zum
   // Match nicht auf - siehe tournament_mark_no_show() fuer die Kaskade auf
   // alle weiteren offenen Partien der/des tatsaechlich Ausgeschiedenen.
-  const markNoShow = async (tm, absentPlayerIds, technicalWinnerId, onDone) => {
+  const markNoShow = async (tm, absentPlayerIds, onDone) => {
     setBusyId(tm.id);
     const { error } = await supabase.rpc("tournament_mark_no_show", {
-      p_tournament_match_id: tm.id, p_absent_player_ids: absentPlayerIds, p_technical_winner_id: technicalWinnerId,
+      p_tournament_match_id: tm.id, p_absent_player_ids: absentPlayerIds,
     });
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
