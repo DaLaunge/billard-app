@@ -245,7 +245,6 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
     return (
       <>
         {isFinal && <Trophy className="turnier-graph-final-icon" size={17} />}
-        {m.table_number != null && <span className="turnier-graph-table">{t("Tisch")} {m.table_number}</span>}
         {pending && <span className="turnier-graph-pending" title={t("Wartet auf Bestätigung ...")}>•</span>}
         {m.void && <UserX className="turnier-graph-void" size={13} title={t("Nicht gewertet - beide nicht erschienen")} />}
         <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player1_id ? " won" : "")}>
@@ -339,6 +338,16 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
           die Box, beide Bedienelemente sind also immer synchron. */}
       {selected && selectedInline && (
         <div className="turnier-graph-pinned-row">
+          {/* Als eigenes Element VOR der Box statt wie frueher als Kind
+              hineingerendert (siehe renderBoxInner) - die Box hat
+              overflow:hidden (fuer abgerundete Ecken/Textkuerzung), das hat
+              das Tisch-Label (position:absolute; top:-18px, also ausserhalb
+              der eigenen Box-Flaeche) komplett unsichtbar gemacht statt es
+              wie beabsichtigt darueber anzuzeigen (Nutzer-Feedback: "ich
+              sehe den Tisch im Graphen nicht"). */}
+          {selected.table_number != null && (
+            <div className="turnier-graph-table-pinned">{t("Tisch")} {selected.table_number}</div>
+          )}
           <div className={"turnier-graph-box turnier-graph-box--" + selected.bracket + " selected"
             + (selIsFinal ? " turnier-graph-box--final" : "")}
             style={{ width: selIsFinal ? FINAL_BOX_W : BOX_W, height: selBoxH }}>
@@ -397,17 +406,31 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               const isDim = highlightIds && !highlightIds.has(m.id);
               const toggleSelect = () => setSelectedId(m.id === selectedId ? null : m.id);
               return (
-                <div key={m.id} role="button" tabIndex={0}
-                  className={"turnier-graph-box turnier-graph-box--" + m.bracket
-                    + (actionable ? " actionable" : "") + (isSelected ? " selected" : "")
-                    + (isConnected ? " connected" : "") + (isDim ? " dim" : "")}
-                  style={{ left: p.x, top: p.y, width: boxW, height: baseBoxH, zIndex: isSelected ? 4 : undefined }}
-                  onClick={toggleSelect}
-                  onKeyDown={(e) => {
-                    if (e.target !== e.currentTarget) return;
-                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSelect(); }
-                  }}>
-                  {renderBoxInner(m, isFinal, inlineEdit)}
+                <div key={m.id}>
+                  {/* Eigenes Geschwister-Element statt (wie frueher) ein Kind
+                      der Box - die Box hat overflow:hidden (fuer abgerundete
+                      Ecken/Textkuerzung), das machte das Tisch-Label
+                      (position:absolute; top:-18px, also ausserhalb der
+                      eigenen Box-Flaeche) komplett unsichtbar statt es wie
+                      beabsichtigt darueber anzuzeigen (Nutzer-Feedback:
+                      "ich sehe den Tisch im Graphen nicht"). */}
+                  {m.table_number != null && (
+                    <span className="turnier-graph-table" style={{ left: p.x, top: p.y - 18 }}>
+                      {t("Tisch")} {m.table_number}
+                    </span>
+                  )}
+                  <div role="button" tabIndex={0}
+                    className={"turnier-graph-box turnier-graph-box--" + m.bracket
+                      + (actionable ? " actionable" : "") + (isSelected ? " selected" : "")
+                      + (isConnected ? " connected" : "") + (isDim ? " dim" : "")}
+                    style={{ left: p.x, top: p.y, width: boxW, height: baseBoxH, zIndex: isSelected ? 4 : undefined }}
+                    onClick={toggleSelect}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSelect(); }
+                    }}>
+                    {renderBoxInner(m, isFinal, inlineEdit)}
+                  </div>
                 </div>
               );
             })}
