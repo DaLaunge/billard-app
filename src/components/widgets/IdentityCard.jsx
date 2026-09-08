@@ -24,7 +24,7 @@ import DecayBadge from "./DecayBadge";
    nachdem was zutrifft) spiegelt das an der oberen linken Ecke - selber
    Grund. pulse=true, weil hier immer genau eine (die betroffene) Person im
    Fokus steht - im Unterschied zur Rangliste, wo mehrere Treffer
-   gleichzeitig zu sehen sein koennen (siehe RanglisteScreen.jsx). */
+   gleichzeitig zu sehen sein koennen (siehe StatistikScreen.jsx). */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
   onHeadClick, onInvite, actions, photoSize = 88 }) {
   const head = (

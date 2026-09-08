@@ -1,13 +1,16 @@
 import { useState, useMemo } from "react";
-import { Trophy, BarChart3, Flame, Swords, X, FileText } from "lucide-react";
+import { Trophy, BarChart3, Flame, Swords, X, FileText, Check, Clock } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
-import { initials, fmtDateTime, sideNames, isDoubles } from "../lib/format";
+import { initials, fmtDate, fmtDateTime, sideNames, isDoubles, mSide } from "../lib/format";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
 import UserPanel from "./widgets/UserPanel";
+import DecayBadge from "./widgets/DecayBadge";
+import LiveStatusCard from "./widgets/LiveStatusCard";
 
+const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
 const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
 const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
@@ -44,7 +47,51 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
   );
 }
 
-export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me, challenges, catalog, earnedBadges, onInvite }) {
+// Die fruehere eigene "Uebersicht"/Rangliste-Seite: hier als weiterer
+// Bestenlisten-Block eingegliedert (gleiches Top-3/Top-10/Alle-Muster wie
+// "Meiste Siege" & Co.), da sie inhaltlich ohnehin eine Rangliste ist.
+// Anders als die anderen Bloecke mit Disziplin-Auswahl, da die Rangliste
+// (im Gegensatz zu den reinen Zaehl-Statistiken) je Disziplin getrennt
+// gefuehrt wird.
+function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpenProfile }) {
+  const [disc, setDisc] = useState("Gesamt");
+  const [count, setCount] = useState(3);
+  const rows = rangliste.filter((r) => r.discipline === disc && r.aktiv && !r.vorlaeufig);
+  const visible = count === "all" ? rows : rows.slice(0, count);
+  return (
+    <section className="stat-block">
+      <div className="stat-block-head">
+        <h3><Trophy size={17} /> {t("Rangliste")}</h3>
+        <div className="chips small">
+          {COUNT_OPTIONS.map((c) => (
+            <button key={c} className={"chip" + (count === c ? " active" : "")} onClick={() => setCount(c)}>
+              {c === "all" ? t("Alle") : `Top ${c}`}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="hint" style={{ marginTop: 0 }}>{t("Fargo-Skala - 100 Punkte = 2:1")}</p>
+      <div className="chips small" style={{ marginBottom: 10 }}>
+        {["Gesamt", ...disciplines].map((d) => (
+          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => setDisc(d)}>{t(d)}</button>
+        ))}
+      </div>
+      {visible.length === 0 && <p className="hint">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
+      {visible.map((r, i) => (
+        <button key={r.nickname + r.discipline} className="stat-row as-btn" onClick={() => onOpenProfile(r.nickname)}>
+          <span className="medal">{i < 3 ? MEDAL_EMOJI[i] : `${i + 1}.`}</span>
+          <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} photo={photoOf(r.nickname)} size={34} />
+          <span className="stat-name">{r.nickname}</span>
+          <span className="stat-val">{r.rating}</span>
+          <DecayBadge player={r} iconSize={15} />
+        </button>
+      ))}
+    </section>
+  );
+}
+
+export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me, challenges,
+  catalog, earnedBadges, onInvite, disciplines, pending, onConfirm, myOpenReports, pings, openChallengesToMe, onGoToLive }) {
   const stats = useMemo(() => computeStats(matches), [matches]);
   const topWins = useMemo(() => Object.values(stats).sort((a, b) => b.siege - a.siege), [stats]);
   const topQuote = useMemo(
@@ -55,7 +102,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     () => Object.values(stats).filter((p) => p.streak > 0).sort((a, b) => b.streak - a.streak),
     [stats]
   );
-
   const [filterPlayer, setFilterPlayer] = useState("");
   const [filterResult, setFilterResult] = useState("all"); // all | win | loss
   const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ... | "Doppel"
@@ -98,11 +144,67 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   return (
     <div className="screen">
       <header className="screen-head"><h2>{t("Statistik")}</h2><span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span></header>
+
+      {pending.map((m) => {
+        if (isDoubles(m)) {
+          return (
+            <div className="confirm-banner" key={m.id}>
+              <div>
+                <b>{t("Doppel bestätigen:")}</b> {mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)} ({t(m.discipline)}, {fmtDate(m.played_at)}).
+                <span className="confirm-warn"> {t("Nur bestätigen, wenn du dieses Doppel wirklich gespielt hast.")}</span>
+              </div>
+              <div className="confirm-actions">
+                <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> {t("Passt")}</button>
+                <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> {t("Falsch")}</button>
+              </div>
+            </div>
+          );
+        }
+        const other = m.player1_id === me.id ? m.p2.nickname : m.p1.nickname;
+        const myScore = m.player1_id === me.id ? m.score1 : m.score2;
+        const otherScore = m.player1_id === me.id ? m.score2 : m.score1;
+        const hasLog = m.run_log?.length > 0;
+        return (
+          <div className="confirm-banner" key={m.id}>
+            <div><b>{t("Match bestaetigen:")}</b> {other} {t("meldet ein")} {otherScore}:{myScore} {t("gegen dich")} ({t(m.discipline)}, {fmtDate(m.played_at)}).</div>
+            <div className="confirm-actions">
+              {hasLog && (
+                <button className="chip-btn" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
+                  <FileText size={15} />
+                </button>
+              )}
+              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> {t("Passt")}</button>
+              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> {t("Falsch")}</button>
+            </div>
+          </div>
+        );
+      })}
+
+      {myOpenReports.length > 0 && (
+        <div className="open-reports">
+          <p className="open-note"><Clock size={14} /> {myOpenReports.length === 1 && !isDoubles(myOpenReports[0])
+            ? t("1 gemeldetes Match wartet noch auf Bestätigung durch {name}.", { name: myOpenReports[0].p2.nickname })
+            : t("{n} gemeldete Matches warten noch auf Bestätigung.", { n: myOpenReports.length })}{" "}
+            {t("Ohne Bestätigung fließt das nicht ins Rating ein.")}</p>
+          {myOpenReports.map((m) => (
+            <div key={m.id} className="match-row">
+              <span className="m-date">{fmtDate(m.played_at)}</span>
+              <span className="m-txt">{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</span>
+              <span className="m-disc">{t(m.discipline)}</span>
+              {m.run_log?.length > 0 && (
+                <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
+                  <FileText size={15} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="stat-split">
       <aside className="ov-side">
-        {/* Wie auf Uebersicht/Profil: dieselbe UserPanel-Konstante - am
-            Handy ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px
-            sichtbar. */}
+        {/* Wie auf Profil: dieselbe UserPanel-Konstante - am Handy
+            ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px sichtbar. */}
         <div className="ov-side-extra">
           <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
             challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
@@ -196,9 +298,13 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </section>
       </div>
 
-      {/* Rechte Spalte: die drei Bestenlisten ("alles andere"). */}
+      {/* Rechte Spalte: Rangliste ganz oben, danach Live-Status, danach die
+          drei reinen Bestenlisten ("alles andere"). */}
       <div className="stat-rest-col">
       <div className="stat-grid">
+        <RankingBlock rangliste={rangliste} disciplines={disciplines}
+          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+        <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
         <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins}
           fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
         <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote}

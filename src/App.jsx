@@ -15,7 +15,6 @@ import { applyTheme } from "./lib/themes";
 import LoginScreen from "./components/LoginScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
 import NicknameScreen from "./components/NicknameScreen";
-import RanglisteScreen from "./components/RanglisteScreen";
 import LiveScreen from "./components/LiveScreen";
 import MatchScreen from "./components/MatchScreen";
 import StatistikScreen from "./components/StatistikScreen";
@@ -39,11 +38,12 @@ export default function App() {
   const [unconfirmed, setUnconfirmed] = useState([]);
   const [confirmations, setConfirmations] = useState([]);
   const [pings, setPings] = useState([]);
+  const [plannings, setPlannings] = useState([]);
   const [challenges, setChallenges] = useState([]);
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
   const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
-  const [tab, setTab] = useState("rang");
+  const [tab, setTab] = useState("stats");
   const [profileName, setProfileName] = useState(null);
   const [protokollMatch, setProtokollMatch] = useState(null);
   const [protokollBackTab, setProtokollBackTab] = useState("stats");
@@ -56,13 +56,14 @@ export default function App() {
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [celebrate, setCelebrate] = useState(null);  // neue Erfolge fürs Popup
   const [tourneyReady, setTourneyReady] = useState(null); // bereite Turnierpaarung fürs Popup
+  const [tourneyReadyList, setTourneyReadyList] = useState([]); // ALLE bereiten Turnierpaarungen fuer mich - speist den Turniere-Badge (siehe checkTourneyReady unten)
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
   const [vsOpp, setVsOpp] = useState(null);
   const [matchTournamentCtx, setMatchTournamentCtx] = useState(null); // Turnier-Kontext fuers Melden ueber MatchScreen (siehe TurnierRasterScreen)
   // Fuer Startseite "Zuletzt geoeffnet": den zuletzt gespeicherten Tab EINMAL
   // beim allerersten Rendern sichern, bevor der Persistenz-Effekt weiter
-  // unten den initialen "rang"-Default hineinschreibt und den echten Wert
+  // unten den initialen "stats"-Default hineinschreibt und den echten Wert
   // ueberschreiben wuerde.
   const [lastMainTabAtStart] = useState(() => {
     try { return localStorage.getItem("lastMainTab"); } catch { return null; }
@@ -123,14 +124,14 @@ export default function App() {
   // Navigation nicht zurueck auf die Startseite reissen.
   const startTabAppliedRef = useRef(false);
   useEffect(() => {
-    try { window.history.replaceState({ tab: "rang" }, ""); } catch { /* ignore */ }
+    try { window.history.replaceState({ tab: "stats" }, ""); } catch { /* ignore */ }
     const onPop = (e) => {
       if (tabRef.current === "match" && !allowLeaveMatchRef.current) {
         try { window.history.pushState({ tab: "match", vsOpp: vsOppRef.current, matchTournamentCtx: matchTournamentCtxRef.current }, ""); } catch { /* ignore */ }
         return;
       }
       allowLeaveMatchRef.current = false;
-      applyNavState(e.state || { tab: "rang" });
+      applyNavState(e.state || { tab: "stats" });
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -210,20 +211,29 @@ export default function App() {
   }, [player, badgesByPlayer]);
 
   // Turnier "du bist dran"-Popup: pollt (kein Realtime, siehe CLAUDE.md),
-  // ob fuer mich irgendwo eine Turnierpaarung bereitsteht (beide Spieler
-  // feststehen, noch kein Ergebnis gemeldet) - damit die Turnierleitung
-  // Spielpartien nicht manuell zuteilen/ankuendigen muss. Einmal gezeigte
-  // Paarungen merkt sich der Client geraeteweise in localStorage (wie
-  // seenBadges oben), damit das Popup nicht bei jedem Poll erneut aufploppt,
-  // solange noch kein Ergebnis gemeldet wurde.
+  // ob fuer mich irgendwo eine Turnierpaarung bereitsteht - beide Spieler
+  // UND der Tisch feststehen, noch kein Ergebnis gemeldet (Nutzer-Feedback:
+  // ohne die table_number-Pruefung feuerte der Hinweis bei Jeder-gegen-jeden
+  // sofort bei Turnierstart, weil dort ALLE Paarungen von Anfang an beide
+  // Spieler kennen, aber Tische erst nach und nach frei werden - das zeigte
+  // dann eine beliebige spaetere Paarung statt der tatsaechlich anstehenden
+  // mit zugeteiltem Tisch) - damit die Turnierleitung Spielpartien nicht
+  // manuell zuteilen/ankuendigen muss. Einmal gezeigte Paarungen merkt sich
+  // der Client geraeteweise in localStorage (wie seenBadges oben), damit das
+  // Popup nicht bei jedem Poll erneut aufploppt, solange noch kein Ergebnis
+  // gemeldet wurde - das vollstaendige tourneyReadyList (siehe unten) ist
+  // davon unabhaengig und speist stattdessen den Turniere-Badge in
+  // ProfilScreen, der erst verschwindet, wenn tatsaechlich gespielt wurde.
   const checkTourneyReady = useCallback(async () => {
     if (!player) return;
     const { data } = await supabase.from("tournament_matches")
       .select("id, tournament_id, table_number, player1_id, player2_id, tournament:tournaments!tournament_matches_tournament_id_fkey(name, status), player1:players!tournament_matches_player1_id_fkey(nickname), player2:players!tournament_matches_player2_id_fkey(nickname)")
       .eq("is_bye", false)
       .is("match_id", null)
+      .not("table_number", "is", null)
       .or(`player1_id.eq.${player.id},player2_id.eq.${player.id}`);
     const candidates = (data ?? []).filter((tm) => tm.player1_id && tm.player2_id && tm.tournament?.status === "running");
+    setTourneyReadyList(candidates);
     if (candidates.length === 0) return;
     let dismissed = [];
     try { dismissed = JSON.parse(localStorage.getItem("dismissedTourneyMatches:" + player.id) || "[]"); } catch { /* ignore */ }
@@ -261,7 +271,7 @@ export default function App() {
   // besuchten Hauptmenuepunkt geraeteweise (nicht Unterseiten wie Match/
   // Protokoll/Admin/Einladen - die sollen beim Neustart nicht "Startseite" sein).
   useEffect(() => {
-    if (["rang", "live", "stats", "profil"].includes(tab)) {
+    if (["stats", "turnier", "live", "profil"].includes(tab)) {
       try { localStorage.setItem("lastMainTab", tab); } catch { /* ignore */ }
     }
   }, [tab]);
@@ -278,8 +288,8 @@ export default function App() {
       if (data && !startTabAppliedRef.current) {
         startTabAppliedRef.current = true;
         let target = data.start_tab;
-        if (target === "last") target = lastMainTabAtStart || "rang";
-        if (target && target !== "rang") navReplace({ tab: target });
+        if (target === "last") target = lastMainTabAtStart || "stats";
+        if (target && target !== "stats") navReplace({ tab: target });
       }
       const { data: all } = await supabase.from("players")
         .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, blocked, invited_by, created_at");
@@ -297,7 +307,7 @@ export default function App() {
       .select("player_id, snap_date, iso_week, discipline, rating, rank, provisional")
       .order("snap_date", { ascending: true })
       .range(from, to));
-    const [rang, m, pl, pi, bg, ct, mc, ch] = await Promise.all([
+    const [rang, m, pl, pi, bg, ct, mc, ch, pn] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
         .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, run_log, tournament_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
@@ -314,14 +324,19 @@ export default function App() {
       supabase.from("challenges")
         .select("id, challenger_id, challenged_id, status, created_at, expires_at, resolved_match_id, message, message_updated_at, reply, reply_updated_at, challenger:players!challenges_challenger_id_fkey(nickname), challenged:players!challenges_challenged_id_fkey(nickname)")
         .order("created_at", { ascending: false }),
+      supabase.from("plannings")
+        .select("id, planned_date, message, created_at, expires_at, player_id, player:players!plannings_player_id_fkey(nickname), replies:planning_replies(id, message, created_at, player_id, player:players!planning_replies_player_id_fkey(nickname))")
+        .gt("expires_at", new Date().toISOString())
+        .order("planned_date", { ascending: true }),
     ]);
-    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error;
+    const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || pn.error;
     if (err) toast(isNetworkError(err) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + err.message);
     setRangliste(rang.data ?? []);
     setMatches((m.data ?? []).filter((x) => x.confirmed));
     setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
     setPlayers(pl.data ?? []);
     setPings(pi.data ?? []);
+    setPlannings(pn.data ?? []);
     setChallenges(ch.data ?? []);
     const byPlayer = {};
     (bg.data ?? []).forEach((r) => {
@@ -485,6 +500,30 @@ export default function App() {
     loadData();
   };
 
+  const createPlanning = async (date, msg) => {
+    const { error } = await supabase.rpc("create_planning", { p_planned_date: date, p_message: msg.trim() || null });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Planung eingetragen!"));
+    loadData();
+  };
+  const deletePlanning = async (id) => {
+    const { error } = await supabase.rpc("close_planning", { p_planning_id: id });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Planung geloescht."));
+    loadData();
+  };
+  const replyPlanning = async (id, msg) => {
+    const { error } = await supabase.rpc("reply_planning", { p_planning_id: id, p_message: msg.trim() || null });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Zusage gesendet!"));
+    loadData();
+  };
+  const unreplyPlanning = async (id) => {
+    const { error } = await supabase.rpc("unreply_planning", { p_planning_id: id });
+    if (error) toast(t("Fehler: ") + error.message);
+    loadData();
+  };
+
   const createChallenge = async (playerId, message) => {
     const { error } = await supabase.rpc("create_challenge", { p_challenged_id: playerId, p_message: message || null });
     if (error) toast(t("Fehler: ") + error.message);
@@ -515,7 +554,7 @@ export default function App() {
   const openProfile = (nick) => navPush({ tab: "fremdprofil", profileName: nick });
   const openProtokoll = (m) => navPush({ tab: "protokoll", protokollMatch: m, protokollBackTab: tab });
   const startMatchVs = (opponent) => navPush({ tab: "match", vsOpp: opponent });
-  const logout = async () => { await supabase.auth.signOut(); navReplace({ tab: "rang" }); };
+  const logout = async () => { await supabase.auth.signOut(); navReplace({ tab: "stats" }); };
 
   const submitFeedback = async (category, message) => {
     const { error } = await supabase.rpc("submit_feedback", { p_category: category, p_message: message });
@@ -527,7 +566,7 @@ export default function App() {
     const { error } = await supabase.rpc("self_delete_account");
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await supabase.auth.signOut();
-    navReplace({ tab: "rang" });
+    navReplace({ tab: "stats" });
   };
 
   if (!authReady) {
@@ -613,22 +652,14 @@ export default function App() {
               );
             })()}
             <main className={"content" + (tab === "match" ? " no-tabbar" : "")}>
-              {tab === "rang" && (
-                <RanglisteScreen rangliste={rangliste} disciplines={disciplines}
-                  pending={pendingForMe} me={player} onConfirm={confirmMatch}
-                  onOpenProfile={openProfile} onOpenProtokoll={openProtokoll} myOpenReports={myOpenReports}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} ratingOf={ratingOf}
-                  matches={matches} players={players} challenges={challenges}
-                  catalog={catalog} earnedBadges={badgesOfId(player.id)}
-                  pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => navPush({ tab: "live" })}
-                  onInvite={() => navPush({ tab: "invite" })} snapshots={snapshots} />
-              )}
               {tab === "live" && (
-                <LiveScreen me={player} pings={pings} challenges={challenges} matches={matches} rangliste={rangliste}
+                <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
+                  onCreatePlanning={createPlanning} onDeletePlanning={deletePlanning}
+                  onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
                   onInvite={() => navPush({ tab: "invite" })} />
@@ -657,7 +688,9 @@ export default function App() {
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
                 rangliste={rangliste} me={player} challenges={challenges}
                 catalog={catalog} earnedBadges={badgesOfId(player.id)}
-                onInvite={() => navPush({ tab: "invite" })} />}
+                onInvite={() => navPush({ tab: "invite" })} disciplines={disciplines}
+                pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports}
+                pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => navPush({ tab: "live" })} />}
               {tab === "protokoll" && protokollMatch && (
                 <MatchProtokollScreen match={protokollMatch} onBack={() => window.history.back()} />
               )}
@@ -667,7 +700,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
-                  onOpenTurniere={() => navPush({ tab: "turnier" })}
+                  onOpenTurniere={() => navPush({ tab: "turnier" })} tourneyReadyCount={tourneyReadyList.length}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
@@ -712,22 +745,22 @@ export default function App() {
 
             {tab !== "match" && (
             <nav className="tabbar">
-              <button className={"tab" + (tab === "rang" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "rang" })}>
-                <Trophy size={21} /><span>{t("Übersicht")}</span>
+              <button className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
+                <BarChart3 size={21} /><span>{t("Statistik")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
-              <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
-                <Radio size={21} /><span>{t("Live")}</span>
-                {pings.length + openChallengesToMe.length > 0 && (
-                  <span className="badge live">{pings.length + openChallengesToMe.length}</span>
-                )}
+              <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" ? " on" : "")} onClick={() => navPush({ tab: "turnier" })}>
+                <Trophy size={21} /><span>{t("Turniere")}</span>
               </button>
               <button className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
                 <span className="fab-shine" />
                 <Plus size={26} className="fab-plus" />
               </button>
-              <button className={"tab" + (tab === "stats" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
-                <BarChart3 size={21} /><span>{t("Statistik")}</span>
+              <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
+                <Radio size={21} /><span>{t("Live")}</span>
+                {pings.length + openChallengesToMe.length + plannings.length > 0 && (
+                  <span className="badge live">{pings.length + openChallengesToMe.length + plannings.length}</span>
+                )}
               </button>
               <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
                 <User size={21} /><span>{t("Profil")}</span>

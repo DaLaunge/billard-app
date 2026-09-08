@@ -16,9 +16,10 @@ import MyFeedbackTickets from "./MyFeedbackTickets";
 import HeadToHeadCard from "./widgets/HeadToHeadCard";
 import RecordsCard from "./widgets/RecordsCard";
 import IdentityCard from "./widgets/IdentityCard";
+import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
-  players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
+  players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
@@ -81,7 +82,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     setBusy(false);
   };
 
-  const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "rang");
+  const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "stats");
   const pickStartTab = async (value) => {
     setStartTabLocal(value);
     setBusy(true);
@@ -168,12 +169,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     await Promise.all([
       onSaveProfile(nickValid ? cleanNick : nickname, null, motto),
       onSetTheme("green", null),
-      onSetStartTab("rang"),
+      onSetStartTab("stats"),
     ]);
     setColor(null);
     setThemeKey("green");
     applyTheme("green");
-    setStartTabLocal("rang");
+    setStartTabLocal("stats");
     setBusy(false);
     toast(t("Standardeinstellungen wiederhergestellt."));
   };
@@ -310,9 +311,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <p className="hint" style={{ marginTop: 0 }}>{t("Was soll beim Starten der App zuerst angezeigt werden?")}</p>
             <div className="chips">
               {[
-                ["rang", t("Übersicht")],
-                ["live", t("Live")],
                 ["stats", t("Statistik")],
+                ["turnier", t("Turniere")],
+                ["live", t("Live")],
                 ["profil", t("Profil")],
                 ["last", t("Zuletzt geöffnet")],
               ].map(([v, label]) => (
@@ -414,6 +415,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       {/* Ratings + Head-to-Head bilden am PC die linke Spalte (zusammen mit
           pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
       <div className="pf-stats-a">
+      <AchievementsProgressCard catalog={catalog} extras={liveExtras} earnedBadges={earnedBadges} nickname={nickname}
+        onOpenProfile={() => document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+
       <section className="stat-block">
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
         {myRows.map((r) => (
@@ -435,7 +439,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       {/* Erfolge sind ein zentrales Element der App - stehen deshalb in der
           Mitte und bekommen die meiste Breite (Kachel-Raster). */}
-      <div className="pf-achievements">
+      <div className="pf-achievements" id="pf-achievements-full">
       <section className="stat-block">
         <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
         {isMe && achievementHint && (
@@ -531,7 +535,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           Identitaets-Karte oben - kein zweiter, weniger sichtbarer Button
           hier noetig. */}
       {isMe && (
-        <button className="btn ghost" onClick={onOpenTurniere}><Trophy size={16} /> {t("Turniere")}</button>
+        <button className="btn ghost tournament-ready-btn" onClick={onOpenTurniere}>
+          <Trophy size={16} /> {t("Turniere")}
+          {/* Bleibt sichtbar, bis das Match tatsaechlich gespielt/gemeldet
+              wurde (tourneyReadyCount kommt direkt aus der DB, siehe
+              checkTourneyReady in App.jsx) - anders als das "Du bist dran"-
+              Popup NICHT per "Später" wegklickbar, damit eine bereite
+              Turnierpaarung nicht in Vergessenheit geraet (Nutzer-Feedback). */}
+          {tourneyReadyCount > 0 && <span className="badge tournament-ready-badge">{tourneyReadyCount}</span>}
+        </button>
       )}
       {isMe && meRow?.role === "admin" && (
         <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>

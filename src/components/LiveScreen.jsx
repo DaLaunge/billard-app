@@ -1,18 +1,29 @@
 import { useState, useEffect, useRef } from "react";
-import { Radio, MapPin, Pencil, X, Swords, ChevronDown } from "lucide-react";
+import { Radio, MapPin, Pencil, X, Swords, ChevronDown, Calendar } from "lucide-react";
 import { t } from "../lib/i18n";
 import PingCard from "./PingCard";
+import PlanungCard from "./PlanungCard";
 import ChallengeCard from "./ChallengeCard";
 import UserPanel from "./widgets/UserPanel";
 
-export default function LiveScreen({ me, pings, challenges, matches, rangliste, players, catalog, earnedBadges,
+export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
+  onCreatePlanning, onDeletePlanning, onReplyPlanning, onUnreplyPlanning,
   onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
   const [loc, setLoc] = useState("");
   const [msg, setMsg] = useState("");
   const [hours, setHours] = useState(3);
+
+  const myPlannings = plannings.filter((p) => p.player_id === me.id);
+  const otherPlannings = plannings.filter((p) => p.player_id !== me.id);
+  const [planDate, setPlanDate] = useState("");
+  const [planMsg, setPlanMsg] = useState("");
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const maxPlanDate = new Date();
+  maxPlanDate.setDate(maxPlanDate.getDate() + 120);
+  const maxPlanISO = maxPlanDate.toISOString().slice(0, 10);
 
   const openChallenges = (challenges || []).filter((c) => c.status === "open" && new Date(c.expires_at) > new Date());
   const challengesToMe = openChallenges.filter((c) => c.challenged_id === me.id);
@@ -63,6 +74,7 @@ export default function LiveScreen({ me, pings, challenges, matches, rangliste, 
 
   const duelleOpen = openSecs.has("duelle");
   const liveOpen = openSecs.has("live");
+  const planungOpen = openSecs.has("planung");
 
   return (
     <div className="screen">
@@ -158,6 +170,57 @@ export default function LiveScreen({ me, pings, challenges, matches, rangliste, 
             {others.length === 0 && !myPing && (
               <p className="hint center" style={{ marginTop: 24 }}>
                 {t("Gerade ist niemand live. Sei du der Erste - dein Eintrag erscheint hier fuer alle sichtbar.")}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="live-section planung">
+        <button className="live-section-head" onClick={() => toggleSec("planung")}>
+          <Calendar size={17} />
+          <span className="live-section-title">{t("Planung")}</span>
+          <span className="live-section-count">{plannings.length}</span>
+          <ChevronDown size={16} className={"cat-chev" + (planungOpen ? " open" : "")} />
+        </button>
+        {planungOpen && (
+          <>
+            <section className="stat-block">
+              <h3><Calendar size={17} /> {t("Planung erstellen")}</h3>
+              <p className="hint" style={{ marginTop: 0 }}>
+                {t("Wann bist du voraussichtlich verfuegbar? Andere koennen dir dann direkt eine Nachricht schicken - spart laestiges Hin-und-Her bei der Terminfindung.")}
+              </p>
+              <div className="search-row">
+                <Calendar size={16} className="mail-ico" />
+                <input type="date" value={planDate} min={todayISO} max={maxPlanISO} aria-label={t("Datum")}
+                  onChange={(e) => setPlanDate(e.target.value)} />
+              </div>
+              <div className="search-row">
+                <Pencil size={16} className="mail-ico" />
+                <input placeholder={t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")} value={planMsg}
+                  maxLength={120} onChange={(e) => setPlanMsg(e.target.value)} />
+              </div>
+              <button className="btn primary" disabled={!planDate}
+                onClick={() => { onCreatePlanning(planDate, planMsg); setPlanDate(""); setPlanMsg(""); }}>
+                <Calendar size={17} /> {t("Planung eintragen")}
+              </button>
+              <p className="hint">{t("Deine Planung verschwindet automatisch nach dem gewaehlten Tag.")}</p>
+            </section>
+
+            {myPlannings.length > 0 && <p className="q" style={{ marginTop: 18 }}>{t("Meine Planungen:")}</p>}
+            {myPlannings.map((p) => (
+              <PlanungCard key={p.id} planning={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                onOpenProfile={onOpenProfile} onDelete={onDeletePlanning} />
+            ))}
+
+            {otherPlannings.length > 0 && <p className="q" style={{ marginTop: 18 }}>{t("Weitere Planungen:")}</p>}
+            {otherPlannings.map((p) => (
+              <PlanungCard key={p.id} planning={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                onOpenProfile={onOpenProfile} onReply={onReplyPlanning} onUnreply={onUnreplyPlanning} />
+            ))}
+            {plannings.length === 0 && (
+              <p className="hint center" style={{ marginTop: 24 }}>
+                {t("Noch keine Planungen. Leg die erste an - dein Eintrag ist fuer alle sichtbar.")}
               </p>
             )}
           </>

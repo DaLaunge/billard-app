@@ -46,8 +46,15 @@ function StaticBracket({ matches, nameOf }) {
         const x1 = e.from.x + BOX_W, y1 = e.from.y + BOX_H / 2;
         const x2 = e.to.x, y2 = e.to.y + e.toH / 2;
         const midX = (x1 + x2) / 2;
+        // Anders als im interaktiven Baum ist hier (Turnier bereits beendet)
+        // JEDE Kante "entschieden" - die dort sinnvolle decided/undecided-
+        // Unterscheidung waere hier bedeutungslos und wuerde jede Abstiegs-
+        // Kante rot+kraeftig einfaerben (kreuz und quer durchs ganze Bild,
+        // Nutzer-Feedback "optisch nicht ansprechend"). Deshalb bewusst
+        // NUR Sieger-Pfade (kind="advance") gold hervorheben, Abstiegs-Pfade
+        // bleiben immer dezent grau gestrichelt.
         return (
-          <path key={i} className={"tb-edge" + (e.decided ? " decided" : "") + (e.kind === "drop" ? " drop" : "")}
+          <path key={i} className={"tb-edge" + (e.kind === "drop" ? " drop" : "")}
             d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`} />
         );
       })}
@@ -63,8 +70,22 @@ function StaticBracket({ matches, nameOf }) {
         const w = isFinal ? FINAL_BOX_W : BOX_W;
         const h = isFinal ? FINAL_BOX_H : BOX_H;
         const n1 = nameOf(m.player1_id) || t("TBD");
-        const n2 = m.is_bye ? t("(Freilos)") : (nameOf(m.player2_id) || t("TBD"));
         const sc = tmScores(m);
+        // Freilos: nur EINE Zeile (der durchmarschierende Spieler), zentriert
+        // statt der vollen Zwei-Zeilen-Aufteilung mit leerem/redundantem
+        // zweiten Namen - eine komplette Box nur fuer "Name + (Freilos)"
+        // wirkte unnoetig ausladend (Nutzer-Feedback "optisch nicht
+        // ansprechend"), siehe auch keine Trennlinie hier (nur ein Spieler).
+        if (m.is_bye) {
+          return (
+            <g key={m.id}>
+              <rect className={"tb-box tb-box--" + m.bracket} x={p.x} y={p.y} width={w} height={h} rx={8} />
+              <text className="tb-name" x={p.x + 10} y={p.y + h * 0.42} dominantBaseline="middle">{n1}</text>
+              <text className="tb-name tb-bye" x={p.x + 10} y={p.y + h * 0.72} dominantBaseline="middle">{t("(Freilos)")}</text>
+            </g>
+          );
+        }
+        const n2 = nameOf(m.player2_id) || t("TBD");
         const row1Y = p.y + h * 0.4, row2Y = p.y + h * 0.78;
         return (
           <g key={m.id}>
