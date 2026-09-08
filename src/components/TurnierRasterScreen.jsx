@@ -69,7 +69,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
       supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
       supabase.from("tournament_matches")
-        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, player1_id, player2_id, score1, score2, confirmed, reported_by, confirmed_by, played_at, discipline, run_log, high_run1, high_run2, avg1, avg2)")
+        .select("id, bracket, round, bracket_position, player1_id, player2_id, is_bye, void, table_number, match_id, winner_id, next_match_id, loser_next_match_id, ready_at, match:matches(id, player1_id, player2_id, score1, score2, confirmed, reported_by, confirmed_by, played_at, discipline, run_log, high_run1, high_run2, avg1, avg2)")
         .eq("tournament_id", tournamentId)
         .order("bracket").order("round").order("bracket_position"),
       supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId),

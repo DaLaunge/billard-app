@@ -64,7 +64,14 @@ begin
     return; -- noch nichts zu tun, wartet auf einen echten Zubringer
   end if;
 
-  update tournament_matches set is_bye = true, winner_id = v_survivor where id = p_match_id;
+  -- Ueberlebende(r) immer nach player1_id normalisieren, player2_id leeren -
+  -- dieselbe Form, die generate_ko_bracket() fuer ganz normale Freilose bei
+  -- der Baum-Erzeugung verwendet. Ohne das wuerde eine Ueberlebende Seite,
+  -- die zufaellig in Slot 2 sass, in dieser Zeile in player2_id verbleiben -
+  -- die Freilos-Anzeige (renderMatch()/renderBoxInner()) geht aber IMMER
+  -- von player1_id als der Freilos-Seite aus und haette dort "TBD" gezeigt.
+  update tournament_matches set is_bye = true, winner_id = v_survivor, player1_id = v_survivor, player2_id = null
+    where id = p_match_id;
 
   if v_m.next_match_id is not null then
     if v_m.next_slot = 1 then
