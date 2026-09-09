@@ -3,6 +3,7 @@ import { TrendingUp, Plus, Search, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { dateMinusDays, todayStr } from "../lib/stats";
 import DevChart from "./DevChart";
+import InfoButton from "./widgets/InfoButton";
 
 const RANGES = [
   { key: "1M", label: "1M", days: 31 },
@@ -105,7 +106,12 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
 
   return (
     <section className="stat-block">
-      <h3><TrendingUp size={17} /> {t("Entwicklung über die Zeit")}</h3>
+      <div className="stat-block-head">
+        <h3><TrendingUp size={17} /> {t("Entwicklung über die Zeit")}</h3>
+        <InfoButton title={t("Entwicklung über die Zeit")}>
+          {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
+        </InfoButton>
+      </div>
       {allDates.length > 0 && (
         <div className="chips small">
           {RANGES.map((r) => (
@@ -157,7 +163,6 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               <button className="btn ghost" onClick={() => { setAddOpen(false); setQuery(""); }}>{t("Fertig")}</button>
             </div>
           )}
-          <p className="hint">{t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}</p>
         </>
       )}
     </section>

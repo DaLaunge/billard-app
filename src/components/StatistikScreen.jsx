@@ -9,6 +9,7 @@ import EntwicklungBlock from "./EntwicklungBlock";
 import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
 import LiveStatusCard from "./widgets/LiveStatusCard";
+import InfoButton from "./widgets/InfoButton";
 import ImprintFooter from "./widgets/ImprintFooter";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
@@ -29,7 +30,7 @@ const COUNT_OPTIONS = [3, 10, "all"];
 // ungekuerzten "rows"-Liste ermittelt (nicht aus "visible") - liegt er
 // ausserhalb der gerade sichtbaren Top-N, wird die eigene Zeile per Trenner
 // angehaengt statt nur als Text erwaehnt.
-function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile, me, count, nearby }) {
+function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile, me, count, nearby, info }) {
   const myIndex = rows.findIndex((p) => p.name === me?.nickname);
   const showNearby = nearby && myIndex >= 0;
   const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
@@ -38,7 +39,10 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
   const pinMyRow = myIndex >= 0 && !myRowShown;
   return (
     <section className="stat-block">
-      <h3>{icon} {title}</h3>
+      <div className="stat-block-head">
+        <h3>{icon} {title}</h3>
+        {info && <InfoButton title={title}>{info}</InfoButton>}
+      </div>
       {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{t("Noch keine Daten.")}</p>}
       {visible.map((p, i) => (
@@ -77,7 +81,12 @@ function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoO
   const pinMyRow = myIndex >= 0 && !myRowShown;
   return (
     <section className="stat-block">
-      <h3><Trophy size={17} /> {t("Rangliste")}</h3>
+      <div className="stat-block-head">
+        <h3><Trophy size={17} /> {t("Rangliste")}</h3>
+        <InfoButton title={t("Rangliste")}>
+          {t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.")}
+        </InfoButton>
+      </div>
       {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
       {visible.map((r, i) => {
@@ -185,7 +194,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     <div className="screen">
       <header className="screen-head">
         <h2>{t("Statistik")}</h2>
-        <span className="head-note">{t("Bestenlisten (bestaetigte Matches)")} · {t("Fargo-Skala - 100 Punkte = 2:1")}</span>
+        <span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span>
       </header>
 
       {pending.map((m) => {
@@ -274,9 +283,11 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
         <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} me={me} count={globalCount} nearby={globalNearby}
-          fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+          fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+          info={t("Anteil gewonnener Einzel-Matches (Siege ÷ Spiele) in der aktuell gewählten Disziplin. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.")} />
         <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me} count={globalCount} nearby={globalNearby}
-          fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+          fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+          info={t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin.")} />
       </div>
       </div>
       </div>
