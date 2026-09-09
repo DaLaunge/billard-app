@@ -153,16 +153,23 @@ function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, o
 
 // Club-weite Rekorde statt der eigenen Zahlen (siehe RecordsCard.jsx im
 // Profil) - fuer jede Kennzahl wird gezeigt, WER sie gerade haelt, nicht
-// nur "wie viel". Jeder Eintrag: Label + eigenes Info-Symbol ganz rechts
-// (Nutzer-Feedback: pro Rekord erklaeren, wie er zustande kommt - je
-// nachdem auch mit einem "Protokoll ansehen"-Button, wenn der Rekord auf
-// ein konkretes Match mit gespeichertem Protokoll zurueckgeht, siehe
-// matchRef unten), darunter entweder eine normale Ranglisten-Zeile
-// (Ball-Avatar + Name + Wert, ein eindeutiger Rekordhalter) oder - bei
-// type "match" (Schnellstes/Laengstes Match) - eine Match-Zeile mit BEIDEN
-// beteiligten Spielern, da so ein Rekord nicht EINER Person allein
-// gehoert. Eintraege ohne Halter (noch keine Daten) werden ausgeblendet
-// statt eine leere/falsche Zeile zu zeigen.
+// nur "wie viel". Als Tabelle statt gestapelter Karten-Zeilen (Nutzer-
+// Feedback: "Alle Informationen in einer Zeile. Die Tabelle soll in der
+// Breite immer gleich sein.") - feste Spaltenbreiten per <colgroup> plus
+// table-layout:fixed halten die Tabellenbreite konstant, ein zu langer
+// Name/Wert bricht per Zeilenvorschub INNERHALB seiner Zelle um (siehe
+// .records-table in App.css) statt die Spalten zu verschieben. Bei type
+// "match" (Schnellstes/Laengstes Match) stehen beide beteiligten Spieler
+// in der Halter-Zelle, da so ein Rekord nicht EINER Person allein gehoert.
+// Eintraege ohne Halter (noch keine Daten) werden ausgeblendet statt eine
+// leere/falsche Zeile zu zeigen.
+// Ergebnisse wie "658:258" haben keine Leerzeichen, an denen ein Zeilen-
+// umbruch natuerlich ansetzen koennte - ohne Hilfe bricht der Browser
+// mitten in der Zahl (z.B. "658:25" / "8"). Ein unsichtbares Zero-Width-
+// Space nach dem Doppelpunkt gibt dem Browser dort einen sauberen, sonst
+// visuell unsichtbaren Umbruchpunkt.
+const breakableValue = (val) => (typeof val === "string" ? val.replace(/:/g, ":​") : val);
+
 function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpenProtokoll }) {
   const shown = records.filter((r) => r.holder);
   return (
@@ -174,40 +181,53 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
         </InfoButton>
       </div>
       {shown.length === 0 && <p className="hint">{t("Noch keine Rekorde.")}</p>}
-      {shown.map(({ key, label, holder, fmt, type, info, matchRef }) => {
-        const hasProtokoll = matchRef?.run_log?.length > 0;
-        return (
-          <div key={key} className="record-entry">
-            <div className="record-entry-head">
-              <p className="record-entry-label">{label}</p>
-              {info && (
-                <InfoButton title={label}
-                  actionLabel={hasProtokoll ? t("Protokoll ansehen") : undefined}
-                  onAction={hasProtokoll ? () => onOpenProtokoll(matchRef) : undefined}>
-                  {info}
-                </InfoButton>
-              )}
-            </div>
-            {type === "match" ? (
-              <div className="match-row">
-                <span className="m-txt">
-                  <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button>
-                  {" vs. "}
-                  <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button>
-                </span>
-                <span className="m-disc">{t(holder.discipline)}</span>
-                <span className="stat-val">{fmt(holder)}</span>
-              </div>
-            ) : (
-              <button className="stat-row as-btn" onClick={() => onOpenProfile(holder.name)}>
-                <Ball color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={30} />
-                <span className="stat-name">{holder.name}</span>
-                <span className="stat-val">{fmt(holder)}</span>
-              </button>
-            )}
-          </div>
-        );
-      })}
+      {shown.length > 0 && (
+        <table className="records-table">
+          <colgroup>
+            <col className="rt-col-label" />
+            <col className="rt-col-holder" />
+            <col className="rt-col-value" />
+            <col className="rt-col-info" />
+          </colgroup>
+          <tbody>
+            {shown.map(({ key, label, holder, fmt, type, info, matchRef }) => {
+              const hasProtokoll = matchRef?.run_log?.length > 0;
+              return (
+                <tr key={key}>
+                  <td className="rt-label">{label}</td>
+                  <td className="rt-holder">
+                    {type === "match" ? (
+                      <span className="rt-match">
+                        <span className="rt-match-names">
+                          <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button>
+                          {" vs. "}
+                          <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button>
+                        </span>
+                        <span className="rt-match-disc">{t(holder.discipline)}</span>
+                      </span>
+                    ) : (
+                      <button className="rt-holder-btn" onClick={() => onOpenProfile(holder.name)}>
+                        <Ball color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={26} />
+                        <span className="rt-name">{holder.name}</span>
+                      </button>
+                    )}
+                  </td>
+                  <td className="rt-value">{breakableValue(fmt(holder))}</td>
+                  <td className="rt-info">
+                    {info && (
+                      <InfoButton title={label}
+                        actionLabel={hasProtokoll ? t("Protokoll ansehen") : undefined}
+                        onAction={hasProtokoll ? () => onOpenProtokoll(matchRef) : undefined}>
+                        {info}
+                      </InfoButton>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </section>
   );
 }

@@ -815,16 +815,34 @@ button.id-card-head { cursor: pointer; }
 .records-grid b { font-size: 15px; }
 .records-grid span { font-size: 10px; color: var(--ivory-dim); line-height: 1.25; }
 .record-emoji { margin-right: 4px; }
-/* Club-weite Rekorde-Karte (StatistikScreen.jsx): Label ueber einer
-   normalen Ranglisten-Zeile statt eines Grid-Feldes wie .records-grid,
-   weil hier jeder Eintrag eine ANDERE Kennzahl mit einem eigenen
-   Rekordhalter zeigt (Ball-Avatar + Name), nicht dieselbe Kennzahl fuer
-   verschiedene Spieler. */
-.record-entry { margin-bottom: 8px; }
-.record-entry:last-child { margin-bottom: 0; }
-.record-entry-head { display: flex; align-items: center; gap: 4px; }
-.record-entry-label { font-size: 12px; color: var(--ivory-dim); margin: 0 2px 2px 0; }
-.record-entry-head .card-info-btn { margin: -4px -2px -2px auto; }
+/* Club-weite Rekorde-Karte (StatistikScreen.jsx): echte <table> statt
+   gestapelter Karten-Zeilen (Nutzer-Feedback: "Alle Informationen in einer
+   Zeile. Die Tabelle soll in der Breite immer gleich sein.") - jeder
+   Eintrag zeigt eine ANDERE Kennzahl mit einem eigenen Rekordhalter
+   (Ball-Avatar + Name), nicht dieselbe Kennzahl fuer verschiedene Spieler.
+   table-layout:fixed + feste Spaltenbreiten im colgroup halten die
+   Tabellenbreite konstant; ein zu langer Name/Wert bricht per
+   Zeilenvorschub INNERHALB seiner Zelle um statt die Spaltenbreite zu
+   verschieben (word-break/overflow-wrap unten). */
+.records-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.records-table td { padding: 7px 2px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.records-table tr:last-child td { border-bottom: none; }
+.rt-col-label { width: 30%; }
+.rt-col-holder { width: 38%; }
+.rt-col-value { width: 22%; }
+.rt-col-info { width: 30px; }
+.rt-label { font-size: 12px; color: var(--ivory-dim); overflow-wrap: break-word; }
+.rt-holder-btn { display: flex; align-items: center; gap: 6px; width: 100%;
+  background: none; border: none; padding: 0; margin: 0; color: inherit;
+  font: inherit; text-align: left; cursor: pointer; }
+.rt-name { font-weight: 600; font-size: 13px; overflow-wrap: break-word; min-width: 0; }
+.rt-match { display: flex; flex-direction: column; gap: 1px; }
+.rt-match-names { font-size: 12.5px; overflow-wrap: break-word; }
+.rt-match-disc { color: var(--ivory-dim); font-size: 11px; }
+.rt-value { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
+  font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: break-word; }
+.rt-info { text-align: right; }
+.rt-info .card-info-btn { margin: 0; }
 
 /* Profil: am Handy Foto+Kennzahlen, dann alle eigenen Statistiken
    zusammen, dann Erfolge - die Konto-Einstellungen (Login, Feedback, Konto
