@@ -26,7 +26,7 @@ export default function PlayerPicker({
   const freqByKey = useMemo(() => recentOpponentFreq(matches, me), [matches, me]);
 
   const candidates = useMemo(() => {
-    const pool = players.filter((p) => !p.is_ghost && !exclude.includes(getKey(p)));
+    const pool = players.filter((p) => !p.is_ghost && !p.is_guest && !exclude.includes(getKey(p)));
     const q = query.trim().toLowerCase();
     const filtered = q ? pool.filter((p) => p.nickname.toLowerCase().includes(q)) : pool;
     const sorted = [...filtered].sort(

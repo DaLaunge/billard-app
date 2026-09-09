@@ -57,7 +57,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
 
   const ghost = players.find((p) => p.is_ghost);
   const opponents = players
-    .filter((p) => p.id !== me.id && !p.is_ghost && !p.blocked)
+    .filter((p) => p.id !== me.id && !p.is_ghost && !p.is_guest && !p.blocked)
     .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
     .sort((a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname));
 
