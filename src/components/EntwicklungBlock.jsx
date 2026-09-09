@@ -110,21 +110,22 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   return (
     <section className="stat-block">
       <h3><TrendingUp size={17} /> {t("Entwicklung über die Zeit")}</h3>
+      {/* Disziplin- und Zeitraum-Auswahl in EINER Zeile statt zwei (Nutzer-
+          Feedback: "auch hier kann man Platz reduzieren") - beide sind
+          gleichwertig kompakte Chips, umbrechen bei Bedarf per flex-wrap. */}
       <div className="chips small">
         {GRAPH_DISCIPLINES.map((d) => (
           <button key={d} className={"chip" + (selDisc === d ? " active" : "")} onClick={() => setSelDisc(d)}>{t(DISC_LABEL[d] || d)}</button>
+        ))}
+        {allDates.length > 0 && RANGES.map((r) => (
+          <button key={r.key} className={"chip" + (rangeKey === r.key ? " active" : "")}
+            onClick={() => setRangeKey(r.key)}>{t(r.label)}</button>
         ))}
       </div>
       {allDates.length === 0 ? (
         <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
         <>
-          <div className="range-row">
-            {RANGES.map((r) => (
-              <button key={r.key} className={"range-btn" + (rangeKey === r.key ? " active" : "")}
-                onClick={() => setRangeKey(r.key)}>{t(r.label)}</button>
-            ))}
-          </div>
           <DevChart dates={visibleDates} lines={lines} />
           <div className="legend">
             {sel.map((nick) => (
