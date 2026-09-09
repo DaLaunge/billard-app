@@ -1075,6 +1075,9 @@ const TRANSLATIONS = {
     "Spieler und komplette Historie gelöscht.": "Player and complete history deleted.",
     "Diese E-Mail-Adresse ist noch nicht bestätigt.": "This email address hasn't been confirmed yet.",
     "Anmeldung fehlgeschlagen – Passwort falsch oder noch keins gesetzt. Nutze den Magic-Link.": "Sign-in failed – wrong password or none set yet. Use the magic link instead.",
+    "Aufnahme": "Inning",
+    "Beendet": "Finished",
+    "Turniername fehlt.": "Tournament name is missing.",
   },
 };
 export function setLangGlobal(l) {
