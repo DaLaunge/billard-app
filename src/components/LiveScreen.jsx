@@ -139,6 +139,8 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
         </div>
       </aside>
 
+      <div className="live-right-col">
+      <div className="live-top-row">
       <div className="live-section duelle">
         <button className="live-section-head" onClick={() => toggleSec("duelle")}>
           <Swords size={17} />
@@ -221,6 +223,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
             )}
           </>
         )}
+      </div>
       </div>
 
       <div className="live-section planung">
@@ -360,6 +363,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
             )}
           </section>
         )}
+      </div>
       </div>
       </div>
       <ImprintFooter />
