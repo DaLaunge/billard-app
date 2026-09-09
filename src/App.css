@@ -851,6 +851,11 @@ button.id-card-head { cursor: pointer; }
    ab 900px zweispaltig. */
 .live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: 20px; }
 .stat-chart-col, .stat-rest-col, .match-selectors, .match-players { min-width: 0; }
+/* Unsichtbare Huellen am Handy (siehe .live-right-col/.live-top-row weiter
+   unten fuer den Grund) - ihre Kinder (Duelle/Pings/Planung/Matches)
+   werden dadurch direkte Flex-Kinder von .live-split und bleiben so in
+   der urspruenglichen Quelltext-Reihenfolge untereinander. */
+.live-right-col, .live-top-row { display: contents; }
 
 /* .stat-right-col fasst Rangliste + "alles andere" (Live-Status,
    Bestenlisten) zu EINEM Grid-Feld zusammen (wie .pf-right-col beim
@@ -940,18 +945,29 @@ button.id-card-head { cursor: pointer; }
      links (dieselbe Konstante), Duelle zentral/breit (der Fokus dieser
      Seite - offene Herausforderungen brauchen mehr Platz fuer Nachricht/
      Antwort), Live-Pings rechts (kompakte Liste, wie die Bestenlisten in
-     der Statistik). */
+     der Statistik), darunter Planung und Letzte Matches ueber die volle
+     Breite. Duelle/Pings/Planung/Matches stecken dafuer in EINEM
+     Grid-Feld (.live-right-col, gleiches Prinzip wie .stat-right-col in
+     der Statistik) statt als vier einzelne mehrzeilige Grid-Kinder:
+     CSS Grid bemisst eine Zeile sonst anhand des hoechsten Elements, das
+     sie beruehrt - das durch alle Zeilen spannende .ov-side (oft sehr
+     hoch durch UserPanel) blaehte dadurch Zeile 1+2 auf, selbst wenn
+     Duelle/Live/Planung gerade eingeklappt und daher kurz sind (Nutzer-
+     Feedback: "sehr viel Zwischenraum, wenn zugeklappt"). Fix identisch
+     zum Statistik-Bug: .live-right-col stapelt seinen Inhalt selbst per
+     Flexbox, dadurch bestimmt nur seine eigene Hoehe (bzw. die von
+     .ov-side) die einzige Grid-Zeile. */
   .phone.app .screen:has(.live-split) { max-width: 1440px; }
   .live-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .live-section.duelle { grid-column: 2; }
-  .live-section.pings { grid-column: 3; }
-  /* Planung braucht sowohl fuers Eintragen-Formular (wie Duelle) als auch
-     fuer die Karten-Liste (wie Live-Pings) ordentlich Platz - bekommt daher
-     die volle Breite ueber beide rechten Spalten, unterhalb von Duelle/Live. */
-  .live-section.planung { grid-column: 2 / 4; grid-row: 2; }
-  /* Letzte Matches (von Statistik hierher verschoben): eigene Filterzeile
-     braucht ebenfalls die volle Breite, steht unterhalb von Planung. */
-  .live-section.matches { grid-column: 2 / 4; grid-row: 3; }
+  .live-split .ov-side { grid-row: 1; }
+  .live-right-col { grid-column: 2 / 4; grid-row: 1; display: flex; flex-direction: column; gap: var(--card-gap); }
+  .live-right-col .live-section { margin-bottom: 0; }
+  /* Duelle zentral/breit (der Fokus - offene Herausforderungen brauchen
+     mehr Platz fuer Nachricht/Antwort), Live-Pings daneben schmal
+     (kompakte Liste), wie zuvor per Grid-Spalte. */
+  .live-top-row { display: flex; align-items: flex-start; gap: 24px; }
+  .live-top-row .live-section.duelle { flex: 1; min-width: 0; }
+  .live-top-row .live-section.pings { flex: 0 0 300px; min-width: 0; }
 
   /* Statistik: duenn-breit-duenn wie Profil - UserPanel links (dieselbe
      Konstante), Verlaufs-Graph zentral/breit (der eigentliche Fokus dieser
