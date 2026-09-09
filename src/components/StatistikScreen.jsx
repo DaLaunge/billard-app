@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Trophy, BarChart3, Flame, Swords, X, FileText, Check, Clock } from "lucide-react";
+import { Trophy, BarChart3, Flame, Swords, X, FileText, Check, Clock, Locate } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { initials, fmtDate, fmtDateTime, sideNames, isDoubles, mSide } from "../lib/format";
@@ -49,12 +49,13 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
           {COUNT_OPTIONS.map((c) => (
             <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
               onClick={() => { setCount(c); setNearby(false); }}>
-              {c === "all" ? t("Alle") : `Top ${c}`}
+              {c === "all" ? t("Alle") : c}
             </button>
           ))}
           {myIndex >= 0 && (
-            <button className={"chip" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}>
-              {t("Meine Umgebung")}
+            <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}
+              aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
+              <Locate size={14} />
             </button>
           )}
         </div>
@@ -109,12 +110,13 @@ function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpe
           {COUNT_OPTIONS.map((c) => (
             <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
               onClick={() => { setCount(c); setNearby(false); }}>
-              {c === "all" ? t("Alle") : `Top ${c}`}
+              {c === "all" ? t("Alle") : c}
             </button>
           ))}
           {myIndex >= 0 && (
-            <button className={"chip" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}>
-              {t("Meine Umgebung")}
+            <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}
+              aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
+              <Locate size={14} />
             </button>
           )}
         </div>
