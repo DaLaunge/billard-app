@@ -153,45 +153,61 @@ function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, o
 
 // Club-weite Rekorde statt der eigenen Zahlen (siehe RecordsCard.jsx im
 // Profil) - fuer jede Kennzahl wird gezeigt, WER sie gerade haelt, nicht
-// nur "wie viel". Jeder Eintrag: Label darueber, darunter entweder eine
-// normale Ranglisten-Zeile (Ball-Avatar + Name + Wert, ein eindeutiger
-// Rekordhalter) oder - bei type "match" (Schnellstes/Laengstes Match) -
-// eine Match-Zeile mit BEIDEN beteiligten Spielern, da so ein Rekord nicht
-// EINER Person allein gehoert. Eintraege ohne Halter (noch keine Daten)
-// werden ausgeblendet statt eine leere/falsche Zeile zu zeigen.
-function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile }) {
+// nur "wie viel". Jeder Eintrag: Label + eigenes Info-Symbol ganz rechts
+// (Nutzer-Feedback: pro Rekord erklaeren, wie er zustande kommt - je
+// nachdem auch mit einem "Protokoll ansehen"-Button, wenn der Rekord auf
+// ein konkretes Match mit gespeichertem Protokoll zurueckgeht, siehe
+// matchRef unten), darunter entweder eine normale Ranglisten-Zeile
+// (Ball-Avatar + Name + Wert, ein eindeutiger Rekordhalter) oder - bei
+// type "match" (Schnellstes/Laengstes Match) - eine Match-Zeile mit BEIDEN
+// beteiligten Spielern, da so ein Rekord nicht EINER Person allein
+// gehoert. Eintraege ohne Halter (noch keine Daten) werden ausgeblendet
+// statt eine leere/falsche Zeile zu zeigen.
+function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpenProtokoll }) {
   const shown = records.filter((r) => r.holder);
   return (
     <section className="stat-block">
       <div className="stat-block-head">
         <h3><Star size={17} /> {t("Rekorde")}</h3>
         <InfoButton title={t("Rekorde")}>
-          {t("Aktuelle Bestwerte der gesamten Gruppe aus allen bestätigten Einzel-Matches (bzw. dem bisherigen Rating-Verlauf beim Rating-Rekord) - wer hält gerade welchen Rekord? Schnellstes/Längstes Match zählen nur Matches mit gespeichertem Zeit-Protokoll (über den digitalen Zähler gemeldet) und sind unabhängig von der Disziplin-Auswahl oben, genau wie alle anderen Rekorde dieser Karte. Höchster Sieg gibt es getrennt für 14/1 (zählt in Punkten statt Racks, daher meist viel höhere Zahlen) und alle anderen Disziplinen.")}
+          {t("Aktuelle Bestwerte der gesamten Gruppe - wer hält gerade welchen Rekord? Jede Zeile hat rechts ihr eigenes Info-Symbol mit genauerer Erklärung (und, wenn vorhanden, dem zugehörigen Match-Protokoll).")}
         </InfoButton>
       </div>
       {shown.length === 0 && <p className="hint">{t("Noch keine Rekorde.")}</p>}
-      {shown.map(({ key, label, holder, fmt, type }) => (
-        <div key={key} className="record-entry">
-          <p className="record-entry-label">{label}</p>
-          {type === "match" ? (
-            <div className="match-row">
-              <span className="m-txt">
-                <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button>
-                {" vs. "}
-                <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button>
-              </span>
-              <span className="m-disc">{t(holder.discipline)}</span>
-              <span className="stat-val">{fmt(holder)}</span>
+      {shown.map(({ key, label, holder, fmt, type, info, matchRef }) => {
+        const hasProtokoll = matchRef?.run_log?.length > 0;
+        return (
+          <div key={key} className="record-entry">
+            <div className="record-entry-head">
+              <p className="record-entry-label">{label}</p>
+              {info && (
+                <InfoButton title={label}
+                  actionLabel={hasProtokoll ? t("Protokoll ansehen") : undefined}
+                  onAction={hasProtokoll ? () => onOpenProtokoll(matchRef) : undefined}>
+                  {info}
+                </InfoButton>
+              )}
             </div>
-          ) : (
-            <button className="stat-row as-btn" onClick={() => onOpenProfile(holder.name)}>
-              <Ball color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={30} />
-              <span className="stat-name">{holder.name}</span>
-              <span className="stat-val">{fmt(holder)}</span>
-            </button>
-          )}
-        </div>
-      ))}
+            {type === "match" ? (
+              <div className="match-row">
+                <span className="m-txt">
+                  <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button>
+                  {" vs. "}
+                  <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button>
+                </span>
+                <span className="m-disc">{t(holder.discipline)}</span>
+                <span className="stat-val">{fmt(holder)}</span>
+              </div>
+            ) : (
+              <button className="stat-row as-btn" onClick={() => onOpenProfile(holder.name)}>
+                <Ball color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={30} />
+                <span className="stat-name">{holder.name}</span>
+                <span className="stat-val">{fmt(holder)}</span>
+              </button>
+            )}
+          </div>
+        );
+      })}
     </section>
   );
 }
@@ -284,6 +300,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // und wuerde in einer gemeinsamen Rangliste jede andere Disziplin immer
   // haushoch schlagen - daher zwei getrennte Rekorde statt einem: "Höchster
   // Sieg" fuer 8/9/10-Ball, "Höchster Sieg (14/1)" separat fuer 14/1.
+  // Bei Gleichstand (z.B. mehrere 5:0-Ergebnisse in einer kurzen Disziplin)
+  // gewinnt der/die Erste, der/die diesen Wert erreicht hat - nicht wer im
+  // (neueste-zuerst sortierten) matches-Array zuerst auftaucht (Nutzer-
+  // Feedback: "zählt der Rekord der Person, die dieses Ergebnis als erstes
+  // erreicht hat"). match wird mitgefuehrt, damit die Info-Zeile bei
+  // vorhandenem Protokoll einen "Protokoll ansehen"-Button anbieten kann.
   const biggestWinBy = (disciplineFilter) => {
     let best = null;
     matches.forEach((m) => {
@@ -291,16 +313,36 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       if (!disciplineFilter(m.discipline)) return;
       const diff = Math.abs(m.score1 - m.score2);
       if (diff === 0) return;
-      if (!best || diff > best.diff) {
+      const better = !best || diff > best.diff ||
+        (diff === best.diff && new Date(m.played_at) < new Date(best.match.played_at));
+      if (better) {
         const p1Won = m.score1 > m.score2;
         best = { name: p1Won ? m.p1.nickname : m.p2.nickname, diff,
-          score: `${Math.max(m.score1, m.score2)}:${Math.min(m.score1, m.score2)}` };
+          score: `${Math.max(m.score1, m.score2)}:${Math.min(m.score1, m.score2)}`, match: m };
       }
     });
     return best;
   };
   const biggestWin = useMemo(() => biggestWinBy((d) => d !== "14/1 Endlos"), [matches]);
   const biggestWin141 = useMemo(() => biggestWinBy((d) => d === "14/1 Endlos"), [matches]);
+
+  // Hoechste 14/1-Serie mitsamt Quellmatch (topExtra("highRun") kannte nur
+  // den Wert, nicht welches Match dazu gehoert - fuer den Protokoll-Link
+  // hier direkt aus high_run1/high_run2 neu berechnet). Gleicher Gleichstand-
+  // Grundsatz wie oben: wer zuerst so weit kam, haelt den Rekord.
+  const highRunRecord = useMemo(() => {
+    let best = null;
+    matches.forEach((m) => {
+      if (m.player1b_id) return;
+      [[m.high_run1, m.p1?.nickname], [m.high_run2, m.p2?.nickname]].forEach(([run, name]) => {
+        if (run == null || run <= 0 || !name) return;
+        const better = !best || run > best.highRun ||
+          (run === best.highRun && new Date(m.played_at) < new Date(best.match.played_at));
+        if (better) best = { name, highRun: run, match: m };
+      });
+    });
+    return best;
+  }, [matches]);
 
   // Hoechstes je erreichtes Gesamt-Rating: sowohl aus dem taeglichen
   // Snapshot-Verlauf als auch dem aktuellen Stand (falls das heutige
@@ -344,32 +386,52 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       if (m.player1b_id) return;
       const ms = matchDurationMs(m.run_log);
       if (ms == null || ms < MIN_MATCH_MS || ms > MAX_MATCH_MS) return;
-      list.push({ p1Name: m.p1.nickname, p2Name: m.p2.nickname, discipline: m.discipline, ms });
+      list.push({ p1Name: m.p1.nickname, p2Name: m.p2.nickname, discipline: m.discipline, ms, match: m });
     });
     return list;
   }, [matches]);
-  const fastestMatch = useMemo(
-    () => matchDurations.reduce((best, m) => (!best || m.ms < best.ms ? m : best), null),
-    [matchDurations]
-  );
-  const longestMatch = useMemo(
-    () => matchDurations.reduce((best, m) => (!best || m.ms > best.ms ? m : best), null),
-    [matchDurations]
-  );
+  // Gleichstand-Faelle (auf die Sekunde selten, aber moeglich): frueheres
+  // Match gewinnt, gleicher Grundsatz wie bei biggestWinBy/highRunRecord.
+  const pickExtreme = (list, isBetter) => list.reduce((best, cur) => {
+    if (!best) return cur;
+    if (isBetter(cur.ms, best.ms)) return cur;
+    if (cur.ms === best.ms && new Date(cur.match.played_at) < new Date(best.match.played_at)) return cur;
+    return best;
+  }, null);
+  const fastestMatch = useMemo(() => pickExtreme(matchDurations, (a, b) => a < b), [matchDurations]);
+  const longestMatch = useMemo(() => pickExtreme(matchDurations, (a, b) => a > b), [matchDurations]);
 
+  // info: Erklaerungstext im per-Zeile Info-Button (Nutzer-Feedback: "füge
+  // bei jedem einzelnen Rekord einen Info-Badge ganz rechts hinzu"). matchRef
+  // ist, wo vorhanden, das konkrete Match, aus dem der Rekord stammt - hat es
+  // ein gespeichertes Zeit-Protokoll, bietet RecordsBoard dort automatisch
+  // "Protokoll ansehen" an. Kennzahlen ohne einzelnes Quellmatch (Serien,
+  // Zaehler ueber mehrere Matches hinweg) haben nur einen Erklaerungstext.
   const recordRows = [
-    { key: "highRun", label: t("Höchstserie 14/1"), holder: topExtra("highRun"), fmt: (h) => h.highRun },
-    { key: "longestStreak", label: t("Beste Serie"), holder: topExtra("longestStreak"), fmt: (h) => h.longestStreak },
-    { key: "shutoutWins", label: t("Zu-Null-Siege"), holder: topExtra("shutoutWins"), fmt: (h) => h.shutoutWins },
-    { key: "maxVsOpponent", label: t("Rekord geg. 1 Gegner"), holder: topExtra("maxVsOpponent"), fmt: (h) => h.maxVsOpponent },
-    { key: "maxPerDay", label: t("Meiste an 1 Tag"), holder: topExtra("maxPerDay"), fmt: (h) => h.maxPerDay },
-    { key: "recruitedCount", label: t("Geworben"), holder: topExtra("recruitedCount"), fmt: (h) => h.recruitedCount },
-    { key: "biggestWin", label: t("Höchster Sieg"), holder: biggestWin, fmt: (h) => h.score },
-    { key: "biggestWin141", label: t("Höchster Sieg (14/1)"), holder: biggestWin141, fmt: (h) => h.score },
-    { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => h.rating },
-    { key: "mostGames", label: t("Meiste Matches gesamt"), holder: mostGames, fmt: (h) => h.spiele },
-    { key: "fastestMatch", label: t("Schnellstes Match"), holder: fastestMatch, fmt: (h) => fmtDuration(h.ms), type: "match" },
-    { key: "longestMatch", label: t("Längstes Match"), holder: longestMatch, fmt: (h) => fmtDuration(h.ms), type: "match" },
+    { key: "highRun", label: t("Höchstserie 14/1"), holder: highRunRecord, fmt: (h) => h.highRun, matchRef: highRunRecord?.match,
+      info: t("Höchste ununterbrochene Serie in einer Partie 14/1 Endlos. Bei Gleichstand zählt, wer diese Serie zuerst erreicht hat.") },
+    { key: "longestStreak", label: t("Beste Serie"), holder: topExtra("longestStreak"), fmt: (h) => h.longestStreak,
+      info: t("Längste ununterbrochene Siegesserie (aufeinanderfolgende gewonnene Matches, unabhängig vom Gegner).") },
+    { key: "shutoutWins", label: t("Zu-Null-Siege"), holder: topExtra("shutoutWins"), fmt: (h) => h.shutoutWins,
+      info: t("Anzahl gewonnener Matches, bei denen der Gegner 0 Punkte bzw. Racks erzielt hat.") },
+    { key: "maxVsOpponent", label: t("Rekord geg. 1 Gegner"), holder: topExtra("maxVsOpponent"), fmt: (h) => h.maxVsOpponent,
+      info: t("Meiste Matches, die eine Person gegen ein und denselben Gegner gewonnen hat.") },
+    { key: "maxPerDay", label: t("Meiste an 1 Tag"), holder: topExtra("maxPerDay"), fmt: (h) => h.maxPerDay,
+      info: t("Meiste an einem einzigen Kalendertag gewonnene Matches.") },
+    { key: "recruitedCount", label: t("Geworben"), holder: topExtra("recruitedCount"), fmt: (h) => h.recruitedCount,
+      info: t("Anzahl neuer Mitglieder, die über den eigenen Einladungslink beigetreten sind.") },
+    { key: "biggestWin", label: t("Höchster Sieg"), holder: biggestWin, fmt: (h) => h.score, matchRef: biggestWin?.match,
+      info: t("Größter Punkte- bzw. Rack-Abstand in einem Einzel-Match (alle Disziplinen außer 14/1 Endlos). Bei Gleichstand zählt, wer dieses Ergebnis zuerst erreicht hat.") },
+    { key: "biggestWin141", label: t("Höchster Sieg (14/1)"), holder: biggestWin141, fmt: (h) => h.score, matchRef: biggestWin141?.match,
+      info: t("Größter Punkteabstand in einem Einzel-Match der Disziplin 14/1 Endlos (zählt in Punkten, daher meist deutlich höhere Werte als in anderen Disziplinen). Bei Gleichstand zählt, wer dieses Ergebnis zuerst erreicht hat.") },
+    { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => h.rating,
+      info: t("Höchstes je erreichtes Gesamt-Rating, aus dem täglichen Verlauf oder dem aktuellen Stand.") },
+    { key: "mostGames", label: t("Meiste Matches gesamt"), holder: mostGames, fmt: (h) => h.spiele,
+      info: t("Meiste bestätigte Matches insgesamt, über alle Disziplinen.") },
+    { key: "fastestMatch", label: t("Schnellstes Match"), holder: fastestMatch, fmt: (h) => fmtDuration(h.ms), type: "match", matchRef: fastestMatch?.match,
+      info: t("Kürzeste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
+    { key: "longestMatch", label: t("Längstes Match"), holder: longestMatch, fmt: (h) => fmtDuration(h.ms), type: "match", matchRef: longestMatch?.match,
+      info: t("Längste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
   ];
 
   return (
@@ -500,7 +562,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           Graphen statt am Ende der rechten Spalte). */}
       <div className="stat-chart-col">
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} disc={globalDisc} />
-      <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+      <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} />
       </div>
       </div>
       <ImprintFooter />
