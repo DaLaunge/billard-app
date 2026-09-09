@@ -244,21 +244,25 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         </div>
       )}
 
+      <div className="stat-split">
+      {/* .stat-right-col buendelt die globale Auswahl + Rangliste + "Rest"
+          (siehe unten) zu EINER Huelle: am Handy per CSS unsichtbar
+          (display:contents), dort ordnen sich ihre Kinder ueber "order"
+          direkt in .stat-split ein (globale Auswahl zuerst, dann Rangliste
+          - Nutzer-Feedback: Gesamt-Rangliste soll am Handy gleich danach
+          an erster Stelle stehen, ohne eigenen "order" faellt die globale
+          Auswahl automatisch auf order:0 zurueck und bleibt damit vorn).
+          Am Desktop wird daraus ein einziges Grid-Feld mit eigenem
+          Flex-Stapel (siehe App.css) - das verhindert den Grid-Zeilen-
+          Kopplungs-Bug (leere Luecke vor "Meiste Siege", weil die viel
+          hoehere Chart-Spalte sonst dieselbe Grid-Zeile wie die kurze
+          Rangliste aufblaeht) UND stellt die globale Auswahl (Nutzer-
+          Feedback) ganz oben in die rechte Spalte statt als eigene volle
+          Zeile ueber allen drei Spalten. */}
+      <div className="stat-right-col">
       <StatGlobalFilter disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
         count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
         me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-
-      <div className="stat-split">
-      {/* .stat-right-col buendelt Rangliste + "Rest" (siehe unten) zu EINER
-          Huelle: am Handy per CSS unsichtbar (display:contents), dort
-          ordnen sich ihre beiden Kinder ueber "order" direkt in .stat-split
-          ein (Rangliste zuerst - Nutzer-Feedback: Gesamt-Rangliste soll am
-          Handy an erster Stelle stehen). Am Desktop wird daraus ein
-          einziges Grid-Feld mit eigenem Flex-Stapel (siehe App.css) - das
-          verhindert den Grid-Zeilen-Kopplungs-Bug (leere Luecke vor
-          "Meiste Siege", weil die viel hoehere Chart-Spalte sonst dieselbe
-          Grid-Zeile wie die kurze Rangliste aufblaeht). */}
-      <div className="stat-right-col">
       <div className="stat-ranking-col">
         <RankingBlock rangliste={rangliste} disc={globalDisc} count={globalCount} nearby={globalNearby} me={me}
           colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />

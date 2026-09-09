@@ -854,8 +854,10 @@ button.id-card-head { cursor: pointer; }
    addiert sich der eigene margin-bottom:var(--card-gap) der Rangliste-
    Karte zum flex-gap von .stat-split/.stat-right-col dazu und der Abstand
    zur naechsten Karte wird doppelt so gross wie ueberall sonst
-   (Nutzer-Feedback: "Karten haben immer noch unterschiedliche Luecken"). */
-.stat-ranking-col .stat-block { margin-bottom: 0; }
+   (Nutzer-Feedback: "Karten haben immer noch unterschiedliche Luecken").
+   Gleicher Grund fuer .stat-global-filter (jetzt ebenfalls direktes
+   Flex-Kind von .stat-right-col, siehe StatistikScreen.jsx). */
+.stat-ranking-col .stat-block, .stat-global-filter { margin-bottom: 0; }
 
 /* ===== Desktop: breitere Flaeche, Statistik zweispaltig =====
    Nur aktiv, wenn eingeloggt (.phone.app) - Login/Ladebildschirm bleiben
@@ -939,10 +941,10 @@ button.id-card-head { cursor: pointer; }
   /* Statistik: duenn-breit-duenn wie Profil - UserPanel links (dieselbe
      Konstante), Verlaufs-Graph zentral/breit (der eigentliche Fokus dieser
      Seite - Letzte Matches sind in den Live-Menuepunkt gewandert), rechts
-     die Rangliste, Live-Status und die reinen Bestenlisten ("alles
-     andere") gestapelt statt gequetscht nebeneinander. Die globale
-     Disziplin-/Top-N-Auswahl (.stat-global-filter) steht als eigene,
-     schmale Karte VOR diesem Grid, ueber die volle Seitenbreite. */
+     ganz oben die globale Disziplin-/Top-N-Auswahl (Nutzer-Feedback: dort
+     statt als eigene volle Zeile ueber allen drei Spalten), darunter die
+     Rangliste, Live-Status und die reinen Bestenlisten ("alles andere")
+     gestapelt statt gequetscht nebeneinander. */
   .phone.app .screen:has(.stat-split) { max-width: 1440px; }
   .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
   .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
@@ -963,7 +965,7 @@ button.id-card-head { cursor: pointer; }
      Handy VOR der Chart-Spalte stehen soll, waehrend der Rest danach folgt -
      das leistet dort "order" auf den einzelnen Kindern. */
   .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); }
-  .stat-ranking-col, .stat-chart-col, .stat-rest-col { order: 0; }
+  .stat-global-filter, .stat-ranking-col, .stat-chart-col, .stat-rest-col { order: 0; }
   .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
