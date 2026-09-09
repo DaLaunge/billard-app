@@ -468,7 +468,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         <LeaderboardBlock icon={<Timer size={17} />} title={t("Schnellstes 14/1-Tempo (Ø pro Kugel)")} rows={topBallSpeed} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => fmtDuration(p.avgBallMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
           info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} />
-        <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
       </div>
       </div>
       </div>
@@ -488,9 +487,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </aside>
 
       {/* Mittlere Spalte: der Verlaufs-Graph - der eigentliche Fokus dieser
-          Seite (Letzte Matches sind in den Live-Menuepunkt gewandert). */}
+          Seite (Letzte Matches sind in den Live-Menuepunkt gewandert) -
+          darunter die Rekorde-Karte (Nutzer-Feedback: direkt unter dem
+          Graphen statt am Ende der rechten Spalte). */}
       <div className="stat-chart-col">
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} disc={globalDisc} />
+      <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
       </div>
       </div>
       <ImprintFooter />
