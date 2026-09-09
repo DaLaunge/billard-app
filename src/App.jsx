@@ -142,8 +142,9 @@ export default function App() {
   // App pruefen; sonst alle 30/60 Min per Timer; "manual" = nur per Klick in
   // den Profileinstellungen. Ein gefundenes Update wird per Reload angewendet,
   // aber erst NACHDEM die Uebersicht einmal fertig geladen hat (initialLoadDone)
-  // und nie waehrend einer laufenden Matcheingabe oder des Erfolgs-Popups
-  // (siehe Effekt unten). Wichtig: registerType "autoUpdate" (vite.config.js)
+  // und nie waehrend einer laufenden Matcheingabe, eines laufenden Winner-
+  // Stays-Spiels oder des Erfolgs-Popups (siehe Effekt unten) - sonst gehen
+  // unbestaetigte Ergebnisse verloren. Wichtig: registerType "autoUpdate" (vite.config.js)
   // ruft bei gefundenem Update intern SOFORT window.location.reload() auf,
   // sobald keine eigene onNeedReload-Callback uebergeben wird - darum hier
   // NICHT ohne onNeedReload arbeiten, sonst reisst ein Update-Check die gerade
@@ -176,7 +177,11 @@ export default function App() {
   useEffect(() => {
     // Auch das Erfolgs-Popup nicht durch einen Reload wegreissen - sobald es
     // geschlossen wird, greift dieser Effekt erneut und holt das Update nach.
-    if (needReload && initialLoadDone && tab !== "match" && !celebrate) window.location.reload();
+    // "winnerstays" haelt wie "match" unbestaetigte Live-Eingaben (sA/sB in
+    // WinnerStaysScreen), die bei einem Reload verloren gehen wuerden - beide
+    // Screens muessen daher ein Update blockieren, bis man sie verlaesst.
+    const midEntry = tab === "match" || tab === "winnerstays";
+    if (needReload && initialLoadDone && !midEntry && !celebrate) window.location.reload();
   }, [needReload, initialLoadDone, tab, celebrate]);
 
   const toast = useCallback((msg) => {
