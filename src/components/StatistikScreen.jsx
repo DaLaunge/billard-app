@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
-import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal } from "lucide-react";
+import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
-import { initials, fmtDate, isDoubles, mSide } from "../lib/format";
+import { initials, fmtDate, fmtDuration, isDoubles, mSide } from "../lib/format";
+import { computeSpeedStats } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
@@ -190,6 +191,26 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     [stats]
   );
 
+  // Spielgeschwindigkeit: unabhaengig von der globalen Disziplin-Auswahl,
+  // weil die beiden Werte je schon fix auf eine Protokoll-Art festgelegt
+  // sind (Zeit/Spiel nur bei 8/9/10-Ball-Zaehler-Protokollen, Zeit/Kugel nur
+  // bei 14/1) - "Doppel" waere hier immer leer, genau wie beim Verlaufs-
+  // Graphen gibt es daher bewusst keine Kopplung an globalDisc. Wie bei
+  // "Beste Siegquote" erst ab ein paar Matches mit Protokoll gelistet,
+  // damit ein einzelnes (unrepraesentatives) Match den Schnitt nicht verzerrt.
+  const speedStats = useMemo(
+    () => players.map((p) => ({ name: p.nickname, ...computeSpeedStats(matches, p.id) })),
+    [players, matches]
+  );
+  const topGameSpeed = useMemo(
+    () => speedStats.filter((p) => p.avgGameMs != null && p.gameSampleMatches >= 3).sort((a, b) => a.avgGameMs - b.avgGameMs),
+    [speedStats]
+  );
+  const topBallSpeed = useMemo(
+    () => speedStats.filter((p) => p.avgBallMs != null && p.ballSampleMatches >= 3).sort((a, b) => a.avgBallMs - b.avgBallMs),
+    [speedStats]
+  );
+
   return (
     <div className="screen">
       <header className="screen-head">
@@ -288,6 +309,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
           info={t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin.")} />
+        <LeaderboardBlock icon={<Zap size={17} />} title={t("Schnellstes Tempo (Ø pro Spiel)")} rows={topGameSpeed} me={me} count={globalCount} nearby={globalNearby}
+          fmt={(p) => fmtDuration(p.avgGameMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+          info={t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Erst ab 3 Matches mit Protokoll gelistet, damit der Schnitt aussagekräftig ist.")} />
+        <LeaderboardBlock icon={<Timer size={17} />} title={t("Schnellstes 14/1-Tempo (Ø pro Kugel)")} rows={topBallSpeed} me={me} count={globalCount} nearby={globalNearby}
+          fmt={(p) => fmtDuration(p.avgBallMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+          info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Erst ab 3 Matches mit Protokoll gelistet, damit der Schnitt aussagekräftig ist.")} />
       </div>
       </div>
       </div>
