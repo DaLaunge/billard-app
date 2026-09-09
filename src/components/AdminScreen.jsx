@@ -133,6 +133,11 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     if (deleteConfirmText.trim() !== p.nickname) { toast(t("Spielername stimmt nicht überein.")); return; }
     if (!window.confirm(t("Bist du sicher? {name} wird UNWIDERRUFLICH mit der kompletten Historie (Matches, Erfolge, Ratings, Turnierteilnahmen, ...) gelöscht.", { name: p.nickname }))) return;
     setBusyDelete(true);
+    // Profilfoto zuerst ueber die Storage-API entfernen - ein direktes
+    // SQL-DELETE auf storage.objects blockiert Supabase inzwischen
+    // (siehe 2026-09-09d_fix_avatar_storage_delete.sql). Bestfall-Aufruf:
+    // schlaegt er fehl (z.B. kein Foto vorhanden), wird trotzdem geloescht.
+    await supabase.storage.from("avatars").remove([`${p.player_id}.jpg`]);
     const { error } = await supabase.rpc("admin_delete_player", { p_player: p.player_id, p_confirm_nickname: deleteConfirmText.trim() });
     setBusyDelete(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
