@@ -1,5 +1,10 @@
 export const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-export const APP_VERSION = "256";  // bei jedem Release erhöhen
+// Kurzform fuer Disziplin-Chips app-weit (Nutzer-Feedback: so wenig Platz
+// wie moeglich, vor allem am Handy) - der volle Name bleibt der eigentliche
+// Wert fuer Filterung/State, nur die ANZEIGE wird abgekuerzt. Verwendung:
+// t(DISC_LABEL[d] || d) statt t(d) an jeder Disziplin-Chip-Stelle.
+export const DISC_LABEL = { "Gesamt": "Alle", "8 Ball": "8B", "9 Ball": "9B", "10 Ball": "10B", "14/1 Endlos": "14/1" };
+export const APP_VERSION = "257";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim

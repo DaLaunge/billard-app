@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Plus, Search, Trophy, X } from "lucide-react
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
-import { DEFAULT_DISCIPLINES } from "../lib/constants";
+import { DEFAULT_DISCIPLINES, DISC_LABEL } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
 
 const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
@@ -137,7 +137,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onBack }) {
             <p className="hint" style={{ marginBottom: 4 }}>{t("Disziplin")}</p>
             <div className="chips small">
               {DEFAULT_DISCIPLINES.map((d) => (
-                <button key={d} className={"chip" + (discipline === d ? " active" : "")} onClick={() => setDiscipline(d)}>{t(d)}</button>
+                <button key={d} className={"chip" + (discipline === d ? " active" : "")} onClick={() => setDiscipline(d)}>{t(DISC_LABEL[d] || d)}</button>
               ))}
             </div>
 
