@@ -806,10 +806,6 @@ button.id-card-head { cursor: pointer; }
 .id-card-decay-warn.warn-pulse:hover { background: #F5C543; }
 .id-card-kpis { margin-top: 14px; }
 .id-card-kpis + * { margin-top: 14px; }
-.dash-live { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; width: 100%;
-  background: color-mix(in srgb, var(--loss) 20%, transparent);
-  border: 1px solid color-mix(in srgb, var(--loss) 45%, transparent);
-  color: var(--ivory); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left; }
 .records-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 8px; }
 .records-grid div { display: flex; flex-direction: column; gap: 1px; }
 .records-grid b { font-size: 15px; }
