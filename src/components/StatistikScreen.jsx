@@ -195,19 +195,28 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // weil die beiden Werte je schon fix auf eine Protokoll-Art festgelegt
   // sind (Zeit/Spiel nur bei 8/9/10-Ball-Zaehler-Protokollen, Zeit/Kugel nur
   // bei 14/1) - "Doppel" waere hier immer leer, genau wie beim Verlaufs-
-  // Graphen gibt es daher bewusst keine Kopplung an globalDisc. Wie bei
-  // "Beste Siegquote" erst ab ein paar Matches mit Protokoll gelistet,
-  // damit ein einzelnes (unrepraesentatives) Match den Schnitt nicht verzerrt.
+  // Graphen gibt es daher bewusst keine Kopplung an globalDisc.
+  //
+  // KEIN Mindest-Match-Filter wie bei "Beste Siegquote" (dort >= 10 Spiele):
+  // gueltige Zeitstempel gibt es nur bei Matches, die live ueber den
+  // digitalen Zaehler gespielt wurden (nicht bei nachgetragenen/manuell
+  // erfassten Matches) UND deren Tempo die Plausibilitaetsgrenze in
+  // ballSpeedSums()/gameSpeedSums() besteht (lib/runLog.js) - das ist schon
+  // ein deutlich kleinerer, aber dafuer verlaesslicher Pool. Ein zusaetzliches
+  // ">= 3 Matches" liess die Listen praktisch immer leer bleiben (Nutzer-
+  // Feedback: "egal was ich einstelle, keine Werte"), weil kaum ein Spieler
+  // bisher so viele qualifizierende Matches hat - avgGameMs/avgBallMs sind
+  // bereits null ohne jeden Treffer, das reicht als Filter.
   const speedStats = useMemo(
     () => players.map((p) => ({ name: p.nickname, ...computeSpeedStats(matches, p.id) })),
     [players, matches]
   );
   const topGameSpeed = useMemo(
-    () => speedStats.filter((p) => p.avgGameMs != null && p.gameSampleMatches >= 3).sort((a, b) => a.avgGameMs - b.avgGameMs),
+    () => speedStats.filter((p) => p.avgGameMs != null).sort((a, b) => a.avgGameMs - b.avgGameMs),
     [speedStats]
   );
   const topBallSpeed = useMemo(
-    () => speedStats.filter((p) => p.avgBallMs != null && p.ballSampleMatches >= 3).sort((a, b) => a.avgBallMs - b.avgBallMs),
+    () => speedStats.filter((p) => p.avgBallMs != null).sort((a, b) => a.avgBallMs - b.avgBallMs),
     [speedStats]
   );
 
@@ -311,10 +320,10 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           info={t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin.")} />
         <LeaderboardBlock icon={<Zap size={17} />} title={t("Schnellstes Tempo (Ø pro Spiel)")} rows={topGameSpeed} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => fmtDuration(p.avgGameMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-          info={t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Erst ab 3 Matches mit Protokoll gelistet, damit der Schnitt aussagekräftig ist.")} />
+          info={t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} />
         <LeaderboardBlock icon={<Timer size={17} />} title={t("Schnellstes 14/1-Tempo (Ø pro Kugel)")} rows={topBallSpeed} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => fmtDuration(p.avgBallMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-          info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Erst ab 3 Matches mit Protokoll gelistet, damit der Schnitt aussagekräftig ist.")} />
+          info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} />
       </div>
       </div>
       </div>
