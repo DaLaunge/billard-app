@@ -166,7 +166,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile }) {
       <div className="stat-block-head">
         <h3><Star size={17} /> {t("Rekorde")}</h3>
         <InfoButton title={t("Rekorde")}>
-          {t("Aktuelle Bestwerte der gesamten Gruppe aus allen bestätigten Einzel-Matches (bzw. dem bisherigen Rating-Verlauf beim Rating-Rekord) - wer hält gerade welchen Rekord? Schnellstes/Längstes Match zählen nur Matches mit gespeichertem Zeit-Protokoll (über den digitalen Zähler gemeldet) und sind unabhängig von der Disziplin-Auswahl oben, genau wie alle anderen Rekorde dieser Karte.")}
+          {t("Aktuelle Bestwerte der gesamten Gruppe aus allen bestätigten Einzel-Matches (bzw. dem bisherigen Rating-Verlauf beim Rating-Rekord) - wer hält gerade welchen Rekord? Schnellstes/Längstes Match zählen nur Matches mit gespeichertem Zeit-Protokoll (über den digitalen Zähler gemeldet) und sind unabhängig von der Disziplin-Auswahl oben, genau wie alle anderen Rekorde dieser Karte. Höchster Sieg gibt es getrennt für 14/1 (zählt in Punkten statt Racks, daher meist viel höhere Zahlen) und alle anderen Disziplinen.")}
         </InfoButton>
       </div>
       {shown.length === 0 && <p className="hint">{t("Noch keine Rekorde.")}</p>}
@@ -279,11 +279,16 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
   // Groesster Punkteabstand in einem Einzel-Match (wie computeStats/
   // computeAchievementExtras nur Einzel - bei Doppel gaebe es zwei Namen
-  // statt eines eindeutigen Rekordhalters).
-  const biggestWin = useMemo(() => {
+  // statt eines eindeutigen Rekordhalters). 14/1 Endlos zaehlt in Punkten
+  // statt Racks (typisch dreistellig, siehe "658:258" im Testdatensatz)
+  // und wuerde in einer gemeinsamen Rangliste jede andere Disziplin immer
+  // haushoch schlagen - daher zwei getrennte Rekorde statt einem: "Höchster
+  // Sieg" fuer 8/9/10-Ball, "Höchster Sieg (14/1)" separat fuer 14/1.
+  const biggestWinBy = (disciplineFilter) => {
     let best = null;
     matches.forEach((m) => {
       if (m.player1b_id) return;
+      if (!disciplineFilter(m.discipline)) return;
       const diff = Math.abs(m.score1 - m.score2);
       if (diff === 0) return;
       if (!best || diff > best.diff) {
@@ -293,7 +298,9 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       }
     });
     return best;
-  }, [matches]);
+  };
+  const biggestWin = useMemo(() => biggestWinBy((d) => d !== "14/1 Endlos"), [matches]);
+  const biggestWin141 = useMemo(() => biggestWinBy((d) => d === "14/1 Endlos"), [matches]);
 
   // Hoechstes je erreichtes Gesamt-Rating: sowohl aus dem taeglichen
   // Snapshot-Verlauf als auch dem aktuellen Stand (falls das heutige
@@ -358,6 +365,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     { key: "maxPerDay", label: t("Meiste an 1 Tag"), holder: topExtra("maxPerDay"), fmt: (h) => h.maxPerDay },
     { key: "recruitedCount", label: t("Geworben"), holder: topExtra("recruitedCount"), fmt: (h) => h.recruitedCount },
     { key: "biggestWin", label: t("Höchster Sieg"), holder: biggestWin, fmt: (h) => h.score },
+    { key: "biggestWin141", label: t("Höchster Sieg (14/1)"), holder: biggestWin141, fmt: (h) => h.score },
     { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => h.rating },
     { key: "mostGames", label: t("Meiste Matches gesamt"), holder: mostGames, fmt: (h) => h.spiele },
     { key: "fastestMatch", label: t("Schnellstes Match"), holder: fastestMatch, fmt: (h) => fmtDuration(h.ms), type: "match" },
