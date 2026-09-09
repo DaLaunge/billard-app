@@ -110,10 +110,9 @@ function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoO
 
 // EIN Satz Disziplin-/Top-N-Buttons ganz oben auf der Seite statt in jeder
 // einzelnen Bestenliste - Nutzer-Feedback: zu viele Buttons, wenn Rangliste
-// + 3 Bestenlisten je eigene Chips haben. Gilt fuer alle vier Karten unten
-// (Rangliste, Meiste Siege, Beste Siegquote, Aktuelle Serien); der
-// Verlaufs-Graph ist bewusst ausgenommen (eigener Zweck: mehrere Spieler UND
-// mehrere Disziplinen gleichzeitig vergleichen, nicht nur "eine Ansicht").
+// + 3 Bestenlisten je eigene Chips haben. Gilt fuer alle Karten der Seite,
+// inklusive Disziplin fuer den Verlaufs-Graph (der behaelt nur seine
+// eigene Zeitraum-Auswahl, weil die sonst nirgends vorkommt).
 function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf }) {
   return (
     <section className="stat-block stat-global-filter">
@@ -295,7 +294,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       {/* Mittlere Spalte: der Verlaufs-Graph - der eigentliche Fokus dieser
           Seite (Letzte Matches sind in den Live-Menuepunkt gewandert). */}
       <div className="stat-chart-col">
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} />
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} disc={globalDisc} />
       </div>
       </div>
       <ImprintFooter />

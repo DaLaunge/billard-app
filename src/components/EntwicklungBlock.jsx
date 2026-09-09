@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, Plus, Search, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { dateMinusDays, todayStr } from "../lib/stats";
-import { DISC_LABEL } from "../lib/constants";
 import DevChart from "./DevChart";
 
 const RANGES = [
@@ -13,22 +12,19 @@ const RANGES = [
   { key: "ALL", label: "Alles", days: null },
 ];
 
-// Wie bei Uebersicht/Statistik-Filtern: "Doppel" gehoert dazu, ist aber
-// keine "echte" Disziplin in DEFAULT_DISCIPLINES (die ist nur fuer
-// Einzel-Matches gedacht).
-const GRAPH_DISCIPLINES = ["Gesamt", "8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
-
-export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches }) {
+// disc kommt jetzt von der globalen Disziplin-Auswahl auf der Statistik-
+// Seite (siehe StatGlobalFilter in StatistikScreen.jsx) statt aus eigenem
+// State - Nutzer-Feedback: wenn ohnehin schon eine globale Auswahl da ist,
+// braucht der Graph keine eigenen Disziplin-Buttons mehr. Alle folgenden
+// Werte (Spieler-Reihenfolge, Kurven, verfuegbare Daten) haengen weiterhin
+// von der Disziplin ab.
+export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches, disc }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
 
-  // Standardmaessig Gesamt, waehlbar auf eine Einzeldisziplin - siehe
-  // GRAPH_DISCIPLINES. Alle folgenden Werte (Spieler-Reihenfolge,
-  // Kurven, verfuegbare Daten) haengen von der gewaehlten Disziplin ab.
-  const [selDisc, setSelDisc] = useState("Gesamt");
-  const discRangliste = useMemo(() => rangliste.filter((r) => r.discipline === selDisc), [rangliste, selDisc]);
-  const discSnapshots = useMemo(() => snapshots.filter((r) => r.discipline === selDisc), [snapshots, selDisc]);
+  const discRangliste = useMemo(() => rangliste.filter((r) => r.discipline === disc), [rangliste, disc]);
+  const discSnapshots = useMemo(() => snapshots.filter((r) => r.discipline === disc), [snapshots, disc]);
 
   const seriesByNick = useMemo(() => {
     const s = {};
@@ -110,18 +106,14 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   return (
     <section className="stat-block">
       <h3><TrendingUp size={17} /> {t("Entwicklung über die Zeit")}</h3>
-      {/* Disziplin- und Zeitraum-Auswahl in EINER Zeile statt zwei (Nutzer-
-          Feedback: "auch hier kann man Platz reduzieren") - beide sind
-          gleichwertig kompakte Chips, umbrechen bei Bedarf per flex-wrap. */}
-      <div className="chips small">
-        {GRAPH_DISCIPLINES.map((d) => (
-          <button key={d} className={"chip" + (selDisc === d ? " active" : "")} onClick={() => setSelDisc(d)}>{t(DISC_LABEL[d] || d)}</button>
-        ))}
-        {allDates.length > 0 && RANGES.map((r) => (
-          <button key={r.key} className={"chip" + (rangeKey === r.key ? " active" : "")}
-            onClick={() => setRangeKey(r.key)}>{t(r.label)}</button>
-        ))}
-      </div>
+      {allDates.length > 0 && (
+        <div className="chips small">
+          {RANGES.map((r) => (
+            <button key={r.key} className={"chip" + (rangeKey === r.key ? " active" : "")}
+              onClick={() => setRangeKey(r.key)}>{t(r.label)}</button>
+          ))}
+        </div>
+      )}
       {allDates.length === 0 ? (
         <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
