@@ -3,6 +3,7 @@ import { Trophy, BarChart3, Flame, Swords, X, FileText, Check, Clock } from "luc
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { initials, fmtDate, fmtDateTime, sideNames, isDoubles, mSide } from "../lib/format";
+import { DISC_LABEL } from "../lib/constants";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -15,10 +16,6 @@ const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
 const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
 const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
-// Kurzform nur fuer die Rangliste-Disziplin-Chips (Nutzer-Feedback: so wenig
-// Platz wie moeglich) - der volle Name ("8 Ball" usw.) bleibt der eigentliche
-// Wert fuer Filterung/State, nur die ANZEIGE wird abgekuerzt.
-const DISC_LABEL = { "Gesamt": "Alle", "8 Ball": "8B", "9 Ball": "9B", "10 Ball": "10B", "14/1 Endlos": "14/1" };
 
 // Eigene Komponente statt Definition innerhalb von StatistikScreen: sonst
 // waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
@@ -339,7 +336,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
             </button>
             {MATCH_DISCIPLINES.map((d) => (
               <button key={d} className={"chip" + (filterDisc === d ? " active" : "")} onClick={() => setFilterDisc(d)}>
-                {t(d)}
+                {t(DISC_LABEL[d] || d)}
               </button>
             ))}
           </div>
