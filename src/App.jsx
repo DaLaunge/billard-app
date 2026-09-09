@@ -312,6 +312,10 @@ export default function App() {
         startTabAppliedRef.current = true;
         let target = data.start_tab;
         if (target === "last") target = lastMainTabAtStart || "stats";
+        // Faengt veraltete gespeicherte Werte ab (z.B. "rang" von vor dem
+        // Uebersicht/Statistik-Menue-Umbau) - sonst landet man auf einem
+        // tab-Wert, den kein Screen mehr rendert (leere Seite mit Tabbar).
+        if (!["stats", "turnier", "live", "profil"].includes(target)) target = null;
         if (target && target !== "stats") navReplace({ tab: target });
       }
       const { data: all } = await supabase.from("players")
@@ -679,7 +683,7 @@ export default function App() {
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                  onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
+                  onCreate={createPing} onClose={closePing} onOpenProfile={openProfile} onOpenProtokoll={openProtokoll}
                   onReply={replyPing} onUnreply={unreplyPing}
                   onCreatePlanning={createPlanning} onDeletePlanning={deletePlanning}
                   onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}

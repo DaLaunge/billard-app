@@ -1,12 +1,11 @@
-import { useState, useMemo } from "react";
-import { Trophy, BarChart3, Flame, Swords, X, FileText, Check, Clock } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
-import { initials, fmtDate, fmtDateTime, sideNames, isDoubles, mSide } from "../lib/format";
+import { initials, fmtDate, isDoubles, mSide } from "../lib/format";
 import { DISC_LABEL } from "../lib/constants";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
-import PlayerPicker from "./PlayerPicker";
 import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
 import LiveStatusCard from "./widgets/LiveStatusCard";
@@ -14,28 +13,23 @@ import ImprintFooter from "./widgets/ImprintFooter";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
-const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
-const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
 
 // Eigene Komponente statt Definition innerhalb von StatistikScreen: sonst
 // waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
 // React wuerde sie als anderen Komponententyp behandeln und ihren
 // useState (die gewaehlte Anzahl) jedes Mal verwerfen.
 //
-// Nutzer-Feedback: in JEDER Ranglisten-/Bestenliste soll die eigene
-// Position IMMER sichtbar sein - auch bei Top-3/Top-10, nicht nur als
-// Zahl, sondern als echte Zeile mit Name/Wert (Beispiel: "wenn ich Platz
-// 40 bin, will ich das trotzdem in der Top-3-Ansicht sehen"). Der eigene
-// Rang wird deshalb IMMER aus der vollen, ungekuerzten "rows"-Liste
-// ermittelt (nicht aus "visible") - liegt er ausserhalb der gerade
-// sichtbaren Top-N, wird die eigene Zeile per Trenner angehaengt statt nur
-// als Text erwaehnt. Zusaetzlich ein "Meine Umgebung"-Umschalter (2 Plaetze
-// davor/danach) als vierte, zu Top-3/10/Alle exklusive Option - beim
-// Wechsel zurueck auf eine Top-N-Zahl wird er automatisch wieder
-// deaktiviert.
-function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile, me }) {
-  const [count, setCount] = useState(3);
-  const [nearby, setNearby] = useState(false);
+// count/nearby kommen jetzt von AUSSEN (globale Auswahl ganz oben auf der
+// Seite, siehe StatGlobalFilter) statt aus eigenem State - Nutzer-Feedback:
+// jede Bestenliste hatte vorher ihre eigenen Top-3/10/Alle-Knoepfe, das war
+// zu viele Buttons. Die eigene Position bleibt trotzdem IMMER sichtbar -
+// auch bei Top-3/Top-10, nicht nur als Zahl, sondern als echte Zeile mit
+// Name/Wert (Beispiel: "wenn ich Platz 40 bin, will ich das trotzdem in der
+// Top-3-Ansicht sehen"). Der eigene Rang wird deshalb IMMER aus der vollen,
+// ungekuerzten "rows"-Liste ermittelt (nicht aus "visible") - liegt er
+// ausserhalb der gerade sichtbaren Top-N, wird die eigene Zeile per Trenner
+// angehaengt statt nur als Text erwaehnt.
+function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile, me, count, nearby }) {
   const myIndex = rows.findIndex((p) => p.name === me?.nickname);
   const showNearby = nearby && myIndex >= 0;
   const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
@@ -44,23 +38,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
   const pinMyRow = myIndex >= 0 && !myRowShown;
   return (
     <section className="stat-block">
-      <div className="stat-block-head">
-        <h3>{icon} {title}</h3>
-        <div className="chips small">
-          {COUNT_OPTIONS.map((c) => (
-            <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
-              onClick={() => { setCount(c); setNearby(false); }}>
-              {c === "all" ? t("Alle") : c}
-            </button>
-          ))}
-          {myIndex >= 0 && (
-            <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}
-              aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
-              <Ball color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
-            </button>
-          )}
-        </div>
-      </div>
+      <h3>{icon} {title}</h3>
       {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{t("Noch keine Daten.")}</p>}
       {visible.map((p, i) => (
@@ -87,15 +65,9 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
 }
 
 // Die fruehere eigene "Uebersicht"/Rangliste-Seite: hier als weiterer
-// Bestenlisten-Block eingegliedert (gleiches Top-3/Top-10/Alle-Muster wie
-// "Meiste Siege" & Co.), da sie inhaltlich ohnehin eine Rangliste ist.
-// Anders als die anderen Bloecke mit Disziplin-Auswahl, da die Rangliste
-// (im Gegensatz zu den reinen Zaehl-Statistiken) je Disziplin getrennt
-// gefuehrt wird.
-function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpenProfile, me }) {
-  const [disc, setDisc] = useState("Gesamt");
-  const [count, setCount] = useState(3);
-  const [nearby, setNearby] = useState(false);
+// Bestenlisten-Block eingegliedert (gleiches Muster wie "Meiste Siege" &
+// Co.). disc/count/nearby kommen ebenfalls von der globalen Auswahl.
+function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoOf, onOpenProfile, me }) {
   const rows = rangliste.filter((r) => r.discipline === disc && r.aktiv && !r.vorlaeufig);
   const myIndex = rows.findIndex((r) => r.nickname === me?.nickname);
   const showNearby = nearby && myIndex >= 0;
@@ -105,28 +77,7 @@ function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpe
   const pinMyRow = myIndex >= 0 && !myRowShown;
   return (
     <section className="stat-block">
-      <div className="stat-block-head">
-        <h3><Trophy size={17} /> {t("Rangliste")}</h3>
-        <div className="chips small">
-          {COUNT_OPTIONS.map((c) => (
-            <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
-              onClick={() => { setCount(c); setNearby(false); }}>
-              {c === "all" ? t("Alle") : c}
-            </button>
-          ))}
-          {myIndex >= 0 && (
-            <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}
-              aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
-              <Ball color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="chips small" style={{ marginBottom: 10 }}>
-        {["Gesamt", ...disciplines].map((d) => (
-          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => setDisc(d)}>{t(DISC_LABEL[d] || d)}</button>
-        ))}
-      </div>
+      <h3><Trophy size={17} /> {t("Rangliste")}</h3>
       {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
       {visible.map((r, i) => {
@@ -157,9 +108,69 @@ function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpe
   );
 }
 
+// EIN Satz Disziplin-/Top-N-Buttons ganz oben auf der Seite statt in jeder
+// einzelnen Bestenliste - Nutzer-Feedback: zu viele Buttons, wenn Rangliste
+// + 3 Bestenlisten je eigene Chips haben. Gilt fuer alle Karten der Seite,
+// inklusive Disziplin fuer den Verlaufs-Graph (der behaelt nur seine
+// eigene Zeitraum-Auswahl, weil die sonst nirgends vorkommt).
+function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf }) {
+  return (
+    <section className="stat-block stat-global-filter">
+      <div className="stat-block-head">
+        <h3><SlidersHorizontal size={17} /> {t("Auswahl fuer alle Statistiken")}</h3>
+      </div>
+      <div className="chips small" style={{ marginBottom: 8 }}>
+        {["Gesamt", ...disciplines].map((d) => (
+          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => onDisc(d)}>{t(DISC_LABEL[d] || d)}</button>
+        ))}
+      </div>
+      <div className="chips small" style={{ marginBottom: 0 }}>
+        {COUNT_OPTIONS.map((c) => (
+          <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
+            onClick={() => { onCount(c); onNearby(false); }}>
+            {c === "all" ? t("Alle") : c}
+          </button>
+        ))}
+        <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => onNearby((n) => !n)}
+          aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
+          <Ball color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me, challenges,
   catalog, earnedBadges, onInvite, disciplines, pending, onConfirm, myOpenReports, pings, openChallengesToMe, onGoToLive }) {
-  const stats = useMemo(() => computeStats(matches), [matches]);
+  // Globale Auswahl (Disziplin + Top-N/Meine Umgebung): letzte Wahl wird
+  // geraeteweise gemerkt, wie bei den Live-Bereichen (siehe LiveScreen).
+  const [globalDisc, setGlobalDisc] = useState(() => {
+    try { return localStorage.getItem("statGlobalDisc") || "Gesamt"; } catch { return "Gesamt"; }
+  });
+  const [globalCount, setGlobalCount] = useState(() => {
+    try {
+      const raw = localStorage.getItem("statGlobalCount");
+      return raw === "all" ? "all" : raw ? Number(raw) : 3;
+    } catch { return 3; }
+  });
+  const [globalNearby, setGlobalNearby] = useState(() => {
+    try { return localStorage.getItem("statGlobalNearby") === "1"; } catch { return false; }
+  });
+  useEffect(() => { try { localStorage.setItem("statGlobalDisc", globalDisc); } catch { /* ignore */ } }, [globalDisc]);
+  useEffect(() => { try { localStorage.setItem("statGlobalCount", String(globalCount)); } catch { /* ignore */ } }, [globalCount]);
+  useEffect(() => { try { localStorage.setItem("statGlobalNearby", globalNearby ? "1" : "0"); } catch { /* ignore */ } }, [globalNearby]);
+
+  // Meiste Siege/Beste Siegquote/Aktuelle Serien nach der globalen Disziplin
+  // filtern - computeStats() selbst kennt keine Disziplin, zaehlt aber
+  // ohnehin nur Einzel-Matches (Doppel wird intern uebersprungen), daher
+  // fuer "Doppel" direkt leer lassen statt auf einen nie zutreffenden
+  // matches.discipline-Wert zu filtern.
+  const discFilteredMatches = useMemo(() => {
+    if (globalDisc === "Gesamt") return matches;
+    if (globalDisc === "Doppel") return [];
+    return matches.filter((m) => m.discipline === globalDisc);
+  }, [matches, globalDisc]);
+  const stats = useMemo(() => computeStats(discFilteredMatches), [discFilteredMatches]);
   const topWins = useMemo(() => Object.values(stats).sort((a, b) => b.siege - a.siege), [stats]);
   const topQuote = useMemo(
     () => Object.values(stats).filter((p) => p.spiele >= 10).sort((a, b) => b.quote - a.quote),
@@ -169,44 +180,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     () => Object.values(stats).filter((p) => p.streak > 0).sort((a, b) => b.streak - a.streak),
     [stats]
   );
-  const [filterPlayer, setFilterPlayer] = useState("");
-  const [filterResult, setFilterResult] = useState("all"); // all | win | loss
-  const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ... | "Doppel"
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [matchCount, setMatchCount] = useState(10);
-  const [hideTournament, setHideTournament] = useState(false);
-
-  const filteredMatches = useMemo(() => {
-    return [...matches]
-      .filter((m) => {
-        if (hideTournament && m.tournament_id) return false;
-        if (filterPlayer) {
-          const isP1 = m.p1?.nickname === filterPlayer || m.p1b?.nickname === filterPlayer;
-          const isP2 = m.p2?.nickname === filterPlayer || m.p2b?.nickname === filterPlayer;
-          if (!isP1 && !isP2) return false;
-          if (filterResult !== "all") {
-            const won = isP1 ? m.score1 > m.score2 : m.score2 > m.score1;
-            if (filterResult === "win" && !won) return false;
-            if (filterResult === "loss" && won) return false;
-          }
-        }
-        if (filterDisc === "Doppel") { if (!isDoubles(m)) return false; }
-        else if (filterDisc !== "all") { if (m.discipline !== filterDisc) return false; }
-        const day = m.played_at.slice(0, 10);
-        if (dateFrom && day < dateFrom) return false;
-        if (dateTo && day > dateTo) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(b.played_at) - new Date(a.played_at));
-  }, [matches, hideTournament, filterPlayer, filterResult, filterDisc, dateFrom, dateTo]);
-
-  const visibleMatches = matchCount === "all" ? filteredMatches : filteredMatches.slice(0, matchCount);
-  const filtersActive = !!(filterPlayer || filterDisc !== "all" || dateFrom || dateTo || hideTournament);
-  const resetFilters = () => {
-    setFilterPlayer(""); setFilterResult("all"); setFilterDisc("all"); setDateFrom(""); setDateTo("");
-    setMatchCount(10); setHideTournament(false);
-  };
 
   return (
     <div className="screen">
@@ -272,29 +245,37 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       )}
 
       <div className="stat-split">
-      {/* .stat-right-col buendelt Rangliste + "Rest" (siehe unten) zu EINER
-          Huelle: am Handy per CSS unsichtbar (display:contents), dort
-          ordnen sich ihre beiden Kinder ueber "order" direkt in .stat-split
-          ein (Rangliste zuerst - Nutzer-Feedback: Gesamt-Rangliste soll am
-          Handy an erster Stelle stehen). Am Desktop wird daraus ein
-          einziges Grid-Feld mit eigenem Flex-Stapel (siehe App.css) - das
-          verhindert den Grid-Zeilen-Kopplungs-Bug (leere Luecke vor
-          "Meiste Siege", weil die viel hoehere Chart-Spalte sonst dieselbe
-          Grid-Zeile wie die kurze Rangliste aufblaeht). */}
+      {/* .stat-right-col buendelt die globale Auswahl + Rangliste + "Rest"
+          (siehe unten) zu EINER Huelle: am Handy per CSS unsichtbar
+          (display:contents), dort ordnen sich ihre Kinder ueber "order"
+          direkt in .stat-split ein (globale Auswahl zuerst, dann Rangliste
+          - Nutzer-Feedback: Gesamt-Rangliste soll am Handy gleich danach
+          an erster Stelle stehen, ohne eigenen "order" faellt die globale
+          Auswahl automatisch auf order:0 zurueck und bleibt damit vorn).
+          Am Desktop wird daraus ein einziges Grid-Feld mit eigenem
+          Flex-Stapel (siehe App.css) - das verhindert den Grid-Zeilen-
+          Kopplungs-Bug (leere Luecke vor "Meiste Siege", weil die viel
+          hoehere Chart-Spalte sonst dieselbe Grid-Zeile wie die kurze
+          Rangliste aufblaeht) UND stellt die globale Auswahl (Nutzer-
+          Feedback) ganz oben in die rechte Spalte statt als eigene volle
+          Zeile ueber allen drei Spalten. */}
       <div className="stat-right-col">
+      <StatGlobalFilter disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
+        count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
+        me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
       <div className="stat-ranking-col">
-        <RankingBlock rangliste={rangliste} disciplines={disciplines} me={me}
+        <RankingBlock rangliste={rangliste} disc={globalDisc} count={globalCount} nearby={globalNearby} me={me}
           colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
       </div>
 
       <div className="stat-rest-col">
       <div className="stat-grid">
         <LiveStatusCard pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={onGoToLive} />
-        <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} me={me}
+        <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} me={me}
+        <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me}
+        <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
       </div>
       </div>
@@ -302,98 +283,22 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
       <aside className="ov-side">
         {/* Wie auf Profil: dieselbe UserPanel-Konstante - am Handy
-            ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px sichtbar. */}
+            ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px sichtbar.
+            hideRatings: die "Ratings nach Disziplin"-Karte duplizierte hier
+            die eigene (angeheftete) Zeile in der Rangliste-Karte rechts,
+            die dank der globalen Disziplin-Auswahl ohnehin jede Disziplin
+            zeigen kann - auf Profil/Live bleibt sie unveraendert sichtbar. */}
         <div className="ov-side-extra">
           <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
-            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} hideRatings
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
         </div>
       </aside>
 
-      {/* Mittlere Spalte: der Graph und darunter die zuletzt gespielten
-          Matches - der eigentliche Fokus dieser Seite. */}
+      {/* Mittlere Spalte: der Verlaufs-Graph - der eigentliche Fokus dieser
+          Seite (Letzte Matches sind in den Live-Menuepunkt gewandert). */}
       <div className="stat-chart-col">
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} />
-
-      <section className="stat-block">
-        <h3><Swords size={17} /> {t("Letzte Matches")}</h3>
-        <div className="match-filters">
-          <PlayerPicker players={players} matches={matches} me={me} allowAll
-            value={filterPlayer || null}
-            onSelect={(nick) => { setFilterPlayer(nick || ""); setFilterResult("all"); }} />
-          {filterPlayer && (
-            <div className="chips small" style={{ marginBottom: 0 }}>
-              {["all", "win", "loss"].map((r) => (
-                <button key={r} className={"chip" + (filterResult === r ? " active" : "")} onClick={() => setFilterResult(r)}>
-                  {r === "all" ? t("Alle") : r === "win" ? t("Siege") : t("Niederlagen")}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="chips small" style={{ marginBottom: 0 }}>
-            <button className={"chip" + (filterDisc === "all" ? " active" : "")} onClick={() => setFilterDisc("all")}>
-              {t("Alle")}
-            </button>
-            {MATCH_DISCIPLINES.map((d) => (
-              <button key={d} className={"chip" + (filterDisc === d ? " active" : "")} onClick={() => setFilterDisc(d)}>
-                {t(DISC_LABEL[d] || d)}
-              </button>
-            ))}
-          </div>
-          <div className="chips small" style={{ marginBottom: 0 }}>
-            <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
-              {t("Turniermatches ausblenden")}
-            </button>
-          </div>
-          <div className="date-range">
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label={t("Von")} />
-            <span>{t("bis")}</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label={t("Bis")} />
-          </div>
-          {filtersActive && (
-            <button className="btn ghost" style={{ marginTop: 0 }} onClick={resetFilters}>
-              <X size={15} /> {t("Filter zurücksetzen")}
-            </button>
-          )}
-        </div>
-
-        <div className="stat-block-head">
-          <p className="filter-count" style={{ marginBottom: 0 }}>
-            {t("{shown} von {total} Matches", { shown: visibleMatches.length, total: filteredMatches.length })}
-          </p>
-          <div className="chips small">
-            {MATCH_COUNT_OPTIONS.map((c) => (
-              <button key={c} className={"chip" + (matchCount === c ? " active" : "")} onClick={() => setMatchCount(c)}>
-                {c === "all" ? t("Alle") : c}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {visibleMatches.map((m) => (
-          <div key={m.id} className="match-row">
-            <span className="m-date m-datetime">{fmtDateTime(m.played_at)}</span>
-            <span className="m-txt">
-              {sideNames(m, 1).map((n, i) => (
-                <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
-              ))}
-              {" "}<b>{m.score1}:{m.score2}</b>{" "}
-              {sideNames(m, 2).map((n, i) => (
-                <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
-              ))}
-            </span>
-            <span className="m-disc">{t(m.discipline)}{m.tournament_id ? " · 🏆" : ""}</span>
-            {m.run_log?.length > 0 && (
-              <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
-                <FileText size={15} />
-              </button>
-            )}
-          </div>
-        ))}
-        {filteredMatches.length === 0 && (
-          <p className="hint">{filtersActive ? t("Keine Matches fuer diese Filter.") : t("Noch keine bestaetigten Matches.")}</p>
-        )}
-      </section>
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} disc={globalDisc} />
       </div>
       </div>
       <ImprintFooter />

@@ -16,7 +16,7 @@ import HeadToHeadCard from "./HeadToHeadCard";
    Statistik ist das immer "me", auf einem fremden Profil aber die
    betrachtete Person, damit dort weiterhin deren eigene Werte stehen. */
 export default function UserPanel({ nickname, matches, rangliste, players, challenges, catalog, earnedBadges,
-  colorOf, badgeOf, photoOf, onOpenProfile, onInvite }) {
+  colorOf, badgeOf, photoOf, onOpenProfile, onInvite, hideRatings }) {
   const stats = useMemo(() => computeStats(matches)[nickname], [matches, nickname]);
   const extras = useMemo(
     () => computeAchievementExtras(nickname, matches, players, challenges),
@@ -32,17 +32,19 @@ export default function UserPanel({ nickname, matches, rangliste, players, chall
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHeadClick={() => onOpenProfile(nickname)}
         onInvite={onInvite} />
 
-      <section className="stat-block">
-        <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
-        {myRows.map((r) => (
-          <div key={r.discipline} className="stat-row">
-            <span className="stat-name">{t(r.discipline)}</span>
-            <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
-            <span className="stat-val">{r.rating}</span>
-          </div>
-        ))}
-        {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
-      </section>
+      {!hideRatings && (
+        <section className="stat-block">
+          <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
+          {myRows.map((r) => (
+            <div key={r.discipline} className="stat-row">
+              <span className="stat-name">{t(r.discipline)}</span>
+              <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
+              <span className="stat-val">{r.rating}</span>
+            </div>
+          ))}
+          {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
+        </section>
+      )}
 
       <RecordsCard extras={extras} catalog={catalog} earnedBadges={earnedBadges} />
 

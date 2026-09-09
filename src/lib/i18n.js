@@ -530,6 +530,7 @@ const TRANSLATIONS = {
     "Sprache": "Language",
     "Rangliste": "Ranking",
     "Meine Umgebung": "Around me",
+    "Auswahl fuer alle Statistiken": "Selection for all statistics",
     "8B": "8B",
     "9B": "9B",
     "10B": "10B",
