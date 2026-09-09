@@ -598,6 +598,12 @@ export default function App() {
     return true;
   };
   const deleteAccount = async () => {
+    // Profilfoto zuerst ueber die Storage-API entfernen - ein direktes
+    // SQL-DELETE auf storage.objects blockiert Supabase inzwischen (siehe
+    // 2026-09-09d_fix_avatar_storage_delete.sql). Muss VOR dem RPC-Aufruf
+    // passieren, da dieser auth_user_id auf null setzt und danach die
+    // "avatar_delete_own"-Policy nicht mehr greift.
+    if (player?.id) await supabase.storage.from("avatars").remove([`${player.id}.jpg`]);
     const { error } = await supabase.rpc("self_delete_account");
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await supabase.auth.signOut();
