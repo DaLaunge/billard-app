@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Plus, Search, Trophy, X, Repeat } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -6,29 +6,35 @@ import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES, DISC_LABEL } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
 
-const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
+const formatLabel = (item) =>
+  item._kind === "winnerstays"
+    ? `${t("Winner Stays")} · ${t(item.is_doubles ? "Doppel" : "Einzel")}`
+    : item.format === "ko" ? t("K.O.") : item.format === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden");
 const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t("Anmeldung offen") : s === "cancelled" ? t("abgebrochen") : t("läuft"));
 
-// Turnierverwaltung: Liste laufender/vergangener Turniere + Formular zum
-// Anlegen - seit 2026-09-07_tournament_open_creation_no_self_edit.sql fuer
-// alle Spieler offen (nicht mehr nur Admins). Seit 2026-09-09 zusaetzlich
-// ein zweiter Modus "Winner Stays" (eigene Liste/Formular, siehe
-// WinnerStaysScreen.jsx fuer die eigentliche Live-Ansicht) - beide teilen
-// sich diesen Screen ueber einen Umschalter oben, weil sie fuer Nutzer
-// beide unter "Turniermodus" fallen, auch wenn das Datenmodell komplett
-// unterschiedlich ist (keine Bracket-Struktur, dynamische Warteschlange).
+// Turnierverwaltung: EINE Liste + EIN Anlegen-Formular fuer beide
+// Strukturen (Nutzer-Feedback: "Winner stays sollte als Turniermodus so
+// wie KO und Doppel KO und Jeder gegen jeden auswaehlbar sein" - urspruenglich
+// als eigener Umschalter/eigene Liste gebaut, das fand der Nutzer aber nicht
+// intuitiv). "Winner Stays" ist im Formular ein vierter Format-Chip neben
+// K.O./Doppel-K.O./Jeder gegen jeden; abhaengig davon werden andere Felder
+// gezeigt (Einzel/Doppel + optional EIN Tisch statt Playoff-Groesse +
+// mehrerer Tische) und eine andere RPC gerufen. Das Datenmodell bleibt
+// bewusst getrennt (tournaments/tournament_matches vs. winner_stays_*
+// Tabellen, siehe WinnerStaysScreen.jsx) - keine Bracket-Struktur, sondern
+// eine dynamische Warteschlange - nur die Oberflaeche tut so, als waere es
+// ein einziges Menü.
 export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerStays, onBack }) {
-  const [mode, setMode] = useState("turniere"); // "turniere" | "winnerstays"
-
   const [tournaments, setTournaments] = useState(null);
+  const [wsSessions, setWsSessions] = useState(null);
   // Default "running" statt "all" (Nutzer-Feedback) - beim Oeffnen der
   // Turnierliste sind die AKTUELL laufenden Turniere fast immer das
   // Relevante, nicht die komplette Historie.
-  const [statusFilter, setStatusFilter] = useState("running"); // all | running | done - schnelles Finden bereits gespielter Turniere
-  const [query, setQuery] = useState(""); // Suche nach Turniername
+  const [statusFilter, setStatusFilter] = useState("running"); // all | running | done
+  const [query, setQuery] = useState(""); // Suche nach Name
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
-  const [format, setFormat] = useState("ko");
+  const [format, setFormat] = useState("ko"); // "ko" | "double_ko" | "round_robin" | "winner_stays"
   const [discipline, setDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
   const [tableMode, setTableMode] = useState("range");
   const [tableFrom, setTableFrom] = useState("");
@@ -40,6 +46,10 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
   // Standardverhalten: Gewinner-/Verliererbaum laufen komplett durch).
   const [playoffSize, setPlayoffSize] = useState(null);
   const [doubleRoundRobin, setDoubleRoundRobin] = useState(false);
+  // Nur fuer format === "winner_stays": Einzel/Doppel + EIN optionaler
+  // Tisch, statt der Playoff-/Mehrtisch-Felder oben.
+  const [wsDoubles, setWsDoubles] = useState(false);
+  const [wsTable, setWsTable] = useState("");
 
   const load = async () => {
     // organizer(nickname) per Inline-Join statt eines eigenen players-Props
@@ -51,7 +61,23 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
       .order("created_at", { ascending: false });
     if (!error) setTournaments(data || []);
   };
-  useEffect(() => { load(); }, []);
+  const loadWs = async () => {
+    const { data, error } = await supabase.from("winner_stays_sessions")
+      .select("id, name, discipline, is_doubles, table_number, status, created_at, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
+      .order("created_at", { ascending: false });
+    if (!error) setWsSessions(data || []);
+  };
+  useEffect(() => { load(); loadWs(); }, []);
+
+  // Beide Listen zu einer gemeinsamen, nach Datum sortierten Liste
+  // zusammenfuehren - fuer den Nutzer ist das EIN "Turniere"-Bereich.
+  const combined = useMemo(() => {
+    if (tournaments == null || wsSessions == null) return null;
+    return [
+      ...tournaments.map((tr) => ({ ...tr, _kind: "tournament" })),
+      ...wsSessions.map((s) => ({ ...s, _kind: "winnerstays" })),
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [tournaments, wsSessions]);
 
   const chooseFormat = (f) => {
     setFormat(f);
@@ -71,8 +97,31 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
     return arr.length ? arr : null;
   };
 
+  const resetForm = () => {
+    setShowForm(false);
+    setName(""); setTableFrom(""); setTableTo(""); setTableList(""); setWsTable(""); setWsDoubles(false);
+  };
+
   const create = async () => {
     if (!name.trim()) { toast(t("Turniername fehlt.")); return; }
+
+    if (format === "winner_stays") {
+      const tableNum = wsTable.trim() ? parseInt(wsTable.trim(), 10) : null;
+      if (wsTable.trim() && !Number.isFinite(tableNum)) { toast(t("Bitte gültige Tischnummern angeben.")); return; }
+      setBusy(true);
+      const { data, error } = await supabase.rpc("winner_stays_create_session", {
+        p_name: name.trim(), p_discipline: discipline, p_is_doubles: wsDoubles,
+        p_table_number: tableNum,
+      });
+      setBusy(false);
+      if (error) { toast(t("Fehler: ") + error.message); return; }
+      toast(t("Winner-Stays-Runde erstellt."));
+      resetForm();
+      await loadWs();
+      onOpenWinnerStays(data.id);
+      return;
+    }
+
     const tables = parseTables();
     if (!tables) { toast(t("Bitte gültige Tischnummern angeben.")); return; }
     setBusy(true);
@@ -84,49 +133,9 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Turnier erstellt – Anmeldung ist jetzt offen."));
-    setShowForm(false);
-    setName(""); setTableFrom(""); setTableTo(""); setTableList("");
+    resetForm();
     await load();
     onOpenTournament(data.id);
-  };
-
-  // --- Winner Stays --------------------------------------------------------
-  // Eigene, viel einfachere Liste/Formular als bei Turnieren - keine
-  // Tischverwaltung/Playoff-Optionen, nur Name+Disziplin+Einzel-oder-Doppel
-  // (optional ein einzelner Tisch, da hier immer nur EIN Tisch bespielt
-  // wird). Teilnehmer kommen erst danach in WinnerStaysScreen.jsx dazu.
-  const [wsSessions, setWsSessions] = useState(null);
-  const [wsShowForm, setWsShowForm] = useState(false);
-  const [wsName, setWsName] = useState("");
-  const [wsDiscipline, setWsDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
-  const [wsDoubles, setWsDoubles] = useState(false);
-  const [wsTable, setWsTable] = useState("");
-  const [wsBusy, setWsBusy] = useState(false);
-  const [wsStatusFilter, setWsStatusFilter] = useState("running");
-
-  const loadWs = async () => {
-    const { data, error } = await supabase.from("winner_stays_sessions")
-      .select("id, name, discipline, is_doubles, table_number, status, created_at, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
-      .order("created_at", { ascending: false });
-    if (!error) setWsSessions(data || []);
-  };
-  useEffect(() => { if (mode === "winnerstays" && wsSessions == null) loadWs(); }, [mode, wsSessions]);
-
-  const wsCreate = async () => {
-    if (!wsName.trim()) { toast(t("Name fehlt.")); return; }
-    const tableNum = wsTable.trim() ? parseInt(wsTable.trim(), 10) : null;
-    if (wsTable.trim() && !Number.isFinite(tableNum)) { toast(t("Bitte gültige Tischnummern angeben.")); return; }
-    setWsBusy(true);
-    const { data, error } = await supabase.rpc("winner_stays_create_session", {
-      p_name: wsName.trim(), p_discipline: wsDiscipline, p_is_doubles: wsDoubles,
-      p_table_number: tableNum,
-    });
-    setWsBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Winner-Stays-Runde erstellt."));
-    setWsShowForm(false); setWsName(""); setWsTable(""); setWsDoubles(false);
-    await loadWs();
-    onOpenWinnerStays(data.id);
   };
 
   return (
@@ -137,16 +146,6 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
         <h2>{t("Turniere")}</h2>
       </header>
 
-      <div className="chips" style={{ marginBottom: 14 }}>
-        <button className={"chip" + (mode === "turniere" ? " active" : "")} onClick={() => setMode("turniere")}>
-          <Trophy size={15} /> {t("Turniere")}
-        </button>
-        <button className={"chip" + (mode === "winnerstays" ? " active" : "")} onClick={() => setMode("winnerstays")}>
-          <Repeat size={15} /> {t("Winner Stays")}
-        </button>
-      </div>
-
-      {mode === "turniere" ? (
       <section className="stat-block">
         <div className="stat-block-head">
           <h3><Trophy size={17} /> {t("Turniere")}</h3>
@@ -164,7 +163,14 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               <button className={"chip" + (format === "ko" ? " active" : "")} onClick={() => chooseFormat("ko")}>{t("K.O.")}</button>
               <button className={"chip" + (format === "double_ko" ? " active" : "")} onClick={() => chooseFormat("double_ko")}>{t("Doppel-K.O.")}</button>
               <button className={"chip" + (format === "round_robin" ? " active" : "")} onClick={() => chooseFormat("round_robin")}>{t("Jeder gegen jeden")}</button>
+              <button className={"chip" + (format === "winner_stays" ? " active" : "")} onClick={() => chooseFormat("winner_stays")}><Repeat size={14} /> {t("Winner Stays")}</button>
             </div>
+
+            {format === "winner_stays" && (
+              <p className="hint" style={{ marginTop: 4 }}>
+                {t("Ein Tisch, mehrere Leute: der Sieger bleibt, der Verlierer geht ans Ende der Schlange - funktioniert mit 3 oder beliebig vielen Personen, auch im Doppel.")}
+              </p>
+            )}
 
             {format === "round_robin" && (
               <>
@@ -176,7 +182,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               </>
             )}
 
-            {format !== "ko" && (
+            {format !== "ko" && format !== "winner_stays" && (
               <>
                 <p className="hint" style={{ marginBottom: 4 }}>{format === "double_ko" ? t("Finalrunde") : t("Abschluss")}</p>
                 <div className="chips small">
@@ -190,6 +196,16 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               </>
             )}
 
+            {format === "winner_stays" && (
+              <>
+                <p className="hint" style={{ marginBottom: 4 }}>{t("Modus")}</p>
+                <div className="chips small">
+                  <button className={"chip" + (!wsDoubles ? " active" : "")} onClick={() => setWsDoubles(false)}>{t("Einzel")}</button>
+                  <button className={"chip" + (wsDoubles ? " active" : "")} onClick={() => setWsDoubles(true)}>{t("Doppel")}</button>
+                </div>
+              </>
+            )}
+
             <p className="hint" style={{ marginBottom: 4 }}>{t("Disziplin")}</p>
             <div className="chips small">
               {DEFAULT_DISCIPLINES.map((d) => (
@@ -197,22 +213,31 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               ))}
             </div>
 
-            <p className="hint" style={{ marginBottom: 4 }}>{t("Tische")}</p>
-            <div className="chips small">
-              <button className={"chip" + (tableMode === "range" ? " active" : "")} onClick={() => setTableMode("range")}>{t("Von–Bis")}</button>
-              <button className={"chip" + (tableMode === "list" ? " active" : "")} onClick={() => setTableMode("list")}>{t("Liste")}</button>
-            </div>
-            {tableMode === "range" ? (
-              <div className="turnier-score-inputs">
-                <input type="number" inputMode="numeric" min="1" placeholder={t("von")} value={tableFrom} onChange={(e) => setTableFrom(e.target.value)} />
-                <span>–</span>
-                <input type="number" inputMode="numeric" min="1" placeholder={t("bis")} value={tableTo} onChange={(e) => setTableTo(e.target.value)} />
-              </div>
+            {format === "winner_stays" ? (
+              <>
+                <p className="hint" style={{ marginBottom: 4 }}>{t("Tisch (optional)")}</p>
+                <input type="number" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
+                <p className="hint" style={{ marginTop: 10 }}>{t("Teilnehmer fügst du danach direkt in der Runde hinzu.")}</p>
+              </>
             ) : (
-              <input type="text" placeholder={t("z. B. 1, 3, 5")} value={tableList} onChange={(e) => setTableList(e.target.value)} />
+              <>
+                <p className="hint" style={{ marginBottom: 4 }}>{t("Tische")}</p>
+                <div className="chips small">
+                  <button className={"chip" + (tableMode === "range" ? " active" : "")} onClick={() => setTableMode("range")}>{t("Von–Bis")}</button>
+                  <button className={"chip" + (tableMode === "list" ? " active" : "")} onClick={() => setTableMode("list")}>{t("Liste")}</button>
+                </div>
+                {tableMode === "range" ? (
+                  <div className="turnier-score-inputs">
+                    <input type="number" inputMode="numeric" min="1" placeholder={t("von")} value={tableFrom} onChange={(e) => setTableFrom(e.target.value)} />
+                    <span>–</span>
+                    <input type="number" inputMode="numeric" min="1" placeholder={t("bis")} value={tableTo} onChange={(e) => setTableTo(e.target.value)} />
+                  </div>
+                ) : (
+                  <input type="text" placeholder={t("z. B. 1, 3, 5")} value={tableList} onChange={(e) => setTableList(e.target.value)} />
+                )}
+                <p className="hint" style={{ marginTop: 10 }}>{t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")}</p>
+              </>
             )}
-
-            <p className="hint" style={{ marginTop: 10 }}>{t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")}</p>
 
             <button className="btn primary" disabled={busy} onClick={create}>
               {busy ? t("Lege an …") : <><Trophy size={16} /> {t("Turnier anlegen")}</>}
@@ -220,7 +245,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
           </div>
         )}
 
-        {tournaments != null && tournaments.length > 0 && (
+        {combined != null && combined.length > 0 && (
           <>
             <div className="search-row" style={{ marginBottom: 10 }}>
               <Search size={16} className="mail-ico" />
@@ -235,101 +260,34 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
           </>
         )}
 
-        {tournaments == null ? (
+        {combined == null ? (
           <p className="hint">{t("Lade ...")}</p>
-        ) : tournaments.length === 0 ? (
+        ) : combined.length === 0 ? (
           <p className="hint">{t("Noch keine Turniere.")}</p>
         ) : (() => {
           const q = query.trim().toLowerCase();
-          const filtered = tournaments
-            .filter((tr) => statusFilter === "all" ? true : statusFilter === "running" ? tr.status !== "finished" : tr.status === "finished")
-            .filter((tr) => !q || tr.name.toLowerCase().includes(q));
+          const filtered = combined
+            .filter((it) => statusFilter === "all" ? true : statusFilter === "running" ? it.status !== "finished" : it.status === "finished")
+            .filter((it) => !q || it.name.toLowerCase().includes(q));
           return filtered.length === 0 ? (
             <p className="hint">{t("Keine Turniere in diesem Filter.")}</p>
-          ) : filtered.map((tr) => (
-            <button key={tr.id} className="turnier-list-row" onClick={() => onOpenTournament(tr.id)}>
+          ) : filtered.map((it) => (
+            <button key={it.id} className="turnier-list-row"
+              onClick={() => it._kind === "winnerstays" ? onOpenWinnerStays(it.id) : onOpenTournament(it.id)}>
               <span className="turnier-list-row-main">
-                <b>{tr.name}</b>
-                <span className="turnier-list-row-meta">{formatLabel(tr.format)} · {t(tr.discipline)} · {statusLabel(tr.status)} · {fmtDate(tr.created_at)}</span>
-                <span className="turnier-list-row-meta">{t("Turnierleitung")}: {tr.organizer?.nickname || "?"}</span>
-              </span>
-              <ChevronRight size={20} className="turnier-list-row-chevron" />
-            </button>
-          ));
-        })()}
-      </section>
-      ) : (
-      <section className="stat-block">
-        <div className="stat-block-head">
-          <h3><Repeat size={17} /> {t("Winner Stays")}</h3>
-          <button className="btn ghost" onClick={() => setWsShowForm((s) => !s)}>
-            {wsShowForm ? <><X size={15} /> {t("Abbrechen")}</> : <><Plus size={15} /> {t("Neue Runde")}</>}
-          </button>
-        </div>
-        <p className="hint" style={{ marginTop: 0 }}>
-          {t("Ein Tisch, mehrere Leute: der Sieger bleibt, der Verlierer geht ans Ende der Schlange - funktioniert mit 3 oder beliebig vielen Personen, auch im Doppel.")}
-        </p>
-
-        {wsShowForm && (
-          <div className="turnier-form" style={{ marginBottom: 16 }}>
-            <input type="text" placeholder={t("Name der Runde")} value={wsName} onChange={(e) => setWsName(e.target.value)} />
-
-            <p className="hint" style={{ marginBottom: 4 }}>{t("Disziplin")}</p>
-            <div className="chips small">
-              {DEFAULT_DISCIPLINES.map((d) => (
-                <button key={d} className={"chip" + (wsDiscipline === d ? " active" : "")} onClick={() => setWsDiscipline(d)}>{t(DISC_LABEL[d] || d)}</button>
-              ))}
-            </div>
-
-            <p className="hint" style={{ marginBottom: 4 }}>{t("Modus")}</p>
-            <div className="chips small">
-              <button className={"chip" + (!wsDoubles ? " active" : "")} onClick={() => setWsDoubles(false)}>{t("Einzel")}</button>
-              <button className={"chip" + (wsDoubles ? " active" : "")} onClick={() => setWsDoubles(true)}>{t("Doppel")}</button>
-            </div>
-
-            <p className="hint" style={{ marginBottom: 4 }}>{t("Tisch (optional)")}</p>
-            <input type="number" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
-
-            <p className="hint" style={{ marginTop: 10 }}>{t("Teilnehmer fügst du danach direkt in der Runde hinzu.")}</p>
-
-            <button className="btn primary" disabled={wsBusy} onClick={wsCreate}>
-              {wsBusy ? t("Lege an …") : <><Repeat size={16} /> {t("Runde anlegen")}</>}
-            </button>
-          </div>
-        )}
-
-        {wsSessions != null && wsSessions.length > 0 && (
-          <div className="chips small" style={{ marginBottom: 10 }}>
-            <button className={"chip" + (wsStatusFilter === "all" ? " active" : "")} onClick={() => setWsStatusFilter("all")}>{t("Alle")}</button>
-            <button className={"chip" + (wsStatusFilter === "running" ? " active" : "")} onClick={() => setWsStatusFilter("running")}>{t("Läuft")}</button>
-            <button className={"chip" + (wsStatusFilter === "done" ? " active" : "")} onClick={() => setWsStatusFilter("done")}>{t("Beendet")}</button>
-          </div>
-        )}
-
-        {wsSessions == null ? (
-          <p className="hint">{t("Lade ...")}</p>
-        ) : wsSessions.length === 0 ? (
-          <p className="hint">{t("Noch keine Winner-Stays-Runde.")}</p>
-        ) : (() => {
-          const filtered = wsSessions.filter((s) => wsStatusFilter === "all" ? true : wsStatusFilter === "running" ? s.status !== "finished" : s.status === "finished");
-          return filtered.length === 0 ? (
-            <p className="hint">{t("Keine Runden in diesem Filter.")}</p>
-          ) : filtered.map((s) => (
-            <button key={s.id} className="turnier-list-row" onClick={() => onOpenWinnerStays(s.id)}>
-              <span className="turnier-list-row-main">
-                <b>{s.name}</b>
+                <b>{it.name}</b>
                 <span className="turnier-list-row-meta">
-                  {t(s.is_doubles ? "Doppel" : "Einzel")} · {t(s.discipline)}
-                  {s.table_number != null && ` · ${t("Tisch")} ${s.table_number}`} · {statusLabel(s.status)} · {fmtDate(s.created_at)}
+                  {formatLabel(it)} · {t(it.discipline)}
+                  {it._kind === "winnerstays" && it.table_number != null && ` · ${t("Tisch")} ${it.table_number}`}
+                  {" · "}{statusLabel(it.status)} · {fmtDate(it.created_at)}
                 </span>
-                <span className="turnier-list-row-meta">{t("Turnierleitung")}: {s.organizer?.nickname || "?"}</span>
+                <span className="turnier-list-row-meta">{t("Turnierleitung")}: {it.organizer?.nickname || "?"}</span>
               </span>
               <ChevronRight size={20} className="turnier-list-row-chevron" />
             </button>
           ));
         })()}
       </section>
-      )}
       </div>
       <ImprintFooter />
     </div>
