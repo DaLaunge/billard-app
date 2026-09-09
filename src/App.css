@@ -815,6 +815,14 @@ button.id-card-head { cursor: pointer; }
 .records-grid b { font-size: 15px; }
 .records-grid span { font-size: 10px; color: var(--ivory-dim); line-height: 1.25; }
 .record-emoji { margin-right: 4px; }
+/* Club-weite Rekorde-Karte (StatistikScreen.jsx): Label ueber einer
+   normalen Ranglisten-Zeile statt eines Grid-Feldes wie .records-grid,
+   weil hier jeder Eintrag eine ANDERE Kennzahl mit einem eigenen
+   Rekordhalter zeigt (Ball-Avatar + Name), nicht dieselbe Kennzahl fuer
+   verschiedene Spieler. */
+.record-entry { margin-bottom: 8px; }
+.record-entry:last-child { margin-bottom: 0; }
+.record-entry-label { font-size: 12px; color: var(--ivory-dim); margin: 0 0 2px; }
 
 /* Profil: am Handy Foto+Kennzahlen, dann alle eigenen Statistiken
    zusammen, dann Erfolge - die Konto-Einstellungen (Login, Feedback, Konto
