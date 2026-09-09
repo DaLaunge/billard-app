@@ -4,7 +4,7 @@ import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDuration, isDoubles, mSide } from "../lib/format";
-import { computeSpeedStats } from "../lib/runLog";
+import { computeSpeedStats, matchDurationMs } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
@@ -153,10 +153,12 @@ function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, o
 
 // Club-weite Rekorde statt der eigenen Zahlen (siehe RecordsCard.jsx im
 // Profil) - fuer jede Kennzahl wird gezeigt, WER sie gerade haelt, nicht
-// nur "wie viel". Jeder Eintrag: Label darueber, darunter eine normale
-// Ranglisten-Zeile (Ball-Avatar + Name + Wert), damit der Rekordhalter
-// direkt anklickbar ist. Eintraege ohne Halter (noch niemand > 0) werden
-// ausgeblendet statt eine leere/falsche Zeile zu zeigen.
+// nur "wie viel". Jeder Eintrag: Label darueber, darunter entweder eine
+// normale Ranglisten-Zeile (Ball-Avatar + Name + Wert, ein eindeutiger
+// Rekordhalter) oder - bei type "match" (Schnellstes/Laengstes Match) -
+// eine Match-Zeile mit BEIDEN beteiligten Spielern, da so ein Rekord nicht
+// EINER Person allein gehoert. Eintraege ohne Halter (noch keine Daten)
+// werden ausgeblendet statt eine leere/falsche Zeile zu zeigen.
 function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile }) {
   const shown = records.filter((r) => r.holder);
   return (
@@ -164,18 +166,30 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile }) {
       <div className="stat-block-head">
         <h3><Star size={17} /> {t("Rekorde")}</h3>
         <InfoButton title={t("Rekorde")}>
-          {t("Aktuelle Bestwerte der gesamten Gruppe aus allen bestätigten Einzel-Matches (bzw. dem bisherigen Rating-Verlauf beim Rating-Rekord) - wer hält gerade welchen Rekord?")}
+          {t("Aktuelle Bestwerte der gesamten Gruppe aus allen bestätigten Einzel-Matches (bzw. dem bisherigen Rating-Verlauf beim Rating-Rekord) - wer hält gerade welchen Rekord? Schnellstes/Längstes Match zählen nur Matches mit gespeichertem Zeit-Protokoll (über den digitalen Zähler gemeldet) und sind unabhängig von der Disziplin-Auswahl oben, genau wie alle anderen Rekorde dieser Karte.")}
         </InfoButton>
       </div>
       {shown.length === 0 && <p className="hint">{t("Noch keine Rekorde.")}</p>}
-      {shown.map(({ key, label, holder, fmt }) => (
+      {shown.map(({ key, label, holder, fmt, type }) => (
         <div key={key} className="record-entry">
           <p className="record-entry-label">{label}</p>
-          <button className="stat-row as-btn" onClick={() => onOpenProfile(holder.name)}>
-            <Ball color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={30} />
-            <span className="stat-name">{holder.name}</span>
-            <span className="stat-val">{fmt(holder)}</span>
-          </button>
+          {type === "match" ? (
+            <div className="match-row">
+              <span className="m-txt">
+                <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button>
+                {" vs. "}
+                <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button>
+              </span>
+              <span className="m-disc">{t(holder.discipline)}</span>
+              <span className="stat-val">{fmt(holder)}</span>
+            </div>
+          ) : (
+            <button className="stat-row as-btn" onClick={() => onOpenProfile(holder.name)}>
+              <Ball color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={30} />
+              <span className="stat-name">{holder.name}</span>
+              <span className="stat-val">{fmt(holder)}</span>
+            </button>
+          )}
         </div>
       ))}
     </section>
@@ -305,6 +319,37 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     return arr[0] || null;
   }, [matches]);
 
+  // Schnellstes/Laengstes Match: Gesamtdauer (erster bis letzter Zeitstempel
+  // im Protokoll), nur Einzel-Matches (bei Doppel waeren es vier statt zwei
+  // Namen - passt nicht in die Zwei-Spieler-Zeile). matchDurationMs() selbst
+  // prueft keine Plausibilitaet (anders als ballSpeedSums/gameSpeedSums in
+  // lib/runLog.js) - Grenzen hier daher separat: unter 1 Minute ist fuer ein
+  // echtes Match praktisch unmoeglich (gleiche Idee wie MIN_MS_PER_BALL, nur
+  // aufs ganze Match bezogen) und schliesst dieselben zu schnell durch-
+  // geklickten Alt-/Testdaten aus, die schon bei der Spielgeschwindigkeit
+  // aufgefallen sind. Ueber 4 Stunden ist eher ein liegen gelassenes,
+  // verspaetet fertig erfasstes Match als echte durchgehende Spielzeit.
+  const MIN_MATCH_MS = 60 * 1000;
+  const MAX_MATCH_MS = 4 * 60 * 60 * 1000;
+  const matchDurations = useMemo(() => {
+    const list = [];
+    matches.forEach((m) => {
+      if (m.player1b_id) return;
+      const ms = matchDurationMs(m.run_log);
+      if (ms == null || ms < MIN_MATCH_MS || ms > MAX_MATCH_MS) return;
+      list.push({ p1Name: m.p1.nickname, p2Name: m.p2.nickname, discipline: m.discipline, ms });
+    });
+    return list;
+  }, [matches]);
+  const fastestMatch = useMemo(
+    () => matchDurations.reduce((best, m) => (!best || m.ms < best.ms ? m : best), null),
+    [matchDurations]
+  );
+  const longestMatch = useMemo(
+    () => matchDurations.reduce((best, m) => (!best || m.ms > best.ms ? m : best), null),
+    [matchDurations]
+  );
+
   const recordRows = [
     { key: "highRun", label: t("Höchstserie 14/1"), holder: topExtra("highRun"), fmt: (h) => h.highRun },
     { key: "longestStreak", label: t("Beste Serie"), holder: topExtra("longestStreak"), fmt: (h) => h.longestStreak },
@@ -315,6 +360,8 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     { key: "biggestWin", label: t("Höchster Sieg"), holder: biggestWin, fmt: (h) => h.score },
     { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => h.rating },
     { key: "mostGames", label: t("Meiste Matches gesamt"), holder: mostGames, fmt: (h) => h.spiele },
+    { key: "fastestMatch", label: t("Schnellstes Match"), holder: fastestMatch, fmt: (h) => fmtDuration(h.ms), type: "match" },
+    { key: "longestMatch", label: t("Längstes Match"), holder: longestMatch, fmt: (h) => fmtDuration(h.ms), type: "match" },
   ];
 
   return (
