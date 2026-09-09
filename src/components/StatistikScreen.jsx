@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Trophy, BarChart3, Flame, Swords, X, FileText, Check, Clock, Locate } from "lucide-react";
+import { Trophy, BarChart3, Flame, Swords, X, FileText, Check, Clock } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { initials, fmtDate, fmtDateTime, sideNames, isDoubles, mSide } from "../lib/format";
@@ -15,6 +15,10 @@ const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
 const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
 const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
+// Kurzform nur fuer die Rangliste-Disziplin-Chips (Nutzer-Feedback: so wenig
+// Platz wie moeglich) - der volle Name ("8 Ball" usw.) bleibt der eigentliche
+// Wert fuer Filterung/State, nur die ANZEIGE wird abgekuerzt.
+const DISC_LABEL = { "Gesamt": "Alle", "8 Ball": "8B", "9 Ball": "9B", "10 Ball": "10B", "14/1 Endlos": "14/1" };
 
 // Eigene Komponente statt Definition innerhalb von StatistikScreen: sonst
 // waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
@@ -55,7 +59,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
           {myIndex >= 0 && (
             <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}
               aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
-              <Locate size={14} />
+              <Ball color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
             </button>
           )}
         </div>
@@ -116,15 +120,14 @@ function RankingBlock({ rangliste, disciplines, colorOf, badgeOf, photoOf, onOpe
           {myIndex >= 0 && (
             <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => setNearby((n) => !n)}
               aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
-              <Locate size={14} />
+              <Ball color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
             </button>
           )}
         </div>
       </div>
-      <p className="hint" style={{ marginTop: 0 }}>{t("Fargo-Skala - 100 Punkte = 2:1")}</p>
       <div className="chips small" style={{ marginBottom: 10 }}>
         {["Gesamt", ...disciplines].map((d) => (
-          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => setDisc(d)}>{t(d)}</button>
+          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => setDisc(d)}>{t(DISC_LABEL[d] || d)}</button>
         ))}
       </div>
       {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
@@ -210,7 +213,10 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
   return (
     <div className="screen">
-      <header className="screen-head"><h2>{t("Statistik")}</h2><span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span></header>
+      <header className="screen-head">
+        <h2>{t("Statistik")}</h2>
+        <span className="head-note">{t("Bestenlisten (bestaetigte Matches)")} · {t("Fargo-Skala - 100 Punkte = 2:1")}</span>
+      </header>
 
       {pending.map((m) => {
         if (isDoubles(m)) {

@@ -514,11 +514,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .stat-block-head h3 { margin-bottom: 0; }
 .chips.small { gap: 6px; margin-bottom: 8px; }
 .chips.small .chip { padding: 5px 11px; font-size: 12.5px; }
-/* Reine Icon-Chips (z.B. "Meine Umgebung") so schmal wie moeglich statt der
-   sonstigen Text-Breite - Nutzer-Feedback: Buttons sollen moeglichst wenig
-   Platz beanspruchen, damit die eigentlichen Statistiken im Vordergrund
-   stehen. */
-.chip.chip-icon { padding: 6px 9px; display: inline-flex; align-items: center; }
+/* Reine Icon-Chips ("Meine Umgebung", zeigt den eigenen Avatar statt eines
+   abstrakten Symbols - Nutzer-Feedback: macht auf einen Blick klar, wessen
+   Umgebung angezeigt wird UND dass der Button anklickbar ist) so schmal wie
+   moeglich statt der sonstigen Text-Breite - Buttons sollen moeglichst
+   wenig Platz beanspruchen, damit die eigentlichen Statistiken im
+   Vordergrund stehen. */
+.chip.chip-icon { padding: 3px; display: inline-flex; align-items: center; }
 .match-filters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 .date-range { display: flex; align-items: center; gap: 8px; }
 .date-range input[type="date"] { flex: 1; box-sizing: border-box; background: var(--felt); color: var(--ivory);
