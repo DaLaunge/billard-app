@@ -716,8 +716,7 @@ export default function App() {
                 rangliste={rangliste} me={player} challenges={challenges}
                 catalog={catalog} earnedBadges={badgesOfId(player.id)}
                 onInvite={() => navPush({ tab: "invite" })} disciplines={disciplines}
-                pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports}
-                pings={pings} openChallengesToMe={openChallengesToMe} onGoToLive={() => navPush({ tab: "live" })} />}
+                pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports} />}
               {tab === "protokoll" && protokollMatch && (
                 <MatchProtokollScreen match={protokollMatch} onBack={() => window.history.back()} />
               )}
@@ -818,7 +817,9 @@ export default function App() {
               </button>
               <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
                 <User size={21} /><span>{t("Profil")}</span>
-                {player?.role === "admin" && unconfirmed.length > 0 && <span className="badge">{unconfirmed.length}</span>}
+                {openChallengesToMe.length > 0
+                  ? <span className="badge" aria-label={t("Offene Herausforderung")} title={t("Offene Herausforderung")}>!</span>
+                  : player?.role === "admin" && unconfirmed.length > 0 && <span className="badge">{unconfirmed.length}</span>}
               </button>
             </nav>
             )}
