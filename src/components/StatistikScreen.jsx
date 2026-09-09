@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer } from "lucide-react";
+import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer, Star } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
+import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDuration, isDoubles, mSide } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
@@ -150,6 +151,37 @@ function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, o
   );
 }
 
+// Club-weite Rekorde statt der eigenen Zahlen (siehe RecordsCard.jsx im
+// Profil) - fuer jede Kennzahl wird gezeigt, WER sie gerade haelt, nicht
+// nur "wie viel". Jeder Eintrag: Label darueber, darunter eine normale
+// Ranglisten-Zeile (Ball-Avatar + Name + Wert), damit der Rekordhalter
+// direkt anklickbar ist. Eintraege ohne Halter (noch niemand > 0) werden
+// ausgeblendet statt eine leere/falsche Zeile zu zeigen.
+function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile }) {
+  const shown = records.filter((r) => r.holder);
+  return (
+    <section className="stat-block">
+      <div className="stat-block-head">
+        <h3><Star size={17} /> {t("Rekorde")}</h3>
+        <InfoButton title={t("Rekorde")}>
+          {t("Aktuelle Bestwerte der gesamten Gruppe aus allen bestätigten Einzel-Matches (bzw. dem bisherigen Rating-Verlauf beim Rating-Rekord) - wer hält gerade welchen Rekord?")}
+        </InfoButton>
+      </div>
+      {shown.length === 0 && <p className="hint">{t("Noch keine Rekorde.")}</p>}
+      {shown.map(({ key, label, holder, fmt }) => (
+        <div key={key} className="record-entry">
+          <p className="record-entry-label">{label}</p>
+          <button className="stat-row as-btn" onClick={() => onOpenProfile(holder.name)}>
+            <Ball color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={30} />
+            <span className="stat-name">{holder.name}</span>
+            <span className="stat-val">{fmt(holder)}</span>
+          </button>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me, challenges,
   catalog, earnedBadges, onInvite, disciplines, pending, onConfirm, myOpenReports, pings, openChallengesToMe, onGoToLive }) {
   // Globale Auswahl (Disziplin + Top-N/Meine Umgebung): letzte Wahl wird
@@ -219,6 +251,71 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     () => speedStats.filter((p) => p.avgBallMs != null).sort((a, b) => a.avgBallMs - b.avgBallMs),
     [speedStats]
   );
+
+  // Rekorde: dieselbe computeAchievementExtras()-Berechnung wie im eigenen
+  // Profil (RecordsCard.jsx), hier aber fuer JEDEN Spieler durchgefuehrt, um
+  // je Kennzahl den aktuellen Rekordhalter zu finden statt nur die eigene
+  // Zahl zu zeigen. Ergaenzt um drei bisher nirgends gezeigte Kennzahlen
+  // (Hoechster Sieg, Rating-Rekord, meiste Matches gesamt).
+  const extrasAll = useMemo(
+    () => players.map((p) => ({ name: p.nickname, ...computeAchievementExtras(p.nickname, matches, players, challenges) })),
+    [players, matches, challenges]
+  );
+  const topExtra = (metric) => extrasAll.filter((p) => p[metric] > 0).sort((a, b) => b[metric] - a[metric])[0] || null;
+
+  // Groesster Punkteabstand in einem Einzel-Match (wie computeStats/
+  // computeAchievementExtras nur Einzel - bei Doppel gaebe es zwei Namen
+  // statt eines eindeutigen Rekordhalters).
+  const biggestWin = useMemo(() => {
+    let best = null;
+    matches.forEach((m) => {
+      if (m.player1b_id) return;
+      const diff = Math.abs(m.score1 - m.score2);
+      if (diff === 0) return;
+      if (!best || diff > best.diff) {
+        const p1Won = m.score1 > m.score2;
+        best = { name: p1Won ? m.p1.nickname : m.p2.nickname, diff,
+          score: `${Math.max(m.score1, m.score2)}:${Math.min(m.score1, m.score2)}` };
+      }
+    });
+    return best;
+  }, [matches]);
+
+  // Hoechstes je erreichtes Gesamt-Rating: sowohl aus dem taeglichen
+  // Snapshot-Verlauf als auch dem aktuellen Stand (falls das heutige
+  // Hoch noch nicht als Snapshot vorliegt).
+  const peakRating = useMemo(() => {
+    let best = null;
+    snapshots.forEach((s) => {
+      if (s.discipline !== "Gesamt") return;
+      if (!best || s.rating > best.rating) {
+        const p = players.find((pl) => pl.id === s.player_id);
+        if (p) best = { name: p.nickname, rating: s.rating };
+      }
+    });
+    rangliste.forEach((r) => {
+      if (r.discipline !== "Gesamt") return;
+      if (!best || r.rating > best.rating) best = { name: r.nickname, rating: r.rating };
+    });
+    return best ? { name: best.name, rating: Math.round(best.rating) } : null;
+  }, [snapshots, players, rangliste]);
+
+  const mostGames = useMemo(() => {
+    const arr = Object.values(computeStats(matches)).filter((p) => p.spiele > 0).sort((a, b) => b.spiele - a.spiele);
+    return arr[0] || null;
+  }, [matches]);
+
+  const recordRows = [
+    { key: "highRun", label: t("Höchstserie 14/1"), holder: topExtra("highRun"), fmt: (h) => h.highRun },
+    { key: "longestStreak", label: t("Beste Serie"), holder: topExtra("longestStreak"), fmt: (h) => h.longestStreak },
+    { key: "shutoutWins", label: t("Zu-Null-Siege"), holder: topExtra("shutoutWins"), fmt: (h) => h.shutoutWins },
+    { key: "maxVsOpponent", label: t("Rekord geg. 1 Gegner"), holder: topExtra("maxVsOpponent"), fmt: (h) => h.maxVsOpponent },
+    { key: "maxPerDay", label: t("Meiste an 1 Tag"), holder: topExtra("maxPerDay"), fmt: (h) => h.maxPerDay },
+    { key: "recruitedCount", label: t("Geworben"), holder: topExtra("recruitedCount"), fmt: (h) => h.recruitedCount },
+    { key: "biggestWin", label: t("Höchster Sieg"), holder: biggestWin, fmt: (h) => h.score },
+    { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => h.rating },
+    { key: "mostGames", label: t("Meiste Matches gesamt"), holder: mostGames, fmt: (h) => h.spiele },
+  ];
 
   return (
     <div className="screen">
@@ -324,6 +421,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         <LeaderboardBlock icon={<Timer size={17} />} title={t("Schnellstes 14/1-Tempo (Ø pro Kugel)")} rows={topBallSpeed} me={me} count={globalCount} nearby={globalNearby}
           fmt={(p) => fmtDuration(p.avgBallMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
           info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} />
+        <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
       </div>
       </div>
       </div>
