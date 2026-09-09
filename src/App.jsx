@@ -24,6 +24,7 @@ import InviteScreen from "./components/InviteScreen";
 import MatchProtokollScreen from "./components/MatchProtokollScreen";
 import TurniereScreen from "./components/TurniereScreen";
 import TurnierRasterScreen from "./components/TurnierRasterScreen";
+import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 
 export default function App() {
@@ -48,6 +49,7 @@ export default function App() {
   const [protokollMatch, setProtokollMatch] = useState(null);
   const [protokollBackTab, setProtokollBackTab] = useState("stats");
   const [tournamentId, setTournamentId] = useState(null);
+  const [winnerStaysId, setWinnerStaysId] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   // Wird einmalig true, sobald der allererste loadData()-Durchlauf steht -
@@ -90,6 +92,7 @@ export default function App() {
     setProtokollBackTab(s.protokollBackTab ?? "stats");
     setVsOpp(s.vsOpp ?? null);
     setTournamentId(s.tournamentId ?? null);
+    setWinnerStaysId(s.winnerStaysId ?? null);
     setMatchTournamentCtx(s.matchTournamentCtx ?? null);
   }, []);
   const navPush = useCallback((s) => {
@@ -282,7 +285,7 @@ export default function App() {
   // aus einem Turnier heraus gar nicht mehr zur Liste navigieren, weil
   // dieser Klick einen immer wieder ins selbe/ein Turnier zurueckwarf).
   const openTurniereMenu = useCallback(() => {
-    const alreadyInTurnierBereich = tab === "turnier" || tab === "turnierdetail";
+    const alreadyInTurnierBereich = tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays";
     if (!alreadyInTurnierBereich && tourneyReadyList.length > 0) {
       navPush({ tab: "turnierdetail", tournamentId: tourneyReadyList[0].tournament_id });
     } else {
@@ -757,12 +760,17 @@ export default function App() {
               {tab === "turnier" && (
                 <TurniereScreen toast={toast}
                   onOpenTournament={(id) => navPush({ tab: "turnierdetail", tournamentId: id })}
+                  onOpenWinnerStays={(id) => navPush({ tab: "winnerstays", winnerStaysId: id })}
                   onBack={() => window.history.back()} />
               )}
               {tab === "turnierdetail" && tournamentId && (
                 <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} matches={matches} toast={toast}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => window.history.back()}
                   onReportTournamentMatch={(ctx) => navPush({ tab: "match", matchTournamentCtx: ctx })} />
+              )}
+              {tab === "winnerstays" && winnerStaysId && (
+                <WinnerStaysScreen sessionId={winnerStaysId} me={player} players={players} matches={matches} toast={toast}
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => window.history.back()} />
               )}
               <button className="refresh-btn" onClick={() => { loadData(); checkForUpdate(); }} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
@@ -801,7 +809,7 @@ export default function App() {
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
-              <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" ? " on" : "")} onClick={openTurniereMenu}>
+              <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays" ? " on" : "")} onClick={openTurniereMenu}>
                 <Trophy size={21} /><span>{t("Turniere")}</span>
                 {tourneyReadyList.length > 0 && <span className="badge">{tourneyReadyList.length}</span>}
               </button>

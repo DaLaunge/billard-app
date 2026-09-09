@@ -1200,6 +1200,17 @@ button.id-card-head { cursor: pointer; }
 .turnier-tied-names { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .turnier-tied-player { display: flex; align-items: center; gap: 6px; }
 
+/* Winner-Stays-Tisch (WinnerStaysScreen.jsx) - zwei Seiten (Verteidiger/
+   Herausforderer) nebeneinander mit grossem ":" dazwischen, auf Mobile
+   untereinander da sonst die Namen/Zaehler zu eng werden. */
+.ws-table-row { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 10px 0; flex-wrap: wrap; }
+.ws-table-side { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 110px; }
+.ws-table-vs { font-size: 20px; font-weight: 800; color: var(--ivory-dim); }
+.ws-table-name { font-weight: 700; }
+.ws-entry-avatars { display: flex; gap: -6px; }
+.ws-entry-avatars .ball + .ball { margin-left: -10px; }
+.ws-live-tag { margin-left: 8px; font-size: 12px; font-weight: 600; color: var(--gold); white-space: nowrap; }
+
 @media (min-width: 900px) {
   /* Ab Desktop-Breite lohnt sich kein Wisch-Scrollen mehr - alle Runden
      einer Turnierphase nebeneinander, gleichmaessig auf die Breite verteilt. */
