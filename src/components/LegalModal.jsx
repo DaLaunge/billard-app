@@ -36,7 +36,7 @@ export default function LegalModal({ onClose }) {
           <h4>{t("Kontakt")}</h4>
           <p>
             {t("Fragen zum Datenschutz beantworten wir gerne unter")} <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a> {t("oder im")}{" "}
-            <a href="https://t.me/+vG8sWgH_utJlODRk" target="_blank" rel="noopener noreferrer">Telegram-Kanal</a>.
+            <a href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">Telegram-Kanal</a>.
           </p>
         </div>
       </div>

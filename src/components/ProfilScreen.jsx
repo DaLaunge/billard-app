@@ -564,7 +564,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <>
               <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
               <div className="sp-controls">
-                <a className="btn ghost" href="https://t.me/+vG8sWgH_utJlODRk" target="_blank" rel="noopener noreferrer">
+                <a className="btn ghost" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">
                   {t("Per Telegram")}
                 </a>
                 <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>

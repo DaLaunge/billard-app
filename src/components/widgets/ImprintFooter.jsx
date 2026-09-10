@@ -18,7 +18,7 @@ export default function ImprintFooter() {
           Break &amp; Rank · {t("Version")} {APP_VERSION}<br />
           © {new Date().getFullYear()} Break &amp; Rank<br />
           {t("Kontakt")}: <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a><br />
-          {t("Diskussion im")} <a href="https://t.me/+vG8sWgH_utJlODRk" target="_blank" rel="noopener noreferrer">Telegram-Kanal</a>
+          {t("Diskussion im")} <a href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">Telegram-Kanal</a>
         </p>
         <button className="legal-link" onClick={() => setLegalOpen(true)}>{t("Nutzungsbedingungen & Datenschutzerklärung")}</button>
       </footer>
