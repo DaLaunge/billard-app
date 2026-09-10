@@ -216,7 +216,9 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
             {format === "winner_stays" ? (
               <>
                 <p className="hint" style={{ marginBottom: 4 }}>{t("Tisch (optional)")}</p>
-                <input type="number" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
+                <div className="turnier-score-inputs">
+                  <input type="number" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
+                </div>
                 <p className="hint" style={{ marginTop: 10 }}>{t("Teilnehmer fügst du danach direkt in der Runde hinzu.")}</p>
               </>
             ) : (
