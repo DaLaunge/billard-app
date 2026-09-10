@@ -65,12 +65,25 @@ begin
     select
       coalesce(sum(case when g.entry_a_id = v_pair.side1_id then g.score_a else g.score_b end), 0),
       coalesce(sum(case when g.entry_a_id = v_pair.side1_id then g.score_b else g.score_a end), 0),
-      max(g.played_at), max(g.reported_by)
-    into v_score1, v_score2, v_played_at, v_reporter
+      max(g.played_at)
+    into v_score1, v_score2, v_played_at
     from winner_stays_games g
     where g.session_id = p_session_id
       and least(g.entry_a_id, g.entry_b_id) = v_pair.side1_id
       and greatest(g.entry_a_id, g.entry_b_id) = v_pair.side2_id;
+
+    -- max()/min() existieren fuer uuid nicht ("function max(uuid) does not
+    -- exist", live beim Ausfuehren aufgefallen, anders als bei least()/
+    -- greatest() oben, die ueber Vergleichsoperatoren statt eines
+    -- Aggregat-Funktionskatalogeintrags funktionieren) - stattdessen den
+    -- Melder des zeitlich letzten Racks dieser Paarung gezielt holen.
+    select reported_by into v_reporter
+      from winner_stays_games
+      where session_id = p_session_id
+        and least(entry_a_id, entry_b_id) = v_pair.side1_id
+        and greatest(entry_a_id, entry_b_id) = v_pair.side2_id
+      order by game_no desc
+      limit 1;
 
     select jsonb_agg(jsonb_build_array(s1_running, s2_running, extract(epoch from played_at) * 1000) order by game_no)
     into v_run_log
