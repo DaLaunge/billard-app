@@ -354,6 +354,32 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
       </section>
 
       <section className="stat-block">
+        <h3><Send size={17} /> {t("SMTP-Testmail")}</h3>
+        <p className="hint" style={{ marginTop: 0 }}>{t("Verschickt eine einzelne Mail direkt über das konfigurierte SMTP-Konto (unabhängig von den Supabase-Auth-Mails) – zum gezielten Testen von Zustellung und Sendekapazität. Betreff/Text leer lassen für automatische Werte.")}</p>
+        <div className="pw-box">
+          <input type="email" placeholder={t("Empfänger-Adresse")} value={testMailTo} autoComplete="off"
+            onChange={(e) => setTestMailTo(e.target.value)} />
+          <input type="text" placeholder={t("Betreff (optional)")} value={testMailSubject} autoComplete="off"
+            onChange={(e) => setTestMailSubject(e.target.value)} />
+          <input type="text" placeholder={t("Mailtext (optional)")} value={testMailText} autoComplete="off"
+            onChange={(e) => setTestMailText(e.target.value)} />
+          <button className="btn primary" disabled={busyTestMail} onClick={sendTestMail}>
+            {busyTestMail ? t("Sende ...") : <><Send size={16} /> {t("Testmail versenden")}</>}
+          </button>
+        </div>
+        {testMailLog.length > 0 && (
+          <div className="mem-list" style={{ marginTop: 10 }}>
+            {testMailLog.map((e, i) => (
+              <div key={i} className="pending-row">
+                <span className="m-date">{fmtDateTime(e.at)}</span>
+                <span className="m-txt">{e.ok ? <Check size={14} /> : <X size={14} />} {e.msg}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="stat-block">
         <h3><User size={17} /> {t("Neuen Nutzer anlegen")}</h3>
         <p className="hint" style={{ marginTop: 0 }}>{t("Legt einen Login mit E-Mail, Passwort und Spielername an – sofort nutzbar, ohne dass eine Mail verschickt wird. Muss beim ersten Login das Passwort ändern.")}</p>
         <div className="pw-box">
@@ -497,32 +523,6 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           </div>
         )}
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
-      </section>
-
-      <section className="stat-block">
-        <h3><Send size={17} /> {t("SMTP-Testmail")}</h3>
-        <p className="hint" style={{ marginTop: 0 }}>{t("Verschickt eine einzelne Mail direkt über das konfigurierte SMTP-Konto (unabhängig von den Supabase-Auth-Mails) – zum gezielten Testen von Zustellung und Sendekapazität. Betreff/Text leer lassen für automatische Werte.")}</p>
-        <div className="pw-box">
-          <input type="email" placeholder={t("Empfänger-Adresse")} value={testMailTo} autoComplete="off"
-            onChange={(e) => setTestMailTo(e.target.value)} />
-          <input type="text" placeholder={t("Betreff (optional)")} value={testMailSubject} autoComplete="off"
-            onChange={(e) => setTestMailSubject(e.target.value)} />
-          <input type="text" placeholder={t("Mailtext (optional)")} value={testMailText} autoComplete="off"
-            onChange={(e) => setTestMailText(e.target.value)} />
-          <button className="btn primary" disabled={busyTestMail} onClick={sendTestMail}>
-            {busyTestMail ? t("Sende ...") : <><Send size={16} /> {t("Testmail versenden")}</>}
-          </button>
-        </div>
-        {testMailLog.length > 0 && (
-          <div className="mem-list" style={{ marginTop: 10 }}>
-            {testMailLog.map((e, i) => (
-              <div key={i} className="pending-row">
-                <span className="m-date">{fmtDateTime(e.at)}</span>
-                <span className="m-txt">{e.ok ? <Check size={14} /> : <X size={14} />} {e.msg}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
 
       <section className="stat-block">
