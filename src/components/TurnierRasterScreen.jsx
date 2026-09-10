@@ -4,6 +4,7 @@ import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
+import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
 import PlayerMultiPicker from "./PlayerMultiPicker";
 import TurnierGraph from "./TurnierGraph";
@@ -273,7 +274,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   };
 
   const forceConfirm = async (tm) => {
-    if (!window.confirm(t("Dieses Ergebnis als Turnierleitung erzwungen bestätigen?"))) return;
+    if (!(await appConfirm(t("Dieses Ergebnis als Turnierleitung erzwungen bestätigen?")))) return;
     setBusyId(tm.id);
     const { error } = await supabase.rpc("tournament_force_confirm_match", { p_tournament_match_id: tm.id });
     setBusyId(null);
@@ -313,7 +314,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   };
 
   const endEarly = async () => {
-    if (!window.confirm(t("Turnier jetzt vorzeitig beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste."))) return;
+    if (!(await appConfirm(t("Turnier jetzt vorzeitig beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste.")))) return;
     setBusyId("end");
     const { error } = await supabase.rpc("tournament_end_early", { p_tournament_id: tournamentId });
     setBusyId(null);
@@ -325,11 +326,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // Schranke (Nutzer-Feedback): erst mit dieser expliziten Bestaetigung durch
   // Turnierleitung/Admin werden Ergebnis-Korrekturen gesperrt (siehe
   // resultsLocked/tournament_confirm_results) - bis dahin bleiben Tippfehler
-  // jederzeit korrigierbar. Bewusst window.confirm() wie bei endEarly/
-  // deleteTournament (gleiche Kategorie: einmalige, irreversible Aktion ohne
-  // weitere Dateneingabe) statt eines eigenen Overlays.
+  // jederzeit korrigierbar.
   const confirmResults = async () => {
-    if (!window.confirm(t("Turnier endgültig bestätigen? Danach sind keine Ergebnis-Korrekturen mehr möglich."))) return;
+    if (!(await appConfirm(t("Turnier endgültig bestätigen? Danach sind keine Ergebnis-Korrekturen mehr möglich.")))) return;
     setBusyId("confirmResults");
     const { error } = await supabase.rpc("tournament_confirm_results", { p_tournament_id: tournamentId });
     setBusyId(null);
@@ -339,7 +338,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   };
 
   const deleteTournament = async () => {
-    if (!window.confirm(t("Dieses Turnier wirklich unwiderruflich löschen?"))) return;
+    if (!(await appConfirm(t("Dieses Turnier wirklich unwiderruflich löschen?")))) return;
     setBusyId("delete");
     const { error } = await supabase.rpc("tournament_delete", { p_tournament_id: tournamentId });
     setBusyId(null);
@@ -408,7 +407,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   };
 
   const startTournament = async () => {
-    if (!window.confirm(t("Turnier jetzt starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost."))) return;
+    if (!(await appConfirm(t("Turnier jetzt starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost.")))) return;
     setBusyId("start");
     const { error } = await supabase.rpc("tournament_start", { p_tournament_id: tournamentId });
     setBusyId(null);
@@ -423,7 +422,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // unten durchgesetzt), loescht den ausgelosten Baum wieder und geht
   // zurueck in die Anmeldephase - die Anmeldeliste selbst bleibt bestehen.
   const cancelStart = async () => {
-    if (!window.confirm(t("Start rückgängig machen und zurück zur Anmeldung?"))) return;
+    if (!(await appConfirm(t("Start rückgängig machen und zurück zur Anmeldung?")))) return;
     setBusyId("cancelStart");
     const { error } = await supabase.rpc("tournament_cancel_start", { p_tournament_id: tournamentId });
     setBusyId(null);

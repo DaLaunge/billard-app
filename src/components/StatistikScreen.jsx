@@ -13,6 +13,7 @@ import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
 import InfoButton from "./widgets/InfoButton";
 import ImprintFooter from "./widgets/ImprintFooter";
+import TournamentFlag from "./TournamentFlag";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
@@ -255,7 +256,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
   const filteredMatches = useMemo(() => {
     return [...matches]
       .filter((m) => {
-        if (hideTournament && m.tournament_id) return false;
+        if (hideTournament && (m.tournament_id || m.winner_stays_session_id)) return false;
         if (filterPlayer) {
           const isP1 = m.p1?.nickname === filterPlayer || m.p1b?.nickname === filterPlayer;
           const isP2 = m.p2?.nickname === filterPlayer || m.p2b?.nickname === filterPlayer;
@@ -351,7 +352,8 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
               <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
             ))}
           </span>
-          <span className="m-disc">{t(m.discipline)}{m.tournament_id ? " · 🏆" : ""}</span>
+          <span className="m-disc">{t(m.discipline)}</span>
+          <TournamentFlag match={m} />
           {m.run_log?.length > 0 && (
             <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
               <FileText size={15} />

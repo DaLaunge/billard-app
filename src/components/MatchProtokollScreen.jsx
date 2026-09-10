@@ -2,6 +2,7 @@ import { ChevronLeft, Printer } from "lucide-react";
 import { t } from "../lib/i18n";
 import { fmtDateTime, mSide } from "../lib/format";
 import MatchProtokollTable from "./MatchProtokollTable";
+import TournamentFlag from "./TournamentFlag";
 
 // Nachtraegliche Ansicht des gespeicherten Match-Protokolls, als echte
 // Tabelle (nicht als Fliesstext) - die eigentliche Tabellen-Logik steckt in
@@ -22,7 +23,7 @@ export default function MatchProtokollScreen({ match: m, onBack }) {
       <div className="protokoll-doc">
         <div className="protokoll-head">
           <h1>{names[0]} <span className="protokoll-score">{m.score1} : {m.score2}</span> {names[1]}</h1>
-          <p className="protokoll-meta">{t(m.discipline)} · {fmtDateTime(m.played_at)}</p>
+          <p className="protokoll-meta">{t(m.discipline)} · {fmtDateTime(m.played_at)} <TournamentFlag match={m} /></p>
         </div>
 
         <MatchProtokollTable match={m} names={names} />
