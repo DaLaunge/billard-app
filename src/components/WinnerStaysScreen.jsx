@@ -124,7 +124,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   const finishSession = async () => {
-    if (!window.confirm(t("Diese Runde jetzt beenden?"))) return;
+    if (!window.confirm(t("Diese Runde jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert."))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_finish_session", { p_session_id: sessionId });
     setBusy(false);

@@ -1097,6 +1097,7 @@ const TRANSLATIONS = {
     "Runde beendet.": "Round ended.",
     "Runde gelöscht.": "Round deleted.",
     "Diese Runde jetzt beenden?": "End this round now?",
+    "Diese Runde jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert.": "End this round now? A rated match with a protocol will now be saved for each pairing.",
     "Diese Runde wirklich löschen?": "Really delete this round?",
     "Hinzufügen": "Add",
     "Team hinzufügen": "Add team",
