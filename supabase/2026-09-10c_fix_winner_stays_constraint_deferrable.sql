@@ -27,6 +27,12 @@
 -- Supabase-Projekte (Test: hadamdvpnwslztsxmwdr, Produktion: wofsutwidaitloeiwnma)
 -- - dieses Skript muss in BEIDEN separat laufen, zuerst Test.
 
+-- ALTER CONSTRAINT ... DEFERRABLE geht in Postgres nur bei Fremdschluesseln,
+-- nicht bei UNIQUE-Constraints ("is not a foreign key constraint", live
+-- beim Ausfuehren aufgefallen) - deshalb hier Drop + Re-Add statt eines
+-- simplen ALTER.
 alter table public.winner_stays_entries
-  alter constraint winner_stays_entries_session_id_queue_position_key
-  deferrable initially deferred;
+  drop constraint winner_stays_entries_session_id_queue_position_key;
+alter table public.winner_stays_entries
+  add constraint winner_stays_entries_session_id_queue_position_key
+  unique (session_id, queue_position) deferrable initially deferred;
