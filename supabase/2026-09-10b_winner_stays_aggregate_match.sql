@@ -136,11 +136,6 @@ begin
         and least(entry_a_id, entry_b_id) = v_pair.side1_id
         and greatest(entry_a_id, entry_b_id) = v_pair.side2_id
         and match_id is not null;
-    if v_old_match_ids is not null then
-      delete from match_confirmations where match_id = any(v_old_match_ids);
-      update challenges set resolved_match_id = null where resolved_match_id = any(v_old_match_ids);
-      delete from matches where id = any(v_old_match_ids);
-    end if;
 
     select
       coalesce(sum(case when g.entry_a_id = v_pair.side1_id then g.score_a else g.score_b end), 0),
@@ -179,6 +174,16 @@ begin
       where session_id = p_session_id
         and least(entry_a_id, entry_b_id) = v_pair.side1_id
         and greatest(entry_a_id, entry_b_id) = v_pair.side2_id;
+
+    -- Erst JETZT sind die alten Match-Zeilen (falls vorhanden) von keiner
+    -- winner_stays_games-Zeile mehr referenziert (alle zeigen jetzt auf
+    -- v_match_id) - vorher haette das DELETE an genau dieser
+    -- Fremdschluessel-Regel gescheitert (live beim Testen aufgefallen).
+    if v_old_match_ids is not null then
+      delete from match_confirmations where match_id = any(v_old_match_ids);
+      update challenges set resolved_match_id = null where resolved_match_id = any(v_old_match_ids);
+      delete from matches where id = any(v_old_match_ids);
+    end if;
   end loop;
 
   update winner_stays_sessions set status = 'finished', finished_at = now() where id = p_session_id;
