@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -206,6 +206,33 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     if (onReload) await onReload();
     toast(t("Erfolge neu berechnet."));
   };
+  const [testMailTo, setTestMailTo] = useState("");
+  const [testMailSubject, setTestMailSubject] = useState("");
+  const [testMailText, setTestMailText] = useState("");
+  const [busyTestMail, setBusyTestMail] = useState(false);
+  const [testMailLog, setTestMailLog] = useState([]);
+  const sendTestMail = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testMailTo)) { toast(t("Gültige Empfänger-Adresse nötig.")); return; }
+    setBusyTestMail(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    let entry;
+    try {
+      const res = await fetch("/api/send-test-mail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
+        body: JSON.stringify({ to: testMailTo.trim(), subject: testMailSubject.trim(), text: testMailText.trim() }),
+      });
+      const data = await res.json();
+      entry = { at: new Date(), ok: res.ok, msg: res.ok ? data.subject : (data.error || res.statusText) };
+      toast(res.ok ? t("Testmail gesendet.") : t("Fehler: ") + entry.msg);
+    } catch (err) {
+      entry = { at: new Date(), ok: false, msg: err.message };
+      toast(t("Fehler: ") + err.message);
+    }
+    setTestMailLog((log) => [entry, ...log]);
+    setBusyTestMail(false);
+  };
+
   const createUser = async () => {
     if (!nu.email.includes("@") || nu.password.length < 6 || nu.nickname.trim().length < 2) {
       toast(t("E-Mail, Passwort (min. 6 Zeichen) und Spielername (min. 2 Zeichen) nötig.")); return;
@@ -470,6 +497,32 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           </div>
         )}
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
+      </section>
+
+      <section className="stat-block">
+        <h3><Send size={17} /> {t("SMTP-Testmail")}</h3>
+        <p className="hint" style={{ marginTop: 0 }}>{t("Verschickt eine einzelne Mail direkt über das konfigurierte SMTP-Konto (unabhängig von den Supabase-Auth-Mails) – zum gezielten Testen von Zustellung und Sendekapazität. Betreff/Text leer lassen für automatische Werte.")}</p>
+        <div className="pw-box">
+          <input type="email" placeholder={t("Empfänger-Adresse")} value={testMailTo} autoComplete="off"
+            onChange={(e) => setTestMailTo(e.target.value)} />
+          <input type="text" placeholder={t("Betreff (optional)")} value={testMailSubject} autoComplete="off"
+            onChange={(e) => setTestMailSubject(e.target.value)} />
+          <input type="text" placeholder={t("Mailtext (optional)")} value={testMailText} autoComplete="off"
+            onChange={(e) => setTestMailText(e.target.value)} />
+          <button className="btn primary" disabled={busyTestMail} onClick={sendTestMail}>
+            {busyTestMail ? t("Sende ...") : <><Send size={16} /> {t("Testmail versenden")}</>}
+          </button>
+        </div>
+        {testMailLog.length > 0 && (
+          <div className="mem-list" style={{ marginTop: 10 }}>
+            {testMailLog.map((e, i) => (
+              <div key={i} className="pending-row">
+                <span className="m-date">{fmtDateTime(e.at)}</span>
+                <span className="m-txt">{e.ok ? <Check size={14} /> : <X size={14} />} {e.msg}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="stat-block">
