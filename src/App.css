@@ -987,7 +987,7 @@ button.id-card-head { cursor: pointer; }
 
   /* Statistik: duenn-breit-duenn wie Profil - UserPanel links (dieselbe
      Konstante), Verlaufs-Graph zentral/breit (der eigentliche Fokus dieser
-     Seite - Letzte Matches sind in den Live-Menuepunkt gewandert), rechts
+     Seite, darunter Rekorde und ganz unten die Spielehistorie), rechts
      ganz oben die globale Disziplin-/Top-N-Auswahl (Nutzer-Feedback: dort
      statt als eigene volle Zeile ueber allen drei Spalten), darunter die
      Rangliste, Live-Status und die reinen Bestenlisten ("alles andere")
@@ -1128,6 +1128,11 @@ button.id-card-head { cursor: pointer; }
 .pmp-chip:hover { background: var(--felt-3); }
 .pmp-chip.sel { border-color: var(--gold); background: var(--felt-3); }
 .pmp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.guest-tag { margin-left: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+  color: var(--ivory-dim); background: var(--felt-3); border-radius: 5px; padding: 1px 5px; }
+.turnier-guest-form { display: flex; gap: 8px; margin-top: 10px; }
+.turnier-guest-form input { flex: 1; min-width: 0; }
+.turnier-guest-form .btn { width: auto; margin-top: 0; white-space: nowrap; }
 .turnier-organizer-line { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; }
 .pmp-check { color: var(--gold); flex-shrink: 0; }
 /* Entfernen-Button in der Angemeldet-Liste (Turnierleitung, Anmeldephase) -

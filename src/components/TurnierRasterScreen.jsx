@@ -64,6 +64,14 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   const [showAddPlayers, setShowAddPlayers] = useState(false);
   const [addSelected, setAddSelected] = useState([]);
   const toggleAddSelected = (id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  // Gast-Person ohne App/Login (Nutzer-Feedback: "wenn jemand die App nicht
+  // benutzen will") - eigenes, einfaches Textfeld statt PlayerMultiPicker,
+  // da hier kein bestehender Spieler ausgewaehlt, sondern ein neuer
+  // Platzhalter mit reinem Namen angelegt wird (siehe
+  // tournament_organizer_add_guest() - erledigt Anlegen + Anmeldung in
+  // einem Schritt). Ergebnisse gegen Gaeste zaehlen fuers Turnier normal,
+  // fliessen aber nicht ins Rating (rebuild_elo() schliesst is_guest aus).
+  const [guestName, setGuestName] = useState("");
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
@@ -374,6 +382,20 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     await load();
   };
 
+  const addGuest = async () => {
+    if (!guestName.trim()) { toast(t("Name fehlt.")); return; }
+    setBusyId("addGuest");
+    const { error } = await supabase.rpc("tournament_organizer_add_guest", {
+      p_tournament_id: tournamentId, p_nickname: guestName.trim(),
+    });
+    setBusyId(null);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Gast hinzugefügt."));
+    setGuestName("");
+    await load();
+    if (onReload) await onReload();
+  };
+
   const removePlayer = async (playerId) => {
     setBusyId("removePlayer");
     const { error } = await supabase.rpc("tournament_organizer_remove_player", {
@@ -464,10 +486,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
               {(roster || []).map((r) => {
                 const nick = nameOf(r.player_id);
                 if (!nick) return null;
+                const isGuest = players.find((p) => p.id === r.player_id)?.is_guest;
                 return (
                   <div key={r.player_id} className="pmp-chip">
                     <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={32} />
-                    <span className="pmp-name">{nick}</span>
+                    <span className="pmp-name">{nick}{isGuest && <span className="guest-tag">{t("Gast")}</span>}</span>
                     {isOrganizer && (
                       <button type="button" className="pmp-remove" disabled={busyId === "removePlayer"}
                         onClick={() => removePlayer(r.player_id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
@@ -500,6 +523,17 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                   </button>
                 </div>
               )}
+              <div className="turnier-guest-form">
+                <input type="text" placeholder={t("Name des Gasts")} value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") addGuest(); }} />
+                <button className="btn ghost" disabled={!guestName.trim() || busyId === "addGuest"} onClick={addGuest}>
+                  <UserPlus size={15} /> {t("Gast hinzufügen")}
+                </button>
+              </div>
+              <p className="hint" style={{ marginTop: 4 }}>
+                {t("Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.")}
+              </p>
             </>
           )}
         </section>

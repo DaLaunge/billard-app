@@ -1113,6 +1113,11 @@ const TRANSLATIONS = {
     "{n} in Folge": "{n} in a row",
     "Name fehlt.": "Name is missing.",
     "z. B. 3": "e.g. 3",
+    "Gast hinzufügen": "Add guest",
+    "Name des Gasts": "Guest's name",
+    "Gast hinzugefügt.": "Guest added.",
+    "Gast": "Guest",
+    "Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.": "For people without the app - results against guests count for the tournament, but not for the rating.",
   },
 };
 export function setLangGlobal(l) {
