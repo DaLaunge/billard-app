@@ -1,0 +1,49 @@
+<!--
+  Kein SQL, keine automatisch angewandte Migration - dient nur als
+  Ablage/Versionsgeschichte fuer den Inhalt, der manuell im Supabase-
+  Dashboard eingetragen wird (Authentication -> Emails -> Templates ->
+  Magic Link, "Source"-Ansicht). Muss in BEIDEN Projekten (Test
+  hadamdvpnwslztsxmwdr und Produktion wofsutwidaitloeiwnma) separat
+  eingetragen werden, genau wie die SMTP-Einstellungen.
+
+  Subject-Feld (separat im Dashboard): Dein Break & Rank Login-Link
+
+  Tabellenbasiertes Layout mit Inline-Styles statt Flex/Grid, weil
+  Mail-Clients (v.a. Outlook Desktop) modernes CSS nicht zuverlaessig
+  unterstuetzen - fuer HTML-Mails Branchenstandard.
+-->
+<div style="background-color:#f4f1ea;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2ddd0;">
+    <tr>
+      <td style="background-color:#0A2B21;padding:28px 24px;text-align:center;">
+        <img src="https://billard-app.vercel.app/icon-512.png" width="56" height="56" alt="Break & Rank" style="display:block;margin:0 auto 10px;border-radius:12px;">
+        <span style="color:#F2EDE0;font-size:20px;font-weight:bold;font-family:Arial,Helvetica,sans-serif;">Break &amp; Rank</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px 28px 24px;text-align:center;">
+        <h1 style="margin:0 0 12px;font-size:20px;color:#111111;font-family:Arial,Helvetica,sans-serif;">Dein Login-Link</h1>
+        <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#444444;font-family:Arial,Helvetica,sans-serif;">
+          Tippe auf den Button, um dich bei Break &amp; Rank anzumelden. Der Link ist einmalig gültig und läuft nach kurzer Zeit ab.
+        </p>
+        <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;background-color:#D6A425;color:#0A2B21;font-weight:bold;font-size:16px;text-decoration:none;padding:14px 32px;border-radius:8px;font-family:Arial,Helvetica,sans-serif;">
+          Jetzt anmelden
+        </a>
+        <p style="margin:28px 0 0;font-size:13px;color:#888888;font-family:Arial,Helvetica,sans-serif;">
+          Button funktioniert nicht? Adresse kopieren und im Browser öffnen:
+        </p>
+        <p style="margin:6px 0 0;font-size:12px;color:#0A2B21;word-break:break-all;font-family:monospace;">
+          {{ .ConfirmationURL }}
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color:#f4f1ea;padding:20px 24px;text-align:center;border-top:1px solid #e2ddd0;">
+        <p style="margin:0;font-size:11px;line-height:1.6;color:#999999;font-family:Arial,Helvetica,sans-serif;">
+          Break &amp; Rank · Kontakt: <a href="mailto:dalaunge@gmx.at" style="color:#999999;">dalaunge@gmx.at</a><br>
+          Diese Mail wurde angefordert, weil sich jemand mit dieser Adresse bei Break &amp; Rank anmelden wollte. War das nicht du, kannst du sie ignorieren.
+        </p>
+      </td>
+    </tr>
+  </table>
+</div>
