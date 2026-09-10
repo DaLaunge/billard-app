@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
+import { appConfirm } from "../lib/confirmDialog";
 import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
 import Ball from "./Ball";
@@ -70,7 +71,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     const msg = role === "admin"
       ? t("{name} zum Admin machen?", { name: p.nickname })
       : t("{name} die Admin-Rolle entziehen?", { name: p.nickname });
-    if (!window.confirm(msg)) return;
+    if (!(await appConfirm(msg))) return;
     const { error } = await supabase.rpc("admin_set_role", { p_player: p.player_id, p_role: role });
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await loadLogins();
@@ -83,7 +84,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   const [busyPw, setBusyPw] = useState(false);
   const setPlayerPassword = async (p) => {
     if (newPw.length < 6) { toast(t("Mindestens 6 Zeichen.")); return; }
-    if (!window.confirm(t("Neues Passwort für {name} setzen? Muss beim nächsten Login sofort geändert werden.", { name: p.nickname }))) return;
+    if (!(await appConfirm(t("Neues Passwort für {name} setzen? Muss beim nächsten Login sofort geändert werden.", { name: p.nickname })))) return;
     setBusyPw(true);
     const { error } = await supabase.rpc("admin_set_password", { p_player: p.player_id, p_new_password: newPw });
     setBusyPw(false);
@@ -100,7 +101,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     if (!newLoginEmail.includes("@") || newLoginPw.length < 6) {
       toast(t("E-Mail und Passwort (min. 6 Zeichen) nötig.")); return;
     }
-    if (!window.confirm(t("Login für {name} mit {email} anlegen? Muss beim ersten Login das Passwort ändern.", { name: p.nickname, email: newLoginEmail.trim() }))) return;
+    if (!(await appConfirm(t("Login für {name} mit {email} anlegen? Muss beim ersten Login das Passwort ändern.", { name: p.nickname, email: newLoginEmail.trim() })))) return;
     setBusyLogin(true);
     const { error } = await supabase.rpc("admin_create_login", {
       p_player: p.player_id, p_email: newLoginEmail.trim(), p_new_password: newLoginPw,
@@ -117,7 +118,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   const [busyEmail, setBusyEmail] = useState(false);
   const setPlayerEmail = async (p) => {
     if (!newEmail.includes("@")) { toast(t("Ungültige E-Mail-Adresse.")); return; }
-    if (!window.confirm(t("E-Mail für {name} auf {email} ändern? Der Spieler muss sich künftig damit anmelden.", { name: p.nickname, email: newEmail.trim() }))) return;
+    if (!(await appConfirm(t("E-Mail für {name} auf {email} ändern? Der Spieler muss sich künftig damit anmelden.", { name: p.nickname, email: newEmail.trim() })))) return;
     setBusyEmail(true);
     const { error } = await supabase.rpc("admin_set_email", { p_player: p.player_id, p_new_email: newEmail.trim() });
     setBusyEmail(false);
@@ -131,7 +132,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   const [busyDelete, setBusyDelete] = useState(false);
   const deletePlayer = async (p) => {
     if (deleteConfirmText.trim() !== p.nickname) { toast(t("Spielername stimmt nicht überein.")); return; }
-    if (!window.confirm(t("Bist du sicher? {name} wird UNWIDERRUFLICH mit der kompletten Historie (Matches, Erfolge, Ratings, Turnierteilnahmen, ...) gelöscht.", { name: p.nickname }))) return;
+    if (!(await appConfirm(t("Bist du sicher? {name} wird UNWIDERRUFLICH mit der kompletten Historie (Matches, Erfolge, Ratings, Turnierteilnahmen, ...) gelöscht.", { name: p.nickname })))) return;
     setBusyDelete(true);
     // Profilfoto zuerst ueber die Storage-API entfernen - ein direktes
     // SQL-DELETE auf storage.objects blockiert Supabase inzwischen
@@ -148,7 +149,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   };
   const setBlocked = async (p, blocked) => {
     const msg = blocked ? t("{name} blockieren?", { name: p.nickname }) : t("{name} entsperren?", { name: p.nickname });
-    if (!window.confirm(msg)) return;
+    if (!(await appConfirm(msg))) return;
     const { error } = await supabase.rpc("admin_set_blocked", { p_player: p.player_id, p_blocked: blocked });
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await loadLogins();

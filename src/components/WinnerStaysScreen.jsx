@@ -3,6 +3,7 @@ import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown } 
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
+import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 import PlayerMultiPicker from "./PlayerMultiPicker";
@@ -115,7 +116,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   const removeEntry = async (entryId) => {
-    if (!window.confirm(t("Diese Person/dieses Team aus der Runde nehmen?"))) return;
+    if (!(await appConfirm(t("Diese Person/dieses Team aus der Runde nehmen?")))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_remove_entry", { p_session_id: sessionId, p_entry_id: entryId });
     setBusy(false);
@@ -124,7 +125,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   const finishSession = async () => {
-    if (!window.confirm(t("Diese Runde jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert."))) return;
+    if (!(await appConfirm(t("Diese Runde jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert.")))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_finish_session", { p_session_id: sessionId });
     setBusy(false);
@@ -134,7 +135,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   const deleteSession = async () => {
-    if (!window.confirm(t("Diese Runde wirklich löschen?"))) return;
+    if (!(await appConfirm(t("Diese Runde wirklich löschen?")))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_delete_session", { p_session_id: sessionId });
     setBusy(false);

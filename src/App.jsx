@@ -26,6 +26,7 @@ import TurniereScreen from "./components/TurniereScreen";
 import TurnierRasterScreen from "./components/TurnierRasterScreen";
 import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
+import ConfirmHost from "./components/ConfirmHost";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -345,7 +346,7 @@ export default function App() {
     const [rang, m, pl, pi, bg, ct, mc, ch, pn] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
-        .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, run_log, tournament_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname)")
+        .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, run_log, tournament_id, winner_stays_session_id, p1:players!matches_player1_id_fkey(nickname), p2:players!matches_player2_id_fkey(nickname), p1b:players!matches_player1b_id_fkey(nickname), p2b:players!matches_player2b_id_fkey(nickname), tournament:tournaments(name, format), winner_stays_session:winner_stays_sessions(name, is_doubles)")
         .order("played_at", { ascending: false })
         .range(from, to)),
       supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, is_guest, blocked, invited_by, created_at"),
@@ -645,6 +646,7 @@ export default function App() {
 
         {session && player && !player.must_change_password && initialLoadDone && (
           <>
+            <ConfirmHost />
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
                 <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
