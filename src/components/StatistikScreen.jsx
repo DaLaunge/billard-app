@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
-import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer, Star } from "lucide-react";
+import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer, Star, History } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
-import { initials, fmtDate, fmtDuration, isDoubles, mSide } from "../lib/format";
+import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
+import PlayerPicker from "./PlayerPicker";
 import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
 import InfoButton from "./widgets/InfoButton";
@@ -15,6 +16,8 @@ import ImprintFooter from "./widgets/ImprintFooter";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
+const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
+const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
 
 // Eigene Komponente statt Definition innerhalb von StatistikScreen: sonst
 // waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
@@ -226,6 +229,138 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
             })}
           </tbody>
         </table>
+      )}
+    </section>
+  );
+}
+
+// Spielehistorie: war urspruenglich Teil dieser Seite, wanderte bei der
+// Nav-Umstellung (Uebersicht+Statistik -> Statistik, Live bekam eigenen
+// Fokus) komplett in den Live-Tab - Nutzer-Feedback holte sie explizit
+// wieder zurueck ("wo ist die Spielehistorie verschwunden? Ich wollte sie
+// in den Statistiken in der mittleren Spalte ganz unten haben"), diesmal
+// dauerhaft hier statt zusaetzlich auf Live dupliziert. Eigene Komponente
+// aus demselben Grund wie LeaderboardBlock/RecordsBoard oben: sonst
+// verliert ihr lokaler Filter-State bei jedem Render der Eltern-
+// Komponente seine Identitaet.
+function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokoll }) {
+  const [filterPlayer, setFilterPlayer] = useState("");
+  const [filterResult, setFilterResult] = useState("all"); // all | win | loss
+  const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ... | "Doppel"
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [matchCount, setMatchCount] = useState(10);
+  const [hideTournament, setHideTournament] = useState(false);
+
+  const filteredMatches = useMemo(() => {
+    return [...matches]
+      .filter((m) => {
+        if (hideTournament && m.tournament_id) return false;
+        if (filterPlayer) {
+          const isP1 = m.p1?.nickname === filterPlayer || m.p1b?.nickname === filterPlayer;
+          const isP2 = m.p2?.nickname === filterPlayer || m.p2b?.nickname === filterPlayer;
+          if (!isP1 && !isP2) return false;
+          if (filterResult !== "all") {
+            const won = isP1 ? m.score1 > m.score2 : m.score2 > m.score1;
+            if (filterResult === "win" && !won) return false;
+            if (filterResult === "loss" && won) return false;
+          }
+        }
+        if (filterDisc === "Doppel") { if (!isDoubles(m)) return false; }
+        else if (filterDisc !== "all") { if (m.discipline !== filterDisc) return false; }
+        const day = m.played_at.slice(0, 10);
+        if (dateFrom && day < dateFrom) return false;
+        if (dateTo && day > dateTo) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.played_at) - new Date(a.played_at));
+  }, [matches, hideTournament, filterPlayer, filterResult, filterDisc, dateFrom, dateTo]);
+
+  const visibleMatches = matchCount === "all" ? filteredMatches : filteredMatches.slice(0, matchCount);
+  const filtersActive = !!(filterPlayer || filterDisc !== "all" || dateFrom || dateTo || hideTournament);
+  const resetFilters = () => {
+    setFilterPlayer(""); setFilterResult("all"); setFilterDisc("all"); setDateFrom(""); setDateTo("");
+    setMatchCount(10); setHideTournament(false);
+  };
+
+  return (
+    <section className="stat-block">
+      <h3><History size={17} /> {t("Letzte Matches")}</h3>
+      <div className="match-filters">
+        <PlayerPicker players={players} matches={matches} me={me} allowAll
+          value={filterPlayer || null}
+          onSelect={(nick) => { setFilterPlayer(nick || ""); setFilterResult("all"); }} />
+        {filterPlayer && (
+          <div className="chips small" style={{ marginBottom: 0 }}>
+            {["all", "win", "loss"].map((r) => (
+              <button key={r} className={"chip" + (filterResult === r ? " active" : "")} onClick={() => setFilterResult(r)}>
+                {r === "all" ? t("Alle") : r === "win" ? t("Siege") : t("Niederlagen")}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="chips small" style={{ marginBottom: 0 }}>
+          <button className={"chip" + (filterDisc === "all" ? " active" : "")} onClick={() => setFilterDisc("all")}>
+            {t("Alle")}
+          </button>
+          {MATCH_DISCIPLINES.map((d) => (
+            <button key={d} className={"chip" + (filterDisc === d ? " active" : "")} onClick={() => setFilterDisc(d)}>
+              {t(DISC_LABEL[d] || d)}
+            </button>
+          ))}
+        </div>
+        <div className="chips small" style={{ marginBottom: 0 }}>
+          <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
+            {t("Turniermatches ausblenden")}
+          </button>
+        </div>
+        <div className="date-range">
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label={t("Von")} />
+          <span>{t("bis")}</span>
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label={t("Bis")} />
+        </div>
+        {filtersActive && (
+          <button className="btn ghost" style={{ marginTop: 0 }} onClick={resetFilters}>
+            <X size={15} /> {t("Filter zurücksetzen")}
+          </button>
+        )}
+      </div>
+
+      <div className="stat-block-head">
+        <p className="filter-count" style={{ marginBottom: 0 }}>
+          {t("{shown} von {total} Matches", { shown: visibleMatches.length, total: filteredMatches.length })}
+        </p>
+        <div className="chips small">
+          {MATCH_COUNT_OPTIONS.map((c) => (
+            <button key={c} className={"chip" + (matchCount === c ? " active" : "")} onClick={() => setMatchCount(c)}>
+              {c === "all" ? t("Alle") : c}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {visibleMatches.map((m) => (
+        <div key={m.id} className="match-row">
+          <span className="m-date m-datetime">{fmtDateTime(m.played_at)}</span>
+          <span className="m-txt">
+            {sideNames(m, 1).map((n, i) => (
+              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
+            ))}
+            {" "}<b>{m.score1}:{m.score2}</b>{" "}
+            {sideNames(m, 2).map((n, i) => (
+              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
+            ))}
+          </span>
+          <span className="m-disc">{t(m.discipline)}{m.tournament_id ? " · 🏆" : ""}</span>
+          {m.run_log?.length > 0 && (
+            <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
+              <FileText size={15} />
+            </button>
+          )}
+        </div>
+      ))}
+      {filteredMatches.length === 0 && (
+        <p className="hint">{filtersActive ? t("Keine Matches fuer diese Filter.") : t("Noch keine bestaetigten Matches.")}</p>
       )}
     </section>
   );
@@ -575,12 +710,14 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </aside>
 
       {/* Mittlere Spalte: der Verlaufs-Graph - der eigentliche Fokus dieser
-          Seite (Letzte Matches sind in den Live-Menuepunkt gewandert) -
-          darunter die Rekorde-Karte (Nutzer-Feedback: direkt unter dem
-          Graphen statt am Ende der rechten Spalte). */}
+          Seite - darunter die Rekorde-Karte (Nutzer-Feedback: direkt unter
+          dem Graphen statt am Ende der rechten Spalte), ganz unten die
+          Spielehistorie (Nutzer-Feedback: zurueck von Live nach Statistik,
+          siehe MatchHistoryBlock oben). */}
       <div className="stat-chart-col">
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} disc={globalDisc} />
       <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} />
+      <MatchHistoryBlock matches={matches} players={players} me={me} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} />
       </div>
       </div>
       <ImprintFooter />

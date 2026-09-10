@@ -697,7 +697,7 @@ export default function App() {
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                  onCreate={createPing} onClose={closePing} onOpenProfile={openProfile} onOpenProtokoll={openProtokoll}
+                  onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
                   onCreatePlanning={createPlanning} onDeletePlanning={deletePlanning}
                   onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
