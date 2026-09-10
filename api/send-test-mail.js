@@ -43,8 +43,11 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (!process.env.TEST_SMTP_HOST || !process.env.TEST_SMTP_USER || !process.env.TEST_SMTP_PASS) {
-    res.status(500).json({ error: "SMTP-Umgebungsvariablen sind auf dem Server nicht gesetzt." });
+  const missing = ["TEST_SMTP_HOST", "TEST_SMTP_USER", "TEST_SMTP_PASS"].filter((k) => !process.env[k]);
+  if (missing.length) {
+    res.status(500).json({
+      error: `SMTP-Umgebungsvariablen fehlen: ${missing.join(", ")} (VERCEL_ENV=${process.env.VERCEL_ENV || "?"})`,
+    });
     return;
   }
 
