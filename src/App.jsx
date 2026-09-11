@@ -68,16 +68,22 @@ export default function App() {
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
   const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
   // Von einem update-bedingten Reload zwischengespeicherter Navigationszustand
-  // (siehe persistNavAndReload) - wird hier einmalig gelesen und sofort
-  // wieder geloescht, damit ein normaler, spaeterer Reload nicht versehentlich
-  // wieder darauf zurueckfaellt.
+  // (siehe persistNavAndReload). Nur LESEN, kein sessionStorage.removeItem
+  // hier drin - useState-Initializer laufen unter React.StrictMode im Dev-
+  // Modus zweimal (Zweck: unreine Initializer aufdecken), und ein Loesch-
+  // Seiteneffekt hier wuerde beim zweiten Aufruf bereits "null" lesen und so
+  // den wiederhergestellten Zustand verwerfen. Das eigentliche Loeschen
+  // passiert separat im Effekt direkt darunter (idempotent, daher unkritisch
+  // bei ebenfalls doppeltem Aufruf).
   const [resumedNav] = useState(() => {
     try {
       const raw = sessionStorage.getItem(RESUME_NAV_KEY);
-      if (raw) sessionStorage.removeItem(RESUME_NAV_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
   });
+  useEffect(() => {
+    try { sessionStorage.removeItem(RESUME_NAV_KEY); } catch { /* ignore */ }
+  }, []);
   const [tab, setTab] = useState(resumedNav?.tab ?? "stats");
   const [profileName, setProfileName] = useState(resumedNav?.profileName ?? null);
   const [protokollMatch, setProtokollMatch] = useState(resumedNav?.protokollMatch ?? null);
