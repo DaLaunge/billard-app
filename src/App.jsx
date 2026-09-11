@@ -28,6 +28,28 @@ import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import ConfirmHost from "./components/ConfirmHost";
 
+// Tabs mit unbestaetigter Live-Eingabe (Punktestand, Ballprotokoll), die nur
+// im Speicher liegt und bei einem Reload verloren waere. Wird ein Update
+// erkannt, WAEHREND die App im Hintergrund ist (siehe "Update anwenden"
+// unten), darf hier nicht automatisch reloadet werden - anders als beim
+// Reload-am-Bildschirmwechsel-Weg gibt es hier keinen "Uebergang", der den
+// Reload unsichtbar macht, und nichts speichert den Stand zwischen.
+// WICHTIG: Bei jedem neuen Live-Eingabe-Screen (eigener Punktestand/Protokoll
+// im Speicher) hier ergaenzen - siehe CLAUDE.md, Abschnitt "PWA/Service
+// Worker".
+const LIVE_ENTRY_TABS = ["match", "winnerstays"];
+
+// sessionStorage-Key, unter dem der Navigationszustand kurz vor einem
+// update-bedingten Reload zwischengespeichert wird, damit die App danach
+// wieder auf demselben Screen (inkl. Turnier-/Winner-Stays-ID etc.) landet,
+// statt auf die Startseite zurueckzufallen.
+const RESUME_NAV_KEY = "pendingUpdateNav";
+
+function persistNavAndReload(navState) {
+  try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ }
+  window.location.reload();
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(false);
@@ -45,12 +67,29 @@ export default function App() {
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
   const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
-  const [tab, setTab] = useState("stats");
-  const [profileName, setProfileName] = useState(null);
-  const [protokollMatch, setProtokollMatch] = useState(null);
-  const [protokollBackTab, setProtokollBackTab] = useState("stats");
-  const [tournamentId, setTournamentId] = useState(null);
-  const [winnerStaysId, setWinnerStaysId] = useState(null);
+  // Von einem update-bedingten Reload zwischengespeicherter Navigationszustand
+  // (siehe persistNavAndReload). Nur LESEN, kein sessionStorage.removeItem
+  // hier drin - useState-Initializer laufen unter React.StrictMode im Dev-
+  // Modus zweimal (Zweck: unreine Initializer aufdecken), und ein Loesch-
+  // Seiteneffekt hier wuerde beim zweiten Aufruf bereits "null" lesen und so
+  // den wiederhergestellten Zustand verwerfen. Das eigentliche Loeschen
+  // passiert separat im Effekt direkt darunter (idempotent, daher unkritisch
+  // bei ebenfalls doppeltem Aufruf).
+  const [resumedNav] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(RESUME_NAV_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+  useEffect(() => {
+    try { sessionStorage.removeItem(RESUME_NAV_KEY); } catch { /* ignore */ }
+  }, []);
+  const [tab, setTab] = useState(resumedNav?.tab ?? "stats");
+  const [profileName, setProfileName] = useState(resumedNav?.profileName ?? null);
+  const [protokollMatch, setProtokollMatch] = useState(resumedNav?.protokollMatch ?? null);
+  const [protokollBackTab, setProtokollBackTab] = useState(resumedNav?.protokollBackTab ?? "stats");
+  const [tournamentId, setTournamentId] = useState(resumedNav?.tournamentId ?? null);
+  const [winnerStaysId, setWinnerStaysId] = useState(resumedNav?.winnerStaysId ?? null);
   const [toastMsg, setToastMsg] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   // Wird einmalig true, sobald der allererste loadData()-Durchlauf steht -
@@ -62,8 +101,8 @@ export default function App() {
   const [tourneyReadyList, setTourneyReadyList] = useState([]); // ALLE bereiten Turnierpaarungen fuer mich - speist den Turniere-Badge (siehe checkTourneyReady unten)
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
-  const [vsOpp, setVsOpp] = useState(null);
-  const [matchTournamentCtx, setMatchTournamentCtx] = useState(null); // Turnier-Kontext fuers Melden ueber MatchScreen (siehe TurnierRasterScreen)
+  const [vsOpp, setVsOpp] = useState(resumedNav?.vsOpp ?? null);
+  const [matchTournamentCtx, setMatchTournamentCtx] = useState(resumedNav?.matchTournamentCtx ?? null); // Turnier-Kontext fuers Melden ueber MatchScreen (siehe TurnierRasterScreen)
   // Fuer Startseite "Zuletzt geoeffnet": den zuletzt gespeicherten Tab EINMAL
   // beim allerersten Rendern sichern, bevor der Persistenz-Effekt weiter
   // unten den initialen "stats"-Default hineinschreibt und den echten Wert
@@ -126,9 +165,9 @@ export default function App() {
   // gespeicherte Startseite springen. Der Ref sorgt dafuer, dass spaetere
   // Token-Refreshs (die denselben useEffect erneut auslösen) die laufende
   // Navigation nicht zurueck auf die Startseite reissen.
-  const startTabAppliedRef = useRef(false);
+  const startTabAppliedRef = useRef(!!resumedNav);
   useEffect(() => {
-    try { window.history.replaceState({ tab: "stats" }, ""); } catch { /* ignore */ }
+    try { window.history.replaceState(resumedNav || { tab: "stats" }, ""); } catch { /* ignore */ }
     const onPop = (e) => {
       if (tabRef.current === "match" && !allowLeaveMatchRef.current) {
         try { window.history.pushState({ tab: "match", vsOpp: vsOppRef.current, matchTournamentCtx: matchTournamentCtxRef.current }, ""); } catch { /* ignore */ }
@@ -144,15 +183,29 @@ export default function App() {
   // --- App-Updates (Service Worker) --------------------------------------
   // "bei jedem Aufruf" = kein Timer, stattdessen bei jedem Sichtbarwerden der
   // App pruefen; sonst alle 30/60 Min per Timer; "manual" = nur per Klick in
-  // den Profileinstellungen. Ein gefundenes Update wird per Reload angewendet,
-  // aber erst NACHDEM die Uebersicht einmal fertig geladen hat (initialLoadDone)
-  // und nie waehrend einer laufenden Matcheingabe, eines laufenden Winner-
-  // Stays-Spiels oder des Erfolgs-Popups (siehe Effekt unten) - sonst gehen
-  // unbestaetigte Ergebnisse verloren. Wichtig: registerType "autoUpdate" (vite.config.js)
+  // den Profileinstellungen. Wichtig: registerType "autoUpdate" (vite.config.js)
   // ruft bei gefundenem Update intern SOFORT window.location.reload() auf,
   // sobald keine eigene onNeedReload-Callback uebergeben wird - darum hier
   // NICHT ohne onNeedReload arbeiten, sonst reisst ein Update-Check die gerade
   // ladende Seite ungebremst weg.
+  //
+  // Ein gefundenes Update wird NICHT sofort angewendet, sondern erst in einem
+  // fuer den Nutzer unauffaelligen Moment - zwei Trigger, siehe die beiden
+  // Effekte unten:
+  //  1) sobald der Tab in den Hintergrund geht (Nutzer schaut nicht hin) -
+  //     ausser auf einem LIVE_ENTRY_TABS-Screen, siehe Konstante oben: dort
+  //     liegt unbestaetigte Eingabe nur im Speicher und ginge verloren.
+  //  2) beim naechsten echten Bildschirmwechsel (jede Navigation laeuft laut
+  //     Architektur durch applyNavState, egal ob Button-Klick oder Browser-
+  //     Zurueck) - der Reload faellt dann mit dem ohnehin stattfindenden
+  //     Screen-Wechsel zusammen und ist nicht wahrnehmbar. Braucht KEINE
+  //     Tab-Liste: an einer Uebergangs-Grenze ist nie unbestaetigte Eingabe
+  //     "mittendrin" unterwegs, das gilt automatisch auch fuer neue, spaeter
+  //     hinzugefuegte Screens.
+  // In beiden Faellen wird der Navigationszustand vorher gesichert (siehe
+  // persistNavAndReload) und beim Neustart wiederhergestellt (resumedNav
+  // oben), damit z.B. ein dauerhaft angezeigter Turnier-Bildschirm nach dem
+  // Reload auf demselben Screen bleibt statt auf die Startseite zu springen.
   const [updateInterval, setUpdateInterval] = useState(() => {
     try { return localStorage.getItem("updateCheckInterval") || "30"; } catch { return "30"; }
   });
@@ -178,15 +231,31 @@ export default function App() {
     const id = setInterval(checkForUpdate, Number(updateInterval) * 60000);
     return () => clearInterval(id);
   }, [updateInterval, checkForUpdate]);
+  const currentNavState = useMemo(() => (
+    { tab, profileName, protokollMatch, protokollBackTab, vsOpp, tournamentId, winnerStaysId, matchTournamentCtx }
+  ), [tab, profileName, protokollMatch, protokollBackTab, vsOpp, tournamentId, winnerStaysId, matchTournamentCtx]);
+  // Trigger 1: Reload waehrend die App im Hintergrund ist - fuer den Nutzer
+  // unsichtbar, ausser auf einem Live-Eingabe-Screen (siehe LIVE_ENTRY_TABS
+  // oben), wo trotz Unsichtbarkeit unbestaetigte Eingabe im Speicher liegt.
   useEffect(() => {
-    // Auch das Erfolgs-Popup nicht durch einen Reload wegreissen - sobald es
-    // geschlossen wird, greift dieser Effekt erneut und holt das Update nach.
-    // "winnerstays" haelt wie "match" unbestaetigte Live-Eingaben (sA/sB in
-    // WinnerStaysScreen), die bei einem Reload verloren gehen wuerden - beide
-    // Screens muessen daher ein Update blockieren, bis man sie verlaesst.
-    const midEntry = tab === "match" || tab === "winnerstays";
-    if (needReload && initialLoadDone && !midEntry && !celebrate) window.location.reload();
-  }, [needReload, initialLoadDone, tab, celebrate]);
+    const onHidden = () => {
+      if (document.visibilityState !== "hidden") return;
+      if (!needReload || !initialLoadDone || celebrate) return;
+      if (LIVE_ENTRY_TABS.includes(tab)) return;
+      persistNavAndReload(currentNavState);
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    return () => document.removeEventListener("visibilitychange", onHidden);
+  }, [needReload, initialLoadDone, celebrate, tab, currentNavState]);
+  // Trigger 2: Reload exakt beim naechsten echten Bildschirmwechsel (nicht
+  // schon, sobald needReload auf einem stehenden Screen true wird - sonst
+  // waere z.B. ein dauerhaft gezeigter Turnier-Bildschirm nicht geschuetzt).
+  const prevTabForReloadRef = useRef(tab);
+  useEffect(() => {
+    const changed = prevTabForReloadRef.current !== tab;
+    prevTabForReloadRef.current = tab;
+    if (changed && needReload && initialLoadDone && !celebrate) persistNavAndReload(currentNavState);
+  }, [tab, needReload, initialLoadDone, celebrate, currentNavState]);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
