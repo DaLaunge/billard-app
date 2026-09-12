@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock, Search } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
-import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
+import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE, fmtDate, fmtDuration } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
@@ -40,6 +40,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   });
   const expandAll = () => setOpenCats(new Set(catalogByCategory.map(([c]) => c)));
   const collapseAll = () => setOpenCats(new Set());
+  // Suche/Status-Filter fuer die Erfolgsliste (144 Eintraege sind ohne
+  // Suchmoeglichkeit schwer zu durchsuchen) - waehrend gefiltert wird,
+  // klappen betroffene Kategorien automatisch auf (unabhaengig von openCats),
+  // damit Treffer nicht in einer zugeklappten Kategorie verborgen bleiben.
+  const [badgeQuery, setBadgeQuery] = useState("");
+  const [badgeStatus, setBadgeStatus] = useState("all"); // "all" | "earned" | "locked"
+  const badgeFiltering = badgeQuery.trim() !== "" || badgeStatus !== "all";
   const [challengeForm, setChallengeForm] = useState(false);
   const [challengeMsg, setChallengeMsg] = useState("");
   const installPrompt = useInstallPrompt();
@@ -448,57 +455,90 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
           </p>
         )}
+        <div className="search-row" style={{ marginBottom: 8 }}>
+          <Search size={16} className="mail-ico" />
+          <input placeholder={t("Erfolge durchsuchen …")} value={badgeQuery} onChange={(e) => setBadgeQuery(e.target.value)} />
+          {badgeQuery && <button className="clear-btn" onClick={() => setBadgeQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
+        </div>
+        {isMe && (
+          <div className="chips small" style={{ marginBottom: 8 }}>
+            <button className={"chip" + (badgeStatus === "all" ? " active" : "")} onClick={() => setBadgeStatus("all")}>{t("Alle")}</button>
+            <button className={"chip" + (badgeStatus === "earned" ? " active" : "")} onClick={() => setBadgeStatus("earned")}>{t("Erreicht")}</button>
+            <button className={"chip" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}>{t("Gesperrt")}</button>
+          </div>
+        )}
         <div className="badge-tools">
           <button className="badge-tool-btn" onClick={expandAll}>{t("Alles aufklappen")}</button>
           <button className="badge-tool-btn" onClick={collapseAll}>{t("Alles zuklappen")}</button>
         </div>
-        {catalogByCategory.map(([cat, items]) => {
-          // eigenes Profil: ALLE Erfolge zeigen (gesperrte gedimmt) -> Symbole + korrekte Gesamtzahl.
-          // fremde Profile: nur erreichte zeigen.
-          const visible = items.filter((b) => {
-            if (!isMe) return earnedBadges.has(b.badge_key);
-            return true;
+        {(() => {
+          const q = badgeQuery.trim().toLowerCase();
+          let anyVisible = false;
+          const rows = catalogByCategory.map(([cat, items]) => {
+            // eigenes Profil: ALLE Erfolge zeigen (gesperrte gedimmt) -> Symbole + korrekte Gesamtzahl.
+            // fremde Profile: nur erreichte zeigen. Suche/Status filtern zusaetzlich.
+            const visible = items.filter((b) => {
+              const earned = earnedBadges.has(b.badge_key);
+              if (!isMe) { if (!earned) return false; }
+              else if (badgeStatus === "earned" && !earned) return false;
+              else if (badgeStatus === "locked" && earned) return false;
+              if (q && !(t(b.name) + " " + t(b.description)).toLowerCase().includes(q)) return false;
+              return true;
+            });
+            if (visible.length === 0) return null;
+            anyVisible = true;
+            // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
+            const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
+            const open = badgeFiltering ? true : openCats.has(cat);
+            const liveStat = isMe ? catLiveStat(items, liveExtras) : null;
+            return (
+              <div key={cat} className="badge-cat">
+                <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
+                  <div className="badge-cat-head-row">
+                    <span className="badge-cat-title">{t(cat)}</span>
+                    <span className="badge-cat-count">{earnedCount} / {items.length}</span>
+                    <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
+                  </div>
+                  {liveStat && <span className="badge-cat-live">{liveStat}</span>}
+                </button>
+                {open && (
+                  <div className="badge-grid">
+                    {visible.map((b) => {
+                      const key = b.badge_key;
+                      const earned = earnedBadges.has(key);
+                      const selected = meRow?.selected_badge === key && isMe;
+                      const progress = isMe && !earned ? badgeProgress(b.description, liveExtras) : null;
+                      return (
+                        <button key={key}
+                          className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
+                          disabled={!isMe || !earned}
+                          onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
+                          title={t(b.description)}>
+                          <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
+                          <span className="badge-name">{t(b.name)}</span>
+                          <span className="badge-desc">{t(b.description)}</span>
+                          {progress && (
+                            <span className="badge-progress">
+                              {t("Fortschritt: {cur} / {target} {unit}", { cur: progress.current, target: progress.target, unit: progress.unit })}
+                            </span>
+                          )}
+                          {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
           });
-          if (visible.length === 0) return null;
-          // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
-          const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
-          const open = openCats.has(cat);
-          const liveStat = isMe ? catLiveStat(items, liveExtras) : null;
           return (
-            <div key={cat} className="badge-cat">
-              <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
-                <div className="badge-cat-head-row">
-                  <span className="badge-cat-title">{t(cat)}</span>
-                  <span className="badge-cat-count">{earnedCount} / {items.length}</span>
-                  <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
-                </div>
-                {liveStat && <span className="badge-cat-live">{liveStat}</span>}
-              </button>
-              {open && (
-                <div className="badge-grid">
-                  {visible.map((b) => {
-                    const key = b.badge_key;
-                    const earned = earnedBadges.has(key);
-                    const selected = meRow?.selected_badge === key && isMe;
-                    return (
-                      <button key={key}
-                        className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
-                        disabled={!isMe || !earned}
-                        onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
-                        title={t(b.description)}>
-                        <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
-                        <span className="badge-name">{t(b.name)}</span>
-                        <span className="badge-desc">{t(b.description)}</span>
-                        {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <>
+              {rows}
+              {!anyVisible && badgeFiltering && <p className="hint">{t("Keine passenden Erfolge gefunden.")}</p>}
+            </>
           );
-        })}
-        {!isMe && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
+        })()}
+        {!isMe && !badgeFiltering && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
       </div>
 

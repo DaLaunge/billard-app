@@ -111,6 +111,19 @@ function closestCandidates(catalog, extras, earnedBadges) {
   return candidates;
 }
 
+/* Live-Fortschritt zu einem einzelnen, noch nicht erreichten Katalog-Eintrag
+   (Beschreibungstext genuegt, keine Kategorie noetig - siehe FAMILIES oben).
+   null, wenn die Familie nicht lokal aus matches/players/challenges berechenbar
+   ist (z.B. Rangliste/Ghost/Turnier-Erfolge, die serverseitige Historie
+   brauchen) - dafuer zeigt die Erfolge-Kachel dann einfach keinen Fortschritt. */
+export function badgeProgress(description, extras) {
+  const fam = FAMILIES.find((f) => f.test(description));
+  if (!fam) return null;
+  const cur = fam.current(extras);
+  if (cur == null) return null;
+  return { current: Math.max(0, cur), target: leadingNumber(description), unit: fam.unit() };
+}
+
 /* Die paar naechstliegenden, noch nicht erreichten Erfolge als Rohdaten
    (fuer eine kompakte Fortschritts-Anzeige, z.B. im Desktop-Sidebar-Panel) -
    im Unterschied zu nextAchievementHint() nicht als fertiger Satz, sondern

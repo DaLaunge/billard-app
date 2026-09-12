@@ -213,6 +213,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .badge-name { font-size: 12px; font-weight: 700; overflow-wrap: break-word; word-break: break-word; width: 100%; }
 .badge-desc { font-size: 10px; color: var(--ivory-dim); line-height: 1.3; overflow-wrap: break-word; word-break: break-word; width: 100%; }
 .badge-active { font-size: 9.5px; font-weight: 700; color: var(--gold); margin-top: 2px; }
+.badge-progress { font-size: 9.5px; font-weight: 600; color: var(--ivory-dim); margin-top: 2px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .chip { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
