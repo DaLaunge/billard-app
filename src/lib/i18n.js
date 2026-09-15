@@ -681,6 +681,7 @@ const TRANSLATIONS = {
     "Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.": "Curves will appear here once history data is available.",
     "Spieler hinzufügen": "Add player",
     "Spieler suchen …": "Search players …",
+    "Spieler suchen oder Gast eingeben …": "Search players or enter a guest …",
     "Deine häufigsten Mitspieler zuerst:": "Your most frequent opponents first:",
     "Häufigste Mitspieler zuerst:": "Most frequent opponents first:",
     "Keine weiteren Spieler.": "No more players.",

@@ -11,7 +11,7 @@ import Ball from "./Ball";
 // nacheinander (Turnier-Teilnehmer), nicht nur einen. Bereits ausgewaehlte
 // bleiben oben angeheftet sichtbar, damit man die aktuelle Auswahl auf
 // einen Blick ueberprueft, statt sie in der Liste suchen zu muessen.
-export default function PlayerMultiPicker({ players, matches, me, selected, onToggle, colorOf, badgeOf, photoOf, exclude = [], onQueryChange }) {
+export default function PlayerMultiPicker({ players, matches, me, selected, onToggle, colorOf, badgeOf, photoOf, exclude = [], onQueryChange, placeholder }) {
   const [query, setQuery] = useState("");
   const updateQuery = (q) => { setQuery(q); onQueryChange && onQueryChange(q); };
 
@@ -32,7 +32,7 @@ export default function PlayerMultiPicker({ players, matches, me, selected, onTo
     <div className="player-multi-picker">
       <div className="search-row">
         <Search size={16} className="mail-ico" />
-        <input placeholder={t("Spieler suchen …")} value={query} onChange={(e) => updateQuery(e.target.value)} />
+        <input placeholder={placeholder || t("Spieler suchen …")} value={query} onChange={(e) => updateQuery(e.target.value)} />
         {query && <button className="clear-btn" onClick={() => updateQuery("")}><X size={15} /></button>}
       </div>
       {!query && <p className="hint" style={{ marginTop: 0, marginBottom: 6 }}>{t("Häufigste Mitspieler zuerst:")}</p>}

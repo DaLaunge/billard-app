@@ -526,7 +526,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                 <div style={{ marginTop: 10 }}>
                   <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
                     onToggle={toggleAddSelected} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                    exclude={(roster || []).map((r) => r.player_id)} onQueryChange={setAddQuery} />
+                    exclude={(roster || []).map((r) => r.player_id)} onQueryChange={setAddQuery}
+                    placeholder={t("Spieler suchen oder Gast eingeben …")} />
                   <button className="btn primary" style={{ marginTop: 10 }}
                     disabled={addSelected.length === 0 || busyId === "addPlayers"} onClick={addPlayers}>
                     <Check size={15} /> {t("{n} Spieler hinzufügen", { n: addSelected.length })}
