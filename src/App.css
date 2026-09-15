@@ -495,6 +495,10 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .ghost-info { display: flex; flex-direction: column; text-align: left; flex: 1; min-width: 0; }
 .ghost-name { font-weight: 700; font-size: 14px; }
 .ghost-sub { font-size: 11.5px; color: var(--ivory-dim); }
+.guest-empty-card { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 12px;
+  background: var(--felt-2); border: 1px dashed #5B7B70; border-radius: 16px; padding: 12px 14px;
+  box-sizing: border-box; }
+.guest-empty-card .btn { margin-top: 0; }
 .prob-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--ivory-dim); margin-bottom: 6px; gap: 10px; }
 .prob-bar { height: 8px; border-radius: 99px; background: var(--felt-3); overflow: hidden; }
 .prob-bar div { height: 100%; background: var(--chalk); border-radius: 99px; }

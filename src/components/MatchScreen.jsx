@@ -39,7 +39,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [offlineQueued, setOfflineQueued] = useState(false); // Match konnte mangels Verbindung nicht gemeldet werden, wartet lokal
   const [ghostStartedAt, setGhostStartedAt] = useState(null); // gegen "Durchklicken" beim Ghost-Training
   const [nowTick, setNowTick] = useState(Date.now());
-  const [guestName, setGuestName] = useState(""); // Name-Eingabe fuers "Gast hinzufuegen"-Formular
   const [guestBusy, setGuestBusy] = useState(false);
   const [oppCount, setOppCount] = useState(10); // Standard: nur die haeufigsten Mitspieler zeigen (Nutzer-Feedback: Liste wird lang)
 
@@ -75,21 +74,19 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
 
   // Gast fuers normale Match hinzufuegen (Turniere haben dafuer schon
   // tournament_organizer_add_guest() - dies hier ist das Gegenstueck ohne
-  // Turnierbezug, siehe add_guest_player()). Neuer Gast wird direkt als
-  // Gegner/Mitspieler ausgewaehlt, players-Liste laedt danach neu nach.
-  // Findet die Suche niemanden, wird das Namensfeld mit dem Suchbegriff
-  // vorausgefuellt (Nutzer-Feedback: "Findet er keinen, soll die App auf
-  // den Gast aufmerksam machen") - sobald man selbst ins Feld tippt,
-  // uebernimmt die eigene Eingabe.
-  const guestFieldValue = guestName || (oppQuery.trim() && opponents.length === 0 ? oppQuery.trim() : "");
+  // Turnierbezug, siehe add_guest_player()). Kein eigenes Namensfeld mehr -
+  // die Suche IST die Namenseingabe: erst wenn sie niemanden findet
+  // (Nutzer-Feedback: "zunaechst die Suche starten, erst wenn kein Spieler
+  // gefunden wird, wird der Gast-Button klickbar"), erscheint die Karte mit
+  // dem Suchbegriff als vorgeschlagenem Gast-Namen.
   const addGuest = async () => {
-    const nick = guestFieldValue.trim();
+    const nick = oppQuery.trim();
     if (!nick) return;
     setGuestBusy(true);
     const { data, error } = await supabase.rpc("add_guest_player", { p_nickname: nick });
     setGuestBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    setGuestName("");
+    setOppQuery("");
     pickPlayer(data);
     onReload && onReload();
   };
@@ -371,17 +368,16 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </button>
           )}
           {oppQuery.trim() && opponents.length === 0 && (
-            <p className="hint-highlight">🤔 {t('Niemand namens "{q}" gefunden – unten als Gast hinzufügen?', { q: oppQuery.trim() })}</p>
+            <div className="guest-empty-card">
+              <div className="ghost-info">
+                <span className="ghost-name">🤔 {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</span>
+                <span className="ghost-sub">{t("Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.")}</span>
+              </div>
+              <button className="btn primary" disabled={guestBusy} onClick={addGuest}>
+                <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: oppQuery.trim() })}
+              </button>
+            </div>
           )}
-          <div className="turnier-guest-form">
-            <input type="text" placeholder={t("Name des Gasts")} value={guestFieldValue}
-              onChange={(e) => setGuestName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") addGuest(); }} />
-            <button className="btn ghost" disabled={!guestFieldValue.trim() || guestBusy} onClick={addGuest}>
-              <UserPlus size={15} /> {t("Gast hinzufügen")}
-            </button>
-          </div>
-          {!oppQuery.trim() && <p className="hint">{t("Für Personen ohne App - Ergebnisse gegen Gäste zählen nicht fürs Rating und brauchen keine Bestätigung.")}</p>}
 
           {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
           {mode === "single" && !oppQuery && suggestions.length > 0 && (
