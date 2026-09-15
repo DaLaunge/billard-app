@@ -375,9 +375,17 @@ export default function App() {
     // haengende Sperre nach einem abgebrochenen vorherigen Aufruf), blieb
     // die App bisher fuer immer auf dem Lade-Screen stehen - ein normaler
     // Browser-Refresh brachte dann nichts, weil authReady nie true wurde.
+    // 15s statt kurz bemessen: auf iOS ist das erneute Oeffnen einer aus der
+    // App-Uebersicht weggewischten Home-Screen-PWA ein echter Kaltstart -
+    // WebKits Storage-Engine (wo die Sitzung in localStorage liegt) kann
+    // dabei messbar laenger zum Hochfahren brauchen als bei einem simplen
+    // Fortsetzen. Ein zu kurzes Timeout hier wuerde faelschlich "keine
+    // Sitzung" annehmen, OBWOHL eine gueltige nur noch nicht geladen war -
+    // das sah aus wie "nach jedem Schliessen der App muss ich mich neu
+    // anmelden", war aber dieses Timeout selbst, nicht der Speicher-Verlust.
     Promise.race([
       supabase.auth.getSession(),
-      new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), 5000)),
+      new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), 15000)),
     ]).then(({ data }) => { setSession(data.session); setAuthReady(true); });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
