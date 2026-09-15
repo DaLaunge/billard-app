@@ -351,7 +351,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
 
           <div className="search-row">
             <Search size={16} className="mail-ico" />
-            <input placeholder={t("Spieler suchen …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
+            <input placeholder={t("Spieler suchen oder Gast eingeben …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
             {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
           </div>
           </div>
