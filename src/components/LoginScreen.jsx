@@ -80,7 +80,12 @@ export default function LoginScreen() {
     );
     setGuestBusy(false);
     if (error) {
-      setGuestError(error.message);
+      // Supabase liefert bei fehlendem/abgelaufenem Captcha nur einen
+      // englischen Rohtext - gleiche Idee wie bei den bekannten Faellen in
+      // signInPw() oben: uebersetzen statt roh durchreichen.
+      setGuestError(error.message.includes("captcha")
+        ? t("Sicherheitsprüfung fehlgeschlagen - bitte Seite neu laden und nochmal versuchen.")
+        : error.message);
       // Turnstile-Token ist Einweg - nach einem Fehlversuch zuruecksetzen,
       // sonst kann nie wieder ein zweiter Versuch gestartet werden.
       if (window.turnstile && turnstileWidgetId.current) window.turnstile.reset(turnstileWidgetId.current);

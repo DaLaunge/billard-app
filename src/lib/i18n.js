@@ -1148,6 +1148,7 @@ const TRANSLATIONS = {
     "Nur zu Besuch? Ohne Account als Gast einsteigen – zählt fürs Protokoll, aber nicht fürs Ranking.": "Just visiting? Join as a guest without an account – counts for the log, but not for the ranking.",
     "Du spielst als Gast – zählt fürs Protokoll, aber nicht fürs Ranking.": "You're playing as a guest – counts for the log, but not for the ranking.",
     "Doch nicht als Gast? Abmelden": "Changed your mind about the guest login? Sign out",
+    "Sicherheitsprüfung fehlgeschlagen - bitte Seite neu laden und nochmal versuchen.": "Security check failed - please reload the page and try again.",
   },
 };
 export function setLangGlobal(l) {
