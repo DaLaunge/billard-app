@@ -1137,7 +1137,6 @@ const TRANSLATIONS = {
     "Schließen": "Close",
     "Turnierinfo": "Tournament info",
     "Gast hinzufügen": "Add guest",
-    "Name des Gasts": "Guest's name",
     "Gast hinzugefügt.": "Guest added.",
     "Gast": "Guest",
     "Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.": "For people without the app - results against guests count for the tournament, but not for the rating.",

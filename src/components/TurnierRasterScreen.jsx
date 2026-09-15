@@ -66,13 +66,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   const [addSelected, setAddSelected] = useState([]);
   const toggleAddSelected = (id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   // Gast-Person ohne App/Login (Nutzer-Feedback: "wenn jemand die App nicht
-  // benutzen will") - eigenes, einfaches Textfeld statt PlayerMultiPicker,
-  // da hier kein bestehender Spieler ausgewaehlt, sondern ein neuer
-  // Platzhalter mit reinem Namen angelegt wird (siehe
-  // tournament_organizer_add_guest() - erledigt Anlegen + Anmeldung in
-  // einem Schritt). Ergebnisse gegen Gaeste zaehlen fuers Turnier normal,
-  // fliessen aber nicht ins Rating (rebuild_elo() schliesst is_guest aus).
-  const [guestName, setGuestName] = useState("");
+  // benutzen will") - kein eigenes Namensfeld mehr, sondern derselbe Weg wie
+  // im normalen Match-Screen (siehe MatchScreen.jsx): die Suche im
+  // PlayerMultiPicker oben IST die Namenseingabe. Findet sie kein echtes
+  // Mitglied, erscheint darunter eine Karte, die den Suchbegriff als
+  // Gast-Namen vorschlaegt (tournament_organizer_add_guest() erledigt
+  // Anlegen + Anmeldung in einem Schritt). Ergebnisse gegen Gaeste zaehlen
+  // fuers Turnier normal, fliessen aber nicht ins Rating (rebuild_elo()
+  // schliesst is_guest aus).
+  const [addQuery, setAddQuery] = useState("");
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
@@ -382,15 +384,16 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   };
 
   const addGuest = async () => {
-    if (!guestName.trim()) { toast(t("Name fehlt.")); return; }
+    const nick = addQuery.trim();
+    if (!nick) return;
     setBusyId("addGuest");
     const { error } = await supabase.rpc("tournament_organizer_add_guest", {
-      p_tournament_id: tournamentId, p_nickname: guestName.trim(),
+      p_tournament_id: tournamentId, p_nickname: nick,
     });
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Gast hinzugefügt."));
-    setGuestName("");
+    setAddQuery("");
     await load();
     if (onReload) await onReload();
   };
@@ -460,6 +463,14 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
   if (tour.status === "setup") {
     const isRegistered = (roster || []).some((r) => r.player_id === me.id);
+    // Gleiche Logik wie PlayerMultiPickers eigener "candidates"-Filter (ohne
+    // die exclude-Liste extra durchzureichen reicht ein simpler roster-Check
+    // hier) - nur um zu wissen, ob die Suche dort gerade ins Leere laeuft.
+    const rosterIds = (roster || []).map((r) => r.player_id);
+    const addQueryHasRealMatch = players.some((p) =>
+      !p.is_ghost && !p.is_guest && !p.blocked && !rosterIds.includes(p.id)
+      && p.nickname.toLowerCase().includes(addQuery.trim().toLowerCase())
+    );
     return (
       <div className="screen">
         <div className="turnier-layout">
@@ -515,24 +526,24 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                 <div style={{ marginTop: 10 }}>
                   <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
                     onToggle={toggleAddSelected} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                    exclude={(roster || []).map((r) => r.player_id)} />
+                    exclude={(roster || []).map((r) => r.player_id)} onQueryChange={setAddQuery} />
                   <button className="btn primary" style={{ marginTop: 10 }}
                     disabled={addSelected.length === 0 || busyId === "addPlayers"} onClick={addPlayers}>
                     <Check size={15} /> {t("{n} Spieler hinzufügen", { n: addSelected.length })}
                   </button>
+                  {addQuery.trim() && !addQueryHasRealMatch && (
+                    <div className="guest-empty-card" style={{ marginTop: 10, marginBottom: 0 }}>
+                      <div className="ghost-info">
+                        <span className="ghost-name">🤔 {t('Niemand namens "{q}" gefunden', { q: addQuery.trim() })}</span>
+                        <span className="ghost-sub">{t("Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.")}</span>
+                      </div>
+                      <button className="btn primary" disabled={busyId === "addGuest"} onClick={addGuest}>
+                        <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: addQuery.trim() })}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
-              <div className="turnier-guest-form">
-                <input type="text" placeholder={t("Name des Gasts")} value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") addGuest(); }} />
-                <button className="btn ghost" disabled={!guestName.trim() || busyId === "addGuest"} onClick={addGuest}>
-                  <UserPlus size={15} /> {t("Gast hinzufügen")}
-                </button>
-              </div>
-              <p className="hint" style={{ marginTop: 4 }}>
-                {t("Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.")}
-              </p>
             </>
           )}
         </section>
