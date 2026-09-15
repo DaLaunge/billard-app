@@ -349,7 +349,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
+    // Mit Timeout abgesichert (siehe persistNavAndUpdate oben fuer den
+    // gleichen Grund): haengt getSession() beim Start (z.B. eine intern
+    // haengende Sperre nach einem abgebrochenen vorherigen Aufruf), blieb
+    // die App bisher fuer immer auf dem Lade-Screen stehen - ein normaler
+    // Browser-Refresh brachte dann nichts, weil authReady nie true wurde.
+    Promise.race([
+      supabase.auth.getSession(),
+      new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), 5000)),
+    ]).then(({ data }) => { setSession(data.session); setAuthReady(true); });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
