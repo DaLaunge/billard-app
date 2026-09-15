@@ -1141,6 +1141,13 @@ const TRANSLATIONS = {
     "Gast hinzugefügt.": "Guest added.",
     "Gast": "Guest",
     "Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.": "For people without the app - results against guests count for the tournament, but not for the rating.",
+    "Für Personen ohne App - Ergebnisse gegen Gäste zählen nicht fürs Rating und brauchen keine Bestätigung.": "For people without the app - results against guests don't count for the rating and need no confirmation.",
+    " · Gast": " · Guest",
+    "Gast-Match – zählt nicht fürs Rating, braucht keine Bestätigung.": "Guest match – doesn't count for the rating, needs no confirmation.",
+    "Als Gast spielen": "Play as guest",
+    "Nur zu Besuch? Ohne Account als Gast einsteigen – zählt fürs Protokoll, aber nicht fürs Ranking.": "Just visiting? Join as a guest without an account – counts for the log, but not for the ranking.",
+    "Du spielst als Gast – zählt fürs Protokoll, aber nicht fürs Ranking.": "You're playing as a guest – counts for the log, but not for the ranking.",
+    "Doch nicht als Gast? Abmelden": "Changed your mind about the guest login? Sign out",
   },
 };
 export function setLangGlobal(l) {

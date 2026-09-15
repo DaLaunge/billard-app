@@ -16,6 +16,7 @@ export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenPro
     const map = {};
     matches.forEach((m) => {
       if (m.player1b_id) return;
+      if (m.p1.is_guest || m.p2.is_guest) return;
       let opp = null, w = 0, l = 0;
       if (m.p1.nickname === nickname) { opp = m.p2.nickname; w = m.score1 > m.score2 ? 1 : 0; l = 1 - w; }
       if (m.p2.nickname === nickname) { opp = m.p1.nickname; w = m.score2 > m.score1 ? 1 : 0; l = 1 - w; }

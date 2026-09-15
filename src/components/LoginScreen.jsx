@@ -14,6 +14,14 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [legalOpen, setLegalOpen] = useState(false);
+  const [guestBusy, setGuestBusy] = useState(false);
+
+  const playAsGuest = async () => {
+    setGuestBusy(true); setError("");
+    const { error } = await supabase.auth.signInAnonymously();
+    setGuestBusy(false);
+    if (error) setError(error.message);
+  };
 
   const sendLink = async () => {
     setBusy(true); setError("");
@@ -114,6 +122,15 @@ export default function LoginScreen() {
               <p className="hint">{t("Kein Passwort noetig – du bekommst einen Link per Mail und bist drin. Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.")}</p>
             </>
           )}
+        </div>
+      )}
+
+      {!sent && (
+        <div className="login-card">
+          <button className="btn ghost" disabled={guestBusy} onClick={playAsGuest}>
+            {guestBusy ? "..." : t("Als Gast spielen")}
+          </button>
+          <p className="hint center">{t("Nur zu Besuch? Ohne Account als Gast einsteigen – zählt fürs Protokoll, aber nicht fürs Ranking.")}</p>
         </div>
       )}
 

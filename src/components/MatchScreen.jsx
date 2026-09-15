@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock } from "lucide-react";
+import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
@@ -39,6 +39,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [offlineQueued, setOfflineQueued] = useState(false); // Match konnte mangels Verbindung nicht gemeldet werden, wartet lokal
   const [ghostStartedAt, setGhostStartedAt] = useState(null); // gegen "Durchklicken" beim Ghost-Training
   const [nowTick, setNowTick] = useState(Date.now());
+  const [guestName, setGuestName] = useState(""); // Name-Eingabe fuers "Gast hinzufuegen"-Formular unten
+  const [guestBusy, setGuestBusy] = useState(false);
 
   const is141 = disc === "14/1 Endlos";
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
@@ -51,13 +53,29 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (!partner) setPartner(p); else if (!opp) setOpp(p); else if (!opp2) setOpp2(p);
   };
 
+  // Gast fuers normale Match hinzufuegen (Turniere haben dafuer schon
+  // tournament_organizer_add_guest() - dies hier ist das Gegenstueck ohne
+  // Turnierbezug, siehe add_guest_player()). Neuer Gast wird direkt als
+  // Gegner/Mitspieler ausgewaehlt, players-Liste laedt danach neu nach.
+  const addGuest = async () => {
+    const nick = guestName.trim();
+    if (!nick) return;
+    setGuestBusy(true);
+    const { data, error } = await supabase.rpc("add_guest_player", { p_nickname: nick });
+    setGuestBusy(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    setGuestName("");
+    pickPlayer(data);
+    onReload && onReload();
+  };
+
   // Wie oft habe ich in letzter Zeit gegen wen gespielt? (häufigste Gegner zuerst,
   // dieselbe Logik wie im PlayerPicker – siehe lib/frequency.js)
   const freqByNick = useMemo(() => recentOpponentFreq(matches, me), [matches, me]);
 
   const ghost = players.find((p) => p.is_ghost);
   const opponents = players
-    .filter((p) => p.id !== me.id && !p.is_ghost && !p.is_guest && !p.blocked)
+    .filter((p) => p.id !== me.id && !p.is_ghost && !p.blocked)
     .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
     .sort((a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname));
 
@@ -87,6 +105,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     [catalog, matches, players, challenges, me.nickname, earnedBadges]
   );
   const suggestions = opponents
+    .filter((p) => !p.is_guest)
     .map((p) => ({ p, gain: previewFor("Gesamt", p.nickname).winMax }))
     .sort((a, b) => b.gain - a.gain)
     .slice(0, 2);
@@ -109,6 +128,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   };
 
   const isGhost = !!opp?.is_ghost;
+  // Gast als Gegner (Einzel), Doppelpartner ODER man selbst per Gast-Login
+  // eingeloggt: Match wird server-seitig sofort bestaetigt (siehe
+  // report_match()/report_doubles()) und zaehlt nicht fuers Rating, weil ein
+  // Gast nie bewertet wird (rebuild_elo() schliesst diese Matches aus).
+  const isGuestMatch = !!(me.is_guest || opp?.is_guest || (mode === "double" && opp2?.is_guest));
 
   // Mindestdauer gegen "Durchklicken" beim Ghost-Training (siehe lib/ghostTiming.js) -
   // ab Auswahl von Ghost tickt eine Sekundenuhr, "Training abschließen" bleibt bis
@@ -357,12 +381,21 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               return (
                 <button key={p.id} className={"opp-card" + (role ? " sel" : "")} onClick={() => pickPlayer(p)}>
                   <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
-                  <span>{p.nickname}</span>
+                  <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
                   {mode === "double" && role && <span className="dbl-role">{role}</span>}
                 </button>
               );
             })}
           </div>
+          <div className="turnier-guest-form">
+            <input type="text" placeholder={t("Name des Gasts")} value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addGuest(); }} />
+            <button className="btn ghost" disabled={!guestName.trim() || guestBusy} onClick={addGuest}>
+              <UserPlus size={15} /> {t("Gast hinzufügen")}
+            </button>
+          </div>
+          <p className="hint">{t("Für Personen ohne App - Ergebnisse gegen Gäste zählen nicht fürs Rating und brauchen keine Bestätigung.")}</p>
           <button className="btn ghost" onClick={() => setShowInvite(true)}>
             <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
           </button>
@@ -399,7 +432,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <div className="score-head">
             <DiscChip />
           </div>
-          {mode === "single" && (() => {
+          {mode === "single" && !isGuestMatch && (() => {
             const pv = previewFor(disc, opp.nickname);
             return (
               <div className="pt-preview">
@@ -489,7 +522,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 <span>{teamB}</span>
               </div>
             </div>
-            <div className="sum-disc">{t(disc)}{isGhost ? t(" · Training") : ""}</div>
+            <div className="sum-disc">{t(disc)}{isGhost ? t(" · Training") : isGuestMatch ? t(" · Gast") : ""}</div>
             {is141 && (hr[0] != null || hr[1] != null) && (
               <div className="sum-141">
                 {t("Höchstserie:")} {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}
@@ -500,6 +533,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             )}
             {isGhost ? (
               <p className="hint center" style={{ marginBottom: 0 }}>{t("Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.")}</p>
+            ) : isGuestMatch ? (
+              <p className="hint center" style={{ marginBottom: 0 }}>{t("Gast-Match – zählt nicht fürs Rating, braucht keine Bestätigung.")}</p>
             ) : (
               <div className="prob-wrap">
                 <div className="prob-label">
@@ -520,7 +555,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {isGhost && !ghostReady && (
             <p className="hint center">{t("Ein echtes Training dauert länger – bitte warte, bis der Timer abgelaufen ist.")}</p>
           )}
-          {!isGhost && <p className="hint center">{mode === "double"
+          {!isGhost && !isGuestMatch && <p className="hint center">{mode === "double"
             ? t("Das Doppel zählt erst, wenn alle drei anderen bestätigt haben.")
             : t("Das Match fliesst erst ins Rating ein, wenn {name} es bestaetigt.", { name: opp.nickname })}</p>}
         </div>
@@ -545,6 +580,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             <>
               <h3>{t("Bestätigt!")}</h3>
               <p>{t("Match bestaetigt - Ranking wird neu berechnet.")}</p>
+            </>
+          ) : isGuestMatch ? (
+            <>
+              <h3>{t("Gespeichert!")}</h3>
+              <p>{t("Gast-Match – zählt nicht fürs Rating, braucht keine Bestätigung.")}</p>
             </>
           ) : (
             <>

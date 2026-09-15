@@ -466,6 +466,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     let best = null;
     matches.forEach((m) => {
       if (m.player1b_id) return;
+      if (m.p1.is_guest || m.p2.is_guest) return;
       if (!disciplineFilter(m.discipline)) return;
       const diff = Math.abs(m.score1 - m.score2);
       if (diff === 0) return;
@@ -490,6 +491,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     let best = null;
     matches.forEach((m) => {
       if (m.player1b_id) return;
+      if (m.p1.is_guest || m.p2.is_guest) return;
       [[m.high_run1, m.p1?.nickname], [m.high_run2, m.p2?.nickname]].forEach(([run, name]) => {
         if (run == null || run <= 0 || !name) return;
         const better = !best || run > best.highRun ||
@@ -540,6 +542,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     const list = [];
     matches.forEach((m) => {
       if (m.player1b_id) return;
+      if (m.p1.is_guest || m.p2.is_guest) return;
       const ms = matchDurationMs(m.run_log);
       if (ms == null || ms < MIN_MATCH_MS || ms > MAX_MATCH_MS) return;
       list.push({ p1Name: m.p1.nickname, p2Name: m.p2.nickname, discipline: m.discipline, ms, match: m });
