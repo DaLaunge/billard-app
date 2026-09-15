@@ -60,7 +60,23 @@ const RESUME_NAV_KEY = "pendingUpdateNav";
 // schickt die Skip-Waiting-Nachricht; vite-plugin-pwa's eigener
 // "controlling"-Listener (siehe registerSW in virtual:pwa-register) macht
 // danach selbststaendig den Reload, sobald der neue Worker uebernommen hat.
-function persistNavAndUpdate(navState, updateSW) {
+//
+// WICHTIG: erst supabase.auth.getSession() abwarten, bevor irgendetwas den
+// Reload anstoesst. Supabase rotiert den Refresh-Token bei jeder Erneuerung
+// (der alte wird serverseitig sofort ungueltig) - laeuft gerade eine
+// Erneuerung (Timer oder ein anderer Tab/Aufruf) und die Seite wird
+// GENAU DANN abgerissen, bevor der neue Token in localStorage geschrieben
+// ist, bleibt dort der bereits ungueltige alte Token stehen. Der naechste
+// Erneuerungsversuch schlaegt dann mit "Refresh Token Not Found" fehl und
+// Supabase meldet den Nutzer ab - genau das Verhalten, das als "Update
+// wirft mich aus der App" beobachtet wurde (bestaetigt in den Auth-Logs:
+// mehrere refresh_token_not_found-Fehler waehrend intensiven Testens mit
+// vielen Reloads kurz hintereinander). getSession() nutzt supabase-js'
+// eigene interne Sperre und wartet daher auf eine bereits laufende
+// Erneuerung, statt eine neue anzustossen - kein zusaetzlicher Netzwerk-
+// Request im Normalfall.
+async function persistNavAndUpdate(navState, updateSW) {
+  try { await supabase.auth.getSession(); } catch { /* ignore */ }
   try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ }
   updateSW(true);
 }
@@ -217,7 +233,7 @@ export default function App() {
   // wirkungslos gemacht (needReload wurde nie von einem echten Update gesetzt).
   //
   // Ein gefundenes Update wird NICHT sofort angewendet (ausser bei explizitem
-  // Nutzerwunsch, siehe requestUpdateNow), sondern erst bei einem von drei
+  // Nutzerwunsch, siehe requestUpdateNow), sondern erst bei einem von vier
   // klar umrissenen Ausloesern - bewusst einfach und nachvollziehbar gehalten,
   // NICHT bei jedem beliebigen Bildschirmwechsel oder "im Hintergrund"
   // irgendwann (das war zu unvorhersehbar):
@@ -232,6 +248,10 @@ export default function App() {
   //     LIVE_ENTRY_TABS zurueck: mitten in einem laufenden Winner-Stays-Spiel
   //     ruft z.B. jedes einzelne Spielergebnis loadData() auf, OHNE dass die
   //     Session (tab bleibt "winnerstays") schon zu Ende ist.
+  //  D) Direkt nachdem sich der Spieler zum ersten Mal in diesem Seitenaufruf
+  //     angemeldet hat (siehe der "!startTabAppliedRef.current"-Block weiter
+  //     unten) - vorher war noch kein Inhalt zu sehen, also ebenfalls
+  //     unauffaellig.
   // In allen Faellen wird der Navigationszustand vorher gesichert (siehe
   // persistNavAndUpdate) und beim Neustart wiederhergestellt (resumedNav
   // oben), damit z.B. ein dauerhaft angezeigter Turnier-Bildschirm nach dem
@@ -453,6 +473,15 @@ export default function App() {
         // tab-Wert, den kein Screen mehr rendert (leere Seite mit Tabbar).
         if (!["stats", "turnier", "live", "profil"].includes(target)) target = null;
         if (target && target !== "stats") navReplace({ tab: target });
+        // Trigger D: direkt nachdem sich der Spieler zum ersten Mal in
+        // diesem Seitenaufruf angemeldet hat (egal ob frischer Login oder
+        // eine bestehende Session, die hier zum ersten Mal geladen wird) -
+        // vorher war noch nichts vom eigentlichen Inhalt zu sehen, also ein
+        // ebenso unauffaelliger Moment wie ein echter Bildschirmwechsel.
+        // Deckt zusaetzlich ab, dass Spieler nach einem Update nicht erneut
+        // durch einen weiteren Reload "herausgerissen" werden, sobald sie
+        // sich naechstes Mal anmelden.
+        if (needReload && !LIVE_ENTRY_TABS.includes(tab)) persistNavAndUpdate(currentNavState, updateServiceWorker);
       }
       const { data: all } = await supabase.from("players")
         .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, is_guest, blocked, invited_by, created_at");
