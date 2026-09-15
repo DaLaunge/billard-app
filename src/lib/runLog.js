@@ -96,8 +96,14 @@ const entryDuration = (e) => (Array.isArray(e) && typeof e[3] === "number" ? e[3
 
 export function matchDurationMs(log) {
   if (!log || log.length < 2) return null;
-  if (isSimpleScoreLog(log) && log.every((e) => entryDuration(e) != null)) {
-    return log.reduce((sum, e) => sum + entryDuration(e), 0);
+  // some() statt every(): das allererste Rack der GESAMTEN Winner-Stays-
+  // Runde hat nie eine Dauer (kein Vorgaenger existiert) - das darf nicht
+  // die ganze Summe auf die falsche ts-Differenz-Methode zurueckfallen
+  // lassen, nur weil GENAU DIESES Rack zufaellig auch das erste Rack
+  // dieses Paares war. Ein fehlender Wert zaehlt dabei als 0 (unbekannt,
+  // besser als falsch mitgezaehlte fremde Spielzeit).
+  if (isSimpleScoreLog(log) && log.some((e) => entryDuration(e) != null)) {
+    return log.reduce((sum, e) => sum + (entryDuration(e) ?? 0), 0);
   }
   const first = entryTs(log[0]);
   const last = entryTs(log[log.length - 1]);
