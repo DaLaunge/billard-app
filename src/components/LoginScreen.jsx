@@ -20,26 +20,28 @@ export default function LoginScreen() {
   const [guestBusy, setGuestBusy] = useState(false);
   const [guestError, setGuestError] = useState("");
   const [captchaToken, setCaptchaToken] = useState(null);
-  const [captchaUnavailable, setCaptchaUnavailable] = useState(false);
   const turnstileBoxRef = useRef(null);
   const turnstileWidgetId = useRef(null);
 
-  // Cloudflare Turnstile fuer "Als Gast spielen" (Nutzer-Feedback: Anonymous
-  // Sign-In ist der einzige Login-Weg ohne jede Reibung - Magic-Link ist
-  // durch den Mailversand, Passwort-Logins durch Admin-Anlegen natuerlich
-  // gebremst. Ohne Captcha koennte ein Skript in einer Schleife beliebig
-  // viele Gast-Accounts erzeugen, siehe supabase/2026-09-15d_*.sql fuer die
-  // serverseitigen Rate-Limits als zusaetzliche Verteidigungsebene). Das
-  // Skript wird nur hier (Login-Screen) nachgeladen, nicht global in
-  // index.html, damit eingeloggte Nutzer es nie sehen.
+  // Cloudflare Turnstile - EIN Widget fuers ganze Login-Screen, nicht nur
+  // fuer "Als Gast spielen": Supabase wendet eine aktivierte Captcha-Pflicht
+  // serverseitig auf ALLE Auth-Endpunkte an (Passwort-Login, Magic-Link,
+  // Anonymous Sign-In) - eine Beschraenkung nur auf einen einzelnen Login-Weg
+  // ist im Supabase-Dashboard nicht moeglich. Das Skript wird nur hier
+  // (Login-Screen) nachgeladen, nicht global in index.html, damit eingeloggte
+  // Nutzer es nie sehen. Das Widget bleibt bewusst IMMER im DOM (auch auf dem
+  // "Link gesendet"-Zwischenschritt) statt nur innerhalb von {!sent && ...}
+  // zu haengen - sonst wuerde React es beim Umschalten zerstoeren und beim
+  // Zurueckwechseln (z.B. "Andere Adresse verwenden") nie neu rendern, weil
+  // der Aufbau-Effekt unten nur einmal beim Mount laeuft.
   //
-  // Faellt das Skript aus (Werbeblocker, Firmennetz, Cloudflare-Ausfall),
-  // darf der Button NICHT fuer immer gesperrt bleiben - nach 8 Sekunden ohne
-  // Token wird er trotzdem freigegeben; ein fehlendes Captcha fuehrt dann
+  // Kein Login-Weg wartet auf ein Token, bevor er ueberhaupt klickbar wird -
+  // faellt das Skript aus (Werbeblocker, Firmennetz, Cloudflare-Ausfall),
+  // wird einfach ohne Token versucht; ein fehlendes Captcha fuehrt dann
   // hoechstens zu einer Fehlermeldung von Supabase selbst, statt einer
   // stillen Sackgasse.
   useEffect(() => {
-    if (!TURNSTILE_SITE_KEY) return; // kein Key konfiguriert -> Gast-Button bleibt ohne Captcha nutzbar (siehe unten)
+    if (!TURNSTILE_SITE_KEY) return; // kein Key konfiguriert -> alle Login-Wege bleiben ohne Captcha nutzbar
     let cancelled = false;
     const renderWidget = () => {
       if (cancelled || !turnstileBoxRef.current || !window.turnstile || turnstileWidgetId.current) return;
@@ -48,17 +50,14 @@ export default function LoginScreen() {
         size: "compact",
         callback: (token) => setCaptchaToken(token),
         "expired-callback": () => setCaptchaToken(null),
-        "error-callback": () => setCaptchaUnavailable(true),
       });
     };
-    const fallbackTimer = setTimeout(() => { if (!cancelled) setCaptchaUnavailable(true); }, 8000);
     if (window.turnstile) {
       renderWidget();
     } else {
       const existing = document.getElementById(TURNSTILE_SCRIPT_ID);
       if (existing) {
         existing.addEventListener("load", renderWidget);
-        existing.addEventListener("error", () => setCaptchaUnavailable(true));
       } else {
         const script = document.createElement("script");
         script.id = TURNSTILE_SCRIPT_ID;
@@ -66,12 +65,25 @@ export default function LoginScreen() {
         script.async = true;
         script.defer = true;
         script.onload = renderWidget;
-        script.onerror = () => setCaptchaUnavailable(true);
         document.body.appendChild(script);
       }
     }
-    return () => { cancelled = true; clearTimeout(fallbackTimer); };
+    return () => { cancelled = true; };
   }, []);
+
+  // Turnstile-Token ist Einweg - nach JEDEM Versuch (egal ob erfolgreich
+  // oder nicht) zuruecksetzen, damit der naechste Login-Versuch (auch ein
+  // Wechsel zwischen Magic-Link/Passwort/Gast) wieder ein frisches Token hat.
+  const resetCaptcha = () => {
+    if (window.turnstile && turnstileWidgetId.current) window.turnstile.reset(turnstileWidgetId.current);
+    setCaptchaToken(null);
+  };
+  // Supabase liefert bei fehlendem/abgelaufenem Captcha nur einen englischen
+  // Rohtext - gleiche Idee wie bei den bekannten Faellen in signInPw()
+  // unten: uebersetzen statt roh durchreichen.
+  const friendlyError = (msg) => msg.includes("captcha")
+    ? t("Sicherheitsprüfung fehlgeschlagen - bitte Seite neu laden und nochmal versuchen.")
+    : msg;
 
   const playAsGuest = async () => {
     setGuestBusy(true); setGuestError("");
@@ -79,35 +91,30 @@ export default function LoginScreen() {
       captchaToken ? { options: { captchaToken } } : undefined
     );
     setGuestBusy(false);
-    if (error) {
-      // Supabase liefert bei fehlendem/abgelaufenem Captcha nur einen
-      // englischen Rohtext - gleiche Idee wie bei den bekannten Faellen in
-      // signInPw() oben: uebersetzen statt roh durchreichen.
-      setGuestError(error.message.includes("captcha")
-        ? t("Sicherheitsprüfung fehlgeschlagen - bitte Seite neu laden und nochmal versuchen.")
-        : error.message);
-      // Turnstile-Token ist Einweg - nach einem Fehlversuch zuruecksetzen,
-      // sonst kann nie wieder ein zweiter Versuch gestartet werden.
-      if (window.turnstile && turnstileWidgetId.current) window.turnstile.reset(turnstileWidgetId.current);
-      setCaptchaToken(null);
-    }
+    resetCaptcha();
+    if (error) setGuestError(friendlyError(error.message));
   };
 
   const sendLink = async () => {
     setBusy(true); setError("");
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: window.location.origin, captchaToken: captchaToken || undefined },
     });
     setBusy(false);
-    if (error) setError(error.message);
+    resetCaptcha();
+    if (error) setError(friendlyError(error.message));
     else setSent(true);
   };
 
   const signInPw = async () => {
     setBusy(true); setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(), password,
+      options: captchaToken ? { captchaToken } : undefined,
+    });
     setBusy(false);
+    resetCaptcha();
     if (!error) return;
     // Vorher wurde hier IMMER dieselbe generische Meldung gezeigt, egal was
     // Supabase tatsaechlich zurueckgab - das hat "Email not confirmed" (z.B.
@@ -121,7 +128,7 @@ export default function LoginScreen() {
     } else if (error.message === "Invalid login credentials") {
       setError(t("Anmeldung fehlgeschlagen – Passwort falsch oder noch keins gesetzt. Nutze den Magic-Link."));
     } else {
-      setError(error.message);
+      setError(friendlyError(error.message));
     }
   };
 
@@ -139,6 +146,8 @@ export default function LoginScreen() {
           <p className="invite-note"><Check size={14} /> {t("Du wurdest eingeladen – melde dich an, um dabei zu sein!")}</p>
         )}
       </div>
+
+      {TURNSTILE_SITE_KEY && <div ref={turnstileBoxRef} className="turnstile-box" />}
 
       {sent ? (
         <div className="login-card">
@@ -197,9 +206,8 @@ export default function LoginScreen() {
 
       {!sent && (
         <div className="login-card">
-          {TURNSTILE_SITE_KEY && <div ref={turnstileBoxRef} className="turnstile-box" />}
           {guestError && <p className="nick-status err"><X size={14} /> {guestError}</p>}
-          <button className="btn ghost" disabled={guestBusy || (!!TURNSTILE_SITE_KEY && !captchaToken && !captchaUnavailable)} onClick={playAsGuest}>
+          <button className="btn ghost" disabled={guestBusy} onClick={playAsGuest}>
             {guestBusy ? "..." : t("Als Gast spielen")}
           </button>
           <p className="hint center">{t("Nur zu Besuch? Ohne Account als Gast einsteigen – zählt fürs Protokoll, aber nicht fürs Ranking.")}</p>
