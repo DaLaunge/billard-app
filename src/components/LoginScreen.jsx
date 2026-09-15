@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Check, X, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { getRef } from "../lib/session";
 import Ball from "./Ball";
 import LegalModal from "./LegalModal";
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+const TURNSTILE_SCRIPT_ID = "cf-turnstile-script";
 
 export default function LoginScreen() {
   const [mode, setMode] = useState("magic"); // Standard: gewohnter Magic-Link; Passwort ist ein Tipp entfernt
@@ -15,12 +18,74 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const [legalOpen, setLegalOpen] = useState(false);
   const [guestBusy, setGuestBusy] = useState(false);
+  const [guestError, setGuestError] = useState("");
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaUnavailable, setCaptchaUnavailable] = useState(false);
+  const turnstileBoxRef = useRef(null);
+  const turnstileWidgetId = useRef(null);
+
+  // Cloudflare Turnstile fuer "Als Gast spielen" (Nutzer-Feedback: Anonymous
+  // Sign-In ist der einzige Login-Weg ohne jede Reibung - Magic-Link ist
+  // durch den Mailversand, Passwort-Logins durch Admin-Anlegen natuerlich
+  // gebremst. Ohne Captcha koennte ein Skript in einer Schleife beliebig
+  // viele Gast-Accounts erzeugen, siehe supabase/2026-09-15d_*.sql fuer die
+  // serverseitigen Rate-Limits als zusaetzliche Verteidigungsebene). Das
+  // Skript wird nur hier (Login-Screen) nachgeladen, nicht global in
+  // index.html, damit eingeloggte Nutzer es nie sehen.
+  //
+  // Faellt das Skript aus (Werbeblocker, Firmennetz, Cloudflare-Ausfall),
+  // darf der Button NICHT fuer immer gesperrt bleiben - nach 8 Sekunden ohne
+  // Token wird er trotzdem freigegeben; ein fehlendes Captcha fuehrt dann
+  // hoechstens zu einer Fehlermeldung von Supabase selbst, statt einer
+  // stillen Sackgasse.
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) return; // kein Key konfiguriert -> Gast-Button bleibt ohne Captcha nutzbar (siehe unten)
+    let cancelled = false;
+    const renderWidget = () => {
+      if (cancelled || !turnstileBoxRef.current || !window.turnstile || turnstileWidgetId.current) return;
+      turnstileWidgetId.current = window.turnstile.render(turnstileBoxRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        size: "compact",
+        callback: (token) => setCaptchaToken(token),
+        "expired-callback": () => setCaptchaToken(null),
+        "error-callback": () => setCaptchaUnavailable(true),
+      });
+    };
+    const fallbackTimer = setTimeout(() => { if (!cancelled) setCaptchaUnavailable(true); }, 8000);
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      const existing = document.getElementById(TURNSTILE_SCRIPT_ID);
+      if (existing) {
+        existing.addEventListener("load", renderWidget);
+        existing.addEventListener("error", () => setCaptchaUnavailable(true));
+      } else {
+        const script = document.createElement("script");
+        script.id = TURNSTILE_SCRIPT_ID;
+        script.src = "https://challenge.cloudflare.com/turnstile/v0/api.js";
+        script.async = true;
+        script.defer = true;
+        script.onload = renderWidget;
+        script.onerror = () => setCaptchaUnavailable(true);
+        document.body.appendChild(script);
+      }
+    }
+    return () => { cancelled = true; clearTimeout(fallbackTimer); };
+  }, []);
 
   const playAsGuest = async () => {
-    setGuestBusy(true); setError("");
-    const { error } = await supabase.auth.signInAnonymously();
+    setGuestBusy(true); setGuestError("");
+    const { error } = await supabase.auth.signInAnonymously(
+      captchaToken ? { options: { captchaToken } } : undefined
+    );
     setGuestBusy(false);
-    if (error) setError(error.message);
+    if (error) {
+      setGuestError(error.message);
+      // Turnstile-Token ist Einweg - nach einem Fehlversuch zuruecksetzen,
+      // sonst kann nie wieder ein zweiter Versuch gestartet werden.
+      if (window.turnstile && turnstileWidgetId.current) window.turnstile.reset(turnstileWidgetId.current);
+      setCaptchaToken(null);
+    }
   };
 
   const sendLink = async () => {
@@ -127,7 +192,9 @@ export default function LoginScreen() {
 
       {!sent && (
         <div className="login-card">
-          <button className="btn ghost" disabled={guestBusy} onClick={playAsGuest}>
+          {TURNSTILE_SITE_KEY && <div ref={turnstileBoxRef} className="turnstile-box" />}
+          {guestError && <p className="nick-status err"><X size={14} /> {guestError}</p>}
+          <button className="btn ghost" disabled={guestBusy || (!!TURNSTILE_SITE_KEY && !captchaToken && !captchaUnavailable)} onClick={playAsGuest}>
             {guestBusy ? "..." : t("Als Gast spielen")}
           </button>
           <p className="hint center">{t("Nur zu Besuch? Ohne Account als Gast einsteigen – zählt fürs Protokoll, aber nicht fürs Ranking.")}</p>

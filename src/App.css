@@ -700,6 +700,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   color: #06231A; display: grid; place-items: center; margin: 0 auto 14px; }
 .sent-check.big { width: 68px; height: 68px; }
 .sent-text { text-align: center; margin-bottom: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.turnstile-box { display: flex; justify-content: center; margin-bottom: 12px; }
 
 /* Permanenter Tisch-Hinweis (siehe App.jsx) - knapp ueber der Tabbar, damit
    er auf jedem Screen (ausser waehrend eines laufenden Matches) sichtbar
