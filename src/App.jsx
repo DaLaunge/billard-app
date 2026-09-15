@@ -143,6 +143,8 @@ export default function App() {
   const [celebrate, setCelebrate] = useState(null);  // neue Erfolge fürs Popup
   const [tourneyReady, setTourneyReady] = useState(null); // bereite Turnierpaarung fürs Popup
   const [tourneyReadyList, setTourneyReadyList] = useState([]); // ALLE bereiten Turnierpaarungen fuer mich - speist den Turniere-Badge (siehe checkTourneyReady unten)
+  const [wsReady, setWsReady] = useState(null); // wie tourneyReady, nur fuer Winner Stays (siehe checkWinnerStaysReady unten)
+  const [wsReadyList, setWsReadyList] = useState([]); // wie tourneyReadyList, nur fuer Winner Stays
   const [lang, setLang] = useState(getLang());
   const changeLang = useCallback((l) => { setLangGlobal(l); setLang(l); }, []);
   const [vsOpp, setVsOpp] = useState(resumedNav?.vsOpp ?? null);
@@ -468,6 +470,72 @@ export default function App() {
     dismissTourneyReady();
   }, [tourneyReady, dismissTourneyReady, navPush]);
 
+  // Wie checkTourneyReady oben, nur fuer Winner Stays (Nutzer-Feedback: "wie
+  // bei den anderen Turniermodi eine Information geben, dass die Person
+  // dran ist"). Anders als ein Turnier-Bracket-Match (das genau EINMAL
+  // bereit wird, bis es gemeldet ist) rotiert die Warteschlange bei Winner
+  // Stays nach JEDEM Rack neu - Position 0/1 ("am Tisch") ist also kein
+  // stabiler Bezeichner fuer "diese eine Gelegenheit". Als eindeutiger
+  // Dismiss-Schluessel dient stattdessen "Session + hoechste bisher
+  // gemeldete game_no" - das aendert sich garantiert bei jeder Rotation,
+  // aber nicht bei jedem Poll derselben Partie.
+  const checkWinnerStaysReady = useCallback(async () => {
+    if (!player) return;
+    const { data: mine } = await supabase.from("winner_stays_entries")
+      .select("id, session_id, player1_id, player2_id")
+      .in("queue_position", [0, 1])
+      .or(`player1_id.eq.${player.id},player2_id.eq.${player.id}`);
+    const myEntries = mine ?? [];
+    if (myEntries.length === 0) { setWsReadyList([]); return; }
+    const sessionIds = [...new Set(myEntries.map((e) => e.session_id))];
+    const [{ data: sessions }, { data: allEntries }, { data: recentGames }] = await Promise.all([
+      supabase.from("winner_stays_sessions").select("id, name, status, table_number").in("id", sessionIds),
+      supabase.from("winner_stays_entries").select("id, session_id, player1_id, player2_id").in("session_id", sessionIds).in("queue_position", [0, 1]),
+      supabase.from("winner_stays_games").select("session_id, game_no").in("session_id", sessionIds).order("game_no", { ascending: false }),
+    ]);
+    const sessById = Object.fromEntries((sessions ?? []).map((s) => [s.id, s]));
+    const maxGameNoBySession = {};
+    for (const g of (recentGames ?? [])) { if (!(g.session_id in maxGameNoBySession)) maxGameNoBySession[g.session_id] = g.game_no; }
+    const candidates = myEntries.map((e) => {
+      const sess = sessById[e.session_id];
+      const opp = (allEntries ?? []).find((o) => o.session_id === e.session_id && o.id !== e.id);
+      if (!sess || sess.status !== "running" || !opp) return null;
+      return { id: `${e.session_id}:${maxGameNoBySession[e.session_id] ?? 0}`, session_id: e.session_id, session: sess, oppPlayer1Id: opp.player1_id, oppPlayer2Id: opp.player2_id };
+    }).filter(Boolean);
+    setWsReadyList(candidates);
+    if (candidates.length === 0) return;
+    let dismissed = [];
+    try { dismissed = JSON.parse(localStorage.getItem("dismissedWinnerStaysReady:" + player.id) || "[]"); } catch { /* ignore */ }
+    const next = candidates.find((c) => !dismissed.includes(c.id));
+    if (!next) return;
+    setWsReady((prev) => prev || next);
+  }, [player]);
+
+  useEffect(() => {
+    if (!player) return;
+    checkWinnerStaysReady();
+    const id = setInterval(checkWinnerStaysReady, 20000);
+    const onVis = () => { if (document.visibilityState === "visible") checkWinnerStaysReady(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+  }, [player, checkWinnerStaysReady]);
+
+  const dismissWsReady = useCallback(() => {
+    if (!wsReady || !player) return;
+    try {
+      const key = "dismissedWinnerStaysReady:" + player.id;
+      const cur = JSON.parse(localStorage.getItem(key) || "[]");
+      localStorage.setItem(key, JSON.stringify([...cur, wsReady.id]));
+    } catch { /* ignore */ }
+    setWsReady(null);
+  }, [wsReady, player]);
+
+  const goToWsReady = useCallback(() => {
+    if (!wsReady) return;
+    navPush({ tab: "winnerstays", winnerStaysId: wsReady.session_id });
+    dismissWsReady();
+  }, [wsReady, dismissWsReady, navPush]);
+
   // Turniere-Menuepunkt (Tabbar + Profil-Button): springt bei einer
   // bereiten Paarung direkt ins BETROFFENE Turnier statt in die allgemeine
   // Liste - sonst sieht man zwar das Badge ("hier ist etwas zu tun"), muss
@@ -484,12 +552,16 @@ export default function App() {
   // dieser Klick einen immer wieder ins selbe/ein Turnier zurueckwarf).
   const openTurniereMenu = useCallback(() => {
     const alreadyInTurnierBereich = tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays";
-    if (!alreadyInTurnierBereich && tourneyReadyList.length > 0) {
+    if (alreadyInTurnierBereich) {
+      navPush({ tab: "turnier" });
+    } else if (tourneyReadyList.length > 0) {
       navPush({ tab: "turnierdetail", tournamentId: tourneyReadyList[0].tournament_id });
+    } else if (wsReadyList.length > 0) {
+      navPush({ tab: "winnerstays", winnerStaysId: wsReadyList[0].session_id });
     } else {
       navPush({ tab: "turnier" });
     }
-  }, [tab, tourneyReadyList, navPush]);
+  }, [tab, tourneyReadyList, wsReadyList, navPush]);
 
   // Fuer die Startseiten-Option "Zuletzt geoeffnet": merkt sich den zuletzt
   // besuchten Hauptmenuepunkt geraeteweise (nicht Unterseiten wie Match/
@@ -896,7 +968,32 @@ export default function App() {
                 </div>
               );
             })()}
-            <main className={"content" + (tab === "match" ? " no-tabbar" : "") + (tourneyReadyList.length > 0 && tab !== "match" ? " has-table-banner" : "")}>
+            {wsReady && tab !== "match" && tab !== "winnerstays" && !celebrate && !tourneyReady && (() => {
+              const nameOfId = (id) => players.find((p) => p.id === id)?.nickname;
+              const oppName = [nameOfId(wsReady.oppPlayer1Id), nameOfId(wsReady.oppPlayer2Id)].filter(Boolean).join(" & ");
+              return (
+                <div className="celebrate-overlay" onClick={dismissWsReady}>
+                  <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
+                    <div className="celebrate-head">🎱 {t("Du bist dran!")}</div>
+                    <p className="hint" style={{ marginTop: -6, marginBottom: 14 }}>{wsReady.session.name}</p>
+                    <div className="celebrate-item">
+                      <Ball color={colorOf(oppName)} label={initials(oppName)} badge={badgeOf(oppName)} photo={photoOf(oppName)} size={40} />
+                      <div className="celebrate-txt">
+                        <span className="celebrate-name">{t("gegen {name}", { name: oppName || "?" })}</span>
+                        <span className="celebrate-desc">
+                          {wsReady.session.table_number != null ? `${t("Tisch")} ${wsReady.session.table_number}` : t("Winner Stays")}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                      <button className="btn ghost" style={{ width: "auto", flex: 1, marginTop: 0 }} onClick={dismissWsReady}>{t("Später")}</button>
+                      <button className="btn primary" style={{ width: "auto", flex: 1 }} onClick={goToWsReady}>{t("Zum Turnier")}</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+            <main className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
@@ -944,7 +1041,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
-                  onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length}
+                  onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length + wsReadyList.length}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
@@ -1018,6 +1115,22 @@ export default function App() {
               );
             })()}
 
+            {/* Wie der Turnier-Banner oben, nur fuer Winner Stays - auf dem
+                Winner-Stays-Screen selbst weggelassen, weil "Am Tisch" dort
+                schon direkt sichtbar ist. */}
+            {wsReadyList.length > 0 && tab !== "match" && tab !== "winnerstays" && (() => {
+              const next = wsReadyList[0];
+              const nameOfId = (id) => players.find((p) => p.id === id)?.nickname;
+              const oppName = [nameOfId(next.oppPlayer1Id), nameOfId(next.oppPlayer2Id)].filter(Boolean).join(" & ");
+              return (
+                <button className="tourney-table-banner"
+                  onClick={() => navPush({ tab: "winnerstays", winnerStaysId: next.session_id })}>
+                  🎱 {next.session.table_number != null ? `${t("Tisch")} ${next.session.table_number} · ` : ""}{t("gegen {name}", { name: oppName || "?" })}
+                  {wsReadyList.length > 1 && ` · ${t("+{n} weitere", { n: wsReadyList.length - 1 })}`}
+                </button>
+              );
+            })()}
+
             {tab !== "match" && (
             <nav className="tabbar">
               <button className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
@@ -1026,7 +1139,7 @@ export default function App() {
               </button>
               <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays" ? " on" : "")} onClick={openTurniereMenu}>
                 <Trophy size={21} /><span>{t("Turniere")}</span>
-                {tourneyReadyList.length > 0 && <span className="badge">{tourneyReadyList.length}</span>}
+                {(tourneyReadyList.length + wsReadyList.length) > 0 && <span className="badge">{tourneyReadyList.length + wsReadyList.length}</span>}
               </button>
               <button className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
                 <span className="fab-shine" />
