@@ -74,9 +74,17 @@ const RESUME_NAV_KEY = "pendingUpdateNav";
 // vielen Reloads kurz hintereinander). getSession() nutzt supabase-js'
 // eigene interne Sperre und wartet daher auf eine bereits laufende
 // Erneuerung, statt eine neue anzustossen - kein zusaetzlicher Netzwerk-
-// Request im Normalfall.
+// Request im Normalfall. Mit einem Timeout abgesichert: haengt getSession()
+// aus irgendeinem Grund (z.B. eine haengende interne Sperre), darf das
+// NIE das Anwenden des Updates dauerhaft blockieren - lieber nach kurzer
+// Zeit trotzdem weitermachen als gar nicht mehr updaten.
 async function persistNavAndUpdate(navState, updateSW) {
-  try { await supabase.auth.getSession(); } catch { /* ignore */ }
+  try {
+    await Promise.race([
+      supabase.auth.getSession(),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
+  } catch { /* ignore */ }
   try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ }
   updateSW(true);
 }
