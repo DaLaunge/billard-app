@@ -680,6 +680,7 @@ const TRANSLATIONS = {
     "Keine Daten im gewählten Zeitraum.": "No data in the selected period.",
     "Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.": "Curves will appear here once history data is available.",
     "Spieler hinzufügen": "Add player",
+    "Ausblenden": "Hide",
     "Spieler suchen …": "Search players …",
     "Spieler suchen oder Gast eingeben …": "Search players or enter a guest …",
     "Deine häufigsten Mitspieler zuerst:": "Your most frequent opponents first:",

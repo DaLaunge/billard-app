@@ -58,11 +58,14 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   const [showReport, setShowReport] = useState(false);
   // Manuelles Hinzufuegen durch die Turnierleitung (Nutzer-Feedback: der
   // frueher entfernte PlayerMultiPicker-Auswahlschirm soll als ERGAENZUNG
-  // zur Selbst-Anmeldung zurueckkommen, nicht als Ersatz) - eigener,
-  // ausklappbarer Auswahlzustand statt eines Formularfelds, da er nur
-  // waehrend der Anmeldephase gebraucht wird (siehe addPlayers/removePlayer
-  // unten sowie tournament_organizer_add_players()/_remove_player()).
-  const [showAddPlayers, setShowAddPlayers] = useState(false);
+  // zur Selbst-Anmeldung zurueckkommen, nicht als Ersatz) - ausklappbar,
+  // aber standardmaessig bereits OFFEN (Nutzer-Feedback: waehrend der
+  // Anmeldephase wird ohnehin praktisch immer jemand hinzugefuegt, ein
+  // Extra-Klick zum Aufklappen kostet der Turnierleitung nur Zeit) - bleibt
+  // trotzdem einklappbar, falls die Liste mal aus dem Weg soll (siehe
+  // addPlayers/removePlayer unten sowie
+  // tournament_organizer_add_players()/_remove_player()).
+  const [showAddPlayers, setShowAddPlayers] = useState(true);
   const [addSelected, setAddSelected] = useState([]);
   const toggleAddSelected = (id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   // Gast-Person ohne App/Login (Nutzer-Feedback: "wenn jemand die App nicht
@@ -520,7 +523,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           {isOrganizer && (
             <>
               <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setShowAddPlayers((s) => !s)}>
-                {showAddPlayers ? <><X size={15} /> {t("Abbrechen")}</> : <><UserPlus size={15} /> {t("Spieler hinzufügen")}</>}
+                {showAddPlayers ? <><X size={15} /> {t("Ausblenden")}</> : <><UserPlus size={15} /> {t("Spieler hinzufügen")}</>}
               </button>
               {showAddPlayers && (
                 <div style={{ marginTop: 10 }}>
