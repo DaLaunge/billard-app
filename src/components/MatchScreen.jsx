@@ -39,8 +39,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [offlineQueued, setOfflineQueued] = useState(false); // Match konnte mangels Verbindung nicht gemeldet werden, wartet lokal
   const [ghostStartedAt, setGhostStartedAt] = useState(null); // gegen "Durchklicken" beim Ghost-Training
   const [nowTick, setNowTick] = useState(Date.now());
-  const [guestName, setGuestName] = useState(""); // Name-Eingabe fuers "Gast hinzufuegen"-Formular unten
+  const [guestName, setGuestName] = useState(""); // Name-Eingabe fuers "Gast hinzufuegen"-Formular
   const [guestBusy, setGuestBusy] = useState(false);
+  const [oppCount, setOppCount] = useState(10); // Standard: nur die haeufigsten Mitspieler zeigen (Nutzer-Feedback: Liste wird lang)
 
   const is141 = disc === "14/1 Endlos";
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
@@ -53,12 +54,36 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (!partner) setPartner(p); else if (!opp) setOpp(p); else if (!opp2) setOpp2(p);
   };
 
+  // Wie oft habe ich in letzter Zeit gegen wen gespielt? (häufigste Gegner zuerst,
+  // dieselbe Logik wie im PlayerPicker – siehe lib/frequency.js)
+  const freqByNick = useMemo(() => recentOpponentFreq(matches, me), [matches, me]);
+
+  const ghost = players.find((p) => p.is_ghost);
+  // Alle passenden Gegner (haeufigste zuerst) - ungekuerzt, u.a. um zu wissen,
+  // ob ueberhaupt noch mehr hinter "10"/"20"/"Alle" steckt.
+  const allMatchingOpponents = players
+    .filter((p) => p.id !== me.id && !p.is_ghost && !p.blocked)
+    .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
+    .sort((a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname));
+  // Ohne aktive Suche nur die Top-N zeigen (Nutzer-Feedback: Spielerliste
+  // wird mit der Zeit sehr lang) - waehrend einer Suche wird IMMER die volle
+  // Trefferliste gezeigt, sonst faende man jemanden mit wenigen gemeinsamen
+  // Matches nie.
+  const opponents = (!oppQuery.trim() && oppCount !== "all")
+    ? allMatchingOpponents.slice(0, oppCount)
+    : allMatchingOpponents;
+
   // Gast fuers normale Match hinzufuegen (Turniere haben dafuer schon
   // tournament_organizer_add_guest() - dies hier ist das Gegenstueck ohne
   // Turnierbezug, siehe add_guest_player()). Neuer Gast wird direkt als
   // Gegner/Mitspieler ausgewaehlt, players-Liste laedt danach neu nach.
+  // Findet die Suche niemanden, wird das Namensfeld mit dem Suchbegriff
+  // vorausgefuellt (Nutzer-Feedback: "Findet er keinen, soll die App auf
+  // den Gast aufmerksam machen") - sobald man selbst ins Feld tippt,
+  // uebernimmt die eigene Eingabe.
+  const guestFieldValue = guestName || (oppQuery.trim() && opponents.length === 0 ? oppQuery.trim() : "");
   const addGuest = async () => {
-    const nick = guestName.trim();
+    const nick = guestFieldValue.trim();
     if (!nick) return;
     setGuestBusy(true);
     const { data, error } = await supabase.rpc("add_guest_player", { p_nickname: nick });
@@ -68,16 +93,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     pickPlayer(data);
     onReload && onReload();
   };
-
-  // Wie oft habe ich in letzter Zeit gegen wen gespielt? (häufigste Gegner zuerst,
-  // dieselbe Logik wie im PlayerPicker – siehe lib/frequency.js)
-  const freqByNick = useMemo(() => recentOpponentFreq(matches, me), [matches, me]);
-
-  const ghost = players.find((p) => p.is_ghost);
-  const opponents = players
-    .filter((p) => p.id !== me.id && !p.is_ghost && !p.blocked)
-    .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
-    .sort((a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname));
 
   const myRating = ratingOf(me.nickname);
   const oppRating = opp ? ratingOf(opp.nickname) : 500;
@@ -345,7 +360,30 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           </div>
 
           <div className="match-players">
-          {opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
+          {mode === "single" && ghost && !oppQuery && (
+            <button className="ghost-card" onClick={() => { setOpp(ghost); setGhostStartedAt(Date.now()); setStep(1); }}>
+              <div className="ghost-ball">👻</div>
+              <div className="ghost-info">
+                <span className="ghost-name">{t("Training gegen Ghost")}</span>
+                <span className="ghost-sub">{t("Übungsmatch – zählt nicht fürs Rating")}</span>
+              </div>
+              <ArrowRight size={18} />
+            </button>
+          )}
+          {oppQuery.trim() && opponents.length === 0 && (
+            <p className="hint-highlight">🤔 {t('Niemand namens "{q}" gefunden – unten als Gast hinzufügen?', { q: oppQuery.trim() })}</p>
+          )}
+          <div className="turnier-guest-form">
+            <input type="text" placeholder={t("Name des Gasts")} value={guestFieldValue}
+              onChange={(e) => setGuestName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addGuest(); }} />
+            <button className="btn ghost" disabled={!guestFieldValue.trim() || guestBusy} onClick={addGuest}>
+              <UserPlus size={15} /> {t("Gast hinzufügen")}
+            </button>
+          </div>
+          {!oppQuery.trim() && <p className="hint">{t("Für Personen ohne App - Ergebnisse gegen Gäste zählen nicht fürs Rating und brauchen keine Bestätigung.")}</p>}
+
+          {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
           {mode === "single" && !oppQuery && suggestions.length > 0 && (
             <div className="suggest-card">
               <div className="suggest-title">💡 {t("Empfehlung")}</div>
@@ -363,16 +401,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               ))}
             </div>
           )}
-          {mode === "single" && ghost && !oppQuery && (
-            <button className="ghost-card" onClick={() => { setOpp(ghost); setGhostStartedAt(Date.now()); setStep(1); }}>
-              <div className="ghost-ball">👻</div>
-              <div className="ghost-info">
-                <span className="ghost-name">{t("Training gegen Ghost")}</span>
-                <span className="ghost-sub">{t("Übungsmatch – zählt nicht fürs Rating")}</span>
-              </div>
-              <ArrowRight size={18} />
-            </button>
-          )}
           <div className="opp-grid">
             {opponents.map((p) => {
               const role = mode === "double"
@@ -387,15 +415,15 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               );
             })}
           </div>
-          <div className="turnier-guest-form">
-            <input type="text" placeholder={t("Name des Gasts")} value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") addGuest(); }} />
-            <button className="btn ghost" disabled={!guestName.trim() || guestBusy} onClick={addGuest}>
-              <UserPlus size={15} /> {t("Gast hinzufügen")}
-            </button>
-          </div>
-          <p className="hint">{t("Für Personen ohne App - Ergebnisse gegen Gäste zählen nicht fürs Rating und brauchen keine Bestätigung.")}</p>
+          {!oppQuery.trim() && allMatchingOpponents.length > 3 && (
+            <div className="chips small">
+              {[3, 10, 20, "all"].map((c) => (
+                <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
+                  {c === "all" ? t("Alle") : c}
+                </button>
+              ))}
+            </div>
+          )}
           <button className="btn ghost" onClick={() => setShowInvite(true)}>
             <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
           </button>

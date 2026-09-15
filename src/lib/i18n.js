@@ -1144,6 +1144,7 @@ const TRANSLATIONS = {
     "Für Personen ohne App - Ergebnisse gegen Gäste zählen nicht fürs Rating und brauchen keine Bestätigung.": "For people without the app - results against guests don't count for the rating and need no confirmation.",
     " · Gast": " · Guest",
     "Gast-Match – zählt nicht fürs Rating, braucht keine Bestätigung.": "Guest match – doesn't count for the rating, needs no confirmation.",
+    'Niemand namens "{q}" gefunden – unten als Gast hinzufügen?': 'No one named "{q}" found – add as a guest below?',
   },
 };
 export function setLangGlobal(l) {
