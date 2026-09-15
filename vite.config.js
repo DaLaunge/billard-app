@@ -6,9 +6,20 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      // "prompt" statt "autoUpdate": Bei "autoUpdate" ruft vite-plugin-pwa's
+      // generierter Registrierungscode bei Aktivierung eines neuen Service
+      // Workers IMMER sofort window.location.reload() auf (siehe
+      // node_modules/vite-plugin-pwa/dist/client/build/react.js) - unsere
+      // gesamte Verzoegerungslogik in App.jsx (onNeedRefresh -> erst bei
+      // Hintergrund/Bildschirmwechsel reloaden) wird dabei nie erreicht,
+      // ganz unabhaengig davon, ob/wie onNeedRefresh benannt ist. "prompt"
+      // ruft stattdessen onNeedRefresh() auf und wartet, bis die App selbst
+      // updateServiceWorker() aufruft. skipWaiting darf dafuer NICHT gesetzt
+      // sein, sonst aktiviert sich der neue Worker von selbst, bevor die App
+      // reagieren kann.
+      registerType: "prompt",
       injectRegister: false, // Registrierung laeuft manuell ueber useRegisterSW() in App.jsx
-      workbox: { skipWaiting: true, clientsClaim: true },
+      workbox: { clientsClaim: true },
       devOptions: { enabled: true, type: "module" }, // Service Worker auch im `npm run dev` aktiv, zum Testen
       includeAssets: ["apple-touch-icon.png"],
       manifest: {

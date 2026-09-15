@@ -15,7 +15,7 @@ export default function AchievementsProgressCard({ catalog, extras, earnedBadges
         <div key={c.badgeKey} className="side-row">
           <span className="side-row-emoji">{c.emoji}</span>
           <span className="side-row-name">{c.name}</span>
-          <span className="side-row-gap">{t("noch {n}", { n: c.gap })}</span>
+          <span className="side-row-gap">{t("noch {n} {unit}", { n: c.gap, unit: c.unit })}</span>
         </div>
       ))}
       <button className="btn ghost small" onClick={() => onOpenProfile(nickname)}>{t("Alle Erfolge ansehen")}</button>

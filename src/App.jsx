@@ -45,9 +45,16 @@ const LIVE_ENTRY_TABS = ["match", "winnerstays"];
 // statt auf die Startseite zurueckzufallen.
 const RESUME_NAV_KEY = "pendingUpdateNav";
 
-function persistNavAndReload(navState) {
+// Sichert den Navigationszustand und stoesst dann die Aktivierung des
+// wartenden Service Workers an - NICHT selbst window.location.reload()
+// aufrufen: der neue Worker ist bis hierher nur "waiting", noch nicht aktiv,
+// ein Reload jetzt wuerde einfach die alte Version neu laden. updateSW(true)
+// schickt die Skip-Waiting-Nachricht; vite-plugin-pwa's eigener
+// "controlling"-Listener (siehe registerSW in virtual:pwa-register) macht
+// danach selbststaendig den Reload, sobald der neue Worker uebernommen hat.
+function persistNavAndUpdate(navState, updateSW) {
   try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ }
-  window.location.reload();
+  updateSW(true);
 }
 
 export default function App() {
@@ -68,7 +75,7 @@ export default function App() {
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
   const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
   // Von einem update-bedingten Reload zwischengespeicherter Navigationszustand
-  // (siehe persistNavAndReload). Nur LESEN, kein sessionStorage.removeItem
+  // (siehe persistNavAndUpdate). Nur LESEN, kein sessionStorage.removeItem
   // hier drin - useState-Initializer laufen unter React.StrictMode im Dev-
   // Modus zweimal (Zweck: unreine Initializer aufdecken), und ein Loesch-
   // Seiteneffekt hier wuerde beim zweiten Aufruf bereits "null" lesen und so
@@ -185,9 +192,16 @@ export default function App() {
   // App pruefen; sonst alle 30/60 Min per Timer; "manual" = nur per Klick in
   // den Profileinstellungen. Wichtig: registerType "autoUpdate" (vite.config.js)
   // ruft bei gefundenem Update intern SOFORT window.location.reload() auf,
-  // sobald keine eigene onNeedReload-Callback uebergeben wird - darum hier
-  // NICHT ohne onNeedReload arbeiten, sonst reisst ein Update-Check die gerade
-  // ladende Seite ungebremst weg.
+  // sobald keine eigene onNeedRefresh-Callback uebergeben wird - darum hier
+  // NICHT ohne onNeedRefresh arbeiten, sonst reisst ein Update-Check die
+  // gerade ladende Seite ungebremst weg. ACHTUNG: die Property MUSS exakt
+  // "onNeedRefresh" heissen (nicht "onNeedReload") - vite-plugin-pwa kennt
+  // nur diesen Namen (siehe RegisterSWOptions in vite-plugin-pwa/types), ein
+  // falscher Name wird von useRegisterSW stillschweigend ignoriert und faellt
+  // exakt auf das oben beschriebene Sofort-Reload-Verhalten zurueck, ohne
+  // dass sich das im Code bemerkbar macht - genau dieser Tippfehler war bis
+  // 2026-09-12 im Einsatz und hat die komplette Verzoegerungslogik unten
+  // wirkungslos gemacht (needReload wurde nie von einem echten Update gesetzt).
   //
   // Ein gefundenes Update wird NICHT sofort angewendet, sondern erst in einem
   // fuer den Nutzer unauffaelligen Moment - zwei Trigger, siehe die beiden
@@ -203,7 +217,7 @@ export default function App() {
   //     "mittendrin" unterwegs, das gilt automatisch auch fuer neue, spaeter
   //     hinzugefuegte Screens.
   // In beiden Faellen wird der Navigationszustand vorher gesichert (siehe
-  // persistNavAndReload) und beim Neustart wiederhergestellt (resumedNav
+  // persistNavAndUpdate) und beim Neustart wiederhergestellt (resumedNav
   // oben), damit z.B. ein dauerhaft angezeigter Turnier-Bildschirm nach dem
   // Reload auf demselben Screen bleibt statt auf die Startseite zu springen.
   const [updateInterval, setUpdateInterval] = useState(() => {
@@ -211,9 +225,9 @@ export default function App() {
   });
   const [needReload, setNeedReload] = useState(false);
   const swRegistration = useRef(null);
-  useRegisterSW({
+  const { updateServiceWorker } = useRegisterSW({
     onRegisteredSW(_url, reg) { swRegistration.current = reg || null; },
-    onNeedReload() { setNeedReload(true); },
+    onNeedRefresh() { setNeedReload(true); },
   });
   const checkForUpdate = useCallback(() => { swRegistration.current?.update(); }, []);
   const setUpdateCheckInterval = useCallback((v) => {
@@ -242,11 +256,11 @@ export default function App() {
       if (document.visibilityState !== "hidden") return;
       if (!needReload || !initialLoadDone || celebrate) return;
       if (LIVE_ENTRY_TABS.includes(tab)) return;
-      persistNavAndReload(currentNavState);
+      persistNavAndUpdate(currentNavState, updateServiceWorker);
     };
     document.addEventListener("visibilitychange", onHidden);
     return () => document.removeEventListener("visibilitychange", onHidden);
-  }, [needReload, initialLoadDone, celebrate, tab, currentNavState]);
+  }, [needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
   // Trigger 2: Reload exakt beim naechsten echten Bildschirmwechsel (nicht
   // schon, sobald needReload auf einem stehenden Screen true wird - sonst
   // waere z.B. ein dauerhaft gezeigter Turnier-Bildschirm nicht geschuetzt).
@@ -254,8 +268,8 @@ export default function App() {
   useEffect(() => {
     const changed = prevTabForReloadRef.current !== tab;
     prevTabForReloadRef.current = tab;
-    if (changed && needReload && initialLoadDone && !celebrate) persistNavAndReload(currentNavState);
-  }, [tab, needReload, initialLoadDone, celebrate, currentNavState]);
+    if (changed && needReload && initialLoadDone && !celebrate) persistNavAndUpdate(currentNavState, updateServiceWorker);
+  }, [tab, needReload, initialLoadDone, celebrate, currentNavState, updateServiceWorker]);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
