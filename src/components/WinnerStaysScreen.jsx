@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -57,6 +57,18 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [addSelected, setAddSelected] = useState([]);
   const [teamP1, setTeamP1] = useState(null);
   const [teamP2, setTeamP2] = useState(null);
+  // Nutzer-Feedback: nach dem Anlegen einer Runde ist der leere Zwischen-
+  // Screen ("Hinzufügen" erst extra antippen) unnoetig - beim allerersten
+  // Laden ohne Teilnehmer gleich direkt die Auswahl aufklappen. Nur EINMAL
+  // (Ref statt State), damit ein spaeteres bewusstes Zuklappen (z.B. wenn
+  // alle Teilnehmer wieder entfernt wurden) nicht ungefragt wieder aufspringt.
+  const autoOpenedAddRef = useRef(false);
+  useEffect(() => {
+    if (entries && entries.length === 0 && !autoOpenedAddRef.current) {
+      autoOpenedAddRef.current = true;
+      setShowAdd(true);
+    }
+  }, [entries]);
 
   if (!session || !entries) {
     return (
@@ -75,7 +87,13 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const posB = entries.find((e) => e.queue_position === 1);
   const waiting = entries.filter((e) => e.queue_position >= 2).sort((a, b) => a.queue_position - b.queue_position);
   const ranked = [...entries].sort((a, b) => b.wins - a.wins || b.streak - a.streak || a.queue_position - b.queue_position);
-  const canReport = isOrganizer && session.status === "running" && posA && posB;
+  // Nutzer-Feedback: nicht nur die Turnierleitung, auch die beiden gerade
+  // am Tisch stehenden Personen sollen selbst ein Ergebnis eintragen
+  // koennen (bei Doppel beide Team-Mitglieder) - serverseitig identisch in
+  // winner_stays_report_game() durchgesetzt, hier nur zusaetzlich als
+  // Bedienbarkeits-Kriterium.
+  const isAtTable = !!(posA && posB && [posA.player1_id, posA.player2_id, posB.player1_id, posB.player2_id].includes(me.id));
+  const canReport = (isOrganizer || isAtTable) && session.status === "running" && posA && posB;
   const canDelete = isOrganizer && games.length === 0;
   const existingPlayerIds = entries.flatMap((e) => [e.player1_id, e.player2_id]).filter(Boolean);
 
