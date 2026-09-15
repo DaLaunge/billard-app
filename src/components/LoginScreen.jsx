@@ -14,6 +14,9 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [legalOpen, setLegalOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeError, setCodeError] = useState("");
 
   const sendLink = async () => {
     setBusy(true); setError("");
@@ -24,6 +27,21 @@ export default function LoginScreen() {
     setBusy(false);
     if (error) setError(error.message);
     else setSent(true);
+  };
+
+  // Alternative zum Link-Klick: Supabase verschickt bei signInWithOtp immer
+  // auch einen 6-stelligen Zahlencode in derselben Mail (Mail-Vorlage muss
+  // {{ .Token }} enthalten). Wichtig auf iOS: oeffnet die Mail-App den Link
+  // in einem anderen Browser/In-App-Webview als dem, den man sonst nutzt
+  // (eigener, separater localStorage!), landet die Sitzung dort und man
+  // sieht sich in seinem eigentlichen Browser weiter als ausgeloggt - der
+  // Code umgeht das, weil verifyOtp() direkt in DIESEM Tab laeuft und die
+  // Sitzung darum garantiert im richtigen Speicher landet.
+  const verifyCode = async () => {
+    setCodeBusy(true); setCodeError("");
+    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" });
+    setCodeBusy(false);
+    if (error) setCodeError(error.message);
   };
 
   const signInPw = async () => {
@@ -69,7 +87,25 @@ export default function LoginScreen() {
           <p className="hint" style={{ textAlign: "center" }}>
             {t("Oeffne die Mail auf DIESEM Geraet und tippe auf den Link. Nichts bekommen? Schau in den Spam-Ordner.")}
           </p>
-          <button className="btn ghost" onClick={() => setSent(false)}>{t("Andere Adresse verwenden")}</button>
+
+          <p className="hint center" style={{ marginTop: 10 }}>{t("Oder gib den 6-stelligen Code aus derselben Mail ein:")}</p>
+          <label className="field-label" htmlFor="otp">{t("Code")}</label>
+          <div className="mail-row">
+            <Lock size={18} className="mail-ico" />
+            <input id="otp" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} placeholder="123456"
+              value={code} autoComplete="one-time-code"
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onKeyDown={(e) => e.key === "Enter" && code.length === 6 && verifyCode()} />
+          </div>
+          {codeError && <p className="nick-status err"><X size={14} /> {codeError}</p>}
+          <button className="btn primary" disabled={codeBusy || code.length !== 6} onClick={verifyCode}>
+            {codeBusy ? "..." : <>{t("Code bestätigen")} <ArrowRight size={18} /></>}
+          </button>
+          <p className="hint" style={{ textAlign: "center" }}>
+            {t("Praktisch, wenn der Link die Mail-App in einem anderen Browser oeffnet als dem, den du sonst nutzt.")}
+          </p>
+
+          <button className="btn ghost" onClick={() => { setSent(false); setCode(""); setCodeError(""); }}>{t("Andere Adresse verwenden")}</button>
         </div>
       ) : (
         <div className="login-card">

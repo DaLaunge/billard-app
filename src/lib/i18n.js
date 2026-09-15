@@ -4,6 +4,10 @@ export function getLang() { return _LANG; }
 
 const TRANSLATIONS = {
   en: {
+    "Oder gib den 6-stelligen Code aus derselben Mail ein:": "Or enter the 6-digit code from the same email:",
+    "Code": "Code",
+    "Code bestätigen": "Confirm code",
+    "Praktisch, wenn der Link die Mail-App in einem anderen Browser oeffnet als dem, den du sonst nutzt.": "Handy if the link opens your mail app in a different browser than the one you normally use.",
     "Siegchance": "Win chance",
     "Bei Race to 4": "In a race to 4",
     "Bei Distanz 50": "At a distance of 50",
