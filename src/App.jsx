@@ -39,6 +39,14 @@ import ConfirmHost from "./components/ConfirmHost";
 // Worker".
 const LIVE_ENTRY_TABS = ["match", "winnerstays"];
 
+// Die 4 Hauptmenuepunkte der unteren Tab-Leiste - ein Wechsel HIERHIN ist einer
+// der expliziten Momente, in denen ein bereitliegendes Update angewendet wird
+// (siehe "Update anwenden" unten). Bewusst NICHT jeder beliebige Bildschirm-
+// wechsel (z.B. nicht turnierdetail/winnerstays/protokoll) - das war zu
+// unvorhersehbar/schwer nachvollziehbar; diese 4 Ziele sind es, die der
+// Nutzer bewusst als "Hauptmenue" anklickt.
+const MAIN_TABS = ["stats", "turnier", "live", "profil"];
+
 // sessionStorage-Key, unter dem der Navigationszustand kurz vor einem
 // update-bedingten Reload zwischengespeichert wird, damit die App danach
 // wieder auf demselben Screen (inkl. Turnier-/Winner-Stays-ID etc.) landet,
@@ -52,7 +60,31 @@ const RESUME_NAV_KEY = "pendingUpdateNav";
 // schickt die Skip-Waiting-Nachricht; vite-plugin-pwa's eigener
 // "controlling"-Listener (siehe registerSW in virtual:pwa-register) macht
 // danach selbststaendig den Reload, sobald der neue Worker uebernommen hat.
-function persistNavAndUpdate(navState, updateSW) {
+//
+// WICHTIG: erst supabase.auth.getSession() abwarten, bevor irgendetwas den
+// Reload anstoesst. Supabase rotiert den Refresh-Token bei jeder Erneuerung
+// (der alte wird serverseitig sofort ungueltig) - laeuft gerade eine
+// Erneuerung (Timer oder ein anderer Tab/Aufruf) und die Seite wird
+// GENAU DANN abgerissen, bevor der neue Token in localStorage geschrieben
+// ist, bleibt dort der bereits ungueltige alte Token stehen. Der naechste
+// Erneuerungsversuch schlaegt dann mit "Refresh Token Not Found" fehl und
+// Supabase meldet den Nutzer ab - genau das Verhalten, das als "Update
+// wirft mich aus der App" beobachtet wurde (bestaetigt in den Auth-Logs:
+// mehrere refresh_token_not_found-Fehler waehrend intensiven Testens mit
+// vielen Reloads kurz hintereinander). getSession() nutzt supabase-js'
+// eigene interne Sperre und wartet daher auf eine bereits laufende
+// Erneuerung, statt eine neue anzustossen - kein zusaetzlicher Netzwerk-
+// Request im Normalfall. Mit einem Timeout abgesichert: haengt getSession()
+// aus irgendeinem Grund (z.B. eine haengende interne Sperre), darf das
+// NIE das Anwenden des Updates dauerhaft blockieren - lieber nach kurzer
+// Zeit trotzdem weitermachen als gar nicht mehr updaten.
+async function persistNavAndUpdate(navState, updateSW) {
+  try {
+    await Promise.race([
+      supabase.auth.getSession(),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
+  } catch { /* ignore */ }
   try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ }
   updateSW(true);
 }
@@ -99,6 +131,11 @@ export default function App() {
   const [winnerStaysId, setWinnerStaysId] = useState(resumedNav?.winnerStaysId ?? null);
   const [toastMsg, setToastMsg] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
+  // Zaehlt jeden abgeschlossenen loadData()-Durchlauf (0 = noch keiner) -
+  // im Gegensatz zu initialLoadDone (bleibt nach dem ersten Mal dauerhaft
+  // true) aendert sich das bei JEDEM Durchlauf, damit Trigger C (Update nach
+  // Speichern) unten bei jedem erneuten Laden feuern kann.
+  const [loadGen, setLoadGen] = useState(0);
   // Wird einmalig true, sobald der allererste loadData()-Durchlauf steht -
   // haelt den Tab-Inhalt bis dahin auf einem einheitlichen "Lade ..." statt
   // Screens mit noch leeren Arrays (z.B. Rangliste) kurz aufblitzen zu lassen.
@@ -203,20 +240,27 @@ export default function App() {
   // 2026-09-12 im Einsatz und hat die komplette Verzoegerungslogik unten
   // wirkungslos gemacht (needReload wurde nie von einem echten Update gesetzt).
   //
-  // Ein gefundenes Update wird NICHT sofort angewendet, sondern erst in einem
-  // fuer den Nutzer unauffaelligen Moment - zwei Trigger, siehe die beiden
-  // Effekte unten:
-  //  1) sobald der Tab in den Hintergrund geht (Nutzer schaut nicht hin) -
-  //     ausser auf einem LIVE_ENTRY_TABS-Screen, siehe Konstante oben: dort
-  //     liegt unbestaetigte Eingabe nur im Speicher und ginge verloren.
-  //  2) beim naechsten echten Bildschirmwechsel (jede Navigation laeuft laut
-  //     Architektur durch applyNavState, egal ob Button-Klick oder Browser-
-  //     Zurueck) - der Reload faellt dann mit dem ohnehin stattfindenden
-  //     Screen-Wechsel zusammen und ist nicht wahrnehmbar. Braucht KEINE
-  //     Tab-Liste: an einer Uebergangs-Grenze ist nie unbestaetigte Eingabe
-  //     "mittendrin" unterwegs, das gilt automatisch auch fuer neue, spaeter
-  //     hinzugefuegte Screens.
-  // In beiden Faellen wird der Navigationszustand vorher gesichert (siehe
+  // Ein gefundenes Update wird NICHT sofort angewendet (ausser bei explizitem
+  // Nutzerwunsch, siehe requestUpdateNow), sondern erst bei einem von vier
+  // klar umrissenen Ausloesern - bewusst einfach und nachvollziehbar gehalten,
+  // NICHT bei jedem beliebigen Bildschirmwechsel oder "im Hintergrund"
+  // irgendwann (das war zu unvorhersehbar):
+  //  A) Wechsel auf einen der 4 Hauptmenuepunkte (MAIN_TABS oben) unten in der
+  //     Tab-Leiste.
+  //  B) Explizite Nutzeranfrage: Klick auf "Aktualisieren" (oben rechts) oder
+  //     "Nach Updates suchen" (Profileinstellungen) - siehe requestUpdateNow.
+  //     Hier ist Sofortigkeit erwuenscht, kein Verstecken noetig.
+  //  C) Direkt nachdem loadData() durchgelaufen ist (siehe loadGen) - das
+  //     deckt "ein Match/Turnier wurde gespeichert" ab, weil jede erfolgreiche
+  //     RPC-Mutation im Anschluss loadData() aufruft. Bleibt trotzdem hinter
+  //     LIVE_ENTRY_TABS zurueck: mitten in einem laufenden Winner-Stays-Spiel
+  //     ruft z.B. jedes einzelne Spielergebnis loadData() auf, OHNE dass die
+  //     Session (tab bleibt "winnerstays") schon zu Ende ist.
+  //  D) Direkt nachdem sich der Spieler zum ersten Mal in diesem Seitenaufruf
+  //     angemeldet hat (siehe der "!startTabAppliedRef.current"-Block weiter
+  //     unten) - vorher war noch kein Inhalt zu sehen, also ebenfalls
+  //     unauffaellig.
+  // In allen Faellen wird der Navigationszustand vorher gesichert (siehe
   // persistNavAndUpdate) und beim Neustart wiederhergestellt (resumedNav
   // oben), damit z.B. ein dauerhaft angezeigter Turnier-Bildschirm nach dem
   // Reload auf demselben Screen bleibt statt auf die Startseite zu springen.
@@ -248,28 +292,56 @@ export default function App() {
   const currentNavState = useMemo(() => (
     { tab, profileName, protokollMatch, protokollBackTab, vsOpp, tournamentId, winnerStaysId, matchTournamentCtx }
   ), [tab, profileName, protokollMatch, protokollBackTab, vsOpp, tournamentId, winnerStaysId, matchTournamentCtx]);
-  // Trigger 1: Reload waehrend die App im Hintergrund ist - fuer den Nutzer
-  // unsichtbar, ausser auf einem Live-Eingabe-Screen (siehe LIVE_ENTRY_TABS
-  // oben), wo trotz Unsichtbarkeit unbestaetigte Eingabe im Speicher liegt.
-  useEffect(() => {
-    const onHidden = () => {
-      if (document.visibilityState !== "hidden") return;
-      if (!needReload || !initialLoadDone || celebrate) return;
-      if (LIVE_ENTRY_TABS.includes(tab)) return;
-      persistNavAndUpdate(currentNavState, updateServiceWorker);
-    };
-    document.addEventListener("visibilitychange", onHidden);
-    return () => document.removeEventListener("visibilitychange", onHidden);
-  }, [needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
-  // Trigger 2: Reload exakt beim naechsten echten Bildschirmwechsel (nicht
-  // schon, sobald needReload auf einem stehenden Screen true wird - sonst
-  // waere z.B. ein dauerhaft gezeigter Turnier-Bildschirm nicht geschuetzt).
+  // Trigger A: Reload beim Wechsel auf einen der 4 Hauptmenuepunkte (nicht
+  // schon, sobald needReload waehrend man DORT steht true wird).
   const prevTabForReloadRef = useRef(tab);
   useEffect(() => {
     const changed = prevTabForReloadRef.current !== tab;
     prevTabForReloadRef.current = tab;
-    if (changed && needReload && initialLoadDone && !celebrate) persistNavAndUpdate(currentNavState, updateServiceWorker);
+    if (changed && MAIN_TABS.includes(tab) && needReload && initialLoadDone && !celebrate) {
+      persistNavAndUpdate(currentNavState, updateServiceWorker);
+    }
   }, [tab, needReload, initialLoadDone, celebrate, currentNavState, updateServiceWorker]);
+  // Trigger B: explizite Nutzeranfrage (Aktualisieren-Button / "Nach Updates
+  // suchen") - wendet sofort an, falls schon ein Update wartet; sonst wird
+  // forceApplyRef gesetzt und der Effekt darunter greift, sobald onNeedRefresh
+  // (asynchron, nach dem Laden von sw.js) tatsaechlich feuert. Der
+  // Aktualisieren-Button (oben rechts) ist NICHT auf sichere Tabs beschraenkt
+  // - liegt gerade ein LIVE_ENTRY_TABS-Screen vor (laufendes Match/Winner-
+  // Stays-Spiel), wird trotzdem nur GEPRUEFT, nie sofort angewendet, sonst
+  // koennte ein Klick mitten im Spiel unbestaetigte Eingabe wegreissen.
+  const forceApplyRef = useRef(false);
+  const requestUpdateNow = useCallback(() => {
+    if (LIVE_ENTRY_TABS.includes(tab)) { checkForUpdate(); return; }
+    if (needReload) { persistNavAndUpdate(currentNavState, updateServiceWorker); return; }
+    forceApplyRef.current = true;
+    checkForUpdate();
+  }, [tab, needReload, currentNavState, updateServiceWorker, checkForUpdate]);
+  useEffect(() => {
+    if (!needReload || !forceApplyRef.current) return;
+    forceApplyRef.current = false;
+    if (LIVE_ENTRY_TABS.includes(tab)) return;
+    persistNavAndUpdate(currentNavState, updateServiceWorker);
+  }, [needReload, tab, currentNavState, updateServiceWorker]);
+  // Trigger C: direkt nach jedem loadData()-Durchlauf (siehe loadGen dort) -
+  // deckt "Match/Turnier gespeichert" ab, respektiert aber weiterhin
+  // LIVE_ENTRY_TABS (ein laufendes Winner-Stays-Spiel ruft pro Spielergebnis
+  // ebenfalls loadData() auf, ohne dass die Session schon vorbei ist). MUSS
+  // pruefen, ob loadGen sich WIRKLICH gerade veraendert hat (nicht nur, ob es
+  // > 0 ist) - sonst wuerde dieser Effekt bei JEDER Aenderung von needReload/
+  // celebrate/tab erneut laufen und faelschlich auf einen laengst vergangenen
+  // loadData()-Aufruf reagieren (z.B. sofort feuern, sobald ein Update
+  // irgendwann spaeter erkannt wird, auch ohne dass gerade etwas gespeichert
+  // wurde) - exakt das Gegenteil von "nur direkt nach dem Speichern".
+  const prevLoadGenRef = useRef(loadGen);
+  useEffect(() => {
+    const changed = prevLoadGenRef.current !== loadGen;
+    prevLoadGenRef.current = loadGen;
+    if (!changed || loadGen === 0) return;
+    if (!needReload || !initialLoadDone || celebrate) return;
+    if (LIVE_ENTRY_TABS.includes(tab)) return;
+    persistNavAndUpdate(currentNavState, updateServiceWorker);
+  }, [loadGen, needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
 
   const toast = useCallback((msg) => {
     setToastMsg(msg);
@@ -409,6 +481,15 @@ export default function App() {
         // tab-Wert, den kein Screen mehr rendert (leere Seite mit Tabbar).
         if (!["stats", "turnier", "live", "profil"].includes(target)) target = null;
         if (target && target !== "stats") navReplace({ tab: target });
+        // Trigger D: direkt nachdem sich der Spieler zum ersten Mal in
+        // diesem Seitenaufruf angemeldet hat (egal ob frischer Login oder
+        // eine bestehende Session, die hier zum ersten Mal geladen wird) -
+        // vorher war noch nichts vom eigentlichen Inhalt zu sehen, also ein
+        // ebenso unauffaelliger Moment wie ein echter Bildschirmwechsel.
+        // Deckt zusaetzlich ab, dass Spieler nach einem Update nicht erneut
+        // durch einen weiteren Reload "herausgerissen" werden, sobald sie
+        // sich naechstes Mal anmelden.
+        if (needReload && !LIVE_ENTRY_TABS.includes(tab)) persistNavAndUpdate(currentNavState, updateServiceWorker);
       }
       const { data: all } = await supabase.from("players")
         .select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, is_guest, blocked, invited_by, created_at");
@@ -473,6 +554,7 @@ export default function App() {
     const snap = await snapPromise;
     if (snap.error && !err) toast(isNetworkError(snap.error) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + snap.error.message);
     setSnapshots(snap.data ?? []);
+    setLoadGen((g) => g + 1);
   }, [toast]);
 
   useEffect(() => { if (player) loadData(); }, [player, loadData]);
@@ -827,7 +909,7 @@ export default function App() {
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length}
                   lang={lang} onLang={changeLang}
-                  updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={checkForUpdate}
+                  updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}
@@ -868,7 +950,7 @@ export default function App() {
                 <WinnerStaysScreen sessionId={winnerStaysId} me={player} players={players} matches={matches} toast={toast}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => window.history.back()} />
               )}
-              <button className="refresh-btn" onClick={() => { loadData(); checkForUpdate(); }} aria-label={t("Aktualisieren")}>
+              <button className="refresh-btn" onClick={() => { loadData(); requestUpdateNow(); }} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
               </button>
             </main>

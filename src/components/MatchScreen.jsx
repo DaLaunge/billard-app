@@ -140,11 +140,21 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   };
 
   const isGhost = !!opp?.is_ghost;
-  // Gast als Gegner (Einzel), Doppelpartner ODER man selbst per Gast-Login
-  // eingeloggt: Match wird server-seitig sofort bestaetigt (siehe
-  // report_match()/report_doubles()) und zaehlt nicht fuers Rating, weil ein
-  // Gast nie bewertet wird (rebuild_elo() schliesst diese Matches aus).
-  const isGuestMatch = !!(me.is_guest || opp?.is_guest || (mode === "double" && opp2?.is_guest));
+  // Gast als Gegner ODER (beim Doppel) als EIGENER Partner oder Gegner 2 -
+  // jede der vier Doppel-Positionen kann ein Gast sein, nicht nur Gegner 1
+  // (frueher hier ein Bug: nur opp2 wurde geprueft, ein Gast als partner
+  // fuehrte zur falschen "wartet auf Bestaetigung"-Anzeige, obwohl
+  // report_doubles() serverseitig schon automatisch bestaetigt hatte, weil
+  // v_has_guest dort alle vier Positionen prueft). Match wird server-seitig
+  // sofort bestaetigt (siehe report_match()/report_doubles()) und zaehlt
+  // nicht fuers Rating, genau wie ein Ghost-Training - der Gast selbst
+  // MUSS nicht bestaetigen (kann er als Nicht-Account eh nicht), aber bei
+  // einem Doppel muessen dann auch die ECHTEN Mitspieler nicht bestaetigen:
+  // report_doubles() legt in dem Fall ueberhaupt keine
+  // match_confirmations-Zeilen an (rebuild_elo() schliesst das Match
+  // ausserdem komplett vom Rating aus).
+  const isGuestMatch = !!(me.is_guest || opp?.is_guest
+    || (mode === "double" && (partner?.is_guest || opp2?.is_guest)));
 
   // Mindestdauer gegen "Durchklicken" beim Ghost-Training (siehe lib/ghostTiming.js) -
   // ab Auswahl von Ghost tickt eine Sekundenuhr, "Training abschließen" bleibt bis
