@@ -241,10 +241,9 @@ export default function App() {
   // wirkungslos gemacht (needReload wurde nie von einem echten Update gesetzt).
   //
   // Ein gefundenes Update wird NICHT sofort angewendet (ausser bei explizitem
-  // Nutzerwunsch, siehe requestUpdateNow), sondern erst bei einem von vier
+  // Nutzerwunsch, siehe requestUpdateNow), sondern erst bei einem von fuenf
   // klar umrissenen Ausloesern - bewusst einfach und nachvollziehbar gehalten,
-  // NICHT bei jedem beliebigen Bildschirmwechsel oder "im Hintergrund"
-  // irgendwann (das war zu unvorhersehbar):
+  // NICHT bei jedem beliebigen Bildschirmwechsel (das war zu unvorhersehbar):
   //  A) Wechsel auf einen der 4 Hauptmenuepunkte (MAIN_TABS oben) unten in der
   //     Tab-Leiste.
   //  B) Explizite Nutzeranfrage: Klick auf "Aktualisieren" (oben rechts) oder
@@ -260,6 +259,13 @@ export default function App() {
   //     angemeldet hat (siehe der "!startTabAppliedRef.current"-Block weiter
   //     unten) - vorher war noch kein Inhalt zu sehen, also ebenfalls
   //     unauffaellig.
+  //  E) Der Tab geht in den Hintergrund (visibilitychange -> hidden) - fuer
+  //     den Nutzer unsichtbar, ausser auf LIVE_ENTRY_TABS. Wieder mit dabei,
+  //     weil A-D am Desktop (ein einzelner, tagelang offener Tab ohne Klick
+  //     auf einen Hauptmenuepunkt/Speichern/Neuanmelden) faktisch nie
+  //     greifen, waehrend am Handy das haeufige Schliessen/Neuoeffnen der
+  //     PWA fast immer ueber D abgedeckt ist - genau dieser Unterschied
+  //     wurde beobachtet ("funktioniert am Handy, nicht am PC").
   // In allen Faellen wird der Navigationszustand vorher gesichert (siehe
   // persistNavAndUpdate) und beim Neustart wiederhergestellt (resumedNav
   // oben), damit z.B. ein dauerhaft angezeigter Turnier-Bildschirm nach dem
@@ -302,6 +308,21 @@ export default function App() {
       persistNavAndUpdate(currentNavState, updateServiceWorker);
     }
   }, [tab, needReload, initialLoadDone, celebrate, currentNavState, updateServiceWorker]);
+  // Trigger E: Reload waehrend die App im Hintergrund ist - fuer den Nutzer
+  // unsichtbar, ausser auf einem Live-Eingabe-Screen (LIVE_ENTRY_TABS), wo
+  // trotz Unsichtbarkeit unbestaetigte Eingabe im Speicher liegt. Faengt vor
+  // allem den Desktop-Fall auf: ein einzelner, lange offener Tab, der nie
+  // A-D auslöst.
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState !== "hidden") return;
+      if (!needReload || !initialLoadDone || celebrate) return;
+      if (LIVE_ENTRY_TABS.includes(tab)) return;
+      persistNavAndUpdate(currentNavState, updateServiceWorker);
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    return () => document.removeEventListener("visibilitychange", onHidden);
+  }, [needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
   // Trigger B: explizite Nutzeranfrage (Aktualisieren-Button / "Nach Updates
   // suchen") - wendet sofort an, falls schon ein Update wartet; sonst wird
   // forceApplyRef gesetzt und der Effekt darunter greift, sobald onNeedRefresh
