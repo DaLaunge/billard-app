@@ -1,13 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Check, X, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { getRef } from "../lib/session";
 import Ball from "./Ball";
 import LegalModal from "./LegalModal";
-
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-const TURNSTILE_SCRIPT_ID = "cf-turnstile-script";
 
 export default function LoginScreen() {
   const [mode, setMode] = useState("magic"); // Standard: gewohnter Magic-Link; Passwort ist ein Tipp entfernt
@@ -17,104 +14,22 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [legalOpen, setLegalOpen] = useState(false);
-  const [guestBusy, setGuestBusy] = useState(false);
-  const [guestError, setGuestError] = useState("");
-  const [captchaToken, setCaptchaToken] = useState(null);
-  const turnstileBoxRef = useRef(null);
-  const turnstileWidgetId = useRef(null);
-
-  // Cloudflare Turnstile - EIN Widget fuers ganze Login-Screen, nicht nur
-  // fuer "Als Gast spielen": Supabase wendet eine aktivierte Captcha-Pflicht
-  // serverseitig auf ALLE Auth-Endpunkte an (Passwort-Login, Magic-Link,
-  // Anonymous Sign-In) - eine Beschraenkung nur auf einen einzelnen Login-Weg
-  // ist im Supabase-Dashboard nicht moeglich. Das Skript wird nur hier
-  // (Login-Screen) nachgeladen, nicht global in index.html, damit eingeloggte
-  // Nutzer es nie sehen. Das Widget bleibt bewusst IMMER im DOM (auch auf dem
-  // "Link gesendet"-Zwischenschritt) statt nur innerhalb von {!sent && ...}
-  // zu haengen - sonst wuerde React es beim Umschalten zerstoeren und beim
-  // Zurueckwechseln (z.B. "Andere Adresse verwenden") nie neu rendern, weil
-  // der Aufbau-Effekt unten nur einmal beim Mount laeuft.
-  //
-  // Kein Login-Weg wartet auf ein Token, bevor er ueberhaupt klickbar wird -
-  // faellt das Skript aus (Werbeblocker, Firmennetz, Cloudflare-Ausfall),
-  // wird einfach ohne Token versucht; ein fehlendes Captcha fuehrt dann
-  // hoechstens zu einer Fehlermeldung von Supabase selbst, statt einer
-  // stillen Sackgasse.
-  useEffect(() => {
-    if (!TURNSTILE_SITE_KEY) return; // kein Key konfiguriert -> alle Login-Wege bleiben ohne Captcha nutzbar
-    let cancelled = false;
-    const renderWidget = () => {
-      if (cancelled || !turnstileBoxRef.current || !window.turnstile || turnstileWidgetId.current) return;
-      turnstileWidgetId.current = window.turnstile.render(turnstileBoxRef.current, {
-        sitekey: TURNSTILE_SITE_KEY,
-        size: "compact",
-        callback: (token) => setCaptchaToken(token),
-        "expired-callback": () => setCaptchaToken(null),
-      });
-    };
-    if (window.turnstile) {
-      renderWidget();
-    } else {
-      const existing = document.getElementById(TURNSTILE_SCRIPT_ID);
-      if (existing) {
-        existing.addEventListener("load", renderWidget);
-      } else {
-        const script = document.createElement("script");
-        script.id = TURNSTILE_SCRIPT_ID;
-        script.src = "https://challenge.cloudflare.com/turnstile/v0/api.js";
-        script.async = true;
-        script.defer = true;
-        script.onload = renderWidget;
-        document.body.appendChild(script);
-      }
-    }
-    return () => { cancelled = true; };
-  }, []);
-
-  // Turnstile-Token ist Einweg - nach JEDEM Versuch (egal ob erfolgreich
-  // oder nicht) zuruecksetzen, damit der naechste Login-Versuch (auch ein
-  // Wechsel zwischen Magic-Link/Passwort/Gast) wieder ein frisches Token hat.
-  const resetCaptcha = () => {
-    if (window.turnstile && turnstileWidgetId.current) window.turnstile.reset(turnstileWidgetId.current);
-    setCaptchaToken(null);
-  };
-  // Supabase liefert bei fehlendem/abgelaufenem Captcha nur einen englischen
-  // Rohtext - gleiche Idee wie bei den bekannten Faellen in signInPw()
-  // unten: uebersetzen statt roh durchreichen.
-  const friendlyError = (msg) => msg.includes("captcha")
-    ? t("Sicherheitsprüfung fehlgeschlagen - bitte Seite neu laden und nochmal versuchen.")
-    : msg;
-
-  const playAsGuest = async () => {
-    setGuestBusy(true); setGuestError("");
-    const { error } = await supabase.auth.signInAnonymously(
-      captchaToken ? { options: { captchaToken } } : undefined
-    );
-    setGuestBusy(false);
-    resetCaptcha();
-    if (error) setGuestError(friendlyError(error.message));
-  };
 
   const sendLink = async () => {
     setBusy(true); setError("");
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: window.location.origin, captchaToken: captchaToken || undefined },
+      options: { emailRedirectTo: window.location.origin },
     });
     setBusy(false);
-    resetCaptcha();
-    if (error) setError(friendlyError(error.message));
+    if (error) setError(error.message);
     else setSent(true);
   };
 
   const signInPw = async () => {
     setBusy(true); setError("");
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(), password,
-      options: captchaToken ? { captchaToken } : undefined,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    resetCaptcha();
     if (!error) return;
     // Vorher wurde hier IMMER dieselbe generische Meldung gezeigt, egal was
     // Supabase tatsaechlich zurueckgab - das hat "Email not confirmed" (z.B.
@@ -128,7 +43,7 @@ export default function LoginScreen() {
     } else if (error.message === "Invalid login credentials") {
       setError(t("Anmeldung fehlgeschlagen – Passwort falsch oder noch keins gesetzt. Nutze den Magic-Link."));
     } else {
-      setError(friendlyError(error.message));
+      setError(error.message);
     }
   };
 
@@ -146,8 +61,6 @@ export default function LoginScreen() {
           <p className="invite-note"><Check size={14} /> {t("Du wurdest eingeladen – melde dich an, um dabei zu sein!")}</p>
         )}
       </div>
-
-      {TURNSTILE_SITE_KEY && <div ref={turnstileBoxRef} className="turnstile-box" />}
 
       {sent ? (
         <div className="login-card">
@@ -201,16 +114,6 @@ export default function LoginScreen() {
               <p className="hint">{t("Kein Passwort noetig – du bekommst einen Link per Mail und bist drin. Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.")}</p>
             </>
           )}
-        </div>
-      )}
-
-      {!sent && (
-        <div className="login-card">
-          {guestError && <p className="nick-status err"><X size={14} /> {guestError}</p>}
-          <button className="btn ghost" disabled={guestBusy} onClick={playAsGuest}>
-            {guestBusy ? "..." : t("Als Gast spielen")}
-          </button>
-          <p className="hint center">{t("Nur zu Besuch? Ohne Account als Gast einsteigen – zählt fürs Protokoll, aber nicht fürs Ranking.")}</p>
         </div>
       )}
 

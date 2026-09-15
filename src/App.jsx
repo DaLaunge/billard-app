@@ -714,7 +714,7 @@ export default function App() {
         )}
 
         {session && playerChecked && !player && (
-          <NicknameScreen existingPlayers={players} isGuest={!!session.user.is_anonymous}
+          <NicknameScreen existingPlayers={players}
             onRegistered={(p) => { setPlayer(p); toast(t("Willkommen, {name}!", { name: p.nickname })); }} />
         )}
 

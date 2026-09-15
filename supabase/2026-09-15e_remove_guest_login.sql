@@ -1,0 +1,44 @@
+-- Gast-LOGIN (Punkt 7 aus dem urspruenglichen Feedback: Supabase Anonymous
+-- Sign-In + "Als Gast spielen" auf dem Anmeldescreen) wird wieder
+-- ausgebaut - Entscheidung von Stefan am 2026-09-15, siehe Begruendung
+-- unten. Alles andere aus dem Gast-Feature (Punkte 1-6: is_guest-Spieler,
+-- von einem eingeloggten Mitglied per "Gast hinzufügen"/add_guest_player()
+-- angelegt, kein Ranking-Einfluss, keine Bestaetigung noetig, turnierfaehig)
+-- BLEIBT bestehen und ist von dieser Migration nicht betroffen.
+--
+-- Grund: Das dafuer noetige Captcha (Supabase erzwingt bei aktivierter
+-- Captcha-Pflicht IMMER eine Pruefung auf ALLEN Auth-Endpunkten, nicht nur
+-- beim Gast-Login - eine Beschraenkung auf nur einen Login-Weg ist im
+-- Supabase-Dashboard nicht moeglich) hat sich als nicht praktikabel
+-- herausgestellt:
+--   - Cloudflare Turnstile: die Skript-Domain challenge.cloudflare.com war
+--     bei Stefans Live-Test in ZWEI verschiedenen Browsern (Chrome, Edge)
+--     per DNS nicht aufloesbar (DNS_PROBE_POSSIBLE) - vermutlich eine
+--     DNS-/Netzwerk-Filterliste, die diese eine Cloudflare-Subdomain
+--     blockiert. js.hcaptcha.com lud im selben Test problemlos, was den
+--     Verdacht auf eine gezielte Blockliste statt allgemeines
+--     Netzwerkproblem erhaertet.
+--   - hCaptcha als Alternative: kostenlose Konten sind laut Stefan nur 14
+--     Tage nutzbar (zeitlich begrenzter Test-Zugang, keine dauerhaft
+--     kostenlose Stufe) - fuer ein dauerhaftes Vereins-Feature ungeeignet.
+-- Ergebnis: bis eine funktionierende Captcha-Loesung gefunden ist, muss
+-- mindestens eine echte Person mit App-Zugang jeden Gast persoenlich
+-- eintragen (bereits moeglich, siehe add_guest_player() in
+-- 2026-09-15_guest_players_everywhere.sql).
+--
+-- Diese Migration entfernt nur die anonyme Selbstanmeldung. guest_self_signup()
+-- ist seit dieser Migration OHNE Zweck mehr (kein Client-Code ruft sie mehr
+-- auf) und wird geloescht, statt als toter Code liegen zu bleiben.
+--
+-- Zusaetzlich manuell im Supabase-Dashboard zu erledigen (Test JETZT,
+-- Produktion war ohnehin nie so weit):
+--   - Authentication -> Sign In / Providers -> "Anonymous" wieder deaktivieren
+--   - Authentication -> Attack Protection -> "Enable CAPTCHA protection"
+--     wieder deaktivieren (ohne Anonymous Sign-In gibt es nichts mehr, das
+--     geschuetzt werden muesste, und die Pflicht wuerde weiterhin auch
+--     Passwort-Login/Magic-Link ausbremsen)
+--
+-- In Supabase SQL-Editor ausfuehren. Test und Produktion sind getrennte
+-- Supabase-Projekte (Test: hadamdvpnwslztsxmwdr, Produktion: wofsutwidaitloeiwnma).
+
+drop function if exists public.guest_self_signup(text);

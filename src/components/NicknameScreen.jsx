@@ -5,45 +5,40 @@ import { t } from "../lib/i18n";
 import { getRef, clearRef } from "../lib/session";
 import Ball from "./Ball";
 
-export default function NicknameScreen({ onRegistered, existingPlayers, isGuest = false }) {
+export default function NicknameScreen({ onRegistered, existingPlayers }) {
   const [nick, setNick] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const clean = nick.trim();
 
-  // Als Gast (Anonymous Sign-In vom Login-Screen) gibt es keine
-  // Alt-Account-Uebernahme - jeder Name, der noch nicht vergeben ist, geht,
-  // sonst koennte ein Gast versehentlich die Historie eines echten
-  // Mitglieds "uebernehmen" (siehe guest_self_signup()).
-  const legacyMatch = !isGuest && existingPlayers.find(
-    (p) => p.nickname.toLowerCase() === clean.toLowerCase() && !p.auth_user_id
+  // Gast-Spieler (is_guest, siehe MatchScreen "Gast hinzufügen") duerfen hier
+  // NIE als Alt-Account erkannt werden - sonst wuerde ein echtes Mitglied,
+  // das zufaellig denselben Namen wie ein bestehender Gast waehlt, dessen
+  // Zeile faelschlich als "gefunden" anzeigen, obwohl register_player() sie
+  // serverseitig ohnehin nicht uebernimmt (siehe dortiger Ausschluss).
+  const legacyMatch = existingPlayers.find(
+    (p) => p.nickname.toLowerCase() === clean.toLowerCase() && !p.auth_user_id && !p.is_guest
   );
   const taken = existingPlayers.find(
-    (p) => p.nickname.toLowerCase() === clean.toLowerCase() && (isGuest || p.auth_user_id)
+    (p) => p.nickname.toLowerCase() === clean.toLowerCase() && p.auth_user_id
   );
   const tooShort = clean.length > 0 && clean.length < 2;
   const valid = clean.length >= 2 && clean.length <= 30 && !taken;
 
   const register = async () => {
     setBusy(true); setError("");
-    const { data, error } = isGuest
-      ? await supabase.rpc("guest_self_signup", { p_nickname: clean })
-      : await supabase.rpc("register_player", { p_nickname: clean, p_ref: getRef() });
+    const { data, error } = await supabase.rpc("register_player", { p_nickname: clean, p_ref: getRef() });
     setBusy(false);
     if (error) setError(error.message);
     else { clearRef(); onRegistered(data); }
   };
-
-  const cancelGuest = async () => { await supabase.auth.signOut(); };
 
   return (
     <div className="screen login-screen">
       <div className="login-hero">
         <div className="login-balls"><Ball color="#6C4AB0" label="?" size={54} /></div>
         <h1 className="app-title" style={{ fontSize: 28 }}>{t("Wie sollen wir dich nennen?")}</h1>
-        <p className="app-sub">{isGuest
-          ? t("Du spielst als Gast – zählt fürs Protokoll, aber nicht fürs Ranking.")
-          : <>{t("Dein Nickname erscheint in Rangliste und Statistiken.")}<br />{t("Er muss im Verein eindeutig sein.")}</>}</p>
+        <p className="app-sub">{t("Dein Nickname erscheint in Rangliste und Statistiken.")}<br />{t("Er muss im Verein eindeutig sein.")}</p>
       </div>
       <div className="login-card">
         <label className="field-label" htmlFor="nick">{t("Nickname")}</label>
@@ -63,9 +58,7 @@ export default function NicknameScreen({ onRegistered, existingPlayers, isGuest 
         <button className="btn primary" disabled={!valid || busy} onClick={register}>
           {busy ? t("Speichere ...") : <>{t("Los geht's")} <ArrowRight size={18} /></>}
         </button>
-        {isGuest
-          ? <button className="btn ghost" onClick={cancelGuest}>{t("Doch nicht als Gast? Abmelden")}</button>
-          : <p className="hint">{t("Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.")}</p>}
+        <p className="hint">{t("Warst du schon im alten Telegram-Ranking dabei? Dann gib genau deinen damaligen Nicknamen ein, um deine Historie zu behalten.")}</p>
       </div>
     </div>
   );
