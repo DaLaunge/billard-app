@@ -213,6 +213,7 @@ export function computeSpeedStats(matches, playerId) {
   let ballMs = 0, ballCount = 0, matches141 = 0;
   for (const m of matches) {
     if (!m.run_log?.length) continue;
+    if (m.p1?.is_guest || m.p2?.is_guest || m.p1b?.is_guest || m.p2b?.is_guest) continue; // Gast-Matches zaehlen nicht (wie Ghost-Training)
     const mySide = (m.player1_id === playerId || m.player1b_id === playerId) ? 0
       : (m.player2_id === playerId || m.player2b_id === playerId) ? 1 : null;
     if (mySide == null) continue;

@@ -1141,6 +1141,11 @@ const TRANSLATIONS = {
     "Gast hinzugefügt.": "Guest added.",
     "Gast": "Guest",
     "Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.": "For people without the app - results against guests count for the tournament, but not for the rating.",
+    " · Gast": " · Guest",
+    "Gast-Match – zählt nicht fürs Rating, braucht keine Bestätigung.": "Guest match – doesn't count for the rating, needs no confirmation.",
+    'Niemand namens "{q}" gefunden': 'No one named "{q}" found',
+    "Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.": "For people without the app - doesn't count for the rating, needs no confirmation.",
+    '"{q}" als Gast hinzufügen': 'Add "{q}" as a guest',
   },
 };
 export function setLangGlobal(l) {

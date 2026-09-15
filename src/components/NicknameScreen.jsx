@@ -11,8 +11,13 @@ export default function NicknameScreen({ onRegistered, existingPlayers }) {
   const [error, setError] = useState("");
   const clean = nick.trim();
 
+  // Gast-Spieler (is_guest, siehe MatchScreen "Gast hinzufügen") duerfen hier
+  // NIE als Alt-Account erkannt werden - sonst wuerde ein echtes Mitglied,
+  // das zufaellig denselben Namen wie ein bestehender Gast waehlt, dessen
+  // Zeile faelschlich als "gefunden" anzeigen, obwohl register_player() sie
+  // serverseitig ohnehin nicht uebernimmt (siehe dortiger Ausschluss).
   const legacyMatch = existingPlayers.find(
-    (p) => p.nickname.toLowerCase() === clean.toLowerCase() && !p.auth_user_id
+    (p) => p.nickname.toLowerCase() === clean.toLowerCase() && !p.auth_user_id && !p.is_guest
   );
   const taken = existingPlayers.find(
     (p) => p.nickname.toLowerCase() === clean.toLowerCase() && p.auth_user_id

@@ -10,6 +10,7 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
   const perOpp = {}, perDay = {};
   matches.forEach((m) => {
     if (m.player1b_id) return;
+    if (m.p1.is_guest || m.p2.is_guest) return; // Gast-Matches zaehlen wie Ghost-Training nicht fuer Achievements
     let my, opp, oppNick, myRun;
     if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; myRun = m.high_run1; }
     else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; myRun = m.high_run2; }
@@ -33,6 +34,7 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
   const oppStreak = {}, oppBroken = {};
   byDateDesc.forEach((m) => {
     if (m.player1b_id) return;
+    if (m.p1.is_guest || m.p2.is_guest) return;
     let my, opp, oppNick;
     if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; }
     else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; }

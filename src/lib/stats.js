@@ -4,6 +4,7 @@ export function computeStats(matches) {
   const sorted = [...matches].sort((a, b) => new Date(a.played_at) - new Date(b.played_at));
   sorted.forEach((m) => {
     if (m.player1b_id) return;
+    if (m.p1.is_guest || m.p2.is_guest) return; // Gast-Matches zaehlen wie Ghost-Training nicht fuer Quote/Serien
     const a = get(m.p1.nickname), b = get(m.p2.nickname);
     a.spiele++; b.spiele++;
     a.racksW += m.score1; a.racksT += m.score1 + m.score2;
