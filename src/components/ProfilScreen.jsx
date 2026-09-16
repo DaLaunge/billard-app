@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock, Search } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock, Search } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -501,11 +501,16 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           // Alle 5 Werkzeuge (Status-Filter + Auf-/Zuklappen) auf einer
           // Ebene statt zweier getrennter Zeilen (Nutzer-Feedback) - eine
           // gemeinsame Flex-Zeile, die Auf-/Zuklappen-Buttons rechtsbuendig
-          // per margin-left:auto auf dem ersten der beiden.
+          // per margin-left:auto auf dem ersten der beiden. Erreicht/Gesperrt
+          // als Icon-Chips (Schloss offen/zu) statt Textlabels - kompakter
+          // (behebt auch den Zeilenumbruch am Handy, Nutzer-Feedback) und
+          // selbsterklaerend passend zum "Erfolge freischalten"-Thema.
           <div className="chips small" style={{ marginBottom: 8 }}>
             <button className={"chip" + (badgeStatus === "all" ? " active" : "")} onClick={() => setBadgeStatus("all")}>{t("Alle")}</button>
-            <button className={"chip" + (badgeStatus === "earned" ? " active" : "")} onClick={() => setBadgeStatus("earned")}>{t("Erreicht")}</button>
-            <button className={"chip" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}>{t("Gesperrt")}</button>
+            <button className={"chip chip-icon" + (badgeStatus === "earned" ? " active" : "")} onClick={() => setBadgeStatus("earned")}
+              aria-label={t("Erreicht")} title={t("Erreicht")}><LockOpen size={16} /></button>
+            <button className={"chip chip-icon" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}
+              aria-label={t("Gesperrt")} title={t("Gesperrt")}><Lock size={16} /></button>
             <button className="chip chip-icon" style={{ marginLeft: "auto" }} onClick={expandAll}
               aria-label={t("Alles aufklappen")} title={t("Alles aufklappen")}><ChevronsDown size={16} /></button>
             <button className="chip chip-icon" onClick={collapseAll}
