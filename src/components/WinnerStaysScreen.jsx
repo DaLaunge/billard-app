@@ -109,8 +109,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const canSkip = canManageQueue && posA && posB && entries.length > 3;
   // Nutzer-Feedback: "Es kann jederzeit einer der Spieler ausfallen. Diese
   // Moeglichkeit sollte jeder haben." - Selbstbedienung, unabhaengig von
-  // Position (auch am Tisch), siehe winner_stays_sit_out().
-  const canSitOut = (e) => session.status === "running" && (isOrganizer || e.player1_id === me.id || e.player2_id === me.id);
+  // Position (auch am Tisch), siehe winner_stays_set_paused().
+  const canTogglePaused = (e) => session.status === "running" && (isOrganizer || e.player1_id === me.id || e.player2_id === me.id);
   const existingPlayerIds = entries.flatMap((e) => [e.player1_id, e.player2_id]).filter(Boolean);
 
   const entryName = (e) => (e?.player2_id ? `${e.player1?.nickname} & ${e.player2?.nickname}` : e?.player1?.nickname);
@@ -142,17 +142,19 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   // Nutzer-Feedback: "Ein 'Aussetzen' Button. Es kann jederzeit einer der
-  // Spieler ausfallen. Diese Moeglichkeit sollte jeder haben." - anders als
-  // Ueberspringen (fuer jemand ANDEREN, nur den Herausforderer) geht es
-  // hier um Selbstbedienung: jede Person kann sich selbst von JEDER
-  // Position (auch am Tisch) ans Ende der Warteschlange schicken, siehe
-  // winner_stays_sit_out().
-  const sitOut = async (entryId) => {
+  // Spieler ausfallen. Diese Moeglichkeit sollte jeder haben." - erst als
+  // einmalige Aktion gebaut, dann auf Nutzer-Feedback hin ("wie kann ich
+  // den Aussetzen Button wieder ausschalten? Ich kann das kaffee-icon nur
+  // aktivieren, nicht deaktivieren") zu einem echten Ein/Aus-Schalter
+  // gemacht: pausierte Personen werden serverseitig automatisch
+  // uebersprungen, sobald sie an der Reihe waeren (winner_stays_skip_paused
+  // in der DB), bis sie sich selbst wieder aktiv melden.
+  const togglePaused = async (entry) => {
     setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_sit_out", { p_session_id: sessionId, p_entry_id: entryId });
+    const { error } = await supabase.rpc("winner_stays_set_paused", { p_session_id: sessionId, p_entry_id: entry.id, p_paused: !entry.is_paused });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Ausgesetzt."));
+    toast(entry.is_paused ? t("Wieder dabei.") : t("Pausiert."));
     await load();
   };
 
@@ -290,9 +292,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <span className="ws-table-name">{entryName(posA)}</span>
               <span className="hint" style={{ margin: 0 }}>{t("Verteidigt")}</span>
               {canReport && <ScoreStepper value={sA} onChange={setSA} />}
-              {canSitOut(posA) && (
-                <button type="button" className="btn ghost small" disabled={busy} onClick={() => sitOut(posA.id)} title={t("Aussetzen")}>
-                  <Coffee size={14} /> {t("Aussetzen")}
+              {canTogglePaused(posA) && (
+                <button type="button" className={"btn small" + (posA.is_paused ? " ws-pause-btn active" : " ghost ws-pause-btn")} disabled={busy} onClick={() => togglePaused(posA)} title={posA.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
+                  <Coffee size={14} /> {posA.is_paused ? t("Wieder dabei") : t("Aussetzen")}
                 </button>
               )}
             </div>
@@ -302,9 +304,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <span className="ws-table-name">{entryName(posB)}</span>
               <span className="hint" style={{ margin: 0 }}>{t("Herausforderer")}</span>
               {canReport && <ScoreStepper value={sB} onChange={setSB} />}
-              {canSitOut(posB) && (
-                <button type="button" className="btn ghost small" disabled={busy} onClick={() => sitOut(posB.id)} title={t("Aussetzen")}>
-                  <Coffee size={14} /> {t("Aussetzen")}
+              {canTogglePaused(posB) && (
+                <button type="button" className={"btn small" + (posB.is_paused ? " ws-pause-btn active" : " ghost ws-pause-btn")} disabled={busy} onClick={() => togglePaused(posB)} title={posB.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
+                  <Coffee size={14} /> {posB.is_paused ? t("Wieder dabei") : t("Aussetzen")}
                 </button>
               )}
             </div>
@@ -329,9 +331,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           <h3><Repeat size={17} /> {t("Warteschlange")}</h3>
           <div className="pmp-grid">
             {waiting.map((e, i) => (
-              <div key={e.id} className="pmp-chip">
+              <div key={e.id} className={"pmp-chip" + (e.is_paused ? " ws-paused-chip" : "")}>
                 {renderEntryAvatars(e, 28)}
-                <span className="pmp-name">{i + 1}. {entryName(e)}</span>
+                <span className="pmp-name">{i + 1}. {entryName(e)}{e.is_paused && <span className="ws-live-tag">☕ {t("pausiert")}</span>}</span>
                 {canManageQueue && (
                   <span className="ws-queue-move">
                     <button type="button" className="pmp-remove" disabled={busy || i === 0} onClick={() => moveEntry(e.id, -1)} aria-label={t("Nach vorne")} title={t("Nach vorne")}>
@@ -342,8 +344,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                     </button>
                   </span>
                 )}
-                {canSitOut(e) && (
-                  <button type="button" className="pmp-remove" disabled={busy || i === waiting.length - 1} onClick={() => sitOut(e.id)} aria-label={t("Aussetzen")} title={t("Aussetzen")}>
+                {canTogglePaused(e) && (
+                  <button type="button" className={"pmp-remove" + (e.is_paused ? " ws-pause-btn active" : "")} disabled={busy} onClick={() => togglePaused(e)} aria-label={e.is_paused ? t("Wieder dabei") : t("Aussetzen")} title={e.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
                     <Coffee size={14} />
                   </button>
                 )}
@@ -415,6 +417,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   <span className="stat-name">
                     {entryName(e)}
                     {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
+                    {e.is_paused && <span className="ws-live-tag ws-paused-tag">☕ {t("pausiert")}</span>}
                   </span>
                 </span>
                 <span className="ws-rank-num">{e.wins}</span>

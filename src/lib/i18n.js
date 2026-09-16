@@ -1172,6 +1172,11 @@ const TRANSLATIONS = {
     "Aussetzen": "Sit out",
     "Ausgesetzt.": "Sat out.",
     "Nur die Person selbst oder die Leitung kann hier aussetzen.": "Only the person themselves or the organizer can sit them out.",
+    "Wieder dabei": "Back in",
+    "Wieder dabei.": "Back in.",
+    "Pausiert.": "Paused.",
+    "pausiert": "paused",
+    "Nur die Person selbst oder die Leitung kann hier pausieren.": "Only the person themselves or the organizer can pause them.",
   },
 };
 export function setLangGlobal(l) {
