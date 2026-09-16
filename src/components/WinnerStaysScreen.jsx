@@ -409,22 +409,25 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <span className="ws-rank-num" title={t("Niederlagen")}>{t("N")}</span>
               <span className="ws-rank-streak"></span>
             </div>
-            {ranked.map((e, i) => (
-              <div key={e.id} className="ws-rank-row">
-                <span className="ws-rank-pos medal">{i + 1}.</span>
-                <span className="ws-rank-name">
-                  {renderEntryAvatars(e, 28)}
-                  <span className="stat-name">
-                    {entryName(e)}
-                    {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
-                    {e.is_paused && <span className="ws-live-tag ws-paused-tag">☕ {t("pausiert")}</span>}
+            {ranked.map((e, i) => {
+              const alt = i % 2 === 1 ? " ws-row-alt" : "";
+              return (
+                <div key={e.id} className="ws-rank-row">
+                  <span className={"ws-rank-pos medal" + alt}>{i + 1}.</span>
+                  <span className={"ws-rank-name" + alt}>
+                    {renderEntryAvatars(e, 28)}
+                    <span className="stat-name">
+                      {entryName(e)}
+                      {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
+                      {e.is_paused && <span className="ws-live-tag ws-paused-tag">☕ {t("pausiert")}</span>}
+                    </span>
                   </span>
-                </span>
-                <span className="ws-rank-num">{e.wins}</span>
-                <span className="ws-rank-num">{e.losses}</span>
-                <span className="ws-rank-streak">{e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : ""}</span>
-              </div>
-            ))}
+                  <span className={"ws-rank-num" + alt}>{e.wins}</span>
+                  <span className={"ws-rank-num" + alt}>{e.losses}</span>
+                  <span className={"ws-rank-streak" + alt} title={e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : undefined}>{e.streak > 1 ? `🔥${e.streak}` : ""}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
