@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown } from "lucide-react";
+import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown, SkipForward } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
@@ -95,6 +95,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const isAtTable = !!(posA && posB && [posA.player1_id, posA.player2_id, posB.player1_id, posB.player2_id].includes(me.id));
   const canReport = (isOrganizer || isAtTable) && session.status === "running" && posA && posB;
   const canDelete = isOrganizer && games.length === 0;
+  // Nutzer-Feedback: "ueberspringen"-Button macht nur Sinn ab mehr als 3
+  // Teilnehmern (siehe winner_stays_skip_next() - sonst kaeme die
+  // uebersprungene Person sofort wieder dran) und ist bewusst nur der
+  // Leitung vorbehalten, nicht den Spielern am Tisch selbst.
+  const canSkip = isOrganizer && session.status === "running" && posA && posB && entries.length > 3;
   const existingPlayerIds = entries.flatMap((e) => [e.player1_id, e.player2_id]).filter(Boolean);
 
   const entryName = (e) => (e?.player2_id ? `${e.player1?.nickname} & ${e.player2?.nickname}` : e?.player1?.nickname);
@@ -109,6 +114,20 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     setSA(0); setSB(0);
     await load();
     onReload && onReload();
+  };
+
+  // Nutzer-Feedback: "damit gewaehrleistet ist, dass der Tisch so gut als
+  // moeglich ausgenutzt wird, auch wenn der naechste Spieler gerade am WC
+  // ist oder ein dringendes Telefonat fuehren muss" - schickt den
+  // Herausforderer ohne Wertung ans Ende der Warteschlange (kein Rack,
+  // keine Statistik-Aenderung, siehe winner_stays_skip_next()).
+  const skipNext = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc("winner_stays_skip_next", { p_session_id: sessionId });
+    setBusy(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Übersprungen."));
+    await load();
   };
 
   const addSingles = async () => {
@@ -241,11 +260,18 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               {canReport && <ScoreStepper value={sB} onChange={setSB} />}
             </div>
           </div>
-          {canReport && (
-            <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || sA === sB} onClick={reportGame}>
-              <Check size={16} /> {t("Eintragen")}
-            </button>
-          )}
+          <div className="chips small" style={{ marginTop: 10 }}>
+            {canReport && (
+              <button className="btn primary" disabled={busy || sA === sB} onClick={reportGame}>
+                <Check size={16} /> {t("Eintragen")}
+              </button>
+            )}
+            {canSkip && (
+              <button className="btn ghost" disabled={busy} onClick={skipNext} title={t("Herausforderer überspringen, wenn die Person gerade nicht verfügbar ist.")}>
+                <SkipForward size={15} /> {t("Überspringen")}
+              </button>
+            )}
+          </div>
         </section>
       )}
 

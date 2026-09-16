@@ -1154,6 +1154,12 @@ const TRANSLATIONS = {
     'Niemand namens "{q}" gefunden': 'No one named "{q}" found',
     "Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.": "For people without the app - doesn't count for the rating, needs no confirmation.",
     '"{q}" als Gast hinzufügen': 'Add "{q}" as a guest',
+    "Überspringen": "Skip",
+    "Übersprungen.": "Skipped.",
+    "Herausforderer überspringen, wenn die Person gerade nicht verfügbar ist.": "Skip the challenger if that person isn't available right now.",
+    "Überspringen ist erst ab mehr als drei Teilnehmern möglich.": "Skipping is only possible with more than three participants.",
+    "Kein Herausforderer zum Überspringen vorhanden.": "No challenger to skip.",
+    "Nur die Leitung dieser Runde kann jemanden überspringen.": "Only this round's organizer can skip someone.",
   },
 };
 export function setLangGlobal(l) {
