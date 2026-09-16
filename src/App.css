@@ -11,6 +11,15 @@
      .pf-right-col mit 24px, .stat-block-Default mit 14px). Eine einzige
      Variable statt verstreuter Werte macht das an EINER Stelle wartbar. */
   --card-gap: 16px;
+  /* Einheitlicher, klar sichtbarer Rahmen fuer "Hintergrund"-Buttons
+     (Ghost-Varianten, runde Icon-Buttons, Chips/Toggles) - Nutzer-Feedback:
+     "Buttons sind manchmal nicht als Buttons erkennbar", weil viele davon
+     bisher nur das sehr blasse --line (niedrige Deckkraft, fuer Trennlinien/
+     Karten gedacht) als Rahmenfarbe hatten. color-mix() auf --ivory-dim statt
+     eines eigenen Hex-Werts, damit die Staerke automatisch zu jedem
+     Farbthema passt (siehe lib/themes.js) - derselbe Ansatz wie schon bei
+     der Tabbar (--felt-Mix weiter unten). */
+  --btn-border: color-mix(in srgb, var(--ivory-dim) 45%, transparent);
 }
 * { box-sizing: border-box; margin: 0; }
 html, body { background: var(--felt); }
@@ -62,10 +71,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .cat-chev { color: var(--ivory-dim); transition: transform 0.18s ease; }
 .cat-chev.open { transform: rotate(180deg); }
 .badge-cat .badge-grid { padding-top: 10px; }
-.badge-tools { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
-.badge-tool-btn { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
-  border-radius: 10px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.badge-tool-btn:active { background: var(--felt); }
 .login-list { display: flex; flex-direction: column; gap: 2px; }
 .login-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
   padding: 8px 2px; border-bottom: 1px solid var(--line); }
@@ -755,10 +760,114 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 
 button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) {
-  .rank-row, .opp-card, .btn, .tab, .chip-btn { transition: background .15s, border-color .15s, opacity .15s; }
+  /* Ermoeglicht sanftes Scrollen, wenn der Browser ein Element (z.B. per
+     .focus(), siehe "Alle Erfolge ansehen" in ProfilScreen.jsx) selbst ins
+     Bild scrollt, statt es sofort ruckartig zu springen. */
+  .content { scroll-behavior: smooth; }
+  .rank-row, .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn,
+  .mini-stepper button, .turnier-stepper-btn, .suggest-challenge-btn, .back-btn,
+  .refresh-btn, .csv-btn, .mem-edit, .mode-btn, .lang-btn,
+  .auth-tab, .legend-item, .cand-chip, .pp-trigger, .badge-chip, .pmp-chip,
+  .turnier-list-row, .card-info-btn, .m-download, .msg-edit-btn, .clear-btn,
+  .turnier-graph-detail-close, .rank-decay-warn, .pmp-remove, .disc-chip,
+  .suggest-row-play, .sp-pot, .sp-rack, .tourney-table-banner, .tab.fab {
+    transition: background .15s, border-color .15s, opacity .15s, filter .15s;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .live-dot { animation: none; } .spin { animation: none; } .warn-pulse { animation: none; }
+}
+
+/* ============================================================
+   EINHEITLICHES BUTTON-SYSTEM (Nutzer-Feedback: "Buttons sind
+   manchmal nicht als Buttons erkennbar" + "sollen am PC auf
+   Mouseover reagieren, so wie die Zoom-Buttons im Turnierbaum").
+   Zwei Faelle:
+   1) Gefuellte/hervorgehobene Buttons (Akzentfarbe als Flaeche,
+      z.B. .btn.primary, .round-btn.plus, .chip.active, .sp-pot) -
+      die sind schon als Buttons erkennbar, bekommen am PC nur ein
+      Hover-Aufhellen (filter: brightness), keinen Rahmen-Wechsel.
+   2) "Hintergrund"-Buttons ohne bzw. mit nur dem blassen --line als
+      Rahmen (Ghost-Buttons, runde Icon-Buttons, Chips/Toggles,
+      Auswahlkarten) - bekommen ueberall denselben sichtbaren
+      Rahmen (--btn-border) und am PC denselben Hover wie das
+      Vorbild .turnier-graph-zoom-controls weiter unten: Rahmen und
+      Text wechseln auf den Akzent (--chalk), Flaeche hellt leicht
+      auf. Zustaende, die bereits eine eigene Rahmenfarbe tragen
+      (.active/.on/.sel/.selected/.no/...), sind bewusst per :not()
+      ausgenommen, damit Hover ihren Status nicht uebertoent.
+   Neue Buttons: in die passende Gruppe unten eintragen statt eine
+   eigene Rahmen-/Hover-Regel zu duplizieren. */
+.btn.ghost, .back-btn, .refresh-btn, .csv-btn,
+.round-btn, .mini-stepper button, .suggest-challenge-btn, .turnier-stepper-btn,
+.mem-edit, .mode-btn, .lang-btn, .auth-tab, .legend-item, .cand-chip,
+.pp-trigger, .badge-chip, .chip, .chip-btn:not(.ok):not(.no), .pmp-chip,
+.rank-row, .card-info-btn, .m-download, .msg-edit-btn, .clear-btn,
+.turnier-graph-detail-close, .pmp-remove {
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: var(--btn-border);
+}
+/* .round-btn.plus/.turnier-stepper-btn.plus (gefuellte Akzentflaeche) und
+   .chip.active (zwei Klassen, hoehere Spezifitaet) behalten ihre eigene
+   Rahmenfarbe automatisch - werden hier bewusst NICHT ausgeschlossen, die
+   spezifischeren Regeln weiter oben im Stylesheet gewinnen ohnehin. */
+.btn.ghost { border-style: solid; }
+/* Hatten bisher kein eigenes border-radius (border:none), der neue Rahmen
+   waere sonst eckig statt wie alle anderen runden Icon-Buttons. */
+.msg-edit-btn, .clear-btn { border-radius: 8px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn.ghost:hover:not(:disabled),
+  .back-btn:hover, .refresh-btn:hover, .csv-btn:hover,
+  .round-btn:hover:not(.plus), .mini-stepper button:hover,
+  .suggest-challenge-btn:hover, .turnier-stepper-btn:hover:not(.plus),
+  .mem-edit:hover:not(.on), .mode-btn:hover:not(.active),
+  .lang-btn:hover:not(.active), .auth-tab:hover:not(.on),
+  .legend-item:hover, .cand-chip:hover:not(.sel),
+  .pp-trigger:hover, .badge-chip:hover:not(.selected):not(.locked),
+  .chip:hover:not(.active), .chip-btn:hover:not(.ok):not(.no):not(.sel),
+  .pmp-chip:hover:not(.sel), .rank-row:hover,
+  .card-info-btn:hover, .m-download:hover, .msg-edit-btn:hover, .clear-btn:hover,
+  .turnier-graph-detail-close:hover,
+  .turnier-list-row:hover, .suggest-row-play:hover,
+  .opp-card:hover:not(.sel), .disc-card:hover:not(.sel), .theme-swatch:hover:not(.sel) {
+    border-color: var(--chalk);
+    background: var(--felt-3);
+  }
+  /* .disc-chip hat schon einen kraeftigen goldenen Rahmen (eigene
+     Bedeutungsfarbe wie .disc-chip selbst, siehe Basis-Regel) - auf Hover
+     bleibt Gold erhalten, nur ein Aufhellen statt Farbwechsel auf Chalk. */
+  .disc-chip:hover { filter: brightness(1.12); }
+  /* .rank-decay-warn ist bewusst ein randloses Icon ohne eigene Flaeche (wie
+     im Kommentar bei der Klasse selbst erklaert - in einer Rangliste mit
+     vielen Treffern soll es NICHT so auffallen wie das grosse Pendant auf
+     der Identitaetskarte, .id-card-decay-warn) - bekommt daher nur ein
+     dezentes Aufhellen statt Rahmen/Flaeche. */
+  .rank-decay-warn:hover { filter: brightness(1.25); }
+  /* Text-/Icon-Farbe mitziehen, wo sie bisher den blassen --ivory-dim-Ton
+     hatte - sonst bleibt der Rahmen blau, der Inhalt aber grau. Buttons
+     mit eigener Bedeutungsfarbe (z.B. .m-download, .disc-chip in Gold)
+     sind hier bewusst nicht enthalten. */
+  .back-btn:hover, .refresh-btn:hover, .csv-btn:hover,
+  .mini-stepper button:hover, .suggest-challenge-btn:hover,
+  .mem-edit:hover:not(.on), .mode-btn:hover:not(.active), .lang-btn:hover:not(.active),
+  .auth-tab:hover:not(.on), .pp-trigger:hover, .chip:hover:not(.active),
+  .chip-btn:hover:not(.ok):not(.no):not(.sel), .card-info-btn:hover, .clear-btn:hover,
+  .msg-edit-btn:hover {
+    color: var(--chalk);
+  }
+  .pmp-remove:hover { border-color: var(--loss); }
+  /* Gefuellte Buttons: kein Rahmen-Wechsel noetig, nur ein Hellwerden -
+     dieselbe Wirkung wie das bestehende ":active{filter:brightness(.94)}"
+     bei .sp-pot/.sp-rack, nur in die andere Richtung fuers Hovern. */
+  .btn.primary:hover:not(:disabled), .btn.danger:hover:not(:disabled),
+  .round-btn.plus:hover, .turnier-stepper-btn.plus:hover, .chip.active:hover,
+  .chip-btn.ok:hover, .sp-pot:hover, .sp-rack:hover, .tourney-table-banner:hover,
+  .tab.fab:hover {
+    filter: brightness(1.08);
+  }
+  .chip-btn.no:hover { background: var(--loss); color: #fff; }
 }
 
 /* ===== Statistik: linke UserPanel-Spalte (siehe src/components/widgets) =====
