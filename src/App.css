@@ -1224,18 +1224,63 @@ button.id-card-head { cursor: pointer; }
 .ws-entry-avatars { display: flex; gap: -6px; }
 .ws-entry-avatars .ball + .ball { margin-left: -10px; }
 .ws-live-tag { margin-left: 8px; font-size: 12px; font-weight: 600; color: var(--gold); white-space: nowrap; }
+/* Pausiert-Schalter (Nutzer-Feedback: "wie kann ich den Aussetzen Button
+   wieder ausschalten? Ich kann das kaffee-icon nur aktivieren, nicht
+   deaktivieren" + "der button soll auch gut sichtbar sein, damit man sieht
+   ob die person auf pause ist") - deutlich sichtbarer goldener Fuellzustand
+   statt nur eines dezenten ghost-Buttons, plus derselbe Tag-Stil wie das
+   bestehende "Am Tisch"-Badge (.ws-live-tag) an jeder Stelle, an der die
+   Person auftaucht (Warteschlange, Live-Rangliste). */
+.btn.ws-pause-btn.active { background: var(--gold); color: var(--felt); border-color: var(--gold); }
+.pmp-remove.ws-pause-btn.active { background: var(--gold); color: var(--felt); }
+.pmp-remove.ws-pause-btn.active:hover { background: var(--gold); color: var(--felt); }
+.ws-paused-chip { opacity: 0.75; }
 
 /* Live-Rangliste als echte Spalten-Tabelle (Nutzer-Feedback: Siege/
    Niederlagen wirkten als zusammengeschobener "10S / 4N"-String am rechten
    Kartenrand unklar) - Platz/Name/S/N/Serie je eine eigene, ueber alle
-   Zeilen ausgerichtete Spalte statt eines einzelnen Text-Werts. */
-.ws-rank-table { display: flex; flex-direction: column; }
-.ws-rank-row { display: grid; grid-template-columns: 24px 1fr 30px 30px auto; align-items: center; gap: 8px; padding: 7px 0; font-size: 14px; }
-.ws-rank-head { font-size: 11px; color: var(--ivory-dim); text-transform: uppercase; letter-spacing: 0.3px; padding-bottom: 2px; }
+   Zeilen ausgerichtete Spalte statt eines einzelnen Text-Werts.
+   Nutzer-Feedback (Folge-Runde): mit der neuen "X in Folge"-Serienanzeige
+   verschoben sich S/N je nach Zeile, weil .ws-rank-row vorher PRO ZEILE ein
+   eigenes CSS-Grid war (jede Zeile berechnet ihre Spaltenbreiten
+   unabhaengig - eine Zeile mit langem Serientext konnte die vorherigen
+   Spalten dieser einen Zeile anders auffuellen als eine Zeile ohne). Fix:
+   EIN gemeinsames Grid auf .ws-rank-table, .ws-rank-row nur noch als
+   unsichtbarer "display:contents"-Wrapper (bleibt fuer den React-key/die
+   Semantik da, erzeugt aber keine eigene Box mehr) - dadurch werden die
+   Zellen aller Zeilen (inkl. Kopfzeile) direkte Kinder DESSELBEN Grids und
+   teilen sich exakt dieselben Spaltenbreiten, S/N landen garantiert an
+   derselben Pixel-Position in jeder Zeile. display:contents entfernt aber
+   auch die Faerbbarkeit der Zeile selbst - die abwechselnde Zeilenfarbe
+   (zweiter Wunsch: "Faerbe jede Zeile ein klein wenig um, damit man besser
+   sieht, wo die jeweiligen Daten zusammengehoeren") wird deshalb auf JEDE
+   einzelne Zelle der Zeile gesetzt (.ws-row-alt), nicht auf den Wrapper. */
+.ws-rank-table { display: grid; grid-template-columns: 28px 1fr 32px 32px 38px; align-items: stretch; column-gap: 0; font-size: 14px; }
+.ws-rank-row { display: contents; }
+/* Nutzer-Feedback: "Es sollte ein durchgaengiger Streifen sein" - kein
+   column-gap mehr (die Luecken zerschnitten die Zeilenfarbe optisch in
+   einzelne Bloecke), Abstand stattdessen ueber Innenabstand je Zelle, damit
+   die Hintergrundfarben direkt aneinander anschliessen. Zusaetzliches
+   Nutzer-Feedback: "die Hoehe der einzelnen Farbstreifen ist immer noch
+   unterschiedlich" - zwei Ursachen. (1) align-items:center liess jede
+   Zelle nur so hoch wie ihren eigenen Inhalt werden, statt die volle
+   Zeilenhoehe auszufuellen - jetzt stretch. (2) Name+Tag ("Am Tisch"/
+   "pausiert") konnten bei knappem Platz auf eine zweite Zeile umbrechen
+   (overflow-wrap:anywhere von .stat-name), wodurch genau DIESE eine Zeile
+   hoeher wurde als alle anderen - .ws-rank-name erzwingt jetzt eine Zeile
+   mit Ellipsis, damit jede Zeile exakt gleich hoch bleibt. */
+.ws-rank-pos, .ws-rank-name, .ws-rank-num, .ws-rank-streak { padding: 7px 6px; display: flex; align-items: center; }
+.ws-rank-head > .ws-rank-pos, .ws-rank-head > .ws-rank-name, .ws-rank-head > .ws-rank-num, .ws-rank-head > .ws-rank-streak {
+  font-size: 11px; color: var(--ivory-dim); text-transform: uppercase; letter-spacing: 0.3px; padding-top: 0; padding-bottom: 2px;
+}
 .ws-rank-pos { font-weight: 700; color: var(--gold); }
-.ws-rank-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ws-rank-num { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; text-align: center; }
-.ws-rank-streak { font-size: 12px; color: var(--ivory-dim); white-space: nowrap; text-align: right; }
+.ws-rank-name { gap: 8px; min-width: 0; }
+.ws-rank-name .stat-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ws-rank-num { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; justify-content: center; }
+.ws-rank-streak { font-size: 12px; color: var(--ivory-dim); white-space: nowrap; justify-content: flex-end; overflow: hidden; }
+.ws-row-alt { background: var(--felt-3); }
+.ws-row-alt.ws-rank-pos { border-radius: 8px 0 0 8px; }
+.ws-row-alt.ws-rank-streak { border-radius: 0 8px 8px 0; }
 
 @media (min-width: 900px) {
   /* Ab Desktop-Breite lohnt sich kein Wisch-Scrollen mehr - alle Runden

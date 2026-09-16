@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown, SkipForward, ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown, SkipForward, ChevronUp, ChevronDown, Coffee } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
@@ -107,6 +107,10 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // winner_stays_skip_next() - sonst kaeme die uebersprungene Person sofort
   // wieder dran).
   const canSkip = canManageQueue && posA && posB && entries.length > 3;
+  // Nutzer-Feedback: "Es kann jederzeit einer der Spieler ausfallen. Diese
+  // Moeglichkeit sollte jeder haben." - Selbstbedienung, unabhaengig von
+  // Position (auch am Tisch), siehe winner_stays_set_paused().
+  const canTogglePaused = (e) => session.status === "running" && (isOrganizer || e.player1_id === me.id || e.player2_id === me.id);
   const existingPlayerIds = entries.flatMap((e) => [e.player1_id, e.player2_id]).filter(Boolean);
 
   const entryName = (e) => (e?.player2_id ? `${e.player1?.nickname} & ${e.player2?.nickname}` : e?.player1?.nickname);
@@ -134,6 +138,23 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Übersprungen."));
+    await load();
+  };
+
+  // Nutzer-Feedback: "Ein 'Aussetzen' Button. Es kann jederzeit einer der
+  // Spieler ausfallen. Diese Moeglichkeit sollte jeder haben." - erst als
+  // einmalige Aktion gebaut, dann auf Nutzer-Feedback hin ("wie kann ich
+  // den Aussetzen Button wieder ausschalten? Ich kann das kaffee-icon nur
+  // aktivieren, nicht deaktivieren") zu einem echten Ein/Aus-Schalter
+  // gemacht: pausierte Personen werden serverseitig automatisch
+  // uebersprungen, sobald sie an der Reihe waeren (winner_stays_skip_paused
+  // in der DB), bis sie sich selbst wieder aktiv melden.
+  const togglePaused = async (entry) => {
+    setBusy(true);
+    const { error } = await supabase.rpc("winner_stays_set_paused", { p_session_id: sessionId, p_entry_id: entry.id, p_paused: !entry.is_paused });
+    setBusy(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(entry.is_paused ? t("Wieder dabei.") : t("Pausiert."));
     await load();
   };
 
@@ -271,6 +292,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <span className="ws-table-name">{entryName(posA)}</span>
               <span className="hint" style={{ margin: 0 }}>{t("Verteidigt")}</span>
               {canReport && <ScoreStepper value={sA} onChange={setSA} />}
+              {canTogglePaused(posA) && (
+                <button type="button" className={"btn small" + (posA.is_paused ? " ws-pause-btn active" : " ghost ws-pause-btn")} disabled={busy} onClick={() => togglePaused(posA)} title={posA.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
+                  <Coffee size={14} /> {posA.is_paused ? t("Wieder dabei") : t("Aussetzen")}
+                </button>
+              )}
             </div>
             <span className="ws-table-vs">:</span>
             <div className="ws-table-side">
@@ -278,6 +304,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <span className="ws-table-name">{entryName(posB)}</span>
               <span className="hint" style={{ margin: 0 }}>{t("Herausforderer")}</span>
               {canReport && <ScoreStepper value={sB} onChange={setSB} />}
+              {canTogglePaused(posB) && (
+                <button type="button" className={"btn small" + (posB.is_paused ? " ws-pause-btn active" : " ghost ws-pause-btn")} disabled={busy} onClick={() => togglePaused(posB)} title={posB.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
+                  <Coffee size={14} /> {posB.is_paused ? t("Wieder dabei") : t("Aussetzen")}
+                </button>
+              )}
             </div>
           </div>
           <div className="chips small" style={{ marginTop: 10 }}>
@@ -300,9 +331,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           <h3><Repeat size={17} /> {t("Warteschlange")}</h3>
           <div className="pmp-grid">
             {waiting.map((e, i) => (
-              <div key={e.id} className="pmp-chip">
+              <div key={e.id} className={"pmp-chip" + (e.is_paused ? " ws-paused-chip" : "")}>
                 {renderEntryAvatars(e, 28)}
-                <span className="pmp-name">{i + 1}. {entryName(e)}</span>
+                <span className="pmp-name">{i + 1}. {entryName(e)}{e.is_paused && <span className="ws-live-tag">☕ {t("pausiert")}</span>}</span>
                 {canManageQueue && (
                   <span className="ws-queue-move">
                     <button type="button" className="pmp-remove" disabled={busy || i === 0} onClick={() => moveEntry(e.id, -1)} aria-label={t("Nach vorne")} title={t("Nach vorne")}>
@@ -312,6 +343,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                       <ChevronDown size={14} />
                     </button>
                   </span>
+                )}
+                {canTogglePaused(e) && (
+                  <button type="button" className={"pmp-remove" + (e.is_paused ? " ws-pause-btn active" : "")} disabled={busy} onClick={() => togglePaused(e)} aria-label={e.is_paused ? t("Wieder dabei") : t("Aussetzen")} title={e.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
+                    <Coffee size={14} />
+                  </button>
                 )}
                 {isOrganizer && session.status === "running" && (
                   <button type="button" className="pmp-remove" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
@@ -373,21 +409,25 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <span className="ws-rank-num" title={t("Niederlagen")}>{t("N")}</span>
               <span className="ws-rank-streak"></span>
             </div>
-            {ranked.map((e, i) => (
-              <div key={e.id} className="ws-rank-row">
-                <span className="ws-rank-pos medal">{i + 1}.</span>
-                <span className="ws-rank-name">
-                  {renderEntryAvatars(e, 28)}
-                  <span className="stat-name">
-                    {entryName(e)}
-                    {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
+            {ranked.map((e, i) => {
+              const alt = i % 2 === 1 ? " ws-row-alt" : "";
+              return (
+                <div key={e.id} className="ws-rank-row">
+                  <span className={"ws-rank-pos" + alt}>{i + 1}.</span>
+                  <span className={"ws-rank-name" + alt}>
+                    {renderEntryAvatars(e, 28)}
+                    <span className="stat-name">
+                      {entryName(e)}
+                      {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
+                      {e.is_paused && <span className="ws-live-tag ws-paused-tag">☕ {t("pausiert")}</span>}
+                    </span>
                   </span>
-                </span>
-                <span className="ws-rank-num">{e.wins}</span>
-                <span className="ws-rank-num">{e.losses}</span>
-                <span className="ws-rank-streak">{e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : ""}</span>
-              </div>
-            ))}
+                  <span className={"ws-rank-num" + alt}>{e.wins}</span>
+                  <span className={"ws-rank-num" + alt}>{e.losses}</span>
+                  <span className={"ws-rank-streak" + alt} title={e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : undefined}>{e.streak > 1 ? `🔥${e.streak}` : ""}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
