@@ -745,6 +745,10 @@ export default function App() {
   const openChallengesToMe = player
     ? challenges.filter((c) => c.challenged_id === player.id && c.status === "open" && new Date(c.expires_at) > new Date())
     : [];
+  // Fuer das Live-Tab-Badge im Hauptmenue: alle aktuellen Herausforderungen
+  // (an mich UND von mir), nicht nur die an mich - sonst verschwindet eine
+  // gerade verschickte Herausforderung aus der Zaehlung, bis sie beantwortet wird.
+  const openChallengesAll = challenges.filter((c) => c.status === "open" && new Date(c.expires_at) > new Date());
 
   const confirmMatch = async (id, ok) => {
     const { error } = await supabase.rpc("confirm_match", { p_match_id: id, p_ok: ok });
@@ -1147,8 +1151,8 @@ export default function App() {
               </button>
               <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
                 <Radio size={21} /><span>{t("Live")}</span>
-                {pings.length + openChallengesToMe.length + plannings.length > 0 && (
-                  <span className="badge live">{pings.length + openChallengesToMe.length + plannings.length}</span>
+                {pings.length + openChallengesAll.length + plannings.length > 0 && (
+                  <span className="badge live">{pings.length + openChallengesAll.length + plannings.length}</span>
                 )}
               </button>
               <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
