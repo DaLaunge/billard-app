@@ -122,6 +122,23 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     await load();
   };
 
+  // Nutzer-Feedback: "hier sollte bereits ein Gast-User vorgeschlagen
+  // werden, weil es den user nicht im System gibt" - fuer Personen ohne
+  // App/Login, direkt aus der Spieler-Suche heraus (siehe onCreateGuest an
+  // PlayerMultiPicker unten). Legt die Gast-Person an UND meldet sie im
+  // selben Schritt an (winner_stays_add_guest) - onReload() zusaetzlich zu
+  // load(), da dabei ein neuer players-Datensatz entsteht, der auch in der
+  // globalen App.jsx-Spielerliste ankommen muss.
+  const addGuest = async (name) => {
+    setBusy(true);
+    const { error } = await supabase.rpc("winner_stays_add_guest", { p_session_id: sessionId, p_nickname: name });
+    setBusy(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    toast(t("Gast hinzugefügt."));
+    await load();
+    onReload && onReload();
+  };
+
   const addTeam = async () => {
     if (!teamP1 || !teamP2) return;
     setBusy(true);
@@ -276,7 +293,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <div>
                 <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
                   onToggle={(id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} exclude={existingPlayerIds} />
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} exclude={existingPlayerIds}
+                  onCreateGuest={addGuest} />
                 <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || addSelected.length === 0} onClick={addSingles}>
                   <Check size={15} /> {t("{n} Teilnehmer hinzufügen", { n: addSelected.length })}
                 </button>

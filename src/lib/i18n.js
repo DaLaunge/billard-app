@@ -1142,6 +1142,7 @@ const TRANSLATIONS = {
     "z. B. 3": "e.g. 3",
     "S": "W",
     "N": "L",
+    "Gast \"{name}\" hinzufügen": "Add guest \"{name}\"",
     "Schließen": "Close",
     "Turnierinfo": "Tournament info",
     "Gast hinzufügen": "Add guest",
