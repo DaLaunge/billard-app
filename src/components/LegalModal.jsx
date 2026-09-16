@@ -31,7 +31,7 @@ export default function LegalModal({ onClose }) {
           <p>{t("Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch und Datenübertragbarkeit sowie ein Beschwerderecht bei der zuständigen Datenschutzbehörde.")}</p>
 
           <h4>{t("Selbstständige Löschung")}</h4>
-          <p>{t("Du kannst dein Konto jederzeit in deinem Profil unter \"Meine Daten löschen\" selbst und endgültig löschen. Dabei werden alle personenbezogenen Daten (Login, Name, Profilfarbe, Motto, Nachrichten) unwiderruflich entfernt. Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt – ohne jeden Bezug mehr zu dir.")}</p>
+          <p>{t("Du kannst dein Konto jederzeit unter \"Profil bearbeiten\" ganz unten über \"Meine Daten löschen\" selbst und endgültig löschen. Dabei werden alle personenbezogenen Daten (Login, Name, Profilfarbe, Motto, Nachrichten) unwiderruflich entfernt. Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt – ohne jeden Bezug mehr zu dir.")}</p>
 
           <h4>{t("Kontakt")}</h4>
           <p>
