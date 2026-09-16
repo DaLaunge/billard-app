@@ -1146,6 +1146,12 @@ button.id-card-head { cursor: pointer; }
   width: 22px; height: 22px; border-radius: 50%; background: none; border: none;
   color: var(--ivory-dim); cursor: pointer; padding: 0; }
 .pmp-remove:hover { background: var(--felt); color: var(--loss); }
+.pmp-remove:disabled { opacity: 0.3; cursor: default; }
+.pmp-remove:disabled:hover { background: none; color: var(--ivory-dim); }
+/* Pfeil-Buttons zum Umsortieren der Winner-Stays-Warteschlange (bewusst
+   keine Drag&Drop-Bibliothek - am Handy auf einer scrollenden Liste
+   zuverlaessiger, siehe WinnerStaysScreen.jsx). */
+.ws-queue-move { display: flex; flex-shrink: 0; gap: 2px; }
 
 /* Turnier-Uebersicht: deutlich groesseres Tap-Ziel als die generische
    .stat-row (die ist auf kompakte Listen wie Statistik-Bestenlisten

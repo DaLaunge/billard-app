@@ -1160,6 +1160,15 @@ const TRANSLATIONS = {
     "Überspringen ist erst ab mehr als drei Teilnehmern möglich.": "Skipping is only possible with more than three participants.",
     "Kein Herausforderer zum Überspringen vorhanden.": "No challenger to skip.",
     "Nur die Leitung dieser Runde kann jemanden überspringen.": "Only this round's organizer can skip someone.",
+    "Nach vorne": "Move up",
+    "Nach hinten": "Move down",
+    "Nur Teilnehmer dieser Runde können die Warteschlange verschieben.": "Only this round's participants can reorder the queue.",
+    "Nur Teilnehmer dieser Runde können überspringen.": "Only this round's participants can skip someone.",
+    "Die beiden Positionen am Tisch können hier nicht verschoben werden.": "The two table positions can't be moved here.",
+    "Ungültige Position.": "Invalid position.",
+    "Ungültiger Schritt.": "Invalid step.",
+    "Zielposition nicht gefunden.": "Target position not found.",
+    "Teilnehmer nicht gefunden.": "Participant not found.",
   },
 };
 export function setLangGlobal(l) {
