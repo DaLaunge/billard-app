@@ -71,9 +71,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .cat-chev { color: var(--ivory-dim); transition: transform 0.18s ease; }
 .cat-chev.open { transform: rotate(180deg); }
 .badge-cat .badge-grid { padding-top: 10px; }
-.badge-tool-btn { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
-  border-radius: 10px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.badge-tool-btn:active { background: var(--felt); }
 .login-list { display: flex; flex-direction: column; gap: 2px; }
 .login-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
   padding: 8px 2px; border-bottom: 1px solid var(--line); }
@@ -765,7 +762,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 @media (prefers-reduced-motion: no-preference) {
   .rank-row, .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn,
   .mini-stepper button, .turnier-stepper-btn, .suggest-challenge-btn, .back-btn,
-  .refresh-btn, .badge-tool-btn, .csv-btn, .mem-edit, .mode-btn, .lang-btn,
+  .refresh-btn, .csv-btn, .mem-edit, .mode-btn, .lang-btn,
   .auth-tab, .legend-item, .cand-chip, .pp-trigger, .badge-chip, .pmp-chip,
   .turnier-list-row, .card-info-btn, .m-download, .msg-edit-btn, .clear-btn,
   .turnier-graph-detail-close, .rank-decay-warn, .pmp-remove, .disc-chip,
@@ -797,7 +794,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
       ausgenommen, damit Hover ihren Status nicht uebertoent.
    Neue Buttons: in die passende Gruppe unten eintragen statt eine
    eigene Rahmen-/Hover-Regel zu duplizieren. */
-.btn.ghost, .back-btn, .refresh-btn, .badge-tool-btn, .csv-btn,
+.btn.ghost, .back-btn, .refresh-btn, .csv-btn,
 .round-btn, .mini-stepper button, .suggest-challenge-btn, .turnier-stepper-btn,
 .mem-edit, .mode-btn, .lang-btn, .auth-tab, .legend-item, .cand-chip,
 .pp-trigger, .badge-chip, .chip, .chip-btn:not(.ok):not(.no), .pmp-chip,
@@ -818,8 +815,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 
 @media (hover: hover) and (pointer: fine) {
   .btn.ghost:hover:not(:disabled),
-  .back-btn:hover, .refresh-btn:hover,
-  .badge-tool-btn:hover, .csv-btn:hover,
+  .back-btn:hover, .refresh-btn:hover, .csv-btn:hover,
   .round-btn:hover:not(.plus), .mini-stepper button:hover,
   .suggest-challenge-btn:hover, .turnier-stepper-btn:hover:not(.plus),
   .mem-edit:hover:not(.on), .mode-btn:hover:not(.active),
@@ -847,9 +843,9 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .rank-decay-warn:hover { filter: brightness(1.25); }
   /* Text-/Icon-Farbe mitziehen, wo sie bisher den blassen --ivory-dim-Ton
      hatte - sonst bleibt der Rahmen blau, der Inhalt aber grau. Buttons
-     mit eigener Bedeutungsfarbe (z.B. .badge-tool-btn-Icon, .disc-chip in
-     Gold) sind hier bewusst nicht enthalten. */
-  .back-btn:hover, .refresh-btn:hover, .badge-tool-btn:hover, .csv-btn:hover,
+     mit eigener Bedeutungsfarbe (z.B. .m-download, .disc-chip in Gold)
+     sind hier bewusst nicht enthalten. */
+  .back-btn:hover, .refresh-btn:hover, .csv-btn:hover,
   .mini-stepper button:hover, .suggest-challenge-btn:hover,
   .mem-edit:hover:not(.on), .mode-btn:hover:not(.active), .lang-btn:hover:not(.active),
   .auth-tab:hover:not(.on), .pp-trigger:hover, .chip:hover:not(.active),

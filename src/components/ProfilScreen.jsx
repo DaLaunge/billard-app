@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock, Search } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock, Search } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -506,8 +506,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <button className={"chip" + (badgeStatus === "all" ? " active" : "")} onClick={() => setBadgeStatus("all")}>{t("Alle")}</button>
             <button className={"chip" + (badgeStatus === "earned" ? " active" : "")} onClick={() => setBadgeStatus("earned")}>{t("Erreicht")}</button>
             <button className={"chip" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}>{t("Gesperrt")}</button>
-            <button className="badge-tool-btn" style={{ marginLeft: "auto" }} onClick={expandAll}>{t("Alles aufklappen")}</button>
-            <button className="badge-tool-btn" onClick={collapseAll}>{t("Alles zuklappen")}</button>
+            <button className="chip chip-icon" style={{ marginLeft: "auto" }} onClick={expandAll}
+              aria-label={t("Alles aufklappen")} title={t("Alles aufklappen")}><ChevronsDown size={16} /></button>
+            <button className="chip chip-icon" onClick={collapseAll}
+              aria-label={t("Alles zuklappen")} title={t("Alles zuklappen")}><ChevronsUp size={16} /></button>
           </div>
         )}
         {(() => {
