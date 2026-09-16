@@ -458,7 +458,17 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
       <div className="pf-stats-a">
       <AchievementsProgressCard catalog={catalog} extras={liveExtras} earnedBadges={earnedBadges} nickname={nickname}
-        onOpenProfile={() => document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+        // behavior:"smooth" scrollte am Handy nicht (Nutzer-Feedback) - nur
+        // ein .focus() auf ein Eingabefeld (das der Browser selbst nativ
+        // dorthin scrollt, ganz ohne eigenes scrollIntoView) hat zuverlaessig
+        // funktioniert, aber mit ungewollter Bildschirmtastatur. Sehr
+        // wahrscheinlich dieselbe Ursache: iOS Safari behandelt
+        // scrollIntoView({behavior:"smooth"}) innerhalb eines eigenen
+        // scrollbaren Containers (hier .content, nicht der Seiten-Body)
+        // unzuverlaessig - ohne "smooth" (Standard "auto", ein sofortiger
+        // Sprung statt einer Animation) ist das Verhalten plattformuebergreifend
+        // verlaesslich unterstuetzt.
+        onOpenProfile={() => document.getElementById("pf-achievements-full")?.scrollIntoView({ block: "start" })} />
 
       <section className="stat-block">
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
