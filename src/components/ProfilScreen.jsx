@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock, Search } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
@@ -45,6 +45,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [badgeQuery, setBadgeQuery] = useState("");
   const [badgeStatus, setBadgeStatus] = useState("all"); // "all" | "earned" | "locked"
   const badgeFiltering = badgeQuery.trim() !== "" || badgeStatus !== "all";
+  // "Alle Erfolge ansehen" (siehe unten bei AchievementsProgressCard) landet
+  // am PC in der 3-Spalten-Ansicht dank CSS Grid oft schon ohne jedes
+  // Scrollen sichtbar direkt neben der kompakten Vorschau (beide Spalten
+  // beginnen in derselben Grid-Zeile) - dort wirkte der Klick bisher wie
+  // "nichts passiert" (Nutzer-Feedback), obwohl technisch korrekt gescrollt
+  // wurde (nur eben kaum wahrnehmbar wenig). Fokus auf das Suchfeld gibt
+  // unabhaengig vom Scrollweg immer eine spuerbare Rueckmeldung.
+  const achievementsSearchRef = useRef(null);
   // Welche Erfolge pro Kategorie beim aktuellen Filter sichtbar sind - fuer
   // die Liste unten UND fuers Auto-Aufklappen (siehe Effekt darunter).
   const visibleByCategory = useMemo(() => {
@@ -458,7 +466,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
       <div className="pf-stats-a">
       <AchievementsProgressCard catalog={catalog} extras={liveExtras} earnedBadges={earnedBadges} nickname={nickname}
-        onOpenProfile={() => document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+        onOpenProfile={() => {
+          document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          achievementsSearchRef.current?.focus({ preventScroll: true });
+        }} />
 
       <section className="stat-block">
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
@@ -494,7 +505,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         )}
         <div className="search-row" style={{ marginBottom: 8 }}>
           <Search size={16} className="mail-ico" />
-          <input placeholder={t("Erfolge durchsuchen …")} value={badgeQuery} onChange={(e) => setBadgeQuery(e.target.value)} />
+          <input ref={achievementsSearchRef} placeholder={t("Erfolge durchsuchen …")} value={badgeQuery} onChange={(e) => setBadgeQuery(e.target.value)} />
           {badgeQuery && <button className="clear-btn" onClick={() => setBadgeQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
         </div>
         {isMe && (
