@@ -1255,9 +1255,13 @@ button.id-card-head { cursor: pointer; }
    (zweiter Wunsch: "Faerbe jede Zeile ein klein wenig um, damit man besser
    sieht, wo die jeweiligen Daten zusammengehoeren") wird deshalb auf JEDE
    einzelne Zelle der Zeile gesetzt (.ws-row-alt), nicht auf den Wrapper. */
-.ws-rank-table { display: grid; grid-template-columns: 24px 1fr 30px 30px 34px; align-items: center; column-gap: 8px; font-size: 14px; }
+.ws-rank-table { display: grid; grid-template-columns: 28px 1fr 32px 32px 38px; align-items: center; column-gap: 0; font-size: 14px; }
 .ws-rank-row { display: contents; }
-.ws-rank-pos, .ws-rank-name, .ws-rank-num, .ws-rank-streak { padding: 7px 0; }
+/* Nutzer-Feedback: "Es sollte ein durchgaengiger Streifen sein" - kein
+   column-gap mehr (die Luecken zerschnitten die Zeilenfarbe optisch in
+   einzelne Bloecke), Abstand stattdessen ueber Innenabstand je Zelle, damit
+   die Hintergrundfarben direkt aneinander anschliessen. */
+.ws-rank-pos, .ws-rank-name, .ws-rank-num, .ws-rank-streak { padding: 7px 6px; }
 .ws-rank-head > .ws-rank-pos, .ws-rank-head > .ws-rank-name, .ws-rank-head > .ws-rank-num, .ws-rank-head > .ws-rank-streak {
   font-size: 11px; color: var(--ivory-dim); text-transform: uppercase; letter-spacing: 0.3px; padding-top: 0; padding-bottom: 2px;
 }
