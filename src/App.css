@@ -760,6 +760,10 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 
 button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) {
+  /* Ermoeglicht sanftes Scrollen, wenn der Browser ein Element (z.B. per
+     .focus(), siehe "Alle Erfolge ansehen" in ProfilScreen.jsx) selbst ins
+     Bild scrollt, statt es sofort ruckartig zu springen. */
+  .content { scroll-behavior: smooth; }
   .rank-row, .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn,
   .mini-stepper button, .turnier-stepper-btn, .suggest-challenge-btn, .back-btn,
   .refresh-btn, .csv-btn, .mem-edit, .mode-btn, .lang-btn,

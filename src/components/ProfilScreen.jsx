@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock, Search } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
@@ -45,6 +45,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [badgeQuery, setBadgeQuery] = useState("");
   const [badgeStatus, setBadgeStatus] = useState("all"); // "all" | "earned" | "locked"
   const badgeFiltering = badgeQuery.trim() !== "" || badgeStatus !== "all";
+  // "Alle Erfolge ansehen" (unten bei AchievementsProgressCard) fokussiert
+  // statt manuell zu scrollen den "Alle"-Filter-Chip selbst - ein natives
+  // .focus() auf ein Nicht-Eingabefeld loest zuverlaessig (auch am Handy,
+  // siehe Nutzer-Feedback - manuelles scrollIntoView({behavior:"smooth"})
+  // griff dort nicht) das browsereigene Ins-Bild-Scrollen aus, OHNE dabei
+  // wie bei einem <input> die Bildschirmtastatur zu oeffnen. Setzt den
+  // Filter dabei gleich auf "Alle" - passt semantisch zum Button-Namen.
+  const allFilterRef = useRef(null);
   // Welche Erfolge pro Kategorie beim aktuellen Filter sichtbar sind - fuer
   // die Liste unten UND fuers Auto-Aufklappen (siehe Effekt darunter).
   const visibleByCategory = useMemo(() => {
@@ -458,17 +466,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
       <div className="pf-stats-a">
       <AchievementsProgressCard catalog={catalog} extras={liveExtras} earnedBadges={earnedBadges} nickname={nickname}
-        // behavior:"smooth" scrollte am Handy nicht (Nutzer-Feedback) - nur
-        // ein .focus() auf ein Eingabefeld (das der Browser selbst nativ
-        // dorthin scrollt, ganz ohne eigenes scrollIntoView) hat zuverlaessig
-        // funktioniert, aber mit ungewollter Bildschirmtastatur. Sehr
-        // wahrscheinlich dieselbe Ursache: iOS Safari behandelt
-        // scrollIntoView({behavior:"smooth"}) innerhalb eines eigenen
-        // scrollbaren Containers (hier .content, nicht der Seiten-Body)
-        // unzuverlaessig - ohne "smooth" (Standard "auto", ein sofortiger
-        // Sprung statt einer Animation) ist das Verhalten plattformuebergreifend
-        // verlaesslich unterstuetzt.
-        onOpenProfile={() => document.getElementById("pf-achievements-full")?.scrollIntoView({ block: "start" })} />
+        onOpenProfile={() => {
+          // "Alle"-Filter-Chip fokussieren statt manuell zu scrollen (siehe
+          // allFilterRef oben) - klappt bei fremden Profilen nicht (Chips
+          // nur bei isMe gerendert), dort bleibt scrollIntoView als Ersatz.
+          if (allFilterRef.current) { setBadgeStatus("all"); allFilterRef.current.focus(); }
+          else document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }} />
 
       <section className="stat-block">
         <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
@@ -516,7 +520,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           // (behebt auch den Zeilenumbruch am Handy, Nutzer-Feedback) und
           // selbsterklaerend passend zum "Erfolge freischalten"-Thema.
           <div className="chips small" style={{ marginBottom: 8 }}>
-            <button className={"chip" + (badgeStatus === "all" ? " active" : "")} onClick={() => setBadgeStatus("all")}>{t("Alle")}</button>
+            <button ref={allFilterRef} className={"chip" + (badgeStatus === "all" ? " active" : "")} onClick={() => setBadgeStatus("all")}>{t("Alle")}</button>
             <button className={"chip chip-icon" + (badgeStatus === "earned" ? " active" : "")} onClick={() => setBadgeStatus("earned")}
               aria-label={t("Erreicht")} title={t("Erreicht")}><LockOpen size={16} /></button>
             <button className={"chip chip-icon" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}
