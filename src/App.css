@@ -1255,20 +1255,29 @@ button.id-card-head { cursor: pointer; }
    (zweiter Wunsch: "Faerbe jede Zeile ein klein wenig um, damit man besser
    sieht, wo die jeweiligen Daten zusammengehoeren") wird deshalb auf JEDE
    einzelne Zelle der Zeile gesetzt (.ws-row-alt), nicht auf den Wrapper. */
-.ws-rank-table { display: grid; grid-template-columns: 28px 1fr 32px 32px 38px; align-items: center; column-gap: 0; font-size: 14px; }
+.ws-rank-table { display: grid; grid-template-columns: 28px 1fr 32px 32px 38px; align-items: stretch; column-gap: 0; font-size: 14px; }
 .ws-rank-row { display: contents; }
 /* Nutzer-Feedback: "Es sollte ein durchgaengiger Streifen sein" - kein
    column-gap mehr (die Luecken zerschnitten die Zeilenfarbe optisch in
    einzelne Bloecke), Abstand stattdessen ueber Innenabstand je Zelle, damit
-   die Hintergrundfarben direkt aneinander anschliessen. */
-.ws-rank-pos, .ws-rank-name, .ws-rank-num, .ws-rank-streak { padding: 7px 6px; }
+   die Hintergrundfarben direkt aneinander anschliessen. Zusaetzliches
+   Nutzer-Feedback: "die Hoehe der einzelnen Farbstreifen ist immer noch
+   unterschiedlich" - zwei Ursachen. (1) align-items:center liess jede
+   Zelle nur so hoch wie ihren eigenen Inhalt werden, statt die volle
+   Zeilenhoehe auszufuellen - jetzt stretch. (2) Name+Tag ("Am Tisch"/
+   "pausiert") konnten bei knappem Platz auf eine zweite Zeile umbrechen
+   (overflow-wrap:anywhere von .stat-name), wodurch genau DIESE eine Zeile
+   hoeher wurde als alle anderen - .ws-rank-name erzwingt jetzt eine Zeile
+   mit Ellipsis, damit jede Zeile exakt gleich hoch bleibt. */
+.ws-rank-pos, .ws-rank-name, .ws-rank-num, .ws-rank-streak { padding: 7px 6px; display: flex; align-items: center; }
 .ws-rank-head > .ws-rank-pos, .ws-rank-head > .ws-rank-name, .ws-rank-head > .ws-rank-num, .ws-rank-head > .ws-rank-streak {
   font-size: 11px; color: var(--ivory-dim); text-transform: uppercase; letter-spacing: 0.3px; padding-top: 0; padding-bottom: 2px;
 }
 .ws-rank-pos { font-weight: 700; color: var(--gold); }
-.ws-rank-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ws-rank-num { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; text-align: center; }
-.ws-rank-streak { font-size: 12px; color: var(--ivory-dim); white-space: nowrap; text-align: right; overflow: hidden; }
+.ws-rank-name { gap: 8px; min-width: 0; }
+.ws-rank-name .stat-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ws-rank-num { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; justify-content: center; }
+.ws-rank-streak { font-size: 12px; color: var(--ivory-dim); white-space: nowrap; justify-content: flex-end; overflow: hidden; }
 .ws-row-alt { background: var(--felt-3); }
 .ws-row-alt.ws-rank-pos { border-radius: 8px 0 0 8px; }
 .ws-row-alt.ws-rank-streak { border-radius: 0 8px 8px 0; }
