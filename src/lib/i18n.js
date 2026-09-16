@@ -1140,6 +1140,8 @@ const TRANSLATIONS = {
     "{n} in Folge": "{n} in a row",
     "Name fehlt.": "Name is missing.",
     "z. B. 3": "e.g. 3",
+    "S": "W",
+    "N": "L",
     "Schließen": "Close",
     "Turnierinfo": "Tournament info",
     "Gast hinzufügen": "Add guest",

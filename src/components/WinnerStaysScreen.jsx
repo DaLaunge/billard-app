@@ -288,19 +288,34 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
       <section className="stat-block">
         <h3><Crown size={17} /> {t("Live-Rangliste")}</h3>
-        {ranked.length === 0 && <p className="hint">{t("Noch keine Teilnehmer.")}</p>}
-        {ranked.map((e, i) => (
-          <div key={e.id} className="stat-row turnier-standings-row">
-            <span className="medal">{i + 1}.</span>
-            {renderEntryAvatars(e, 30)}
-            <span className="stat-name">
-              {entryName(e)}
-              {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
-            </span>
-            <span className="stat-val">{e.wins}S / {e.losses}N</span>
-            {e.streak > 1 && <span className="hint" style={{ margin: 0 }}>{t("{n} in Folge", { n: e.streak })}</span>}
+        {ranked.length === 0 ? (
+          <p className="hint">{t("Noch keine Teilnehmer.")}</p>
+        ) : (
+          <div className="ws-rank-table">
+            <div className="ws-rank-row ws-rank-head">
+              <span className="ws-rank-pos"></span>
+              <span className="ws-rank-name"></span>
+              <span className="ws-rank-num" title={t("Siege")}>{t("S")}</span>
+              <span className="ws-rank-num" title={t("Niederlagen")}>{t("N")}</span>
+              <span className="ws-rank-streak"></span>
+            </div>
+            {ranked.map((e, i) => (
+              <div key={e.id} className="ws-rank-row">
+                <span className="ws-rank-pos medal">{i + 1}.</span>
+                <span className="ws-rank-name">
+                  {renderEntryAvatars(e, 28)}
+                  <span className="stat-name">
+                    {entryName(e)}
+                    {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
+                  </span>
+                </span>
+                <span className="ws-rank-num">{e.wins}</span>
+                <span className="ws-rank-num">{e.losses}</span>
+                <span className="ws-rank-streak">{e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : ""}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </section>
 
       {games.length > 0 && (
