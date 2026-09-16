@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown, SkipForward } from "lucide-react";
+import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown, SkipForward, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
@@ -93,13 +93,20 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // winner_stays_report_game() durchgesetzt, hier nur zusaetzlich als
   // Bedienbarkeits-Kriterium.
   const isAtTable = !!(posA && posB && [posA.player1_id, posA.player2_id, posB.player1_id, posB.player2_id].includes(me.id));
+  // Nutzer-Feedback: "Winner stays ist der einzige Turniermodus, bei dem
+  // jeder Spieler etwas eingeben kann... das Verschieben eines wartenden
+  // Spielers muss fuer jeden moeglich sein, der im Turnier mitspielt" -
+  // gilt fuer Ueberspringen UND Warteschlange-Umsortieren gleichermassen,
+  // nicht nur fuer die Leitung (serverseitig identisch durchgesetzt in
+  // winner_stays_skip_next()/winner_stays_move_entry()).
+  const isParticipant = entries.some((e) => e.player1_id === me.id || e.player2_id === me.id);
+  const canManageQueue = (isOrganizer || isParticipant) && session.status === "running";
   const canReport = (isOrganizer || isAtTable) && session.status === "running" && posA && posB;
   const canDelete = isOrganizer && games.length === 0;
-  // Nutzer-Feedback: "ueberspringen"-Button macht nur Sinn ab mehr als 3
-  // Teilnehmern (siehe winner_stays_skip_next() - sonst kaeme die
-  // uebersprungene Person sofort wieder dran) und ist bewusst nur der
-  // Leitung vorbehalten, nicht den Spielern am Tisch selbst.
-  const canSkip = isOrganizer && session.status === "running" && posA && posB && entries.length > 3;
+  // "ueberspringen"-Button macht nur Sinn ab mehr als 3 Teilnehmern (siehe
+  // winner_stays_skip_next() - sonst kaeme die uebersprungene Person sofort
+  // wieder dran).
+  const canSkip = canManageQueue && posA && posB && entries.length > 3;
   const existingPlayerIds = entries.flatMap((e) => [e.player1_id, e.player2_id]).filter(Boolean);
 
   const entryName = (e) => (e?.player2_id ? `${e.player1?.nickname} & ${e.player2?.nickname}` : e?.player1?.nickname);
@@ -166,6 +173,19 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Team hinzugefügt."));
     setTeamP1(null); setTeamP2(null); setShowAdd(false);
+    await load();
+  };
+
+  // Nutzer-Feedback: Warteschlange soll umsortierbar sein - Pfeil-Buttons
+  // statt echtem Drag & Drop (robuster am Handy), nur innerhalb der
+  // Warteschlange (nicht die beiden Tisch-Positionen), siehe
+  // winner_stays_move_entry(). Fuer jeden Teilnehmer der Runde erlaubt, wie
+  // Ueberspringen.
+  const moveEntry = async (entryId, delta) => {
+    setBusy(true);
+    const { error } = await supabase.rpc("winner_stays_move_entry", { p_session_id: sessionId, p_entry_id: entryId, p_delta: delta });
+    setBusy(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
     await load();
   };
 
@@ -283,6 +303,16 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <div key={e.id} className="pmp-chip">
                 {renderEntryAvatars(e, 28)}
                 <span className="pmp-name">{i + 1}. {entryName(e)}</span>
+                {canManageQueue && (
+                  <span className="ws-queue-move">
+                    <button type="button" className="pmp-remove" disabled={busy || i === 0} onClick={() => moveEntry(e.id, -1)} aria-label={t("Nach vorne")} title={t("Nach vorne")}>
+                      <ChevronUp size={14} />
+                    </button>
+                    <button type="button" className="pmp-remove" disabled={busy || i === waiting.length - 1} onClick={() => moveEntry(e.id, 1)} aria-label={t("Nach hinten")} title={t("Nach hinten")}>
+                      <ChevronDown size={14} />
+                    </button>
+                  </span>
+                )}
                 {isOrganizer && session.status === "running" && (
                   <button type="button" className="pmp-remove" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
                     <X size={14} />
