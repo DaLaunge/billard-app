@@ -1169,6 +1169,9 @@ const TRANSLATIONS = {
     "Ungültiger Schritt.": "Invalid step.",
     "Zielposition nicht gefunden.": "Target position not found.",
     "Teilnehmer nicht gefunden.": "Participant not found.",
+    "Aussetzen": "Sit out",
+    "Ausgesetzt.": "Sat out.",
+    "Nur die Person selbst oder die Leitung kann hier aussetzen.": "Only the person themselves or the organizer can sit them out.",
   },
 };
 export function setLangGlobal(l) {
