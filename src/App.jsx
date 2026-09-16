@@ -1084,7 +1084,7 @@ export default function App() {
                 <WinnerStaysScreen sessionId={winnerStaysId} me={player} players={players} matches={matches} toast={toast}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => navReplace({ tab: "turnier" })} />
               )}
-              <button className="refresh-btn" onClick={() => { loadData(); requestUpdateNow(); }} aria-label={t("Aktualisieren")}>
+              <button className="refresh-btn" onClick={() => { loadData(); requestUpdateNow(); toast(t("Suche nach Updates …")); }} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />
               </button>
             </main>
