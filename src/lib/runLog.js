@@ -81,8 +81,30 @@ export function splitProtocolRowsByPlayer(rows) {
 // Funktion gespeicherte Matches haben keine .ts-Werte - alle Funktionen
 // geben dann sauber null zurueck statt falscher Werte.
 
+// Optionales 4. Array-Element bei einfachen Punktestand-Protokollen
+// ([s1, s2, ts, durationMs]) - explizite, schon vorberechnete Dauer DIESES
+// einen Eintrags. Noetig fuer Winner-Stays-Matches (siehe
+// winner_stays_aggregate_session() in der DB): das Protokoll dort ist nach
+// Zweier-Paarung gruppiert, zwischen zwei Begegnungen DESSELBEN Paares
+// koennen aber Racks gegen andere Personen liegen - "ts[i] - ts[i-1]
+// innerhalb dieses Protokolls" wuerde dann faelschlich auch deren Spielzeit
+// mitzaehlen. durationMs kommt stattdessen aus der session-weiten
+// Reihenfolge alle Racks (unabhaengig von der Paarung) und ist daher immer
+// korrekt - fehlt es (aeltere/normale Matches), faellt alles unveraendert
+// auf die reine ts-Differenz zurueck.
+const entryDuration = (e) => (Array.isArray(e) && typeof e[3] === "number" ? e[3] : null);
+
 export function matchDurationMs(log) {
   if (!log || log.length < 2) return null;
+  // some() statt every(): das allererste Rack der GESAMTEN Winner-Stays-
+  // Runde hat nie eine Dauer (kein Vorgaenger existiert) - das darf nicht
+  // die ganze Summe auf die falsche ts-Differenz-Methode zurueckfallen
+  // lassen, nur weil GENAU DIESES Rack zufaellig auch das erste Rack
+  // dieses Paares war. Ein fehlender Wert zaehlt dabei als 0 (unbekannt,
+  // besser als falsch mitgezaehlte fremde Spielzeit).
+  if (isSimpleScoreLog(log) && log.some((e) => entryDuration(e) != null)) {
+    return log.reduce((sum, e) => sum + (entryDuration(e) ?? 0), 0);
+  }
   const first = entryTs(log[0]);
   const last = entryTs(log[log.length - 1]);
   if (typeof first !== "number" || typeof last !== "number") return null;
@@ -160,7 +182,10 @@ export function gameSpeedSums(log, discipline) {
   let prevTs = null;
   for (const e of log) {
     const ts = entryTs(e);
-    if (typeof ts === "number" && typeof prevTs === "number") {
+    const explicit = entryDuration(e);
+    if (explicit != null) {
+      if (explicit >= minMs) { timeMs += explicit; count += 1; }
+    } else if (typeof ts === "number" && typeof prevTs === "number") {
       const delta = ts - prevTs;
       if (delta >= minMs) { timeMs += delta; count += 1; }
     }

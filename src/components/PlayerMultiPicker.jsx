@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, X, Check } from "lucide-react";
+import { Search, X, Check, UserPlus } from "lucide-react";
 import { t } from "../lib/i18n";
 import { recentOpponentFreq } from "../lib/frequency";
 import { initials } from "../lib/format";
@@ -11,7 +11,7 @@ import Ball from "./Ball";
 // nacheinander (Turnier-Teilnehmer), nicht nur einen. Bereits ausgewaehlte
 // bleiben oben angeheftet sichtbar, damit man die aktuelle Auswahl auf
 // einen Blick ueberprueft, statt sie in der Liste suchen zu muessen.
-export default function PlayerMultiPicker({ players, matches, me, selected, onToggle, colorOf, badgeOf, photoOf, exclude = [], onQueryChange, placeholder }) {
+export default function PlayerMultiPicker({ players, matches, me, selected, onToggle, colorOf, badgeOf, photoOf, exclude = [], onQueryChange, placeholder, onCreateGuest }) {
   const [query, setQuery] = useState("");
   const updateQuery = (q) => { setQuery(q); onQueryChange && onQueryChange(q); };
 
@@ -49,6 +49,17 @@ export default function PlayerMultiPicker({ players, matches, me, selected, onTo
         })}
         {candidates.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
       </div>
+      {/* Nutzer-Feedback: "hier sollte bereits ein Gast-User vorgeschlagen
+          werden, weil es den user nicht im System gibt" - findet die Suche
+          niemanden, direkt anbieten, den getippten Namen als Gast (ohne App/
+          Login) anzulegen, statt separat zu einem eigenen Gast-Formular
+          wechseln zu muessen. Nur sichtbar, wenn der Aufrufer das ueberhaupt
+          unterstuetzt (onCreateGuest gesetzt, siehe WinnerStaysScreen.jsx). */}
+      {candidates.length === 0 && query.trim() && onCreateGuest && (
+        <button type="button" className="btn ghost" style={{ marginTop: 10 }} onClick={() => onCreateGuest(query.trim())}>
+          <UserPlus size={15} /> {t("Gast \"{name}\" hinzufügen", { name: query.trim() })}
+        </button>
+      )}
     </div>
   );
 }
