@@ -41,12 +41,49 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const expandAll = () => setOpenCats(new Set(catalogByCategory.map(([c]) => c)));
   const collapseAll = () => setOpenCats(new Set());
   // Suche/Status-Filter fuer die Erfolgsliste (144 Eintraege sind ohne
-  // Suchmoeglichkeit schwer zu durchsuchen) - waehrend gefiltert wird,
-  // klappen betroffene Kategorien automatisch auf (unabhaengig von openCats),
-  // damit Treffer nicht in einer zugeklappten Kategorie verborgen bleiben.
+  // Suchmoeglichkeit schwer zu durchsuchen).
   const [badgeQuery, setBadgeQuery] = useState("");
   const [badgeStatus, setBadgeStatus] = useState("all"); // "all" | "earned" | "locked"
   const badgeFiltering = badgeQuery.trim() !== "" || badgeStatus !== "all";
+  // Welche Erfolge pro Kategorie beim aktuellen Filter sichtbar sind - fuer
+  // die Liste unten UND fuers Auto-Aufklappen (siehe Effekt darunter).
+  const visibleByCategory = useMemo(() => {
+    const q = badgeQuery.trim().toLowerCase();
+    return catalogByCategory.map(([cat, items]) => {
+      // eigenes Profil: ALLE Erfolge zeigen (gesperrte gedimmt) -> Symbole + korrekte Gesamtzahl.
+      // fremde Profile: nur erreichte zeigen. Suche/Status filtern zusaetzlich.
+      const visible = items.filter((b) => {
+        const earned = earnedBadges.has(b.badge_key);
+        if (!isMe) { if (!earned) return false; }
+        else if (badgeStatus === "earned" && !earned) return false;
+        else if (badgeStatus === "locked" && earned) return false;
+        if (q && !(t(b.name) + " " + t(b.description)).toLowerCase().includes(q)) return false;
+        return true;
+      });
+      return [cat, items, visible];
+    });
+  }, [catalogByCategory, earnedBadges, isMe, badgeStatus, badgeQuery]);
+  // Beim Tippen/Filtern Kategorien mit Treffern automatisch aufklappen,
+  // damit Treffer nicht in einer zugeklappten Kategorie verborgen bleiben -
+  // aber nur EINMAL je Suchtext/Status-Aenderung (Abhaengigkeiten bewusst
+  // nur badgeQuery/badgeStatus, NICHT visibleByCategory), sonst wuerde ein
+  // beliebiges Neuladen der Daten (z.B. earnedBadges nach einem Match) eine
+  // gerade manuell zugeklappte Kategorie wieder aufzwingen. Vorher war
+  // "offen" waehrend des Filterns komplett erzwungen (unabhaengig von
+  // openCats) - dadurch griffen "Alles auf-/zuklappen" nur in der
+  // ungefilterten "Alle"-Ansicht (Nutzer-Feedback).
+  useEffect(() => {
+    if (!badgeFiltering) return;
+    setOpenCats((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const [cat, , visible] of visibleByCategory) {
+        if (visible.length > 0 && !next.has(cat)) { next.add(cat); changed = true; }
+      }
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [badgeQuery, badgeStatus]);
   const [challengeForm, setChallengeForm] = useState(false);
   const [challengeMsg, setChallengeMsg] = useState("");
   const installPrompt = useInstallPrompt();
@@ -461,35 +498,26 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           {badgeQuery && <button className="clear-btn" onClick={() => setBadgeQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
         </div>
         {isMe && (
+          // Alle 5 Werkzeuge (Status-Filter + Auf-/Zuklappen) auf einer
+          // Ebene statt zweier getrennter Zeilen (Nutzer-Feedback) - eine
+          // gemeinsame Flex-Zeile, die Auf-/Zuklappen-Buttons rechtsbuendig
+          // per margin-left:auto auf dem ersten der beiden.
           <div className="chips small" style={{ marginBottom: 8 }}>
             <button className={"chip" + (badgeStatus === "all" ? " active" : "")} onClick={() => setBadgeStatus("all")}>{t("Alle")}</button>
             <button className={"chip" + (badgeStatus === "earned" ? " active" : "")} onClick={() => setBadgeStatus("earned")}>{t("Erreicht")}</button>
             <button className={"chip" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}>{t("Gesperrt")}</button>
+            <button className="badge-tool-btn" style={{ marginLeft: "auto" }} onClick={expandAll}>{t("Alles aufklappen")}</button>
+            <button className="badge-tool-btn" onClick={collapseAll}>{t("Alles zuklappen")}</button>
           </div>
         )}
-        <div className="badge-tools">
-          <button className="badge-tool-btn" onClick={expandAll}>{t("Alles aufklappen")}</button>
-          <button className="badge-tool-btn" onClick={collapseAll}>{t("Alles zuklappen")}</button>
-        </div>
         {(() => {
-          const q = badgeQuery.trim().toLowerCase();
           let anyVisible = false;
-          const rows = catalogByCategory.map(([cat, items]) => {
-            // eigenes Profil: ALLE Erfolge zeigen (gesperrte gedimmt) -> Symbole + korrekte Gesamtzahl.
-            // fremde Profile: nur erreichte zeigen. Suche/Status filtern zusaetzlich.
-            const visible = items.filter((b) => {
-              const earned = earnedBadges.has(b.badge_key);
-              if (!isMe) { if (!earned) return false; }
-              else if (badgeStatus === "earned" && !earned) return false;
-              else if (badgeStatus === "locked" && earned) return false;
-              if (q && !(t(b.name) + " " + t(b.description)).toLowerCase().includes(q)) return false;
-              return true;
-            });
+          const rows = visibleByCategory.map(([cat, items, visible]) => {
             if (visible.length === 0) return null;
             anyVisible = true;
             // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
             const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
-            const open = badgeFiltering ? true : openCats.has(cat);
+            const open = openCats.has(cat);
             const liveStat = isMe ? catLiveStat(items, liveExtras) : null;
             return (
               <div key={cat} className="badge-cat">
