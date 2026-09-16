@@ -413,7 +413,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               const alt = i % 2 === 1 ? " ws-row-alt" : "";
               return (
                 <div key={e.id} className="ws-rank-row">
-                  <span className={"ws-rank-pos medal" + alt}>{i + 1}.</span>
+                  <span className={"ws-rank-pos" + alt}>{i + 1}.</span>
                   <span className={"ws-rank-name" + alt}>
                     {renderEntryAvatars(e, 28)}
                     <span className="stat-name">
