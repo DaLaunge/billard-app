@@ -26,6 +26,31 @@ const COUNT_OPTIONS = [3, 10, "all"];
 const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
 const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
 
+// rectSortingStrategy() geht von EINER durchgehenden Liste aus: es simuliert
+// ein arrayMove() ueber ALLE Karten hinweg und verschiebt darauf basierend
+// jede dazwischenliegende Karte optisch. Beim Ziehen INNERHALB einer Spalte
+// passt das genau (siehe items-Kommentar bei SortableContext weiter unten).
+// Beim Ziehen UEBER die Spaltengrenze hinweg wuerde diese Simulation aber
+// auch Karten der jeweils ANDEREN, unbeteiligten Spalte optisch verschieben
+// (Nutzer-Feedback: "wenn ich von rechts nach links schiebe, zeigt die
+// Animation, dass eine Karte nach rechts verschoben wird, obwohl sie nach
+// dem Loslassen trotzdem in der Mitte bleibt" - die Daten waren immer schon
+// richtig, nur die Voransicht waehrend des Ziehens log). Da laut Design
+// (siehe cardLayout.js Stufe 4) ein Spaltenwechsel per Ziehen IMMER nur die
+// gezogene Karte selbst betrifft, gibt es fuer diesen Fall schlicht keine
+// korrekte Voransicht der anderen Karten zu berechnen - andere Karten
+// bleiben deshalb bewusst unbewegt liegen, bis beim Loslassen alles auf
+// einmal an die neue Position springt. Innerhalb einer Spalte bleibt die
+// gewohnte fluessige Animation von rectSortingStrategy erhalten.
+function statCardSortingStrategy(middleCount) {
+  const groupOf = (i) => (i < middleCount ? "middle" : "right");
+  return (args) => {
+    const { activeIndex, overIndex } = args;
+    if (activeIndex === -1 || overIndex === -1 || groupOf(activeIndex) !== groupOf(overIndex)) return null;
+    return rectSortingStrategy(args);
+  };
+}
+
 // Eigene Komponente statt Definition innerhalb von StatistikScreen: sonst
 // waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
 // React wuerde sie als anderen Komponententyp behandeln und ihren
@@ -930,7 +955,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           kommt, aber die Sortierung ist danach trotzdem richtig" - das
           Endergebnis stimmte immer schon, nur die Animation dazwischen
           nicht). */}
-      <SortableContext items={[...middleCardIds, ...rightCardIds]} strategy={rectSortingStrategy}>
+      <SortableContext items={[...middleCardIds, ...rightCardIds]} strategy={statCardSortingStrategy(middleCardIds.length)}>
       {/* .stat-right-col buendelt alle rechten Karten (inkl. der globalen
           Auswahl, die seit dem Drag&Drop-Feature ebenfalls nur eine Karte
           unter vielen ist - Nutzer-Feedback: "auch die 'Selection for all
