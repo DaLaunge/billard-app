@@ -35,19 +35,38 @@ const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel
 // (Nutzer-Feedback: "wenn ich von rechts nach links schiebe, zeigt die
 // Animation, dass eine Karte nach rechts verschoben wird, obwohl sie nach
 // dem Loslassen trotzdem in der Mitte bleibt" - die Daten waren immer schon
-// richtig, nur die Voransicht waehrend des Ziehens log). Da laut Design
-// (siehe cardLayout.js Stufe 4) ein Spaltenwechsel per Ziehen IMMER nur die
-// gezogene Karte selbst betrifft, gibt es fuer diesen Fall schlicht keine
-// korrekte Voransicht der anderen Karten zu berechnen - andere Karten
-// bleiben deshalb bewusst unbewegt liegen, bis beim Loslassen alles auf
-// einmal an die neue Position springt. Innerhalb einer Spalte bleibt die
-// gewohnte fluessige Animation von rectSortingStrategy erhalten.
+// richtig, nur die Voransicht waehrend des Ziehens log).
+//
+// Ein erster Versuch liess beim Spaltenwechsel dafuer JEDE andere Karte
+// unbewegt (return null) - das vermied die falsche Voransicht, aber ohne
+// jede Reaktion beim Ziehen wirkte das Ziehen selbst wie kaputt (Nutzer-
+// Feedback: "jetzt funktioniert der Drag and Drop zwar perfekt in der
+// Mitte, aber ich kann nichts mehr nach rechts drag and droppen"). Diese
+// Version berechnet die Voransicht stattdessen GETRENNT je Spalte: die
+// Herkunftsspalte verhaelt sich wie ein reines Entfernen (alle Karten nach
+// der gezogenen ruecken um deren Groesse zurueck), die Zielspalte wie ein
+// reines Einfuegen von aussen (alle Karten ab der Zielposition ruecken um
+// dieselbe Groesse weiter) - beide unabhaengig voneinander, nie ueber die
+// eigene Spalte hinaus. Keine Karte bekommt dadurch je einen Transform, der
+// so aussieht, als wechsle SIE die Spalte (das darf laut Design, siehe
+// cardLayout.js Stufe 4, ausschliesslich die gezogene Karte selbst).
+const STAT_CARD_GAP = 16; // entspricht --card-gap in App.css
 function statCardSortingStrategy(middleCount) {
   const groupOf = (i) => (i < middleCount ? "middle" : "right");
   return (args) => {
-    const { activeIndex, overIndex } = args;
-    if (activeIndex === -1 || overIndex === -1 || groupOf(activeIndex) !== groupOf(overIndex)) return null;
-    return rectSortingStrategy(args);
+    const { rects, activeIndex, overIndex, index } = args;
+    if (activeIndex === -1 || overIndex === -1) return null;
+    const activeGroup = groupOf(activeIndex);
+    const overGroup = groupOf(overIndex);
+    if (activeGroup === overGroup) return rectSortingStrategy(args);
+    if (index === activeIndex) return null;
+    const myGroup = groupOf(index);
+    if (myGroup !== activeGroup && myGroup !== overGroup) return null;
+    const activeRect = rects[activeIndex];
+    if (!activeRect) return null;
+    const shift = activeRect.height + STAT_CARD_GAP;
+    if (myGroup === activeGroup) return index > activeIndex ? { x: 0, y: -shift, scaleX: 1, scaleY: 1 } : null;
+    return index >= overIndex ? { x: 0, y: shift, scaleX: 1, scaleY: 1 } : null;
   };
 }
 
