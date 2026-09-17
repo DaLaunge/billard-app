@@ -120,12 +120,6 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     return latest(nick);
   };
 
-  // Rasterzellen-Mindestbreite an den laengsten gewaehlten Namen gekoppelt
-  // (ch-Einheit statt JS-Textmessung) - Nutzer-Feedback: am PC sollen bis zu
-  // 6 Spieler nebeneinander passen (6x1), am Handy bei langen Namen ggf. nur
-  // einer pro Zeile (1x6). auto-fit im Grid erledigt den Rest je nach Breite.
-  const legendMinCh = Math.min(24, Math.max(9, sel.reduce((m, n) => Math.max(m, n.length), 0) + 6));
-
   return (
     <section className="stat-block">
       <div className="stat-block-head">
@@ -152,20 +146,22 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
         <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
         <>
-          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
-          <div className="legend" style={{ "--legend-min": `${legendMinCh}ch` }}>
+          <div className="dev-userlist">
             {sel.map((nick) => {
               const val = displayVal(nick);
               return (
-                <button key={nick} className="legend-item" onClick={() => toggle(nick)} title={t("Entfernen")}>
-                  <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={26} />
-                  <span className="legend-name">{nick}</span>
-                  <span className="legend-val" style={{ color: colorOf(nick) }}>{val != null ? val : "–"}</span>
-                  <X size={12} className="legend-x" />
-                </button>
+                <div key={nick} className="stat-row">
+                  <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={30} />
+                  <span className="stat-name">{nick}</span>
+                  <span className="stat-val" style={{ color: colorOf(nick) }}>{val != null ? val : "–"}</span>
+                  <button type="button" className="pmp-remove" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>
+                    <X size={14} />
+                  </button>
+                </div>
               );
             })}
           </div>
+          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
 
           {!addOpen ? (
             <button className="btn ghost" onClick={() => setAddOpen(true)}>

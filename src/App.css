@@ -183,22 +183,15 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .pw-box input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
   background: var(--felt-2); color: var(--ivory); font-size: 15px; font-family: inherit; }
 .add-panel { margin-top: 8px; }
-/* Nutzer-Raster unterhalb des Verlaufsgraphen (EntwicklungBlock.jsx) - echtes
-   CSS-Grid statt flex-wrap, damit die Karten beim Ziehen des Balkens ueber
-   den Graphen (Wert in .legend-val aktualisiert sich live) nicht "huepfen":
-   jede Zelle behaelt ihre Position, nur die Zahl darin wechselt. Die
-   Mindestbreite je Zelle kommt dynamisch aus --legend-min (an den laengsten
-   gewaehlten Namen gekoppelt, siehe legendMinCh dort) - dadurch passen am PC
-   bis zu 6 Spieler nebeneinander, am Handy bei langen Namen ggf. nur einer
-   pro Zeile, ohne feste Breakpoints pflegen zu muessen. */
-.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--legend-min, 120px), 1fr));
-  gap: 6px; margin-bottom: 8px; }
-.legend-item { display: inline-flex; align-items: center; gap: 7px; background: var(--felt);
-  border: 1px solid var(--line); border-radius: 12px; padding: 5px 9px 5px 5px; font-size: 12.5px;
-  font-weight: 600; color: var(--ivory); cursor: pointer; font-family: inherit; min-width: 0; text-align: left; }
-.legend-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.legend-val { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; flex-shrink: 0; }
-.legend-x { flex-shrink: 0; opacity: 0.55; }
+/* Nutzer-Auswahl fuer den Verlaufsgraphen (EntwicklungBlock.jsx) - Nutzer-
+   Feedback: soll wie die uebrigen Statistik-Listen aussehen (kein eigener
+   Chip-/Grid-Stil) und ueber statt unter dem Graphen stehen, damit man die
+   Namen im Handy-Querformat sofort sieht statt erst am Graphen vorbeischrollen
+   zu muessen. Nutzt daher dieselben .stat-row/.stat-name/.stat-val-Klassen
+   wie Rangliste/Bestenlisten - einzig .pmp-remove kommt dazu, weil die Zeile
+   hier (anders als eine Ranglisten-Zeile) kein Navigations-Link ist, sondern
+   per eigenem kleinen Button entfernt wird. */
+.dev-userlist { margin-bottom: 8px; }
 .cand-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .cand-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--felt-3);
   border: 1px solid var(--line); border-radius: 999px; padding: 6px 11px; font-size: 12.5px;
@@ -390,14 +383,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   .sp { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; align-items: start; }
   .sp-board { grid-column: 1; }
   .sp-actions { grid-column: 2; display: flex; flex-direction: column; gap: 8px; }
-  /* Entwicklung ueber die Zeit: der Graph selbst wird in DevChart.jsx per
-     flacherem viewBox niedriger (derselbe Breakpoint) - hier zusaetzlich das
-     Nutzer-Raster darunter etwas dichter, damit die Namen ohne Scrollen in
-     den kurzen Viewport passen. */
+  /* Entwicklung ueber die Zeit: die Nutzerliste steht ueber dem Graphen
+     (siehe EntwicklungBlock.jsx) und ist als .stat-row schon kompakt - hier
+     zusaetzlich nur der Graph selbst per flacherem viewBox in DevChart.jsx
+     niedriger (derselbe Breakpoint), damit die ganze Karte ohne Scrollen in
+     den kurzen Viewport passt. */
   .dev-readout { min-height: 16px; margin-bottom: 2px; }
   .dev-chart { margin-bottom: 6px; }
-  .legend { gap: 4px; }
-  .legend-item { padding: 3px 7px 3px 3px; }
 }
 .sp-turn { font-size: 11.5px; font-weight: 700; color: var(--gold); }
 .sp-target { text-align: center; font-size: 12.5px; color: var(--ivory-dim); }
