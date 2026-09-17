@@ -562,8 +562,16 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border-radius: 8px; color: var(--ivory-dim); display: inline-flex; align-items: center;
   cursor: pointer; flex-shrink: 0; }
 .card-collapse-btn:hover { color: var(--chalk); background: var(--felt-3); }
+/* Manuelle Spalten-Zuordnung (siehe CardColumnButton.jsx/cardLayout.js
+   Stufe 4) - am Handy gibt es keine zwei Spalten, daher hier ausgeblendet
+   und erst ab der 3-Spalten-Desktop-Breite (siehe @media (min-width: 900px)
+   weiter unten) sichtbar. */
+.card-column-btn { display: none; background: none; border: none; padding: 4px; margin: -4px 0;
+  border-radius: 8px; color: var(--ivory-dim); align-items: center; cursor: pointer; flex-shrink: 0; }
+.card-column-btn:hover { color: var(--chalk); background: var(--felt-3); }
 .chips.small { gap: 6px; margin-bottom: 8px; }
 .chips.small .chip { padding: 5px 11px; font-size: 12.5px; }
+.chip:disabled { opacity: 0.4; cursor: default; }
 /* Reine Icon-Chips ("Meine Umgebung", zeigt den eigenen Avatar statt eines
    abstrakten Symbols - Nutzer-Feedback: macht auf einen Blick klar, wessen
    Umgebung angezeigt wird UND dass der Button anklickbar ist) so schmal wie
@@ -1174,6 +1182,7 @@ button.id-card-head { cursor: pointer; }
   .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); }
   .stat-global-filter, .stat-chart-col, .stat-grid { order: 0; }
   .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
+  .card-column-btn { display: inline-flex; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }
