@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { t } from "../lib/i18n";
-import { fmtDate, luminance } from "../lib/format";
+import { fmtDate } from "../lib/format";
 
 /* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek).
    Die Werte pro Spieler werden nicht mehr hier oberhalb des Graphen angezeigt,
@@ -100,29 +100,15 @@ export default function DevChart({ dates, lines, onActiveChange }) {
         {lines.map((l) => {
           const pts = l.points.map((p) => `${xFor(p.i)},${yFor(p.rating)}`).join(" ");
           const av = active != null ? valAt(l, active) : null;
-          // Manche Spieler haben eine dunkle Ballfarbe UND ein dunkles Tischfarb-
-          // Thema (siehe lib/themes.js - jedes Thema ist bewusst dunkel, felt-
-          // Helligkeit typischerweise <15%) - eine dunkle Linie darauf ist kaum
-          // zu erkennen (Nutzer-Feedback). Statt die Farbe selbst aufzuhellen
-          // (dann passt sie nicht mehr zur Kugel/Legende) bekommt nur die Linie
-          // einen hellen Hof dahinter, nur wenn die Farbe tatsaechlich dunkel
-          // ist - helle Ballfarben sehen unveraendert aus.
-          const dark = luminance(l.color) < 0.45;
           return (
             <g key={l.nickname}>
-              {dark && (
-                <polyline points={pts} fill="none" stroke="rgba(242,237,224,0.55)" strokeWidth="4.4"
-                  strokeLinejoin="round" strokeLinecap="round" />
-              )}
               <polyline points={pts} fill="none" stroke={l.color} strokeWidth="2.2"
                 strokeLinejoin="round" strokeLinecap="round" />
               {l.points.length > 0 && (
-                <circle cx={xFor(l.points.at(-1).i)} cy={yFor(l.points.at(-1).rating)} r="3" fill={l.color}
-                  stroke={dark ? "var(--ivory)" : "none"} strokeWidth={dark ? 1.3 : 0} />
+                <circle cx={xFor(l.points.at(-1).i)} cy={yFor(l.points.at(-1).rating)} r="3" fill={l.color} />
               )}
               {av != null && (
-                <circle cx={xFor(active)} cy={yFor(av)} r="4" fill={l.color}
-                  stroke={dark ? "var(--ivory)" : "var(--felt)"} strokeWidth="1.5" />
+                <circle cx={xFor(active)} cy={yFor(av)} r="4" fill={l.color} stroke="var(--felt)" strokeWidth="1.5" />
               )}
             </g>
           );

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, Plus, Search, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { dateMinusDays, todayStr } from "../lib/stats";
-import { initials } from "../lib/format";
+import { initials, readableColor } from "../lib/format";
 import DevChart from "./DevChart";
 import Ball from "./Ball";
 import InfoButton from "./widgets/InfoButton";
@@ -91,7 +91,12 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     .filter((nick) => seriesByNick[nick])
     .map((nick) => ({
       nickname: nick,
-      color: colorOf(nick),
+      // readableColor statt der rohen Ballfarbe (Nutzer-Feedback) - dieselbe
+      // aufgehellte Farbe wie .stat-val unten, damit Linie und Zahlenwert
+      // wieder exakt gleich aussehen. DevChart braucht dadurch keinen
+      // eigenen Hell-Hof mehr fuer dunkle Linien, die Farbe ist schon gut
+      // erkennbar.
+      color: readableColor(colorOf(nick)),
       points: visibleDates
         .map((dt, i) => (seriesByNick[nick][dt] != null ? { i, rating: seriesByNick[nick][dt] } : null))
         .filter(Boolean),
@@ -163,7 +168,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
                 <div key={nick} className="stat-row">
                   <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={30} />
                   <span className="stat-name">{nick}</span>
-                  <span className="stat-val" style={{ color: colorOf(nick) }}>{val != null ? val : "–"}</span>
+                  <span className="stat-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? val : "–"}</span>
                   <button type="button" className="pmp-remove" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>
                     <X size={14} />
                   </button>
