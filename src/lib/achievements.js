@@ -77,7 +77,51 @@ const FAMILIES = [
   { metric: "recruitedCount", test: (d) => /Spieler geworben/.test(d), current: (e) => e.recruitedCount, unit: () => t("geworbene Spieler") },
   { metric: "challengesAccepted", test: (d) => /Herausforderung(en)? angenommen/.test(d), current: (e) => e.challengesAccepted, unit: () => t("Herausforderungen") },
   { metric: "maxOpponentStreak", test: (d) => /Siege in Folge gegen denselben Gegner$/.test(d), current: (e) => (e.maxOpponentStreak > 0 ? e.maxOpponentStreak : null), unit: () => t("Sieg(e) in Folge gegen 1 Gegner") },
+  // Ghost/Turnier-Zaehler kommen nicht aus matches/players/challenges, sondern
+  // aus my_achievement_counters() (server-only: ghost_games hat keine RLS-Policy
+  // fuers Lesen, Turnierplatzierungen brauchen die Bracket-Aufloesung von
+  // tournament_final_standings()) - siehe extras.ghostGames/tournamentWins/....
+  { metric: "ghostGames", test: (d) => /Spiele? gegen den Ghost$/.test(d), current: (e) => e.ghostGames, unit: () => t("Spiel(e) gegen den Ghost") },
+  { metric: "tournamentWins", test: (d) => /Turniere? gewonnen$/.test(d), current: (e) => e.tournamentWins, unit: () => t("Turniersieg(e)") },
+  { metric: "tournament2nd", test: (d) => /Turnier-Zweiter$/.test(d), current: (e) => e.tournament2nd, unit: () => t("zweite Plätze") },
+  { metric: "tournament3rd", test: (d) => /Turnier-Dritter$/.test(d), current: (e) => e.tournament3rd, unit: () => t("dritte Plätze") },
 ];
+
+// Tage pro Einheit fuer die Mitgliedschafts-Familie ("1 Woche/Monat/Jahr(e)
+// dabei") - anders als alle anderen Familien nicht EIN gemeinsames Ziel-Maß
+// (mal Wochen, mal Monate, mal Jahre), daher kein FAMILIES-Eintrag, sondern
+// eigene Umrechnung auf Tage seit players.created_at (kalendergenau statt
+// grob mit 30/365 multipliziert, damit z.B. Schaltjahre nicht staendig zu
+// einem Tag Differenz gegenueber der echten Serverpruefung fuehren).
+function membershipTargetDays(description, joinedAt) {
+  if (!joinedAt) return null;
+  const m = description.match(/^(\d+)\s+(Woche|Wochen|Monat|Monate|Jahr|Jahre)\s+dabei$/);
+  if (!m) return null;
+  const amount = parseInt(m[1], 10);
+  const join = new Date(joinedAt);
+  const target = new Date(join);
+  if (m[2].startsWith("Woche")) target.setDate(target.getDate() + amount * 7);
+  else if (m[2].startsWith("Monat")) target.setMonth(target.getMonth() + amount);
+  else target.setFullYear(target.getFullYear() + amount);
+  return Math.round((target - join) / 86400000);
+}
+
+/* Gemeinsamer Fortschritts-Ermittler fuer badgeProgress() UND closestCandidates()
+   (Naechste-Erfolge-Vorschlaege) - Mitgliedschaft zuerst (eigene Tage-Umrechnung),
+   sonst FAMILIES. null, wenn der Beschreibungstext zu keiner bekannten Familie
+   passt oder die dafuer noetigen Rohdaten (noch) fehlen. */
+function progressFor(description, extras) {
+  const days = membershipTargetDays(description, extras?.joinedAt);
+  if (days != null) {
+    const current = Math.floor((Date.now() - new Date(extras.joinedAt)) / 86400000);
+    return { current: Math.max(0, current), target: days, unit: t("Tage") };
+  }
+  const fam = FAMILIES.find((f) => f.test(description));
+  if (!fam) return null;
+  const current = fam.current(extras);
+  if (current == null) return null;
+  return { current: Math.max(0, current), target: leadingNumber(description), unit: fam.unit() };
+}
 
 // Einfacher, deterministischer Streuwert aus einem String (kein Crypto-Anspruch,
 // nur um taeglich + je Spieler eine andere, aber stabile Auswahl zu treffen).
@@ -101,13 +145,11 @@ function closestCandidates(catalog, extras, earnedBadges) {
   const candidates = [];
   (catalog || []).forEach((b) => {
     if (earnedBadges && earnedBadges.has(b.badge_key)) return;
-    const fam = FAMILIES.find((f) => f.test(b.description));
-    if (!fam) return;
-    const cur = fam.current(extras);
-    if (cur == null) return;
-    const gap = leadingNumber(b.description) - cur;
+    const p = progressFor(b.description, extras);
+    if (!p) return;
+    const gap = p.target - p.current;
     if (gap <= 0) return;
-    candidates.push({ gap, unit: fam.unit(), name: t(b.name), badgeKey: b.badge_key, emoji: b.emoji });
+    candidates.push({ gap, unit: p.unit, name: t(b.name), badgeKey: b.badge_key, emoji: b.emoji });
   });
   candidates.sort((a, b) => a.gap - b.gap);
   return candidates;
@@ -119,11 +161,7 @@ function closestCandidates(catalog, extras, earnedBadges) {
    ist (z.B. Rangliste/Ghost/Turnier-Erfolge, die serverseitige Historie
    brauchen) - dafuer zeigt die Erfolge-Kachel dann einfach keinen Fortschritt. */
 export function badgeProgress(description, extras) {
-  const fam = FAMILIES.find((f) => f.test(description));
-  if (!fam) return null;
-  const cur = fam.current(extras);
-  if (cur == null) return null;
-  return { current: Math.max(0, cur), target: leadingNumber(description), unit: fam.unit() };
+  return progressFor(description, extras);
 }
 
 /* Die paar naechstliegenden, noch nicht erreichten Erfolge als Rohdaten

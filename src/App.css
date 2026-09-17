@@ -1676,6 +1676,16 @@ button.id-card-head { cursor: pointer; }
 .protokoll-head h1 { font-size: 20px; font-weight: 800; line-height: 1.3; }
 .protokoll-score { color: var(--gold); margin: 0 8px; }
 .protokoll-meta { color: var(--ivory-dim); font-size: 13px; margin-top: 4px; }
+/* Nutzer-Feedback: "Wenn kein Protokoll vorhanden ist, gib in der
+   Matchstatistik einen Button mit Fragezeichen an" - Transparenz-Hinweis +
+   optionale Notiz (nur Turnierleitung/Admin editierbar), wenn ein
+   Turniermatch kein run_log hat (siehe MatchProtokollScreen.jsx). */
+.protokoll-no-log { background: var(--felt-2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.protokoll-manual-note { margin: 0; font-size: 14px; font-style: italic; color: var(--ivory-dim); }
+.protokoll-manual-note-form { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.protokoll-manual-note-form textarea { width: 100%; resize: vertical; background: var(--felt); color: var(--ivory);
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 14px; }
 .protokoll-table-wrap { overflow-x: auto; margin-bottom: 20px; border: 1px solid var(--line); border-radius: 12px; }
 .protokoll-table { width: 100%; border-collapse: collapse; font-size: 13.5px; white-space: nowrap; }
 .protokoll-table th, .protokoll-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); }
