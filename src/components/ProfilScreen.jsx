@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, AlertTriangle, Palette, Play, Clock, Search } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -398,6 +398,56 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </button>
           <p className="hint">{t("Setzt Kugelfarbe, Design und Startseite auf die Standardeinstellungen zurück.")}</p>
         </div>
+
+        {/* Nutzer-Feedback: "Konto löschen" soll in "Profil bearbeiten" und
+            dort moeglichst unauffaellig sein - statt der bisherigen roten
+            Warnkarte mit Dauertext jetzt nur ein kleiner, gedaempfter
+            Text-Link ganz unten. Die ausfuehrliche Erklaerung, was beim
+            Loeschen mit den Daten passiert, steht stattdessen im ersten
+            Bestaetigungsdialog (siehe deleteStep === 1 unten) - wer nicht
+            klickt, sieht sie also gar nicht erst. Label bleibt "Meine Daten
+            löschen", weil genau dieser Text auch in der Datenschutz-
+            erklaerung (LegalModal.jsx) als Fundstelle genannt wird. */}
+        <div className="pf-edit-danger">
+          <button className="pf-edit-danger-link" onClick={() => setDeleteStep(1)}>
+            {t("Meine Daten löschen")}
+          </button>
+        </div>
+
+        {deleteStep === 1 && (
+          <div className="modal-overlay" onClick={() => setDeleteStep(0)}>
+            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+              <h3>{t("Wirklich alle Daten löschen?")}</h3>
+              <p>{t("Das entfernt dein Login und deine persönlichen Daten unwiderruflich. Das kann nicht rückgängig gemacht werden.")}</p>
+              <p className="hint">
+                {t("Entfernt unwiderruflich all deine persönlichen Daten (Login, Name, Profilfarbe, Motto, Nachrichten). Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt.")}
+              </p>
+              <div className="sp-controls">
+                <button className="btn primary" onClick={() => setDeleteStep(0)}>{t("Abbrechen")}</button>
+                <button className="btn ghost warn" onClick={() => setDeleteStep(2)}>{t("Ja, fortfahren")}</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {deleteStep === 2 && (
+          <div className="modal-overlay" onClick={() => { setDeleteStep(0); setDeleteConfirmText(""); }}>
+            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+              <h3>{t("Letzte Bestätigung")}</h3>
+              <p>{t("Tippe deinen Namen \"{name}\" ein, um die endgültige Löschung zu bestätigen.", { name: nickname })}</p>
+              <div className="mail-row" style={{ marginBottom: 14 }}>
+                <User size={18} className="mail-ico" />
+                <input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} autoFocus />
+              </div>
+              <div className="sp-controls">
+                <button className="btn primary" onClick={() => { setDeleteStep(0); setDeleteConfirmText(""); }}>{t("Abbrechen")}</button>
+                <button className="btn ghost warn" disabled={deleteConfirmText.trim() !== nickname || deleteBusy}
+                  onClick={confirmDelete}>
+                  {deleteBusy ? t("Speichere ...") : t("Endgültig löschen")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -689,59 +739,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
       </div>
       </div>
-
-      {/* Bewusst AUSSERHALB des pf-layout-Spaltenraster: die rechte Spalte
-          (pf-account) ist meist deutlich kuerzer als die mittlere Erfolge-
-          Spalte, daher stuende "Konto loeschen" dort optisch viel zu weit
-          oben statt wirklich ganz unten - wie schon "Zuruecksetzen" im
-          Profil-bearbeiten-Screen (siehe .pf-edit-save), gehoert eine
-          niedrig priorisierte Aktion als eigener voller-Breite-Block ans
-          Seitenende, nicht in eine der drei Spalten. */}
-      {isMe && (
-        <div className="pf-danger">
-          <section className="stat-block danger-zone">
-            <h3><AlertTriangle size={17} /> {t("Konto löschen")}</h3>
-            <p className="hint" style={{ marginTop: 0 }}>
-              {t("Entfernt unwiderruflich all deine persönlichen Daten (Login, Name, Profilfarbe, Motto, Nachrichten). Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt.")}
-            </p>
-            <button className="btn ghost warn" onClick={() => setDeleteStep(1)}>
-              <AlertTriangle size={15} /> {t("Meine Daten löschen")}
-            </button>
-          </section>
-        </div>
-      )}
-
-      {deleteStep === 1 && (
-        <div className="modal-overlay" onClick={() => setDeleteStep(0)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <h3>{t("Wirklich alle Daten löschen?")}</h3>
-            <p>{t("Das entfernt dein Login und deine persönlichen Daten unwiderruflich. Das kann nicht rückgängig gemacht werden.")}</p>
-            <div className="sp-controls">
-              <button className="btn primary" onClick={() => setDeleteStep(0)}>{t("Abbrechen")}</button>
-              <button className="btn ghost warn" onClick={() => setDeleteStep(2)}>{t("Ja, fortfahren")}</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {deleteStep === 2 && (
-        <div className="modal-overlay" onClick={() => { setDeleteStep(0); setDeleteConfirmText(""); }}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <h3>{t("Letzte Bestätigung")}</h3>
-            <p>{t("Tippe deinen Namen \"{name}\" ein, um die endgültige Löschung zu bestätigen.", { name: nickname })}</p>
-            <div className="mail-row" style={{ marginBottom: 14 }}>
-              <User size={18} className="mail-ico" />
-              <input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} autoFocus />
-            </div>
-            <div className="sp-controls">
-              <button className="btn primary" onClick={() => { setDeleteStep(0); setDeleteConfirmText(""); }}>{t("Abbrechen")}</button>
-              <button className="btn ghost warn" disabled={deleteConfirmText.trim() !== nickname || deleteBusy}
-                onClick={confirmDelete}>
-                {deleteBusy ? t("Speichere ...") : t("Endgültig löschen")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <ImprintFooter />
       {photoViewerOpen && heroPhoto && (
