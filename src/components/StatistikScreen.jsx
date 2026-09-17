@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer, Star, History } from "lucide-react";
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
@@ -393,7 +393,22 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // wird") - bewegt sich der Zeiger vor Ablauf der Verzoegerung weiter als
   // die Toleranz, bricht @dnd-kit die Aktivierung selbst ab und ueberlaesst
   // die Geste dem normalen Touch-Scrollen (siehe SortableCard.jsx).
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { delay: 300, tolerance: 8 } }));
+  //
+  // MouseSensor + TouchSensor statt des vereinheitlichten PointerSensor
+  // (Nutzer-Feedback: "am Smartphone wird erkannt, dass ich drag and drop
+  // machen möchte, aber die Karte verschiebt sich nicht, sondern das Handy
+  // geht sofort zum Scroll-Modus über") - PointerSensor's preventDefault()
+  // auf Pointer-Events verhindert auf manchen mobilen Browsern das bereits
+  // parallel vom Compositor-Thread gestartete native Scrollen nicht
+  // zuverlaessig, weil touch-action dort schon VOR der JS-Verzoegerung
+  // entscheidet. TouchSensor haengt seinen Listener direkt und non-passive
+  // an echte touchmove-Events (kein Pointer-Events-Umweg) - das ist der
+  // von @dnd-kit selbst fuer genau dieses Delay+Scroll-Szenario empfohlene,
+  // auf Touch-Geraeten zuverlaessigere Pfad.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
+  );
   const handleDragEnd = async (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
