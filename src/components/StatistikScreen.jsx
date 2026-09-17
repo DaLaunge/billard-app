@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer, Star, History } from "lucide-react";
+import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer, Star, History, ChevronsDown, ChevronsUp } from "lucide-react";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { t } from "../lib/i18n";
@@ -50,7 +50,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
   return (
     <section className="stat-block">
       <div className="stat-block-head">
-        <h3>{icon} {title}</h3>
+        <h3>{icon} <span className="stat-block-title-text">{title}</span></h3>
         <div className="stat-block-head-actions">
           {info && <InfoButton title={title}>{info}</InfoButton>}
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
@@ -99,7 +99,7 @@ function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoO
   return (
     <section className="stat-block">
       <div className="stat-block-head">
-        <h3><Trophy size={17} /> {t("Rangliste")}</h3>
+        <h3><Trophy size={17} /> <span className="stat-block-title-text">{t("Rangliste")}</span></h3>
         <div className="stat-block-head-actions">
           <InfoButton title={t("Rangliste")}>
             {t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.")}
@@ -146,14 +146,27 @@ function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoO
 // + 3 Bestenlisten je eigene Chips haben. Gilt fuer alle Karten der Seite,
 // inklusive Disziplin fuer den Verlaufs-Graph (der behaelt nur seine
 // eigene Zeitraum-Auswahl, weil die sonst nirgends vorkommt).
-function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf, collapsed, onToggleCollapse }) {
+function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf, collapsed, onToggleCollapse, onExpandAll, onCollapseAll }) {
   return (
     <section className="stat-block stat-global-filter">
       <div className="stat-block-head">
-        <h3><SlidersHorizontal size={17} /> {t("Auswahl fuer alle Statistiken")}</h3>
+        <h3><SlidersHorizontal size={17} /> <span className="stat-block-title-text">{t("Auswahl fuer alle Statistiken")}</span></h3>
         <div className="stat-block-head-actions">
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
+      </div>
+      {/* Nutzer-Feedback: "es fehlt der Button für 'alles ausklappen' und
+          'alles zuklappen'" - bewusst AUSSERHALB von "{!collapsed && ...}":
+          klappt man diese Karte selbst zu (oder per "Alle zuklappen"), muss
+          "Alle aufklappen" trotzdem erreichbar bleiben, sonst gibt es keinen
+          Weg mehr zurueck ausser jede Karte einzeln aufzuklappen. */}
+      <div className="chips small" style={{ marginBottom: collapsed ? 0 : 8 }}>
+        <button className="chip" onClick={onExpandAll}>
+          <ChevronsDown size={14} /> {t("Alle aufklappen")}
+        </button>
+        <button className="chip" onClick={onCollapseAll}>
+          <ChevronsUp size={14} /> {t("Alle zuklappen")}
+        </button>
       </div>
       {!collapsed && (
         <>
@@ -204,7 +217,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
   return (
     <section className="stat-block">
       <div className="stat-block-head">
-        <h3><Star size={17} /> {t("Rekorde")}</h3>
+        <h3><Star size={17} /> <span className="stat-block-title-text">{t("Rekorde")}</span></h3>
         <div className="stat-block-head-actions">
           <InfoButton title={t("Rekorde")}>
             {t("Aktuelle Bestwerte der gesamten Gruppe - wer hält gerade welchen Rekord? Jede Zeile hat rechts ihr eigenes Info-Symbol mit genauerer Erklärung (und, wenn vorhanden, dem zugehörigen Match-Protokoll).")}
@@ -316,7 +329,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
   return (
     <section className="stat-block">
       <div className="stat-block-head">
-        <h3><History size={17} /> {t("Letzte Matches")}</h3>
+        <h3><History size={17} /> <span className="stat-block-title-text">{t("Letzte Matches")}</span></h3>
         <div className="stat-block-head-actions">
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
@@ -471,6 +484,11 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const toggleCardCollapse = (id) => setCollapsedCards((prev) => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
   });
+  // Nutzer-Feedback: "es fehlt der Button für 'alles ausklappen' und 'alles
+  // zuklappen'" - cardOrder statt einer festen Liste, damit auch neue,
+  // per normalizeCardOrder() angehaengte Karten mit erfasst werden.
+  const expandAllCards = () => setCollapsedCards(new Set());
+  const collapseAllCards = () => setCollapsedCards(new Set(cardOrder));
 
   // Globale Auswahl (Disziplin + Top-N/Meine Umgebung): letzte Wahl wird
   // geraeteweise gemerkt, wie bei den Live-Bereichen (siehe LiveScreen).
@@ -706,7 +724,8 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     globalFilter: (
       <StatGlobalFilter disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
         count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
-        me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} {...cardCollapse("globalFilter")} />
+        me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} {...cardCollapse("globalFilter")}
+        onExpandAll={expandAllCards} onCollapseAll={collapseAllCards} />
     ),
     rangliste: (
       <RankingBlock rangliste={rangliste} disc={globalDisc} count={globalCount} nearby={globalNearby} me={me}

@@ -108,7 +108,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   return (
     <section className="stat-block">
       <div className="stat-block-head">
-        <h3><TrendingUp size={17} /> {t("Entwicklung über die Zeit")}</h3>
+        <h3><TrendingUp size={17} /> <span className="stat-block-title-text">{t("Entwicklung über die Zeit")}</span></h3>
         <div className="stat-block-head-actions">
           <InfoButton title={t("Entwicklung über die Zeit")}>
             {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}

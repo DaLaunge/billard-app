@@ -516,6 +516,34 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .stat-block h3 { font-size: 15px; display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--chalk); }
 .stat-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .stat-block-head h3 { margin-bottom: 0; }
+/* Lange Kartentitel (z.B. "Schnellstes 14/1-Tempo (Ø pro Kugel)") passen in
+   der schmalen rechten Spalte (300px) nicht auf eine Zeile, in der breiten
+   mittleren Spalte schon - ohne Begrenzung bricht der Titel dort auf 2
+   Zeilen um, was je nachdem, in welcher Spalte eine der per Drag & Drop
+   sortierbaren Karten gerade landet, unterschiedlich hohe Kartenkoepfe
+   erzeugt und wie ein "anderes Grid" aussieht (Nutzer-Feedback: "die
+   horizontalen Abstände zwischen den Karten variieren"). Einzeiliger
+   Titel mit Auslassungspunkten haelt die Kopfhoehe unabhaengig von Text
+   und Spaltenbreite konstant.
+   Bewusst ueber ".sortable-card" skopiert statt direkt auf ".stat-block-
+   head h3": .stat-block-head wird auch von anderen, NICHT sortierbaren
+   Karten verwendet (z.B. HeadToHeadCard.jsx im UserPanel) - eine globale
+   Aenderung liess dort "Head-to-Head (Match-Siege)" unerwuenscht auf 2
+   Zeilen umbrechen (min-width:0 erlaubt einem Flex-Kind, unter seine
+   bisherige Mindestbreite am laengsten Wort zu schrumpfen). min-width:0
+   ist noetig, damit der Flex-Text ueberhaupt schrumpfen darf statt seine
+   Mindestbreite am ganzen Wort zu behalten; flex-basis bewusst 0% statt
+   "auto": "auto" wuerde fuer die Zeilenumbruch-Entscheidung von
+   .stat-block-head (flex-wrap:wrap) weiterhin die VOLLE ungekuerzte
+   Textbreite ansetzen (erst danach schrumpfen) - dadurch "passte"
+   h3+Aktionen-Gruppe rechnerisch nicht in eine Zeile und die Aktionen-
+   Gruppe (Info-/Einklapp-Button) wurde selbst in eine zweite Zeile
+   umgebrochen statt der Titel zu kuerzen. Mit Basis 0% startet h3 bei 0
+   und waechst nur in den Rest, der nach der Aktionen-Gruppe uebrigbleibt -
+   das uebliche Flexbox-Muster fuer "Text neben fixer Geschwister-Breite
+   kuerzen statt umbrechen". */
+.sortable-card .stat-block-head h3 { min-width: 0; flex: 1 1 0%; }
+.stat-block-title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; display: inline-block; max-width: 100%; vertical-align: bottom; }
 /* Info-Symbol rechts oben in einer Karte statt Dauertext (siehe
    widgets/InfoButton.jsx) - Nutzer-Feedback: Erklaerungen nahmen als
    fixer Absatz unnoetig Platz weg. */
