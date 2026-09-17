@@ -915,7 +915,22 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
       <div className="stat-split">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
+      {/* items MUSS die tatsaechliche Render-Reihenfolge sein (erst
+          middleCardIds, dann rightCardIds - genau wie weiter unten
+          gerendert), NICHT das rohe cardOrder: rectSortingStrategy
+          berechnet die Zieh-Animation anhand der Positionen benachbarter
+          Eintraege IN DIESEM ARRAY, nicht anhand echter Bildschirm-
+          Nachbarschaft. Seit Spalte und Reihenfolge unabhaengig sind
+          (siehe cardLayout.js Stufe 4) kann cardOrder Karten aus Mitte und
+          Rechts beliebig mischen, waehrend am Bildschirm immer erst alle
+          Mitte-Karten, dann alle Rechts-Karten stehen - reicht man dort
+          cardOrder direkt durch, "verschiebt" sich fuer eine voellig
+          unbeteiligte Karte kurz die falsche Nachbar-Position (Nutzer-
+          Feedback: "die Animation zeigt, dass 'Records' ganz nach oben
+          kommt, aber die Sortierung ist danach trotzdem richtig" - das
+          Endergebnis stimmte immer schon, nur die Animation dazwischen
+          nicht). */}
+      <SortableContext items={[...middleCardIds, ...rightCardIds]} strategy={rectSortingStrategy}>
       {/* .stat-right-col buendelt alle rechten Karten (inkl. der globalen
           Auswahl, die seit dem Drag&Drop-Feature ebenfalls nur eine Karte
           unter vielen ist - Nutzer-Feedback: "auch die 'Selection for all

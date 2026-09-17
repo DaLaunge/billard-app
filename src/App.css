@@ -1049,17 +1049,37 @@ button.id-card-head { cursor: pointer; }
    Grid-Feld zusammen (wie .pf-right-col beim Profil) - display:contents am
    Handy macht die Huelle unsichtbar, ihre Kinder ordnen sich per eigenem
    "order" direkt in .stat-split ein (siehe Desktop-Block weiter unten fuer
-   die Gegenprobe: dort wird daraus ein echter Flex-Stapel). .stat-grid
-   traegt seit dem Drag&Drop-Feature (Nutzer-Feedback: "in der mobilen
-   Ansicht ... ganz oben die Karten aus der mittleren Spalte, darunter die
-   Karten der rechten Spalte") die komplette rechte Kartengruppe als EIN
-   Flex-Kind statt vormals zwei separater Huellen (Rangliste war eine fixe
-   erste Position, ist jetzt nur noch eine von mehreren frei sortierbaren
-   Karten in dieser Gruppe). */
+   die Gegenprobe: dort werden .stat-chart-col/.stat-grid zu echten
+   Grid-Spalten). .stat-grid traegt seit dem Drag&Drop-Feature (Nutzer-
+   Feedback: "in der mobilen Ansicht ... ganz oben die Karten aus der
+   mittleren Spalte, darunter die Karten der rechten Spalte") die komplette
+   rechte Kartengruppe als EIN Flex-Kind statt vormals zwei separater
+   Huellen (Rangliste war eine fixe erste Position, ist jetzt nur noch eine
+   von mehreren frei sortierbaren Karten in dieser Gruppe). */
 .stat-right-col { display: contents; }
 .stat-chart-col { order: 2; }
 .stat-grid { order: 3; }
 .stat-split .ov-side { order: 4; }
+/* Nutzer-Feedback: "zu grosse Luecke... vermute die Unterscheidung
+   zwischen Mitte/Breit und Rechts/schmal". Seit Stufe 4 (cardLayout.js)
+   ist die Spaltenwahl reine Nutzerentscheidung - am Handy sollen
+   .stat-chart-col/.stat-grid daher wie EINE einzige durchgehende Liste
+   wirken, nie wie zwei fuehlbar getrennte Bloecke. Vorher hatte nur
+   .stat-split selbst einen Flex-Gap (20px, geerbt von der Regel oben,
+   gemeinsam mit .live-split/.match-split) - die Karten INNERHALB von
+   .stat-chart-col/.stat-grid stapelten sich dagegen ueber die eigene
+   .stat-block-Marge (16px). Am Uebergang zwischen den beiden Huellen (aber
+   nirgends sonst) addierten sich beide zu 36px statt der sonst
+   durchgaengigen 16px - genau der spuerbare "Spaltenbruch", den der Nutzer
+   zurecht bemerkt hat. Jetzt tragen beide Huellen selbst denselben
+   Flex-Gap wie jede einzelne Karte, ihre Kinder verlieren dafuer die
+   eigene Marge (sonst doppelt gezaehlt); .stat-split bekommt denselben,
+   kleineren Wert statt der 20px von live-split/match-split. Gilt bewusst
+   unveraendert auch am Desktop (dort bisher nur bei .stat-grid so, jetzt
+   auch bei .stat-chart-col - beide Spalten verhalten sich dadurch gleich). */
+.stat-split { gap: var(--card-gap); }
+.stat-chart-col, .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
+.stat-chart-col .stat-block, .stat-grid .stat-block { margin-bottom: 0; }
 /* Per Drag & Drop sortierbare Karten (siehe SortableCard.jsx) - Cursor/
    Transform/Opacity beim Ziehen setzt die Komponente selbst inline (haengt
    vom Drag-Status ab), hier nur das app-weit Statische: kein Textmarkieren
@@ -1081,8 +1101,6 @@ button.id-card-head { cursor: pointer; }
      erben sie von hier. */
   .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; margin: 0 auto; }
   .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
-
-  .stat-grid .stat-block { margin-bottom: 0; }
 
   /* .ov-side ist bewusst NICHT sticky (anders als frueher) - UserPanel ist
      hier oft hoeher als der Viewport, ein sticky-Block der nie vollstaendig
@@ -1165,21 +1183,14 @@ button.id-card-head { cursor: pointer; }
      eigene volle Zeile ueber allen drei Spalten). */
   .phone.app .screen:has(.stat-split) { max-width: 1440px; }
   .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
-  /* .stat-grid (alle rechten Karten) und .stat-chart-col (alle mittleren
-     Karten) teilen sich je EIN Grid-Feld mit .stat-right-col (wie
-     .pf-right-col) statt als eigene mehrzeilige Grid-Kinder nebeneinander
-     zu stehen - CSS Grid bemisst eine auto-Zeile sonst anhand des
-     hoechsten Elements, das sie beruehrt, was frueher (Nutzer-Feedback:
-     "nach einem Push zu viel Platz zwischen den Karten") eine grosse
-     leere Luecke erzeugte. .stat-right-col stapelt seinen Inhalt daher
-     selbst per Flexbox, dadurch bestimmt nur seine eigene Hoehe den
-     Abstand. Die Aufteilung auf zwei DOM-Kinder (Filter + .stat-grid)
-     bleibt trotzdem bestehen (siehe .stat-right-col{display:contents}
-     weiter oben), weil am Handy die globale Auswahl VOR der Chart-Spalte
-     stehen soll, waehrend .stat-grid danach folgt - das leistet dort
-     "order" auf den einzelnen Kindern. */
-  .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); }
+  /* .stat-grid (alle rechten Karten, inkl. der globalen Auswahl - eine
+     einzelne Huelle, siehe .stat-right-col{display:contents} weiter oben)
+     bekommt hier ein eigenes Grid-Feld statt als eigenes mehrzeiliges
+     Grid-Kind neben .stat-chart-col zu stehen - CSS Grid bemisst eine
+     auto-Zeile sonst anhand des hoechsten Elements, das sie beruehrt, was
+     frueher (Nutzer-Feedback: "nach einem Push zu viel Platz zwischen den
+     Karten") eine grosse leere Luecke erzeugte. */
+  .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; }
   .stat-global-filter, .stat-chart-col, .stat-grid { order: 0; }
   .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
   .card-column-btn { display: inline-flex; }
