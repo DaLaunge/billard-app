@@ -1,11 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer, Star, History } from "lucide-react";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
+import { STAT_CARD_SCREEN, DEFAULT_STAT_CARD_ORDER, normalizeCardOrder, splitCardColumns } from "../lib/cardLayout";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -14,6 +17,7 @@ import DecayBadge from "./widgets/DecayBadge";
 import InfoButton from "./widgets/InfoButton";
 import ImprintFooter from "./widgets/ImprintFooter";
 import TournamentFlag from "./TournamentFlag";
+import SortableCard from "./widgets/SortableCard";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
@@ -375,7 +379,33 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
 }
 
 export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me, challenges,
-  catalog, earnedBadges, onInvite, disciplines, pending, onConfirm, myOpenReports }) {
+  catalog, earnedBadges, onInvite, disciplines, pending, onConfirm, myOpenReports, onSetCardLayout }) {
+  // Kartenreihenfolge (Drag & Drop): EIN flaches Array wird direkt am
+  // Spielerprofil gespeichert (siehe cardLayout.js/App.jsx setCardLayout) -
+  // kein useEffect-Resync mit der Server-Antwort noetig, weil dieser Screen
+  // bei jedem Tab-Wechsel komplett neu gemountet wird (siehe tab-basiertes
+  // Rendering in App.jsx) und den frischen Wert dann einfach neu initialisiert.
+  // Optimistisches Update: die neue Reihenfolge wird sofort lokal gesetzt,
+  // bei einem RPC-Fehler aber wieder zurueckgerollt (siehe handleDragEnd).
+  const [cardOrder, setCardOrder] = useState(() => normalizeCardOrder(me.card_layout?.[STAT_CARD_SCREEN]));
+  // delay+tolerance statt sofortiger Aktivierung (Nutzer-Feedback: "lange
+  // druecken, dann verschieben, damit es nicht mit einem Wischen verwechselt
+  // wird") - bewegt sich der Zeiger vor Ablauf der Verzoegerung weiter als
+  // die Toleranz, bricht @dnd-kit die Aktivierung selbst ab und ueberlaesst
+  // die Geste dem normalen Touch-Scrollen (siehe SortableCard.jsx).
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { delay: 300, tolerance: 8 } }));
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = cardOrder.indexOf(active.id);
+    const newIndex = cardOrder.indexOf(over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const prevOrder = cardOrder;
+    const nextOrder = arrayMove(cardOrder, oldIndex, newIndex);
+    setCardOrder(nextOrder);
+    const ok = await onSetCardLayout(STAT_CARD_SCREEN, nextOrder);
+    if (!ok) setCardOrder(prevOrder);
+  };
   // Globale Auswahl (Disziplin + Top-N/Meine Umgebung): letzte Wahl wird
   // geraeteweise gemerkt, wie bei den Live-Bereichen (siehe LiveScreen).
   const [globalDisc, setGlobalDisc] = useState(() => {
@@ -599,6 +629,53 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       info: t("Längste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
   ];
 
+  // Registry aller per Drag & Drop sortierbaren Karten dieser Seite (Nutzer-
+  // Feedback: "sollte auf alle Karten angewendet werden") - IDs muessen zu
+  // DEFAULT_STAT_CARD_ORDER in cardLayout.js passen. middle/right kommen aus
+  // splitCardColumns() (Hoehen-Ausgleich, siehe dort), auf dem Handy werden
+  // beide Gruppen einfach hintereinander gestapelt (erst Mitte, dann rechts -
+  // siehe .stat-chart-col/.stat-grid-Reihenfolge in App.css).
+  const cardsById = {
+    rangliste: (
+      <RankingBlock rangliste={rangliste} disc={globalDisc} count={globalCount} nearby={globalNearby} me={me}
+        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+    ),
+    entwicklung: (
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} disc={globalDisc} />
+    ),
+    rekordeClub: (
+      <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} />
+    ),
+    letzteMatches: (
+      <MatchHistoryBlock matches={matches} players={players} me={me} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} />
+    ),
+    meisteSiege: (
+      <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} me={me} count={globalCount} nearby={globalNearby}
+        fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
+    ),
+    besteSiegquote: (
+      <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} me={me} count={globalCount} nearby={globalNearby}
+        fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+        info={t("Anteil gewonnener Einzel-Matches (Siege ÷ Spiele) in der aktuell gewählten Disziplin. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.")} />
+    ),
+    aktuelleSerien: (
+      <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me} count={globalCount} nearby={globalNearby}
+        fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+        info={t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin.")} />
+    ),
+    schnellstesTempo: (
+      <LeaderboardBlock icon={<Zap size={17} />} title={t("Schnellstes Tempo (Ø pro Spiel)")} rows={topGameSpeed} me={me} count={globalCount} nearby={globalNearby}
+        fmt={(p) => fmtDuration(p.avgGameMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+        info={t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} />
+    ),
+    schnellste141: (
+      <LeaderboardBlock icon={<Timer size={17} />} title={t("Schnellstes 14/1-Tempo (Ø pro Kugel)")} rows={topBallSpeed} me={me} count={globalCount} nearby={globalNearby}
+        fmt={(p) => fmtDuration(p.avgBallMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+        info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} />
+    ),
+  };
+  const { middle: middleCardIds, right: rightCardIds } = splitCardColumns(cardOrder);
+
   return (
     <div className="screen">
       <header className="screen-head">
@@ -663,46 +740,30 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       )}
 
       <div className="stat-split">
-      {/* .stat-right-col buendelt die globale Auswahl + Rangliste + "Rest"
-          (siehe unten) zu EINER Huelle: am Handy per CSS unsichtbar
-          (display:contents), dort ordnen sich ihre Kinder ueber "order"
-          direkt in .stat-split ein (globale Auswahl zuerst, dann Rangliste
-          - Nutzer-Feedback: Gesamt-Rangliste soll am Handy gleich danach
-          an erster Stelle stehen, ohne eigenen "order" faellt die globale
-          Auswahl automatisch auf order:0 zurueck und bleibt damit vorn).
-          Am Desktop wird daraus ein einziges Grid-Feld mit eigenem
-          Flex-Stapel (siehe App.css) - das verhindert den Grid-Zeilen-
-          Kopplungs-Bug (leere Luecke vor "Meiste Siege", weil die viel
-          hoehere Chart-Spalte sonst dieselbe Grid-Zeile wie die kurze
-          Rangliste aufblaeht) UND stellt die globale Auswahl (Nutzer-
-          Feedback) ganz oben in die rechte Spalte statt als eigene volle
-          Zeile ueber allen drei Spalten. */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
+      {/* .stat-right-col buendelt die globale Auswahl + alle rechten Karten
+          zu EINER Huelle: am Handy per CSS unsichtbar (display:contents),
+          ihre Kinder ordnen sich ueber "order" direkt in .stat-split ein
+          (globale Auswahl zuerst, danach die Karten - Nutzer-Feedback:
+          "in der mobilen Ansicht ... ganz oben die Karten aus der
+          mittleren Spalte, darunter die Karten der rechten Spalte", die
+          Rangliste ist seit dem Drag&Drop-Feature nur noch eine Karte
+          unter vielen, keine feste erste Position mehr). Am Desktop wird
+          daraus ein einziges Grid-Feld mit eigenem Flex-Stapel (siehe
+          App.css) - das verhindert den Grid-Zeilen-Kopplungs-Bug (leere
+          Luecke, weil die viel hoehere Chart-Spalte sonst dieselbe
+          Grid-Zeile wie die kuerzere rechte Spalte aufblaeht) UND stellt
+          die globale Auswahl ganz oben in die rechte Spalte statt als
+          eigene volle Zeile ueber allen drei Spalten. Welche Karte hier
+          bzw. in .stat-chart-col landet, entscheidet splitCardColumns()
+          weiter oben per Hoehen-Ausgleich, nicht die Spielposition. */}
       <div className="stat-right-col">
       <StatGlobalFilter disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
         count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
         me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-      <div className="stat-ranking-col">
-        <RankingBlock rangliste={rangliste} disc={globalDisc} count={globalCount} nearby={globalNearby} me={me}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-      </div>
-
-      <div className="stat-rest-col">
       <div className="stat-grid">
-        <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} me={me} count={globalCount} nearby={globalNearby}
-          fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} />
-        <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} me={me} count={globalCount} nearby={globalNearby}
-          fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-          info={t("Anteil gewonnener Einzel-Matches (Siege ÷ Spiele) in der aktuell gewählten Disziplin. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.")} />
-        <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me} count={globalCount} nearby={globalNearby}
-          fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-          info={t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin.")} />
-        <LeaderboardBlock icon={<Zap size={17} />} title={t("Schnellstes Tempo (Ø pro Spiel)")} rows={topGameSpeed} me={me} count={globalCount} nearby={globalNearby}
-          fmt={(p) => fmtDuration(p.avgGameMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-          info={t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} />
-        <LeaderboardBlock icon={<Timer size={17} />} title={t("Schnellstes 14/1-Tempo (Ø pro Kugel)")} rows={topBallSpeed} me={me} count={globalCount} nearby={globalNearby}
-          fmt={(p) => fmtDuration(p.avgBallMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-          info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} />
-      </div>
+        {rightCardIds.map((id) => <SortableCard key={id} id={id}>{cardsById[id]}</SortableCard>)}
       </div>
       </div>
 
@@ -712,7 +773,11 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
             hideRatings: die "Ratings nach Disziplin"-Karte duplizierte hier
             die eigene (angeheftete) Zeile in der Rangliste-Karte rechts,
             die dank der globalen Disziplin-Auswahl ohnehin jede Disziplin
-            zeigen kann - auf Profil/Live bleibt sie unveraendert sichtbar. */}
+            zeigen kann - auf Profil/Live bleibt sie unveraendert sichtbar.
+            Bewusst NICHT Teil der sortierbaren Karten (Nutzer-Feedback:
+            "das Profilmenü ist das einzige, wo sich alle Karten komplett
+            frei verschieben lassen" - hier auf Statistik bleibt die
+            Identitaets-Spalte fix). */}
         <div className="ov-side-extra">
           <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
             challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} hideRatings
@@ -720,16 +785,14 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         </div>
       </aside>
 
-      {/* Mittlere Spalte: der Verlaufs-Graph - der eigentliche Fokus dieser
-          Seite - darunter die Rekorde-Karte (Nutzer-Feedback: direkt unter
-          dem Graphen statt am Ende der rechten Spalte), ganz unten die
-          Spielehistorie (Nutzer-Feedback: zurueck von Live nach Statistik,
-          siehe MatchHistoryBlock oben). */}
+      {/* Mittlere Spalte: welche Karten hier statt in .stat-right-col
+          landen, entscheidet splitCardColumns() (Hoehen-Ausgleich) anhand
+          der vom Nutzer per Drag & Drop festgelegten Gesamtreihenfolge. */}
       <div className="stat-chart-col">
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} disc={globalDisc} />
-      <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} />
-      <MatchHistoryBlock matches={matches} players={players} me={me} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} />
+        {middleCardIds.map((id) => <SortableCard key={id} id={id}>{cardsById[id]}</SortableCard>)}
       </div>
+      </SortableContext>
+      </DndContext>
       </div>
       <ImprintFooter />
     </div>

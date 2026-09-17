@@ -785,6 +785,24 @@ export default function App() {
     setPlayer(data);
   };
 
+  // Kartenreihenfolge (Drag & Drop, siehe StatistikScreen.jsx/SortableCard.jsx)
+  // - Rueckgabewert statt "fire and forget" wie bei setTheme/setStartTab: der
+  // Aufrufer setzt die Reihenfolge lokal schon optimistisch, bevor die Antwort
+  // da ist, und muss bei einem Fehler wissen, ob er das wieder rueckgaengig
+  // machen muss.
+  const setCardLayout = async (screen, order) => {
+    const { data, error } = await supabase.rpc("set_card_layout", { p_screen: screen, p_order: order });
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
+    setPlayer(data);
+    return true;
+  };
+  const resetCardLayout = async (screen = null) => {
+    const { data, error } = await supabase.rpc("reset_card_layout", { p_screen: screen });
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
+    setPlayer(data);
+    return true;
+  };
+
   const saveProfile = async (nick, color, motto) => {
     const { data, error } = await supabase.rpc("update_profile", {
       p_nickname: nick, p_avatar_color: color, p_motto: motto || null,
@@ -1043,7 +1061,8 @@ export default function App() {
                 rangliste={rangliste} me={player} challenges={challenges}
                 catalog={catalog} earnedBadges={badgesOfId(player.id)}
                 onInvite={() => navPush({ tab: "invite" })} disciplines={disciplines}
-                pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports} />}
+                pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports}
+                onSetCardLayout={setCardLayout} />}
               {tab === "protokoll" && protokollMatch && (
                 // Nutzer-Feedback (indirekt beim Testen der Notiz-Funktion
                 // aufgefallen): protokollMatch ist eine Momentaufnahme im
@@ -1069,6 +1088,7 @@ export default function App() {
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}
+                  onResetCardLayout={resetCardLayout}
                   onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (

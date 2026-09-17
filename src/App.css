@@ -991,34 +991,45 @@ button.id-card-head { cursor: pointer; }
    demselben Prinzip - am Handy untereinander (Quelltext-Reihenfolge),
    ab 900px zweispaltig. */
 .live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: 20px; }
-.stat-chart-col, .stat-rest-col, .match-selectors, .match-players { min-width: 0; }
+.stat-chart-col, .stat-grid, .match-selectors, .match-players { min-width: 0; }
 /* Unsichtbare Huellen am Handy (siehe .live-right-col/.live-top-row weiter
    unten fuer den Grund) - ihre Kinder (Duelle/Pings/Planung/Matches)
    werden dadurch direkte Flex-Kinder von .live-split und bleiben so in
    der urspruenglichen Quelltext-Reihenfolge untereinander. */
 .live-right-col, .live-top-row { display: contents; }
 
-/* .stat-right-col fasst Rangliste + "alles andere" (Live-Status,
-   Bestenlisten) zu EINEM Grid-Feld zusammen (wie .pf-right-col beim
-   Profil) - display:contents am Handy macht die Huelle unsichtbar, ihre
-   Kinder ordnen sich per eigenem "order" direkt in .stat-split ein (siehe
-   Desktop-Block weiter unten fuer die Gegenprobe: dort wird daraus ein
-   echter Flex-Stapel). */
+/* .stat-right-col fasst die globale Auswahl + alle rechten Karten zu EINEM
+   Grid-Feld zusammen (wie .pf-right-col beim Profil) - display:contents am
+   Handy macht die Huelle unsichtbar, ihre Kinder ordnen sich per eigenem
+   "order" direkt in .stat-split ein (siehe Desktop-Block weiter unten fuer
+   die Gegenprobe: dort wird daraus ein echter Flex-Stapel). .stat-grid
+   traegt seit dem Drag&Drop-Feature (Nutzer-Feedback: "in der mobilen
+   Ansicht ... ganz oben die Karten aus der mittleren Spalte, darunter die
+   Karten der rechten Spalte") die komplette rechte Kartengruppe als EIN
+   Flex-Kind statt vormals zwei separater Huellen (Rangliste war eine fixe
+   erste Position, ist jetzt nur noch eine von mehreren frei sortierbaren
+   Karten in dieser Gruppe). */
 .stat-right-col { display: contents; }
-.stat-ranking-col { order: 1; }
 .stat-chart-col { order: 2; }
-.stat-rest-col { order: 3; }
+.stat-grid { order: 3; }
 .stat-split .ov-side { order: 4; }
-/* Unabhaengig vom Breakpoint, weil .stat-ranking-col schon am Handy ein
-   Flex-Kind von .stat-split ist (display:contents auf .stat-right-col
-   reicht ihre Kinder direkt weiter, siehe oben) - ohne dieses Zuruecksetzen
-   addiert sich der eigene margin-bottom:var(--card-gap) der Rangliste-
-   Karte zum flex-gap von .stat-split/.stat-right-col dazu und der Abstand
-   zur naechsten Karte wird doppelt so gross wie ueberall sonst
-   (Nutzer-Feedback: "Karten haben immer noch unterschiedliche Luecken").
-   Gleicher Grund fuer .stat-global-filter (jetzt ebenfalls direktes
-   Flex-Kind von .stat-right-col, siehe StatistikScreen.jsx). */
-.stat-ranking-col .stat-block, .stat-global-filter { margin-bottom: 0; }
+/* Unabhaengig vom Breakpoint, weil .stat-grid schon am Handy ein Flex-Kind
+   von .stat-split ist (display:contents auf .stat-right-col reicht ihre
+   Kinder direkt weiter, siehe oben) - ohne dieses Zuruecksetzen addiert
+   sich der eigene margin-bottom:var(--card-gap) der ersten Karte zum
+   flex-gap von .stat-split/.stat-right-col dazu und der Abstand zur
+   naechsten Karte wird doppelt so gross wie ueberall sonst (Nutzer-
+   Feedback: "Karten haben immer noch unterschiedliche Luecken"). Gleicher
+   Grund fuer .stat-global-filter (ebenfalls direktes Flex-Kind von
+   .stat-right-col, siehe StatistikScreen.jsx). */
+.stat-global-filter { margin-bottom: 0; }
+/* Per Drag & Drop sortierbare Karten (siehe SortableCard.jsx) - Cursor/
+   Transform/Opacity beim Ziehen setzt die Komponente selbst inline (haengt
+   vom Drag-Status ab), hier nur das app-weit Statische: kein Textmarkieren
+   waehrend des langen Drucks vor der Drag-Aktivierung (sonst markiert ein
+   Finger/Klick, der auf Text landet, sichtbar Text statt die Karte
+   "greifbar" wirken zu lassen). */
+.sortable-card { min-width: 0; user-select: none; -webkit-user-select: none; }
 
 /* ===== Desktop: breitere Flaeche, Statistik zweispaltig =====
    Nur aktiv, wenn eingeloggt (.phone.app) - Login/Ladebildschirm bleiben
@@ -1111,33 +1122,28 @@ button.id-card-head { cursor: pointer; }
   .live-top-row .live-section.pings { flex: 0 0 300px; min-width: 0; }
 
   /* Statistik: duenn-breit-duenn wie Profil - UserPanel links (dieselbe
-     Konstante), Verlaufs-Graph zentral/breit (der eigentliche Fokus dieser
-     Seite, darunter Rekorde und ganz unten die Spielehistorie), rechts
-     ganz oben die globale Disziplin-/Top-N-Auswahl (Nutzer-Feedback: dort
-     statt als eigene volle Zeile ueber allen drei Spalten), darunter die
-     Rangliste, Live-Status und die reinen Bestenlisten ("alles andere")
-     gestapelt statt gequetscht nebeneinander. */
+     Konstante), mittlere und rechte Spalte frei per Drag & Drop sortierbar
+     (siehe StatistikScreen.jsx/cardLayout.js), ganz oben rechts fix die
+     globale Disziplin-/Top-N-Auswahl (Nutzer-Feedback: dort statt als
+     eigene volle Zeile ueber allen drei Spalten). */
   .phone.app .screen:has(.stat-split) { max-width: 1440px; }
   .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
   .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
-  /* Rangliste und "Rest" (Live-Status+Bestenlisten) standen zunaechst als
-     ZWEI separate Grid-Kinder in Spalte 3 (Zeile 1 bzw. 2) nebeneinander
-     zur hohen .stat-chart-col (Zeile 1/span 2). Bug (Nutzer-Feedback: "nach
-     einem Push zu viel Platz zwischen den Karten"): CSS Grid bemisst eine
-     auto-Zeile anhand des hoechsten Elements, das sie beruehrt - die viel
-     hoehere .stat-chart-col (spannt beide Zeilen) blaehte dadurch Zeile 1
-     spuerbar auf, obwohl die Rangliste selbst viel kuerzer ist. Das erzeugte
-     genau die grosse leere Luecke vor "Meiste Siege". Gleicher Bug-Typ wie
-     schon einmal bei .pf-layout geloest (siehe Kommentar dort) - Fix hier
-     identisch: Rangliste + Rest teilen sich jetzt EIN Grid-Feld
-     (.stat-right-col, wie .pf-right-col), das seine zwei Module per
-     Flexbox stapelt, dadurch bestimmt nur ihre eigene Hoehe den Abstand.
-     Die Aufteilung auf mehrere DOM-Kinder bleibt trotzdem bestehen (siehe
-     .stat-right-col{display:contents} weiter oben), weil die Rangliste am
-     Handy VOR der Chart-Spalte stehen soll, waehrend der Rest danach folgt -
-     das leistet dort "order" auf den einzelnen Kindern. */
+  /* .stat-grid (alle rechten Karten) und .stat-chart-col (alle mittleren
+     Karten) teilen sich je EIN Grid-Feld mit .stat-right-col (wie
+     .pf-right-col) statt als eigene mehrzeilige Grid-Kinder nebeneinander
+     zu stehen - CSS Grid bemisst eine auto-Zeile sonst anhand des
+     hoechsten Elements, das sie beruehrt, was frueher (Nutzer-Feedback:
+     "nach einem Push zu viel Platz zwischen den Karten") eine grosse
+     leere Luecke erzeugte. .stat-right-col stapelt seinen Inhalt daher
+     selbst per Flexbox, dadurch bestimmt nur seine eigene Hoehe den
+     Abstand. Die Aufteilung auf zwei DOM-Kinder (Filter + .stat-grid)
+     bleibt trotzdem bestehen (siehe .stat-right-col{display:contents}
+     weiter oben), weil am Handy die globale Auswahl VOR der Chart-Spalte
+     stehen soll, waehrend .stat-grid danach folgt - das leistet dort
+     "order" auf den einzelnen Kindern. */
   .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); }
-  .stat-global-filter, .stat-ranking-col, .stat-chart-col, .stat-rest-col { order: 0; }
+  .stat-global-filter, .stat-chart-col, .stat-grid { order: 0; }
   .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */

@@ -454,7 +454,7 @@ const TRANSLATIONS = {
     "Was soll beim Starten der App zuerst angezeigt werden?": "What should be shown first when the app starts?",
     "Zuletzt geöffnet": "Last opened",
     "Zurücksetzen": "Reset",
-    "Setzt Kugelfarbe, Design und Startseite auf die Standardeinstellungen zurück.": "Resets ball color, design and home screen to their default settings.",
+    "Setzt Kugelfarbe, Design, Startseite und die verschobenen Karten auf die Standardeinstellungen zurück.": "Resets ball color, design, home screen, and any rearranged cards to their default settings.",
     "Standardeinstellungen wiederhergestellt.": "Default settings restored.",
     "App-Updates": "App updates",
     "Wie oft auf neue Version pruefen?": "How often to check for a new version?",
