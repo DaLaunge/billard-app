@@ -101,24 +101,31 @@ export function normalizeCardOrder(saved, defaultOrder = DEFAULT_STAT_CARD_ORDER
 }
 
 // Verteilt eine flache Kartenreihenfolge auf zwei Spalten (Desktop): jede
-// Karte geht der Reihe nach in die Spalte, die DANACH insgesamt
-// ausgeglichener bleibt (nicht einfach "aktuell kuerzere Spalte" wie in
-// einer frueheren Version - das wuerde die spaltenspezifischen
-// Hoehenunterschiede derselben Karte ignorieren). Bei exaktem Gleichstand
-// gewinnt die mittlere Spalte, damit die Lesereihenfolge grob von links
-// nach rechts bleibt.
+// Karte geht der Reihe nach in die Spalte, die GERADE JETZT (nach den
+// bisher verteilten Karten) kuerzer ist - bei Gleichstand gewinnt die
+// mittlere Spalte, damit die Lesereihenfolge grob von links nach rechts
+// bleibt.
+//
+// Nutzer-Feedback: "wenn ich die obersten beiden Karten tauschen moechte,
+// tauschen die beiden nicht die Plaetze". Ursache war eine fruehere Version
+// dieser Funktion, die pro Karte die fuer SIE GUENSTIGSTE Spalte waehlte
+// (also z.B. immer Spalte X, wenn die Karte dort schon fuer sich allein
+// niedriger waere) - das ignoriert die Position in der Reihenfolge fast
+// komplett: zwei Karten mit klar entgegengesetzter Spalten-Praeferenz
+// landeten dadurch IMMER in derselben Spalte, egal in welcher Reihenfolge
+// sie im Array standen, ein Vertauschen blieb wirkungslos. Die Entscheidung
+// hier haengt dagegen NUR von den bisher schon verteilten Karten ab (den
+// laufenden Summen hMiddle/hRight), nicht von einem Vorausblick auf die
+// aktuelle Karte selbst - dadurch aendert eine andere Reihenfolge auch
+// tatsaechlich das Ergebnis.
 export function splitCardColumns(order, middleHeights = STAT_CARD_HEIGHTS_MIDDLE, rightHeights = STAT_CARD_HEIGHTS_RIGHT) {
   const middle = [];
   const right = [];
   let hMiddle = 0;
   let hRight = 0;
   order.forEach((id) => {
-    const hIfMiddle = middleHeights[id] ?? 200;
-    const hIfRight = rightHeights[id] ?? 200;
-    const diffIfMiddle = Math.abs((hMiddle + hIfMiddle) - hRight);
-    const diffIfRight = Math.abs(hMiddle - (hRight + hIfRight));
-    if (diffIfMiddle <= diffIfRight) { middle.push(id); hMiddle += hIfMiddle; }
-    else { right.push(id); hRight += hIfRight; }
+    if (hMiddle <= hRight) { middle.push(id); hMiddle += middleHeights[id] ?? 200; }
+    else { right.push(id); hRight += rightHeights[id] ?? 200; }
   });
   return { middle, right };
 }
