@@ -523,6 +523,17 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border-radius: 8px; color: var(--ivory-dim); display: inline-flex; align-items: center;
   cursor: pointer; flex-shrink: 0; }
 .card-info-btn:hover { color: var(--chalk); background: var(--felt-3); }
+/* Gruppiert Info-Button + Einklapp-Knopf als EIN Flex-Kind rechts im
+   Kartenkopf (Nutzer-Feedback: "alle Karten herunterklappbar machen") -
+   .stat-block-head verteilt seine direkten Kinder per justify-content:
+   space-between; ohne diese Huelle wuerden bei 3 direkten Kindern (Titel +
+   Info-Button + Einklapp-Knopf) alle drei ueber die volle Breite verteilt
+   statt Info-Button und Einklapp-Knopf rechts nebeneinander zu bleiben. */
+.stat-block-head-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.card-collapse-btn { background: none; border: none; padding: 4px; margin: -4px -4px -4px 0;
+  border-radius: 8px; color: var(--ivory-dim); display: inline-flex; align-items: center;
+  cursor: pointer; flex-shrink: 0; }
+.card-collapse-btn:hover { color: var(--chalk); background: var(--felt-3); }
 .chips.small { gap: 6px; margin-bottom: 8px; }
 .chips.small .chip { padding: 5px 11px; font-size: 12.5px; }
 /* Reine Icon-Chips ("Meine Umgebung", zeigt den eigenen Avatar statt eines
@@ -1013,16 +1024,6 @@ button.id-card-head { cursor: pointer; }
 .stat-chart-col { order: 2; }
 .stat-grid { order: 3; }
 .stat-split .ov-side { order: 4; }
-/* Unabhaengig vom Breakpoint, weil .stat-grid schon am Handy ein Flex-Kind
-   von .stat-split ist (display:contents auf .stat-right-col reicht ihre
-   Kinder direkt weiter, siehe oben) - ohne dieses Zuruecksetzen addiert
-   sich der eigene margin-bottom:var(--card-gap) der ersten Karte zum
-   flex-gap von .stat-split/.stat-right-col dazu und der Abstand zur
-   naechsten Karte wird doppelt so gross wie ueberall sonst (Nutzer-
-   Feedback: "Karten haben immer noch unterschiedliche Luecken"). Gleicher
-   Grund fuer .stat-global-filter (ebenfalls direktes Flex-Kind von
-   .stat-right-col, siehe StatistikScreen.jsx). */
-.stat-global-filter { margin-bottom: 0; }
 /* Per Drag & Drop sortierbare Karten (siehe SortableCard.jsx) - Cursor/
    Transform/Opacity beim Ziehen setzt die Komponente selbst inline (haengt
    vom Drag-Status ab), hier nur das app-weit Statische: kein Textmarkieren

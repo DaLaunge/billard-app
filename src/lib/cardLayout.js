@@ -12,9 +12,14 @@ export const STAT_CARD_SCREEN = "stats";
 // Karte per Gleichstand-Regel immer der mittleren Spalte zu - der
 // Verlaufs-Graph ist "der eigentliche Fokus dieser Seite" (siehe App.css)
 // und soll das auch im nie-angefassten Standardzustand bleiben, nicht
-// zufaellig in die rechte Spalte rutschen.
+// zufaellig in die rechte Spalte rutschen. "globalFilter" bewusst gleich
+// danach: landet dadurch im Standardzustand ganz oben in der rechten
+// Spalte (wie bisher fest verdrahtet), ist jetzt aber wie jede andere
+// Karte frei verschiebbar (Nutzer-Feedback: "auch die 'Selection for all
+// Statistics' verschiebbar machen").
 export const DEFAULT_STAT_CARD_ORDER = [
   "entwicklung",
+  "globalFilter",
   "rekordeClub",
   "letzteMatches",
   "rangliste",
@@ -35,6 +40,7 @@ export const DEFAULT_STAT_CARD_ORDER = [
 export const STAT_CARD_HEIGHTS = {
   rangliste: 230,
   entwicklung: 360,
+  globalFilter: 150,
   meisteSiege: 195,
   rekordeClub: 440,
   besteSiegquote: 195,

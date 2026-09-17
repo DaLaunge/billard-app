@@ -4,6 +4,7 @@ import { t } from "../lib/i18n";
 import { dateMinusDays, todayStr } from "../lib/stats";
 import DevChart from "./DevChart";
 import InfoButton from "./widgets/InfoButton";
+import CardCollapseButton from "./widgets/CardCollapseButton";
 
 const RANGES = [
   { key: "1M", label: "1M", days: 31 },
@@ -19,7 +20,7 @@ const RANGES = [
 // braucht der Graph keine eigenen Disziplin-Buttons mehr. Alle folgenden
 // Werte (Spieler-Reihenfolge, Kurven, verfuegbare Daten) haengen weiterhin
 // von der Disziplin ab.
-export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches, disc }) {
+export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches, disc, collapsed, onToggleCollapse }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
@@ -108,10 +109,15 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     <section className="stat-block">
       <div className="stat-block-head">
         <h3><TrendingUp size={17} /> {t("Entwicklung über die Zeit")}</h3>
-        <InfoButton title={t("Entwicklung über die Zeit")}>
-          {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
-        </InfoButton>
+        <div className="stat-block-head-actions">
+          <InfoButton title={t("Entwicklung über die Zeit")}>
+            {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
+          </InfoButton>
+          <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
+        </div>
       </div>
+      {!collapsed && (
+      <>
       {allDates.length > 0 && (
         <div className="chips small">
           {RANGES.map((r) => (
@@ -164,6 +170,8 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
             </div>
           )}
         </>
+      )}
+      </>
       )}
     </section>
   );
