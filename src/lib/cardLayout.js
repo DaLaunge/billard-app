@@ -6,7 +6,12 @@
 // gespeicherte Reihenfolge ist wieder EIN flaches Array, mittlere und
 // rechte Spalte werden automatisch daraus berechnet (splitCardColumns) -
 // diesmal aber mit ZWEI Referenzhoehen pro Karte (eine fuer die breite
-// mittlere, eine fuer die schmale rechte Spalte), nicht nur einer.
+// mittlere, eine fuer die schmale rechte Spalte), nicht nur einer. Die
+// Aufteilung selbst ist ein einziger Praefix/Suffix-Schnitt (siehe
+// Kommentar bei splitCardColumns), keine freie Durchmischung - das hielt
+// sich zwischenzeitlich (Karten-Tausch wirkungslos, dann: Verschieben
+// innerhalb einer Spalte wirft fremde Karten raus) erst nach zwei
+// Korrekturrunden durch.
 //
 // Vorgeschichte: Stufe 1 (ein flaches Array + EINE Hoehe pro Karte) fuehlte
 // sich beim Ziehen unvorhersehbar an, weil eine verschobene Karte die
@@ -24,17 +29,22 @@
 // wieder die Spaltenzuteilung, jetzt aber mit spaltenspezifischen Hoehen.
 export const STAT_CARD_SCREEN = "stats";
 
+// Reihenfolge bewusst so gewaehlt, dass die fuer die breite mittlere Spalte
+// gedachten Karten VORNE stehen und die fuer die schmale rechte Spalte
+// gedachten Karten DANACH folgen ("breite Spalte Mitte --> duenne Spalte
+// rechts", siehe Kommentar bei splitCardColumns) - das ergibt zusammen mit
+// dem Praefix-Ausgleich dort automatisch die gewuenschte Standardaufteilung.
 export const DEFAULT_STAT_CARD_ORDER = [
   "entwicklung",
+  "letzteMatches",
+  "aktuelleSerien",
+  "schnellste141",
   "globalFilter",
   "rekordeClub",
-  "letzteMatches",
   "rangliste",
   "meisteSiege",
   "besteSiegquote",
-  "aktuelleSerien",
   "schnellstesTempo",
-  "schnellste141",
 ];
 
 // Tatsaechlich gemessene Kartenhoehen (px) im Standardzustand ("3
@@ -100,32 +110,43 @@ export function normalizeCardOrder(saved, defaultOrder = DEFAULT_STAT_CARD_ORDER
   return [...cleaned, ...missing];
 }
 
-// Verteilt eine flache Kartenreihenfolge auf zwei Spalten (Desktop): jede
-// Karte geht der Reihe nach in die Spalte, die GERADE JETZT (nach den
-// bisher verteilten Karten) kuerzer ist - bei Gleichstand gewinnt die
-// mittlere Spalte, damit die Lesereihenfolge grob von links nach rechts
-// bleibt.
+// Verteilt eine flache Kartenreihenfolge auf zwei Spalten (Desktop): die
+// ERSTEN Karten der Reihenfolge gehen als zusammenhaengender Block in die
+// mittlere Spalte, alle danach als zusammenhaengender Block in die rechte
+// Spalte ("breite Spalte Mitte --> duenne Spalte rechts", wie urspruenglich
+// angekuendigt) - gesucht wird nur die EINE Trennstelle (k), an der die
+// Summe der Mitte-Hoehen vor k und die Summe der Rechts-Hoehen ab k
+// moeglichst gleich gross sind. Bei mehreren gleich guten Trennstellen
+// gewinnt die groessere (mehr Karten in der Mitte), damit die Lesereihen-
+// folge grob von links nach rechts bleibt.
 //
-// Nutzer-Feedback: "wenn ich die obersten beiden Karten tauschen moechte,
-// tauschen die beiden nicht die Plaetze". Ursache war eine fruehere Version
-// dieser Funktion, die pro Karte die fuer SIE GUENSTIGSTE Spalte waehlte
-// (also z.B. immer Spalte X, wenn die Karte dort schon fuer sich allein
-// niedriger waere) - das ignoriert die Position in der Reihenfolge fast
-// komplett: zwei Karten mit klar entgegengesetzter Spalten-Praeferenz
-// landeten dadurch IMMER in derselben Spalte, egal in welcher Reihenfolge
-// sie im Array standen, ein Vertauschen blieb wirkungslos. Die Entscheidung
-// hier haengt dagegen NUR von den bisher schon verteilten Karten ab (den
-// laufenden Summen hMiddle/hRight), nicht von einem Vorausblick auf die
-// aktuelle Karte selbst - dadurch aendert eine andere Reihenfolge auch
-// tatsaechlich das Ergebnis.
+// Nutzer-Feedback: "wenn ich in der mittleren Spalte eine Karte von der 2.
+// an die 1. Stelle verschiebe, springt die Karte an der 1. Stelle sofort in
+// die rechte Spalte". Ursache war eine fruehere Version dieser Funktion, die
+// JEDE Karte einzeln der Reihe nach der gerade kuerzeren Spalte zuteilte
+// (freie Durchmischung statt zusammenhaengender Bloecke) - eine Karte weiter
+// vorne in der Reihenfolge zu verschieben, veraenderte dadurch die
+// laufenden Zwischensummen und konnte JEDE andere, spaeter geprüfte Karte
+// unvorhersehbar in die andere Spalte umleiten, auch wenn beide gar nicht
+// nah beieinander standen. Mit einer einzigen Trennstelle aendert eine
+// Verschiebung INNERHALB desselben Blocks (vor oder nach k) dagegen gar
+// nichts an der Spaltenzuteilung - nur ein Verschieben UEBER die
+// Trennstelle hinweg kann sie verschieben, und dann auch nur fuer die dabei
+// tatsaechlich uebersprungenen Karten (wie bei jeder normalen sortierbaren
+// Liste).
 export function splitCardColumns(order, middleHeights = STAT_CARD_HEIGHTS_MIDDLE, rightHeights = STAT_CARD_HEIGHTS_RIGHT) {
-  const middle = [];
-  const right = [];
-  let hMiddle = 0;
-  let hRight = 0;
-  order.forEach((id) => {
-    if (hMiddle <= hRight) { middle.push(id); hMiddle += middleHeights[id] ?? 200; }
-    else { right.push(id); hRight += rightHeights[id] ?? 200; }
-  });
-  return { middle, right };
+  const n = order.length;
+  const prefixMiddle = [0];
+  for (let i = 0; i < n; i++) prefixMiddle.push(prefixMiddle[i] + (middleHeights[order[i]] ?? 200));
+  const suffixRight = new Array(n + 1);
+  suffixRight[n] = 0;
+  for (let i = n - 1; i >= 0; i--) suffixRight[i] = suffixRight[i + 1] + (rightHeights[order[i]] ?? 200);
+
+  let bestK = 0;
+  let bestDiff = Infinity;
+  for (let k = 0; k <= n; k++) {
+    const diff = Math.abs(prefixMiddle[k] - suffixRight[k]);
+    if (diff <= bestDiff) { bestDiff = diff; bestK = k; }
+  }
+  return { middle: order.slice(0, bestK), right: order.slice(bestK) };
 }
