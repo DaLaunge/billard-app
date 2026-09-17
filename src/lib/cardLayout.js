@@ -4,18 +4,25 @@
 //
 // Stufe 4 (nach drei frueheren Versuchen, siehe Git-Historie): keine
 // automatische Spaltenzuteilung mehr ueberhaupt - der Nutzer entscheidet
-// selbst per Knopf an jeder Karte (siehe CardColumnButton.jsx), ob sie in
-// der mittleren oder rechten Spalte steht. Reihenfolge (cardOrder) und
-// Spalte (cardColumns) sind dadurch zwei VOELLIG unabhaengige Werte:
-// Ziehen aendert nur die Reihenfolge INNERHALB der jeweils eigenen Spalte,
-// der Knopf aendert nur die Spalte, nie die Reihenfolge. Nutzer-Feedback,
-// das zu dieser Entscheidung fuehrte: "es könnte ja durchaus sein, dass der
-// User zb. alles in der Mitte anzeigen will" (ein automatischer
-// Hoehen-Ausgleich verhindert das strukturell) und "am Smartphone sollte
-// die Sortierung gleich bleiben, aber am PC wirkt sich eine solche
-// Verschiebung aus" (die Spaltenwahl ist ein reines Desktop-Konzept - am
-// Handy gibt es nur eine gemeinsame Liste in cardOrder, siehe
-// StatistikScreen.jsx).
+// selbst, ob eine Karte in der mittleren oder rechten Spalte steht, entweder
+// per Ziehen auf eine Karte der Zielspalte oder per Knopf an jeder Karte
+// (siehe CardColumnButton.jsx - noetig, weil eine LEERE Spalte keine Karte
+// zum Zielen bietet). Reihenfolge (cardOrder) und Spalte (cardColumns) sind
+// zwei unabhaengige Werte, aber Ziehen darf beide gleichzeitig aendern: die
+// Reihenfolge IMMER, die Spalte NUR fuer die gerade gezogene Karte selbst -
+// keine andere Karte wechselt dabei ihre Spalte (siehe handleDragEnd in
+// StatistikScreen.jsx). Nutzer-Feedback, das zu dieser Entscheidung
+// fuehrte: "es könnte ja durchaus sein, dass der User zb. alles in der
+// Mitte anzeigen will" (ein automatischer Hoehen-Ausgleich verhindert das
+// strukturell), "am Smartphone sollte die Sortierung gleich bleiben, aber
+// am PC wirkt sich eine solche Verschiebung aus" (die Spaltenwahl ist ein
+// reines Desktop-Konzept - am Handy gibt es nur eine gemeinsame Liste in
+// cardOrder, siehe StatistikScreen.jsx) und schliesslich "ich versuche die
+// oberste Karte aus der rechten Spalte an die 1. Stelle in der breiten
+// Spalte zu ziehen - das funktioniert aber nicht" (ein erster Entwurf
+// dieser Stufe liess Ziehen NUR die Reihenfolge aendern, nie die Spalte -
+// das widersprach der normalen Erwartung an Drag & Drop zwischen zwei
+// sichtbaren Spalten).
 //
 // Vorgeschichte: Stufe 1 (ein flaches Array + EINE Hoehe pro Karte) fuehlte
 // sich beim Ziehen unvorhersehbar an, weil eine verschobene Karte die
@@ -30,11 +37,11 @@
 // SortableContext), hatte aber weiterhin das Grundproblem: die Spalte einer
 // Karte war nie wirklich frei waehlbar, sondern immer nur eine Folge der
 // Reihenfolge. Stufe 4 loest genau das: Ziehen bleibt bei EINER
-// SortableContext (kein Einfrieren moeglich), aber ein Spaltenwechsel
-// passiert nie mehr durch Ziehen ueber eine Grenze hinweg, sondern
-// ausschliesslich durch den expliziten Knopf - dadurch kann Ziehen
-// niemals mehr eine andere, unbeteiligte Karte in die jeweils andere
-// Spalte verschieben.
+// SortableContext (kein Einfrieren moeglich), ein Spaltenwechsel durch
+// Ziehen betrifft aber immer nur die gezogene Karte selbst - dadurch kann
+// Ziehen niemals mehr eine andere, unbeteiligte Karte in die jeweils
+// andere Spalte verschieben (der eigentliche Fehler in den fruehreren
+// Stufen, nicht die Moeglichkeit eines Spaltenwechsels an sich).
 export const STAT_CARD_SCREEN = "stats";
 
 export const DEFAULT_STAT_CARD_ORDER = [

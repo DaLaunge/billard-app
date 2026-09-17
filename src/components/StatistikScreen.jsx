@@ -508,13 +508,27 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       setUndoSnapshot(null);
     }
   };
+  // Nutzer-Feedback: "ich versuche die oberste Karte aus der rechten Spalte
+  // an die 1. Stelle in der breiten Spalte zu ziehen - das funktioniert
+  // aber nicht" - Ziehen aenderte bisher NIE die Spalte (nur der
+  // CardColumnButton durfte das, siehe cardLayout.js), das widerspricht
+  // aber der ganz normalen Erwartung an Drag & Drop zwischen zwei sichtbar
+  // nebeneinanderliegenden Spalten. Jetzt uebernimmt Ziehen die Spalte der
+  // Karte, auf die fallengelassen wird, ABER NUR fuer die gezogene Karte
+  // selbst - keine andere Karte aendert dabei ihre Spalte (anders als beim
+  // fruehren automatischen Ausgleich). Der Knopf bleibt trotzdem noetig:
+  // eine leere Spalte hat keine Karte, auf die man zielen koennte.
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = cardOrder.indexOf(active.id);
     const newIndex = cardOrder.indexOf(over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    persistLayout(arrayMove(cardOrder, oldIndex, newIndex), cardColumns);
+    const nextOrder = arrayMove(cardOrder, oldIndex, newIndex);
+    const overColumn = cardColumns[over.id] === "right" ? "right" : "middle";
+    const activeColumn = cardColumns[active.id] === "right" ? "right" : "middle";
+    const nextColumns = overColumn !== activeColumn ? { ...cardColumns, [active.id]: overColumn } : cardColumns;
+    persistLayout(nextOrder, nextColumns);
   };
   const toggleCardColumn = (id) => {
     persistLayout(cardOrder, { ...cardColumns, [id]: cardColumns[id] === "right" ? "middle" : "right" });
