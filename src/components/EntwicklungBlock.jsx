@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, Plus, Search, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { dateMinusDays, todayStr } from "../lib/stats";
-import { initials } from "../lib/format";
+import { initials, readableColor } from "../lib/format";
 import DevChart from "./DevChart";
 import Ball from "./Ball";
 import InfoButton from "./widgets/InfoButton";
@@ -163,7 +163,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
                 <div key={nick} className="stat-row">
                   <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={30} />
                   <span className="stat-name">{nick}</span>
-                  <span className="stat-val" style={{ color: colorOf(nick) }}>{val != null ? val : "–"}</span>
+                  <span className="stat-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? val : "–"}</span>
                   <button type="button" className="pmp-remove" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>
                     <X size={14} />
                   </button>

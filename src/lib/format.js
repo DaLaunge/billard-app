@@ -132,3 +132,22 @@ export function luminance(hex) {
   const b = parseInt(hex.slice(5, 7), 16) / 255;
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
+
+/* Textfarbe fuer eine Ballfarbe auf dem (immer dunklen, siehe lib/themes.js)
+   App-Hintergrund: dunkle Ballfarben (z.B. #8B3A2E) sind als Text kaum zu
+   lesen. Statt wie Ball.jsx auf eine neutrale Farbe zu wechseln (dort geht
+   das, weil die Kugel selbst schon die Farbe zeigt), wird Richtung Weiss
+   aufgehellt - der Farbton bleibt dadurch erkennbar derselbe wie die
+   zugehoerige Linie im Graphen (siehe DevChart.jsx, die Linie selbst bleibt
+   unveraendert und bekommt dort stattdessen einen hellen Hof), nur heller
+   und damit lesbar. Helle Farben bleiben unveraendert. */
+export function readableColor(hex) {
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex) || luminance(hex) >= 0.45) return hex;
+  const mix = 0.55;
+  const lighten = (channel) => Math.round(channel + (255 - channel) * mix);
+  const r = lighten(parseInt(hex.slice(1, 3), 16));
+  const g = lighten(parseInt(hex.slice(3, 5), 16));
+  const b = lighten(parseInt(hex.slice(5, 7), 16));
+  const toHex = (n) => n.toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
