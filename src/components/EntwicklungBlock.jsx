@@ -91,7 +91,12 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     .filter((nick) => seriesByNick[nick])
     .map((nick) => ({
       nickname: nick,
-      color: colorOf(nick),
+      // readableColor statt der rohen Ballfarbe (Nutzer-Feedback) - dieselbe
+      // aufgehellte Farbe wie .stat-val unten, damit Linie und Zahlenwert
+      // wieder exakt gleich aussehen. DevChart braucht dadurch keinen
+      // eigenen Hell-Hof mehr fuer dunkle Linien, die Farbe ist schon gut
+      // erkennbar.
+      color: readableColor(colorOf(nick)),
       points: visibleDates
         .map((dt, i) => (seriesByNick[nick][dt] != null ? { i, rating: seriesByNick[nick][dt] } : null))
         .filter(Boolean),
