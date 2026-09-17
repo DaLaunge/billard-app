@@ -146,8 +146,14 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
-.dev-chart .ylabel { fill: var(--ivory-dim); font-size: 9px; text-anchor: end; }
-.dev-chart .xlabel { fill: var(--ivory-dim); font-size: 9px; text-anchor: middle; }
+/* Nutzer-Feedback: Achsenbeschriftung war winzig (9) im Vergleich zur
+   Nutzerliste darueber (.stat-name, 14px). DevChart.jsx setzt die viewBox-
+   Breite jetzt auf die tatsaechlich gemessene Kartenbreite (1 Einheit = 1
+   CSS-px, siehe dortiger Kommentar), daher ist dieser Wert ein echter,
+   kartenbreiten-unabhaengiger px-Wert wie .stat-name und kann 1:1 angeglichen
+   werden. */
+.dev-chart .ylabel { fill: var(--ivory-dim); font-size: 14px; text-anchor: end; }
+.dev-chart .xlabel { fill: var(--ivory-dim); font-size: 14px; text-anchor: middle; }
 .dev-chart .crosshair { stroke: var(--ivory-dim); stroke-width: 1; stroke-dasharray: 3 3; }
 .dev-wrap { }
 .dev-readout { display: flex; align-items: center; gap: 10px; min-height: 22px; margin-bottom: 4px;
