@@ -790,8 +790,8 @@ export default function App() {
   // Aufrufer setzt die Reihenfolge lokal schon optimistisch, bevor die Antwort
   // da ist, und muss bei einem Fehler wissen, ob er das wieder rueckgaengig
   // machen muss.
-  const setCardLayout = async (screen, order) => {
-    const { data, error } = await supabase.rpc("set_card_layout", { p_screen: screen, p_order: order });
+  const setCardLayout = async (screen, layout) => {
+    const { data, error } = await supabase.rpc("set_card_layout", { p_screen: screen, p_layout: layout });
     if (error) { toast(t("Fehler: ") + error.message); return false; }
     setPlayer(data);
     return true;
