@@ -390,6 +390,14 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   .sp { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; align-items: start; }
   .sp-board { grid-column: 1; }
   .sp-actions { grid-column: 2; display: flex; flex-direction: column; gap: 8px; }
+  /* Entwicklung ueber die Zeit: der Graph selbst wird in DevChart.jsx per
+     flacherem viewBox niedriger (derselbe Breakpoint) - hier zusaetzlich das
+     Nutzer-Raster darunter etwas dichter, damit die Namen ohne Scrollen in
+     den kurzen Viewport passen. */
+  .dev-readout { min-height: 16px; margin-bottom: 2px; }
+  .dev-chart { margin-bottom: 6px; }
+  .legend { gap: 4px; }
+  .legend-item { padding: 3px 7px 3px 3px; }
 }
 .sp-turn { font-size: 11.5px; font-weight: 700; color: var(--gold); }
 .sp-target { text-align: center; font-size: 12.5px; color: var(--ivory-dim); }

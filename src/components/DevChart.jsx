@@ -1,6 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
+
+// Gleicher Breakpoint wie die uebrigen "Handy im Querformat"-Anpassungen in
+// App.css (siehe dort: .sp-score etc.) - Nutzer-Feedback: im Querformat
+// frisst der Graph (feste Seitenverhaeltnis-Hoehe ueber die volle Breite)
+// fast den ganzen kurzen Viewport auf, das Nutzer-Raster darunter faellt
+// aus dem sichtbaren Bereich. Ein flacheres viewBox-Seitenverhaeltnis nur in
+// diesem Fall macht den Graphen selbst niedriger statt ihn nur per CSS zu
+// stauchen (das wuerde die Kurven verzerren).
+const LANDSCAPE_QUERY = "(orientation: landscape) and (max-height: 500px)";
 
 /* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek).
    Die Werte pro Spieler werden nicht mehr hier oberhalb des Graphen angezeigt,
@@ -10,7 +19,15 @@ import { fmtDate } from "../lib/format";
 export default function DevChart({ dates, lines, onActiveChange }) {
   const [active, setActiveInner] = useState(null);
   const setActive = (v) => { setActiveInner(v); onActiveChange && onActiveChange(v); };
-  const W = 340, H = 210, padL = 34, padR = 12, padT = 12, padB = 26;
+  const [compact, setCompact] = useState(() => (typeof window !== "undefined" && window.matchMedia(LANDSCAPE_QUERY).matches));
+  useEffect(() => {
+    const mq = window.matchMedia(LANDSCAPE_QUERY);
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  const W = 340, H = compact ? 130 : 210, padL = 34, padR = 12, padT = 10, padB = compact ? 20 : 26;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const all = lines.flatMap((l) => l.points.map((p) => p.rating));
   if (all.length === 0) return <p className="hint center">{t("Keine Daten im gewählten Zeitraum.")}</p>;
