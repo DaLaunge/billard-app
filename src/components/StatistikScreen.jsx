@@ -470,7 +470,25 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Verschieben INNERHALB einer Spalte (normales arrayMove) als auch
   // ZWISCHEN den Spalten (Karte aus der einen entfernen, in der anderen an
   // der Position der Ziel-Karte einfuegen - genau dort, wo tatsaechlich
-  // losgelassen wurde, nicht irgendwo neu berechnet).
+  // losgelassen wurde).
+  //
+  // Bewusst OHNE onDragOver (also ohne die Karte schon waehrend des
+  // Ziehens live in die andere Spalte umzuhaengen): ein erster Versuch
+  // damit sollte das kurze "Einfrieren" der Karte an der Spaltengrenze
+  // beheben (jede Spalte hat ihre eigene SortableContext, deren Verschiebe-
+  // Berechnung kennt nur Positionen innerhalb der eigenen Liste - am Rand
+  // angekommen "weiss" sie nicht mehr, wohin die Karte als naechstes soll,
+  // daher das Einfrieren trotz weiter bewegtem Zeiger). Das fuehrte aber zu
+  // einem SCHLIMMEREN Fehler: die Karte oszillierte beim Ueberqueren der
+  // Grenze sichtbar zwischen den Spalten hin und her und landete teils in
+  // der falschen Spalte, weil die Kollisionserkennung (closestCenter) auf
+  // die durch den Spaltenwechsel selbst veraenderte Position der gezogenen
+  // Karte reagierte - ein Rueckkopplungseffekt. Das kurze Einfrieren beim
+  // Ueberqueren der Grenze ist rein optisch (die Karte bewegt sich beim
+  // Loslassen trotzdem exakt an die richtige Stelle, siehe unten) und
+  // damit das kleinere Problem verglichen mit einer falsch platzierten
+  // Karte - deshalb bewusst nicht behoben, bis es eine robustere Loesung
+  // dafuer gibt.
   const findColumnOf = (cols, id) => (cols.middle.includes(id) ? "middle" : cols.right.includes(id) ? "right" : null);
   const handleDragEnd = async (event) => {
     const { active, over } = event;
