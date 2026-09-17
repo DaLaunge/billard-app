@@ -144,18 +144,43 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .diag-row code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 700; color: var(--chalk);
   background: var(--felt); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; }
 
-.dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
+/* .dev-plot traegt die eigentliche Hoehe des Graphen (fest 210px normal,
+   130px im Handy-Querformat weiter unten, flex:1 im Maximieren-Modus der
+   Karte, siehe .stat-block.is-maximized) - DevChart.jsx misst per
+   ResizeObserver Breite UND Hoehe dieser Box und rendert die viewBox exakt
+   in diesen Massen (1 Einheit = 1 CSS-px, siehe dortiger Kommentar), damit
+   Achsenbeschriftung/Linienstaerke echte, von der Kartengroesse unabhaengige
+   px-Werte bleiben (Nutzer-Feedback: Achsenbeschriftung war winzig (9) im
+   Vergleich zur Nutzerliste daneben, .stat-name, 14px - jetzt exakt
+   angeglichen) - UND der Graph automatisch mitwaechst, wenn die Box mehr
+   Platz bekommt, ohne dass DevChart.jsx selbst einen dieser Faelle kennen
+   muss. */
+.dev-plot { width: 100%; height: 210px; margin-bottom: 10px; }
+.dev-chart { width: 100%; height: 100%; display: block; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
-/* Nutzer-Feedback: Achsenbeschriftung war winzig (9) im Vergleich zur
-   Nutzerliste darueber (.stat-name, 14px). DevChart.jsx setzt die viewBox-
-   Breite jetzt auf die tatsaechlich gemessene Kartenbreite (1 Einheit = 1
-   CSS-px, siehe dortiger Kommentar), daher ist dieser Wert ein echter,
-   kartenbreiten-unabhaengiger px-Wert wie .stat-name und kann 1:1 angeglichen
-   werden. */
 .dev-chart .ylabel { fill: var(--ivory-dim); font-size: 14px; text-anchor: end; }
 .dev-chart .xlabel { fill: var(--ivory-dim); font-size: 14px; text-anchor: middle; }
 .dev-chart .crosshair { stroke: var(--ivory-dim); stroke-width: 1; stroke-dasharray: 3 3; }
 .dev-wrap { }
+/* Maximieren-Modus einer einzelnen Statistik-Karte (CardMaximizeButton.jsx,
+   zuerst fuer die Entwicklung-ueber-Zeit-Karte, generisch fuer jede
+   .stat-block gehalten). Gleiches Prinzip wie .turnier-view-container.
+   is-maximized (siehe dort fuer die ausfuehrliche Begruendung gegen die
+   native Fullscreen-API): eigener CSS-Zustand statt :fullscreen, position:
+   fixed statt Skalierung, damit der Rest der Seite wirklich verschwindet und
+   der volle Bildschirm zur Verfuegung steht. z-index bewusst unter
+   .modal-overlay (100)/.celebrate-overlay (120), aus demselben Grund wie
+   dort: sonst waere ein Bestaetigen-Dialog o.ae. in der maximierten Ansicht
+   nicht mehr erreichbar. Anders als beim Turnierraster liegt der Umschalt-
+   Knopf HIER im eigenen Kartenkopf (kein separates Geschwister-Element) -
+   der bleibt beim Maximieren einfach Teil derselben Karte, deshalb reicht
+   position:sticky auf dem Kartenkopf statt einer eigenen Ausstiegs-Zeile. */
+.stat-block.is-maximized { position: fixed; inset: 0; z-index: 90;
+  background: var(--felt); padding: 20px; margin: 0; border-radius: 0;
+  overflow-y: auto; display: flex; flex-direction: column; }
+.stat-block.is-maximized .stat-block-head { position: sticky; top: -20px;
+  margin: -20px -20px 12px; padding: 20px 20px 8px; background: var(--felt); z-index: 1; }
+.stat-block.is-maximized .dev-plot { flex: 1 1 auto; height: auto; min-height: 240px; }
 .dev-readout { display: flex; align-items: center; gap: 10px; min-height: 22px; margin-bottom: 4px;
   font-size: 13px; flex-wrap: wrap; }
 .dev-readout b { font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; }
@@ -399,11 +424,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   .sp-actions { grid-column: 2; display: flex; flex-direction: column; gap: 8px; }
   /* Entwicklung ueber die Zeit: die Nutzerliste steht ueber dem Graphen
      (siehe EntwicklungBlock.jsx) und ist als .stat-row schon kompakt - hier
-     zusaetzlich nur der Graph selbst per flacherem viewBox in DevChart.jsx
-     niedriger (derselbe Breakpoint), damit die ganze Karte ohne Scrollen in
-     den kurzen Viewport passt. */
+     zusaetzlich nur die .dev-plot-Box (der Graph selbst, siehe dortiger
+     Kommentar in App.css/DevChart.jsx) niedriger (derselbe Breakpoint),
+     damit die ganze Karte ohne Scrollen in den kurzen Viewport passt. */
   .dev-readout { min-height: 16px; margin-bottom: 2px; }
-  .dev-chart { margin-bottom: 6px; }
+  .dev-plot { height: 130px; margin-bottom: 6px; }
 }
 .sp-turn { font-size: 11.5px; font-weight: 700; color: var(--gold); }
 .sp-target { text-align: center; font-size: 12.5px; color: var(--ivory-dim); }
@@ -592,6 +617,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .card-column-btn { display: none; background: none; border: none; padding: 4px; margin: -4px 0;
   border-radius: 8px; color: var(--ivory-dim); align-items: center; cursor: pointer; flex-shrink: 0; }
 .card-column-btn:hover { color: var(--chalk); background: var(--felt-3); }
+/* Maximieren-Knopf einer einzelnen Karte (CardMaximizeButton.jsx, siehe dort
+   und .stat-block.is-maximized weiter unten fuer den eigentlichen Zustand) -
+   aus demselben Grund wie .card-column-btn am Handy ausgeblendet: eine Karte
+   ist dort ohnehin schon so breit wie der Bildschirm. */
+.card-maximize-btn { display: none; background: none; border: none; padding: 4px; margin: -4px 0;
+  border-radius: 8px; color: var(--ivory-dim); align-items: center; cursor: pointer; flex-shrink: 0; }
+.card-maximize-btn:hover { color: var(--chalk); background: var(--felt-3); }
 /* Ablageflaeche einer leeren Spalte (siehe EmptyColumnDropZone.jsx -
    Nutzer-Feedback: "ich habe alle Karten in der Mitte, kann aber keine
    Karte nach rechts schieben") - aus demselben Grund wie .card-column-btn
@@ -1225,6 +1257,7 @@ button.id-card-head { cursor: pointer; }
   .stat-global-filter, .stat-chart-col, .stat-grid { order: 0; }
   .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
   .card-column-btn { display: inline-flex; }
+  .card-maximize-btn { display: inline-flex; }
   .stat-empty-dropzone { display: flex; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
