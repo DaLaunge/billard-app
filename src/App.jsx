@@ -106,6 +106,10 @@ export default function App() {
   const [badgesByPlayer, setBadgesByPlayer] = useState({}); // playerId -> Set(badge_key)
   const [catalog, setCatalog] = useState([]);               // badge_catalog Zeilen
   const [snapshots, setSnapshots] = useState([]);           // rating_snapshots (Verlauf)
+  // Zaehlerstand fuer Erfolgs-Kategorien, die nicht aus matches/players/challenges
+  // ableitbar sind (Ghost-Spiele, Turnierplatzierungen - beide server-only,
+  // siehe my_achievement_counters()) - fuer die Fortschrittsanzeige im Profil.
+  const [achievementCounters, setAchievementCounters] = useState(null);
   // Von einem update-bedingten Reload zwischengespeicherter Navigationszustand
   // (siehe persistNavAndUpdate). Nur LESEN, kein sessionStorage.removeItem
   // hier drin - useState-Initializer laufen unter React.StrictMode im Dev-
@@ -616,7 +620,7 @@ export default function App() {
       .select("player_id, snap_date, iso_week, discipline, rating, rank, provisional")
       .order("snap_date", { ascending: true })
       .range(from, to));
-    const [rang, m, pl, pi, bg, ct, mc, ch, pn] = await Promise.all([
+    const [rang, m, pl, pi, bg, ct, mc, ch, pn, ac] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
         .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, run_log, tournament_id, winner_stays_session_id, manual_entry_note, p1:players!matches_player1_id_fkey(nickname, is_guest), p2:players!matches_player2_id_fkey(nickname, is_guest), p1b:players!matches_player1b_id_fkey(nickname, is_guest), p2b:players!matches_player2b_id_fkey(nickname, is_guest), tournament:tournaments(name, format, organizer_id), winner_stays_session:winner_stays_sessions(name, is_doubles)")
@@ -637,6 +641,7 @@ export default function App() {
         .select("id, planned_date, message, created_at, expires_at, player_id, player:players!plannings_player_id_fkey(nickname), replies:planning_replies(id, message, created_at, player_id, player:players!planning_replies_player_id_fkey(nickname))")
         .gt("expires_at", new Date().toISOString())
         .order("planned_date", { ascending: true }),
+      supabase.rpc("my_achievement_counters").maybeSingle(),
     ]);
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || pn.error;
     if (err) toast(isNetworkError(err) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + err.message);
@@ -658,6 +663,9 @@ export default function App() {
     Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
     cat.forEach((b) => { BADGE_INFO[b.badge_key] = { emoji: b.emoji, name: b.name, description: b.description }; });
     setConfirmations(mc.data ?? []);
+    // Kein harter Fehler, falls die RPC (noch) nicht existiert (Migration nicht
+    // eingespielt) oder scheitert - Fortschrittsanzeige faellt dann einfach weg.
+    setAchievementCounters(ac?.data ?? null);
     setLoadingData(false);
     setInitialLoadDone(true);
     const snap = await snapPromise;
@@ -1053,6 +1061,7 @@ export default function App() {
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
+                  achievementCounters={achievementCounters}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length + wsReadyList.length}
                   lang={lang} onLang={changeLang}
@@ -1069,6 +1078,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
                   onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} onStartMatch={startMatchVs} challenges={challenges}
+                  achievementCounters={achievementCounters}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   lang={lang} onLang={changeLang} onSetTheme={setTheme}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}

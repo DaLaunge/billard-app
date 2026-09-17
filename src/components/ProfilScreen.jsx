@@ -183,6 +183,34 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     if (has(/Spieler geworben/)) parts.push(t("{n} Spieler geworben", { n: extras.recruitedCount }));
     if (has(/Herausforderung(en)? angenommen/)) parts.push(t("{n} Herausforderungen angenommen", { n: extras.challengesAccepted }));
     if (has(/Siege in Folge gegen denselben Gegner$/)) parts.push(t("Laufende Serie gegen 1 Gegner: {n}", { n: extras.maxOpponentStreak }));
+    // Fallback fuer Kategorien ohne lokal berechenbare Live-Kennzahl (z.B.
+    // Ghost/Turniere/Mitgliedschaft - deren Rohdaten aus ghost_games/
+    // tournament_players/players.created_at hier nicht geladen sind): zeigt
+    // zumindest, was in der Kategorie schon erreicht wurde, statt gar nichts -
+    // sonst bleibt z.B. "1 Turnier gewonnen" fuer den Spieler unsichtbar,
+    // obwohl das fuer die Motivation zum naechsten Erfolg wichtig ist.
+    if (parts.length === 0) {
+      if (has(/dabei$/)) {
+        // Mitgliedschaft ist eine einzelne Leiter: jede erreichte Stufe
+        // schliesst die vorherigen automatisch mit ein, nur die hoechste zeigen.
+        const earned = items.filter((b) => earnedBadges.has(b.badge_key));
+        if (earned.length) {
+          const top = earned[earned.length - 1];
+          parts.push(t("Aktuell: {name} ({desc})", { name: t(top.name), desc: t(top.description) }));
+        }
+      } else {
+        // Sonst je Schwellenwert-Familie (Praefix vor der Endziffer, z.B.
+        // "ghost10" -> "ghost", "tournament_win3" -> "tournament_win") nur die
+        // jeweils hoechste erreichte Stufe zeigen - mehrere unabhaengige
+        // Familien pro Kategorie moeglich (z.B. Turniersieg/2./3. Platz).
+        const fams = {};
+        items.forEach((b) => { (fams[b.badge_key.replace(/\d+$/, "")] ||= []).push(b); });
+        Object.values(fams).forEach((fam) => {
+          const earned = fam.filter((b) => earnedBadges.has(b.badge_key));
+          if (earned.length) parts.push(t(earned[earned.length - 1].description));
+        });
+      }
+    }
     return parts.length ? parts.join(" · ") : null;
   };
 

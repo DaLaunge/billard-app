@@ -831,6 +831,7 @@ const TRANSLATIONS = {
     "Alle erreichbaren Erfolge freigeschaltet!": "All available achievements unlocked!",
     "Alle Erfolge ansehen": "View all achievements",
     "Fortschritt: {cur} / {target} {unit}": "Progress: {cur} / {target} {unit}",
+    "Aktuell: {name} ({desc})": "Currently: {name} ({desc})",
     "Erfolge durchsuchen …": "Search achievements …",
     "Erreicht": "Unlocked",
     "Gesperrt": "Locked",
