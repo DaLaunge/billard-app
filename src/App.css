@@ -146,8 +146,14 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 
 .dev-chart { width: 100%; height: auto; display: block; margin-bottom: 10px; touch-action: none; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
-.dev-chart .ylabel { fill: var(--ivory-dim); font-size: 9px; text-anchor: end; }
-.dev-chart .xlabel { fill: var(--ivory-dim); font-size: 9px; text-anchor: middle; }
+/* Nutzer-Feedback: Achsenbeschriftung war winzig (9) im Vergleich zur
+   Nutzerliste darueber (.stat-name, 14px). DevChart.jsx setzt die viewBox-
+   Breite jetzt auf die tatsaechlich gemessene Kartenbreite (1 Einheit = 1
+   CSS-px, siehe dortiger Kommentar), daher ist dieser Wert ein echter,
+   kartenbreiten-unabhaengiger px-Wert wie .stat-name und kann 1:1 angeglichen
+   werden. */
+.dev-chart .ylabel { fill: var(--ivory-dim); font-size: 14px; text-anchor: end; }
+.dev-chart .xlabel { fill: var(--ivory-dim); font-size: 14px; text-anchor: middle; }
 .dev-chart .crosshair { stroke: var(--ivory-dim); stroke-width: 1; stroke-dasharray: 3 3; }
 .dev-wrap { }
 .dev-readout { display: flex; align-items: center; gap: 10px; min-height: 22px; margin-bottom: 4px;
@@ -185,13 +191,21 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .add-panel { margin-top: 8px; }
 /* Nutzer-Auswahl fuer den Verlaufsgraphen (EntwicklungBlock.jsx) - Nutzer-
    Feedback: soll wie die uebrigen Statistik-Listen aussehen (kein eigener
-   Chip-/Grid-Stil) und ueber statt unter dem Graphen stehen, damit man die
-   Namen im Handy-Querformat sofort sieht statt erst am Graphen vorbeischrollen
-   zu muessen. Nutzt daher dieselben .stat-row/.stat-name/.stat-val-Klassen
-   wie Rangliste/Bestenlisten - einzig .pmp-remove kommt dazu, weil die Zeile
+   Chip-Look) und ueber statt unter dem Graphen stehen, damit man die Namen
+   im Handy-Querformat sofort sieht statt erst am Graphen vorbeischrollen zu
+   muessen. Nutzt daher dieselben .stat-row/.stat-name/.stat-val-Klassen wie
+   Rangliste/Bestenlisten - einzig .pmp-remove kommt dazu, weil die Zeile
    hier (anders als eine Ranglisten-Zeile) kein Navigations-Link ist, sondern
-   per eigenem kleinen Button entfernt wird. */
-.dev-userlist { margin-bottom: 8px; }
+   per eigenem kleinen Button entfernt wird.
+   Anders als die (immer einspaltige) Rangliste ist dieser Container hier
+   ein Grid: bei breitem Fenster/Desktop sollen mehrere Zeilen nebeneinander
+   stehen statt darunter (Nutzer-Feedback: "beim Maximieren des Browsers
+   nebeneinander"), am Handy faellt das Grid automatisch auf eine Spalte
+   zurueck. Die Mindestbreite je Zelle kommt dynamisch aus --row-min (an den
+   laengsten gewaehlten Namen gekoppelt, siehe rowMinCh in
+   EntwicklungBlock.jsx) statt eines festen Breakpoints. */
+.dev-userlist { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--row-min, 170px), 1fr));
+  column-gap: 20px; margin-bottom: 8px; }
 .cand-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .cand-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--felt-3);
   border: 1px solid var(--line); border-radius: 999px; padding: 6px 11px; font-size: 12.5px;

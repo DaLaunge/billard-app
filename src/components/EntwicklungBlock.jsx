@@ -120,6 +120,12 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     return latest(nick);
   };
 
+  // Zellen-Mindestbreite fuer das .dev-userlist-Grid an den laengsten
+  // gewaehlten Namen gekoppelt (ch-Einheit statt JS-Textmessung) - so
+  // stehen kurze Namen bei breitem Fenster zu mehreren nebeneinander,
+  // lange Namen bekommen automatisch mehr Platz bzw. eine eigene Spalte.
+  const rowMinCh = Math.max(6, sel.reduce((m, n) => Math.max(m, n.length), 0));
+
   return (
     <section className="stat-block">
       <div className="stat-block-head">
@@ -146,7 +152,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
         <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
         <>
-          <div className="dev-userlist">
+          <div className="dev-userlist" style={{ "--row-min": `calc(${rowMinCh}ch + 120px)` }}>
             {sel.map((nick) => {
               const val = displayVal(nick);
               return (

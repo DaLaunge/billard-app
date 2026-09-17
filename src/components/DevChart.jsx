@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 
@@ -27,7 +27,30 @@ export default function DevChart({ dates, lines, onActiveChange }) {
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
-  const W = 340, H = compact ? 130 : 210, padL = 34, padR = 12, padT = 10, padB = compact ? 20 : 26;
+  // viewBox-Breite = tatsaechliche Kartenbreite in px statt einer festen
+  // abstrakten Einheit, die beim Skalieren proportional mit der Kartenbreite
+  // mitwaechst/-schrumpft - Nutzer-Feedback: Achsenbeschriftung sollte genauso
+  // gross wirken wie die Nutzerliste daneben (.stat-name, feste 14px CSS-px).
+  // Mit einer festen viewBox aendert sich die gerenderte Textgroesse beim
+  // Umschalten schmal/breit (CardColumnButton) oder responsive Breakpoints
+  // mit der Kartenbreite - in der schmalen Spalte zu klein, in der breiten zu
+  // gross. 1 viewBox-Einheit = 1 CSS-px macht font-size/Radien/Strichstaerke
+  // zu echten, von der Kartenbreite unabhaengigen px-Werten wie ueberall
+  // sonst im UI.
+  const wrapRef = useRef(null);
+  const [measuredW, setMeasuredW] = useState(300);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect?.width;
+      if (w) setMeasuredW(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const W = measuredW, H = compact ? 130 : 210, padL = 40, padR = 12, padT = 10, padB = compact ? 26 : 32;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const all = lines.flatMap((l) => l.points.map((p) => p.rating));
   if (all.length === 0) return <p className="hint center">{t("Keine Daten im gewählten Zeitraum.")}</p>;
@@ -66,7 +89,7 @@ export default function DevChart({ dates, lines, onActiveChange }) {
   const up = (e) => { e.currentTarget.releasePointerCapture?.(e.pointerId); setActive(null); };
 
   return (
-    <div className="dev-wrap">
+    <div className="dev-wrap" ref={wrapRef}>
       <div className="dev-readout">
         {active == null ? (
           <span className="dev-hint">{t("Zum Ablesen über den Graphen ziehen")}</span>
@@ -79,11 +102,11 @@ export default function DevChart({ dates, lines, onActiveChange }) {
         {yticks.map((val) => (
           <g key={val}>
             <line x1={padL} y1={yFor(val)} x2={W - padR} y2={yFor(val)} className="grid" />
-            <text x={padL - 5} y={yFor(val) + 3} className="ylabel">{val}</text>
+            <text x={padL - 6} y={yFor(val) + 5} className="ylabel">{val}</text>
           </g>
         ))}
         {xTicks.map((t, k) => (
-          <text key={k} x={t.x} y={H - 8} className="xlabel">{t.label}</text>
+          <text key={k} x={t.x} y={H - 6} className="xlabel">{t.label}</text>
         ))}
         {active != null && (
           <line x1={xFor(active)} y1={padT} x2={xFor(active)} y2={padT + plotH} className="crosshair" />
