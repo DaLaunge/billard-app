@@ -19,7 +19,8 @@ import ImprintFooter from "./widgets/ImprintFooter";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab }) {
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
+  achievementCounters }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -163,7 +164,21 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     () => computeAchievementExtras(nickname, matches, players, challenges),
     [matches, players, nickname, challenges]
   );
-  const achievementHint = useMemo(() => nextAchievementHint(catalog, liveExtras, nickname, earnedBadges), [catalog, liveExtras, nickname, earnedBadges]);
+  const playerObj = players.find((p) => p.nickname === nickname);
+  // liveExtras + alles, was NICHT aus matches/players/challenges ableitbar ist
+  // (Mitgliedschaftsdauer aus players.created_at, Ghost-Spiele/Turnierplatzierungen
+  // aus my_achievement_counters() - siehe App.jsx loadData) - fuer Fortschritts-
+  // anzeige und Naechste-Erfolge-Vorschlaege auch in diesen drei Kategorien, die
+  // sonst als einzige gar keinen "das hast du schon" zeigen (Nutzer-Feedback).
+  const extendedExtras = useMemo(() => ({
+    ...liveExtras,
+    joinedAt: playerObj?.created_at ?? null,
+    ghostGames: achievementCounters?.ghost_games ?? null,
+    tournamentWins: achievementCounters?.tournament_wins ?? null,
+    tournament2nd: achievementCounters?.tournament_2nd ?? null,
+    tournament3rd: achievementCounters?.tournament_3rd ?? null,
+  }), [liveExtras, playerObj?.created_at, achievementCounters]);
+  const achievementHint = useMemo(() => nextAchievementHint(catalog, extendedExtras, nickname, earnedBadges), [catalog, extendedExtras, nickname, earnedBadges]);
 
   // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
   // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB
@@ -183,9 +198,27 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     if (has(/Spieler geworben/)) parts.push(t("{n} Spieler geworben", { n: extras.recruitedCount }));
     if (has(/Herausforderung(en)? angenommen/)) parts.push(t("{n} Herausforderungen angenommen", { n: extras.challengesAccepted }));
     if (has(/Siege in Folge gegen denselben Gegner$/)) parts.push(t("Laufende Serie gegen 1 Gegner: {n}", { n: extras.maxOpponentStreak }));
-    // Fallback fuer Kategorien ohne lokal berechenbare Live-Kennzahl (z.B.
-    // Ghost/Turniere/Mitgliedschaft - deren Rohdaten aus ghost_games/
-    // tournament_players/players.created_at hier nicht geladen sind): zeigt
+    // Ghost/Turniere/Mitgliedschaft: Rohdaten kommen aus my_achievement_counters()
+    // bzw. players.created_at (extendedExtras, siehe oben), nicht aus
+    // matches/players/challenges wie der Rest hier - deshalb eigene Zeilen statt
+    // has()-Erkennung allein. Nur wenn die Zaehler auch tatsaechlich geladen sind
+    // (RPC eingespielt) - sonst greift der Fallback weiter unten.
+    if (extras.ghostGames != null && has(/Spiele? gegen den Ghost$/)) {
+      parts.push(t("{n} Spiele gegen den Ghost", { n: extras.ghostGames }));
+    }
+    if (extras.tournamentWins != null && (has(/Turniere? gewonnen$/) || has(/Turnier-Zweiter$/) || has(/Turnier-Dritter$/))) {
+      const bits = [];
+      if (has(/Turniere? gewonnen$/)) bits.push(t("{n}× Platz 1", { n: extras.tournamentWins }));
+      if (has(/Turnier-Zweiter$/)) bits.push(t("{n}× Platz 2", { n: extras.tournament2nd }));
+      if (has(/Turnier-Dritter$/)) bits.push(t("{n}× Platz 3", { n: extras.tournament3rd }));
+      parts.push(bits.join(" · "));
+    }
+    if (extras.joinedAt && has(/dabei$/)) {
+      const days = Math.floor((Date.now() - new Date(extras.joinedAt)) / 86400000);
+      parts.push(t("Dabei seit {n} Tagen", { n: days }));
+    }
+    // Fallback fuer Kategorien ohne lokal berechenbare Live-Kennzahl UND ohne
+    // geladene Zaehler oben (z.B. Migration noch nicht eingespielt): zeigt
     // zumindest, was in der Kategorie schon erreicht wurde, statt gar nichts -
     // sonst bleibt z.B. "1 Turnier gewonnen" fuer den Spieler unsichtbar,
     // obwohl das fuer die Motivation zum naechsten Erfolg wichtig ist.
@@ -216,7 +249,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
   const myRows = rangliste.filter((r) => r.nickname === nickname);
   const gesamt = myRows.find((r) => r.discipline === "Gesamt");
-  const playerObj = players.find((p) => p.nickname === nickname);
   const speedStats = useMemo(() => computeSpeedStats(matches, playerObj?.id), [matches, playerObj?.id]);
 
   const cleanNick = nick.trim();
@@ -543,7 +575,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       {/* Ratings + Head-to-Head bilden am PC die linke Spalte (zusammen mit
           pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
       <div className="pf-stats-a">
-      <AchievementsProgressCard catalog={catalog} extras={liveExtras} earnedBadges={earnedBadges} nickname={nickname}
+      <AchievementsProgressCard catalog={catalog} extras={extendedExtras} earnedBadges={earnedBadges} nickname={nickname}
         onOpenProfile={() => {
           // "Alle"-Filter-Chip fokussieren statt manuell zu scrollen (siehe
           // allFilterRef oben) - klappt bei fremden Profilen nicht (Chips
@@ -617,7 +649,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
             const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
             const open = openCats.has(cat);
-            const liveStat = isMe ? catLiveStat(items, liveExtras) : null;
+            const liveStat = isMe ? catLiveStat(items, extendedExtras) : null;
             return (
               <div key={cat} className="badge-cat">
                 <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
@@ -634,7 +666,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                       const key = b.badge_key;
                       const earned = earnedBadges.has(key);
                       const selected = meRow?.selected_badge === key && isMe;
-                      const progress = isMe && !earned ? badgeProgress(b.description, liveExtras) : null;
+                      const progress = isMe && !earned ? badgeProgress(b.description, extendedExtras) : null;
                       return (
                         <button key={key}
                           className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}

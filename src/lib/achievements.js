@@ -93,7 +93,6 @@ const FAMILIES = [
 // eigene Umrechnung auf Tage seit players.created_at (kalendergenau statt
 // grob mit 30/365 multipliziert, damit z.B. Schaltjahre nicht staendig zu
 // einem Tag Differenz gegenueber der echten Serverpruefung fuehren).
-const MEMBERSHIP_UNITS = ["Woche", "Wochen", "Monat", "Monate", "Jahr", "Jahre"];
 function membershipTargetDays(description, joinedAt) {
   if (!joinedAt) return null;
   const m = description.match(/^(\d+)\s+(Woche|Wochen|Monat|Monate|Jahr|Jahre)\s+dabei$/);
@@ -146,13 +145,11 @@ function closestCandidates(catalog, extras, earnedBadges) {
   const candidates = [];
   (catalog || []).forEach((b) => {
     if (earnedBadges && earnedBadges.has(b.badge_key)) return;
-    const fam = FAMILIES.find((f) => f.test(b.description));
-    if (!fam) return;
-    const cur = fam.current(extras);
-    if (cur == null) return;
-    const gap = leadingNumber(b.description) - cur;
+    const p = progressFor(b.description, extras);
+    if (!p) return;
+    const gap = p.target - p.current;
     if (gap <= 0) return;
-    candidates.push({ gap, unit: fam.unit(), name: t(b.name), badgeKey: b.badge_key, emoji: b.emoji });
+    candidates.push({ gap, unit: p.unit, name: t(b.name), badgeKey: b.badge_key, emoji: b.emoji });
   });
   candidates.sort((a, b) => a.gap - b.gap);
   return candidates;
@@ -164,11 +161,7 @@ function closestCandidates(catalog, extras, earnedBadges) {
    ist (z.B. Rangliste/Ghost/Turnier-Erfolge, die serverseitige Historie
    brauchen) - dafuer zeigt die Erfolge-Kachel dann einfach keinen Fortschritt. */
 export function badgeProgress(description, extras) {
-  const fam = FAMILIES.find((f) => f.test(description));
-  if (!fam) return null;
-  const cur = fam.current(extras);
-  if (cur == null) return null;
-  return { current: Math.max(0, cur), target: leadingNumber(description), unit: fam.unit() };
+  return progressFor(description, extras);
 }
 
 /* Die paar naechstliegenden, noch nicht erreichten Erfolge als Rohdaten
