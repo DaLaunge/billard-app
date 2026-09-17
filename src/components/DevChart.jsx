@@ -2,9 +2,14 @@ import { useState } from "react";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 
-/* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek). */
-export default function DevChart({ dates, lines }) {
-  const [active, setActive] = useState(null);
+/* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek).
+   Die Werte pro Spieler werden nicht mehr hier oberhalb des Graphen angezeigt,
+   sondern im Nutzer-Raster unterhalb (siehe EntwicklungBlock.jsx) - deshalb
+   nur noch das aktive Datum hier oben und ein Melden des aktiven Index nach
+   oben (onActiveChange), damit das Raster beim Ziehen mitlesen kann. */
+export default function DevChart({ dates, lines, onActiveChange }) {
+  const [active, setActiveInner] = useState(null);
+  const setActive = (v) => { setActiveInner(v); onActiveChange && onActiveChange(v); };
   const W = 340, H = 210, padL = 34, padR = 12, padT = 12, padB = 26;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const all = lines.flatMap((l) => l.points.map((p) => p.rating));
@@ -49,17 +54,7 @@ export default function DevChart({ dates, lines }) {
         {active == null ? (
           <span className="dev-hint">{t("Zum Ablesen über den Graphen ziehen")}</span>
         ) : (
-          <>
-            <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
-            {lines.map((l) => {
-              const v = valAt(l, active);
-              return v == null ? null : (
-                <span key={l.nickname} className="ro">
-                  <span className="legend-dot" style={{ background: l.color }} />{Math.round(v)}
-                </span>
-              );
-            })}
-          </>
+          <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
         )}
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label={t("Rating-Verlauf")}

@@ -877,7 +877,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} {...cardCollapse("rangliste")} {...cardColumn("rangliste")} />
     ),
     entwicklung: (
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} matches={matches} disc={globalDisc} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} />
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={globalDisc} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} />
     ),
     rekordeClub: (
       <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardCollapse("rekordeClub")} {...cardColumn("rekordeClub")} />

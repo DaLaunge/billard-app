@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, Plus, Search, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { dateMinusDays, todayStr } from "../lib/stats";
+import { initials } from "../lib/format";
 import DevChart from "./DevChart";
+import Ball from "./Ball";
 import InfoButton from "./widgets/InfoButton";
 import CardCollapseButton from "./widgets/CardCollapseButton";
 import CardColumnButton from "./widgets/CardColumnButton";
@@ -21,7 +23,7 @@ const RANGES = [
 // braucht der Graph keine eigenen Disziplin-Buttons mehr. Alle folgenden
 // Werte (Spieler-Reihenfolge, Kurven, verfuegbare Daten) haengen weiterhin
 // von der Disziplin ab.
-export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, matches, disc, collapsed, onToggleCollapse, column, onToggleColumn }) {
+export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, collapsed, onToggleCollapse, column, onToggleColumn }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
@@ -69,6 +71,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   const [rangeKey, setRangeKey] = useState("1J");
   const [addOpen, setAddOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [active, setActive] = useState(null);
   useEffect(() => { setSel(defaultSel); }, [defaultSel]);
 
   const toggle = (nick) => {
@@ -106,6 +109,23 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     return dt ? Math.round(pts[dt]) : null;
   };
 
+  // Beim Ziehen ueber den Graphen den Wert des aktiven Tages anzeigen, sonst
+  // den letzten bekannten - so aktualisiert sich nur die Zahl im Raster
+  // unterhalb, statt Karten ein-/auszublenden (das war das "Huepfen").
+  const displayVal = (nick) => {
+    if (active != null) {
+      const v = seriesByNick[nick]?.[visibleDates[active]];
+      return v != null ? Math.round(v) : null;
+    }
+    return latest(nick);
+  };
+
+  // Rasterzellen-Mindestbreite an den laengsten gewaehlten Namen gekoppelt
+  // (ch-Einheit statt JS-Textmessung) - Nutzer-Feedback: am PC sollen bis zu
+  // 6 Spieler nebeneinander passen (6x1), am Handy bei langen Namen ggf. nur
+  // einer pro Zeile (1x6). auto-fit im Grid erledigt den Rest je nach Breite.
+  const legendMinCh = Math.min(24, Math.max(9, sel.reduce((m, n) => Math.max(m, n.length), 0) + 6));
+
   return (
     <section className="stat-block">
       <div className="stat-block-head">
@@ -132,15 +152,19 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
         <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
         <>
-          <DevChart dates={visibleDates} lines={lines} />
-          <div className="legend">
-            {sel.map((nick) => (
-              <button key={nick} className="legend-item" onClick={() => toggle(nick)} title={t("Entfernen")}>
-                <span className="legend-dot" style={{ background: colorOf(nick) }} />
-                {nick}{latest(nick) != null ? ` · ${latest(nick)}` : ""}
-                <X size={12} />
-              </button>
-            ))}
+          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
+          <div className="legend" style={{ "--legend-min": `${legendMinCh}ch` }}>
+            {sel.map((nick) => {
+              const val = displayVal(nick);
+              return (
+                <button key={nick} className="legend-item" onClick={() => toggle(nick)} title={t("Entfernen")}>
+                  <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={26} />
+                  <span className="legend-name">{nick}</span>
+                  <span className="legend-val" style={{ color: colorOf(nick) }}>{val != null ? val : "–"}</span>
+                  <X size={12} className="legend-x" />
+                </button>
+              );
+            })}
           </div>
 
           {!addOpen ? (
