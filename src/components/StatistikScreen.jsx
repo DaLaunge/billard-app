@@ -194,7 +194,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
           </colgroup>
           <tbody>
             {shown.map(({ key, label, holder, fmt, type, info, matchRef }) => {
-              const hasProtokoll = matchRef?.run_log?.length > 0;
+              const hasProtokoll = matchRef && (matchRef.run_log?.length > 0 || matchRef.tournament_id);
               return (
                 <tr key={key}>
                   <td className="rt-label">{label}</td>
@@ -354,7 +354,13 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
           </span>
           <span className="m-disc">{t(m.discipline)}</span>
           <TournamentFlag match={m} />
-          {m.run_log?.length > 0 && (
+          {/* Nutzer-Feedback: der "?"-Notiz-Button (siehe MatchProtokollScreen.jsx)
+              war unerreichbar, weil dieser Link zur Protokoll-Ansicht bisher nur
+              bei VORHANDENEM run_log erschien - genau dort, wo eine
+              Turnierleitungs-Schnelleingabe (also KEIN run_log) am ehesten eine
+              Notiz braucht, kam man gar nicht erst hin. Bei Turniermatches
+              deshalb auch ohne run_log anzeigen. */}
+          {(m.run_log?.length > 0 || m.tournament_id) && (
             <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
               <FileText size={15} />
             </button>

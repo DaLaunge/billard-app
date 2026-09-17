@@ -1037,7 +1037,16 @@ export default function App() {
                 onInvite={() => navPush({ tab: "invite" })} disciplines={disciplines}
                 pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports} />}
               {tab === "protokoll" && protokollMatch && (
-                <MatchProtokollScreen match={protokollMatch} me={player} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
+                // Nutzer-Feedback (indirekt beim Testen der Notiz-Funktion
+                // aufgefallen): protokollMatch ist eine Momentaufnahme im
+                // Navigations-State - nach dem Speichern einer Notiz (oder
+                // sonst einer Aenderung) lud loadData() zwar frische Daten,
+                // aber die Ansicht zeigte weiter die alte Momentaufnahme.
+                // matches.find() zieht die aktuelle Fassung nach, sobald sie
+                // in der (nur bestaetigte Matches enthaltenden) globalen
+                // Liste auftaucht, faellt sonst auf die Momentaufnahme
+                // zurueck (z.B. noch unbestaetigtes eigenes Match).
+                <MatchProtokollScreen match={matches.find((mm) => mm.id === protokollMatch.id) || protokollMatch} me={player} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
               )}
               {tab === "profil" && (
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
