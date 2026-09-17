@@ -153,8 +153,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .dev-readout { display: flex; align-items: center; gap: 10px; min-height: 22px; margin-bottom: 4px;
   font-size: 13px; flex-wrap: wrap; }
 .dev-readout b { font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; }
-.dev-readout .ro { display: inline-flex; align-items: center; gap: 5px; font-weight: 700;
-  font-family: 'Bricolage Grotesque', sans-serif; }
 .dev-hint { color: var(--ivory-dim); font-size: 12px; }
 .lang-row { display: flex; gap: 10px; }
 .lang-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 9px;
@@ -185,11 +183,15 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .pw-box input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
   background: var(--felt-2); color: var(--ivory); font-size: 15px; font-family: inherit; }
 .add-panel { margin-top: 8px; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.legend-item { display: inline-flex; align-items: center; gap: 6px; background: var(--felt);
-  border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 12.5px;
-  font-weight: 600; color: var(--ivory); cursor: pointer; font-family: inherit; }
-.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+/* Nutzer-Auswahl fuer den Verlaufsgraphen (EntwicklungBlock.jsx) - Nutzer-
+   Feedback: soll wie die uebrigen Statistik-Listen aussehen (kein eigener
+   Chip-/Grid-Stil) und ueber statt unter dem Graphen stehen, damit man die
+   Namen im Handy-Querformat sofort sieht statt erst am Graphen vorbeischrollen
+   zu muessen. Nutzt daher dieselben .stat-row/.stat-name/.stat-val-Klassen
+   wie Rangliste/Bestenlisten - einzig .pmp-remove kommt dazu, weil die Zeile
+   hier (anders als eine Ranglisten-Zeile) kein Navigations-Link ist, sondern
+   per eigenem kleinen Button entfernt wird. */
+.dev-userlist { margin-bottom: 8px; }
 .cand-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .cand-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--felt-3);
   border: 1px solid var(--line); border-radius: 999px; padding: 6px 11px; font-size: 12.5px;
@@ -381,6 +383,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   .sp { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; align-items: start; }
   .sp-board { grid-column: 1; }
   .sp-actions { grid-column: 2; display: flex; flex-direction: column; gap: 8px; }
+  /* Entwicklung ueber die Zeit: die Nutzerliste steht ueber dem Graphen
+     (siehe EntwicklungBlock.jsx) und ist als .stat-row schon kompakt - hier
+     zusaetzlich nur der Graph selbst per flacherem viewBox in DevChart.jsx
+     niedriger (derselbe Breakpoint), damit die ganze Karte ohne Scrollen in
+     den kurzen Viewport passt. */
+  .dev-readout { min-height: 16px; margin-bottom: 2px; }
+  .dev-chart { margin-bottom: 6px; }
 }
 .sp-turn { font-size: 11.5px; font-weight: 700; color: var(--gold); }
 .sp-target { text-align: center; font-size: 12.5px; color: var(--ivory-dim); }

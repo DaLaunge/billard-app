@@ -1,11 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 
-/* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek). */
-export default function DevChart({ dates, lines }) {
-  const [active, setActive] = useState(null);
-  const W = 340, H = 210, padL = 34, padR = 12, padT = 12, padB = 26;
+// Gleicher Breakpoint wie die uebrigen "Handy im Querformat"-Anpassungen in
+// App.css (siehe dort: .sp-score etc.) - Nutzer-Feedback: im Querformat
+// frisst der Graph (feste Seitenverhaeltnis-Hoehe ueber die volle Breite)
+// fast den ganzen kurzen Viewport auf, das Nutzer-Raster darunter faellt
+// aus dem sichtbaren Bereich. Ein flacheres viewBox-Seitenverhaeltnis nur in
+// diesem Fall macht den Graphen selbst niedriger statt ihn nur per CSS zu
+// stauchen (das wuerde die Kurven verzerren).
+const LANDSCAPE_QUERY = "(orientation: landscape) and (max-height: 500px)";
+
+/* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek).
+   Die Werte pro Spieler werden nicht mehr hier oberhalb des Graphen angezeigt,
+   sondern im Nutzer-Raster unterhalb (siehe EntwicklungBlock.jsx) - deshalb
+   nur noch das aktive Datum hier oben und ein Melden des aktiven Index nach
+   oben (onActiveChange), damit das Raster beim Ziehen mitlesen kann. */
+export default function DevChart({ dates, lines, onActiveChange }) {
+  const [active, setActiveInner] = useState(null);
+  const setActive = (v) => { setActiveInner(v); onActiveChange && onActiveChange(v); };
+  const [compact, setCompact] = useState(() => (typeof window !== "undefined" && window.matchMedia(LANDSCAPE_QUERY).matches));
+  useEffect(() => {
+    const mq = window.matchMedia(LANDSCAPE_QUERY);
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  const W = 340, H = compact ? 130 : 210, padL = 34, padR = 12, padT = 10, padB = compact ? 20 : 26;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const all = lines.flatMap((l) => l.points.map((p) => p.rating));
   if (all.length === 0) return <p className="hint center">{t("Keine Daten im gewählten Zeitraum.")}</p>;
@@ -49,17 +71,7 @@ export default function DevChart({ dates, lines }) {
         {active == null ? (
           <span className="dev-hint">{t("Zum Ablesen über den Graphen ziehen")}</span>
         ) : (
-          <>
-            <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
-            {lines.map((l) => {
-              const v = valAt(l, active);
-              return v == null ? null : (
-                <span key={l.nickname} className="ro">
-                  <span className="legend-dot" style={{ background: l.color }} />{Math.round(v)}
-                </span>
-              );
-            })}
-          </>
+          <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
         )}
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label={t("Rating-Verlauf")}
