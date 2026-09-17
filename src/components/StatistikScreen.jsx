@@ -20,11 +20,17 @@ import TournamentFlag from "./TournamentFlag";
 import SortableCard from "./widgets/SortableCard";
 import CardCollapseButton from "./widgets/CardCollapseButton";
 import CardColumnButton from "./widgets/CardColumnButton";
+import EmptyColumnDropZone from "./widgets/EmptyColumnDropZone";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 const COUNT_OPTIONS = [3, 10, "all"];
 const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
 const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
+// Feste ids der beiden EmptyColumnDropZone-Ablageflaechen (siehe dort) -
+// koennen keine echte Karten-id ueberschneiden, da Karten-ids aus
+// cardLayout.js kommen.
+const EMPTY_MIDDLE_DROP_ID = "middle-empty";
+const EMPTY_RIGHT_DROP_ID = "right-empty";
 
 // rectSortingStrategy() geht von EINER durchgehenden Liste aus: es simuliert
 // ein arrayMove() ueber ALLE Karten hinweg und verschiebt darauf basierend
@@ -565,6 +571,18 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+    // Leere Spalte hat keine Karte, auf die man beim Ziehen zielen koennte
+    // (Nutzer-Feedback: "ich habe alle Karten in der Mitte, kann aber keine
+    // Karte nach rechts schieben") - EmptyColumnDropZone registriert die
+    // leere Spalte selbst als Ziel mit einer der beiden festen ids. Die
+    // Reihenfolge bleibt hier unangetastet, nur die Spalte wechselt, genau
+    // wie beim CardColumnButton.
+    if (over.id === EMPTY_MIDDLE_DROP_ID || over.id === EMPTY_RIGHT_DROP_ID) {
+      const targetColumn = over.id === EMPTY_RIGHT_DROP_ID ? "right" : "middle";
+      if ((cardColumns[active.id] === "right" ? "right" : "middle") === targetColumn) return;
+      persistLayout(cardOrder, { ...cardColumns, [active.id]: targetColumn });
+      return;
+    }
     const oldIndex = cardOrder.indexOf(active.id);
     const newIndex = cardOrder.indexOf(over.id);
     if (oldIndex === -1 || newIndex === -1) return;
@@ -994,6 +1012,9 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       <div className="stat-right-col">
       <div className="stat-grid">
         {rightCardIds.map((id) => <SortableCard key={id} id={id}>{cardsById[id]}</SortableCard>)}
+        {rightCardIds.length === 0 && (
+          <EmptyColumnDropZone id={EMPTY_RIGHT_DROP_ID} label="Karte hierher ziehen, um sie in diese Spalte zu verschieben" />
+        )}
       </div>
       </div>
 
@@ -1021,6 +1042,9 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           weiterhin aus cardOrder (Drag & Drop). */}
       <div className="stat-chart-col">
         {middleCardIds.map((id) => <SortableCard key={id} id={id}>{cardsById[id]}</SortableCard>)}
+        {middleCardIds.length === 0 && (
+          <EmptyColumnDropZone id={EMPTY_MIDDLE_DROP_ID} label="Karte hierher ziehen, um sie in diese Spalte zu verschieben" />
+        )}
       </div>
       </SortableContext>
       </DndContext>

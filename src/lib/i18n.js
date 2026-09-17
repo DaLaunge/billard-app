@@ -278,6 +278,7 @@ const TRANSLATIONS = {
     "In die rechte Spalte verschieben": "Move to right column",
     "In die mittlere Spalte verschieben": "Move to middle column",
     "Rückgängig": "Undo",
+    "Karte hierher ziehen, um sie in diese Spalte zu verschieben": "Drag a card here to move it into this column",
     "Entfernt unwiderruflich all deine persönlichen Daten (Login, Name, Profilfarbe, Motto, Nachrichten). Reine Ergebniszahlen bereits gespielter Matches bleiben anonymisiert bestehen, damit die Statistik der übrigen Mitglieder korrekt bleibt.": "Permanently removes all your personal data (login, name, profile color, motto, messages). The plain result numbers of matches already played stay on, anonymized, so other members' statistics remain correct.",
     "Meine Daten löschen": "Delete my data",
     "Wirklich alle Daten löschen?": "Really delete all your data?",
