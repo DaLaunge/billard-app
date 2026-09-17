@@ -20,7 +20,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  achievementCounters }) {
+  onResetCardLayout, achievementCounters }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -280,6 +280,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       onSaveProfile(nickValid ? cleanNick : nickname, null, motto),
       onSetTheme("green", null),
       onSetStartTab("stats"),
+      onResetCardLayout(),
     ]);
     setColor(null);
     setThemeKey("green");
@@ -456,7 +457,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button className="btn ghost" disabled={busy} onClick={resetDefaults}>
             {t("Zurücksetzen")}
           </button>
-          <p className="hint">{t("Setzt Kugelfarbe, Design und Startseite auf die Standardeinstellungen zurück.")}</p>
+          <p className="hint">{t("Setzt Kugelfarbe, Design, Startseite und die verschobenen Karten auf die Standardeinstellungen zurück.")}</p>
         </div>
 
         {/* Nutzer-Feedback: "Konto löschen" soll in "Profil bearbeiten" und
