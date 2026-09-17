@@ -196,9 +196,20 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   // Nichterscheinen melden haengt NICHT mehr am Popover (siehe eigener
   // Dialog + Kopfzeilen-Button oben) - das Popover zeigt jetzt wieder nur
   // die Faelle, in denen es wirklich die einzige Bedienmoeglichkeit ist.
+  // Nutzer-Feedback: "ich habe bei einem beendeten Turnier keine
+  // Moeglichkeit, durch die Graphik zu klicken" - sobald ein Turnier
+  // abgeschlossen UND die Ergebnisse bestaetigt/gesperrt sind, hat KEIN
+  // Match mehr eine Aktion (canReport/canConfirm/canForce brauchen alle
+  // tourStatus==="running" bzw. !confirmed), und der bisherige Fallback
+  // (reported_by === confirmed_by, "manuell nachgetragen") griff nur bei
+  // Turnierleitungs-Schnelleingabe - bei normal von den Spielern selbst
+  // gemeldeten+bestaetigten Matches (der Regelfall) verschwand das Popover
+  // dadurch komplett, sobald nichts mehr zu tun war. selected.match_id
+  // allein (jedes bereits gemeldete Match, unabhaengig von wer/wie/Status)
+  // deckt diesen read-only "nur anzeigen"-Fall ab und macht die beiden
+  // spezifischeren Bedingungen ueberfluessig.
   const selectedHasPopoverContent = !!(selectedActions && !selectedInline && (
-    selectedActions.waitingForTable || (selected.match_id && !selected.match?.confirmed)
-    || (selected.match?.reported_by && selected.match.reported_by === selected.match.confirmed_by)
+    selectedActions.waitingForTable || selected.match_id
     || selectedActions.canReport || selectedActions.canConfirm || selectedActions.canForce
   ));
 
