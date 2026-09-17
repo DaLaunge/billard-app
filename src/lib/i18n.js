@@ -1168,6 +1168,8 @@ const TRANSLATIONS = {
     "Ungültiger Schritt.": "Invalid step.",
     "Zielposition nicht gefunden.": "Target position not found.",
     "Teilnehmer nicht gefunden.": "Participant not found.",
+    "n/a": "n/a",
+    'Nur bei Live-Mitzählen über "Melden" verfügbar, nicht bei Turnierleitungs-Schnelleingabe.': 'Only available with live tracking via "Report", not with organizer quick-entry.',
     "Aussetzen": "Sit out",
     "Ausgesetzt.": "Sat out.",
     "Nur die Person selbst oder die Leitung kann hier aussetzen.": "Only the person themselves or the organizer can sit them out.",

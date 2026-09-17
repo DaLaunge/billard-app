@@ -258,13 +258,22 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
                     const hr = [tm.match.high_run1, tm.match.high_run2].filter((v) => v != null);
                     const avg = [tm.match.avg1, tm.match.avg2].filter((v) => v != null);
                     const ms = tableTimeMs(tm);
+                    // Nutzer-Feedback: "es fehlen einige Protokolle" - bei per
+                    // Turnierleitungs-Schnelleingabe gemeldeten Matches gibt es
+                    // mangels Rack-fuer-Rack-Mitzaehlen kein Höchstserie/Schnitt
+                    // (siehe tableTimeMs()-Kommentar oben) - kein Fehler, sondern
+                    // erwartetes Verhalten dieser Eingabeart. "n/a" statt "–" plus
+                    // Tooltip macht das jetzt explizit, statt wie ein fehlender/
+                    // kaputter Wert auszusehen.
+                    const manualEntry = tm.match.reported_by && tm.match.reported_by === tm.match.confirmed_by;
+                    const naTitle = manualEntry ? t("Nur bei Live-Mitzählen über \"Melden\" verfügbar, nicht bei Turnierleitungs-Schnelleingabe.") : undefined;
                     return (
                       <tr key={tm.id}>
                         <td>{fmtDateTime(tm.match.played_at)}</td>
                         <td>{n1} – {n2}</td>
                         <td>{sc.s1}:{sc.s2}</td>
-                        <td>{hr.length ? hr.join(" / ") : "–"}</td>
-                        <td>{avg.length ? avg.map((v) => v.toFixed(1)).join(" / ") : "–"}</td>
+                        <td title={hr.length ? undefined : naTitle}>{hr.length ? hr.join(" / ") : (manualEntry ? t("n/a") : "–")}</td>
+                        <td title={avg.length ? undefined : naTitle}>{avg.length ? avg.map((v) => v.toFixed(1)).join(" / ") : (manualEntry ? t("n/a") : "–")}</td>
                         <td>{ms != null ? fmtDuration(ms) : "–"}</td>
                       </tr>
                     );
