@@ -8,6 +8,7 @@ import Ball from "./Ball";
 import InfoButton from "./widgets/InfoButton";
 import CardCollapseButton from "./widgets/CardCollapseButton";
 import CardColumnButton from "./widgets/CardColumnButton";
+import CardMaximizeButton from "./widgets/CardMaximizeButton";
 
 const RANGES = [
   { key: "1M", label: "1M", days: 31 },
@@ -72,6 +73,8 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   const [addOpen, setAddOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(null);
+  const [maximized, setMaximized] = useState(false);
+  const toggleMaximize = () => setMaximized((m) => !m);
   useEffect(() => { setSel(defaultSel); }, [defaultSel]);
 
   const toggle = (nick) => {
@@ -127,15 +130,16 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   const rowMinCh = Math.max(6, sel.reduce((m, n) => Math.max(m, n.length), 0));
 
   return (
-    <section className="stat-block">
+    <section className={"stat-block" + (maximized ? " is-maximized" : "")}>
       <div className="stat-block-head">
         <h3><TrendingUp size={17} /> <span className="stat-block-title-text">{t("Entwicklung über die Zeit")}</span></h3>
         <div className="stat-block-head-actions">
           <InfoButton title={t("Entwicklung über die Zeit")}>
             {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
           </InfoButton>
-          <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
+          {!maximized && <CardColumnButton column={column} onToggle={onToggleColumn} />}
+          <CardMaximizeButton maximized={maximized} onToggle={toggleMaximize} />
+          {!maximized && <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />}
         </div>
       </div>
       {!collapsed && (

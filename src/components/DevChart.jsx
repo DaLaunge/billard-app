@@ -1,15 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { t } from "../lib/i18n";
-import { fmtDate } from "../lib/format";
-
-// Gleicher Breakpoint wie die uebrigen "Handy im Querformat"-Anpassungen in
-// App.css (siehe dort: .sp-score etc.) - Nutzer-Feedback: im Querformat
-// frisst der Graph (feste Seitenverhaeltnis-Hoehe ueber die volle Breite)
-// fast den ganzen kurzen Viewport auf, das Nutzer-Raster darunter faellt
-// aus dem sichtbaren Bereich. Ein flacheres viewBox-Seitenverhaeltnis nur in
-// diesem Fall macht den Graphen selbst niedriger statt ihn nur per CSS zu
-// stauchen (das wuerde die Kurven verzerren).
-const LANDSCAPE_QUERY = "(orientation: landscape) and (max-height: 500px)";
+import { fmtDate, luminance } from "../lib/format";
 
 /* Selbst gezeichnetes Mehrlinien-Diagramm mit Scrubbing (SVG, ohne Bibliothek).
    Die Werte pro Spieler werden nicht mehr hier oberhalb des Graphen angezeigt,
@@ -19,38 +10,32 @@ const LANDSCAPE_QUERY = "(orientation: landscape) and (max-height: 500px)";
 export default function DevChart({ dates, lines, onActiveChange }) {
   const [active, setActiveInner] = useState(null);
   const setActive = (v) => { setActiveInner(v); onActiveChange && onActiveChange(v); };
-  const [compact, setCompact] = useState(() => (typeof window !== "undefined" && window.matchMedia(LANDSCAPE_QUERY).matches));
+  // viewBox = tatsaechliche Groesse der .dev-plot-Box in px (per ResizeObserver
+  // gemessen) statt einer festen abstrakten Einheit, die beim Skalieren
+  // proportional mit der Kartengroesse mitwaechst/-schrumpft - Nutzer-
+  // Feedback: Achsenbeschriftung sollte genauso gross wirken wie die
+  // Nutzerliste daneben (.stat-name, feste 14px CSS-px). 1 viewBox-Einheit =
+  // 1 CSS-px macht font-size/Radien/Strichstaerke zu echten, von der
+  // Kartengroesse unabhaengigen px-Werten wie ueberall sonst im UI. Die
+  // Hoehe der .dev-plot-Box selbst kommt komplett aus CSS (fest 210px normal,
+  // 130px im Handy-Querformat, flex:1 im Maximieren-Modus der Karte - siehe
+  // App.css) - dieser Hook kennt keinen dieser Faelle, er misst nur, was CSS
+  // gerade entschieden hat, und der Graph passt sich dadurch automatisch an
+  // jede neue Bedingung an, ohne dass hier neue Faelle ergaenzt werden muessten.
+  const plotRef = useRef(null);
+  const [box, setBox] = useState({ w: 300, h: 210 });
   useEffect(() => {
-    const mq = window.matchMedia(LANDSCAPE_QUERY);
-    const update = () => setCompact(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  // viewBox-Breite = tatsaechliche Kartenbreite in px statt einer festen
-  // abstrakten Einheit, die beim Skalieren proportional mit der Kartenbreite
-  // mitwaechst/-schrumpft - Nutzer-Feedback: Achsenbeschriftung sollte genauso
-  // gross wirken wie die Nutzerliste daneben (.stat-name, feste 14px CSS-px).
-  // Mit einer festen viewBox aendert sich die gerenderte Textgroesse beim
-  // Umschalten schmal/breit (CardColumnButton) oder responsive Breakpoints
-  // mit der Kartenbreite - in der schmalen Spalte zu klein, in der breiten zu
-  // gross. 1 viewBox-Einheit = 1 CSS-px macht font-size/Radien/Strichstaerke
-  // zu echten, von der Kartenbreite unabhaengigen px-Werten wie ueberall
-  // sonst im UI.
-  const wrapRef = useRef(null);
-  const [measuredW, setMeasuredW] = useState(300);
-  useEffect(() => {
-    const el = wrapRef.current;
+    const el = plotRef.current;
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect?.width;
-      if (w) setMeasuredW(w);
+      const r = entries[0]?.contentRect;
+      if (r && r.width && r.height) setBox({ w: r.width, h: r.height });
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  const W = measuredW, H = compact ? 130 : 210, padL = 40, padR = 12, padT = 10, padB = compact ? 26 : 32;
+  const W = box.w, H = box.h, padL = 40, padR = 12, padT = 10, padB = 32;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const all = lines.flatMap((l) => l.points.map((p) => p.rating));
   if (all.length === 0) return <p className="hint center">{t("Keine Daten im gewählten Zeitraum.")}</p>;
@@ -89,7 +74,7 @@ export default function DevChart({ dates, lines, onActiveChange }) {
   const up = (e) => { e.currentTarget.releasePointerCapture?.(e.pointerId); setActive(null); };
 
   return (
-    <div className="dev-wrap" ref={wrapRef}>
+    <div className="dev-wrap">
       <div className="dev-readout">
         {active == null ? (
           <span className="dev-hint">{t("Zum Ablesen über den Graphen ziehen")}</span>
@@ -97,6 +82,7 @@ export default function DevChart({ dates, lines, onActiveChange }) {
           <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
         )}
       </div>
+      <div className="dev-plot" ref={plotRef}>
       <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label={t("Rating-Verlauf")}
         onPointerDown={down} onPointerMove={onMove} onPointerUp={up} onPointerLeave={() => setActive(null)} onPointerCancel={up}>
         {yticks.map((val) => (
@@ -114,20 +100,35 @@ export default function DevChart({ dates, lines, onActiveChange }) {
         {lines.map((l) => {
           const pts = l.points.map((p) => `${xFor(p.i)},${yFor(p.rating)}`).join(" ");
           const av = active != null ? valAt(l, active) : null;
+          // Manche Spieler haben eine dunkle Ballfarbe UND ein dunkles Tischfarb-
+          // Thema (siehe lib/themes.js - jedes Thema ist bewusst dunkel, felt-
+          // Helligkeit typischerweise <15%) - eine dunkle Linie darauf ist kaum
+          // zu erkennen (Nutzer-Feedback). Statt die Farbe selbst aufzuhellen
+          // (dann passt sie nicht mehr zur Kugel/Legende) bekommt nur die Linie
+          // einen hellen Hof dahinter, nur wenn die Farbe tatsaechlich dunkel
+          // ist - helle Ballfarben sehen unveraendert aus.
+          const dark = luminance(l.color) < 0.45;
           return (
             <g key={l.nickname}>
+              {dark && (
+                <polyline points={pts} fill="none" stroke="rgba(242,237,224,0.55)" strokeWidth="4.4"
+                  strokeLinejoin="round" strokeLinecap="round" />
+              )}
               <polyline points={pts} fill="none" stroke={l.color} strokeWidth="2.2"
                 strokeLinejoin="round" strokeLinecap="round" />
               {l.points.length > 0 && (
-                <circle cx={xFor(l.points.at(-1).i)} cy={yFor(l.points.at(-1).rating)} r="3" fill={l.color} />
+                <circle cx={xFor(l.points.at(-1).i)} cy={yFor(l.points.at(-1).rating)} r="3" fill={l.color}
+                  stroke={dark ? "var(--ivory)" : "none"} strokeWidth={dark ? 1.3 : 0} />
               )}
               {av != null && (
-                <circle cx={xFor(active)} cy={yFor(av)} r="4" fill={l.color} stroke="#0A2B21" strokeWidth="1.5" />
+                <circle cx={xFor(active)} cy={yFor(av)} r="4" fill={l.color}
+                  stroke={dark ? "var(--ivory)" : "var(--felt)"} strokeWidth="1.5" />
               )}
             </g>
           );
         })}
       </svg>
+      </div>
     </div>
   );
 }
