@@ -92,23 +92,46 @@ export function splitProtocolRowsByPlayer(rows) {
 // Reihenfolge alle Racks (unabhaengig von der Paarung) und ist daher immer
 // korrekt - fehlt es (aeltere/normale Matches), faellt alles unveraendert
 // auf die reine ts-Differenz zurueck.
+//
+// Genutzt wird dieser Wert von gameSpeedSums() (Tempo/Durchschnittszeit -
+// genau der urspruengliche Fehlerbericht) und von matchPlayTimeMs(), NICHT
+// von matchDurationMs(): die Gesamtdauer muss zu den Zeitstempeln passen,
+// die im Protokoll daneben stehen.
 const entryDuration = (e) => (Array.isArray(e) && typeof e[3] === "number" ? e[3] : null);
 
+// Zeitraum des Matches: erster bis letzter Zeitstempel im Protokoll - genau
+// das, was die Zeit-Spalte der Protokoll-Tabelle darueber Zeile fuer Zeile
+// anzeigt. Diese Funktion darf NICHT die expliziten Rack-Dauern aufsummieren
+// (dafuer gibt es matchPlayTimeMs): ein Winner-Stays-Match, dessen Racks laut
+// Protokoll um 15:35 und 16:04 gespielt wurden, zeigte dadurch
+// "Gesamtdauer: 4 Sek" - ein Wert, der jedem Zeitstempel daneben widerspricht
+// (Nutzer-Feedback: "Zeitstempel scheinen bei normalen Matches fehlerhaft,
+// alle Matches dauern nur eine Sekunde"). Der urspruengliche Winner-Stays-
+// Fehlerbericht betraf ausdruecklich die DURCHSCHNITTSZEIT ("average time"),
+// nicht die Gesamtdauer - die Korrektur dafuer steckt weiterhin in
+// gameSpeedSums() und ist von dieser Trennung unberuehrt.
 export function matchDurationMs(log) {
   if (!log || log.length < 2) return null;
-  // some() statt every(): das allererste Rack der GESAMTEN Winner-Stays-
-  // Runde hat nie eine Dauer (kein Vorgaenger existiert) - das darf nicht
-  // die ganze Summe auf die falsche ts-Differenz-Methode zurueckfallen
-  // lassen, nur weil GENAU DIESES Rack zufaellig auch das erste Rack
-  // dieses Paares war. Ein fehlender Wert zaehlt dabei als 0 (unbekannt,
-  // besser als falsch mitgezaehlte fremde Spielzeit).
-  if (isSimpleScoreLog(log) && log.some((e) => entryDuration(e) != null)) {
-    return log.reduce((sum, e) => sum + (entryDuration(e) ?? 0), 0);
-  }
   const first = entryTs(log[0]);
   const last = entryTs(log[log.length - 1]);
   if (typeof first !== "number" || typeof last !== "number") return null;
   return last - first;
+}
+
+// Reine Spielzeit dieser Paarung - nur bei Winner-Stays-Matches bekannt (nur
+// dort tragen die Log-Eintraege eine explizite Dauer, siehe entryDuration).
+// Unterscheidet sich absichtlich von matchDurationMs(): zwischen zwei
+// Begegnungen desselben Paares stand der Tisch anderen zur Verfuegung, deren
+// Spielzeit gehoert nicht zu dieser Begegnung.
+//
+// some() statt every(): das allererste Rack der GESAMTEN Winner-Stays-Runde
+// hat nie eine Dauer (kein Vorgaenger existiert) - das darf nicht die ganze
+// Summe verwerfen, nur weil GENAU DIESES Rack zufaellig auch das erste Rack
+// dieses Paares war. Ein fehlender Wert zaehlt dabei als 0 (unbekannt, besser
+// als falsch mitgezaehlte fremde Spielzeit).
+export function matchPlayTimeMs(log) {
+  if (!isSimpleScoreLog(log) || !log.some((e) => entryDuration(e) != null)) return null;
+  return log.reduce((sum, e) => sum + (entryDuration(e) ?? 0), 0);
 }
 
 // "Einheiten" fuer die Pro-Stueck-Dauer: bei Punktestand-Protokollen die

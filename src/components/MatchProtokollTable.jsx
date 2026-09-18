@@ -1,7 +1,7 @@
 import { t } from "../lib/i18n";
 import { fmtTime, fmtDuration } from "../lib/format";
 import { runLogEntryParts, isSimpleScoreLog, buildProtocolRows, splitProtocolRowsByPlayer,
-  matchDurationMs, matchUnitCount, avgUnitDurationMs } from "../lib/runLog";
+  matchDurationMs, matchPlayTimeMs, matchUnitCount, avgUnitDurationMs } from "../lib/runLog";
 
 // Eine Tabellenzeile je Spieler+Seite: entweder die vier Datenzellen
 // (Ereignis/Serie/Schnitt/Punkte) oder leer, wenn dieser Spieler diese
@@ -34,6 +34,11 @@ export default function MatchProtokollTable({ match: m, names }) {
   const maxRows = Math.max(rowsA.length, rowsB.length);
   const hasTime = simple ? m.run_log?.[0]?.[2] != null : m.run_log?.[0]?.ts != null;
   const duration = hasTime ? matchDurationMs(m.run_log) : null;
+  // Nur bei Winner Stays bekannt: die Zeit, in der dieses Paar wirklich am
+  // Tisch stand. Steht als eigene Zeile NEBEN der Gesamtdauer, statt sie zu
+  // ersetzen - sonst widerspricht die eine Zahl den Zeitstempeln der Tabelle
+  // direkt darueber (siehe matchDurationMs() in lib/runLog.js).
+  const playTime = hasTime ? matchPlayTimeMs(m.run_log) : null;
   const units = hasTime ? matchUnitCount(m.run_log) : null;
   const avgUnit = hasTime ? avgUnitDurationMs(m.run_log, m.discipline) : null;
 
@@ -81,9 +86,14 @@ export default function MatchProtokollTable({ match: m, names }) {
         </div>
       )}
 
-      {duration != null && (
+      {(duration != null || playTime != null) && (
         <div className="protokoll-duration">
-          <span>{t("Gesamtdauer")}: <b>{fmtDuration(duration)}</b></span>
+          {duration != null && <span>{t("Gesamtdauer")}: <b>{fmtDuration(duration)}</b></span>}
+          {playTime != null && (
+            <span title={t("Zwischen zwei Begegnungen desselben Paares spielen bei Winner Stays andere am Tisch - diese Zeit zählt hier nicht mit.")}>
+              {t("Reine Spielzeit")}: <b>{fmtDuration(playTime)}</b>
+            </span>
+          )}
           {units > 0 && (
             <span>
               {simple ? t("Ø pro Spiel") : t("Ø pro Aufnahme")}: <b>{fmtDuration(avgUnit)}</b>
