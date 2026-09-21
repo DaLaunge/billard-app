@@ -11,8 +11,9 @@ import { savePendingReport, isNetworkError } from "../lib/offlineReport";
 import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
+import KeepAwakeButton from "./widgets/KeepAwakeButton";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx }) {
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake }) {
   const [step, setStep] = useState(tournamentCtx ? 2 : (initialOpp ? 1 : 0));
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
@@ -288,6 +289,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <ChevronLeft size={22} />
         </button>
         <h2>{t(tournamentCtx ? "Turnier-Ergebnis" : "Neues Match")}</h2>
+        <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
       </header>
 
       {abortAsk && (

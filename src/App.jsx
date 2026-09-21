@@ -702,10 +702,24 @@ export default function App() {
   // Bildschirm waehrend einer laufenden Match-/Winner-Stays-Eingabe wachhalten
   // (siehe lib/wakeLock.js). Dieselben Screens wie LIVE_ENTRY_TABS: dort liegt
   // das Handy waehrend des Spiels ungenutzt herum und soll trotzdem an bleiben.
-  // Abschaltbar im Profil unter Einstellungen (Standard: an).
-  const [keepAwake, setKeepAwakeState] = useState(getKeepAwake);
-  const setKeepAwake = useCallback((on) => { setKeepAwakeState(on); storeKeepAwake(on); }, []);
-  useWakeLock(keepAwake && LIVE_ENTRY_TABS.includes(tab));
+  //
+  // Zwei Ebenen, mit Absicht: keepAwakeDefault ist die dauerhafte Einstellung
+  // aus dem Profil (Standard: an, siehe lib/wakeLock.js), keepAwakeNow gilt
+  // nur fuer die gerade laufende Eingabe und haengt am Schnellschalter oben
+  // im Match-/Winner-Stays-Kopf. Beim BETRETEN eines Live-Eingabe-Screens
+  // wird keepAwakeNow wieder auf den Standard gesetzt - ein "hier einmal
+  // aus" soll nicht ungefragt beim naechsten Match weitergelten, sonst waere
+  // es eine heimliche zweite Dauereinstellung neben der im Profil.
+  const [keepAwakeDefault, setKeepAwakeDefaultState] = useState(getKeepAwake);
+  const setKeepAwakeDefault = useCallback((on) => { setKeepAwakeDefaultState(on); storeKeepAwake(on); }, []);
+  const [keepAwakeNow, setKeepAwakeNow] = useState(keepAwakeDefault);
+  const inLiveEntry = LIVE_ENTRY_TABS.includes(tab);
+  const wasInLiveEntry = useRef(inLiveEntry);
+  useEffect(() => {
+    if (inLiveEntry && !wasInLiveEntry.current) setKeepAwakeNow(keepAwakeDefault);
+    wasInLiveEntry.current = inLiveEntry;
+  }, [inLiveEntry, keepAwakeDefault]);
+  useWakeLock(keepAwakeNow && inLiveEntry);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1060,6 +1074,7 @@ export default function App() {
                   onReload={loadData} initialOpp={matchTournamentCtx ? tourOpp : vsOpp} onChallenge={createChallenge}
                   catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
                   onOpenProtokoll={openProtokoll} tournamentCtx={matchTournamentCtx}
+                  keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow}
                   onDone={() => { loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}
                   onCancel={() => { allowLeaveMatchRef.current = true; window.history.back(); }} />
                 );
@@ -1094,7 +1109,7 @@ export default function App() {
                   onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length + wsReadyList.length}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
-                  keepAwake={keepAwake} onSetKeepAwake={setKeepAwake}
+                  keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}
@@ -1135,7 +1150,8 @@ export default function App() {
               )}
               {tab === "winnerstays" && winnerStaysId && (
                 <WinnerStaysScreen sessionId={winnerStaysId} me={player} players={players} matches={matches} toast={toast}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => navReplace({ tab: "turnier" })} />
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => navReplace({ tab: "turnier" })}
+                  keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} />
               )}
               <button className="refresh-btn" onClick={() => { loadData(); requestUpdateNow(); toast(t("Suche nach Updates …")); }} aria-label={t("Aktualisieren")}>
                 <RefreshCw size={16} className={loadingData ? "spin" : ""} />

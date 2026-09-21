@@ -75,3 +75,10 @@ export function getKeepAwake() {
 export function storeKeepAwake(on) {
   try { localStorage.setItem(KEEP_AWAKE_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
+
+/* Unterstuetzt das Geraet die Wake Lock API ueberhaupt? (iOS erst ab Safari
+   16.4). Wird genutzt, um den Schnellschalter im Match gar nicht erst
+   anzuzeigen, wo er ohnehin nichts bewirken wuerde. */
+export function wakeLockSupported() {
+  try { return !!navigator.wakeLock; } catch { return false; }
+}

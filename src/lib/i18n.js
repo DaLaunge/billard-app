@@ -467,6 +467,8 @@ const TRANSLATIONS = {
     "App-Updates": "App updates",
     "Wie oft auf neue Version pruefen?": "How often to check for a new version?",
     "Bildschirm": "Screen",
+    "Bildschirm bleibt an": "Screen stays on",
+    "Bildschirm darf sich sperren": "Screen may lock",
     "Bildschirm während eines Matches anlassen": "Keep the screen on during a match",
     "Verhindert, dass sich das Handy mitten im Spiel sperrt. Gilt nur auf diesem Gerät und nur, solange ein Match oder eine Winner-Stays-Runde offen ist.": "Stops your phone from locking mid-game. Applies to this device only, and only while a match or a Winner-Stays round is open.",
     "Bei jedem Aufruf": "Every time I open the app",
