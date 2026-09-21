@@ -16,7 +16,7 @@ import RecordsCard from "./widgets/RecordsCard";
 import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
-import CardHideButton from "./widgets/CardHideButton";
+import CardMenuButton from "./widgets/CardMenuButton";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import { CARD_SCREENS } from "../lib/cardLayout";
 import { useHiddenCards } from "../lib/useHiddenCards";
@@ -39,7 +39,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   };
   const hiddenCards = hiddenByScreen.profil;
   // Auf fremden Profilen bleibt alles sichtbar und es gibt keinen
-  // Ausblenden-Knopf (onHide undefined => CardHideButton rendert nichts).
+  // Ausblenden-Knopf (onHide undefined => CardMenuButton rendert nichts).
   const cardShown = (id) => !isMe || !hiddenCards.isHidden(id);
   const cardHide = (id) => (isMe && onSetCardLayout ? () => hiddenCards.hideCard(id) : undefined);
 
@@ -672,7 +672,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       <section className="stat-block">
         <div className="stat-block-head roomy">
           <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
-          {cardHide("ratings") && <div className="stat-block-head-actions"><CardHideButton onHide={cardHide("ratings")} /></div>}
+          {cardHide("ratings") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("ratings")} /></div>}
         </div>
         {myRows.map((r) => (
           <div key={r.discipline} className="stat-row">
@@ -703,7 +703,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       <section className="stat-block">
         <div className="stat-block-head roomy">
           <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
-          {cardHide("erfolge") && <div className="stat-block-head-actions"><CardHideButton onHide={cardHide("erfolge")} /></div>}
+          {cardHide("erfolge") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("erfolge")} /></div>}
         </div>
         {isMe && achievementHint && (
           <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
@@ -808,7 +808,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <section className="stat-block">
           <div className="stat-block-head roomy">
             <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
-            {cardHide("tempo") && <div className="stat-block-head-actions"><CardHideButton onHide={cardHide("tempo")} /></div>}
+            {cardHide("tempo") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("tempo")} /></div>}
           </div>
           {speedStats.avgGameMs != null && (
             <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
@@ -854,7 +854,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <section className="stat-block">
           <div className="stat-block-head roomy">
             <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
-            {cardHide("feedback") && <div className="stat-block-head-actions"><CardHideButton onHide={cardHide("feedback")} /></div>}
+            {cardHide("feedback") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("feedback")} /></div>}
           </div>
           {!feedbackOpen ? (
             <>

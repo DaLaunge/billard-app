@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Lock, X } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import CardHideButton from "./widgets/CardHideButton";
+import CardMenuButton from "./widgets/CardMenuButton";
 
 export default function PasswordSection({ toast, onHide }) {
   const [open, setOpen] = useState(false);
@@ -32,7 +32,7 @@ export default function PasswordSection({ toast, onHide }) {
     <section className="stat-block">
       <div className="stat-block-head roomy">
         <h3><Lock size={17} /> {t("Anmeldung & Sicherheit")}</h3>
-        {onHide && <div className="stat-block-head-actions"><CardHideButton onHide={onHide} /></div>}
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
       </div>
       {email && <p className="hint" style={{ marginTop: 0 }}>{t("Angemeldet als")} <b>{email}</b></p>}
       {!open ? (

@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
 import { t } from "../../lib/i18n";
-import CardHideButton from "./CardHideButton";
+import CardMenuButton from "./CardMenuButton";
 import { recordBadgeEmoji } from "../../lib/achievements";
 
 const METRICS = [
@@ -23,7 +23,7 @@ export default function RecordsCard({ extras, catalog, earnedBadges, onHide }) {
     <section className="stat-block">
       <div className="stat-block-head roomy">
         <h3><Star size={17} /> {t("Rekorde")}</h3>
-        {onHide && <div className="stat-block-head-actions"><CardHideButton onHide={onHide} /></div>}
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
       </div>
       <div className="records-grid">
         {METRICS.map(([metric, label]) => {

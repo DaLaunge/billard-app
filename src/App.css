@@ -648,16 +648,34 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .card-maximize-btn { display: none; background: none; border: none; padding: 4px; margin: -4px 0;
   border-radius: 8px; color: var(--ivory-dim); align-items: center; cursor: pointer; flex-shrink: 0; }
 .card-maximize-btn:hover { color: var(--chalk); background: var(--felt-3); }
-/* Ausblenden-Knopf einer Karte (CardHideButton.jsx - Nutzer-Feedback: "es
-   werden mittlerweile so viele Karten, dass es unuebersichtlich ist").
+/* Kartenmenue (CardMenuButton.jsx) - enthaelt das Ausblenden einer Karte
+   (Nutzer-Feedback: "es werden mittlerweile so viele Karten, dass es
+   unuebersichtlich ist"). Das Ausblenden steckt bewusst IM Menue statt als
+   eigenes Symbol daneben: als eigenes Symbol lag es direkt neben dem
+   Einklapp-Pfeil, ein Fehlgriff liess also die ganze Karte verschwinden -
+   und das Zurueckholen kostet mehr als der Fehlgriff (Nutzer-Feedback).
    Gleiche randlose Optik wie Einklapp-/Spalten-Knopf, aber bewusst AUCH am
    Handy sichtbar (anders als .card-column-btn/.card-maximize-btn): dort
    stoeren zu viele Karten am meisten, und ohne den Knopf bliebe nur der
    Umweg ueber die Einstellungen. */
-.card-hide-btn { background: none; border: none; padding: 4px; margin: -4px 0;
+.card-menu-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+.card-menu-btn { background: none; border: none; padding: 4px; margin: -4px 0;
   border-radius: 8px; color: var(--ivory-dim); display: inline-flex; align-items: center;
   cursor: pointer; flex-shrink: 0; }
-.card-hide-btn:hover { color: var(--chalk); background: var(--felt-3); }
+.card-menu-btn:hover, .card-menu-btn[aria-expanded="true"] { color: var(--chalk); background: var(--felt-3); }
+/* Nach LINKS aufklappend (right: 0): der Knopf sitzt in der rechten
+   Kartenhaelfte, ein nach rechts aufklappendes Menue wuerde am Handy aus
+   der Karte herausragen. z-index, damit es ueber der naechsten Karte
+   liegt - .stat-block bildet selbst keinen Stapelkontext. */
+.card-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 30;
+  min-width: 172px; padding: 4px; background: var(--felt-3);
+  border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 10px 24px #00000055; }
+.card-menu-item { display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: none; border-radius: 9px; padding: 9px 10px;
+  font-family: inherit; font-size: 13px; color: var(--ivory); text-align: left;
+  cursor: pointer; white-space: nowrap; }
+.card-menu-item:hover { background: var(--felt-2); color: var(--chalk); }
 /* Kartenkopf einer Karte, die vorher nur ein <h3> hatte (Profil: Ratings,
    Erfolge, Spielgeschwindigkeit, Feedback, Tickets ...) - .stat-block-head
    setzt fuer die Statistik-Karten nur 4px Abstand nach unten, weil dort

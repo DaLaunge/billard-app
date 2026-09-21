@@ -3,7 +3,7 @@ import { ChevronDown, MessageSquare } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import FeedbackThread from "./FeedbackThread";
-import CardHideButton from "./widgets/CardHideButton";
+import CardMenuButton from "./widgets/CardMenuButton";
 
 export default function MyFeedbackTickets({ playerId, toast, refreshKey, onHide }) {
   const [tickets, setTickets] = useState(null);
@@ -55,7 +55,7 @@ export default function MyFeedbackTickets({ playerId, toast, refreshKey, onHide 
     <section className="stat-block">
       <div className="stat-block-head roomy">
         <h3><MessageSquare size={17} /> {t("Meine Tickets")}</h3>
-        {onHide && <div className="stat-block-head-actions"><CardHideButton onHide={onHide} /></div>}
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
       </div>
       {tickets.map((tk) => (
         <div key={tk.id} className="ticket-item">

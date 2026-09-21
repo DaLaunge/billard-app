@@ -274,6 +274,7 @@ const TRANSLATIONS = {
     "Karte aufklappen": "Expand card",
     "Karte einklappen": "Collapse card",
     "Karte ausblenden": "Hide card",
+    "Kartenmenü": "Card menu",
     "Karte einblenden": "Show card",
     "Alle Karten einblenden": "Show all cards",
     "Alle einblenden": "Show all",

@@ -20,7 +20,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 import TournamentFlag from "./TournamentFlag";
 import SortableCard from "./widgets/SortableCard";
 import CardCollapseButton from "./widgets/CardCollapseButton";
-import CardHideButton from "./widgets/CardHideButton";
+import CardMenuButton from "./widgets/CardMenuButton";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardColumnButton from "./widgets/CardColumnButton";
 import EmptyColumnDropZone from "./widgets/EmptyColumnDropZone";
@@ -106,9 +106,9 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
       <div className="stat-block-head">
         <h3>{icon} <span className="stat-block-title-text">{title}</span></h3>
         <div className="stat-block-head-actions">
+          <CardMenuButton onHide={onHide} />
           {info && <InfoButton title={title}>{info}</InfoButton>}
           <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -157,11 +157,11 @@ function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoO
       <div className="stat-block-head">
         <h3><Trophy size={17} /> <span className="stat-block-title-text">{t("Rangliste")}</span></h3>
         <div className="stat-block-head-actions">
+          <CardMenuButton onHide={onHide} />
           <InfoButton title={t("Rangliste")}>
             {t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.")}
           </InfoButton>
           <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -210,8 +210,8 @@ function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, o
       <div className="stat-block-head">
         <h3><SlidersHorizontal size={17} /> <span className="stat-block-title-text">{t("Auswahl fuer alle Statistiken")}</span></h3>
         <div className="stat-block-head-actions">
+          <CardMenuButton onHide={onHide} />
           <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -289,11 +289,11 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
       <div className="stat-block-head">
         <h3><Star size={17} /> <span className="stat-block-title-text">{t("Rekorde")}</span></h3>
         <div className="stat-block-head-actions">
+          <CardMenuButton onHide={onHide} />
           <InfoButton title={t("Rekorde")}>
             {t("Aktuelle Bestwerte der gesamten Gruppe - wer hält gerade welchen Rekord? Jede Zeile hat rechts ihr eigenes Info-Symbol mit genauerer Erklärung (und, wenn vorhanden, dem zugehörigen Match-Protokoll).")}
           </InfoButton>
           <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -403,8 +403,8 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
       <div className="stat-block-head">
         <h3><History size={17} /> <span className="stat-block-title-text">{t("Letzte Matches")}</span></h3>
         <div className="stat-block-head-actions">
+          <CardMenuButton onHide={onHide} />
           <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>

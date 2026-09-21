@@ -3,7 +3,7 @@ import { Swords } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { initials } from "../../lib/format";
 import Ball from "../Ball";
-import CardHideButton from "./CardHideButton";
+import CardMenuButton from "./CardMenuButton";
 
 const COUNT_OPTIONS = [3, 10, 20, "all"];
 
@@ -60,7 +60,7 @@ export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenPro
         {/* Ganz rechts, nach den Filter-Chips: .stat-block-head verteilt per
             space-between: der Ausblenden-Knopf dazwischen saehe aus, als
             gehoerte er zum Titel statt zu den Kartenaktionen. */}
-        {onHide && <div className="stat-block-head-actions"><CardHideButton onHide={onHide} /></div>}
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
       </div>
       {visible.map(({ opp, w, l }) => (
         <button key={opp} className="h2h-row as-btn" onClick={() => onOpenProfile(opp)}>

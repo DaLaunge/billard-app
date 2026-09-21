@@ -6,7 +6,7 @@ import PlanungCard from "./PlanungCard";
 import ChallengeCard from "./ChallengeCard";
 import UserPanel from "./widgets/UserPanel";
 import ImprintFooter from "./widgets/ImprintFooter";
-import CardHideButton from "./widgets/CardHideButton";
+import CardMenuButton from "./widgets/CardMenuButton";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import { useHiddenCards } from "../lib/useHiddenCards";
 
@@ -114,7 +114,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           <span className="live-section-count">{openChallenges.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (duelleOpen ? " open" : "")} />
         </button>
-        <CardHideButton onHide={() => hiddenCards.hideCard("duelle")} />
+        <CardMenuButton onHide={() => hiddenCards.hideCard("duelle")} />
         </div>
         {duelleOpen && (
           <>
@@ -147,7 +147,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           <span className="live-section-count">{pings.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (liveOpen ? " open" : "")} />
         </button>
-        <CardHideButton onHide={() => hiddenCards.hideCard("pings")} />
+        <CardMenuButton onHide={() => hiddenCards.hideCard("pings")} />
         </div>
         {liveOpen && (
           <>
@@ -209,7 +209,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           <span className="live-section-count">{plannings.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (planungOpen ? " open" : "")} />
         </button>
-        <CardHideButton onHide={() => hiddenCards.hideCard("planung")} />
+        <CardMenuButton onHide={() => hiddenCards.hideCard("planung")} />
         </div>
         {planungOpen && (
           <>
