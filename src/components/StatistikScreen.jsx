@@ -6,7 +6,7 @@ import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
-import { computeSpeedStats, matchDurationMs } from "../lib/runLog";
+import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
 import { STAT_CARD_SCREEN, normalizeCardOrder, normalizeCardColumns, splitCardColumns } from "../lib/cardLayout";
 import Ball from "./Ball";
@@ -790,7 +790,10 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
   // Schnellstes/Laengstes Match: Gesamtdauer (erster bis letzter Zeitstempel
   // im Protokoll), nur Einzel-Matches (bei Doppel waeren es vier statt zwei
-  // Namen - passt nicht in die Zwei-Spieler-Zeile). matchDurationMs() selbst
+  // Namen - passt nicht in die Zwei-Spieler-Zeile). Bei Winner-Stays-Matches
+  // zaehlt stattdessen die reine Spielzeit (matchPlayTimeMs): der Zeitraum
+  // enthaelt dort die Racks anderer Paarungen am selben Tisch und waere mit
+  // der Dauer eines normalen Matches nicht vergleichbar. matchDurationMs()
   // prueft keine Plausibilitaet (anders als ballSpeedSums/gameSpeedSums in
   // lib/runLog.js) - Grenzen hier daher separat: unter 1 Minute ist fuer ein
   // echtes Match praktisch unmoeglich (gleiche Idee wie MIN_MS_PER_BALL, nur
@@ -805,7 +808,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     matches.forEach((m) => {
       if (m.player1b_id) return;
       if (m.p1.is_guest || m.p2.is_guest) return;
-      const ms = matchDurationMs(m.run_log);
+      const ms = matchPlayTimeMs(m.run_log) ?? matchDurationMs(m.run_log);
       if (ms == null || ms < MIN_MATCH_MS || ms > MAX_MATCH_MS) return;
       list.push({ p1Name: m.p1.nickname, p2Name: m.p2.nickname, discipline: m.discipline, ms, match: m });
     });
@@ -850,9 +853,9 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     { key: "mostGames", label: t("Meiste Matches gesamt"), holder: mostGames, fmt: (h) => h.spiele,
       info: t("Meiste bestätigte Matches insgesamt, über alle Disziplinen.") },
     { key: "fastestMatch", label: t("Schnellstes Match"), holder: fastestMatch, fmt: (h) => fmtDuration(h.ms), type: "match", matchRef: fastestMatch?.match,
-      info: t("Kürzeste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
+      info: t("Kürzeste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll; bei Winner Stays die reine Spielzeit dieser Paarung), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
     { key: "longestMatch", label: t("Längstes Match"), holder: longestMatch, fmt: (h) => fmtDuration(h.ms), type: "match", matchRef: longestMatch?.match,
-      info: t("Längste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
+      info: t("Längste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll; bei Winner Stays die reine Spielzeit dieser Paarung), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
   ];
 
   // Registry aller per Drag & Drop sortierbaren Karten dieser Seite (Nutzer-

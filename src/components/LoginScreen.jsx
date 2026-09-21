@@ -20,9 +20,19 @@ export default function LoginScreen() {
 
   const sendLink = async () => {
     setBusy(true); setError("");
+    // Einladungs-Code an die Rueckkehradresse haengen: oeffnet die Mail-App den
+    // Link in einem anderen Browser/Webview als dem, in dem der QR-Code
+    // gescannt wurde, ist der Code dort sonst unbekannt (localStorage ist pro
+    // Browser) - die Werbung wuerde niemandem gutgeschrieben. Kennt Supabase
+    // die Adresse mit Parameter nicht (Redirect-Allowlist), faellt es auf die
+    // Site-URL zurueck; dann greift wie bisher der lokal gespeicherte Code.
+    const ref = getRef();
+    const redirect = ref
+      ? `${window.location.origin}/?ref=${encodeURIComponent(ref)}`
+      : window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: redirect },
     });
     setBusy(false);
     if (error) setError(error.message);
