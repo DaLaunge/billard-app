@@ -3,6 +3,7 @@ import { Swords } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { initials } from "../../lib/format";
 import Ball from "../Ball";
+import CardMenuButton from "./CardMenuButton";
 
 const COUNT_OPTIONS = [3, 10, 20, "all"];
 
@@ -11,7 +12,7 @@ const COUNT_OPTIONS = [3, 10, 20, "all"];
    (per Default nur aktive Gegner, analog zur Rangliste). Ueberall gleich
    verwendbar (Profil, Uebersicht, ...) - braucht nur matches + den Namen;
    rangliste ist optional und liefert dafuer die "aktiv"-Flags. */
-export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenProfile, colorOf, badgeOf, photoOf, title }) {
+export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenProfile, colorOf, badgeOf, photoOf, title, onHide }) {
   const h2h = useMemo(() => {
     const map = {};
     matches.forEach((m) => {
@@ -56,6 +57,10 @@ export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenPro
             ))}
           </div>
         )}
+        {/* Ganz rechts, nach den Filter-Chips: .stat-block-head verteilt per
+            space-between: der Ausblenden-Knopf dazwischen saehe aus, als
+            gehoerte er zum Titel statt zu den Kartenaktionen. */}
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
       </div>
       {visible.map(({ opp, w, l }) => (
         <button key={opp} className="h2h-row as-btn" onClick={() => onOpenProfile(opp)}>

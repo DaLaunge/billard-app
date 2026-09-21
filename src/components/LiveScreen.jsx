@@ -6,11 +6,14 @@ import PlanungCard from "./PlanungCard";
 import ChallengeCard from "./ChallengeCard";
 import UserPanel from "./widgets/UserPanel";
 import ImprintFooter from "./widgets/ImprintFooter";
+import CardMenuButton from "./widgets/CardMenuButton";
+import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
+import { useHiddenCards } from "../lib/useHiddenCards";
 
 export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
   onCreatePlanning, onDeletePlanning, onReplyPlanning, onUnreplyPlanning,
-  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite }) {
+  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout, toast }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
   const [loc, setLoc] = useState("");
@@ -73,6 +76,13 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
     try { localStorage.setItem(seenKey, JSON.stringify(next)); } catch { /* ignore */ }
   }, [challenges, me.id, seenKey]);
 
+  // Ausblendbare Bereiche (Nutzer-Feedback: "es werden mittlerweile so viele
+  // Karten, dass es unuebersichtlich ist") - hier sind die "Karten" die drei
+  // Bereiche Duelle/Live/Planung; die ids stehen im Katalog in cardLayout.js.
+  // Anders als das Ein-/Ausklappen darueber (openSecs, nur auf diesem Geraet)
+  // gilt das Ausblenden dauerhaft und auf allen Geraeten.
+  const hiddenCards = useHiddenCards("live", me.card_layout, onSetCardLayout, toast);
+
   const duelleOpen = openSecs.has("duelle");
   const liveOpen = openSecs.has("live");
   const planungOpen = openSecs.has("planung");
@@ -95,13 +105,17 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
 
       <div className="live-right-col">
       <div className="live-top-row">
+      {!hiddenCards.isHidden("duelle") && (
       <div className="live-section duelle">
+        <div className="live-section-head-row">
         <button className="live-section-head" onClick={() => toggleSec("duelle")}>
           <Swords size={17} />
           <span className="live-section-title">{t("Duelle")}</span>
           <span className="live-section-count">{openChallenges.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (duelleOpen ? " open" : "")} />
         </button>
+        <CardMenuButton onHide={() => hiddenCards.hideCard("duelle")} />
+        </div>
         {duelleOpen && (
           <>
             {challengesToMe.length > 0 && <p className="q">{t("Herausforderungen an dich")}</p>}
@@ -122,14 +136,19 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           </>
         )}
       </div>
+      )}
 
+      {!hiddenCards.isHidden("pings") && (
       <div className="live-section pings">
+        <div className="live-section-head-row">
         <button className="live-section-head" onClick={() => toggleSec("live")}>
           <Radio size={17} />
           <span className="live-section-title">{t("Live")}</span>
           <span className="live-section-count">{pings.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (liveOpen ? " open" : "")} />
         </button>
+        <CardMenuButton onHide={() => hiddenCards.hideCard("pings")} />
+        </div>
         {liveOpen && (
           <>
             {myPing ? (
@@ -178,15 +197,20 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           </>
         )}
       </div>
+      )}
       </div>
 
+      {!hiddenCards.isHidden("planung") && (
       <div className="live-section planung">
+        <div className="live-section-head-row">
         <button className="live-section-head" onClick={() => toggleSec("planung")}>
           <Calendar size={17} />
           <span className="live-section-title">{t("Planung")}</span>
           <span className="live-section-count">{plannings.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (planungOpen ? " open" : "")} />
         </button>
+        <CardMenuButton onHide={() => hiddenCards.hideCard("planung")} />
+        </div>
         {planungOpen && (
           <>
             <section className="stat-block">
@@ -230,9 +254,11 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           </>
         )}
       </div>
+      )}
 
       </div>
       </div>
+      <ShowAllCardsButton hiddenCount={hiddenCards.hiddenCount} onShowAll={hiddenCards.showAll} />
       <ImprintFooter />
     </div>
   );

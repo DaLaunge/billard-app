@@ -9,6 +9,7 @@ import PlayerPicker from "./PlayerPicker";
 import PlayerMultiPicker from "./PlayerMultiPicker";
 import { ScoreStepper } from "./TurnierMatchActions";
 import ImprintFooter from "./widgets/ImprintFooter";
+import KeepAwakeButton from "./widgets/KeepAwakeButton";
 
 const POLL_MS = 8000;
 
@@ -20,7 +21,7 @@ const POLL_MS = 8000;
 // aktuellen Stand und bietet die Eingabemaske). Voellig anderes Datenmodell
 // als TurnierRasterScreen.jsx (keine Bracket-Struktur), deshalb ein
 // eigener, viel einfacherer Screen statt einer Erweiterung dort.
-export default function WinnerStaysScreen({ sessionId, me, players, matches, toast, colorOf, badgeOf, photoOf, onReload, onBack }) {
+export default function WinnerStaysScreen({ sessionId, me, players, matches, toast, colorOf, badgeOf, photoOf, onReload, onBack, keepAwake, onSetKeepAwake }) {
   const [session, setSession] = useState(null);
   const [entries, setEntries] = useState(null);
   const [games, setGames] = useState([]);
@@ -252,6 +253,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{session.name}</h2>
+        <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
         {t(session.is_doubles ? "Doppel" : "Einzel")} · {t(session.discipline)}

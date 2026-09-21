@@ -11,8 +11,9 @@ import { savePendingReport, isNetworkError } from "../lib/offlineReport";
 import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
+import KeepAwakeButton from "./widgets/KeepAwakeButton";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx }) {
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake }) {
   const [step, setStep] = useState(tournamentCtx ? 2 : (initialOpp ? 1 : 0));
   const [opp, setOpp] = useState(initialOpp || null);
   const [showMyQr, setShowMyQr] = useState(false);
@@ -266,6 +267,20 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     onReload && onReload();
   };
 
+  // Siegchance + moeglicher Punktgewinn - wird sowohl bei der Match-Anlage
+  // (Schritt "Disziplin") als auch waehrend der Aufzeichnung gezeigt.
+  // Solange noch keine Disziplin feststeht, dient "Gesamt" als Grundlage.
+  const PointPreview = ({ dsc }) => {
+    if (mode !== "single" || !opp || isGuestMatch) return null;
+    const pv = previewFor(dsc || "Gesamt", opp.nickname);
+    return (
+      <div className="pt-preview">
+        <span className="pt-chance">{t("Siegchance")} <b>{Math.round(pv.ea * 100)}%</b></span>
+        <span className="pt-range">{pv.is141d ? t("Bei Distanz 50") : t("Bei Race to 4")}: {t("Sieg")} {fmtD(pv.winMin)}…{fmtD(pv.winMax)} · {t("Niederlage")} {fmtD(pv.lossMin)}…{fmtD(pv.lossMax)}</span>
+      </div>
+    );
+  };
+
   const DiscChip = () => (
     tournamentCtx ? (
       <span className="disc-chip disc-chip-locked"><span>{t(disc)}</span></span>
@@ -288,6 +303,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <ChevronLeft size={22} />
         </button>
         <h2>{t(tournamentCtx ? "Turnier-Ergebnis" : "Neues Match")}</h2>
+        <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
       </header>
 
       {abortAsk && (
@@ -300,16 +316,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <button className="btn primary" onClick={() => setAbortAsk(false)}>{t("Match fortführen")}</button>
             </div>
           </div>
-        </div>
-      )}
-
-      {step < 4 && (
-        <div className="steps">
-          {steps.map((s, i) => (
-            <div key={s} className={"step-dot" + (i === step ? " cur" : i < step ? " done" : "")}>
-              <span>{i < step ? <Check size={12} /> : i + 1}</span>{t(s)}
-            </div>
-          ))}
         </div>
       )}
 
@@ -458,34 +464,15 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           ) : (
             <p className="hint center">{t("Zwischen 8/9/10 Ball bleibt dein Ergebnis beim Wechsel erhalten.")}</p>
           )}
+          <PointPreview dsc={disc} />
         </div>
       )}
 
       {step === 2 && opp && disc && (
         <div className="match-score-step">
-          <div className="score-head">
-            <DiscChip />
-          </div>
-          {mode === "single" && !isGuestMatch && (() => {
-            const pv = previewFor(disc, opp.nickname);
-            return (
-              <div className="pt-preview">
-                <span className="pt-chance">{t("Siegchance")} <b>{Math.round(pv.ea * 100)}%</b></span>
-                <span className="pt-range">{pv.is141d ? t("Bei Distanz 50") : t("Bei Race to 4")}: {t("Sieg")} {fmtD(pv.winMin)}…{fmtD(pv.winMax)} · {t("Niederlage")} {fmtD(pv.lossMin)}…{fmtD(pv.lossMax)}</span>
-              </div>
-            );
-          })()}
-          {leaveWarn && (
-            <div className="confirm-box">
-              <p>{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
-              <div className="sp-controls">
-                <button className="btn ghost" onClick={() => setLeaveWarn(false)}>{t("Weiterspielen")}</button>
-                <button className="btn primary" onClick={() => { setLeaveWarn(false); resetScores(); setDisc(null); setStep(1); }}>
-                  {t("Disziplin wechseln")}
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Reihenfolge bewusst so (Nutzer-Feedback): ganz oben das Match
+              selbst (Zaehler bzw. 14/1-Scorer), darunter erst Siegchance,
+              Disziplin-Umschalter und die Schrittpunkte. */}
           {is141 ? (
             <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} toast={toast}
               sideNames={mode === "double" ? [teamA, teamB] : undefined}
@@ -496,7 +483,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               }} />
           ) : (
             <>
-              <p className="q">{t("Wie steht's?")} <span className="q-sub">{t("(gewonnene Spiele)")}</span></p>
               <div className="score-row">
                 {(mode === "double"
                   ? [{ members: [me, partner], name: teamA, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
@@ -524,6 +510,21 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </button>
               {s1 === s2 && total > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
             </>
+          )}
+          <PointPreview dsc={disc} />
+          <div className="score-head">
+            <DiscChip />
+          </div>
+          {leaveWarn && (
+            <div className="confirm-box">
+              <p>{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
+              <div className="sp-controls">
+                <button className="btn ghost" onClick={() => setLeaveWarn(false)}>{t("Weiterspielen")}</button>
+                <button className="btn primary" onClick={() => { setLeaveWarn(false); resetScores(); setDisc(null); setStep(1); }}>
+                  {t("Disziplin wechseln")}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -649,6 +650,17 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <button className={"btn " + (tournamentCtx && !offlineQueued && !confirmedNow && mode !== "double" ? "ghost" : "primary")} onClick={onDone}>
             {t(tournamentCtx ? "Zurück zum Turnier" : "Zur Rangliste")}
           </button>
+        </div>
+      )}
+      {/* Schrittpunkte bewusst UNTER dem Inhalt (Nutzer-Feedback): oben soll
+          das Match selbst stehen, die Navigationsanzeige ist Beiwerk. */}
+      {step < 4 && (
+        <div className="steps bottom">
+          {steps.map((s, i) => (
+            <div key={s} className={"step-dot" + (i === step ? " cur" : i < step ? " done" : "")}>
+              <span>{i < step ? <Check size={12} /> : i + 1}</span>{t(s)}
+            </div>
+          ))}
         </div>
       )}
     </div>

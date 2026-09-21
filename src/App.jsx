@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { RefreshCw, Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
+import { Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -11,6 +11,7 @@ import { hashColor, initials } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
+import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 
 import LoginScreen from "./components/LoginScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
@@ -134,7 +135,6 @@ export default function App() {
   const [tournamentId, setTournamentId] = useState(resumedNav?.tournamentId ?? null);
   const [winnerStaysId, setWinnerStaysId] = useState(resumedNav?.winnerStaysId ?? null);
   const [toastMsg, setToastMsg] = useState(null);
-  const [loadingData, setLoadingData] = useState(false);
   // Zaehlt jeden abgeschlossenen loadData()-Durchlauf (0 = noch keiner) -
   // im Gegensatz zu initialLoadDone (bleibt nach dem ersten Mal dauerhaft
   // true) aendert sich das bei JEDEM Durchlauf, damit Trigger C (Update nach
@@ -252,9 +252,13 @@ export default function App() {
   // NICHT bei jedem beliebigen Bildschirmwechsel (das war zu unvorhersehbar):
   //  A) Wechsel auf einen der 4 Hauptmenuepunkte (MAIN_TABS oben) unten in der
   //     Tab-Leiste.
-  //  B) Explizite Nutzeranfrage: Klick auf "Aktualisieren" (oben rechts) oder
-  //     "Nach Updates suchen" (Profileinstellungen) - siehe requestUpdateNow.
-  //     Hier ist Sofortigkeit erwuenscht, kein Verstecken noetig.
+  //  B) Explizite Nutzeranfrage: "Nach Updates suchen" in den Profil-
+  //     einstellungen - siehe requestUpdateNow. Hier ist Sofortigkeit
+  //     erwuenscht, kein Verstecken noetig. (Der frueher zusaetzlich oben
+  //     rechts schwebende "Aktualisieren"-Knopf ist 2026-09-21 entfallen -
+  //     das Herunterziehen der Seite ist die intuitivere Geste dafuer und
+  //     funktioniert als normaler Seiten-Neuladen ohnehin, der dann ueber
+  //     D greift.)
   //  C) Direkt nachdem loadData() durchgelaufen ist (siehe loadGen) - das
   //     deckt "ein Match/Turnier wurde gespeichert" ab, weil jede erfolgreiche
   //     RPC-Mutation im Anschluss loadData() aufruft. Bleibt trotzdem hinter
@@ -329,14 +333,14 @@ export default function App() {
     document.addEventListener("visibilitychange", onHidden);
     return () => document.removeEventListener("visibilitychange", onHidden);
   }, [needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
-  // Trigger B: explizite Nutzeranfrage (Aktualisieren-Button / "Nach Updates
-  // suchen") - wendet sofort an, falls schon ein Update wartet; sonst wird
-  // forceApplyRef gesetzt und der Effekt darunter greift, sobald onNeedRefresh
-  // (asynchron, nach dem Laden von sw.js) tatsaechlich feuert. Der
-  // Aktualisieren-Button (oben rechts) ist NICHT auf sichere Tabs beschraenkt
-  // - liegt gerade ein LIVE_ENTRY_TABS-Screen vor (laufendes Match/Winner-
-  // Stays-Spiel), wird trotzdem nur GEPRUEFT, nie sofort angewendet, sonst
-  // koennte ein Klick mitten im Spiel unbestaetigte Eingabe wegreissen.
+  // Trigger B: explizite Nutzeranfrage ("Nach Updates suchen" in den
+  // Profileinstellungen) - wendet sofort an, falls schon ein Update wartet;
+  // sonst wird forceApplyRef gesetzt und der Effekt darunter greift, sobald
+  // onNeedRefresh (asynchron, nach dem Laden von sw.js) tatsaechlich feuert.
+  // Die LIVE_ENTRY_TABS-Sperre bleibt, obwohl der einzige verbliebene
+  // Aufrufer auf "profil" sitzt und sie damit derzeit nie greift: sie ist
+  // die Absicherung dafuer, dass ein kuenftiger Aufrufer von einem Live-
+  // Eingabe-Screen aus nur PRUEFT und nicht unbestaetigte Eingabe wegreisst.
   const forceApplyRef = useRef(false);
   const requestUpdateNow = useCallback(() => {
     if (LIVE_ENTRY_TABS.includes(tab)) { checkForUpdate(); return; }
@@ -370,9 +374,19 @@ export default function App() {
     persistNavAndUpdate(currentNavState, updateServiceWorker);
   }, [loadGen, needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
 
-  const toast = useCallback((msg) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3200);
+  // Zweiter Parameter (optional): eine Aktion IM Toast, z.B. "Rueckgaengig"
+  // nach dem Ausblenden einer Karte (Nutzer-Feedback: "mach ein Rueckgaengig
+  // moeglich"). Mit Aktion bleibt der Toast laenger stehen - 3,2 s reichen
+  // zum Lesen, aber nicht zum Lesen UND Entscheiden UND Treffen.
+  // Der Timer haengt an einem Ref und wird bei jedem neuen Toast neu
+  // gesetzt: sonst raeumt der Timer des VORIGEN Toasts den neuen schon nach
+  // dessen Restlaufzeit wieder weg (faellt besonders auf, wenn direkt nach
+  // dem Ausblenden-Toast noch einer kommt).
+  const toastTimerRef = useRef(null);
+  const toast = useCallback((msg, action = null) => {
+    setToastMsg({ msg, action });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMsg(null), action ? 6500 : 3200);
   }, []);
 
   useEffect(() => {
@@ -611,7 +625,6 @@ export default function App() {
   }, [session]);
 
   const loadData = useCallback(async () => {
-    setLoadingData(true);
     // Snapshots (koennen >1000 Zeilen sein: Wochen x Spieler) parallel zum
     // Rest anstossen statt hinterher - sonst wartet die ganze Uebersicht auf
     // die langsamste Abfrage, obwohl sie fuer die Rangliste selbst gar nicht
@@ -666,7 +679,6 @@ export default function App() {
     // Kein harter Fehler, falls die RPC (noch) nicht existiert (Migration nicht
     // eingespielt) oder scheitert - Fortschrittsanzeige faellt dann einfach weg.
     setAchievementCounters(ac?.data ?? null);
-    setLoadingData(false);
     setInitialLoadDone(true);
     const snap = await snapPromise;
     if (snap.error && !err) toast(isNetworkError(snap.error) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + snap.error.message);
@@ -697,6 +709,28 @@ export default function App() {
     };
   }, [player, loadData, toast]);
   useEffect(() => { if (player) applyTheme(player.theme_key || "green", player.theme_custom); }, [player]);
+
+  // Bildschirm waehrend einer laufenden Match-/Winner-Stays-Eingabe wachhalten
+  // (siehe lib/wakeLock.js). Dieselben Screens wie LIVE_ENTRY_TABS: dort liegt
+  // das Handy waehrend des Spiels ungenutzt herum und soll trotzdem an bleiben.
+  //
+  // Zwei Ebenen, mit Absicht: keepAwakeDefault ist die dauerhafte Einstellung
+  // aus dem Profil (Standard: an, siehe lib/wakeLock.js), keepAwakeNow gilt
+  // nur fuer die gerade laufende Eingabe und haengt am Schnellschalter oben
+  // im Match-/Winner-Stays-Kopf. Beim BETRETEN eines Live-Eingabe-Screens
+  // wird keepAwakeNow wieder auf den Standard gesetzt - ein "hier einmal
+  // aus" soll nicht ungefragt beim naechsten Match weitergelten, sonst waere
+  // es eine heimliche zweite Dauereinstellung neben der im Profil.
+  const [keepAwakeDefault, setKeepAwakeDefaultState] = useState(getKeepAwake);
+  const setKeepAwakeDefault = useCallback((on) => { setKeepAwakeDefaultState(on); storeKeepAwake(on); }, []);
+  const [keepAwakeNow, setKeepAwakeNow] = useState(keepAwakeDefault);
+  const inLiveEntry = LIVE_ENTRY_TABS.includes(tab);
+  const wasInLiveEntry = useRef(inLiveEntry);
+  useEffect(() => {
+    if (inLiveEntry && !wasInLiveEntry.current) setKeepAwakeNow(keepAwakeDefault);
+    wasInLiveEntry.current = inLiveEntry;
+  }, [inLiveEntry, keepAwakeDefault]);
+  useWakeLock(keepAwakeNow && inLiveEntry);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1034,6 +1068,7 @@ export default function App() {
                   onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
+                  onSetCardLayout={setCardLayout} toast={toast}
                   onInvite={() => navPush({ tab: "invite" })} />
               )}
               {tab === "match" && (() => {
@@ -1051,6 +1086,7 @@ export default function App() {
                   onReload={loadData} initialOpp={matchTournamentCtx ? tourOpp : vsOpp} onChallenge={createChallenge}
                   catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
                   onOpenProtokoll={openProtokoll} tournamentCtx={matchTournamentCtx}
+                  keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow}
                   onDone={() => { loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}
                   onCancel={() => { allowLeaveMatchRef.current = true; window.history.back(); }} />
                 );
@@ -1062,7 +1098,7 @@ export default function App() {
                 catalog={catalog} earnedBadges={badgesOfId(player.id)}
                 onInvite={() => navPush({ tab: "invite" })} disciplines={disciplines}
                 pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports}
-                onSetCardLayout={setCardLayout} />}
+                onSetCardLayout={setCardLayout} toast={toast} />}
               {tab === "protokoll" && protokollMatch && (
                 // Nutzer-Feedback (indirekt beim Testen der Notiz-Funktion
                 // aufgefallen): protokollMatch ist eine Momentaufnahme im
@@ -1085,10 +1121,12 @@ export default function App() {
                   onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length + wsReadyList.length}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
+                  keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}
                   onResetCardLayout={resetCardLayout}
+                  onSetCardLayout={setCardLayout}
                   onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (
@@ -1102,6 +1140,7 @@ export default function App() {
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   lang={lang} onLang={changeLang} onSetTheme={setTheme}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
+                  onSetCardLayout={setCardLayout}
                   onOpenProfile={openProfile} />
               )}
               {tab === "admin" && player.role === "admin" && (
@@ -1125,11 +1164,9 @@ export default function App() {
               )}
               {tab === "winnerstays" && winnerStaysId && (
                 <WinnerStaysScreen sessionId={winnerStaysId} me={player} players={players} matches={matches} toast={toast}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => navReplace({ tab: "turnier" })} />
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => navReplace({ tab: "turnier" })}
+                  keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} />
               )}
-              <button className="refresh-btn" onClick={() => { loadData(); requestUpdateNow(); toast(t("Suche nach Updates …")); }} aria-label={t("Aktualisieren")}>
-                <RefreshCw size={16} className={loadingData ? "spin" : ""} />
-              </button>
             </main>
 
             {/* Permanenter Tisch-Hinweis (Nutzer-Feedback: "jedem Spieler muss
@@ -1204,7 +1241,16 @@ export default function App() {
             )}
           </>
         )}
-        {toastMsg && <div className="toast">{toastMsg}</div>}
+        {toastMsg && (
+          <div className={"toast" + (toastMsg.action ? " with-action" : "")}>
+            <span className="toast-text">{toastMsg.msg}</span>
+            {toastMsg.action && (
+              <button className="toast-action" onClick={() => { setToastMsg(null); toastMsg.action.onAction(); }}>
+                {toastMsg.action.label}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

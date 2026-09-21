@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { t } from "../../lib/i18n";
+import CardMenuButton from "./CardMenuButton";
 import { recordBadgeEmoji } from "../../lib/achievements";
 
 const METRICS = [
@@ -16,11 +17,14 @@ const METRICS = [
    Zeigt vor der Zahl das Emoji des dazu bereits erreichten Erfolgs, falls
    vorhanden (catalog/earnedBadges optional - ohne die zwei einfach ohne
    Emoji, z.B. bei fremden Profilen ohne geladenen Erfolgs-Kontext). */
-export default function RecordsCard({ extras, catalog, earnedBadges }) {
+export default function RecordsCard({ extras, catalog, earnedBadges, onHide }) {
   if (!extras) return null;
   return (
     <section className="stat-block">
-      <h3><Star size={17} /> {t("Rekorde")}</h3>
+      <div className="stat-block-head roomy">
+        <h3><Star size={17} /> {t("Rekorde")}</h3>
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
+      </div>
       <div className="records-grid">
         {METRICS.map(([metric, label]) => {
           const emoji = recordBadgeEmoji(catalog, earnedBadges, metric);

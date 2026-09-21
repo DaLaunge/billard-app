@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Lock, X } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
+import CardMenuButton from "./widgets/CardMenuButton";
 
-export default function PasswordSection({ toast }) {
+export default function PasswordSection({ toast, onHide }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -29,7 +30,10 @@ export default function PasswordSection({ toast }) {
 
   return (
     <section className="stat-block">
-      <h3><Lock size={17} /> {t("Anmeldung & Sicherheit")}</h3>
+      <div className="stat-block-head roomy">
+        <h3><Lock size={17} /> {t("Anmeldung & Sicherheit")}</h3>
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
+      </div>
       {email && <p className="hint" style={{ marginTop: 0 }}>{t("Angemeldet als")} <b>{email}</b></p>}
       {!open ? (
         <button className="btn ghost" onClick={() => setOpen(true)}>{t("Passwort festlegen / ändern")}</button>
