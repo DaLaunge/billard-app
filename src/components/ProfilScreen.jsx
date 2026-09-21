@@ -447,7 +447,22 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                        (input:checked + .settings-switch-track), deshalb muss
                        er direkt hinter dem input stehen. Angezeigt wird
                        trotzdem Name links / Schieber rechts (order im CSS). */
-                    <label key={c.id} className={"settings-switch card-vis-row" + (shown ? "" : " is-hidden")}>
+                    <label key={c.id} className={"settings-switch card-vis-row" + (shown ? "" : " is-hidden")}
+                      /* Nutzer-Feedback: "wenn ich eine Karte in den
+                         Profileinstellungen deaktiviere, scrollt die App
+                         automatisch ungewollt". Ein Klick aufs Label
+                         fokussiert das unsichtbare Kaestchen (0x0 Pixel),
+                         und der Browser scrollt jedes frisch fokussierte
+                         Element ins Bild - bei 22 Zeilen liegt staendig
+                         eine davon am Rand des Sichtfensters, und wegen
+                         scroll-behavior:smooth auf .content ist die
+                         Korrektur auch noch eine sichtbare Fahrt.
+                         preventDefault auf mousedown unterbindet genau
+                         diesen Fokus-Schritt; das Umschalten selbst haengt
+                         am click bzw. change und funktioniert weiter. Mit
+                         der Tastatur (Tab) wird weiterhin normal
+                         fokussiert - dort IST das Scrollen erwuenscht. */
+                      onMouseDown={(e) => e.preventDefault()}>
                       <input type="checkbox" checked={shown} onChange={() => api.toggleCard(c.id)} />
                       <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
                       <span className="card-vis-name">
