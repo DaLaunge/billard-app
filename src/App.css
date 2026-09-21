@@ -949,10 +949,35 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .tournament-ready-btn { position: relative; }
 .tournament-ready-btn .tournament-ready-badge { top: 50%; right: 14px; transform: translateY(-50%); }
 
+/* Flex-Zeile statt reinem Text, seit ein Toast eine Aktion tragen kann
+   (.toast-action, siehe toast() in App.jsx - Nutzer-Feedback: "mach ein
+   Rueckgaengig moeglich" nach dem Ausblenden einer Karte). Kuerzen/
+   Auslassungspunkte sitzen jetzt am Text, nicht am Toast selbst, damit ein
+   langer Text nie den Knopf daneben abschneidet. */
 .toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
   background: var(--ivory); color: #08251C; font-weight: 600; font-size: 14px;
   border-radius: 999px; padding: 10px 20px; box-shadow: 0 8px 24px #00000070;
-  white-space: nowrap; z-index: 50; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+  z-index: 50; width: max-content; max-width: 92vw; overflow: hidden; }
+/* width:max-content ist noetig, seit der Text umbrechen darf: ein fixed
+   positioniertes Element mit left:50% bekommt als verfuegbare Breite nur
+   den Platz von der Mitte bis zum rechten Rand (am Handy also ~187px, nicht
+   die 92vw aus max-width) - ohne max-content brach der Text schon dort um
+   und der Toast wurde vierzeilig statt zweizeilig. */
+.toast-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* Mit Aktion darf der Text umbrechen statt zu kuerzen: "Ausgeblendet:
+   Schnellstes 14/1-Tempo" + "Rueckgaengig" passt am Handy (92vw = 345px)
+   nicht in eine Zeile, und ausgerechnet der Kartenname - also die Antwort
+   auf "was ist da gerade verschwunden?" - waere das Abgeschnittene.
+   Reine Meldungen ohne Aktion bleiben einzeilig wie bisher. */
+.toast.with-action .toast-text { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+/* Feste dunkle Farbe statt einer Theme-Variablen: der Toast hat als
+   einziges Element einen hellen (--ivory) Hintergrund, die Akzentfarben der
+   Themes sind fuer dunklen Grund gemacht und waeren hier teils unlesbar. */
+.toast-action { flex-shrink: 0; background: none; border: none; padding: 0; margin: 0;
+  font-family: inherit; font-size: 14px; font-weight: 800; color: #0B4E74;
+  text-decoration: underline; cursor: pointer; }
+.toast-action:hover { color: #08251C; }
 
 button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) {

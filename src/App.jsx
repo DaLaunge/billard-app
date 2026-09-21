@@ -374,9 +374,19 @@ export default function App() {
     persistNavAndUpdate(currentNavState, updateServiceWorker);
   }, [loadGen, needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
 
-  const toast = useCallback((msg) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3200);
+  // Zweiter Parameter (optional): eine Aktion IM Toast, z.B. "Rueckgaengig"
+  // nach dem Ausblenden einer Karte (Nutzer-Feedback: "mach ein Rueckgaengig
+  // moeglich"). Mit Aktion bleibt der Toast laenger stehen - 3,2 s reichen
+  // zum Lesen, aber nicht zum Lesen UND Entscheiden UND Treffen.
+  // Der Timer haengt an einem Ref und wird bei jedem neuen Toast neu
+  // gesetzt: sonst raeumt der Timer des VORIGEN Toasts den neuen schon nach
+  // dessen Restlaufzeit wieder weg (faellt besonders auf, wenn direkt nach
+  // dem Ausblenden-Toast noch einer kommt).
+  const toastTimerRef = useRef(null);
+  const toast = useCallback((msg, action = null) => {
+    setToastMsg({ msg, action });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMsg(null), action ? 6500 : 3200);
   }, []);
 
   useEffect(() => {
@@ -1058,7 +1068,7 @@ export default function App() {
                   onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
-                  onSetCardLayout={setCardLayout}
+                  onSetCardLayout={setCardLayout} toast={toast}
                   onInvite={() => navPush({ tab: "invite" })} />
               )}
               {tab === "match" && (() => {
@@ -1088,7 +1098,7 @@ export default function App() {
                 catalog={catalog} earnedBadges={badgesOfId(player.id)}
                 onInvite={() => navPush({ tab: "invite" })} disciplines={disciplines}
                 pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports}
-                onSetCardLayout={setCardLayout} />}
+                onSetCardLayout={setCardLayout} toast={toast} />}
               {tab === "protokoll" && protokollMatch && (
                 // Nutzer-Feedback (indirekt beim Testen der Notiz-Funktion
                 // aufgefallen): protokollMatch ist eine Momentaufnahme im
@@ -1231,7 +1241,16 @@ export default function App() {
             )}
           </>
         )}
-        {toastMsg && <div className="toast">{toastMsg}</div>}
+        {toastMsg && (
+          <div className={"toast" + (toastMsg.action ? " with-action" : "")}>
+            <span className="toast-text">{toastMsg.msg}</span>
+            {toastMsg.action && (
+              <button className="toast-action" onClick={() => { setToastMsg(null); toastMsg.action.onAction(); }}>
+                {toastMsg.action.label}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

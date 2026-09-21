@@ -500,7 +500,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
 }
 
 export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me, challenges,
-  catalog, earnedBadges, onInvite, disciplines, pending, onConfirm, myOpenReports, onSetCardLayout }) {
+  catalog, earnedBadges, onInvite, disciplines, pending, onConfirm, myOpenReports, onSetCardLayout, toast }) {
   // Kartenreihenfolge + Spaltenwahl (Drag & Drop bzw. CardColumnButton):
   // beides wird zusammen direkt am Spielerprofil gespeichert (siehe
   // cardLayout.js/App.jsx setCardLayout) - kein useEffect-Resync mit der
@@ -625,7 +625,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Reihenfolge/Spalte (siehe useHiddenCards.js/cardLayout.js). Deshalb
   // nimmt persistLayout oben den gespeicherten Stand per mergeCardLayout()
   // mit, statt ihn zu ueberschreiben.
-  const hiddenCards = useHiddenCards(STAT_CARD_SCREEN, me.card_layout, onSetCardLayout);
+  const hiddenCards = useHiddenCards(STAT_CARD_SCREEN, me.card_layout, onSetCardLayout, toast);
 
   // Ein-/Ausklappen pro Karte (Nutzer-Feedback: "du solltest alle Karten
   // herunterklappbar machen") - bewusst nur lokal im Browser gemerkt

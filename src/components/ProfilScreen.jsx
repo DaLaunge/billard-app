@@ -33,9 +33,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // Nur fuers eigene Profil: auf einem fremden Profil sind dieselben Karten
   // der ganze Inhalt der Seite, und die Wahl gilt der eigenen Uebersicht.
   const hiddenByScreen = {
-    stats: useHiddenCards("stats", meRow?.card_layout, onSetCardLayout),
-    live: useHiddenCards("live", meRow?.card_layout, onSetCardLayout),
-    profil: useHiddenCards("profil", meRow?.card_layout, onSetCardLayout),
+    stats: useHiddenCards("stats", meRow?.card_layout, onSetCardLayout, toast),
+    live: useHiddenCards("live", meRow?.card_layout, onSetCardLayout, toast),
+    profil: useHiddenCards("profil", meRow?.card_layout, onSetCardLayout, toast),
   };
   const hiddenCards = hiddenByScreen.profil;
   // Auf fremden Profilen bleibt alles sichtbar und es gibt keinen

@@ -13,7 +13,7 @@ import { useHiddenCards } from "../lib/useHiddenCards";
 export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
   onCreatePlanning, onDeletePlanning, onReplyPlanning, onUnreplyPlanning,
-  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout }) {
+  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout, toast }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
   const [loc, setLoc] = useState("");
@@ -81,7 +81,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   // Bereiche Duelle/Live/Planung; die ids stehen im Katalog in cardLayout.js.
   // Anders als das Ein-/Ausklappen darueber (openSecs, nur auf diesem Geraet)
   // gilt das Ausblenden dauerhaft und auf allen Geraeten.
-  const hiddenCards = useHiddenCards("live", me.card_layout, onSetCardLayout);
+  const hiddenCards = useHiddenCards("live", me.card_layout, onSetCardLayout, toast);
 
   const duelleOpen = openSecs.has("duelle");
   const liveOpen = openSecs.has("live");

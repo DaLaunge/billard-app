@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { t } from "./i18n";
 import { normalizeHiddenCards, mergeCardLayout, screenCards } from "./cardLayout";
 
 /* Ausgeblendete Karten EINES Bildschirms (Nutzer-Feedback: "es werden
@@ -17,16 +18,29 @@ import { normalizeHiddenCards, mergeCardLayout, screenCards } from "./cardLayout
 
    cardLayout ist der komplette card_layout-Wert des Spielers (alle
    Bildschirme), damit mergeCardLayout() die Reihenfolge/Spaltenwahl
-   desselben Bildschirms nicht ueberschreibt. */
-export function useHiddenCards(screen, cardLayout, onSetCardLayout) {
+   desselben Bildschirms nicht ueberschreibt.
+
+   toast ist optional - wo er mitkommt, meldet das Ausblenden sich mit einem
+   "Rueckgaengig" (Nutzer-Feedback: "mach ein Rueckgaengig moeglich", nachdem
+   schon das versehentliche Ausblenden als Problem aufgefallen war). Das
+   betrifft bewusst nur hideCard(), also den Weg ueber das Kartenmenue: in
+   den Einstellungen liegt der Chip zum Zurueckschalten ohnehin direkt unter
+   dem Finger. */
+export function useHiddenCards(screen, cardLayout, onSetCardLayout, toast) {
   const saved = cardLayout?.[screen];
   const [hidden, setHidden] = useState(() => new Set(normalizeHiddenCards(saved, screen)));
+  // Immer den FRISCHEN Serverstand mergen, nicht den aus dem Render, in dem
+  // die Aktion entstanden ist: zwischen Ausblenden und "Rueckgaengig" liegen
+  // bis zu 6,5 s, in denen z.B. eine Karte verschoben worden sein kann -
+  // ohne Ref schriebe das Rueckgaengig diese Verschiebung wieder weg.
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
 
   const persist = async (next) => {
     if (!onSetCardLayout) return;
     const prev = hidden;
     setHidden(next);
-    const ok = await onSetCardLayout(screen, mergeCardLayout(saved, { hidden: [...next] }));
+    const ok = await onSetCardLayout(screen, mergeCardLayout(savedRef.current, { hidden: [...next] }));
     if (!ok) setHidden(prev);
   };
 
@@ -34,7 +48,20 @@ export function useHiddenCards(screen, cardLayout, onSetCardLayout) {
     hidden,
     isHidden: (id) => hidden.has(id),
     hiddenCount: hidden.size,
-    hideCard: (id) => { if (!hidden.has(id)) persist(new Set([...hidden, id])); },
+    // Das Rueckgaengig stellt den Stand VOR dem Ausblenden wieder her (die
+    // Momentaufnahme "prev"), statt nur diese eine Karte wieder
+    // einzublenden - bei genau einer Aenderung ist das dasselbe, aber es
+    // kann per Definition nichts anderes mit verstellen.
+    hideCard: (id) => {
+      if (hidden.has(id)) return;
+      const prev = hidden;
+      persist(new Set([...hidden, id]));
+      const label = screenCards(screen).find((c) => c.id === id)?.label;
+      if (toast) {
+        toast(label ? t("Ausgeblendet: {name}", { name: t(label) }) : t("Karte ausgeblendet"),
+          { label: t("Rückgängig"), onAction: () => persist(prev) });
+      }
+    },
     showCard: (id) => { if (hidden.has(id)) { const n = new Set(hidden); n.delete(id); persist(n); } },
     toggleCard: (id) => { const n = new Set(hidden); n.has(id) ? n.delete(id) : n.add(id); persist(n); },
     hideAll: () => persist(new Set(screenCards(screen).map((c) => c.id))),
