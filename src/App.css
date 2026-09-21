@@ -341,6 +341,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .open-reports { margin-bottom: 14px; }
 
 .steps { display: flex; gap: 6px; margin-bottom: 20px; }
+/* Schrittpunkte stehen unter dem Inhalt (siehe MatchScreen): oben gehoert
+   das Match selbst hin, nicht die Navigationsanzeige. */
+.steps.bottom { margin: 24px 0 0; }
 .step-dot { flex: 1; text-align: center; font-size: 11px; color: var(--ivory-dim);
   display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .step-dot span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
@@ -373,9 +376,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .disc-card.compact { padding: 13px 4px; font-size: 15px; border-radius: 12px; }
 
 /* Disziplin-Chip + Kopf im Ergebnis-Schritt */
-.score-head { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+.score-head { display: flex; align-items: center; justify-content: center; margin: 14px 0 0; }
 .sh-players { font-size: 13px; color: var(--ivory-dim); }
-.pt-preview { text-align: center; margin: -4px 0 14px; display: flex; flex-direction: column; gap: 3px; }
+.pt-preview { text-align: center; margin: 14px 0 0; display: flex; flex-direction: column; gap: 3px; }
 .pt-chance { font-size: 13px; color: var(--ivory-dim); }
 .pt-chance b { color: var(--chalk); }
 .pt-range { font-size: 12px; color: var(--ivory-dim); }
