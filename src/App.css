@@ -201,7 +201,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .qr-box { display: grid; place-items: center; background: #F2EDE0; border-radius: 16px;
   padding: 16px; width: fit-content; margin: 0 auto; }
 .qr-loading { width: 210px; height: 210px; display: grid; place-items: center; color: #0A2B21; font-size: 13px; }
-.invite-code { margin-top: 12px; font-size: 14px; color: var(--ivory-dim); letter-spacing: 0.04em; }
+.invite-code { margin-top: 12px; font-size: 14px; color: var(--ivory-dim); letter-spacing: 0.04em;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+/* Kompakter Inline-Knopf im Code-Zeilenfluss - .btn ist sonst width:100%. */
+.btn.invite-new { width: auto; padding: 5px 9px; font-size: 12px; border-radius: 9px;
+  display: inline-flex; align-items: center; gap: 4px; letter-spacing: 0; }
 .invite-code b { color: var(--ivory); font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; letter-spacing: 0.12em; }
 .invite-note { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px;
   font-size: 13px; color: var(--win); font-weight: 600; }
