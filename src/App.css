@@ -7,8 +7,8 @@
   --win: #4CAF6E; --loss: #D9614C;
   /* Einheitlicher Abstand zwischen gestapelten Karten (Nutzer-Feedback:
      nach mehreren Pushes hatten Karten uneinheitliche/versehentlich zu
-     grosse Abstaende - z.B. .ov-side/.stat-grid mit 16px, .pf-left-col/
-     .pf-right-col mit 24px, .stat-block-Default mit 14px). Eine einzige
+     grosse Abstaende - z.B. .ov-side/.stat-grid mit 16px, die Profil-
+     Spalten mit 24px, .stat-block-Default mit 14px). Eine einzige
      Variable statt verstreuter Werte macht das an EINER Stelle wartbar. */
   --card-gap: 16px;
   /* Einheitlicher, klar sichtbarer Rahmen fuer "Hintergrund"-Buttons
@@ -709,19 +709,34 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 /* Am PC zweispaltig: die linke Spalte ist breit genug, und 22 Zeilen
    untereinander wuerden die Einstellungsseite sonst dominieren. */
 .card-vis-list { display: grid; grid-template-columns: 1fr; gap: 2px; }
-/* Zeile = der bekannte Schalter aus "Bildschirm", nur mit umgedrehter
-   Anzeige-Reihenfolge: im Markup muss der Schieber direkt hinter dem input
-   stehen (Geschwister-Selektor), angezeigt gehoert er aber nach rechts. */
-.card-vis-row { gap: 10px; padding: 7px 8px; border-radius: 10px; }
+/* Eine Zeile je Karte: ganz links die Pfeile fuer die Reihenfolge, dann
+   Name + Schalter (der bekannte Schalter aus "Bildschirm", nur mit
+   umgedrehter Anzeige-Reihenfolge: im Markup muss der Schieber direkt
+   hinter dem input stehen (Geschwister-Selektor), angezeigt gehoert er
+   aber nach rechts), ganz rechts die Spaltenwahl (nur am PC). */
+.card-vis-row { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 10px; }
 .card-vis-row:hover { background: var(--felt-3); }
-.card-vis-row .settings-switch-track { order: 2; }
-.card-vis-name { order: 1; display: flex; align-items: center; gap: 8px;
+.card-vis-switch { flex: 1; min-width: 0; margin-bottom: 0; gap: 10px; }
+.card-vis-switch .settings-switch-track { order: 2; }
+.card-vis-name { order: 1; display: flex; align-items: center;
   margin-right: auto; min-width: 0; font-size: 13px; color: var(--ivory); }
-.card-vis-name svg { flex-shrink: 0; color: var(--ivory-dim); }
 .card-vis-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Ausgeblendet auf einen Blick erkennbar, auch ohne den Schalter zu lesen. */
+/* Ausgeblendet auch am Namen selbst erkennbar - kein zweites Symbol davor
+   (Nutzer-Feedback: das Auge sagte dasselbe wie der Schalter daneben). */
 .card-vis-row.is-hidden .card-vis-name { color: var(--ivory-dim); }
 .card-vis-row.is-hidden .card-vis-label { text-decoration: line-through; }
+/* Pfeile (Reihenfolge) und Spaltenwahl: bewusst kleine, randlose Knoepfe
+   wie das Kartenmenue an der Karte selbst - sie sollen die Zeile nicht
+   dominieren, der Kartenname bleibt das Auffaelligste. */
+.card-vis-move { display: inline-flex; flex-shrink: 0; }
+.card-vis-mini { background: none; border: none; padding: 3px; border-radius: 7px;
+  color: var(--ivory-dim); display: inline-flex; align-items: center; cursor: pointer; flex-shrink: 0; }
+.card-vis-mini:hover:not(:disabled) { color: var(--chalk); background: var(--felt-2); }
+.card-vis-mini:disabled { opacity: .3; cursor: default; }
+/* Spalten gibt es nur in der dreispaltigen PC-Ansicht - am Handy steht
+   ohnehin alles untereinander (gleicher Grund wie bei .card-column-btn an
+   der Karte selbst). */
+.card-vis-col { display: none; }
 /* Ablageflaeche einer leeren Spalte (siehe EmptyColumnDropZone.jsx -
    Nutzer-Feedback: "ich habe alle Karten in der Mitte, kann aber keine
    Karte nach rechts schieben") - aus demselben Grund wie .card-column-btn
@@ -859,8 +874,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border-radius: 10px; padding: 8px 10px; line-height: 1.4; }
 .challenge-form { margin-bottom: 14px; }
 
-/* Live-Tab: zwei einklappbare Bereiche (Duelle / Live), klar unterscheidbar */
-.live-section { margin-bottom: 18px; }
+/* Live-Tab: einklappbare Bereiche (Duelle / Live / Planung), klar
+   unterscheidbar. Den Abstand nach unten macht der Flex-Gap der Spalte
+   bzw. des Bildschirms (siehe .live-split/.live-col) - eine eigene Marge
+   hier wuerde sich damit addieren und genau die zu grossen Luecken
+   erzeugen, die der Nutzer bemaengelt hat. */
+.live-section { margin-bottom: 0; }
 .live-section-head { width: 100%; display: flex; align-items: center; gap: 8px; background: var(--felt-2);
   border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer;
   font-family: inherit; color: var(--ivory); margin-bottom: 10px; }
@@ -1123,7 +1142,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 /* ===== Statistik: linke UserPanel-Spalte (siehe src/components/widgets) =====
    Am Handy ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px als
    duenn-breit-duenn-Seitenspalte sichtbar (siehe .stat-split unten). */
-.ov-side { display: flex; flex-direction: column; gap: var(--card-gap); order: 3; }
+.ov-side { display: none; flex-direction: column; gap: var(--card-gap); }
 .ov-side-extra { display: none; }
 .ov-side .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
@@ -1213,14 +1232,20 @@ button.id-card-head { cursor: pointer; }
    linke Spalte, Erfolge stehen als zentrales Element breiter in der Mitte,
    Statistiken+Konto teilen sich die rechte Spalte - die Reihenfolge hier
    spielt dort keine Rolle mehr. */
-.pf-layout { display: flex; flex-direction: column; gap: 22px; }
-.pf-left-col, .pf-right-col { display: contents; }
-.pf-identity { order: 1; }
-.pf-stats-a { order: 2; }
-.pf-stats-b { order: 3; }
-.pf-achievements { order: 4; display: flex; flex-direction: column; }
-.pf-achievements > * { margin-bottom: var(--card-gap); }
-.pf-account { order: 5; }
+.pf-layout { display: flex; flex-direction: column; gap: var(--card-gap); }
+/* Die drei Spalten sind am Handy unsichtbare Huellen: ihre Kinder (die
+   Karten) werden dadurch direkte Flex-Kinder von .pf-layout und ordnen
+   sich ueber ihr eigenes "order" zu EINER durchgehenden Liste in der vom
+   Nutzer gespeicherten Reihenfolge (siehe CardSlot.jsx) - quer ueber die
+   Spalten hinweg, die es hier ohnehin nicht gibt. Gleicher Aufbau wie auf
+   Live und Statistik. */
+.pf-col { display: contents; }
+.pf-identity > *, .card-slot > * { margin-bottom: 0; }
+/* Konto-Knoepfe (Turniere/Verwaltung/Abmelden): keine Karten, deshalb per
+   festem "order" immer ganz am Ende. Den Abstand machen die Knoepfe selbst
+   (.btn.ghost hat margin-top), nur der erste braucht keinen. */
+.pf-account-actions { display: flex; flex-direction: column; }
+.pf-account-actions > .btn:first-child { margin-top: 0; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-main, .pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-save { margin-top: 20px; }
@@ -1242,29 +1267,26 @@ button.id-card-head { cursor: pointer; }
    "Gegner waehlen"): Auswahl-Elemente + Spieler-Raster. Alle drei nach
    demselben Prinzip - am Handy untereinander (Quelltext-Reihenfolge),
    ab 900px zweispaltig. */
-.live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: 20px; }
+.live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: var(--card-gap); }
+.match-split { gap: 20px; }
 .stat-chart-col, .stat-grid, .match-selectors, .match-players { min-width: 0; }
-/* Unsichtbare Huellen am Handy (siehe .live-right-col/.live-top-row weiter
-   unten fuer den Grund) - ihre Kinder (Duelle/Pings/Planung/Matches)
-   werden dadurch direkte Flex-Kinder von .live-split und bleiben so in
-   der urspruenglichen Quelltext-Reihenfolge untereinander. */
-.live-right-col, .live-top-row { display: contents; }
+/* Am Handy unsichtbare Spalten-Huellen: ihre Kinder werden dadurch direkte
+   Flex-Kinder des Bildschirms und ordnen sich ueber ihr eigenes "order" zu
+   EINER durchgehenden Liste in der gespeicherten Reihenfolge (siehe
+   CardSlot.jsx/SortableCard.jsx) - unabhaengig davon, in welcher Spalte
+   eine Karte am PC steht. */
+.live-col { display: contents; }
+.card-slot { min-width: 0; }
 
-/* .stat-right-col fasst die globale Auswahl + alle rechten Karten zu EINEM
-   Grid-Feld zusammen (wie .pf-right-col beim Profil) - display:contents am
-   Handy macht die Huelle unsichtbar, ihre Kinder ordnen sich per eigenem
-   "order" direkt in .stat-split ein (siehe Desktop-Block weiter unten fuer
-   die Gegenprobe: dort werden .stat-chart-col/.stat-grid zu echten
-   Grid-Spalten). .stat-grid traegt seit dem Drag&Drop-Feature (Nutzer-
-   Feedback: "in der mobilen Ansicht ... ganz oben die Karten aus der
-   mittleren Spalte, darunter die Karten der rechten Spalte") die komplette
-   rechte Kartengruppe als EIN Flex-Kind statt vormals zwei separater
-   Huellen (Rangliste war eine fixe erste Position, ist jetzt nur noch eine
-   von mehreren frei sortierbaren Karten in dieser Gruppe). */
-.stat-right-col { display: contents; }
-.stat-chart-col { order: 2; }
-.stat-grid { order: 3; }
-.stat-split .ov-side { order: 4; }
+/* .stat-right-col fasst am Desktop alle rechten Karten zu EINEM Grid-Feld
+   zusammen (sonst koppelt CSS Grid die Zeilenhoehen ueber die Spalten
+   hinweg, siehe Desktop-Block weiter unten). Am Handy sind alle drei
+   Huellen unsichtbar, die Karten also direkte Flex-Kinder von .stat-split
+   und per eigenem "order" EINE Liste in der gespeicherten Reihenfolge -
+   fruehere Fassungen stapelten hier stattdessen erst die mittlere, dann
+   die rechte Gruppe, was nicht mehr zur Reihenfolge passte, die der
+   Nutzer per Ziehen bzw. in den Einstellungen sieht. */
+.stat-right-col, .stat-chart-col, .stat-grid { display: contents; }
 /* Nutzer-Feedback: "zu grosse Luecke... vermute die Unterscheidung
    zwischen Mitte/Breit und Rechts/schmal". Seit Stufe 4 (cardLayout.js)
    ist die Spaltenwahl reine Nutzerentscheidung - am Handy sollen
@@ -1278,12 +1300,10 @@ button.id-card-head { cursor: pointer; }
    durchgaengigen 16px - genau der spuerbare "Spaltenbruch", den der Nutzer
    zurecht bemerkt hat. Jetzt tragen beide Huellen selbst denselben
    Flex-Gap wie jede einzelne Karte, ihre Kinder verlieren dafuer die
-   eigene Marge (sonst doppelt gezaehlt); .stat-split bekommt denselben,
-   kleineren Wert statt der 20px von live-split/match-split. Gilt bewusst
-   unveraendert auch am Desktop (dort bisher nur bei .stat-grid so, jetzt
-   auch bei .stat-chart-col - beide Spalten verhalten sich dadurch gleich). */
-.stat-split { gap: var(--card-gap); }
-.stat-chart-col, .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
+   eigene Marge (sonst doppelt gezaehlt). Seit die Karten am Handy per
+   "order" EINE gemeinsame Liste bilden (siehe oben), sind die Huellen dort
+   gar keine eigenen Kaesten mehr - den einzigen Abstand macht der Gap von
+   .stat-split, und der ist derselbe wie ueberall. */
 .stat-chart-col .stat-block, .stat-grid .stat-block { margin-bottom: 0; }
 /* Per Drag & Drop sortierbare Karten (siehe SortableCard.jsx) - Cursor/
    Transform/Opacity beim Ziehen setzt die Komponente selbst inline (haengt
@@ -1311,75 +1331,78 @@ button.id-card-head { cursor: pointer; }
      ins Bild passt wirkt beim Scrollen wie haengengeblieben statt wie
      "bleibt sichtbar". Scrollt normal mit wie jede andere Spalte
      (siehe .stat-split weiter unten fuer die Spaltenaufteilung). */
-  .ov-side { grid-column: 1; grid-row: 1 / span 2; order: 0; }
-  /* Hoehere Spezifitaet als die Handy-Regel ".stat-split .ov-side{order:4}"
-     weiter oben (zwei Klassen schlagen eine) - sonst wuerde die
-     Medienabfrage allein den order-Wert hier NICHT zuverlaessig
-     zuruecksetzen. */
-  .stat-split .ov-side { order: 0; }
+  .ov-side { display: flex; grid-column: 1; grid-row: 1 / span 2; order: 0; }
   .ov-side-extra { display: flex; flex-direction: column; gap: var(--card-gap); }
 
-  /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Statistik) -
-     Erfolge sind ein zentrales Element der App und stehen
-     deshalb breiter in der Mitte, Statistiken flankieren links/rechts.
-     Links: Identitaet + Ratings/Head-to-Head (bleibt beim Scrollen
-     sichtbar, siehe .pf-left-col). Rechts: Tempo + Konto-Einstellungen
-     (siehe .pf-right-col). Beide Seiten-Spalten sind selbst Flexbox-
-     Stapel, KEIN Grid mit eigenen Zeilen - die "order"-Werte von der
-     Handy-Ansicht wirken hier also weiterhin und muessen fuer alle 4
-     Kinder explizit auf 0 zurueckgesetzt werden, sonst bringt Handy-
-     "order" die Reihenfolge durcheinander. */
+  /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Statistik und
+     Live). Welche Karte in welcher der drei Spalten steht, entscheidet
+     der Nutzer (cardLayout.js) - fest ist nur die Identitaetskarte oben
+     links und die Konto-Knoepfe unten rechts.
+     Flexbox statt Grid (wie auf Live): bei einem festen Raster
+     "300px 1fr 300px" bleibt die Spur einer leer gewordenen Spalte stehen
+     und hinterlaesst genau die breite Luecke, die der Nutzer bemaengelt
+     hat, sobald er die Karten dort alle ausblendet. Als Flex-Zeile
+     verschwindet eine leere Spalte per .pf-col:empty ganz, und die
+     verbleibenden teilen sich den Platz.
+     Jede Spalte stapelt ihren Inhalt selbst per Flexbox - dadurch bestimmt
+     allein ihre eigene Hoehe die Abstaende darin (ein Grid haette Zeilen
+     ueber alle Spalten hinweg gekoppelt und vor dem zweiten Modul eine
+     grosse Luecke erzeugt, siehe "CSS Grid cross-column height coupling"
+     in CLAUDE.md).
+     Sticky gehoert auf die ganze linke Spalte (wie bei .ov-side/UserPanel
+     auf Statistik), NICHT nur auf .pf-identity - sonst bleibt nur die
+     Identitaetskarte kleben, waehrend die Karten darunter wegscrollen und
+     von ihr verdeckt werden (das sah aus wie "Spielerinfo bleibt beim
+     Scrollen immer oben"). */
   .phone.app .screen:has(.pf-layout) { max-width: 1440px; }
-  .pf-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  /* Links und rechts steckt jeweils EIN Grid-Feld (.pf-left-col /
-     .pf-right-col), das seine zwei Module per Flexbox stapelt - so
-     bestimmt allein ihre eigene Hoehe den Abstand, statt dass CSS Grid
-     Zeile 1/2 anhand der viel hoeheren Erfolge-Spalte in der Mitte
-     aufteilt (das erzeugte vorher eine grosse Luecke vor dem zweiten
-     Modul). Sticky gehoert auf die ganze .pf-left-col (wie bei
-     .ov-side/UserPanel auf Statistik), NICHT nur auf
-     .pf-identity - sonst bleibt nur die Identitaetskarte kleben, waehrend
-     .pf-stats-a darunter/dahinter wegscrollt und von ihr verdeckt wird
-     (das sah aus wie "Spielerinfo bleibt beim Scrollen immer oben"). */
-  .pf-left-col { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); position: sticky; top: 28px; }
-  .pf-identity, .pf-stats-a { order: 0; }
-  .pf-achievements { grid-column: 2; grid-row: 1 / span 2; order: 0; }
-  .pf-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: var(--card-gap); }
-  .pf-stats-b, .pf-account { order: 0; }
+  .pf-layout { display: flex; flex-direction: row; gap: 24px; align-items: flex-start; }
+  .pf-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
+  .pf-col.left { flex: 0 0 300px; position: sticky; top: 28px; }
+  .pf-col.middle { flex: 1; }
+  .pf-col.right { flex: 0 0 300px; }
+  .pf-col:empty { display: none; }
+  /* Faellt ausgerechnet die breite Mitte weg, waere sonst rechts neben den
+     beiden schmalen Spalten die halbe Seite leer - dann duerfen die beiden
+     den Platz nehmen. */
+  .pf-layout:has(.pf-col.middle:empty) .pf-col.left,
+  .pf-layout:has(.pf-col.middle:empty) .pf-col.right { flex: 1 1 300px; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
   .phone.app .screen:has(.pf-edit-layout) { max-width: 900px; }
   .pf-edit-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
-  .card-vis-list { grid-template-columns: 1fr 1fr; gap: 2px 14px; }
+  /* Zweispaltig, aber SPALTENWEISE gefuellt (erst die linke Spalte von
+     oben nach unten, dann die rechte): die Liste zeigt die tatsaechliche
+     Kartenreihenfolge, und ein Klick auf "nach oben" soll die Zeile auch
+     nach oben schieben statt sie zeilenweise in die andere Spalte
+     springen zu lassen. --card-vis-rows setzt die Komponente je Liste. */
+  .card-vis-list { grid-template-columns: 1fr 1fr; gap: 2px 14px;
+    grid-auto-flow: column; grid-template-rows: repeat(var(--card-vis-rows, 1), auto); }
+  .card-vis-col { display: inline-flex; }
 
-  /* Live: duenn-breit-duenn wie Statistik/Profil - UserPanel
-     links (dieselbe Konstante), Duelle zentral/breit (der Fokus dieser
-     Seite - offene Herausforderungen brauchen mehr Platz fuer Nachricht/
-     Antwort), Live-Pings rechts (kompakte Liste, wie die Bestenlisten in
-     der Statistik), darunter Planung und Letzte Matches ueber die volle
-     Breite. Duelle/Pings/Planung/Matches stecken dafuer in EINEM
-     Grid-Feld (.live-right-col, gleiches Prinzip wie .stat-right-col in
-     der Statistik) statt als vier einzelne mehrzeilige Grid-Kinder:
-     CSS Grid bemisst eine Zeile sonst anhand des hoechsten Elements, das
-     sie beruehrt - das durch alle Zeilen spannende .ov-side (oft sehr
-     hoch durch UserPanel) blaehte dadurch Zeile 1+2 auf, selbst wenn
-     Duelle/Live/Planung gerade eingeklappt und daher kurz sind (Nutzer-
-     Feedback: "sehr viel Zwischenraum, wenn zugeklappt"). Fix identisch
-     zum Statistik-Bug: .live-right-col stapelt seinen Inhalt selbst per
-     Flexbox, dadurch bestimmt nur seine eigene Hoehe (bzw. die von
-     .ov-side) die einzige Grid-Zeile. */
+  /* Live: duenn-breit-duenn wie Statistik/Profil - UserPanel links
+     (dieselbe Konstante), daneben zwei frei befuellbare Spalten. Standard
+     ist Duelle + Planung in der breiten Mitte (offene Herausforderungen
+     und das Planungsformular brauchen Platz) und die Live-Liste schmal
+     rechts (kompakte Liste, wie die Bestenlisten in der Statistik) - der
+     Nutzer kann das jederzeit umstellen.
+     Eine Flex-Zeile, KEIN Grid: Grid bemisst eine Zeile anhand des
+     hoechsten Elements, das sie beruehrt - das oft sehr hohe UserPanel
+     blaehte damit fruehere Zeilen auf, selbst wenn Duelle/Live/Planung
+     gerade eingeklappt und daher kurz waren (Nutzer-Feedback: "sehr viel
+     Zwischenraum, wenn zugeklappt"), und eine leer gewordene Spalte liess
+     ihre Spur als breite Luecke stehen. */
   .phone.app .screen:has(.live-split) { max-width: 1440px; }
-  .live-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
-  .live-split .ov-side { grid-row: 1; }
-  .live-right-col { grid-column: 2 / 4; grid-row: 1; display: flex; flex-direction: column; gap: var(--card-gap); }
-  .live-right-col .live-section { margin-bottom: 0; }
-  /* Duelle zentral/breit (der Fokus - offene Herausforderungen brauchen
-     mehr Platz fuer Nachricht/Antwort), Live-Pings daneben schmal
-     (kompakte Liste), wie zuvor per Grid-Spalte. */
-  .live-top-row { display: flex; align-items: flex-start; gap: 24px; }
-  .live-top-row .live-section.duelle { flex: 1; min-width: 0; }
-  .live-top-row .live-section.pings { flex: 0 0 300px; min-width: 0; }
+  .live-split { display: flex; flex-direction: row; gap: 24px; align-items: flex-start; }
+  .live-split .ov-side { flex: 0 0 300px; }
+  .live-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
+  .live-col.middle { flex: 1; }
+  .live-col.right { flex: 0 0 300px; }
+  .live-col:empty { display: none; }
+  /* Steht in der breiten Mitte nichts mehr, nimmt die rechte Spalte den
+     Platz - sonst klebte eine 300px-Karte an einer ansonsten leeren Seite
+     (Nutzer-Feedback zu den zu grossen Luecken beim Ausblenden). */
+  .live-split:has(.live-col.middle:empty) .live-col.right { flex: 1; }
 
   /* Statistik: duenn-breit-duenn wie Profil - UserPanel links (dieselbe
      Konstante), mittlere und rechte Spalte frei per Drag & Drop sortierbar
@@ -1397,6 +1420,7 @@ button.id-card-head { cursor: pointer; }
      Karten") eine grosse leere Luecke erzeugte. */
   .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; }
   .stat-global-filter, .stat-chart-col, .stat-grid { order: 0; }
+  .stat-chart-col, .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
   .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
   .card-column-btn { display: inline-flex; }
   .card-maximize-btn { display: inline-flex; }

@@ -8,7 +8,8 @@ import UserPanel from "./widgets/UserPanel";
 import ImprintFooter from "./widgets/ImprintFooter";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
-import { useHiddenCards } from "../lib/useHiddenCards";
+import CardSlot from "./widgets/CardSlot";
+import { useCardLayout } from "../lib/useCardLayout";
 
 export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
@@ -76,36 +77,25 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
     try { localStorage.setItem(seenKey, JSON.stringify(next)); } catch { /* ignore */ }
   }, [challenges, me.id, seenKey]);
 
-  // Ausblendbare Bereiche (Nutzer-Feedback: "es werden mittlerweile so viele
-  // Karten, dass es unuebersichtlich ist") - hier sind die "Karten" die drei
-  // Bereiche Duelle/Live/Planung; die ids stehen im Katalog in cardLayout.js.
-  // Anders als das Ein-/Ausklappen darueber (openSecs, nur auf diesem Geraet)
-  // gilt das Ausblenden dauerhaft und auf allen Geraeten.
-  const hiddenCards = useHiddenCards("live", me.card_layout, onSetCardLayout, toast);
+  // Anordnung + Sichtbarkeit der drei Bereiche Duelle/Live/Planung (die
+  // "Karten" dieses Bildschirms; die ids stehen im Katalog in cardLayout.js).
+  // Beides aendert der Nutzer in den Einstellungen (Profil bearbeiten ->
+  // Karten), das Ausblenden zusaetzlich direkt im Kartenmenue hier. Anders
+  // als das Ein-/Ausklappen darueber (openSecs, nur auf diesem Geraet) gilt
+  // beides dauerhaft und auf allen Geraeten.
+  const cards = useCardLayout("live", me.card_layout, onSetCardLayout, toast);
 
   const duelleOpen = openSecs.has("duelle");
   const liveOpen = openSecs.has("live");
   const planungOpen = openSecs.has("planung");
 
-  return (
-    <div className="screen">
-      <header className="screen-head">
-        <h2>{t("Live")}</h2>
-        <span className="head-note">{t("Wer ist gerade am Tisch oder sucht ein Match?")}</span>
-      </header>
-
-      <div className="live-split">
-      <aside className="ov-side">
-        <div className="ov-side-extra">
-          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
-            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
-        </div>
-      </aside>
-
-      <div className="live-right-col">
-      <div className="live-top-row">
-      {!hiddenCards.isHidden("duelle") && (
+  // Registry der drei Karten dieses Bildschirms - WELCHE Karte in welcher
+  // Spalte und an welcher Stelle steht, entscheidet allein der Nutzer
+  // (Reihenfolge/Spalte aus useCardLayout, geaendert in den Einstellungen
+  // unter "Profil bearbeiten" -> "Karten"); hier steht nur noch, was drin
+  // ist. Ausgeblendete Karten fallen schon in cards.byColumn weg.
+  const cardsById = {
+    duelle: (
       <div className="live-section duelle">
         <div className="live-section-head-row">
         <button className="live-section-head" onClick={() => toggleSec("duelle")}>
@@ -114,7 +104,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           <span className="live-section-count">{openChallenges.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (duelleOpen ? " open" : "")} />
         </button>
-        <CardMenuButton onHide={() => hiddenCards.hideCard("duelle")} />
+        <CardMenuButton onHide={() => cards.hideCard("duelle")} />
         </div>
         {duelleOpen && (
           <>
@@ -136,9 +126,8 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           </>
         )}
       </div>
-      )}
-
-      {!hiddenCards.isHidden("pings") && (
+    ),
+    pings: (
       <div className="live-section pings">
         <div className="live-section-head-row">
         <button className="live-section-head" onClick={() => toggleSec("live")}>
@@ -147,7 +136,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           <span className="live-section-count">{pings.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (liveOpen ? " open" : "")} />
         </button>
-        <CardMenuButton onHide={() => hiddenCards.hideCard("pings")} />
+        <CardMenuButton onHide={() => cards.hideCard("pings")} />
         </div>
         {liveOpen && (
           <>
@@ -197,10 +186,8 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           </>
         )}
       </div>
-      )}
-      </div>
-
-      {!hiddenCards.isHidden("planung") && (
+    ),
+    planung: (
       <div className="live-section planung">
         <div className="live-section-head-row">
         <button className="live-section-head" onClick={() => toggleSec("planung")}>
@@ -209,7 +196,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           <span className="live-section-count">{plannings.length}</span>
           <ChevronDown size={16} className={"cat-chev" + (planungOpen ? " open" : "")} />
         </button>
-        <CardMenuButton onHide={() => hiddenCards.hideCard("planung")} />
+        <CardMenuButton onHide={() => cards.hideCard("planung")} />
         </div>
         {planungOpen && (
           <>
@@ -254,11 +241,40 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           </>
         )}
       </div>
-      )}
+    ),
+  };
+  const { middle: middleCardIds, right: rightCardIds } = cards.byColumn;
+  // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
+  // durchgehende Liste ueber beide Spalten hinweg (siehe CardSlot.jsx).
+  const renderColumn = (ids) => ids.map((id) => (
+    <CardSlot key={id} order={10 + cards.orderIndex(id)}>{cardsById[id]}</CardSlot>
+  ));
 
+  return (
+    <div className="screen">
+      <header className="screen-head">
+        <h2>{t("Live")}</h2>
+        <span className="head-note">{t("Wer ist gerade am Tisch oder sucht ein Match?")}</span>
+      </header>
+
+      <div className="live-split">
+      <aside className="ov-side">
+        <div className="ov-side-extra">
+          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
+        </div>
+      </aside>
+      {/* Zwei frei befuellbare Spalten (am Handy per display:contents EINE
+          durchgehende Liste, siehe App.css): breit in der Mitte, schmal
+          rechts. Eine leere Spalte verschwindet per CSS ganz, statt eine
+          Luecke zu hinterlassen (Nutzer-Feedback: "die Luecken zwischen den
+          Karten sind unnoetig gross, wenn manche dazwischen ausgeblendet
+          sind"). */}
+      <div className="live-col middle">{renderColumn(middleCardIds)}</div>
+      <div className="live-col right">{renderColumn(rightCardIds)}</div>
       </div>
-      </div>
-      <ShowAllCardsButton hiddenCount={hiddenCards.hiddenCount} onShowAll={hiddenCards.showAll} />
+      <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
       <ImprintFooter />
     </div>
   );

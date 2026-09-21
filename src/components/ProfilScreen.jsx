@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, LayoutGrid, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -18,30 +18,41 @@ import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
-import { CARD_SCREENS } from "../lib/cardLayout";
-import { useHiddenCards } from "../lib/useHiddenCards";
+import CardSlot from "./widgets/CardSlot";
+import { CARD_SCREENS, splitCardColumns } from "../lib/cardLayout";
+import { useCardLayout } from "../lib/useCardLayout";
+
+// Spaltenwahl in den Karten-Einstellungen: Symbol + Name je Spalte. Die
+// Symbole zeigen einen Block links/mittig/rechts und damit direkt, wo die
+// Karte am PC landet (welche Spalten es auf einem Bildschirm ueberhaupt
+// gibt, steht im Katalog in cardLayout.js - Statistik und Live haben links
+// eine feste Spalte und daher nur Mitte/Rechts).
+const CARD_COLUMN_LABEL = { left: "Links", middle: "Mitte", right: "Rechts" };
+const CARD_COLUMN_ICON = { left: AlignStartVertical, middle: AlignCenterVertical, right: AlignEndVertical };
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, achievementCounters }) {
-  // Ausgeblendete Karten (Nutzer-Feedback: "es werden mittlerweile so viele
-  // Karten, dass es unuebersichtlich ist"). Drei Haken, weil die Karten-
-  // Einstellungen unter "Profil bearbeiten" ALLE Bildschirme abdecken, nicht
-  // nur das Profil selbst - dort ist die eine Stelle, an der man ohne
-  // Bildschirmwechsel sieht, was ueberall ein- oder ausgeblendet ist.
-  // Nur fuers eigene Profil: auf einem fremden Profil sind dieselben Karten
-  // der ganze Inhalt der Seite, und die Wahl gilt der eigenen Uebersicht.
-  const hiddenByScreen = {
-    stats: useHiddenCards("stats", meRow?.card_layout, onSetCardLayout, toast),
-    live: useHiddenCards("live", meRow?.card_layout, onSetCardLayout, toast),
-    profil: useHiddenCards("profil", meRow?.card_layout, onSetCardLayout, toast),
+  // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
+  // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
+  // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
+  // Stelle, an der man ohne Bildschirmwechsel sieht und aendert, was
+  // ueberall in welcher Reihenfolge steht und was ausgeblendet ist.
+  const layoutByScreen = {
+    stats: useCardLayout("stats", meRow?.card_layout, onSetCardLayout, toast),
+    live: useCardLayout("live", meRow?.card_layout, onSetCardLayout, toast),
+    profil: useCardLayout("profil", meRow?.card_layout, onSetCardLayout, toast),
   };
-  const hiddenCards = hiddenByScreen.profil;
-  // Auf fremden Profilen bleibt alles sichtbar und es gibt keinen
-  // Ausblenden-Knopf (onHide undefined => CardMenuButton rendert nichts).
-  const cardShown = (id) => !isMe || !hiddenCards.isHidden(id);
-  const cardHide = (id) => (isMe && onSetCardLayout ? () => hiddenCards.hideCard(id) : undefined);
+  const cards = layoutByScreen.profil;
+  // Auf einem FREMDEN Profil sind dieselben Karten der ganze Inhalt der
+  // Seite: dort bleibt alles sichtbar (die Ausblend-Entscheidung gilt der
+  // eigenen Uebersicht) und es gibt keinen Ausblenden-Knopf (onHide
+  // undefined => CardMenuButton rendert nichts). Die REIHENFOLGE gilt
+  // dagegen auch dort - sie ist die Vorliebe dessen, der gerade schaut.
+  const shownOrder = isMe ? cards.visibleOrder : cards.order;
+  const pfColumns = splitCardColumns(shownOrder, cards.columns, "profil");
+  const cardHide = (id) => (isMe && onSetCardLayout ? () => cards.hideCard(id) : undefined);
 
   const catalogByCategory = useMemo(() => {
     const groups = {};
@@ -304,11 +315,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       onSetStartTab("stats"),
       onResetCardLayout(),
     ]);
-    // reset_card_layout() hat serverseitig auch die ausgeblendeten Karten
-    // mitgeloescht (der ganze card_layout-Eintrag faellt weg) - der lokale
-    // Stand der drei Haken muss daher mitziehen, sonst zeigt die Liste
-    // darueber bis zum naechsten Neuaufbau noch die alten Ausblendungen.
-    Object.values(hiddenByScreen).forEach((api) => api.clearLocal());
+    // reset_card_layout() hat serverseitig den ganzen card_layout-Eintrag
+    // geloescht, also Reihenfolge, Spalte UND ausgeblendete Karten - der
+    // lokale Stand der drei Haken muss daher mitziehen, sonst zeigt die
+    // Liste darueber bis zum naechsten Neuaufbau noch den alten Stand.
+    Object.values(layoutByScreen).forEach((api) => api.clearLocal());
     setColor(null);
     setThemeKey("green");
     applyTheme("green");
@@ -400,12 +411,21 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </div>
         </section>
 
-      {/* Karten-Sichtbarkeit fuer ALLE Bildschirme an einer Stelle (Vorgabe:
-          "Lasse dem User in den Usersettings die Anzeige der Karten
-          definieren") - dasselbe, was das Kartenmenue an jeder einzelnen
-          Karte tut, nur als Gesamtuebersicht: hier sieht man auch, was auf
-          einem Bildschirm ausgeblendet ist, den man gerade gar nicht offen
-          hat.
+      {/* Karten-Anordnung + -Sichtbarkeit fuer ALLE Bildschirme an einer
+          Stelle (Vorgabe: "Lasse dem User in den Usersettings die Anzeige
+          der Karten definieren", spaeter: "in jedem Menuepunkt die
+          Anordnung der Karten durch den User veraenderbar ... vielleicht
+          laesst sich das mit dem Ein- und Ausblenden in der
+          User-Konfiguration kombinieren"). Je Zeile eine Karte, und zwar
+          genau in der Reihenfolge, in der sie auf ihrem Bildschirm steht:
+          links die Pfeile zum Verschieben, dann Name + Schalter, rechts
+          (nur am PC) die Spaltenwahl.
+
+          Diese Liste ist die EINZIGE Stelle, an der sich die Reihenfolge
+          auf Live und Profil aendern laesst - auf der Statistik geht es
+          zusaetzlich per Drag & Drop direkt an der Karte, wie bisher.
+          Hier sieht man ausserdem, was auf einem Bildschirm ausgeblendet
+          ist, den man gerade gar nicht offen hat.
 
           Steht in der BREITEN linken Spalte, nicht in der 340px schmalen
           rechten (Nutzer-Feedback: "die Auswahlbuttons fuer die Karten
@@ -413,18 +433,20 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           weiss, welche Karte man gerade bearbeitet"). Und eine Zeile pro
           Karte statt einer Chip-Wolke: bei 22 gleich aussehenden Pillen
           ueber drei Bildschirme war beim Antippen nicht auf einen Blick
-          klar, welche Karte man gerade erwischt. Jetzt links der Name (mit
-          Auge/durchgestrichenem Auge), rechts der Schalter - dasselbe
-          Muster wie bei "Bildschirm" weiter unten. Am PC laufen die Zeilen
+          klar, welche Karte man gerade erwischt. Am PC laufen die Zeilen
           zweispaltig, damit die drei Listen zusammen nicht die halbe
-          Einstellungsseite fuellen. */}
+          Einstellungsseite fuellen - dort aber spaltenweise von oben nach
+          unten (grid-auto-flow: column, siehe --card-vis-rows), sonst
+          wuerde ein Klick auf "nach oben" die Karte optisch nach rechts
+          springen lassen. */}
       <section className="stat-block">
         <h3><LayoutGrid size={17} /> {t("Karten")}</h3>
         <p className="hint" style={{ marginTop: 0 }}>
-          {t("Welche Karten sollen auf welchem Bildschirm zu sehen sein? Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
+          {t("Reihenfolge, Spalte und Sichtbarkeit der Karten - fuer jeden Bildschirm. Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
         </p>
         {CARD_SCREENS.map(({ screen, label, cards }) => {
-          const api = hiddenByScreen[screen];
+          const api = layoutByScreen[screen];
+          const byId = Object.fromEntries(cards.map((c) => [c.id, c]));
           const sichtbar = cards.length - api.hiddenCount;
           return (
             <div key={screen} className="card-vis-group">
@@ -438,38 +460,77 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                   <Eye size={15} />
                 </button>
               </div>
-              <div className="card-vis-list">
-                {cards.map((c) => {
-                  const shown = !api.isHidden(c.id);
+              <div className="card-vis-list" style={{ "--card-vis-rows": Math.ceil(api.order.length / 2) }}>
+                {api.order.map((id, i) => {
+                  const c = byId[id];
+                  if (!c) return null;
+                  const shown = !api.isHidden(id);
+                  const col = api.columns[id] || "middle";
+                  const ColIcon = CARD_COLUMN_ICON[col] || AlignCenterVertical;
                   return (
-                    /* Reihenfolge im Markup: Kaestchen, Schieber, Name - der
-                       Schieber-Zustand haengt am Geschwister-Selektor
-                       (input:checked + .settings-switch-track), deshalb muss
-                       er direkt hinter dem input stehen. Angezeigt wird
-                       trotzdem Name links / Schieber rechts (order im CSS). */
-                    <label key={c.id} className={"settings-switch card-vis-row" + (shown ? "" : " is-hidden")}
-                      /* Nutzer-Feedback: "wenn ich eine Karte in den
-                         Profileinstellungen deaktiviere, scrollt die App
-                         automatisch ungewollt". Ein Klick aufs Label
-                         fokussiert das unsichtbare Kaestchen (0x0 Pixel),
-                         und der Browser scrollt jedes frisch fokussierte
-                         Element ins Bild - bei 22 Zeilen liegt staendig
-                         eine davon am Rand des Sichtfensters, und wegen
-                         scroll-behavior:smooth auf .content ist die
-                         Korrektur auch noch eine sichtbare Fahrt.
-                         preventDefault auf mousedown unterbindet genau
-                         diesen Fokus-Schritt; das Umschalten selbst haengt
-                         am click bzw. change und funktioniert weiter. Mit
-                         der Tastatur (Tab) wird weiterhin normal
-                         fokussiert - dort IST das Scrollen erwuenscht. */
-                      onMouseDown={(e) => e.preventDefault()}>
-                      <input type="checkbox" checked={shown} onChange={() => api.toggleCard(c.id)} />
-                      <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
-                      <span className="card-vis-name">
-                        {shown ? <Eye size={14} /> : <EyeOff size={14} />}
-                        <span className="card-vis-label">{t(c.label)}</span>
+                    <div key={id} className={"card-vis-row" + (shown ? "" : " is-hidden")}>
+                      {/* Pfeile statt Ziehen: am Handy waere eine 36px hohe
+                          Zeile ein schlechtes Ziehziel, und ein Fehlgriff
+                          waere hier besonders aergerlich, weil direkt
+                          daneben der Schalter zum Ausblenden sitzt. */}
+                      <span className="card-vis-move">
+                        <button type="button" className="card-vis-mini" disabled={i === 0}
+                          onClick={() => api.moveCard(id, -1)}
+                          aria-label={t("Nach oben")} title={t("Nach oben")}><ChevronUp size={14} /></button>
+                        <button type="button" className="card-vis-mini" disabled={i === api.order.length - 1}
+                          onClick={() => api.moveCard(id, 1)}
+                          aria-label={t("Nach unten")} title={t("Nach unten")}><ChevronDown size={14} /></button>
                       </span>
-                    </label>
+                      {/* Der Schalter steckt in einem eigenen <label>, die
+                          Knoepfe links und rechts davon bewusst DANEBEN und
+                          nicht darin: ein Knopf innerhalb eines Labels loest
+                          dessen Kaestchen mit aus - ein Klick auf "nach
+                          oben" wuerde die Karte also gleich mit ausblenden.
+                          Reihenfolge im Markup: Kaestchen, Schieber, Name -
+                          der Schieber-Zustand haengt am Geschwister-
+                          Selektor (input:checked + .settings-switch-track),
+                          deshalb muss er direkt hinter dem input stehen.
+                          Angezeigt wird trotzdem Name links / Schieber
+                          rechts (order im CSS). */}
+                      <label className="settings-switch card-vis-switch"
+                        /* Nutzer-Feedback: "wenn ich eine Karte in den
+                           Profileinstellungen deaktiviere, scrollt die App
+                           automatisch ungewollt". Ein Klick aufs Label
+                           fokussiert das unsichtbare Kaestchen (0x0 Pixel),
+                           und der Browser scrollt jedes frisch fokussierte
+                           Element ins Bild - bei 22 Zeilen liegt staendig
+                           eine davon am Rand des Sichtfensters, und wegen
+                           scroll-behavior:smooth auf .content ist die
+                           Korrektur auch noch eine sichtbare Fahrt.
+                           preventDefault auf mousedown unterbindet genau
+                           diesen Fokus-Schritt; das Umschalten selbst haengt
+                           am click bzw. change und funktioniert weiter. Mit
+                           der Tastatur (Tab) wird weiterhin normal
+                           fokussiert - dort IST das Scrollen erwuenscht. */
+                        onMouseDown={(e) => e.preventDefault()}>
+                        <input type="checkbox" checked={shown} onChange={() => api.toggleCard(id)} />
+                        <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                        {/* Bewusst NUR der Name, kein Auge/durchgestrichenes
+                            Auge davor (Nutzer-Feedback: "es ist nicht noetig,
+                            die Sichtbarkeit als durchgestrichenes Auge extra
+                            zu betonen, der Schieberegler ist Information
+                            genug") - das Symbol sagte dasselbe wie der
+                            Schalter direkt daneben. */}
+                        <span className="card-vis-name">
+                          <span className="card-vis-label">{t(c.label)}</span>
+                        </span>
+                      </label>
+                      {/* Spaltenwahl nur am PC (siehe .card-vis-col in
+                          App.css) - am Handy steht ohnehin alles
+                          untereinander, dort zaehlt allein die
+                          Reihenfolge. */}
+                      <button type="button" className="card-vis-mini card-vis-col"
+                        onClick={() => api.cycleColumn(id)}
+                        aria-label={t("Spalte wechseln")}
+                        title={t("Spalte: {col}", { col: t(CARD_COLUMN_LABEL[col] || "Mitte") })}>
+                        <ColIcon size={14} />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -639,6 +700,224 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     );
   }
 
+  // Registry aller frei anordenbaren Karten dieses Bildschirms - WELCHE
+  // Karte in welcher Spalte und an welcher Stelle steht, entscheidet allein
+  // der Nutzer (Reihenfolge/Spalte aus useCardLayout, geaendert unter
+  // "Profil bearbeiten" -> "Karten"); hier steht nur noch, was drin ist.
+  // Eine Karte, die es gerade ueberhaupt nicht gibt (Tempo ohne
+  // Protokolldaten, die Konto-Karten auf einem fremden Profil), fehlt hier
+  // schlicht - renderColumn ueberspringt sie dann.
+  const cardsById = {
+    erfolgeFortschritt: (
+        <AchievementsProgressCard catalog={catalog} extras={extendedExtras} earnedBadges={earnedBadges} nickname={nickname}
+          onHide={cardHide("erfolgeFortschritt")}
+          onOpenProfile={() => {
+            // "Alle"-Filter-Chip fokussieren statt manuell zu scrollen (siehe
+            // allFilterRef oben) - klappt bei fremden Profilen nicht (Chips
+            // nur bei isMe gerendert), dort bleibt scrollIntoView als Ersatz.
+            if (allFilterRef.current) { setBadgeStatus("all"); allFilterRef.current.focus(); }
+            else document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }} />
+    ),
+    ratings: (
+        <section className="stat-block">
+          <div className="stat-block-head roomy">
+            <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
+            {cardHide("ratings") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("ratings")} /></div>}
+          </div>
+          {myRows.map((r) => (
+            <div key={r.discipline} className="stat-row">
+              <span className="stat-name">{t(r.discipline)}</span>
+              <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
+              <span className="stat-val">{r.rating}</span>
+            </div>
+          ))}
+          {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
+        </section>
+    ),
+    rekorde: (
+          <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} onHide={cardHide("rekorde")} />
+    ),
+    headToHead: (
+          <HeadToHeadCard nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHide={cardHide("headToHead")} />
+    ),
+    erfolge: (
+        <section className="stat-block" id="pf-achievements-full">
+          <div className="stat-block-head roomy">
+            <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
+            {cardHide("erfolge") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("erfolge")} /></div>}
+          </div>
+          {isMe && achievementHint && (
+            <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
+          )}
+          {isMe && (
+            <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
+              {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
+            </p>
+          )}
+          <div className="search-row" style={{ marginBottom: 8 }}>
+            <Search size={16} className="mail-ico" />
+            <input placeholder={t("Erfolge durchsuchen …")} value={badgeQuery} onChange={(e) => setBadgeQuery(e.target.value)} />
+            {badgeQuery && <button className="clear-btn" onClick={() => setBadgeQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
+          </div>
+          {isMe && (
+            // Alle 5 Werkzeuge (Status-Filter + Auf-/Zuklappen) auf einer
+            // Ebene statt zweier getrennter Zeilen (Nutzer-Feedback) - eine
+            // gemeinsame Flex-Zeile, die Auf-/Zuklappen-Buttons rechtsbuendig
+            // per margin-left:auto auf dem ersten der beiden. Erreicht/Gesperrt
+            // als Icon-Chips (Schloss offen/zu) statt Textlabels - kompakter
+            // (behebt auch den Zeilenumbruch am Handy, Nutzer-Feedback) und
+            // selbsterklaerend passend zum "Erfolge freischalten"-Thema.
+            <div className="chips small" style={{ marginBottom: 8 }}>
+              <button ref={allFilterRef} className={"chip" + (badgeStatus === "all" ? " active" : "")} onClick={() => setBadgeStatus("all")}>{t("Alle")}</button>
+              <button className={"chip chip-icon" + (badgeStatus === "earned" ? " active" : "")} onClick={() => setBadgeStatus("earned")}
+                aria-label={t("Erreicht")} title={t("Erreicht")}><LockOpen size={16} /></button>
+              <button className={"chip chip-icon" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}
+                aria-label={t("Gesperrt")} title={t("Gesperrt")}><Lock size={16} /></button>
+              <button className="chip chip-icon" style={{ marginLeft: "auto" }} onClick={expandAll}
+                aria-label={t("Alles aufklappen")} title={t("Alles aufklappen")}><ChevronsDown size={16} /></button>
+              <button className="chip chip-icon" onClick={collapseAll}
+                aria-label={t("Alles zuklappen")} title={t("Alles zuklappen")}><ChevronsUp size={16} /></button>
+            </div>
+          )}
+          {(() => {
+            let anyVisible = false;
+            const rows = visibleByCategory.map(([cat, items, visible]) => {
+              if (visible.length === 0) return null;
+              anyVisible = true;
+              // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
+              const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
+              const open = openCats.has(cat);
+              const liveStat = isMe ? catLiveStat(items, extendedExtras) : null;
+              return (
+                <div key={cat} className="badge-cat">
+                  <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
+                    <div className="badge-cat-head-row">
+                      <span className="badge-cat-title">{t(cat)}</span>
+                      <span className="badge-cat-count">{earnedCount} / {items.length}</span>
+                      <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
+                    </div>
+                    {liveStat && <span className="badge-cat-live">{liveStat}</span>}
+                  </button>
+                  {open && (
+                    <div className="badge-grid">
+                      {visible.map((b) => {
+                        const key = b.badge_key;
+                        const earned = earnedBadges.has(key);
+                        const selected = meRow?.selected_badge === key && isMe;
+                        const progress = isMe && !earned ? badgeProgress(b.description, extendedExtras) : null;
+                        return (
+                          <button key={key}
+                            className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
+                            disabled={!isMe || !earned}
+                            onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
+                            title={t(b.description)}>
+                            <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
+                            <span className="badge-name">{t(b.name)}</span>
+                            <span className="badge-desc">{t(b.description)}</span>
+                            {progress && (
+                              <span className="badge-progress">
+                                {t("Fortschritt: {cur} / {target} {unit}", { cur: progress.current, target: progress.target, unit: progress.unit })}
+                              </span>
+                            )}
+                            {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            });
+            return (
+              <>
+                {rows}
+                {!anyVisible && badgeFiltering && <p className="hint">{t("Keine passenden Erfolge gefunden.")}</p>}
+              </>
+            );
+          })()}
+          {!isMe && !badgeFiltering && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
+        </section>
+    ),
+    tempo: (speedStats.avgGameMs != null || speedStats.avgBallMs != null) ? (
+          <section className="stat-block">
+            <div className="stat-block-head roomy">
+              <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
+              {cardHide("tempo") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("tempo")} /></div>}
+            </div>
+            {speedStats.avgGameMs != null && (
+              <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
+                <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
+            )}
+            {speedStats.avgBallMs != null && (
+              <>
+                <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Kugel (14/1)")}</span>
+                  <span className="stat-val">{fmtDuration(speedStats.avgBallMs)}</span></div>
+                <div className="stat-row"><span className="stat-name">{t("Hochgerechnet pro Rack")}</span>
+                  <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
+              </>
+            )}
+          </section>
+    ) : null,
+    anmeldung: isMe ? <PasswordSection toast={toast} onHide={cardHide("anmeldung")} /> : null,
+    feedback: isMe ? (
+          <section className="stat-block">
+            <div className="stat-block-head roomy">
+              <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
+              {cardHide("feedback") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("feedback")} /></div>}
+            </div>
+            {!feedbackOpen ? (
+              <>
+                <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
+                <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
+                  <MessageCircle size={15} /> {t("Feedback geben")}
+                </button>
+              </>
+            ) : feedbackSent ? (
+              <>
+                <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
+                <div className="sp-controls">
+                  <a className="btn ghost" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">
+                    {t("Per Telegram")}
+                  </a>
+                  <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
+                </div>
+                <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
+              </>
+            ) : (
+              <div className="challenge-form">
+                <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
+                  {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
+                    <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="search-row" style={{ marginBottom: 8 }}>
+                  <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
+                    style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
+                    onChange={(e) => setFeedbackMsg(e.target.value)} />
+                </div>
+                <div className="sp-controls">
+                  <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
+                  <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
+                    {feedbackBusy ? t("Speichere ...") : t("Absenden")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+    ) : null,
+    tickets: isMe ? <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} onHide={cardHide("tickets")} /> : null,
+  };
+  // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
+  // durchgehende Liste ueber alle drei Spalten hinweg (siehe CardSlot.jsx).
+  const renderColumn = (col) => pfColumns[col].filter((id) => cardsById[id]).map((id) => (
+    <CardSlot key={id} order={10 + shownOrder.indexOf(id)}>{cardsById[id]}</CardSlot>
+  ));
+
+
   return (
     <div className="screen">
       <header className="screen-head with-back">
@@ -650,12 +929,16 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </header>
 
       <div className="pf-layout">
-      {/* Identitaet + Ratings/Rekorde/Head-to-Head stecken ab 900px in EINEM
-          Grid-Feld (.pf-left-col), das sie per Flexbox stapelt - so
-          bestimmt allein ihre eigene Hoehe den Abstand, statt dass CSS
-          Grid Zeile 1/2 anhand der Erfolge-Spalte in der Mitte aufteilt. */}
-      <div className="pf-left-col">
-      <div className="pf-identity">
+      {/* Drei frei befuellbare Spalten (am Handy per display:contents EINE
+          durchgehende Liste, siehe App.css): duenn - breit - duenn, wie auf
+          Statistik und Live. Fest sind nur die Identitaetskarte ganz oben
+          links (sie ist der Kopf des Bildschirms, kein Modul unter vielen)
+          und die Konto-Knoepfe ganz unten rechts. Eine Spalte, in der keine
+          Karte mehr steht, verschwindet per CSS ganz, statt eine Luecke zu
+          hinterlassen (Nutzer-Feedback: "die Luecken zwischen den Karten
+          sind unnoetig gross, wenn manche dazwischen ausgeblendet sind"). */}
+      <div className="pf-col left">
+      <div className="pf-identity" style={{ order: 0 }}>
       <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
         onHeadClick={heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
@@ -698,186 +981,18 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           )}
         </>} />
       </div>
-
-      {/* Ratings + Head-to-Head bilden am PC die linke Spalte (zusammen mit
-          pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
-      <div className="pf-stats-a">
-      {cardShown("erfolgeFortschritt") && (
-      <AchievementsProgressCard catalog={catalog} extras={extendedExtras} earnedBadges={earnedBadges} nickname={nickname}
-        onHide={cardHide("erfolgeFortschritt")}
-        onOpenProfile={() => {
-          // "Alle"-Filter-Chip fokussieren statt manuell zu scrollen (siehe
-          // allFilterRef oben) - klappt bei fremden Profilen nicht (Chips
-          // nur bei isMe gerendert), dort bleibt scrollIntoView als Ersatz.
-          if (allFilterRef.current) { setBadgeStatus("all"); allFilterRef.current.focus(); }
-          else document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }} />
-      )}
-
-      {cardShown("ratings") && (
-      <section className="stat-block">
-        <div className="stat-block-head roomy">
-          <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
-          {cardHide("ratings") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("ratings")} /></div>}
-        </div>
-        {myRows.map((r) => (
-          <div key={r.discipline} className="stat-row">
-            <span className="stat-name">{t(r.discipline)}</span>
-            <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
-            <span className="stat-val">{r.rating}</span>
-          </div>
-        ))}
-        {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
-      </section>
-      )}
-
-      {cardShown("rekorde") && (
-        <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} onHide={cardHide("rekorde")} />
-      )}
-
-      {cardShown("headToHead") && (
-        <HeadToHeadCard nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
-          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHide={cardHide("headToHead")} />
-      )}
-      </div>
+      {renderColumn("left")}
       </div>
 
-      {/* Erfolge sind ein zentrales Element der App - stehen deshalb in der
-          Mitte und bekommen die meiste Breite (Kachel-Raster). */}
-      <div className="pf-achievements" id="pf-achievements-full">
-      {cardShown("erfolge") && (
-      <section className="stat-block">
-        <div className="stat-block-head roomy">
-          <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
-          {cardHide("erfolge") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("erfolge")} /></div>}
-        </div>
-        {isMe && achievementHint && (
-          <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
-        )}
-        {isMe && (
-          <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
-            {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
-          </p>
-        )}
-        <div className="search-row" style={{ marginBottom: 8 }}>
-          <Search size={16} className="mail-ico" />
-          <input placeholder={t("Erfolge durchsuchen …")} value={badgeQuery} onChange={(e) => setBadgeQuery(e.target.value)} />
-          {badgeQuery && <button className="clear-btn" onClick={() => setBadgeQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
-        </div>
-        {isMe && (
-          // Alle 5 Werkzeuge (Status-Filter + Auf-/Zuklappen) auf einer
-          // Ebene statt zweier getrennter Zeilen (Nutzer-Feedback) - eine
-          // gemeinsame Flex-Zeile, die Auf-/Zuklappen-Buttons rechtsbuendig
-          // per margin-left:auto auf dem ersten der beiden. Erreicht/Gesperrt
-          // als Icon-Chips (Schloss offen/zu) statt Textlabels - kompakter
-          // (behebt auch den Zeilenumbruch am Handy, Nutzer-Feedback) und
-          // selbsterklaerend passend zum "Erfolge freischalten"-Thema.
-          <div className="chips small" style={{ marginBottom: 8 }}>
-            <button ref={allFilterRef} className={"chip" + (badgeStatus === "all" ? " active" : "")} onClick={() => setBadgeStatus("all")}>{t("Alle")}</button>
-            <button className={"chip chip-icon" + (badgeStatus === "earned" ? " active" : "")} onClick={() => setBadgeStatus("earned")}
-              aria-label={t("Erreicht")} title={t("Erreicht")}><LockOpen size={16} /></button>
-            <button className={"chip chip-icon" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}
-              aria-label={t("Gesperrt")} title={t("Gesperrt")}><Lock size={16} /></button>
-            <button className="chip chip-icon" style={{ marginLeft: "auto" }} onClick={expandAll}
-              aria-label={t("Alles aufklappen")} title={t("Alles aufklappen")}><ChevronsDown size={16} /></button>
-            <button className="chip chip-icon" onClick={collapseAll}
-              aria-label={t("Alles zuklappen")} title={t("Alles zuklappen")}><ChevronsUp size={16} /></button>
-          </div>
-        )}
-        {(() => {
-          let anyVisible = false;
-          const rows = visibleByCategory.map(([cat, items, visible]) => {
-            if (visible.length === 0) return null;
-            anyVisible = true;
-            // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
-            const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
-            const open = openCats.has(cat);
-            const liveStat = isMe ? catLiveStat(items, extendedExtras) : null;
-            return (
-              <div key={cat} className="badge-cat">
-                <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
-                  <div className="badge-cat-head-row">
-                    <span className="badge-cat-title">{t(cat)}</span>
-                    <span className="badge-cat-count">{earnedCount} / {items.length}</span>
-                    <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
-                  </div>
-                  {liveStat && <span className="badge-cat-live">{liveStat}</span>}
-                </button>
-                {open && (
-                  <div className="badge-grid">
-                    {visible.map((b) => {
-                      const key = b.badge_key;
-                      const earned = earnedBadges.has(key);
-                      const selected = meRow?.selected_badge === key && isMe;
-                      const progress = isMe && !earned ? badgeProgress(b.description, extendedExtras) : null;
-                      return (
-                        <button key={key}
-                          className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
-                          disabled={!isMe || !earned}
-                          onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
-                          title={t(b.description)}>
-                          <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
-                          <span className="badge-name">{t(b.name)}</span>
-                          <span className="badge-desc">{t(b.description)}</span>
-                          {progress && (
-                            <span className="badge-progress">
-                              {t("Fortschritt: {cur} / {target} {unit}", { cur: progress.current, target: progress.target, unit: progress.unit })}
-                            </span>
-                          )}
-                          {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          });
-          return (
-            <>
-              {rows}
-              {!anyVisible && badgeFiltering && <p className="hint">{t("Keine passenden Erfolge gefunden.")}</p>}
-            </>
-          );
-        })()}
-        {!isMe && !badgeFiltering && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
-      </section>
-      )}
-      </div>
+      <div className="pf-col middle">{renderColumn("middle")}</div>
 
-      {/* Spielgeschwindigkeit + Konto-Einstellungen stecken ab 900px in
-          EINEM Grid-Feld (.pf-right-col, gleiches Prinzip wie
-          .pf-left-col oben). */}
-      <div className="pf-right-col">
-      <div className="pf-stats-b">
-      {cardShown("tempo") && (speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
-        <section className="stat-block">
-          <div className="stat-block-head roomy">
-            <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
-            {cardHide("tempo") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("tempo")} /></div>}
-          </div>
-          {speedStats.avgGameMs != null && (
-            <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
-              <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
-          )}
-          {speedStats.avgBallMs != null && (
-            <>
-              <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Kugel (14/1)")}</span>
-                <span className="stat-val">{fmtDuration(speedStats.avgBallMs)}</span></div>
-              <div className="stat-row"><span className="stat-name">{t("Hochgerechnet pro Rack")}</span>
-                <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
-            </>
-          )}
-        </section>
-      )}
-      </div>
-
-      <div className="pf-account">
-      {isMe && cardShown("anmeldung") && <PasswordSection toast={toast} onHide={cardHide("anmeldung")} />}
-
-      {/* "Freund einladen" ist jetzt prominent als QR-Symbol direkt in der
-          Identitaets-Karte oben - kein zweiter, weniger sichtbarer Button
-          hier noetig. */}
+      <div className="pf-col right">
+      {renderColumn("right")}
+      {/* Konto-Knoepfe: bewusst KEINE Karten (Abmelden ausblenden zu koennen
+          waere eine Falle), deshalb fest am Ende der rechten Spalte bzw.
+          am Handy ganz unten. */}
+      {isMe && (
+      <div className="pf-account-actions" style={{ order: 9999 }}>
       {isMe && (
         <button className="btn ghost tournament-ready-btn" onClick={onOpenTurniere}>
           <Trophy size={16} /> {t("Turniere")}
@@ -895,63 +1010,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       {isMe && (
         <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
       )}
-
-      {isMe && cardShown("feedback") && (
-        <section className="stat-block">
-          <div className="stat-block-head roomy">
-            <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
-            {cardHide("feedback") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("feedback")} /></div>}
-          </div>
-          {!feedbackOpen ? (
-            <>
-              <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
-              <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
-                <MessageCircle size={15} /> {t("Feedback geben")}
-              </button>
-            </>
-          ) : feedbackSent ? (
-            <>
-              <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
-              <div className="sp-controls">
-                <a className="btn ghost" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">
-                  {t("Per Telegram")}
-                </a>
-                <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
-              </div>
-              <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
-            </>
-          ) : (
-            <div className="challenge-form">
-              <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
-                {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
-                  <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="search-row" style={{ marginBottom: 8 }}>
-                <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
-                  style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
-                  onChange={(e) => setFeedbackMsg(e.target.value)} />
-              </div>
-              <div className="sp-controls">
-                <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
-                <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
-                  {feedbackBusy ? t("Speichere ...") : t("Absenden")}
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {isMe && cardShown("tickets") && <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} onHide={cardHide("tickets")} />}
       </div>
+      )}
       </div>
       </div>
 
       {isMe && onSetCardLayout && (
-        <ShowAllCardsButton hiddenCount={hiddenCards.hiddenCount} onShowAll={hiddenCards.showAll} />
+        <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
       )}
       <ImprintFooter />
       {photoViewerOpen && heroPhoto && (
