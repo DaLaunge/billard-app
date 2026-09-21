@@ -8,8 +8,9 @@ import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
-import { STAT_CARD_SCREEN, normalizeCardOrder, normalizeCardColumns, splitCardColumns, mergeCardLayout } from "../lib/cardLayout";
-import { useHiddenCards } from "../lib/useHiddenCards";
+import { STAT_CARD_SCREEN } from "../lib/cardLayout";
+import { useCardLayout } from "../lib/useCardLayout";
+import { useWideScreen } from "../lib/useWideScreen";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -501,26 +502,23 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
 
 export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokoll, colorOf, badgeOf, photoOf, snapshots, players, rangliste, me, challenges,
   catalog, earnedBadges, onInvite, disciplines, pending, onConfirm, myOpenReports, onSetCardLayout, toast }) {
-  // Kartenreihenfolge + Spaltenwahl (Drag & Drop bzw. CardColumnButton):
-  // beides wird zusammen direkt am Spielerprofil gespeichert (siehe
-  // cardLayout.js/App.jsx setCardLayout) - kein useEffect-Resync mit der
-  // Server-Antwort noetig, weil dieser Screen bei jedem Tab-Wechsel komplett
-  // neu gemountet wird (siehe tab-basiertes Rendering in App.jsx) und den
-  // frischen Wert dann einfach neu initialisiert. Optimistisches Update:
-  // eine Aenderung wird sofort lokal gesetzt, bei einem RPC-Fehler aber
-  // wieder zurueckgerollt (siehe persistLayout). cardOrder und cardColumns
-  // sind bewusst getrennte Werte (siehe cardLayout.js Stufe 4) - Ziehen
-  // aendert nur cardOrder, der Spalten-Knopf nur cardColumns.
-  const [cardOrder, setCardOrder] = useState(() => normalizeCardOrder(me.card_layout?.[STAT_CARD_SCREEN]));
-  const [cardColumns, setCardColumns] = useState(() => normalizeCardColumns(me.card_layout?.[STAT_CARD_SCREEN], cardOrder));
-  // Ein Schritt Rueckgaengig (Nutzer-Feedback: "vergiss nicht, einen
-  // Rückgängig Button zu implementieren") - haelt den Stand VOR der
-  // letzten Aenderung (Ziehen oder Spalten-Knopf), nicht einen ganzen
-  // Verlauf. Wird beim Rueckgaengig-Machen selbst geleert statt erneut
-  // befuellt - ein zweites Rueckgaengig in Folge macht daher nichts
-  // (bewusst einfach gehalten, siehe Nutzer-Feedback: "ein Rückgängig
-  // Button", kein Mehrschritt-Verlauf war verlangt).
-  const [undoSnapshot, setUndoSnapshot] = useState(null);
+  // Kartenreihenfolge, Spaltenwahl und Sichtbarkeit liegen zusammen in EINEM
+  // Zustand (useCardLayout, siehe dort) und werden direkt am Spielerprofil
+  // gespeichert - kein useEffect-Resync mit der Server-Antwort noetig, weil
+  // dieser Screen bei jedem Tab-Wechsel komplett neu gemountet wird (siehe
+  // tab-basiertes Rendering in App.jsx) und den frischen Wert dann einfach
+  // neu initialisiert. Optimistisches Update samt Rollback und dem einen
+  // Schritt "Rueckgaengig" steckt ebenfalls im Hook. Reihenfolge und Spalte
+  // bleiben zwei unabhaengige Werte (siehe cardLayout.js Stufe 4) - der
+  // Spalten-Knopf aendert nur die Spalte, Ziehen beides.
+  const cards = useCardLayout(STAT_CARD_SCREEN, me.card_layout, onSetCardLayout, toast);
+  const cardOrder = cards.order;
+  const cardColumns = cards.columns;
+  // Spalten gibt es nur am Desktop - am Handy stehen alle Karten in EINER
+  // Liste in der Reihenfolge aus cardOrder (per CSS-"order", siehe unten).
+  // @dnd-kit muss das wissen, sonst rechnet die Zieh-Animation mit einer
+  // anderen Nachbarschaft, als am Bildschirm zu sehen ist.
+  const wide = useWideScreen();
   // delay+tolerance statt sofortiger Aktivierung (Nutzer-Feedback: "lange
   // druecken, dann verschieben, damit es nicht mit einem Wischen verwechselt
   // wird") - bewegt sich der Zeiger vor Ablauf der Verzoegerung weiter als
@@ -550,22 +548,9 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // ausschliesslich der CardColumnButton (siehe cardsById weiter unten).
   // Nutzer-Feedback dazu: "es könnte durchaus sein, dass der User zb. alles
   // in der Mitte anzeigen will... die Entscheidung ob eine Karte in der
-  // Mitte oder rechts steht trifft der User". persistLayout uebernimmt das
-  // optimistische Update + Rollback + Rueckgaengig-Merken fuer beide Arten
-  // von Aenderung (Ziehen hier, Spaltenwechsel in toggleCardColumn).
-  const persistLayout = async (nextOrder, nextColumns) => {
-    const prevOrder = cardOrder;
-    const prevColumns = cardColumns;
-    setUndoSnapshot({ order: prevOrder, columns: prevColumns });
-    setCardOrder(nextOrder);
-    setCardColumns(nextColumns);
-    const ok = await onSetCardLayout(STAT_CARD_SCREEN, mergeCardLayout(me.card_layout?.[STAT_CARD_SCREEN], { order: nextOrder, columns: nextColumns }));
-    if (!ok) {
-      setCardOrder(prevOrder);
-      setCardColumns(prevColumns);
-      setUndoSnapshot(null);
-    }
-  };
+  // Mitte oder rechts steht trifft der User". cards.setLayout() uebernimmt
+  // das optimistische Update + Rollback + Rueckgaengig-Merken fuer beide
+  // Arten von Aenderung (Ziehen hier, Spaltenwechsel per Knopf).
   // Nutzer-Feedback: "ich versuche die oberste Karte aus der rechten Spalte
   // an die 1. Stelle in der breiten Spalte zu ziehen - das funktioniert
   // aber nicht" - Ziehen aenderte bisher NIE die Spalte (nur der
@@ -587,8 +572,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     // wie beim CardColumnButton.
     if (over.id === EMPTY_MIDDLE_DROP_ID || over.id === EMPTY_RIGHT_DROP_ID) {
       const targetColumn = over.id === EMPTY_RIGHT_DROP_ID ? "right" : "middle";
-      if ((cardColumns[active.id] === "right" ? "right" : "middle") === targetColumn) return;
-      persistLayout(cardOrder, { ...cardColumns, [active.id]: targetColumn });
+      cards.setColumn(active.id, targetColumn);
       return;
     }
     const oldIndex = cardOrder.indexOf(active.id);
@@ -598,34 +582,8 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     const overColumn = cardColumns[over.id] === "right" ? "right" : "middle";
     const activeColumn = cardColumns[active.id] === "right" ? "right" : "middle";
     const nextColumns = overColumn !== activeColumn ? { ...cardColumns, [active.id]: overColumn } : cardColumns;
-    persistLayout(nextOrder, nextColumns);
+    cards.setLayout(nextOrder, nextColumns);
   };
-  const toggleCardColumn = (id) => {
-    persistLayout(cardOrder, { ...cardColumns, [id]: cardColumns[id] === "right" ? "middle" : "right" });
-  };
-  const undoLayout = async () => {
-    if (!undoSnapshot) return;
-    const prevOrder = cardOrder;
-    const prevColumns = cardColumns;
-    const { order, columns } = undoSnapshot;
-    setCardOrder(order);
-    setCardColumns(columns);
-    setUndoSnapshot(null);
-    const ok = await onSetCardLayout(STAT_CARD_SCREEN, mergeCardLayout(me.card_layout?.[STAT_CARD_SCREEN], { order, columns }));
-    if (!ok) {
-      setCardOrder(prevOrder);
-      setCardColumns(prevColumns);
-      setUndoSnapshot({ order: prevOrder, columns: prevColumns });
-    }
-  };
-
-  // Ausgeblendete Karten (Nutzer-Feedback: "es werden mittlerweile so viele
-  // Karten, dass es unuebersichtlich ist") - anders als das Einklappen
-  // darunter am Profil gespeichert, im selben card_layout-Eintrag wie
-  // Reihenfolge/Spalte (siehe useHiddenCards.js/cardLayout.js). Deshalb
-  // nimmt persistLayout oben den gespeicherten Stand per mergeCardLayout()
-  // mit, statt ihn zu ueberschreiben.
-  const hiddenCards = useHiddenCards(STAT_CARD_SCREEN, me.card_layout, onSetCardLayout, toast);
 
   // Ein-/Ausklappen pro Karte (Nutzer-Feedback: "du solltest alle Karten
   // herunterklappbar machen") - bewusst nur lokal im Browser gemerkt
@@ -883,14 +841,14 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // (erst Mitte, dann rechts - siehe .stat-chart-col/.stat-grid-Reihenfolge
   // in App.css), unabhaengig davon, welche Karte gerade welche Spalte hat.
   const cardCollapse = (id) => ({ collapsed: collapsedCards.has(id), onToggleCollapse: () => toggleCardCollapse(id) });
-  const cardColumn = (id) => ({ column: cardColumns[id], onToggleColumn: () => toggleCardColumn(id) });
-  const cardHide = (id) => ({ onHide: () => hiddenCards.hideCard(id) });
+  const cardColumn = (id) => ({ column: cardColumns[id], onToggleColumn: () => cards.cycleColumn(id) });
+  const cardHide = (id) => ({ onHide: () => cards.hideCard(id) });
   const cardsById = {
     globalFilter: (
       <StatGlobalFilter disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
         count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
         me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} {...cardCollapse("globalFilter")} {...cardColumn("globalFilter")} {...cardHide("globalFilter")}
-        onExpandAll={expandAllCards} onCollapseAll={collapseAllCards} canUndo={!!undoSnapshot} onUndo={undoLayout} />
+        onExpandAll={expandAllCards} onCollapseAll={collapseAllCards} canUndo={cards.canUndo} onUndo={cards.undo} />
     ),
     rangliste: (
       <RankingBlock rangliste={rangliste} disc={globalDisc} count={globalCount} nearby={globalNearby} me={me}
@@ -936,8 +894,15 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Wichtig fuer @dnd-kit: die SortableContext-Liste unten muss exakt den
   // gerenderten Karten entsprechen - eine id ohne zugehoerigen Knoten wuerde
   // die Zieh-Animation verrechnen.
-  const visibleOrder = cardOrder.filter((id) => !hiddenCards.isHidden(id));
-  const { middle: middleCardIds, right: rightCardIds } = splitCardColumns(visibleOrder, cardColumns);
+  const visibleOrder = cards.visibleOrder;
+  const { middle: middleCardIds, right: rightCardIds } = cards.byColumn;
+  // Am Handy legt CSS-"order" die Reihenfolge fest (die Spalten-Huellen sind
+  // dort display:contents, siehe App.css) - dadurch ist die sichtbare Liste
+  // genau cardOrder, unabhaengig davon, in welcher Spalte eine Karte am
+  // Desktop steht. Am Desktop wirkt derselbe Wert innerhalb der Spalte und
+  // aendert dort nichts (die Spalte ist ohnehin schon nach cardOrder
+  // sortiert). Ab 10, damit die feste Seitenspalte darunter bleiben kann.
+  const slotOrder = (id) => 10 + visibleOrder.indexOf(id);
 
   return (
     <div className="screen">
@@ -1019,7 +984,8 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           kommt, aber die Sortierung ist danach trotzdem richtig" - das
           Endergebnis stimmte immer schon, nur die Animation dazwischen
           nicht). */}
-      <SortableContext items={[...middleCardIds, ...rightCardIds]} strategy={statCardSortingStrategy(middleCardIds.length)}>
+      <SortableContext items={wide ? [...middleCardIds, ...rightCardIds] : visibleOrder}
+        strategy={wide ? statCardSortingStrategy(middleCardIds.length) : rectSortingStrategy}>
       {/* .stat-right-col buendelt alle rechten Karten (inkl. der globalen
           Auswahl, die seit dem Drag&Drop-Feature ebenfalls nur eine Karte
           unter vielen ist - Nutzer-Feedback: "auch die 'Selection for all
@@ -1038,7 +1004,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           dort stehen beide Gruppen nur hintereinander. */}
       <div className="stat-right-col">
       <div className="stat-grid">
-        {rightCardIds.map((id) => <SortableCard key={id} id={id}>{cardsById[id]}</SortableCard>)}
+        {rightCardIds.map((id) => <SortableCard key={id} id={id} order={slotOrder(id)}>{cardsById[id]}</SortableCard>)}
         {rightCardIds.length === 0 && (
           <EmptyColumnDropZone id={EMPTY_RIGHT_DROP_ID} label="Karte hierher ziehen, um sie in diese Spalte zu verschieben" />
         )}
@@ -1068,7 +1034,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           (cardColumns) - die Reihenfolge INNERHALB dieser Spalte kommt
           weiterhin aus cardOrder (Drag & Drop). */}
       <div className="stat-chart-col">
-        {middleCardIds.map((id) => <SortableCard key={id} id={id}>{cardsById[id]}</SortableCard>)}
+        {middleCardIds.map((id) => <SortableCard key={id} id={id} order={slotOrder(id)}>{cardsById[id]}</SortableCard>)}
         {middleCardIds.length === 0 && (
           <EmptyColumnDropZone id={EMPTY_MIDDLE_DROP_ID} label="Karte hierher ziehen, um sie in diese Spalte zu verschieben" />
         )}
@@ -1076,7 +1042,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </SortableContext>
       </DndContext>
       </div>
-      <ShowAllCardsButton hiddenCount={hiddenCards.hiddenCount} onShowAll={hiddenCards.showAll} />
+      <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
       <ImprintFooter />
     </div>
   );

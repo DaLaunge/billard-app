@@ -23,7 +23,7 @@ import { CSS } from "@dnd-kit/utilities";
    aussieht. CSS.Translate.toString uebernimmt nur die Verschiebung
    (translateX/Y), keine Skalierung - die Karte bewegt sich beim Ziehen,
    verzerrt sich aber nicht mehr. */
-export default function SortableCard({ id, children }) {
+export default function SortableCard({ id, order, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -31,6 +31,12 @@ export default function SortableCard({ id, children }) {
     touchAction: "manipulation",
     opacity: isDragging ? 0.5 : 1,
     cursor: isDragging ? "grabbing" : "grab",
+    // Am Handy sind die Spalten-Huellen display:contents (siehe App.css),
+    // die Karten also direkte Flex-Kinder des Bildschirms - "order" macht
+    // daraus EINE Liste in der gespeicherten Reihenfolge, quer ueber die
+    // Spalten hinweg. Am Desktop wirkt derselbe Wert nur innerhalb der
+    // eigenen Spalte, die ohnehin schon so sortiert ist.
+    order,
   };
   return (
     <div ref={setNodeRef} style={style} className="sortable-card" {...attributes} {...listeners}>
