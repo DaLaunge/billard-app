@@ -11,7 +11,7 @@ import { hashColor, initials } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
-import { useWakeLock } from "./lib/wakeLock";
+import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 
 import LoginScreen from "./components/LoginScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
@@ -702,7 +702,10 @@ export default function App() {
   // Bildschirm waehrend einer laufenden Match-/Winner-Stays-Eingabe wachhalten
   // (siehe lib/wakeLock.js). Dieselben Screens wie LIVE_ENTRY_TABS: dort liegt
   // das Handy waehrend des Spiels ungenutzt herum und soll trotzdem an bleiben.
-  useWakeLock(LIVE_ENTRY_TABS.includes(tab));
+  // Abschaltbar im Profil unter Einstellungen (Standard: an).
+  const [keepAwake, setKeepAwakeState] = useState(getKeepAwake);
+  const setKeepAwake = useCallback((on) => { setKeepAwakeState(on); storeKeepAwake(on); }, []);
+  useWakeLock(keepAwake && LIVE_ENTRY_TABS.includes(tab));
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1091,6 +1094,7 @@ export default function App() {
                   onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length + wsReadyList.length}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
+                  keepAwake={keepAwake} onSetKeepAwake={setKeepAwake}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}

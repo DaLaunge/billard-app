@@ -55,3 +55,23 @@ export function useWakeLock(active) {
     };
   }, [active]);
 }
+
+/* Nutzereinstellung "Bildschirm waehrend eines Matches anlassen".
+
+   Bewusst in localStorage und nicht im Profil (players-Tabelle): das ist eine
+   Geraete-Eigenschaft, keine Kontoeinstellung - wer am Tisch das Handy neben
+   sich liegen hat, will es dort an haben, am PC ist es egal. Gleiche Logik wie
+   beim Update-Intervall.
+
+   Standard ist AN: wer nichts einstellt, bekommt das Verhalten, das waehrend
+   eines Matches am wenigsten stoert. Nur ein ausdrueckliches "aus" wird
+   gespeichert, darum der Vergleich gegen "0" statt auf "1". */
+const KEEP_AWAKE_KEY = "keepScreenAwake";
+
+export function getKeepAwake() {
+  try { return localStorage.getItem(KEEP_AWAKE_KEY) !== "0"; } catch { return true; }
+}
+
+export function storeKeepAwake(on) {
+  try { localStorage.setItem(KEEP_AWAKE_KEY, on ? "1" : "0"); } catch { /* ignore */ }
+}

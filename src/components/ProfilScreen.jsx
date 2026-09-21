@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -19,7 +19,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
   onResetCardLayout, achievementCounters }) {
   const catalogByCategory = useMemo(() => {
     const groups = {};
@@ -434,6 +434,20 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 </button>
               ))}
             </div>
+          </section>
+
+          <section className="stat-block">
+            <h3><Smartphone size={17} /> {t("Bildschirm")}</h3>
+            {/* Standard ist an - waehrend eines Matches liegt das Handy meist
+                unberuehrt am Tisch und soll sich nicht dauernd sperren. Wer das
+                nicht will (Akku), schaltet es hier ab; die Einstellung gilt
+                pro Geraet. */}
+            <label className="settings-switch">
+              <input type="checkbox" checked={keepAwake} onChange={(e) => onSetKeepAwake(e.target.checked)} />
+              <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+              <span className="settings-switch-label">{t("Bildschirm während eines Matches anlassen")}</span>
+            </label>
+            <p className="hint">{t("Verhindert, dass sich das Handy mitten im Spiel sperrt. Gilt nur auf diesem Gerät und nur, solange ein Match oder eine Winner-Stays-Runde offen ist.")}</p>
           </section>
 
           <section className="stat-block">

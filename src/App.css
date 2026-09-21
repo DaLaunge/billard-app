@@ -806,6 +806,23 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px;
   font-family: inherit; margin-bottom: 10px; }
 
+/* Ein-/Aus-Regler fuer Einstellungen. Das echte <input type=checkbox> bleibt
+   im DOM (Tastatur, Screenreader, Label-Klick), ist aber unsichtbar - die
+   sichtbare Schiene/Knopf haengt per :checked daran. */
+.settings-switch { display: flex; align-items: center; gap: 10px; cursor: pointer;
+  font-size: 14px; margin-bottom: 8px; }
+.settings-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.settings-switch-track { position: relative; flex: 0 0 auto; width: 40px; height: 23px;
+  background: var(--felt); border: 1px solid var(--line); border-radius: 999px;
+  transition: background .18s, border-color .18s; }
+.settings-switch-knob { position: absolute; top: 2px; left: 2px; width: 17px; height: 17px;
+  border-radius: 50%; background: var(--ivory-dim); transition: transform .18s, background .18s; }
+.settings-switch input:checked + .settings-switch-track { background: var(--chalk); border-color: var(--chalk); }
+.settings-switch input:checked + .settings-switch-track .settings-switch-knob {
+  transform: translateX(17px); background: var(--felt); }
+.settings-switch input:focus-visible + .settings-switch-track { outline: 2px solid var(--chalk); outline-offset: 2px; }
+.settings-switch-label { color: var(--ivory); }
+
 .login-screen { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
 .login-hero { text-align: center; margin-bottom: 34px; }
 .login-balls { display: flex; justify-content: center; gap: 10px; margin-bottom: 22px; }
