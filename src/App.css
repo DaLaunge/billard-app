@@ -45,12 +45,8 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 
 /* Schnellschalter "Bildschirm bleibt an" rechts im Kopf der Live-Eingabe-
    Screens (siehe widgets/KeepAwakeButton.jsx). margin-left:auto schiebt ihn
-   ans rechte Ende, ohne die Breite der Ueberschrift zu begrenzen.
-   Der rechte Abstand haelt den fest positionierten Aktualisieren-Knopf frei
-   (.refresh-btn: 36px breit, 14px vom rechten Rand der Inhaltsspalte -
-   derselbe Bezugspunkt, daher passt der Wert auf allen Breiten). Ohne ihn
-   liegt der Aktualisieren-Knopf genau darueber und faengt die Klicks ab. */
-.keepawake-btn { margin-left: auto; margin-right: 58px; flex-shrink: 0; background: transparent;
+   ans rechte Ende, ohne die Breite der Ueberschrift zu begrenzen. */
+.keepawake-btn { margin-left: auto; flex-shrink: 0; background: transparent;
   border: 1px solid var(--line); color: var(--ivory-dim); border-radius: 12px;
   width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer;
   transition: color .15s, border-color .15s, background .15s; }
@@ -433,7 +429,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   .phone { max-width: 900px; }
   .content { padding-bottom: 20px; }
   .tabbar { max-width: 900px; }
-  .refresh-btn { right: max(14px, calc(50% - 450px + 14px)); }
   /* 14/1-Zähler zweispaltig: Anzeigetafel links, Bedienung rechts */
   .sp { display: grid; grid-template-columns: 1fr 1.1fr; gap: 20px; align-items: start; }
   .sp-board { grid-column: 1; }
@@ -936,14 +931,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .tournament-ready-btn { position: relative; }
 .tournament-ready-btn .tournament-ready-badge { top: 50%; right: 14px; transform: translateY(-50%); }
 
-.refresh-btn { position: fixed; top: 14px; right: calc(50% - 215px + 14px);
-  background: var(--felt-3); border: 1px solid var(--line); color: var(--ivory-dim);
-  border-radius: 12px; width: 36px; height: 36px; display: grid; place-items: center;
-  cursor: pointer; z-index: 20; }
-@media (max-width: 430px) { .refresh-btn { right: 14px; } }
-.spin { animation: spin 0.9s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
 .toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
   background: var(--ivory); color: #08251C; font-weight: 600; font-size: 14px;
   border-radius: 999px; padding: 10px 20px; box-shadow: 0 8px 24px #00000070;
@@ -957,7 +944,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .content { scroll-behavior: smooth; }
   .rank-row, .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn,
   .mini-stepper button, .turnier-stepper-btn, .suggest-challenge-btn, .back-btn,
-  .refresh-btn, .csv-btn, .mem-edit, .mode-btn, .lang-btn,
+  .csv-btn, .mem-edit, .mode-btn, .lang-btn,
   .auth-tab, .legend-item, .cand-chip, .pp-trigger, .badge-chip, .pmp-chip,
   .turnier-list-row, .card-info-btn, .m-download, .msg-edit-btn, .clear-btn,
   .turnier-graph-detail-close, .rank-decay-warn, .pmp-remove, .disc-chip,
@@ -966,7 +953,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .live-dot { animation: none; } .spin { animation: none; } .warn-pulse { animation: none; }
+  .live-dot { animation: none; } .warn-pulse { animation: none; }
 }
 
 /* ============================================================
@@ -989,7 +976,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
       ausgenommen, damit Hover ihren Status nicht uebertoent.
    Neue Buttons: in die passende Gruppe unten eintragen statt eine
    eigene Rahmen-/Hover-Regel zu duplizieren. */
-.btn.ghost, .back-btn, .refresh-btn, .csv-btn,
+.btn.ghost, .back-btn, .csv-btn,
 .round-btn, .mini-stepper button, .suggest-challenge-btn, .turnier-stepper-btn,
 .mem-edit, .mode-btn, .lang-btn, .auth-tab, .legend-item, .cand-chip,
 .pp-trigger, .badge-chip, .chip, .chip-btn:not(.ok):not(.no), .pmp-chip,
@@ -1010,7 +997,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 
 @media (hover: hover) and (pointer: fine) {
   .btn.ghost:hover:not(:disabled),
-  .back-btn:hover, .refresh-btn:hover, .csv-btn:hover,
+  .back-btn:hover, .csv-btn:hover,
   .round-btn:hover:not(.plus), .mini-stepper button:hover,
   .suggest-challenge-btn:hover, .turnier-stepper-btn:hover:not(.plus),
   .mem-edit:hover:not(.on), .mode-btn:hover:not(.active),
@@ -1040,7 +1027,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
      hatte - sonst bleibt der Rahmen blau, der Inhalt aber grau. Buttons
      mit eigener Bedeutungsfarbe (z.B. .m-download, .disc-chip in Gold)
      sind hier bewusst nicht enthalten. */
-  .back-btn:hover, .refresh-btn:hover, .csv-btn:hover,
+  .back-btn:hover, .csv-btn:hover,
   .mini-stepper button:hover, .suggest-challenge-btn:hover,
   .mem-edit:hover:not(.on), .mode-btn:hover:not(.active), .lang-btn:hover:not(.active),
   .auth-tab:hover:not(.on), .pp-trigger:hover, .chip:hover:not(.active),
@@ -1246,7 +1233,6 @@ button.id-card-head { cursor: pointer; }
      mit eigenem Layout unten setzen nur noch max-width, die Zentrierung
      erben sie von hier. */
   .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; margin: 0 auto; }
-  .refresh-btn { right: max(14px, calc(50% - 620px + 14px)); }
 
   /* .ov-side ist bewusst NICHT sticky (anders als frueher) - UserPanel ist
      hier oft hoeher als der Viewport, ein sticky-Block der nie vollstaendig
@@ -1925,7 +1911,7 @@ button.id-card-head { cursor: pointer; }
 .protokoll-duration b { color: var(--ivory); }
 
 @media print {
-  .no-print, .tabbar, .refresh-btn { display: none !important; }
+  .no-print, .tabbar { display: none !important; }
   /* .stage/.phone/.content sind fuers Bildschirm auf 100vh + overflow-y:auto
      festgenagelt (die "Handy in der Mitte des Bildschirms"-Optik) - beim
      Drucken darf das NICHT so bleiben, sonst wird nur der gerade sichtbare

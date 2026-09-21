@@ -810,7 +810,6 @@ const TRANSLATIONS = {
     "E-Mail und Passwort (min. 6 Zeichen) nötig.": "Email and password (min. 6 characters) required.",
     "Mindestens 6 Zeichen.": "At least 6 characters.",
     "Die Passwörter stimmen nicht überein.": "The passwords don't match.",
-    "Aktualisieren": "Refresh",
     "Zurueck": "Back",
     "freigeben": "approve",
     "verwerfen": "reject",

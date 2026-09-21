@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { RefreshCw, Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
+import { Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -135,7 +135,6 @@ export default function App() {
   const [tournamentId, setTournamentId] = useState(resumedNav?.tournamentId ?? null);
   const [winnerStaysId, setWinnerStaysId] = useState(resumedNav?.winnerStaysId ?? null);
   const [toastMsg, setToastMsg] = useState(null);
-  const [loadingData, setLoadingData] = useState(false);
   // Zaehlt jeden abgeschlossenen loadData()-Durchlauf (0 = noch keiner) -
   // im Gegensatz zu initialLoadDone (bleibt nach dem ersten Mal dauerhaft
   // true) aendert sich das bei JEDEM Durchlauf, damit Trigger C (Update nach
@@ -253,9 +252,13 @@ export default function App() {
   // NICHT bei jedem beliebigen Bildschirmwechsel (das war zu unvorhersehbar):
   //  A) Wechsel auf einen der 4 Hauptmenuepunkte (MAIN_TABS oben) unten in der
   //     Tab-Leiste.
-  //  B) Explizite Nutzeranfrage: Klick auf "Aktualisieren" (oben rechts) oder
-  //     "Nach Updates suchen" (Profileinstellungen) - siehe requestUpdateNow.
-  //     Hier ist Sofortigkeit erwuenscht, kein Verstecken noetig.
+  //  B) Explizite Nutzeranfrage: "Nach Updates suchen" in den Profil-
+  //     einstellungen - siehe requestUpdateNow. Hier ist Sofortigkeit
+  //     erwuenscht, kein Verstecken noetig. (Der frueher zusaetzlich oben
+  //     rechts schwebende "Aktualisieren"-Knopf ist 2026-09-21 entfallen -
+  //     das Herunterziehen der Seite ist die intuitivere Geste dafuer und
+  //     funktioniert als normaler Seiten-Neuladen ohnehin, der dann ueber
+  //     D greift.)
   //  C) Direkt nachdem loadData() durchgelaufen ist (siehe loadGen) - das
   //     deckt "ein Match/Turnier wurde gespeichert" ab, weil jede erfolgreiche
   //     RPC-Mutation im Anschluss loadData() aufruft. Bleibt trotzdem hinter
@@ -330,14 +333,14 @@ export default function App() {
     document.addEventListener("visibilitychange", onHidden);
     return () => document.removeEventListener("visibilitychange", onHidden);
   }, [needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
-  // Trigger B: explizite Nutzeranfrage (Aktualisieren-Button / "Nach Updates
-  // suchen") - wendet sofort an, falls schon ein Update wartet; sonst wird
-  // forceApplyRef gesetzt und der Effekt darunter greift, sobald onNeedRefresh
-  // (asynchron, nach dem Laden von sw.js) tatsaechlich feuert. Der
-  // Aktualisieren-Button (oben rechts) ist NICHT auf sichere Tabs beschraenkt
-  // - liegt gerade ein LIVE_ENTRY_TABS-Screen vor (laufendes Match/Winner-
-  // Stays-Spiel), wird trotzdem nur GEPRUEFT, nie sofort angewendet, sonst
-  // koennte ein Klick mitten im Spiel unbestaetigte Eingabe wegreissen.
+  // Trigger B: explizite Nutzeranfrage ("Nach Updates suchen" in den
+  // Profileinstellungen) - wendet sofort an, falls schon ein Update wartet;
+  // sonst wird forceApplyRef gesetzt und der Effekt darunter greift, sobald
+  // onNeedRefresh (asynchron, nach dem Laden von sw.js) tatsaechlich feuert.
+  // Die LIVE_ENTRY_TABS-Sperre bleibt, obwohl der einzige verbliebene
+  // Aufrufer auf "profil" sitzt und sie damit derzeit nie greift: sie ist
+  // die Absicherung dafuer, dass ein kuenftiger Aufrufer von einem Live-
+  // Eingabe-Screen aus nur PRUEFT und nicht unbestaetigte Eingabe wegreisst.
   const forceApplyRef = useRef(false);
   const requestUpdateNow = useCallback(() => {
     if (LIVE_ENTRY_TABS.includes(tab)) { checkForUpdate(); return; }
@@ -612,7 +615,6 @@ export default function App() {
   }, [session]);
 
   const loadData = useCallback(async () => {
-    setLoadingData(true);
     // Snapshots (koennen >1000 Zeilen sein: Wochen x Spieler) parallel zum
     // Rest anstossen statt hinterher - sonst wartet die ganze Uebersicht auf
     // die langsamste Abfrage, obwohl sie fuer die Rangliste selbst gar nicht
@@ -667,7 +669,6 @@ export default function App() {
     // Kein harter Fehler, falls die RPC (noch) nicht existiert (Migration nicht
     // eingespielt) oder scheitert - Fortschrittsanzeige faellt dann einfach weg.
     setAchievementCounters(ac?.data ?? null);
-    setLoadingData(false);
     setInitialLoadDone(true);
     const snap = await snapPromise;
     if (snap.error && !err) toast(isNetworkError(snap.error) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + snap.error.message);
@@ -1156,9 +1157,6 @@ export default function App() {
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => navReplace({ tab: "turnier" })}
                   keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} />
               )}
-              <button className="refresh-btn" onClick={() => { loadData(); requestUpdateNow(); toast(t("Suche nach Updates …")); }} aria-label={t("Aktualisieren")}>
-                <RefreshCw size={16} className={loadingData ? "spin" : ""} />
-              </button>
             </main>
 
             {/* Permanenter Tisch-Hinweis (Nutzer-Feedback: "jedem Spieler muss
