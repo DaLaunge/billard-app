@@ -718,11 +718,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .card-vis-row:hover { background: var(--felt-3); }
 .card-vis-switch { flex: 1; min-width: 0; margin-bottom: 0; gap: 10px; }
 .card-vis-switch .settings-switch-track { order: 2; }
-.card-vis-name { order: 1; display: flex; align-items: center; gap: 8px;
+.card-vis-name { order: 1; display: flex; align-items: center;
   margin-right: auto; min-width: 0; font-size: 13px; color: var(--ivory); }
-.card-vis-name svg { flex-shrink: 0; color: var(--ivory-dim); }
 .card-vis-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Ausgeblendet auf einen Blick erkennbar, auch ohne den Schalter zu lesen. */
+/* Ausgeblendet auch am Namen selbst erkennbar - kein zweites Symbol davor
+   (Nutzer-Feedback: das Auge sagte dasselbe wie der Schalter daneben). */
 .card-vis-row.is-hidden .card-vis-name { color: var(--ivory-dim); }
 .card-vis-row.is-hidden .card-vis-label { text-decoration: line-through; }
 /* Pfeile (Reihenfolge) und Spaltenwahl: bewusst kleine, randlose Knoepfe

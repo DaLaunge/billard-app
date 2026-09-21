@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, LayoutGrid, Eye, EyeOff, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -510,8 +510,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                         onMouseDown={(e) => e.preventDefault()}>
                         <input type="checkbox" checked={shown} onChange={() => api.toggleCard(id)} />
                         <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                        {/* Bewusst NUR der Name, kein Auge/durchgestrichenes
+                            Auge davor (Nutzer-Feedback: "es ist nicht noetig,
+                            die Sichtbarkeit als durchgestrichenes Auge extra
+                            zu betonen, der Schieberegler ist Information
+                            genug") - das Symbol sagte dasselbe wie der
+                            Schalter direkt daneben. */}
                         <span className="card-vis-name">
-                          {shown ? <Eye size={14} /> : <EyeOff size={14} />}
                           <span className="card-vis-label">{t(c.label)}</span>
                         </span>
                       </label>
