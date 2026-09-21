@@ -692,11 +692,36 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 /* Karten-Liste in den Einstellungen (Profil bearbeiten -> Karten): je Chip
    eine Karte, aktiv = sichtbar. Etwas Abstand nach unten, weil direkt der
    naechste Bildschirm-Titel folgt. */
-.card-visibility-chips { margin-bottom: 10px; }
-/* Bildschirm-Name ueber seiner Kartenliste - kraeftiger und mit Luft nach
-   oben, sonst liest sich der erste Name wie das letzte Wort des
-   Erklaertexts darueber. */
-.card-visibility-screen { margin-top: 14px; color: var(--chalk); font-weight: 700; }
+/* Karten-Sichtbarkeit in den Einstellungen (Profil bearbeiten -> Karten):
+   eine Zeile je Karte, Name links, Schalter rechts. Nutzer-Feedback: "mache
+   es uebersichtlicher, damit man sofort weiss, welche Karte man gerade
+   bearbeitet" - vorher war es eine Wolke aus 22 gleich aussehenden Chips in
+   der schmalen rechten Spalte, bei der man beim Tippen leicht danebengriff
+   und den Zustand nur an der Fuellung erkannte. */
+.card-vis-group { margin-bottom: 18px; }
+.card-vis-group:last-child { margin-bottom: 0; }
+.card-vis-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.card-vis-group-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+  font-size: 14px; color: var(--chalk); }
+.card-vis-group-count { font-size: 12px; color: var(--ivory-dim); margin-right: auto; }
+.card-vis-group-head .chip { padding: 4px 8px; }
+/* Am PC zweispaltig: die linke Spalte ist breit genug, und 22 Zeilen
+   untereinander wuerden die Einstellungsseite sonst dominieren. */
+.card-vis-list { display: grid; grid-template-columns: 1fr; gap: 2px; }
+/* Zeile = der bekannte Schalter aus "Bildschirm", nur mit umgedrehter
+   Anzeige-Reihenfolge: im Markup muss der Schieber direkt hinter dem input
+   stehen (Geschwister-Selektor), angezeigt gehoert er aber nach rechts. */
+.card-vis-row { gap: 10px; padding: 7px 8px; border-radius: 10px; }
+.card-vis-row:hover { background: var(--felt-3); }
+.card-vis-row .settings-switch-track { order: 2; }
+.card-vis-name { order: 1; display: flex; align-items: center; gap: 8px;
+  margin-right: auto; min-width: 0; font-size: 13px; color: var(--ivory); }
+.card-vis-name svg { flex-shrink: 0; color: var(--ivory-dim); }
+.card-vis-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Ausgeblendet auf einen Blick erkennbar, auch ohne den Schalter zu lesen. */
+.card-vis-row.is-hidden .card-vis-name { color: var(--ivory-dim); }
+.card-vis-row.is-hidden .card-vis-label { text-decoration: line-through; }
 /* Ablageflaeche einer leeren Spalte (siehe EmptyColumnDropZone.jsx -
    Nutzer-Feedback: "ich habe alle Karten in der Mitte, kann aber keine
    Karte nach rechts schieben") - aus demselben Grund wie .card-column-btn
@@ -1193,7 +1218,7 @@ button.id-card-head { cursor: pointer; }
 .pf-achievements > * { margin-bottom: var(--card-gap); }
 .pf-account { order: 5; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
-.pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
+.pf-edit-main, .pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-save { margin-top: 20px; }
 /* Kontoloeschung: Nutzer-Feedback wollte sie in "Profil bearbeiten" und
    dort moeglichst unauffaellig - kein eigener Kartenrahmen mehr, nur ein
@@ -1322,6 +1347,7 @@ button.id-card-head { cursor: pointer; }
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
   .phone.app .screen:has(.pf-edit-layout) { max-width: 900px; }
   .pf-edit-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+  .card-vis-list { grid-template-columns: 1fr 1fr; gap: 2px 14px; }
 
   /* Live: duenn-breit-duenn wie Statistik/Profil - UserPanel
      links (dieselbe Konstante), Duelle zentral/breit (der Fokus dieser

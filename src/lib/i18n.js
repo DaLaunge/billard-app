@@ -277,6 +277,7 @@ const TRANSLATIONS = {
     "Kartenmenü": "Card menu",
     "Ausgeblendet: {name}": "Hidden: {name}",
     "Karte ausgeblendet": "Card hidden",
+    "{n} von {m} sichtbar": "{n} of {m} visible",
     "Karte einblenden": "Show card",
     "Alle Karten einblenden": "Show all cards",
     "Alle einblenden": "Show all",

@@ -326,6 +326,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </header>
 
         <div className="pf-edit-layout">
+        {/* Linke Spalte: Profilangaben + Karten-Sichtbarkeit. Beide stecken
+            in EINEM Grid-Feld, das sie per Flexbox stapelt - sonst faengt
+            die Karten-Sektion erst unterhalb der hoechsten Spalte der
+            ersten Grid-Zeile an (siehe "CSS Grid cross-column height
+            coupling" in CLAUDE.md). */}
+        <div className="pf-edit-main">
         <section className="stat-block">
           <label className="field-label" htmlFor="pnick">{t("Nickname")}</label>
           <div className="mail-row">
@@ -393,6 +399,70 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               onBlur={() => { if (motto !== (meRow?.motto || "")) persist(); }} />
           </div>
         </section>
+
+      {/* Karten-Sichtbarkeit fuer ALLE Bildschirme an einer Stelle (Vorgabe:
+          "Lasse dem User in den Usersettings die Anzeige der Karten
+          definieren") - dasselbe, was das Kartenmenue an jeder einzelnen
+          Karte tut, nur als Gesamtuebersicht: hier sieht man auch, was auf
+          einem Bildschirm ausgeblendet ist, den man gerade gar nicht offen
+          hat.
+
+          Steht in der BREITEN linken Spalte, nicht in der 340px schmalen
+          rechten (Nutzer-Feedback: "die Auswahlbuttons fuer die Karten
+          schiebe nach links, mache es uebersichtlicher, damit man sofort
+          weiss, welche Karte man gerade bearbeitet"). Und eine Zeile pro
+          Karte statt einer Chip-Wolke: bei 22 gleich aussehenden Pillen
+          ueber drei Bildschirme war beim Antippen nicht auf einen Blick
+          klar, welche Karte man gerade erwischt. Jetzt links der Name (mit
+          Auge/durchgestrichenem Auge), rechts der Schalter - dasselbe
+          Muster wie bei "Bildschirm" weiter unten. Am PC laufen die Zeilen
+          zweispaltig, damit die drei Listen zusammen nicht die halbe
+          Einstellungsseite fuellen. */}
+      <section className="stat-block">
+        <h3><LayoutGrid size={17} /> {t("Karten")}</h3>
+        <p className="hint" style={{ marginTop: 0 }}>
+          {t("Welche Karten sollen auf welchem Bildschirm zu sehen sein? Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
+        </p>
+        {CARD_SCREENS.map(({ screen, label, cards }) => {
+          const api = hiddenByScreen[screen];
+          const sichtbar = cards.length - api.hiddenCount;
+          return (
+            <div key={screen} className="card-vis-group">
+              <div className="card-vis-group-head">
+                <span className="card-vis-group-title">{t(label)}</span>
+                <span className="card-vis-group-count">
+                  {t("{n} von {m} sichtbar", { n: sichtbar, m: cards.length })}
+                </span>
+                <button className="chip chip-icon" onClick={api.showAll} disabled={!api.hiddenCount}
+                  aria-label={t("Alle einblenden")} title={t("Alle einblenden")}>
+                  <Eye size={15} />
+                </button>
+              </div>
+              <div className="card-vis-list">
+                {cards.map((c) => {
+                  const shown = !api.isHidden(c.id);
+                  return (
+                    /* Reihenfolge im Markup: Kaestchen, Schieber, Name - der
+                       Schieber-Zustand haengt am Geschwister-Selektor
+                       (input:checked + .settings-switch-track), deshalb muss
+                       er direkt hinter dem input stehen. Angezeigt wird
+                       trotzdem Name links / Schieber rechts (order im CSS). */
+                    <label key={c.id} className={"settings-switch card-vis-row" + (shown ? "" : " is-hidden")}>
+                      <input type="checkbox" checked={shown} onChange={() => api.toggleCard(c.id)} />
+                      <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                      <span className="card-vis-name">
+                        {shown ? <Eye size={14} /> : <EyeOff size={14} />}
+                        <span className="card-vis-label">{t(c.label)}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </section>
+        </div>
 
         <div className="pf-edit-side">
           <section className="stat-block">
@@ -490,45 +560,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
               <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
             </button>
-          </section>
-
-          {/* Karten-Sichtbarkeit fuer ALLE Bildschirme an einer Stelle
-              (Vorgabe: "Lasse dem User in den Usersettings die Anzeige der
-              Karten definieren") - dasselbe, was der Ausblenden-Knopf an
-              jeder einzelnen Karte tut, nur als Gesamtuebersicht: hier sieht
-              man auch, was auf einem Bildschirm ausgeblendet ist, den man
-              gerade gar nicht offen hat. Ein Chip pro Karte statt Schalter
-              pro Zeile, damit die drei Listen zusammen nicht die ganze
-              Einstellungsseite fuellen (Nutzer-Feedback zu kompakten
-              Bedienelementen). Aktiv/hell = sichtbar. */}
-          <section className="stat-block">
-            <h3><LayoutGrid size={17} /> {t("Karten")}</h3>
-            <p className="hint" style={{ marginTop: 0 }}>
-              {t("Welche Karten sollen auf welchem Bildschirm zu sehen sein? Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
-            </p>
-            {CARD_SCREENS.map(({ screen, label, cards }) => {
-              const api = hiddenByScreen[screen];
-              return (
-                <div key={screen}>
-                  <label className="field-label card-visibility-screen">{t(label)}</label>
-                  <div className="chips small card-visibility-chips">
-                    {cards.map((c) => {
-                      const shown = !api.isHidden(c.id);
-                      return (
-                        <button key={c.id} className={"chip" + (shown ? " active" : "")} aria-pressed={shown}
-                          onClick={() => api.toggleCard(c.id)}
-                          title={shown ? t("Karte ausblenden") : t("Karte einblenden")}>
-                          {shown ? <Eye size={13} /> : <EyeOff size={13} />} {t(c.label)}
-                        </button>
-                      );
-                    })}
-                    <button className="chip" onClick={api.showAll} disabled={!api.hiddenCount}>
-                      {t("Alle einblenden")}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
           </section>
         </div>
         </div>
