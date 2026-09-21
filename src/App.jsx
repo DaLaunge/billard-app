@@ -11,6 +11,7 @@ import { hashColor, initials } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
+import { useWakeLock } from "./lib/wakeLock";
 
 import LoginScreen from "./components/LoginScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
@@ -697,6 +698,11 @@ export default function App() {
     };
   }, [player, loadData, toast]);
   useEffect(() => { if (player) applyTheme(player.theme_key || "green", player.theme_custom); }, [player]);
+
+  // Bildschirm waehrend einer laufenden Match-/Winner-Stays-Eingabe wachhalten
+  // (siehe lib/wakeLock.js). Dieselben Screens wie LIVE_ENTRY_TABS: dort liegt
+  // das Handy waehrend des Spiels ungenutzt herum und soll trotzdem an bleiben.
+  useWakeLock(LIVE_ENTRY_TABS.includes(tab));
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
