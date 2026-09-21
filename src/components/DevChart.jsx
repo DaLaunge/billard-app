@@ -71,6 +71,11 @@ export default function DevChart({ dates, lines, onActiveChange }) {
     setActive(best);
   };
   const down = (e) => { e.currentTarget.setPointerCapture?.(e.pointerId); onMove(e); };
+  // up faengt bewusst auch pointercancel ab: Der Graph laesst senkrechtes
+  // Scrollen der Seite absichtlich durch (touch-action: pan-y auf .dev-chart,
+  // siehe App.css). Entscheidet der Browser waehrend eines Wischers, dass es
+  // ein senkrechter Scroll ist, scrollt er und bricht unsere Zeigerfolge mit
+  // pointercancel ab - ohne dieses Aufraeumen bliebe das Fadenkreuz stehen.
   const up = (e) => { e.currentTarget.releasePointerCapture?.(e.pointerId); setActive(null); };
 
   return (

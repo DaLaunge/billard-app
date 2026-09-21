@@ -169,7 +169,16 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
    Platz bekommt, ohne dass DevChart.jsx selbst einen dieser Faelle kennen
    muss. */
 .dev-plot { width: 100%; height: 210px; margin-bottom: 10px; }
-.dev-chart { width: 100%; height: 100%; display: block; touch-action: none; }
+/* touch-action: pan-y (NICHT none) - das Ziehen am Graphen (Ablesen des
+   Standes zu einem Zeitpunkt, siehe DevChart.jsx) ist eine rein waagrechte
+   Geste, also gibt der Browser nur die waagrechte Richtung an uns ab und
+   behaelt das senkrechte Scrollen fuer die Seite. Mit "none" fing der Graph
+   auch senkrechte Wischer ab und wirkte am Handy wie eine Scroll-Sperre:
+   Wer die Seite dort weiterscrollen wollte, wo gerade der Graph lag, kam
+   nicht weiter (Nutzer-Feedback). Erkennt der Browser den Wischer als
+   senkrecht, scrollt er und schickt uns ein pointercancel - DevChart.jsx
+   behandelt das wie ein pointerup und raeumt das Fadenkreuz auf. */
+.dev-chart { width: 100%; height: 100%; display: block; touch-action: pan-y; }
 .dev-chart .grid { stroke: var(--line); stroke-width: 1; }
 .dev-chart .ylabel { fill: var(--ivory-dim); font-size: 14px; text-anchor: end; }
 .dev-chart .xlabel { fill: var(--ivory-dim); font-size: 14px; text-anchor: middle; }
