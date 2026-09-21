@@ -1057,6 +1057,7 @@ export default function App() {
                   onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
+                  onSetCardLayout={setCardLayout}
                   onInvite={() => navPush({ tab: "invite" })} />
               )}
               {tab === "match" && (() => {
@@ -1114,6 +1115,7 @@ export default function App() {
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}
                   onResetCardLayout={resetCardLayout}
+                  onSetCardLayout={setCardLayout}
                   onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (
@@ -1127,6 +1129,7 @@ export default function App() {
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   lang={lang} onLang={changeLang} onSetTheme={setTheme}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
+                  onSetCardLayout={setCardLayout}
                   onOpenProfile={openProfile} />
               )}
               {tab === "admin" && player.role === "admin" && (

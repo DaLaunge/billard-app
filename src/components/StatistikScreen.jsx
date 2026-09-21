@@ -8,7 +8,8 @@ import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
-import { STAT_CARD_SCREEN, normalizeCardOrder, normalizeCardColumns, splitCardColumns } from "../lib/cardLayout";
+import { STAT_CARD_SCREEN, normalizeCardOrder, normalizeCardColumns, splitCardColumns, mergeCardLayout } from "../lib/cardLayout";
+import { useHiddenCards } from "../lib/useHiddenCards";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -19,6 +20,8 @@ import ImprintFooter from "./widgets/ImprintFooter";
 import TournamentFlag from "./TournamentFlag";
 import SortableCard from "./widgets/SortableCard";
 import CardCollapseButton from "./widgets/CardCollapseButton";
+import CardHideButton from "./widgets/CardHideButton";
+import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardColumnButton from "./widgets/CardColumnButton";
 import EmptyColumnDropZone from "./widgets/EmptyColumnDropZone";
 
@@ -91,7 +94,7 @@ function statCardSortingStrategy(middleCount) {
 // ungekuerzten "rows"-Liste ermittelt (nicht aus "visible") - liegt er
 // ausserhalb der gerade sichtbaren Top-N, wird die eigene Zeile per Trenner
 // angehaengt statt nur als Text erwaehnt.
-function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile, me, count, nearby, info, collapsed, onToggleCollapse, column, onToggleColumn }) {
+function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile, me, count, nearby, info, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const myIndex = rows.findIndex((p) => p.name === me?.nickname);
   const showNearby = nearby && myIndex >= 0;
   const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
@@ -105,6 +108,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
         <div className="stat-block-head-actions">
           {info && <InfoButton title={title}>{info}</InfoButton>}
           <CardColumnButton column={column} onToggle={onToggleColumn} />
+          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -140,7 +144,7 @@ function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, o
 // Die fruehere eigene "Uebersicht"/Rangliste-Seite: hier als weiterer
 // Bestenlisten-Block eingegliedert (gleiches Muster wie "Meiste Siege" &
 // Co.). disc/count/nearby kommen ebenfalls von der globalen Auswahl.
-function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoOf, onOpenProfile, me, collapsed, onToggleCollapse, column, onToggleColumn }) {
+function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoOf, onOpenProfile, me, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const rows = rangliste.filter((r) => r.discipline === disc && r.aktiv && !r.vorlaeufig);
   const myIndex = rows.findIndex((r) => r.nickname === me?.nickname);
   const showNearby = nearby && myIndex >= 0;
@@ -157,6 +161,7 @@ function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoO
             {t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.")}
           </InfoButton>
           <CardColumnButton column={column} onToggle={onToggleColumn} />
+          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -199,13 +204,14 @@ function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoO
 // + 3 Bestenlisten je eigene Chips haben. Gilt fuer alle Karten der Seite,
 // inklusive Disziplin fuer den Verlaufs-Graph (der behaelt nur seine
 // eigene Zeitraum-Auswahl, weil die sonst nirgends vorkommt).
-function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf, collapsed, onToggleCollapse, onExpandAll, onCollapseAll, canUndo, onUndo, column, onToggleColumn }) {
+function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf, collapsed, onToggleCollapse, onExpandAll, onCollapseAll, canUndo, onUndo, column, onToggleColumn, onHide }) {
   return (
     <section className="stat-block stat-global-filter">
       <div className="stat-block-head">
         <h3><SlidersHorizontal size={17} /> <span className="stat-block-title-text">{t("Auswahl fuer alle Statistiken")}</span></h3>
         <div className="stat-block-head-actions">
           <CardColumnButton column={column} onToggle={onToggleColumn} />
+          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -276,7 +282,7 @@ function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, o
 // visuell unsichtbaren Umbruchpunkt.
 const breakableValue = (val) => (typeof val === "string" ? val.replace(/:/g, ":​") : val);
 
-function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpenProtokoll, collapsed, onToggleCollapse, column, onToggleColumn }) {
+function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpenProtokoll, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const shown = records.filter((r) => r.holder);
   return (
     <section className="stat-block">
@@ -287,6 +293,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
             {t("Aktuelle Bestwerte der gesamten Gruppe - wer hält gerade welchen Rekord? Jede Zeile hat rechts ihr eigenes Info-Symbol mit genauerer Erklärung (und, wenn vorhanden, dem zugehörigen Match-Protokoll).")}
           </InfoButton>
           <CardColumnButton column={column} onToggle={onToggleColumn} />
+          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -351,7 +358,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
 // aus demselben Grund wie LeaderboardBlock/RecordsBoard oben: sonst
 // verliert ihr lokaler Filter-State bei jedem Render der Eltern-
 // Komponente seine Identitaet.
-function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokoll, collapsed, onToggleCollapse, column, onToggleColumn }) {
+function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokoll, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const [filterPlayer, setFilterPlayer] = useState("");
   const [filterResult, setFilterResult] = useState("all"); // all | win | loss
   const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ... | "Doppel"
@@ -397,6 +404,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
         <h3><History size={17} /> <span className="stat-block-title-text">{t("Letzte Matches")}</span></h3>
         <div className="stat-block-head-actions">
           <CardColumnButton column={column} onToggle={onToggleColumn} />
+          <CardHideButton onHide={onHide} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
@@ -551,7 +559,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     setUndoSnapshot({ order: prevOrder, columns: prevColumns });
     setCardOrder(nextOrder);
     setCardColumns(nextColumns);
-    const ok = await onSetCardLayout(STAT_CARD_SCREEN, { order: nextOrder, columns: nextColumns });
+    const ok = await onSetCardLayout(STAT_CARD_SCREEN, mergeCardLayout(me.card_layout?.[STAT_CARD_SCREEN], { order: nextOrder, columns: nextColumns }));
     if (!ok) {
       setCardOrder(prevOrder);
       setCardColumns(prevColumns);
@@ -603,13 +611,21 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     setCardOrder(order);
     setCardColumns(columns);
     setUndoSnapshot(null);
-    const ok = await onSetCardLayout(STAT_CARD_SCREEN, { order, columns });
+    const ok = await onSetCardLayout(STAT_CARD_SCREEN, mergeCardLayout(me.card_layout?.[STAT_CARD_SCREEN], { order, columns }));
     if (!ok) {
       setCardOrder(prevOrder);
       setCardColumns(prevColumns);
       setUndoSnapshot({ order: prevOrder, columns: prevColumns });
     }
   };
+
+  // Ausgeblendete Karten (Nutzer-Feedback: "es werden mittlerweile so viele
+  // Karten, dass es unuebersichtlich ist") - anders als das Einklappen
+  // darunter am Profil gespeichert, im selben card_layout-Eintrag wie
+  // Reihenfolge/Spalte (siehe useHiddenCards.js/cardLayout.js). Deshalb
+  // nimmt persistLayout oben den gespeicherten Stand per mergeCardLayout()
+  // mit, statt ihn zu ueberschreiben.
+  const hiddenCards = useHiddenCards(STAT_CARD_SCREEN, me.card_layout, onSetCardLayout);
 
   // Ein-/Ausklappen pro Karte (Nutzer-Feedback: "du solltest alle Karten
   // herunterklappbar machen") - bewusst nur lokal im Browser gemerkt
@@ -868,52 +884,60 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // in App.css), unabhaengig davon, welche Karte gerade welche Spalte hat.
   const cardCollapse = (id) => ({ collapsed: collapsedCards.has(id), onToggleCollapse: () => toggleCardCollapse(id) });
   const cardColumn = (id) => ({ column: cardColumns[id], onToggleColumn: () => toggleCardColumn(id) });
+  const cardHide = (id) => ({ onHide: () => hiddenCards.hideCard(id) });
   const cardsById = {
     globalFilter: (
       <StatGlobalFilter disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
         count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
-        me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} {...cardCollapse("globalFilter")} {...cardColumn("globalFilter")}
+        me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} {...cardCollapse("globalFilter")} {...cardColumn("globalFilter")} {...cardHide("globalFilter")}
         onExpandAll={expandAllCards} onCollapseAll={collapseAllCards} canUndo={!!undoSnapshot} onUndo={undoLayout} />
     ),
     rangliste: (
       <RankingBlock rangliste={rangliste} disc={globalDisc} count={globalCount} nearby={globalNearby} me={me}
-        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} {...cardCollapse("rangliste")} {...cardColumn("rangliste")} />
+        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} {...cardCollapse("rangliste")} {...cardColumn("rangliste")} {...cardHide("rangliste")} />
     ),
     entwicklung: (
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={globalDisc} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} />
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={globalDisc} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} {...cardHide("entwicklung")} />
     ),
     rekordeClub: (
-      <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardCollapse("rekordeClub")} {...cardColumn("rekordeClub")} />
+      <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardCollapse("rekordeClub")} {...cardColumn("rekordeClub")} {...cardHide("rekordeClub")} />
     ),
     letzteMatches: (
-      <MatchHistoryBlock matches={matches} players={players} me={me} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardCollapse("letzteMatches")} {...cardColumn("letzteMatches")} />
+      <MatchHistoryBlock matches={matches} players={players} me={me} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardCollapse("letzteMatches")} {...cardColumn("letzteMatches")} {...cardHide("letzteMatches")} />
     ),
     meisteSiege: (
       <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} me={me} count={globalCount} nearby={globalNearby}
-        fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} {...cardCollapse("meisteSiege")} {...cardColumn("meisteSiege")} />
+        fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} {...cardCollapse("meisteSiege")} {...cardColumn("meisteSiege")} {...cardHide("meisteSiege")} />
     ),
     besteSiegquote: (
       <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} me={me} count={globalCount} nearby={globalNearby}
         fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        info={t("Anteil gewonnener Einzel-Matches (Siege ÷ Spiele) in der aktuell gewählten Disziplin. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.")} {...cardCollapse("besteSiegquote")} {...cardColumn("besteSiegquote")} />
+        info={t("Anteil gewonnener Einzel-Matches (Siege ÷ Spiele) in der aktuell gewählten Disziplin. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.")} {...cardCollapse("besteSiegquote")} {...cardColumn("besteSiegquote")} {...cardHide("besteSiegquote")} />
     ),
     aktuelleSerien: (
       <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me} count={globalCount} nearby={globalNearby}
         fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        info={t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin.")} {...cardCollapse("aktuelleSerien")} {...cardColumn("aktuelleSerien")} />
+        info={t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin.")} {...cardCollapse("aktuelleSerien")} {...cardColumn("aktuelleSerien")} {...cardHide("aktuelleSerien")} />
     ),
     schnellstesTempo: (
       <LeaderboardBlock icon={<Zap size={17} />} title={t("Schnellstes Tempo (Ø pro Spiel)")} rows={topGameSpeed} me={me} count={globalCount} nearby={globalNearby}
         fmt={(p) => fmtDuration(p.avgGameMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        info={t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} {...cardCollapse("schnellstesTempo")} {...cardColumn("schnellstesTempo")} />
+        info={t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} {...cardCollapse("schnellstesTempo")} {...cardColumn("schnellstesTempo")} {...cardHide("schnellstesTempo")} />
     ),
     schnellste141: (
       <LeaderboardBlock icon={<Timer size={17} />} title={t("Schnellstes 14/1-Tempo (Ø pro Kugel)")} rows={topBallSpeed} me={me} count={globalCount} nearby={globalNearby}
         fmt={(p) => fmtDuration(p.avgBallMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} {...cardCollapse("schnellste141")} {...cardColumn("schnellste141")} />
+        info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} {...cardCollapse("schnellste141")} {...cardColumn("schnellste141")} {...cardHide("schnellste141")} />
     ),
   };
-  const { middle: middleCardIds, right: rightCardIds } = splitCardColumns(cardOrder, cardColumns);
+  // Ausgeblendete Karten fliegen erst HIER raus, nicht schon aus cardOrder:
+  // ihre Position in der Reihenfolge und ihre Spalte bleiben gespeichert, so
+  // steht eine wieder eingeblendete Karte genau dort, wo sie vorher war.
+  // Wichtig fuer @dnd-kit: die SortableContext-Liste unten muss exakt den
+  // gerenderten Karten entsprechen - eine id ohne zugehoerigen Knoten wuerde
+  // die Zieh-Animation verrechnen.
+  const visibleOrder = cardOrder.filter((id) => !hiddenCards.isHidden(id));
+  const { middle: middleCardIds, right: rightCardIds } = splitCardColumns(visibleOrder, cardColumns);
 
   return (
     <div className="screen">
@@ -1052,6 +1076,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </SortableContext>
       </DndContext>
       </div>
+      <ShowAllCardsButton hiddenCount={hiddenCards.hiddenCount} onShowAll={hiddenCards.showAll} />
       <ImprintFooter />
     </div>
   );

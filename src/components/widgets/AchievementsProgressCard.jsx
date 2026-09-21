@@ -1,15 +1,19 @@
 import { Award } from "lucide-react";
 import { t } from "../../lib/i18n";
+import CardHideButton from "./CardHideButton";
 import { upcomingAchievements } from "../../lib/achievements";
 
 /* Eigenstaendiges Modul: die naechsten N noch nicht erreichten Erfolge
    eines Spielers (Rohdaten aus upcomingAchievements()), plus Link zur
    vollen Erfolgsliste im Profil. */
-export default function AchievementsProgressCard({ catalog, extras, earnedBadges, onOpenProfile, nickname, count = 3 }) {
+export default function AchievementsProgressCard({ catalog, extras, earnedBadges, onOpenProfile, nickname, count = 3, onHide }) {
   const upcoming = extras ? upcomingAchievements(catalog, extras, earnedBadges, count) : [];
   return (
     <section className="stat-block">
-      <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges?.size ?? 0} / {catalog?.length ?? 0})</h3>
+      <div className="stat-block-head roomy">
+        <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges?.size ?? 0} / {catalog?.length ?? 0})</h3>
+        {onHide && <div className="stat-block-head-actions"><CardHideButton onHide={onHide} /></div>}
+      </div>
       {upcoming.length === 0 && <p className="hint" style={{ marginTop: 0 }}>{t("Alle erreichbaren Erfolge freigeschaltet!")}</p>}
       {upcoming.map((c) => (
         <div key={c.badgeKey} className="side-row">

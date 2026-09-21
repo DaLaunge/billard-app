@@ -9,6 +9,7 @@ import InfoButton from "./widgets/InfoButton";
 import CardCollapseButton from "./widgets/CardCollapseButton";
 import CardColumnButton from "./widgets/CardColumnButton";
 import CardMaximizeButton from "./widgets/CardMaximizeButton";
+import CardHideButton from "./widgets/CardHideButton";
 
 const RANGES = [
   { key: "1M", label: "1M", days: 31 },
@@ -24,7 +25,7 @@ const RANGES = [
 // braucht der Graph keine eigenen Disziplin-Buttons mehr. Alle folgenden
 // Werte (Spieler-Reihenfolge, Kurven, verfuegbare Daten) haengen weiterhin
 // von der Disziplin ab.
-export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, collapsed, onToggleCollapse, column, onToggleColumn }) {
+export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
@@ -144,6 +145,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
           </InfoButton>
           {!maximized && <CardColumnButton column={column} onToggle={onToggleColumn} />}
           <CardMaximizeButton maximized={maximized} onToggle={toggleMaximize} />
+          {!maximized && <CardHideButton onHide={onHide} />}
           {!maximized && <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />}
         </div>
       </div>

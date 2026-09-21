@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone } from "lucide-react";
+import { ChevronLeft, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, LayoutGrid, Eye, EyeOff } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -16,11 +16,33 @@ import RecordsCard from "./widgets/RecordsCard";
 import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
+import CardHideButton from "./widgets/CardHideButton";
+import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
+import { CARD_SCREENS } from "../lib/cardLayout";
+import { useHiddenCards } from "../lib/useHiddenCards";
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, achievementCounters }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters }) {
+  // Ausgeblendete Karten (Nutzer-Feedback: "es werden mittlerweile so viele
+  // Karten, dass es unuebersichtlich ist"). Drei Haken, weil die Karten-
+  // Einstellungen unter "Profil bearbeiten" ALLE Bildschirme abdecken, nicht
+  // nur das Profil selbst - dort ist die eine Stelle, an der man ohne
+  // Bildschirmwechsel sieht, was ueberall ein- oder ausgeblendet ist.
+  // Nur fuers eigene Profil: auf einem fremden Profil sind dieselben Karten
+  // der ganze Inhalt der Seite, und die Wahl gilt der eigenen Uebersicht.
+  const hiddenByScreen = {
+    stats: useHiddenCards("stats", meRow?.card_layout, onSetCardLayout),
+    live: useHiddenCards("live", meRow?.card_layout, onSetCardLayout),
+    profil: useHiddenCards("profil", meRow?.card_layout, onSetCardLayout),
+  };
+  const hiddenCards = hiddenByScreen.profil;
+  // Auf fremden Profilen bleibt alles sichtbar und es gibt keinen
+  // Ausblenden-Knopf (onHide undefined => CardHideButton rendert nichts).
+  const cardShown = (id) => !isMe || !hiddenCards.isHidden(id);
+  const cardHide = (id) => (isMe && onSetCardLayout ? () => hiddenCards.hideCard(id) : undefined);
+
   const catalogByCategory = useMemo(() => {
     const groups = {};
     [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
@@ -282,6 +304,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       onSetStartTab("stats"),
       onResetCardLayout(),
     ]);
+    // reset_card_layout() hat serverseitig auch die ausgeblendeten Karten
+    // mitgeloescht (der ganze card_layout-Eintrag faellt weg) - der lokale
+    // Stand der drei Haken muss daher mitziehen, sonst zeigt die Liste
+    // darueber bis zum naechsten Neuaufbau noch die alten Ausblendungen.
+    Object.values(hiddenByScreen).forEach((api) => api.clearLocal());
     setColor(null);
     setThemeKey("green");
     applyTheme("green");
@@ -464,6 +491,45 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
             </button>
           </section>
+
+          {/* Karten-Sichtbarkeit fuer ALLE Bildschirme an einer Stelle
+              (Vorgabe: "Lasse dem User in den Usersettings die Anzeige der
+              Karten definieren") - dasselbe, was der Ausblenden-Knopf an
+              jeder einzelnen Karte tut, nur als Gesamtuebersicht: hier sieht
+              man auch, was auf einem Bildschirm ausgeblendet ist, den man
+              gerade gar nicht offen hat. Ein Chip pro Karte statt Schalter
+              pro Zeile, damit die drei Listen zusammen nicht die ganze
+              Einstellungsseite fuellen (Nutzer-Feedback zu kompakten
+              Bedienelementen). Aktiv/hell = sichtbar. */}
+          <section className="stat-block">
+            <h3><LayoutGrid size={17} /> {t("Karten")}</h3>
+            <p className="hint" style={{ marginTop: 0 }}>
+              {t("Welche Karten sollen auf welchem Bildschirm zu sehen sein? Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
+            </p>
+            {CARD_SCREENS.map(({ screen, label, cards }) => {
+              const api = hiddenByScreen[screen];
+              return (
+                <div key={screen}>
+                  <label className="field-label card-visibility-screen">{t(label)}</label>
+                  <div className="chips small card-visibility-chips">
+                    {cards.map((c) => {
+                      const shown = !api.isHidden(c.id);
+                      return (
+                        <button key={c.id} className={"chip" + (shown ? " active" : "")} aria-pressed={shown}
+                          onClick={() => api.toggleCard(c.id)}
+                          title={shown ? t("Karte ausblenden") : t("Karte einblenden")}>
+                          {shown ? <Eye size={13} /> : <EyeOff size={13} />} {t(c.label)}
+                        </button>
+                      );
+                    })}
+                    <button className="chip" onClick={api.showAll} disabled={!api.hiddenCount}>
+                      {t("Alle einblenden")}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </section>
         </div>
         </div>
 
@@ -471,7 +537,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button className="btn ghost" disabled={busy} onClick={resetDefaults}>
             {t("Zurücksetzen")}
           </button>
-          <p className="hint">{t("Setzt Kugelfarbe, Design, Startseite und die verschobenen Karten auf die Standardeinstellungen zurück.")}</p>
+          <p className="hint">{t("Setzt Kugelfarbe, Design, Startseite sowie verschobene und ausgeblendete Karten auf die Standardeinstellungen zurück.")}</p>
         </div>
 
         {/* Nutzer-Feedback: "Konto löschen" soll in "Profil bearbeiten" und
@@ -590,7 +656,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       {/* Ratings + Head-to-Head bilden am PC die linke Spalte (zusammen mit
           pf-identity darueber), die Erfolge in der Mitte breiter machen. */}
       <div className="pf-stats-a">
+      {cardShown("erfolgeFortschritt") && (
       <AchievementsProgressCard catalog={catalog} extras={extendedExtras} earnedBadges={earnedBadges} nickname={nickname}
+        onHide={cardHide("erfolgeFortschritt")}
         onOpenProfile={() => {
           // "Alle"-Filter-Chip fokussieren statt manuell zu scrollen (siehe
           // allFilterRef oben) - klappt bei fremden Profilen nicht (Chips
@@ -598,9 +666,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           if (allFilterRef.current) { setBadgeStatus("all"); allFilterRef.current.focus(); }
           else document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }} />
+      )}
 
+      {cardShown("ratings") && (
       <section className="stat-block">
-        <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
+        <div className="stat-block-head roomy">
+          <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
+          {cardHide("ratings") && <div className="stat-block-head-actions"><CardHideButton onHide={cardHide("ratings")} /></div>}
+        </div>
         {myRows.map((r) => (
           <div key={r.discipline} className="stat-row">
             <span className="stat-name">{t(r.discipline)}</span>
@@ -610,19 +683,28 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         ))}
         {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
       </section>
+      )}
 
-      <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
+      {cardShown("rekorde") && (
+        <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} onHide={cardHide("rekorde")} />
+      )}
 
-      <HeadToHeadCard nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
-        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+      {cardShown("headToHead") && (
+        <HeadToHeadCard nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
+          colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHide={cardHide("headToHead")} />
+      )}
       </div>
       </div>
 
       {/* Erfolge sind ein zentrales Element der App - stehen deshalb in der
           Mitte und bekommen die meiste Breite (Kachel-Raster). */}
       <div className="pf-achievements" id="pf-achievements-full">
+      {cardShown("erfolge") && (
       <section className="stat-block">
-        <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
+        <div className="stat-block-head roomy">
+          <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
+          {cardHide("erfolge") && <div className="stat-block-head-actions"><CardHideButton onHide={cardHide("erfolge")} /></div>}
+        </div>
         {isMe && achievementHint && (
           <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
         )}
@@ -714,6 +796,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         })()}
         {!isMe && !badgeFiltering && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
       </section>
+      )}
       </div>
 
       {/* Spielgeschwindigkeit + Konto-Einstellungen stecken ab 900px in
@@ -721,9 +804,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           .pf-left-col oben). */}
       <div className="pf-right-col">
       <div className="pf-stats-b">
-      {(speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
+      {cardShown("tempo") && (speedStats.avgGameMs != null || speedStats.avgBallMs != null) && (
         <section className="stat-block">
-          <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
+          <div className="stat-block-head roomy">
+            <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
+            {cardHide("tempo") && <div className="stat-block-head-actions"><CardHideButton onHide={cardHide("tempo")} /></div>}
+          </div>
           {speedStats.avgGameMs != null && (
             <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
               <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
@@ -741,7 +827,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
 
       <div className="pf-account">
-      {isMe && <PasswordSection toast={toast} />}
+      {isMe && cardShown("anmeldung") && <PasswordSection toast={toast} onHide={cardHide("anmeldung")} />}
 
       {/* "Freund einladen" ist jetzt prominent als QR-Symbol direkt in der
           Identitaets-Karte oben - kein zweiter, weniger sichtbarer Button
@@ -764,9 +850,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
       )}
 
-      {isMe && (
+      {isMe && cardShown("feedback") && (
         <section className="stat-block">
-          <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
+          <div className="stat-block-head roomy">
+            <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
+            {cardHide("feedback") && <div className="stat-block-head-actions"><CardHideButton onHide={cardHide("feedback")} /></div>}
+          </div>
           {!feedbackOpen ? (
             <>
               <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
@@ -810,11 +899,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </section>
       )}
 
-      {isMe && <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />}
+      {isMe && cardShown("tickets") && <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} onHide={cardHide("tickets")} />}
       </div>
       </div>
       </div>
 
+      {isMe && onSetCardLayout && (
+        <ShowAllCardsButton hiddenCount={hiddenCards.hiddenCount} onShowAll={hiddenCards.showAll} />
+      )}
       <ImprintFooter />
       {photoViewerOpen && heroPhoto && (
         <div className="modal-overlay photo-viewer" onClick={() => setPhotoViewerOpen(false)}>

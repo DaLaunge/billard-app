@@ -650,6 +650,37 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .card-maximize-btn { display: none; background: none; border: none; padding: 4px; margin: -4px 0;
   border-radius: 8px; color: var(--ivory-dim); align-items: center; cursor: pointer; flex-shrink: 0; }
 .card-maximize-btn:hover { color: var(--chalk); background: var(--felt-3); }
+/* Ausblenden-Knopf einer Karte (CardHideButton.jsx - Nutzer-Feedback: "es
+   werden mittlerweile so viele Karten, dass es unuebersichtlich ist").
+   Gleiche randlose Optik wie Einklapp-/Spalten-Knopf, aber bewusst AUCH am
+   Handy sichtbar (anders als .card-column-btn/.card-maximize-btn): dort
+   stoeren zu viele Karten am meisten, und ohne den Knopf bliebe nur der
+   Umweg ueber die Einstellungen. */
+.card-hide-btn { background: none; border: none; padding: 4px; margin: -4px 0;
+  border-radius: 8px; color: var(--ivory-dim); display: inline-flex; align-items: center;
+  cursor: pointer; flex-shrink: 0; }
+.card-hide-btn:hover { color: var(--chalk); background: var(--felt-3); }
+/* Kartenkopf einer Karte, die vorher nur ein <h3> hatte (Profil: Ratings,
+   Erfolge, Spielgeschwindigkeit, Feedback, Tickets ...) - .stat-block-head
+   setzt fuer die Statistik-Karten nur 4px Abstand nach unten, weil dort
+   meist direkt eine Chip-Zeile folgt. Hier folgt Inhalt, also derselbe
+   12px-Abstand wie beim blanken <h3>. */
+.stat-block-head.roomy { margin-bottom: 12px; }
+/* "Alle Karten einblenden" (ShowAllCardsButton.jsx) - steht ganz unten auf
+   jedem Bildschirm mit ausblendbaren Karten, vor dem Impressum. Knopf
+   mittig und nur so breit wie noetig, damit er nicht wie eine
+   Hauptaktion der Seite wirkt. */
+.cards-restore-row { display: flex; justify-content: center; margin: 4px 0 8px; }
+.cards-restore-row .btn { width: auto; margin-top: 0; padding-left: 16px; padding-right: 16px; }
+.cards-restore-row .btn:disabled { opacity: .45; cursor: default; }
+/* Karten-Liste in den Einstellungen (Profil bearbeiten -> Karten): je Chip
+   eine Karte, aktiv = sichtbar. Etwas Abstand nach unten, weil direkt der
+   naechste Bildschirm-Titel folgt. */
+.card-visibility-chips { margin-bottom: 10px; }
+/* Bildschirm-Name ueber seiner Kartenliste - kraeftiger und mit Luft nach
+   oben, sonst liest sich der erste Name wie das letzte Wort des
+   Erklaertexts darueber. */
+.card-visibility-screen { margin-top: 14px; color: var(--chalk); font-weight: 700; }
 /* Ablageflaeche einer leeren Spalte (siehe EmptyColumnDropZone.jsx -
    Nutzer-Feedback: "ich habe alle Karten in der Mitte, kann aber keine
    Karte nach rechts schieben") - aus demselben Grund wie .card-column-btn
@@ -793,6 +824,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer;
   font-family: inherit; color: var(--ivory); margin-bottom: 10px; }
 .live-section.duelle .live-section-head { border-color: var(--gold); color: var(--gold); }
+/* Bereichskopf + Ausblenden-Knopf nebeneinander (der Kopf selbst ist ein
+   Knopf zum Ein-/Ausklappen, ein <button> IM <button> waere ungueltiges
+   HTML - daher diese Zeile drumherum statt eines Knopfs im Kopf). Der
+   Abstand nach unten wandert vom Kopf auf die Zeile. */
+.live-section-head-row { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+.live-section-head-row .live-section-head { margin-bottom: 0; }
 .live-section-title { font-size: 14px; font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; }
 .live-section-count { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--ivory-dim);
   background: var(--felt); border-radius: 999px; padding: 2px 9px; }
