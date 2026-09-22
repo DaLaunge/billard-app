@@ -51,7 +51,7 @@ function StaticBracket({ matches, nameOf }) {
         // Unterscheidung waere hier bedeutungslos und wuerde jede Abstiegs-
         // Kante rot+kraeftig einfaerben (kreuz und quer durchs ganze Bild,
         // Nutzer-Feedback "optisch nicht ansprechend"). Deshalb bewusst
-        // NUR Sieger-Pfade (kind="advance") gold hervorheben, Abstiegs-Pfade
+        // NUR Sieger-Pfade (kind="advance") im Akzent hervorheben, Abstiegs-Pfade
         // bleiben immer dezent grau gestrichelt.
         return (
           <path key={i} className={"tb-edge" + (e.kind === "drop" ? " drop" : "")}

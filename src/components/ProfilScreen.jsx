@@ -560,9 +560,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 const th = THEME_CATALOG[key];
                 return (
                   <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
-                    style={{ background: th.felt, borderColor: themeKey === key ? th.chalk : "transparent" }}
+                    style={{ background: th.felt, borderColor: themeKey === key ? th.accent : "transparent" }}
                     onClick={() => pickPresetTheme(key)} disabled={busy}>
-                    <span className="theme-dot" style={{ background: th.chalk }} />
+                    <span className="theme-dot" style={{ background: th.accent }} />
                     {t(th.name)}
                     {themeKey === key && <Check size={14} />}
                   </button>
