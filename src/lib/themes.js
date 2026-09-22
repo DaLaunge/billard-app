@@ -3,25 +3,34 @@
    Alle Werte entsprechen den CSS-Variablen aus App.css (:root).
    Anwenden = dieselben Variablen als Inline-Styles auf <html>
    setzen (hoehere Spezifitaet als :root, kein eigener CSS-Block
-   pro Thema noetig). --win/--loss bleiben bewusst fix (Sieg=gruen,
-   Niederlage=rot soll sich nicht mit der Themenfarbe vermischen).
+   pro Thema noetig). --win/--loss/--warn und die Medaillenfarben
+   bleiben bewusst fix (Sieg=gruen, Niederlage=rot, Warnung=gelb
+   soll sich nicht mit der Themenfarbe vermischen).
+
+   Ein Thema hat GENAU EINE Akzentfarbe (accent, in der Auswahl der
+   farbige Punkt; accentDeep ist nur ihre dunklere Stufe). Bis
+   2026-09-22 gab es daneben ein fest verdrahtetes Gold (#D6A425),
+   das jedes Thema mitgeschleppt hat - Hervorhebungen und
+   Zusatztexte blieben dadurch golden, egal welches Thema (oder
+   welche eigene Akzentfarbe) gewaehlt war. Alles davon haengt
+   jetzt an --accent, siehe :root in App.css.
    ============================================================ */
 
 export const THEME_CATALOG = {
   green: { name: "Grün", felt: "#0A2B21", felt2: "#10382C", felt3: "#17493A", line: "#24564660",
-    chalk: "#7CC1E8", chalkDeep: "#3E82B4", ivory: "#F2EDE0", ivoryDim: "#9DBAAE", gold: "#D6A425" },
+    accent: "#7CC1E8", accentDeep: "#3E82B4", ivory: "#F2EDE0", ivoryDim: "#9DBAAE" },
   black: { name: "Schwarz", felt: "#0B0B0D", felt2: "#171719", felt3: "#232326", line: "#3A3A4060",
-    chalk: "#8FA8C7", chalkDeep: "#5C7699", ivory: "#F2EDE0", ivoryDim: "#A8A8AE", gold: "#D6A425" },
+    accent: "#8FA8C7", accentDeep: "#5C7699", ivory: "#F2EDE0", ivoryDim: "#A8A8AE" },
   red: { name: "Rot", felt: "#2B0A12", felt2: "#38101C", felt3: "#491726", line: "#56242F60",
-    chalk: "#E8B87C", chalkDeep: "#B48446", ivory: "#F2EDE0", ivoryDim: "#C4A0A6", gold: "#D6A425" },
+    accent: "#E8B87C", accentDeep: "#B48446", ivory: "#F2EDE0", ivoryDim: "#C4A0A6" },
   blue: { name: "Blau", felt: "#0A1A2B", felt2: "#102538", felt3: "#173049", line: "#24405660",
-    chalk: "#6FDCE0", chalkDeep: "#3E9CB4", ivory: "#F2EDE0", ivoryDim: "#9DAFBA", gold: "#D6A425" },
+    accent: "#6FDCE0", accentDeep: "#3E9CB4", ivory: "#F2EDE0", ivoryDim: "#9DAFBA" },
   purple: { name: "Lila", felt: "#1E0A2B", felt2: "#291038", felt3: "#361749", line: "#3F245660",
-    chalk: "#C87CE8", chalkDeep: "#8E46B4", ivory: "#F2EDE0", ivoryDim: "#B7A0C4", gold: "#D6A425" },
+    accent: "#C87CE8", accentDeep: "#8E46B4", ivory: "#F2EDE0", ivoryDim: "#B7A0C4" },
   brown: { name: "Braun", felt: "#2B1D0A", felt2: "#382610", felt3: "#493117", line: "#56412460",
-    chalk: "#E8C17C", chalkDeep: "#B4923E", ivory: "#F2EDE0", ivoryDim: "#C4B49D", gold: "#D6A425" },
+    accent: "#E8C17C", accentDeep: "#B4923E", ivory: "#F2EDE0", ivoryDim: "#C4B49D" },
   teal: { name: "Petrol", felt: "#0A2B28", felt2: "#103833", felt3: "#174943", line: "#24565060",
-    chalk: "#7CE8C4", chalkDeep: "#3EB491", ivory: "#F2EDE0", ivoryDim: "#9DBAB2", gold: "#D6A425" },
+    accent: "#7CE8C4", accentDeep: "#3EB491", ivory: "#F2EDE0", ivoryDim: "#9DBAB2" },
 };
 
 export const THEME_KEYS = Object.keys(THEME_CATALOG);
@@ -67,7 +76,7 @@ function hslToHex(h, s, l) {
 
 // Baut aus zwei frei gewaehlten Farben (Hintergrund, Akzent) ein
 // vollstaendiges Thema: felt-2/felt-3 sind hellere Stufen des
-// Hintergrunds (gleicher Farbton, steigende Helligkeit), chalk-deep
+// Hintergrunds (gleicher Farbton, steigende Helligkeit), accent-deep
 // ist eine dunklere Stufe des Akzents.
 export function buildCustomTheme(bgHex, accentHex) {
   const safeBg = /^#[0-9A-Fa-f]{6}$/.test(bgHex || "") ? bgHex : "#0A2B21";
@@ -90,11 +99,11 @@ export function buildCustomTheme(bgHex, accentHex) {
   const felt = hslToHex(bh, bSat, feltL);
   const felt2 = hslToHex(bh, bSat, felt2L);
   const felt3 = hslToHex(bh, bSat, felt3L);
-  const chalk = hslToHex(ah, aSat, 72);
-  const chalkDeep = hslToHex(ah, aSat, 48);
+  const accent = hslToHex(ah, aSat, 72);
+  const accentDeep = hslToHex(ah, aSat, 48);
   return {
     name: "Eigenes Thema", felt, felt2, felt3, line: `${felt3}60`,
-    chalk, chalkDeep, ivory: "#F2EDE0", ivoryDim: "#A8A8AE", gold: "#D6A425",
+    accent, accentDeep, ivory: "#F2EDE0", ivoryDim: "#A8A8AE",
   };
 }
 
@@ -110,9 +119,8 @@ export function applyTheme(themeKey, customColors) {
   root.setProperty("--felt-2", th.felt2);
   root.setProperty("--felt-3", th.felt3);
   root.setProperty("--line", th.line);
-  root.setProperty("--chalk", th.chalk);
-  root.setProperty("--chalk-deep", th.chalkDeep);
+  root.setProperty("--accent", th.accent);
+  root.setProperty("--accent-deep", th.accentDeep);
   root.setProperty("--ivory", th.ivory);
   root.setProperty("--ivory-dim", th.ivoryDim);
-  root.setProperty("--gold", th.gold);
 }

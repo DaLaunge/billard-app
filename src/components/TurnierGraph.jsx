@@ -18,7 +18,7 @@ const ZOOM_STEP = 0.2;
 // einem echten Baum aussehen). Damit das zusammenhaengende Bild trotz vieler
 // kreuzender Linien uebersichtlich bleibt, gibt es jetzt zusaetzlich:
 // - Farbcodierung je Abschnitt (Gewinnerbaum gruen, Verliererbaum rot,
-//   Finale gold - linker Rahmenstreifen an jeder Box plus Abschnittslabel).
+//   Finale im Akzent - linker Rahmenstreifen an jeder Box plus Abschnittslabel).
 // - Klick auf eine Box hebt ihre direkt angeschlossenen Verbinder + die
 //   damit verbundenen Boxen hervor, alles andere wird gedaempft.
 // - Ein Zoom-Regler (Buttons, nicht nur Pinch-Zoom des ganzen Bildschirms -
@@ -306,7 +306,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
             dort steht stattdessen nur "Zoom zuruecksetzen" rechts NEBEN dem
             Minimieren-Button (nicht mittig - Nutzer-Feedback: sah dort
             optisch nicht gut aus). Am PC erst beim Hover ueber diesen
-            Bereich voll sichtbar/gold eingefaerbt, sonst dezent gedaempft -
+            Bereich voll sichtbar im Akzent, sonst dezent gedaempft -
             weniger visueller Ballast, ohne die Buttons ganz zu verstecken. */}
         <div className="turnier-graph-zoom-controls">
           <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={18} /></button>
