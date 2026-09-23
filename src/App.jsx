@@ -12,6 +12,7 @@ import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offli
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
+import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
@@ -157,6 +158,9 @@ export default function App() {
   // beim allerersten Rendern sichern, bevor der Persistenz-Effekt weiter
   // unten den initialen "stats"-Default hineinschreibt und den echten Wert
   // ueberschreiben wuerde.
+  // Ziel aus einem Klick auf eine Push-Nachricht bei geschlossener App
+  // (public/push-sw.js oeffnet dann "/?nav=..."), siehe Startseiten-Block.
+  const [urlNavAtStart] = useState(readUrlNav);
   const [lastMainTabAtStart] = useState(() => {
     try { return localStorage.getItem("lastMainTab"); } catch { return null; }
   });
@@ -607,7 +611,10 @@ export default function App() {
         // Uebersicht/Statistik-Menue-Umbau) - sonst landet man auf einem
         // tab-Wert, den kein Screen mehr rendert (leere Seite mit Tabbar).
         if (!["stats", "turnier", "live", "profil"].includes(target)) target = null;
-        if (target && target !== "stats") navReplace({ tab: target });
+        if (urlNavAtStart) {
+          navReplace(urlNavAtStart);
+          try { window.history.replaceState(urlNavAtStart, "", window.location.pathname); } catch { /* ignore */ }
+        } else if (target && target !== "stats") navReplace({ tab: target });
         // Trigger D: direkt nachdem sich der Spieler zum ersten Mal in
         // diesem Seitenaufruf angemeldet hat (egal ob frischer Login oder
         // eine bestehende Session, die hier zum ersten Mal geladen wird) -
@@ -731,6 +738,124 @@ export default function App() {
     wasInLiveEntry.current = inLiveEntry;
   }, [inLiveEntry, keepAwakeDefault]);
   useWakeLock(keepAwakeNow && inLiveEntry);
+
+  // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
+  // Stufe pro Geraet: "off" / "inapp" (Posteingang abfragen, solange die App
+  // offen ist) / "push" (zusaetzlich echte Push-Nachrichten). Die Texte
+  // kommen fertig aus der Datenbank (deutsch + englisch).
+  const [notifyMode, setNotifyModeState] = useState(getNotifyMode);
+  const setNotifyMode = useCallback(async (mode) => {
+    if (mode === "push") {
+      try { await enablePush(getLang()); }
+      catch (e) {
+        const why = e?.message;
+        toast(why === "denied" ? t("Benachrichtigungen sind für diese App im Browser/System blockiert.")
+          : why === "ios-install" ? t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")
+          : why === "unsupported" ? t("Dieser Browser unterstützt keine Push-Nachrichten.")
+          : t("Fehler: ") + (why || "?"));
+        return;
+      }
+    } else if (notifyMode === "push") {
+      await disablePush();
+    }
+    // Beim Wechsel auf "inapp" den Posteingang neu einlesen, statt alles seit
+    // dem letzten In-App-Betrieb auf einmal als Toasts nachzuliefern.
+    if (mode === "inapp" && player) { try { localStorage.removeItem("notifySeen:" + player.id); } catch { /* ignore */ } }
+    storeNotifyMode(mode);
+    setNotifyModeState(mode);
+  }, [notifyMode, player, toast]);
+
+  // Abo dieses Geraets dem angemeldeten Spieler + seiner Sprache zuordnen
+  // (anderer Nutzer auf demselben Geraet, Sprache gewechselt). Ist die
+  // Erlaubnis inzwischen weg, still auf "inapp" zurueckfallen.
+  useEffect(() => {
+    if (!player || notifyMode !== "push") return;
+    syncPush(lang).then((ok) => {
+      if (!ok) { storeNotifyMode("inapp"); setNotifyModeState("inapp"); }
+    });
+  }, [player?.id, notifyMode, lang]);
+
+  // Toast fuer eine Benachrichtigung. Mitten in einer Match-/Winner-Stays-
+  // Eingabe ohne "Ansehen": ein Sprung weg wuerde die ungespeicherte Eingabe
+  // verwerfen.
+  const showNotice = useCallback((n) => {
+    if (POPUP_KINDS.has(n.kind)) {
+      // Eigene "Du bist dran"-Popups - nur sofort nachsehen statt erst beim
+      // naechsten 20s-Poll.
+      if (n.kind === "tourney_ready") checkTourneyReady(); else checkWinnerStaysReady();
+      return;
+    }
+    const nav = safeNav(n.nav);
+    const text = n.body ? `${n.title} – ${n.body}` : n.title;
+    toast(text, nav && !LIVE_ENTRY_TABS.includes(tabRef.current)
+      ? { label: t("Ansehen"), onAction: () => navPush(nav) } : null);
+  }, [toast, navPush, checkTourneyReady, checkWinnerStaysReady]);
+
+  // Nachrichten vom Service Worker: Push bei offener App (statt System-
+  // Benachrichtigung) und Klick auf eine Benachrichtigung.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMsg = (e) => {
+      const d = e.data || {};
+      if (d.type === "push-notification" && d.notification) showNotice(d.notification);
+      if (d.type === "push-nav") {
+        const nav = safeNav(d.nav);
+        if (nav && !LIVE_ENTRY_TABS.includes(tabRef.current)) navPush(nav);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", onMsg);
+    return () => navigator.serviceWorker.removeEventListener("message", onMsg);
+  }, [showNotice, navPush]);
+
+  // Modus "inapp": Posteingang alle 30s (und beim Zurueckkommen in die App)
+  // abfragen. Beim allerersten Mal nur den Stand merken, nichts anzeigen.
+  // Was aelter als 15 Minuten ist, wird still als gelesen markiert - "X ist
+  // live" von gestern Abend waere beim Oeffnen am naechsten Tag irrefuehrend,
+  // und Offenes (Herausforderung, Bestaetigung) zeigen die Badges ohnehin.
+  useEffect(() => {
+    if (!player || notifyMode !== "inapp") return;
+    const key = "notifySeen:" + player.id;
+    let busy = false;
+    const poll = async () => {
+      if (busy || document.visibilityState !== "visible") return;
+      busy = true;
+      try {
+        let raw = null;
+        try { raw = localStorage.getItem(key); } catch { /* ignore */ }
+        const seen = raw == null ? NaN : Number(raw);
+        if (!Number.isFinite(seen)) {
+          const { data, error } = await supabase.from("notifications").select("id")
+            .eq("player_id", player.id).order("id", { ascending: false }).limit(1);
+          if (error) return;
+          try { localStorage.setItem(key, String(data?.[0]?.id ?? 0)); } catch { /* ignore */ }
+          return;
+        }
+        const { data, error } = await supabase.from("notifications")
+          .select("id, kind, title_de, body_de, title_en, body_en, nav, created_at")
+          .eq("player_id", player.id).gt("id", seen).order("id", { ascending: true }).limit(20);
+        if (error || !data?.length) return;
+        try { localStorage.setItem(key, String(data[data.length - 1].id)); } catch { /* ignore */ }
+        const en = getLang() === "en";
+        const fresh = data.filter((n) => Date.now() - new Date(n.created_at) < 15 * 60000);
+        if (fresh.length === 0) return;
+        const shown = fresh.filter((n) => !POPUP_KINDS.has(n.kind));
+        fresh.filter((n) => POPUP_KINDS.has(n.kind)).forEach((n) => showNotice({ kind: n.kind }));
+        if (shown.length === 0) return;
+        const last = shown[shown.length - 1];
+        const more = shown.length > 1 ? ` (${t("+{n} weitere", { n: shown.length - 1 })})` : "";
+        showNotice({
+          kind: last.kind, nav: last.nav,
+          title: en ? last.title_en : last.title_de,
+          body: (en ? last.body_en : last.body_de) + more,
+        });
+      } finally { busy = false; }
+    };
+    poll();
+    const id = setInterval(poll, 30000);
+    const onVis = () => { if (document.visibilityState === "visible") poll(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+  }, [player, notifyMode, showNotice]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -928,7 +1053,14 @@ export default function App() {
   const openProfile = (nick) => navPush({ tab: "fremdprofil", profileName: nick });
   const openProtokoll = (m) => navPush({ tab: "protokoll", protokollMatch: m, protokollBackTab: tab });
   const startMatchVs = (opponent) => navPush({ tab: "match", vsOpp: opponent });
-  const logout = async () => { await supabase.auth.signOut(); navReplace({ tab: "stats" }); };
+  // Push-Abo vor dem Abmelden loeschen (braucht noch die Sitzung) - sonst
+  // bekaeme dieses Geraet weiter die Nachrichten des abgemeldeten Spielers.
+  // Die Stufe selbst bleibt stehen; nach dem naechsten Anmelden legt
+  // syncPush() das Abo fuer den dann angemeldeten Spieler neu an.
+  const logout = async () => {
+    if (notifyMode === "push") await disablePush();
+    await supabase.auth.signOut(); navReplace({ tab: "stats" });
+  };
 
   const submitFeedback = async (category, message) => {
     const { error } = await supabase.rpc("submit_feedback", { p_category: category, p_message: message });
@@ -1007,7 +1139,7 @@ export default function App() {
                 </div>
               </div>
             )}
-            {tourneyReady && tab !== "match" && !celebrate && (() => {
+            {tourneyReady && notifyMode !== "off" && tab !== "match" && !celebrate && (() => {
               const iAmP1 = tourneyReady.player1_id === player.id;
               const oppName = (iAmP1 ? tourneyReady.player2 : tourneyReady.player1)?.nickname;
               return (
@@ -1032,7 +1164,7 @@ export default function App() {
                 </div>
               );
             })()}
-            {wsReady && tab !== "match" && tab !== "winnerstays" && !celebrate && !tourneyReady && (() => {
+            {wsReady && notifyMode !== "off" && tab !== "match" && tab !== "winnerstays" && !celebrate && !tourneyReady && (() => {
               const nameOfId = (id) => players.find((p) => p.id === id)?.nickname;
               const oppName = [nameOfId(wsReady.oppPlayer1Id), nameOfId(wsReady.oppPlayer2Id)].filter(Boolean).join(" & ");
               return (
@@ -1122,6 +1254,7 @@ export default function App() {
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
                   keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
+                  notifyMode={notifyMode} onSetNotifyMode={setNotifyMode}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}

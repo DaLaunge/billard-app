@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -7,6 +7,7 @@ import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE, fmtDate, fmtDuration } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
 import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
+import { pushAvailability } from "../lib/notifications";
 import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import AvatarPhotoField from "./AvatarPhotoField";
@@ -32,7 +33,7 @@ const CARD_COLUMN_ICON = { left: AlignStartVertical, middle: AlignCenterVertical
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, notifyMode, onSetNotifyMode, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, achievementCounters }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
@@ -621,6 +622,40 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               <span className="settings-switch-label">{t("Bildschirm während eines Matches anlassen")}</span>
             </label>
             <p className="hint">{t("Verhindert, dass sich das Handy mitten im Spiel sperrt. Gilt nur auf diesem Gerät und nur, solange ein Match oder eine Winner-Stays-Runde offen ist.")}</p>
+          </section>
+
+          <section className="stat-block">
+            <h3><Bell size={17} /> {t("Benachrichtigungen")}</h3>
+            {/* Eine Stufe fuer alle Ereignisse (Herausforderung, Match
+                bestaetigen, du bist dran, Live/Planung/Zusagen). Gilt pro
+                Geraet, weil auch die Push-Erlaubnis am Geraet haengt. Die
+                Umstellung auf "Push" MUSS aus diesem Klick heraus
+                passieren - iOS fragt die Erlaubnis sonst nicht ab. */}
+            <div className="chips">
+              {[
+                ["off", t("Aus")],
+                ["inapp", t("In der App")],
+                ["push", t("Push")],
+              ].map(([v, label]) => (
+                <button key={v} className={"chip" + (notifyMode === v ? " active" : "")}
+                  disabled={busy} onClick={async () => {
+                    if (v === notifyMode) return;
+                    setBusy(true);
+                    try { await onSetNotifyMode(v); } finally { setBusy(false); }
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="hint">
+              {notifyMode === "off" ? t("Keine Hinweise, auch kein „Du bist dran!“ bei Turnieren und Winner Stays.")
+                : notifyMode === "inapp" ? t("Hinweise erscheinen nur, solange die App geöffnet ist.")
+                : t("Push-Nachrichten kommen auch, wenn die App geschlossen ist. Ist sie offen, erscheint stattdessen ein Hinweis in der App.")}
+              {" "}{t("Gilt nur auf diesem Gerät.")}
+            </p>
+            {notifyMode !== "push" && pushAvailability() === "ios-install" && (
+              <p className="hint">📲 {t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")}</p>
+            )}
           </section>
 
           <section className="stat-block">
