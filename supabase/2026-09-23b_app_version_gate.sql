@@ -20,7 +20,7 @@
 --   select nickname, app_version, app_version_at from players
 --   where app_version_at is not null order by app_version, app_version_at desc;
 --
--- In Test UND Produktion ausfuehren. Idempotent.
+-- In Test UND Produktion ausfuehren (ganze Datei). Idempotent.
 
 create table if not exists public.app_settings (
   id boolean primary key default true check (id),   -- genau eine Zeile
@@ -49,3 +49,27 @@ $function$;
 
 revoke all on function public.report_app_version(integer) from public, anon;
 grant execute on function public.report_app_version(integer) to authenticated;
+
+-- Uebersicht fuer den Adminbereich ("App-Versionen"): wer nutzt welche
+-- Version, zuletzt wann gemeldet, plus die aktuelle Mindestversion. Eigene
+-- RPC statt app_version in die allgemeine players-Abfrage von loadData() -
+-- so laedt nur der Adminbereich diese Daten, und nur beim Oeffnen.
+-- app_version NULL = hat seit Einfuehrung der Meldung (Version 377) die App
+-- nicht mehr geoeffnet bzw. nutzt noch eine aeltere Version.
+create or replace function public.admin_app_versions()
+returns table(player_id uuid, nickname text, app_version integer,
+              app_version_at timestamp with time zone, min_app_version integer)
+language plpgsql security definer set search_path to 'public' as $function$
+begin
+  if not is_admin() then raise exception 'Nur für Admins.'; end if;
+  return query
+  select p.id, p.nickname::text, p.app_version, p.app_version_at,
+         (select s.min_app_version from app_settings s where s.id)
+  from players p
+  where not coalesce(p.is_ghost, false) and not coalesce(p.is_guest, false)
+  order by p.app_version nulls first, p.app_version_at desc nulls last, p.nickname;
+end;
+$function$;
+
+revoke all on function public.admin_app_versions() from public, anon;
+grant execute on function public.admin_app_versions() to authenticated;

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, Smartphone } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
 import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
-import { DEFAULT_DISCIPLINES } from "../lib/constants";
+import { DEFAULT_DISCIPLINES, APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 import FeedbackThread from "./FeedbackThread";
@@ -22,6 +22,14 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     if (!error) setLogins(data || []);
   };
   useEffect(() => { loadLogins(); }, []);
+
+  // App-Versionen der Spieler (supabase/2026-09-23b_app_version_gate.sql) -
+  // nur hier geladen, damit nicht jeder Spieler diese Daten mitbekommt.
+  // null = RPC fehlt (Migration noch nicht eingespielt) oder Fehler.
+  const [versions, setVersions] = useState(null);
+  useEffect(() => {
+    supabase.rpc("admin_app_versions").then(({ data, error }) => { if (!error) setVersions(data || []); });
+  }, []);
 
   const [feedback, setFeedback] = useState(null);
   const [feedbackMsgs, setFeedbackMsgs] = useState({}); // feedback_id -> Nachrichten
@@ -524,6 +532,38 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         )}
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
       </section>
+
+      {versions && (() => {
+        const current = Number(APP_VERSION);
+        const counts = {};
+        versions.forEach((v) => { const k = v.app_version ?? "?"; counts[k] = (counts[k] || 0) + 1; });
+        const minV = versions[0]?.min_app_version || 0;
+        return (
+          <section className="stat-block">
+            <h3><Smartphone size={17} /> {t("App-Versionen")}</h3>
+            <div className="chips small">
+              {Object.entries(counts).sort((a, b) => (Number(b[0]) || 0) - (Number(a[0]) || 0)).map(([k, n]) => (
+                <span key={k} className={"chip" + (Number(k) === current ? " active" : "")}>{k === "?" ? t("unbekannt") : "v" + k}: {n}</span>
+              ))}
+            </div>
+            <div className="version-list">
+              {versions.map((v) => (
+                <div key={v.player_id} className="diag-row">
+                  <span>{v.nickname}</span>
+                  <span className="version-meta">
+                    {v.app_version_at ? fmtAgo(v.app_version_at) : ""}
+                    <code className={v.app_version === current ? "" : "outdated"}>{v.app_version != null ? "v" + v.app_version : "–"}</code>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="hint">
+              {t("Aktuell: v{v}.", { v: current })} {minV ? t("Mindestversion: v{v}.", { v: minV }) : t("Keine Mindestversion gesetzt.")}{" "}
+              {t("„–“ = App seit v377 nicht geöffnet oder noch eine ältere Version.")}
+            </p>
+          </section>
+        );
+      })()}
 
       <section className="stat-block">
         <h3><Shield size={17} /> {t("Diagnose")}</h3>
