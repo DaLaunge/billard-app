@@ -190,6 +190,10 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .am-scores span { font-size: 20px; font-weight: 700; color: var(--ivory-dim); }
 .diag-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 2px; }
 .diag-row span { color: var(--ivory-dim); font-size: 13px; }
+/* Adminbereich "App-Versionen": veraltete Version in Warnfarbe statt Akzent. */
+.version-list { margin: 8px 0 4px; }
+.version-meta { display: flex; align-items: center; gap: 10px; }
+.diag-row code.outdated { color: var(--warn); }
 .diag-row code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 700; color: var(--accent);
   background: var(--felt); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; }
 
