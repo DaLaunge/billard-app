@@ -7,6 +7,7 @@ import "./App.css";
 import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
+import { loadSnapshots } from "./lib/snapshotCache";
 import { hashColor, initials } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
@@ -636,10 +637,9 @@ export default function App() {
     // Rest anstossen statt hinterher - sonst wartet die ganze Uebersicht auf
     // die langsamste Abfrage, obwohl sie fuer die Rangliste selbst gar nicht
     // gebraucht wird (nur fuer die Rang/Rating-Pfeile und die Statistik-Seite).
-    const snapPromise = fetchAllRows((from, to) => supabase.from("rating_snapshots")
-      .select("player_id, snap_date, iso_week, discipline, rating, rank, provisional")
-      .order("snap_date", { ascending: true })
-      .range(from, to));
+    // Nur ab dem juengsten lokal bekannten Tag nachladen statt jedes Mal alles
+    // (siehe lib/snapshotCache.js - der volle Abruf hat das Egress-Limit gesprengt).
+    const snapPromise = loadSnapshots();
     const [rang, m, pl, pi, bg, ct, mc, ch, pn, ac] = await Promise.all([
       supabase.from("rangliste").select("*"),
       fetchAllRows((from, to) => supabase.from("matches")
