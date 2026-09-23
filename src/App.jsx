@@ -10,7 +10,7 @@ import { fetchAllRows } from "./lib/data";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { hashColor, initials } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
-import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo } from "./lib/constants";
+import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 
@@ -374,6 +374,43 @@ export default function App() {
     if (LIVE_ENTRY_TABS.includes(tab)) return;
     persistNavAndUpdate(currentNavState, updateServiceWorker);
   }, [loadGen, needReload, initialLoadDone, celebrate, tab, currentNavState, updateServiceWorker]);
+
+  // Erzwungenes Update (supabase/2026-09-23b_app_version_gate.sql): beim Start
+  // und beim Zurueckholen der App (hoechstens alle 10 Min) die eigene Version
+  // melden - die Antwort ist die Mindestversion aus app_settings. Liegt
+  // APP_VERSION darunter, sperrt ein Overlay die App und das Update wird
+  // angewendet, sobald der neue Service Worker bereitliegt - ohne auf die
+  // Ausloeser A-E zu warten, aber weiterhin NICHT auf LIVE_ENTRY_TABS (dort
+  // erst beim Verlassen). Wirkt naturgemaess nur ab der Version, die diesen
+  // Code enthaelt. Fehler (z.B. Migration noch nicht eingespielt, offline)
+  // werden ignoriert - im Zweifel lieber weiterarbeiten lassen.
+  const [mustUpdate, setMustUpdate] = useState(false);
+  const lastVersionReportRef = useRef(0);
+  useEffect(() => {
+    if (!player?.id) return;
+    const report = async () => {
+      if (Date.now() - lastVersionReportRef.current < 10 * 60000) return;
+      lastVersionReportRef.current = Date.now();
+      const { data, error } = await supabase.rpc("report_app_version", { p_version: Number(APP_VERSION) });
+      if (!error && typeof data === "number" && Number(APP_VERSION) < data) setMustUpdate(true);
+    };
+    report();
+    const onVis = () => { if (document.visibilityState === "visible") report(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [player?.id]);
+  // Solange kein Update bereitliegt, alle 30 s nachsehen (sw.js kann kurz nach
+  // dem Deploy noch im CDN-Cache haengen).
+  useEffect(() => {
+    if (!mustUpdate || needReload) return;
+    checkForUpdate();
+    const id = setInterval(checkForUpdate, 30000);
+    return () => clearInterval(id);
+  }, [mustUpdate, needReload, checkForUpdate]);
+  useEffect(() => {
+    if (!mustUpdate || !needReload || LIVE_ENTRY_TABS.includes(tab)) return;
+    persistNavAndUpdate(currentNavState, updateServiceWorker);
+  }, [mustUpdate, needReload, tab, currentNavState, updateServiceWorker]);
 
   // Zweiter Parameter (optional): eine Aktion IM Toast, z.B. "Rueckgaengig"
   // nach dem Ausblenden einer Karte (Nutzer-Feedback: "mach ein Rueckgaengig
@@ -978,6 +1015,19 @@ export default function App() {
             onDone={() => setPlayer({ ...player, must_change_password: false })}
             onLogout={logout}
           />
+        )}
+
+        {session && player && mustUpdate && !LIVE_ENTRY_TABS.includes(tab) && (
+          <div className="celebrate-overlay force-update">
+            <div className="celebrate-card">
+              <div className="celebrate-head">{t("Update erforderlich")}</div>
+              <p className="hint">{t("Diese Version der App ist veraltet. Die neue Version wird geladen ...")}</p>
+              <p className="hint">{t("Falls das nicht klappt: App komplett schließen und neu öffnen.")}</p>
+              <button className="btn primary" onClick={() => (needReload
+                ? persistNavAndUpdate(currentNavState, updateServiceWorker)
+                : window.location.reload())}>{t("Jetzt neu laden")}</button>
+            </div>
+          </div>
         )}
 
         {session && player && !player.must_change_password && !initialLoadDone && <div className="center-load">{t("Lade ...")}</div>}

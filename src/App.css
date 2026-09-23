@@ -549,6 +549,9 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .celebrate-card { background: var(--felt-3); border: 1px solid var(--accent); border-radius: 18px;
   padding: 22px 20px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
 .celebrate-head { font-size: 19px; font-weight: 800; color: var(--accent); margin-bottom: 14px; }
+/* Erzwungenes Update (siehe mustUpdate in App.jsx): ueber allem, auch ueber dem Erfolgs-Popup. */
+.celebrate-overlay.force-update { z-index: 200; }
+.celebrate-overlay.force-update .btn { margin-top: 8px; }
 .celebrate-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .celebrate-item { display: flex; align-items: center; gap: 12px; text-align: left;
   background: var(--felt); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
