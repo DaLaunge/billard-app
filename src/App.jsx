@@ -312,12 +312,19 @@ export default function App() {
     { tab, profileName, protokollMatch, protokollBackTab, vsOpp, tournamentId, winnerStaysId, matchTournamentCtx }
   ), [tab, profileName, protokollMatch, protokollBackTab, vsOpp, tournamentId, winnerStaysId, matchTournamentCtx]);
   // Trigger A: Reload beim Wechsel auf einen der 4 Hauptmenuepunkte (nicht
-  // schon, sobald needReload waehrend man DORT steht true wird).
+  // schon, sobald needReload waehrend man DORT steht true wird). NICHT beim
+  // Verlassen eines LIVE_ENTRY_TABS-Screens: "Abbrechen" in der Match-Eingabe
+  // springt per history.back() auf den vorherigen Hauptmenuepunkt zurueck -
+  // ohne diese Ausnahme lud die App genau in dem Moment neu (Nutzer-Feedback
+  // 2026-09-24: nach einem Abbruch soll nichts nachladen). Das Update kommt
+  // dann beim naechsten Ausloeser. Nach "Beenden" greift weiterhin Trigger C
+  // (gespeichert = bewusster Moment).
   const prevTabForReloadRef = useRef(tab);
   useEffect(() => {
-    const changed = prevTabForReloadRef.current !== tab;
+    const prevTab = prevTabForReloadRef.current;
+    const changed = prevTab !== tab;
     prevTabForReloadRef.current = tab;
-    if (changed && MAIN_TABS.includes(tab) && needReload && initialLoadDone && !celebrate) {
+    if (changed && MAIN_TABS.includes(tab) && !LIVE_ENTRY_TABS.includes(prevTab) && needReload && initialLoadDone && !celebrate) {
       persistNavAndUpdate(currentNavState, updateServiceWorker);
     }
   }, [tab, needReload, initialLoadDone, celebrate, currentNavState, updateServiceWorker]);
@@ -663,6 +670,16 @@ export default function App() {
       setPlayers(all ?? []);
     })();
   }, [session]);
+
+  // Nach-unten-Wischen laedt die Seite neu (seit 2026-09-21 bewusst DIE Geste
+  // zum Aktualisieren) - mitten in einer Match-/Winner-Stays-Eingabe waere
+  // der ganze Spielstand weg, ein Wischer beim Tippen reicht dafuer. Auf
+  // diesen Screens deshalb abgeschaltet (Klasse live-entry, siehe App.css).
+  useEffect(() => {
+    const on = LIVE_ENTRY_TABS.includes(tab);
+    document.documentElement.classList.toggle("live-entry", on);
+    return () => document.documentElement.classList.remove("live-entry");
+  }, [tab]);
 
   const lastLoadAtRef = useRef(0); // Zeitpunkt des letzten loadData() - fuers Neuladen im Vordergrund (siehe unten)
   const loadData = useCallback(async () => {
