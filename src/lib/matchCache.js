@@ -73,7 +73,7 @@ async function fetchFull(select) {
 export async function loadMatches() {
   const cache = readCache();
   if (!cache) {
-    lastSync.mode = "full"; lastSync.repaired = false;
+    Object.assign(lastSync, { mode: "full", repaired: false, missing: 0, extra: 0 });
     const res = await fetchFull(SELECT);
     if (undefinedColumn(res.error)) return fetchFull(LEGACY_SELECT);  // Migration fehlt noch
     if (res.error) return res;
@@ -110,8 +110,7 @@ export async function loadMatches() {
   deleted.forEach((d) => byId.delete(d.match_id));
   const syncMs = maxTs(deleted, "deleted_at", maxTs(changed, "updated_at", cache.syncMs));
 
-  lastSync.mode = check ? "delta+check" : "delta";
-  lastSync.repaired = false;
+  Object.assign(lastSync, { mode: check ? "delta+check" : "delta", repaired: false, missing: 0, extra: 0 });
   if (check && !(await matchesCheck(byId, check))) await repair(byId);
 
   const rows = [...byId.values()].sort(byPlayedDesc);
