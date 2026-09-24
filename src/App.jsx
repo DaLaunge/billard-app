@@ -664,6 +664,7 @@ export default function App() {
     })();
   }, [session]);
 
+  const lastLoadAtRef = useRef(0); // Zeitpunkt des letzten loadData() - fuers Neuladen im Vordergrund (siehe unten)
   const loadData = useCallback(async () => {
     // Snapshots (koennen >1000 Zeilen sein: Wochen x Spieler) parallel zum
     // Rest anstossen statt hinterher - sonst wartet die ganze Uebersicht auf
@@ -672,6 +673,7 @@ export default function App() {
     // Nur ab dem juengsten lokal bekannten Tag nachladen statt jedes Mal alles
     // (siehe lib/snapshotCache.js - der volle Abruf hat das Egress-Limit gesprengt).
     const snapPromise = loadSnapshots();
+    lastLoadAtRef.current = Date.now();
     // Matches nur noch seit dem letzten Abgleich (lib/matchCache.js) - die
     // komplette Liste war nach dem Rating-Verlauf der groesste Egress-Posten.
     const [rang, m, pl, pi, bg, mc, ch, pn, ac] = await Promise.all([
@@ -728,6 +730,25 @@ export default function App() {
   }, [toast]);
 
   useEffect(() => { if (player) loadData(); }, [player, loadData]);
+
+  // Beim Zurueckholen der App in den Vordergrund neu laden (hoechstens einmal
+  // pro Minute). Vorher lud eine offene App NUR bei eigenen Aktionen neu -
+  // Ergebnisse anderer Spieler tauchten erst nach einem Neustart auf. Dank der
+  // lokalen Caches (Matches, Verlauf, Katalog) kostet ein Durchlauf nur noch
+  // ~90 KB statt ~5 MB. Nicht auf LIVE_ENTRY_TABS: dort soll sich unter der
+  // laufenden Eingabe nichts veraendern (Winner Stays laedt ohnehin nach
+  // jedem Spiel).
+  useEffect(() => {
+    if (!player) return;
+    const onVis = () => {
+      if (document.visibilityState !== "visible") return;
+      if (LIVE_ENTRY_TABS.includes(tabRef.current)) return;
+      if (Date.now() - lastLoadAtRef.current < 60000) return;
+      loadData();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [player, loadData]);
 
   // Ausfallsicherheit: ein Match, das mangels Internetverbindung nicht gemeldet
   // werden konnte (siehe lib/offlineReport.js), wird hier automatisch nachgesendet -
