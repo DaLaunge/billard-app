@@ -555,6 +555,8 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .celebrate-head { font-size: 19px; font-weight: 800; color: var(--accent); margin-bottom: 14px; }
 /* Erzwungenes Update (siehe mustUpdate in App.jsx): ueber allem, auch ueber dem Erfolgs-Popup. */
 .celebrate-overlay.force-update { z-index: 200; }
+/* Waehrend Match-Eingabe/Winner Stays kein "Nach unten wischen = Seite neu laden" (siehe live-entry in App.jsx). */
+html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 .celebrate-overlay.force-update .btn { margin-top: 8px; }
 .celebrate-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .celebrate-item { display: flex; align-items: center; gap: 12px; text-align: left;
