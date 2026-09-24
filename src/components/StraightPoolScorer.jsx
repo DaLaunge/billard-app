@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, Plus, RotateCcw } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
@@ -6,38 +6,46 @@ import { poolBallStyle } from "../lib/pool";
 import { collapseRunLog, describeRunLogEntry } from "../lib/runLog";
 import Ball from "./Ball";
 
-export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf, onFinish, toast, sideNames, sideAvatars }) {
+// initialState/onStateChange: Zwischenspeicher gegen ein unfreiwilliges
+// Neuladen mitten im Spiel (siehe lib/matchDraft.js). onStateChange bekommt
+// bei jeder Aenderung den kompletten Stand, initialState stellt ihn wieder her.
+export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf, onFinish, toast, sideNames, sideAvatars, initialState, onStateChange }) {
+  const [init] = useState(() => initialState || {});
+  const iv = (k, d) => (init[k] !== undefined ? init[k] : d);
   const PRESETS = [50, 70, 80, 90, 100, 150];
-  const [target, setTarget] = useState(100);
-  const [custom, setCustom] = useState("");
-  const [started, setStarted] = useState(false);
+  const [target, setTarget] = useState(iv("target", 100));
+  const [custom, setCustom] = useState(iv("custom", ""));
+  const [started, setStarted] = useState(iv("started", false));
 
-  const [sc, setSc] = useState([0, 0]);
-  const [active, setActive] = useState(0);
-  const [starter, setStarter] = useState(0);
-  const [breakPhase, setBreakPhase] = useState(true);
-  const [breakChoose, setBreakChoose] = useState(false);   // nach Anstoß-Foul: wer stößt als Nächstes an
-  const [hi, setHi] = useState([0, 0]);
-  const [fouls, setFouls] = useState([0, 0]);
-  const [maxDef, setMaxDef] = useState([0, 0]);
-  const [onTable, setOnTable] = useState(15);
-  const [inningRun, setInningRun] = useState(0);
-  const [pocketed, setPocketed] = useState([0, 0]);        // versenkte Kugeln gesamt (Zähler für Schnitt)
-  const [missInn, setMissInn] = useState([0, 0]);          // Aufnahmen mit Miss/Foul
-  const [safeInn, setSafeInn] = useState([0, 0]);          // Aufnahmen mit Safe/Anstoß
-  const [twoBall, setTwoBall] = useState([0, 0]);          // Zwei-Kugel-Räumungen (0 Kugeln am Tisch)
-  const [entry, setEntry] = useState(null);                // null | 'miss' | 'safe' | 'foul'
-  const [remain, setRemain] = useState(15);
-  const [hist, setHist] = useState([]);
-  const [confirmEnd, setConfirmEnd] = useState(false);
-  const [log, setLog] = useState([]);                       // Verlauf: eine Zeile je Aufnahme/Ereignis
+  const [sc, setSc] = useState(iv("sc", [0, 0]));
+  const [active, setActive] = useState(iv("active", 0));
+  const [starter, setStarter] = useState(iv("starter", 0));
+  const [breakPhase, setBreakPhase] = useState(iv("breakPhase", true));
+  const [breakChoose, setBreakChoose] = useState(iv("breakChoose", false));   // nach Anstoß-Foul: wer stößt als Nächstes an
+  const [hi, setHi] = useState(iv("hi", [0, 0]));
+  const [fouls, setFouls] = useState(iv("fouls", [0, 0]));
+  const [maxDef, setMaxDef] = useState(iv("maxDef", [0, 0]));
+  const [onTable, setOnTable] = useState(iv("onTable", 15));
+  const [inningRun, setInningRun] = useState(iv("inningRun", 0));
+  const [pocketed, setPocketed] = useState(iv("pocketed", [0, 0]));        // versenkte Kugeln gesamt (Zähler für Schnitt)
+  const [missInn, setMissInn] = useState(iv("missInn", [0, 0]));          // Aufnahmen mit Miss/Foul
+  const [safeInn, setSafeInn] = useState(iv("safeInn", [0, 0]));          // Aufnahmen mit Safe/Anstoß
+  const [twoBall, setTwoBall] = useState(iv("twoBall", [0, 0]));          // Zwei-Kugel-Räumungen (0 Kugeln am Tisch)
+  const [entry, setEntry] = useState(iv("entry", null));                // null | 'miss' | 'safe' | 'foul'
+  const [remain, setRemain] = useState(iv("remain", 15));
+  const [hist, setHist] = useState(iv("hist", []));
+  const [confirmEnd, setConfirmEnd] = useState(iv("confirmEnd", false));
+  const [log, setLog] = useState(iv("log", []));                       // Verlauf: eine Zeile je Aufnahme/Ereignis
   const pushLog = (e) => setLog((l) => [...l, e]);
   // Egal wie oft der Anstoss foult (moeglicherweise von wechselnden Spielern
   // versucht): die eroeffnende Aufnahme wird nur EINMAL gezaehlt, nicht pro
   // Fehlversuch. Wird beim ersten Anstoss-Foul auf true gesetzt und bleibt
   // es fuer den Rest des Spiels (die breakPhase endet ohnehin mit dem
   // ersten regulaeren Stoss und startet nie wieder).
-  const [breakCharged, setBreakCharged] = useState(false);
+  const [breakCharged, setBreakCharged] = useState(iv("breakCharged", false));
+
+  useEffect(() => { onStateChange?.({ target, custom, started, sc, active, starter, breakPhase, breakChoose, hi, fouls, maxDef, onTable, inningRun, pocketed, missInn, safeInn, twoBall, entry, remain, hist, confirmEnd, log, breakCharged }); },
+    [target, custom, started, sc, active, starter, breakPhase, breakChoose, hi, fouls, maxDef, onTable, inningRun, pocketed, missInn, safeInn, twoBall, entry, remain, hist, confirmEnd, log, breakCharged]);
 
   const names = sideNames || [me.nickname, opp.nickname];
   const membersOf = (i) => (sideAvatars ? sideAvatars[i] : [i === 0 ? me : opp]);

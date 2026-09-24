@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus } from "lucide-react";
 import { supabase } from "../supabase";
@@ -8,27 +8,34 @@ import { computeAchievementExtras, nextAchievementHint } from "../lib/achievemen
 import { recentOpponentFreq } from "../lib/frequency";
 import { minGhostSeconds } from "../lib/ghostTiming";
 import { savePendingReport, isNetworkError } from "../lib/offlineReport";
+import { saveMatchDraft, clearMatchDraft } from "../lib/matchDraft";
 import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake }) {
-  const [step, setStep] = useState(tournamentCtx ? 2 : (initialOpp ? 1 : 0));
-  const [opp, setOpp] = useState(initialOpp || null);
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
+  // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
+  // Anfangswerte aus dem Entwurf statt leer. Spieler werden per id frisch aus
+  // der Spielerliste geholt (der Entwurf hat nur eine Kopie von damals).
+  const [draft] = useState(() => resumeDraft?.match || null);
+  const fresh = (o) => (o ? players.find((p) => p.id === o.id) || o : null);
+  const dv = (k, d) => (draft && draft[k] !== undefined ? draft[k] : d);
+  const [step, setStep] = useState(dv("step", tournamentCtx ? 2 : (initialOpp ? 1 : 0)));
+  const [opp, setOpp] = useState(draft ? fresh(draft.opp) : (initialOpp || null));
   const [showMyQr, setShowMyQr] = useState(false);
-  const [mode, setMode] = useState("single");
-  const [partner, setPartner] = useState(null);
-  const [opp2, setOpp2] = useState(null);
-  const [s1, setS1] = useState(0);
-  const [s2, setS2] = useState(0);
-  const [disc, setDisc] = useState(tournamentCtx ? tournamentCtx.discipline : null);
-  const [hr, setHr] = useState([null, null]);   // Höchstserie [ich, Gegner] (nur 14/1)
-  const [def, setDef] = useState([null, null]); // aufgeholter Rückstand (nur 14/1)
-  const [avg, setAvg] = useState([null, null]); // Offensivschnitt (nur 14/1)
-  const [tb, setTb] = useState([null, null]);   // Zwei-Kugel-Räumungen (nur 14/1)
-  const [runLog, setRunLog] = useState(null);   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
-  const [scoreLog, setScoreLog] = useState([[0, 0, Date.now()]]); // Punktestand + Zeitpunkt nach jedem Zaehler-Klick (alle anderen Disziplinen)
+  const [mode, setMode] = useState(dv("mode", "single"));
+  const [partner, setPartner] = useState(fresh(dv("partner", null)));
+  const [opp2, setOpp2] = useState(fresh(dv("opp2", null)));
+  const [s1, setS1] = useState(dv("s1", 0));
+  const [s2, setS2] = useState(dv("s2", 0));
+  const [disc, setDisc] = useState(dv("disc", tournamentCtx ? tournamentCtx.discipline : null));
+  const [hr, setHr] = useState(dv("hr", [null, null]));   // Höchstserie [ich, Gegner] (nur 14/1)
+  const [def, setDef] = useState(dv("def", [null, null])); // aufgeholter Rückstand (nur 14/1)
+  const [avg, setAvg] = useState(dv("avg", [null, null])); // Offensivschnitt (nur 14/1)
+  const [tb, setTb] = useState(dv("tb", [null, null]));   // Zwei-Kugel-Räumungen (nur 14/1)
+  const [runLog, setRunLog] = useState(dv("runLog", null));   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
+  const [scoreLog, setScoreLog] = useState(dv("scoreLog", [[0, 0, Date.now()]])); // Punktestand + Zeitpunkt nach jedem Zaehler-Klick (alle anderen Disziplinen)
   const [savedMatch, setSavedMatch] = useState(null); // gerade gespeichertes Match, fuers direkte "Protokoll"-Ansehen
   const [confirmedNow, setConfirmedNow] = useState(false); // Turniermatch direkt nach dem Melden auf diesem Geraet bestaetigt (siehe confirmNow unten)
   const [oppQuery, setOppQuery] = useState("");
@@ -38,12 +45,29 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [showInvite, setShowInvite] = useState(false);
   const [busy, setBusy] = useState(false);
   const [offlineQueued, setOfflineQueued] = useState(false); // Match konnte mangels Verbindung nicht gemeldet werden, wartet lokal
-  const [ghostStartedAt, setGhostStartedAt] = useState(null); // gegen "Durchklicken" beim Ghost-Training
+  const [ghostStartedAt, setGhostStartedAt] = useState(dv("ghostStartedAt", null)); // gegen "Durchklicken" beim Ghost-Training
   const [nowTick, setNowTick] = useState(Date.now());
   const [guestBusy, setGuestBusy] = useState(false);
   const [oppCount, setOppCount] = useState(10); // Standard: nur die haeufigsten Mitspieler zeigen (Nutzer-Feedback: Liste wird lang)
 
   const is141 = disc === "14/1 Endlos";
+
+  // Laufenden Stand bei jeder Aenderung sichern (Schritt 1-3 = Gegner gewaehlt,
+  // noch nicht gemeldet), nach dem Melden (Schritt 4) loeschen. Den 14/1-Stand
+  // liefert StraightPoolScorer ueber onStateChange; scorerStateRef haelt ihn,
+  // resumeScorer gibt ihn EINMAL an den wiederhergestellten Scorer zurueck.
+  const scorerStateRef = useRef(resumeDraft?.scorer || null);
+  const [resumeScorer, setResumeScorer] = useState(() => resumeDraft?.scorer || null);
+  const slim = (p) => (p ? { id: p.id, nickname: p.nickname, is_guest: !!p.is_guest, is_ghost: !!p.is_ghost } : null);
+  const persistDraft = () => {
+    if (step === 4) { clearMatchDraft(me.id); return; }
+    if (step < 1 || !opp) return;
+    saveMatchDraft(me.id, {
+      step, mode, opp: slim(opp), partner: slim(partner), opp2: slim(opp2), s1, s2, disc,
+      hr, def, avg, tb, runLog, scoreLog, ghostStartedAt, tournamentCtx: tournamentCtx || null,
+    }, is141 ? scorerStateRef.current : null);
+  };
+  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, ghostStartedAt]);
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
   const pickPlayer = (p) => {
@@ -123,7 +147,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     .sort((a, b) => b.gain - a.gain)
     .slice(0, 2);
 
-  const resetScores = () => { setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); };
+  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); };
 
   // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
   // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
@@ -477,6 +501,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             <StraightPoolScorer me={me} opp={opp} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} toast={toast}
               sideNames={mode === "double" ? [teamA, teamB] : undefined}
               sideAvatars={mode === "double" ? [[me, partner], [opp, opp2]] : undefined}
+              initialState={resumeScorer}
+              onStateChange={(st) => { scorerStateRef.current = st; persistDraft(); }}
               onFinish={({ s1: a, s2: b, hr1, hr2, def1, def2, avg1, avg2, tb1, tb2, log }) => {
                 setS1(a); setS2(b); setHr([hr1, hr2]); setDef([def1, def2]);
                 setAvg([avg1, avg2]); setTb([tb1, tb2]); setRunLog(log); setStep(3);
