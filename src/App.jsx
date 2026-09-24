@@ -8,6 +8,8 @@ import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
 import { loadSnapshots } from "./lib/snapshotCache";
+import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
+import { loadBadgeCatalog } from "./lib/catalogCache";
 import { hashColor, initials } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION } from "./lib/constants";
@@ -670,19 +672,17 @@ export default function App() {
     // Nur ab dem juengsten lokal bekannten Tag nachladen statt jedes Mal alles
     // (siehe lib/snapshotCache.js - der volle Abruf hat das Egress-Limit gesprengt).
     const snapPromise = loadSnapshots();
-    const [rang, m, pl, pi, bg, ct, mc, ch, pn, ac] = await Promise.all([
+    // Matches nur noch seit dem letzten Abgleich (lib/matchCache.js) - die
+    // komplette Liste war nach dem Rating-Verlauf der groesste Egress-Posten.
+    const [rang, m, pl, pi, bg, mc, ch, pn, ac] = await Promise.all([
       supabase.from("rangliste").select("*"),
-      fetchAllRows((from, to) => supabase.from("matches")
-        .select("id, played_at, score1, score2, high_run1, high_run2, discipline, confirmed, reported_by, player1_id, player2_id, player1b_id, player2b_id, run_log, tournament_id, winner_stays_session_id, manual_entry_note, p1:players!matches_player1_id_fkey(nickname, is_guest), p2:players!matches_player2_id_fkey(nickname, is_guest), p1b:players!matches_player1b_id_fkey(nickname, is_guest), p2b:players!matches_player2b_id_fkey(nickname, is_guest), tournament:tournaments(name, format, organizer_id), winner_stays_session:winner_stays_sessions(name, is_doubles)")
-        .order("played_at", { ascending: false })
-        .range(from, to)),
+      loadMatches(),
       supabase.from("players").select("id, nickname, role, auth_user_id, avatar_color, avatar_photo_at, motto, selected_badge, is_ghost, is_guest, blocked, invited_by, created_at"),
       supabase.from("pings")
         .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false }),
       supabase.from("player_badges").select("player_id, badge_key"),
-      supabase.from("badge_catalog").select("*"),
       supabase.from("match_confirmations").select("match_id, player_id, status"),
       supabase.from("challenges")
         .select("id, challenger_id, challenged_id, status, created_at, expires_at, resolved_match_id, message, message_updated_at, reply, reply_updated_at, challenger:players!challenges_challenger_id_fkey(nickname), challenged:players!challenges_challenged_id_fkey(nickname)")
@@ -693,11 +693,15 @@ export default function App() {
         .order("planned_date", { ascending: true }),
       supabase.rpc("my_achievement_counters").maybeSingle(),
     ]);
+    // Katalog aus dem lokalen Cache, ausser ein vergebener Erfolg fehlt darin
+    // (siehe lib/catalogCache.js) - deshalb erst nach player_badges.
+    const ct = await loadBadgeCatalog([...new Set((bg.data ?? []).map((r) => r.badge_key))]);
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || pn.error;
     if (err) toast(isNetworkError(err) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + err.message);
     setRangliste(rang.data ?? []);
-    setMatches((m.data ?? []).filter((x) => x.confirmed));
-    setUnconfirmed((m.data ?? []).filter((x) => !x.confirmed));
+    const allMatches = attachMatchPlayers(m.data ?? [], pl.data ?? []);
+    setMatches(allMatches.filter((x) => x.confirmed));
+    setUnconfirmed(allMatches.filter((x) => !x.confirmed));
     setPlayers(pl.data ?? []);
     setPings(pi.data ?? []);
     setPlannings(pn.data ?? []);
