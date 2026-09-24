@@ -8,6 +8,7 @@ import { DEFAULT_DISCIPLINES, APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 import FeedbackThread from "./FeedbackThread";
+import { rpcRetry } from "../lib/rpcRetry";
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
   const [busy, setBusy] = useState(false);
@@ -187,7 +188,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     if (s1 < 0 || s2 < 0 || s1 + s2 === 0 || s1 === s2) { toast(t("Ungültiges Ergebnis.")); return; }
     setBusyAdd(true);
     const played = am.date ? new Date(am.date + "T12:00:00").toISOString() : null;
-    const { error } = await supabase.rpc("admin_add_match", {
+    const { error } = await rpcRetry("admin_add_match", {
       p_player1: am.p1, p_player2: am.p2, p_score1: s1, p_score2: s2,
       p_discipline: am.disc, p_played_at: played,
     });

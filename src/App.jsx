@@ -33,6 +33,7 @@ import TurnierRasterScreen from "./components/TurnierRasterScreen";
 import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import ConfirmHost from "./components/ConfirmHost";
+import { rpcRetry } from "./lib/rpcRetry";
 
 // Tabs mit unbestaetigter Live-Eingabe (Punktestand, Ballprotokoll), die nur
 // im Speicher liegt und bei einem Reload verloren waere. Wird ein Update
@@ -1017,7 +1018,7 @@ export default function App() {
   const openChallengesAll = challenges.filter((c) => c.status === "open" && new Date(c.expires_at) > new Date());
 
   const confirmMatch = async (id, ok) => {
-    const { error } = await supabase.rpc("confirm_match", { p_match_id: id, p_ok: ok });
+    const { error } = await rpcRetry("confirm_match", { p_match_id: id, p_ok: ok });
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen."));
     loadData();

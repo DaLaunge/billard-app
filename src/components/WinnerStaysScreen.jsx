@@ -11,6 +11,7 @@ import { ScoreStepper } from "./TurnierMatchActions";
 import ImprintFooter from "./widgets/ImprintFooter";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
+import { rpcRetry } from "../lib/rpcRetry";
 
 const POLL_MS = 8000;
 
@@ -137,7 +138,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const reportGame = async () => {
     if (sA === sB) { toast(t("Unentschieden gibt es beim Billard nicht.")); return; }
     setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_report_game", { p_session_id: sessionId, p_score_a: sA, p_score_b: sB });
+    const { error } = await rpcRetry("winner_stays_report_game", { p_session_id: sessionId, p_score_a: sA, p_score_b: sB });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     setSA(0); setSB(0);
