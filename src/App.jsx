@@ -10,6 +10,7 @@ import { fetchAllRows } from "./lib/data";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
+import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
 import { hashColor, initials } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION } from "./lib/constants";
@@ -688,6 +689,25 @@ export default function App() {
     return () => document.documentElement.classList.remove("live-entry");
   }, [tab]);
 
+  // Unfertiges Match nach einem unfreiwilligen Neuladen (Handy hat die App
+  // beendet, zweite Instanz hat ein Update eingespielt, Anmeldung verloren -
+  // siehe lib/matchDraft.js): ausserhalb der Match-Eingabe nachfragen, ob es
+  // fortgesetzt werden soll. resumeDraft geht beim Fortsetzen an MatchScreen
+  // und wird beim Verlassen der Match-Eingabe wieder geleert.
+  const [draftOffer, setDraftOffer] = useState(null);
+  const [resumeDraft, setResumeDraft] = useState(null);
+  useEffect(() => {
+    if (!player?.id || !initialLoadDone || tab === "match") return;
+    setResumeDraft(null);
+    setDraftOffer(loadMatchDraft(player.id));
+  }, [player?.id, initialLoadDone, tab]);
+  const resumeMatch = () => {
+    const d = draftOffer;
+    setDraftOffer(null); setResumeDraft(d);
+    navPush({ tab: "match", vsOpp: d.match.opp, matchTournamentCtx: d.match.tournamentCtx || null });
+  };
+  const discardDraft = () => { clearMatchDraft(player?.id); setDraftOffer(null); };
+
   const lastLoadAtRef = useRef(0); // Zeitpunkt des letzten loadData() - fuers Neuladen im Vordergrund (siehe unten)
   const loadData = useCallback(async () => {
     // Snapshots (koennen >1000 Zeilen sein: Wochen x Spieler) parallel zum
@@ -1231,6 +1251,20 @@ export default function App() {
                 </div>
               </div>
             )}
+            {draftOffer && !LIVE_ENTRY_TABS.includes(tab) && (() => {
+              const d = describeDraft(draftOffer);
+              return (
+                <div className="celebrate-overlay">
+                  <div className="celebrate-card">
+                    <div className="celebrate-head">{t("Unfertiges Match")}</div>
+                    <p className="hint">{t("Gegen {opp} · {disc} · Stand {score}", { opp: d.opponent, disc: t(d.discipline), score: d.score })}</p>
+                    <p className="hint">{t("Die App wurde während der Eingabe neu gestartet. Noch nichts davon ist gemeldet.")}</p>
+                    <button className="btn primary" onClick={resumeMatch}>{t("Fortsetzen")}</button>
+                    <button className="btn ghost" onClick={discardDraft}>{t("Verwerfen")}</button>
+                  </div>
+                </div>
+              );
+            })()}
             {tourneyReady && notifyMode !== "off" && tab !== "match" && !celebrate && (() => {
               const iAmP1 = tourneyReady.player1_id === player.id;
               const oppName = (iAmP1 ? tourneyReady.player2 : tourneyReady.player1)?.nickname;
@@ -1310,9 +1344,9 @@ export default function App() {
                   onReload={loadData} initialOpp={matchTournamentCtx ? tourOpp : vsOpp} onChallenge={createChallenge}
                   catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
                   onOpenProtokoll={openProtokoll} tournamentCtx={matchTournamentCtx}
-                  keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow}
-                  onDone={() => { loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}
-                  onCancel={() => { allowLeaveMatchRef.current = true; window.history.back(); }} />
+                  keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} resumeDraft={resumeDraft}
+                  onDone={() => { clearMatchDraft(player.id); loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}
+                  onCancel={() => { clearMatchDraft(player.id); allowLeaveMatchRef.current = true; window.history.back(); }} />
                 );
               })()}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}

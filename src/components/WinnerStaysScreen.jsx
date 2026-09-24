@@ -10,6 +10,7 @@ import PlayerMultiPicker from "./PlayerMultiPicker";
 import { ScoreStepper } from "./TurnierMatchActions";
 import ImprintFooter from "./widgets/ImprintFooter";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 
 const POLL_MS = 8000;
 
@@ -54,6 +55,22 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // aktuelle Tisch-Paarung aendert (neue Runde nach Eintragen).
   const [sA, setSA] = useState(0);
   const [sB, setSB] = useState(0);
+  // Spielstand der laufenden Partie gegen ein unfreiwilliges Neuladen sichern
+  // (siehe lib/matchDraft.js). Gebunden an die Nummer des letzten gemeldeten
+  // Spiels: wurde seither eins gemeldet (auch von einem anderen Geraet), ist der
+  // alte Stand hinfaellig. Erst nach dem ersten Laden wiederherstellen, dann
+  // speichern - sonst ueberschriebe die leere Anfangs-0 den Entwurf.
+  const lastGameNo = games[0]?.game_no ?? 0;
+  const wsRestoredRef = useRef(false);
+  useEffect(() => {
+    if (wsRestoredRef.current || !session) return;
+    wsRestoredRef.current = true;
+    const d = loadWsDraft(sessionId, lastGameNo);
+    if (d) { setSA(d.sA); setSB(d.sB); }
+  }, [session, sessionId, lastGameNo]);
+  useEffect(() => {
+    if (wsRestoredRef.current) saveWsDraft(sessionId, lastGameNo, sA, sB);
+  }, [sessionId, lastGameNo, sA, sB]);
   const [showAdd, setShowAdd] = useState(false);
   const [addSelected, setAddSelected] = useState([]);
   const [teamP1, setTeamP1] = useState(null);
