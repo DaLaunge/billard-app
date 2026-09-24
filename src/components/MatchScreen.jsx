@@ -13,6 +13,7 @@ import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import { rpcRetry } from "../lib/rpcRetry";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
@@ -203,7 +204,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
         p_my_score: s1, p_opp_score: s2, p_discipline: disc,
         p_run_log: scoreLog.length > 1 ? scoreLog : null,
       };
-      const { data, error } = await supabase.rpc("report_doubles", params);
+      const { data, error } = await rpcRetry("report_doubles", params);
       setBusy(false);
       if (error) {
         if (isNetworkError(error)) {
@@ -219,7 +220,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     }
     if (isGhost) {
       setBusy(true);
-      const { error } = await supabase.rpc("record_ghost_game", { p_discipline: disc, p_score1: s1, p_score2: s2 });
+      const { error } = await rpcRetry("record_ghost_game", { p_discipline: disc, p_score1: s1, p_score2: s2 });
       setBusy(false);
       if (error) { toast(t("Fehler: ") + error.message); return; }
       setStep(4); return;
@@ -235,7 +236,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
         p_twoball_me: is141 ? tb[0] : null, p_twoball_opp: is141 ? tb[1] : null,
         p_run_log: is141 ? runLog : (scoreLog.length > 1 ? scoreLog : null),
       };
-      const { data, error } = await supabase.rpc(rpc, params);
+      const { data, error } = await rpcRetry(rpc, params);
       setBusy(false);
       if (error) {
         if (isNetworkError(error)) {
@@ -257,7 +258,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       p_twoball_me: is141 ? tb[0] : null, p_twoball_opp: is141 ? tb[1] : null,
       p_run_log: is141 ? runLog : (scoreLog.length > 1 ? scoreLog : null),
     };
-    const { data, error } = await supabase.rpc("report_match", params);
+    const { data, error } = await rpcRetry("report_match", params);
     setBusy(false);
     if (error) {
       if (isNetworkError(error)) {
@@ -283,7 +284,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const confirmNow = async () => {
     if (!savedMatch?.id) return;
     setBusy(true);
-    const { error } = await supabase.rpc("tournament_confirm_own_match", { p_tournament_match_id: tournamentCtx.tournamentMatchId });
+    const { error } = await rpcRetry("tournament_confirm_own_match", { p_tournament_match_id: tournamentCtx.tournamentMatchId });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Match bestaetigt - Ranking wird neu berechnet."));

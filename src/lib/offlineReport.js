@@ -2,7 +2,7 @@
 // Der Report wird lokal zwischengespeichert und automatisch nachgesendet,
 // sobald wieder eine Verbindung besteht. Aendert nichts an der eigentlichen
 // Bestaetigungslogik (RPCs bleiben identisch) - nur der Versand wird robuster.
-import { supabase } from "../supabase";
+import { rpcRetry } from "./rpcRetry";
 
 const KEY = "pendingMatchReport";
 
@@ -33,7 +33,7 @@ export async function sendPendingReport() {
   const report = getPendingReport();
   if (!report) return null;
   const fn = report.type === "double" ? "report_doubles" : report.type === "tournament" ? report.rpc : "report_match";
-  const { data, error } = await supabase.rpc(fn, report.params);
+  const { data, error } = await rpcRetry(fn, report.params);
   if (error) return { ok: false, error, report };
   clearPendingReport();
   return { ok: true, data, report };

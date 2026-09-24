@@ -11,6 +11,7 @@ import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
 import TurnierBerichtScreen from "./TurnierBerichtScreen";
 import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout";
+import { rpcRetry } from "../lib/rpcRetry";
 
 const POLL_MS = 8000;
 
@@ -257,7 +258,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     const { tm, s1, s2, onDone } = pendingReport;
     setPendingReport(null);
     setBusyId(tm.id);
-    const { error } = await supabase.rpc("tournament_organizer_report_match", {
+    const { error } = await rpcRetry("tournament_organizer_report_match", {
       p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
     });
     setBusyId(null);
@@ -270,7 +271,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
   const confirm = async (tm, ok) => {
     setBusyId(tm.id);
-    const { error } = await supabase.rpc("confirm_match", { p_match_id: tm.match.id, p_ok: ok });
+    const { error } = await rpcRetry("confirm_match", { p_match_id: tm.match.id, p_ok: ok });
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen."));
@@ -281,7 +282,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   const forceConfirm = async (tm) => {
     if (!(await appConfirm(t("Dieses Ergebnis als Turnierleitung erzwungen bestätigen?")))) return;
     setBusyId(tm.id);
-    const { error } = await supabase.rpc("tournament_force_confirm_match", { p_tournament_match_id: tm.id });
+    const { error } = await rpcRetry("tournament_force_confirm_match", { p_tournament_match_id: tm.id });
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     toast(t("Erzwungen bestätigt."));
@@ -291,7 +292,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
   const editMatch = async (tm, s1, s2, onDone) => {
     setBusyId(tm.id);
-    const { error } = await supabase.rpc("tournament_organizer_edit_match", {
+    const { error } = await rpcRetry("tournament_organizer_edit_match", {
       p_tournament_match_id: tm.id, p_score1: s1, p_score2: s2,
     });
     setBusyId(null);
@@ -307,7 +308,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // alle weiteren offenen Partien der/des tatsaechlich Ausgeschiedenen.
   const markNoShow = async (tm, absentPlayerIds, onDone) => {
     setBusyId(tm.id);
-    const { error } = await supabase.rpc("tournament_mark_no_show", {
+    const { error } = await rpcRetry("tournament_mark_no_show", {
       p_tournament_match_id: tm.id, p_absent_player_ids: absentPlayerIds,
     });
     setBusyId(null);
