@@ -344,6 +344,24 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .badge-desc { font-size: 10px; color: var(--ivory-dim); line-height: 1.3; overflow-wrap: break-word; word-break: break-word; width: 100%; }
 .badge-active { font-size: 9.5px; font-weight: 700; color: var(--accent); margin-top: 2px; }
 .badge-progress { font-size: 9.5px; font-weight: 600; color: var(--ivory-dim); margin-top: 2px; }
+/* Fortschrittsbalken (siehe widgets/ProgressBar.jsx). Die Spur ist bewusst
+   aus --ivory-dim gemischt und nicht aus dem Akzent: sonst wirkt eine fast
+   leere Leiste wie eine fast volle. */
+.progress-bar { display: block; width: 100%; height: 3px; border-radius: 99px;
+  background: color-mix(in srgb, var(--ivory-dim) 22%, transparent); overflow: hidden; }
+.progress-bar-fill { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.badge-chip .progress-bar { margin-top: 3px; }
+/* In der Kategoriezeile ueber die volle Kopfbreite, direkt unter
+   "SKILL  5 / 29" - dadurch sieht man beim Durchscrollen der Kategorien
+   sofort, wo noch etwas zu holen ist. */
+.badge-cat-head .progress-bar { margin-top: 1px; }
+/* In der Kompaktliste der naechsten Erfolge sitzt der Balken unter der
+   ganzen Zeile, nicht in einer eigenen - .side-row ist eine Flex-Zeile,
+   deshalb ein umschliessendes Element mit Spaltenrichtung. */
+.side-row-progress { display: flex; flex-direction: column; gap: 3px;
+  padding: 6px 0; border-bottom: 1px solid var(--line); }
+.side-row-progress:last-of-type { border-bottom: none; }
+.side-row-progress .side-row { padding: 0; border-bottom: none; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .chip { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);

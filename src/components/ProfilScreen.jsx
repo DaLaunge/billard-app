@@ -18,6 +18,7 @@ import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import CardMenuButton from "./widgets/CardMenuButton";
+import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import { CARD_SCREENS, splitCardColumns } from "../lib/cardLayout";
@@ -905,6 +906,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                       <span className="badge-cat-count">{earnedCount} / {items.length}</span>
                       <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
                     </div>
+                    <ProgressBar current={earnedCount} target={items.length} />
                     {liveStat && <span className="badge-cat-live">{liveStat}</span>}
                   </button>
                   {open && (
@@ -924,9 +926,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                             <span className="badge-name">{t(b.name)}</span>
                             <span className="badge-desc">{t(b.description)}</span>
                             {progress && (
-                              <span className="badge-progress">
-                                {t("Fortschritt: {cur} / {target} {unit}", { cur: progress.current, target: progress.target, unit: progress.unit })}
-                              </span>
+                              <>
+                                <span className="badge-progress">
+                                  {t("Fortschritt: {cur} / {target} {unit}", { cur: progress.current, target: progress.target, unit: progress.unit })}
+                                </span>
+                                <ProgressBar current={progress.current} target={progress.target} />
+                              </>
                             )}
                             {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
                           </button>
