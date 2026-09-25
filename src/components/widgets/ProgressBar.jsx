@@ -10,8 +10,15 @@
    Kostet 3px Hoehe und ersetzt keine Zeile - genau deshalb passt er zur
    Regel "Bedienelemente und Deko klein halten, Inhalt dominieren lassen". */
 export default function ProgressBar({ current, target, className = "" }) {
-  if (!(target > 0)) return null;
-  const pct = Math.max(0, Math.min(100, Math.round((current / target) * 100)));
+  // Bei einem Ziel von 1 ("dein ERSTER zweiter Platz") gibt es keinen
+  // Fortschritt, nur an oder aus - ein Balken, der garantiert leer ist,
+  // solange man den Erfolg sieht, ist reine Deko. Solche Zeilen bleiben
+  // beim Text.
+  if (!(target > 1)) return null;
+  const roh = Math.max(0, Math.min(100, Math.round((current / target) * 100)));
+  // Ein angefangener Fortschritt soll auch sichtbar sein: 1 von 100 waere
+  // sonst auf 1% gerundet und bei 3px Hoehe schlicht nicht zu erkennen.
+  const pct = current > 0 && roh < 3 ? 3 : roh;
   return (
     <span className={"progress-bar" + (className ? " " + className : "")} aria-hidden="true">
       <span className="progress-bar-fill" style={{ width: pct + "%" }} />
