@@ -51,15 +51,20 @@
      Spalten mit 24px, .stat-block-Default mit 14px). Eine einzige
      Variable statt verstreuter Werte macht das an EINER Stelle wartbar. */
   --card-gap: 16px;
-  /* Einheitlicher, klar sichtbarer Rahmen fuer "Hintergrund"-Buttons
-     (Ghost-Varianten, runde Icon-Buttons, Chips/Toggles) - Nutzer-Feedback:
-     "Buttons sind manchmal nicht als Buttons erkennbar", weil viele davon
-     bisher nur das sehr blasse --line (niedrige Deckkraft, fuer Trennlinien/
-     Karten gedacht) als Rahmenfarbe hatten. color-mix() auf --ivory-dim statt
-     eines eigenen Hex-Werts, damit die Staerke automatisch zu jedem
-     Farbthema passt (siehe lib/themes.js) - derselbe Ansatz wie schon bei
-     der Tabbar (--felt-Mix weiter unten). */
-  --btn-border: color-mix(in srgb, var(--ivory-dim) 45%, transparent);
+  /* Flaeche fuer "Hintergrund"-Bedienelemente: sekundaere Knoepfe, Chips,
+     Auswahlkacheln. Bis 2026-09-25 waren das durchsichtige Knoepfe mit
+     sichtbarem Rahmen - auf dem Profil-Bildschirm kamen dadurch ueber ein
+     Dutzend Umrisse auf einen Screen, was unruhig wirkt und den Inhalt
+     (Grafiken, Ranglisten) verdraengt. Eine leicht aufgehellte Flaeche ist
+     als Knopf mindestens so eindeutig wie ein Rahmen, aber deutlich
+     ruhiger. --felt-3 funktioniert auf beiden Untergruenden, die es gibt:
+     Seitenhintergrund (--felt) und Karte (--felt-2). */
+  --surface-btn: var(--felt-3);
+  /* Rahmenfarbe, wo ein Rahmen bleibt (Listenzeilen, Eingabefelder) sowie
+     der Hover-Zustand am PC. Aus dem AKZENT gemischt, nicht mehr aus
+     --ivory-dim: so gehoert jedes Bedienelement sichtbar zur Themenfamilie,
+     ohne selbst um Aufmerksamkeit zu konkurrieren. */
+  --btn-border: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 * { box-sizing: border-box; margin: 0; }
 html, body { background: var(--felt); }
@@ -318,7 +323,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   text-align: center; min-width: 0; }
 .badge-chip.locked { opacity: 0.75; cursor: default; }
 .badge-emoji.locked-emoji { filter: grayscale(1); opacity: 0.45; }
-.badge-chip.earned { border-color: var(--felt-3); }
+.badge-chip.earned { border-color: var(--btn-border); }
 .badge-chip.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--felt-3); }
 .badge-emoji { font-size: 26px; line-height: 1; height: 30px; display: grid; place-items: center;
   color: var(--ivory-dim); }
@@ -1112,26 +1117,35 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
    EINHEITLICHES BUTTON-SYSTEM (Nutzer-Feedback: "Buttons sind
    manchmal nicht als Buttons erkennbar" + "sollen am PC auf
    Mouseover reagieren, so wie die Zoom-Buttons im Turnierbaum").
-   Zwei Faelle:
+   Drei Stufen, absteigend nach Lautstaerke:
    1) Gefuellte/hervorgehobene Buttons (Akzentfarbe als Flaeche,
       z.B. .btn.primary, .round-btn.plus, .chip.active, .sp-pot) -
-      die sind schon als Buttons erkennbar, bekommen am PC nur ein
-      Hover-Aufhellen (filter: brightness), keinen Rahmen-Wechsel.
-   2) "Hintergrund"-Buttons ohne bzw. mit nur dem blassen --line als
-      Rahmen (Ghost-Buttons, runde Icon-Buttons, Chips/Toggles,
-      Auswahlkarten) - bekommen ueberall denselben sichtbaren
-      Rahmen (--btn-border) und am PC denselben Hover wie das
-      Vorbild .turnier-graph-zoom-controls weiter unten: Rahmen und
-      Text wechseln auf den Akzent (--accent), Flaeche hellt leicht
-      auf. Zustaende, die bereits eine eigene Rahmenfarbe tragen
-      (.active/.on/.sel/.selected/.no/...), sind bewusst per :not()
-      ausgenommen, damit Hover ihren Status nicht uebertoent.
+      HOECHSTENS EINER pro Bildschirmabschnitt, sonst verliert der
+      Akzent seine Bedeutung. Am PC nur ein Hover-Aufhellen
+      (filter: brightness), kein Rahmen-Wechsel.
+   2) "Hintergrund"-Buttons (Ghost-Buttons, runde Icon-Buttons,
+      Chips/Toggles, Auswahlkacheln) - bekommen seit 2026-09-25
+      eine eigene FLAECHE (--surface-btn) statt eines sichtbaren
+      Rahmens. Der Rahmen bleibt als durchsichtige 1.5px-Linie
+      erhalten, damit sich an den Massen nichts aendert und der
+      Hover ihn nur einfaerben muss. Zustaende mit eigener
+      Akzentflaeche (.active/.on/.sel/.selected) gewinnen ueber ihre
+      hoehere Spezifitaet automatisch und bleiben unberuehrt.
+   3) Reine Icon-Knoepfe in dichten Zeilen und Listenzeilen - kein
+      Fuellen (sie liegen bereits auf einer eigenen Karte bzw.
+      neben anderen randlosen Icons), nur der akzentgetoente
+      Rahmen.
    Neue Buttons: in die passende Gruppe unten eintragen statt eine
    eigene Rahmen-/Hover-Regel zu duplizieren. */
 .btn.ghost, .back-btn, .csv-btn,
 .round-btn, .mini-stepper button, .suggest-challenge-btn, .turnier-stepper-btn,
 .mem-edit, .mode-btn, .lang-btn, .auth-tab, .legend-item, .cand-chip,
-.pp-trigger, .badge-chip, .chip, .chip-btn:not(.ok):not(.no), .pmp-chip,
+.pp-trigger, .badge-chip, .chip, .chip-btn:not(.ok):not(.no):not(.sel), .pmp-chip {
+  background: var(--surface-btn);
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: transparent;
+}
 .rank-row, .card-info-btn, .m-download, .msg-edit-btn, .clear-btn,
 .turnier-graph-detail-close, .pmp-remove {
   border-width: 1.5px;
@@ -1163,7 +1177,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .turnier-list-row:hover, .suggest-row-play:hover,
   .opp-card:hover:not(.sel), .disc-card:hover:not(.sel), .theme-swatch:hover:not(.sel) {
     border-color: var(--accent);
-    background: var(--felt-3);
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface-btn));
   }
   /* .disc-chip ist schon im Ruhezustand voll im Akzent gerahmt - ein
      Farbwechsel auf Hover waere kein Unterschied, daher nur ein

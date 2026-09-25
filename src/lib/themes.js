@@ -101,9 +101,18 @@ export function buildCustomTheme(bgHex, accentHex) {
   const felt3 = hslToHex(bh, bSat, felt3L);
   const accent = hslToHex(ah, aSat, 72);
   const accentDeep = hslToHex(ah, aSat, 48);
+  // Der gedaempfte Textton folgt dem HINTERGRUND-Farbton, nicht dem Akzent -
+  // genau wie in den Presets (Gruen #9DBAAE, Rot #C4A0A6, Lila #B7A0C4: alle
+  // schwach gesaettigt im Farbton ihres eigenen felt). Bis 2026-09-25 stand
+  // hier ein fester neutralgrauer Wert, wodurch bei einem eigenen Thema JEDER
+  // Nebentext und (ueber --btn-border) jeder Knopfrahmen kalt grau auf einem
+  // farbigen Hintergrund lag und wie ein Fremdkoerper wirkte (Nutzer-Feedback).
+  // Bei farblosem Hintergrund bleibt es fast neutral - das Schwarz-Preset
+  // macht es mit #A8A8AE genauso.
+  const ivoryDim = hslToHex(bh, bSat < 6 ? 4 : 18, 68);
   return {
     name: "Eigenes Thema", felt, felt2, felt3, line: `${felt3}60`,
-    accent, accentDeep, ivory: "#F2EDE0", ivoryDim: "#A8A8AE",
+    accent, accentDeep, ivory: "#F2EDE0", ivoryDim,
   };
 }
 
