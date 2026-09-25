@@ -19,7 +19,16 @@ ungültig. Dann müssen alle „Push“ einmal neu einschalten.
 
 ## 2. Migration
 
-`supabase/2026-09-23_push_notifications.sql` im SQL-Editor ausführen.
+Im SQL-Editor ausführen, in dieser Reihenfolge:
+
+1. `supabase/2026-09-23_push_notifications.sql` — Tabellen, Trigger, RPCs
+2. `supabase/2026-09-25_notifications_grants.sql` — Tabellen-Berechtigungen
+
+Der zweite Schritt ist leicht zu übersehen und fällt erst spät auf: die App
+liest den Posteingang `notifications` direkt als Tabelle. Ohne das `grant`
+scheitert das mit „permission denied“, und zwar unabhängig von der
+RLS-Policy — RLS filtert Zeilen, das `grant` öffnet die Tabelle überhaupt
+erst. Dann funktioniert auch die Stufe „In der App“ nicht mehr.
 
 ## 3. Edge Function `send-push`
 
@@ -63,6 +72,9 @@ Vercel unter Environment Variables eintragen, danach neu deployen.
 2. Mit einem zweiten Konto einen Live-Ping setzen oder den Account herausfordern.
 3. Kommt nichts an, im SQL-Editor nachsehen:
    - `select * from notifications order by id desc limit 5;` zeigt, ob der Trigger gefeuert hat.
+     Achtung: diese Abfrage gelingt im SQL-Editor auch dann, wenn der App das
+     `grant` aus Schritt 2 fehlt — der Editor läuft mit anderen Rechten als die
+     App. Meldet die App „permission denied“ auf `notifications`, fehlt genau das.
    - `select * from net._http_response order by id desc limit 5;` zeigt die Antwort der Edge Function.
    - Edge Functions → send-push → Logs zeigt Fehler beim Versand.
 
