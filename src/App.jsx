@@ -16,6 +16,8 @@ import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offli
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
+import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
+import { useHideTabbar } from "./lib/useHideTabbar";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
@@ -839,6 +841,15 @@ export default function App() {
   }, [inLiveEntry, keepAwakeDefault]);
   useWakeLock(keepAwakeNow && inLiveEntry);
 
+  // Tabbar beim Runterscrollen ausblenden (Geraete-Einstellung, Standard aus -
+  // siehe lib/uiPrefs.js und lib/useHideTabbar.js). Der Hook haengt am
+  // Scroll-Container .content, nicht am Fenster: gescrollt wird in der App
+  // immer dort drin, das Fenster selbst bewegt sich nie.
+  const [hideTabbarPref, setHideTabbarPrefState] = useState(getHideTabbar);
+  const setHideTabbarPref = useCallback((on) => { setHideTabbarPrefState(on); storeHideTabbar(on); }, []);
+  const [contentEl, setContentEl] = useState(null);
+  const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
+
   // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
   // Stufe pro Geraet: "off" / "inapp" (Posteingang abfragen, solange die App
   // offen ist) / "push" (zusaetzlich echte Push-Nachrichten). Die Texte
@@ -1316,7 +1327,7 @@ export default function App() {
                 </div>
               );
             })()}
-            <main className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
+            <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
@@ -1381,6 +1392,7 @@ export default function App() {
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
                   keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
+                  hideTabbar={hideTabbarPref} onSetHideTabbar={setHideTabbarPref}
                   notifyMode={notifyMode} onSetNotifyMode={setNotifyMode}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
@@ -1441,7 +1453,7 @@ export default function App() {
               const iAmP1 = next.player1_id === player.id;
               const oppName = (iAmP1 ? next.player2 : next.player1)?.nickname;
               return (
-                <button className="tourney-table-banner"
+                <button className={"tourney-table-banner" + (tabbarHidden ? " tabbar-off" : "")}
                   onClick={() => navPush({
                     tab: "match",
                     matchTournamentCtx: {
@@ -1463,7 +1475,7 @@ export default function App() {
               const nameOfId = (id) => players.find((p) => p.id === id)?.nickname;
               const oppName = [nameOfId(next.oppPlayer1Id), nameOfId(next.oppPlayer2Id)].filter(Boolean).join(" & ");
               return (
-                <button className="tourney-table-banner"
+                <button className={"tourney-table-banner" + (tabbarHidden ? " tabbar-off" : "")}
                   onClick={() => navPush({ tab: "winnerstays", winnerStaysId: next.session_id })}>
                   🎱 {next.session.table_number != null ? `${t("Tisch")} ${next.session.table_number} · ` : ""}{t("gegen {name}", { name: oppName || "?" })}
                   {wsReadyList.length > 1 && ` · ${t("+{n} weitere", { n: wsReadyList.length - 1 })}`}
@@ -1472,7 +1484,7 @@ export default function App() {
             })()}
 
             {tab !== "match" && (
-            <nav className="tabbar">
+            <nav className={"tabbar" + (tabbarHidden ? " tabbar-off" : "")}>
               <button className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}

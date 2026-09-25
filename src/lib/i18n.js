@@ -493,6 +493,8 @@ const TRANSLATIONS = {
     "Bildschirm bleibt an": "Screen stays on",
     "Bildschirm darf sich sperren": "Screen may lock",
     "Bildschirm während eines Matches anlassen": "Keep the screen on during a match",
+    "Menüleiste beim Scrollen ausblenden": "Hide the menu bar while scrolling",
+    "Beim Runterscrollen verschwindet die Leiste am unteren Rand, beim Hochscrollen kommt sie zurück. Mehr Platz für Ranglisten und Grafiken. Gilt nur auf diesem Gerät.": "Scrolling down hides the bar at the bottom, scrolling up brings it back. More room for rankings and charts. Applies to this device only.",
     "Verhindert, dass sich das Handy mitten im Spiel sperrt. Gilt nur auf diesem Gerät und nur, solange ein Match oder eine Winner-Stays-Runde offen ist.": "Stops your phone from locking mid-game. Applies to this device only, and only while a match or a Winner-Stays round is open.",
     "Benachrichtigungen": "Notifications",
     "Aus": "Off",

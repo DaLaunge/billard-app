@@ -33,7 +33,7 @@ const CARD_COLUMN_ICON = { left: AlignStartVertical, middle: AlignCenterVertical
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, notifyMode, onSetNotifyMode, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, achievementCounters }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
@@ -622,6 +622,16 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               <span className="settings-switch-label">{t("Bildschirm während eines Matches anlassen")}</span>
             </label>
             <p className="hint">{t("Verhindert, dass sich das Handy mitten im Spiel sperrt. Gilt nur auf diesem Gerät und nur, solange ein Match oder eine Winner-Stays-Runde offen ist.")}</p>
+            {/* Standard ist AUS (siehe lib/uiPrefs.js): eine Navigation, die
+                von selbst verschwindet, soll niemand ungefragt bekommen. Wer
+                den Platz will, schaltet es hier ein - am Handy sind es rund
+                76px, die sonst dauerhaft ueber dem Inhalt liegen. */}
+            <label className="settings-switch">
+              <input type="checkbox" checked={hideTabbar} onChange={(e) => onSetHideTabbar(e.target.checked)} />
+              <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+              <span className="settings-switch-label">{t("Menüleiste beim Scrollen ausblenden")}</span>
+            </label>
+            <p className="hint">{t("Beim Runterscrollen verschwindet die Leiste am unteren Rand, beim Hochscrollen kommt sie zurück. Mehr Platz für Ranglisten und Grafiken. Gilt nur auf diesem Gerät.")}</p>
           </section>
 
           <section className="stat-block">

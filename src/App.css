@@ -49,8 +49,11 @@
      nach mehreren Pushes hatten Karten uneinheitliche/versehentlich zu
      grosse Abstaende - z.B. .ov-side/.stat-grid mit 16px, die Profil-
      Spalten mit 24px, .stat-block-Default mit 14px). Eine einzige
-     Variable statt verstreuter Werte macht das an EINER Stelle wartbar. */
-  --card-gap: 16px;
+     Variable statt verstreuter Werte macht das an EINER Stelle wartbar.
+     Der Grundwert ist der fuers Handy (12px, seit 2026-09-25) - am PC gibt
+     es Platz im Ueberfluss, dort stellt der Block bei min-width:900px
+     wieder auf 16px zurueck. */
+  --card-gap: 12px;
   /* Flaeche fuer "Hintergrund"-Bedienelemente: sekundaere Knoepfe, Chips,
      Auswahlkacheln. Bis 2026-09-25 waren das durchsichtige Knoepfe mit
      sichtbarem Rahmen - auf dem Profil-Bildschirm kamen dadurch ueber ein
@@ -77,12 +80,17 @@ html, body { background: var(--felt); }
 .content { flex: 1; overflow-y: auto; padding-bottom: 92px; }
 .content.no-tabbar { padding-bottom: 24px; }
 .content.has-table-banner { padding-bottom: 148px; }
-.screen { padding: 22px 18px 28px; }
+/* Handy-Werte. Am PC ueberschreibt ".phone.app .screen" weiter unten mit
+   deutlich mehr Luft. Bis 2026-09-25 standen hier 22px/18px/28px - am Handy
+   sind das ~7% der Bildschirmbreite, die fuer Rand statt fuer Inhalt
+   draufgehen (Nutzer-Wunsch: Grafiken und Ranglisten sollen dominieren,
+   Bedienelemente zuruecktreten). */
+.screen { padding: 14px 12px 20px; }
 .center-load { flex: 1; display: grid; place-items: center; color: var(--ivory-dim); min-height: 60vh; }
 
 h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
-.screen-head { margin-bottom: 16px; }
-.screen-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+.screen-head { margin-bottom: 10px; }
+.screen-head h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
 .screen-head.with-back { display: flex; align-items: center; gap: 10px; }
 .head-note { font-size: 12.5px; color: var(--ivory-dim); }
 .back-btn { background: var(--felt-3); border: none; color: var(--ivory); border-radius: 12px;
@@ -644,9 +652,9 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 .saved p { color: var(--ivory-dim); font-size: 14px; line-height: 1.55; margin-bottom: 22px; }
 
 .stat-block { background: var(--felt-2); border: 1px solid var(--line); border-radius: 18px;
-  padding: 16px 14px; margin-bottom: var(--card-gap); }
+  padding: 13px 12px; margin-bottom: var(--card-gap); }
 .install-block { margin-top: 16px; margin-bottom: 0; }
-.stat-block h3 { font-size: 15px; display: flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--accent); }
+.stat-block h3 { font-size: 15px; display: flex; align-items: center; gap: 7px; margin-bottom: 9px; color: var(--accent); }
 .stat-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .stat-block-head h3 { margin-bottom: 0; }
 /* Lange Kartentitel (z.B. "Schnellstes 14/1-Tempo (Ø pro Kugel)") passen in
@@ -1038,6 +1046,14 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
   width: 100%; max-width: 430px; display: flex; align-items: center;
   background: color-mix(in srgb, var(--felt) 92%, transparent); border-top: 1px solid var(--line);
   padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(8px); z-index: 30; }
+/* Beim Runterscrollen weggeschoben (Geraete-Einstellung, Standard aus - siehe
+   lib/useHideTabbar.js). Bewusst translate statt display:none oder einer
+   Hoehenaenderung: der Inhalt darunter darf sich nicht bewegen, sonst
+   springt beim Scrollen die ganze Seite. Der FAB ragt oben aus der Leiste
+   heraus, deshalb 140% statt 100% - sonst bliebe seine obere Haelfte am
+   Bildschirmrand kleben. */
+.tabbar.tabbar-off { transform: translate(-50%, 140%); }
+.tourney-table-banner.tabbar-off { bottom: calc(16px + env(safe-area-inset-bottom)); }
 .tab { flex: 1; background: none; border: none; color: var(--ivory-dim);
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   font-size: 10.5px; cursor: pointer; font-family: inherit; padding: 4px 0; position: relative; }
@@ -1099,6 +1115,8 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
      .focus(), siehe "Alle Erfolge ansehen" in ProfilScreen.jsx) selbst ins
      Bild scrollt, statt es sofort ruckartig zu springen. */
   .content { scroll-behavior: smooth; }
+  .tabbar { transition: transform .22s ease; }
+  .tourney-table-banner { transition: bottom .22s ease; }
   .rank-row, .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn,
   .mini-stepper button, .turnier-stepper-btn, .suggest-challenge-btn, .back-btn,
   .csv-btn, .mem-edit, .mode-btn, .lang-btn,
@@ -1395,6 +1413,13 @@ button.id-card-head { cursor: pointer; }
    schmal/zentriert. Die Tabbar bleibt bewusst unten und unveraendert wie
    am Handy (gleiche Bedienung, kein Umlernen). */
 @media (min-width: 900px) {
+  /* Am PC zurueck auf die grosszuegigen Werte - die Enge oben ist eine
+     Handy-Massnahme, am PC fehlt der Platz nicht (siehe :root/--card-gap
+     und .screen ganz oben). */
+  :root { --card-gap: 16px; }
+  .stat-block { padding: 16px 14px; }
+  .screen-head { margin-bottom: 16px; }
+  .screen-head h2 { font-size: 26px; }
   .phone.app { max-width: 1500px; margin: 0 auto; }
   /* margin: auto zentriert JEDEN Screen standardmaessig innerhalb der
      breiten Desktop-Flaeche - ohne das wuerde z.B. die Verwaltung (kein
