@@ -95,6 +95,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .head-note { font-size: 12.5px; color: var(--ivory-dim); }
 .back-btn { background: var(--felt-3); border: none; color: var(--ivory); border-radius: 12px;
   width: 38px; height: 38px; display: grid; place-items: center; cursor: pointer; }
+/* Zahnrad rechts im Profilkopf (siehe ProfilScreen.jsx). Gleiche Form wie
+   der Zurueck-Knopf links, nur ans andere Ende geschoben - der Kopf ist eine
+   Flex-Zeile aus [Zurueck] [Titel] und bekommt so [... Zahnrad] als drittes,
+   rechtsbuendiges Kind. */
+.pf-settings-btn { margin-left: auto; flex-shrink: 0; }
 
 /* Schnellschalter "Bildschirm bleibt an" rechts im Kopf der Live-Eingabe-
    Screens (siehe widgets/KeepAwakeButton.jsx). margin-left:auto schiebt ihn

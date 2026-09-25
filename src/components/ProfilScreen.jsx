@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Settings } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -682,6 +682,68 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
             </button>
           </section>
+
+          {/* Konto und Support. Bis 2026-09-25 waren "Anmeldung & Sicherheit",
+              "Feedback" und "Meine Tickets" frei anordenbare Karten auf dem
+              Profil selbst, und "Verwaltung"/"Abmelden" standen als Knoepfe
+              darunter. Das Profil war damit zwei Dinge gleichzeitig: was ueber
+              dich zu sagen ist (Erfolge, Ratings, Rekorde) UND ein
+              Einstellungs-Sammelbecken. Jetzt liegt alles Zweite hier hinter
+              dem Zahnrad, das Profil zeigt nur noch das Erste. */}
+          <PasswordSection toast={toast} />
+          <section className="stat-block">
+            <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
+            {!feedbackOpen ? (
+              <>
+                <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
+                <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
+                  <MessageCircle size={15} /> {t("Feedback geben")}
+                </button>
+              </>
+            ) : feedbackSent ? (
+              <>
+                <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
+                <div className="sp-controls">
+                  <a className="btn ghost" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">
+                    {t("Per Telegram")}
+                  </a>
+                  <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
+                </div>
+                <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
+              </>
+            ) : (
+              <div className="challenge-form">
+                <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
+                  {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
+                    <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="search-row" style={{ marginBottom: 8 }}>
+                  <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
+                    style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
+                    onChange={(e) => setFeedbackMsg(e.target.value)} />
+                </div>
+                <div className="sp-controls">
+                  <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
+                  <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
+                    {feedbackBusy ? t("Speichere ...") : t("Absenden")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+          <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />
+
+          {/* Am Ende der Einstellungen, nicht dazwischen: das sind die
+              Aktionen, die aus den Einstellungen herausfuehren. */}
+          <div className="pf-account-actions">
+            {meRow?.role === "admin" && (
+              <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
+            )}
+            <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
+          </div>
         </div>
         </div>
 
@@ -905,56 +967,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             )}
           </section>
     ) : null,
-    anmeldung: isMe ? <PasswordSection toast={toast} onHide={cardHide("anmeldung")} /> : null,
-    feedback: isMe ? (
-          <section className="stat-block">
-            <div className="stat-block-head roomy">
-              <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
-              {cardHide("feedback") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("feedback")} /></div>}
-            </div>
-            {!feedbackOpen ? (
-              <>
-                <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
-                <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
-                  <MessageCircle size={15} /> {t("Feedback geben")}
-                </button>
-              </>
-            ) : feedbackSent ? (
-              <>
-                <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
-                <div className="sp-controls">
-                  <a className="btn ghost" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">
-                    {t("Per Telegram")}
-                  </a>
-                  <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
-                </div>
-                <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
-              </>
-            ) : (
-              <div className="challenge-form">
-                <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
-                  {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
-                    <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <div className="search-row" style={{ marginBottom: 8 }}>
-                  <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
-                    style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
-                    onChange={(e) => setFeedbackMsg(e.target.value)} />
-                </div>
-                <div className="sp-controls">
-                  <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
-                  <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
-                    {feedbackBusy ? t("Speichere ...") : t("Absenden")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-    ) : null,
-    tickets: isMe ? <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} onHide={cardHide("tickets")} /> : null,
   };
   // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
   // durchgehende Liste ueber alle drei Spalten hinweg (siehe CardSlot.jsx).
@@ -969,8 +981,18 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         {onBack && <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>}
         <div>
           <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
-          <span className="head-note">{isMe ? t("Deine Erfolge, Statistiken und Einstellungen") : t("Erfolge und Statistiken dieses Spielers")}</span>
+          <span className="head-note">{isMe ? t("Deine Erfolge und Statistiken") : t("Erfolge und Statistiken dieses Spielers")}</span>
         </div>
+        {/* Zahnrad statt des frueheren breiten "Profil bearbeiten"-Knopfs in
+            der Identitaetskarte: Einstellungen liegen dort, wo sie jeder
+            sucht (oben rechts), und die Karte gewinnt eine ganze Knopfzeile
+            an Platz zurueck. */}
+        {isMe && (
+          <button className="back-btn pf-settings-btn" aria-label={t("Profil bearbeiten")} title={t("Profil bearbeiten")}
+            onClick={() => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); }}>
+            <Settings size={20} />
+          </button>
+        )}
       </header>
 
       <div className="pf-layout">
@@ -1017,13 +1039,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               </div>
             </div>
           )}
-          {isMe && (
-            <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
-              setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
-            }}>
-              <Pencil size={15} /> {t("Profil bearbeiten")}
-            </button>
-          )}
         </>} />
       </div>
       {renderColumn("left")}
@@ -1033,12 +1048,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <div className="pf-col right">
       {renderColumn("right")}
-      {/* Konto-Knoepfe: bewusst KEINE Karten (Abmelden ausblenden zu koennen
-          waere eine Falle), deshalb fest am Ende der rechten Spalte bzw.
-          am Handy ganz unten. */}
+      {/* Nur noch der Weg zu den Turnieren - bewusst KEINE Karte (er traegt
+          den "du bist dran"-Zaehler, den auszublenden eine Falle waere).
+          "Verwaltung" und "Abmelden" standen bis 2026-09-25 hier daneben und
+          liegen jetzt am Ende der Einstellungen hinter dem Zahnrad: sie
+          gehoeren zum Konto, nicht zu dem, was dieses Profil ueber dich
+          aussagt. */}
       {isMe && (
       <div className="pf-account-actions" style={{ order: 9999 }}>
-      {isMe && (
         <button className="btn ghost tournament-ready-btn" onClick={onOpenTurniere}>
           <Trophy size={16} /> {t("Turniere")}
           {/* Bleibt sichtbar, bis das Match tatsaechlich gespielt/gemeldet
@@ -1048,13 +1065,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               Turnierpaarung nicht in Vergessenheit geraet (Nutzer-Feedback). */}
           {tourneyReadyCount > 0 && <span className="badge tournament-ready-badge">{tourneyReadyCount}</span>}
         </button>
-      )}
-      {isMe && meRow?.role === "admin" && (
-        <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
-      )}
-      {isMe && (
-        <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
-      )}
       </div>
       )}
       </div>

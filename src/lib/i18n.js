@@ -560,7 +560,7 @@ const TRANSLATIONS = {
     "Speichere ...": "Saving ...",
     "Mein Profil": "My profile",
     "Spielerprofil": "Player profile",
-    "Deine Erfolge, Statistiken und Einstellungen": "Your achievements, stats and settings",
+    "Deine Erfolge und Statistiken": "Your achievements and stats",
     "Erfolge und Statistiken dieses Spielers": "This player's achievements and stats",
     "So sehen dich die anderen.": "This is how others see you.",
     "Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.": "Note: your name changes everywhere – including in old matches and the ranking.",
