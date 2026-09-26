@@ -4,7 +4,7 @@ export function getLang() { return _LANG; }
 
 const TRANSLATIONS = {
   en: {
-    "Oder gib den 6-stelligen Code aus derselben Mail ein:": "Or enter the 6-digit code from the same email:",
+    "Oder gib den Code aus derselben Mail ein:": "Or enter the code from the same email:",
     "Code": "Code",
     "Code bestätigen": "Confirm code",
     "Praktisch, wenn der Link die Mail-App in einem anderen Browser oeffnet als dem, den du sonst nutzt.": "Handy if the link opens your mail app in a different browser than the one you normally use.",
@@ -511,7 +511,7 @@ const TRANSLATIONS = {
     "Automatisch aktualisieren": "Update automatically",
     "Sucht bei jedem Öffnen der App nach einer neuen Version und spielt sie unauffällig ein – nie mitten in einem Match.": "Checks for a new version every time you open the app and installs it quietly – never in the middle of a match.",
     "Neue Versionen gibt es nur über den Knopf unten.": "New versions are only installed via the button below.",
-    "Auf dem iPhone öffnet der Link Safari statt dieser App. Gib hier den 6-stelligen Code aus der Mail ein, dann bist du direkt in der App angemeldet.": "On iPhone, the link opens Safari instead of this app. Enter the 6-digit code from the email here to sign in right in the app.",
+    "Auf dem iPhone öffnet der Link Safari statt dieser App. Gib hier den Code aus der Mail ein, dann bist du direkt in der App angemeldet.": "On iPhone, the link opens Safari instead of this app. Enter the code from the email here to sign in right in the app.",
     "Suche nach Updates …": "Checking for updates …",
     "Installiere Break & Rank auf deinem Home-Bildschirm": "Install Break & Rank on your home screen",
     "Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"": "Tap Share below, then \"Add to Home Screen\"",
