@@ -7,6 +7,9 @@ import { isIos, isStandalone } from "../lib/notifications";
 import Ball from "./Ball";
 import LegalModal from "./LegalModal";
 
+const OTP_MIN = 6;
+const OTP_MAX = 10;
+
 export default function LoginScreen() {
   const [mode, setMode] = useState("magic"); // Standard: gewohnter Magic-Link; Passwort ist ein Tipp entfernt
   const [email, setEmail] = useState("");
@@ -41,7 +44,7 @@ export default function LoginScreen() {
   };
 
   // Alternative zum Link-Klick: Supabase verschickt bei signInWithOtp immer
-  // auch einen 6-stelligen Zahlencode in derselben Mail (Mail-Vorlage muss
+  // auch einen Zahlencode in derselben Mail (Mail-Vorlage muss
   // {{ .Token }} enthalten). Wichtig auf iOS: oeffnet die Mail-App den Link
   // in einem anderen Browser/In-App-Webview als dem, den man sonst nutzt
   // (eigener, separater localStorage!), landet die Sitzung dort und man
@@ -102,26 +105,30 @@ export default function LoginScreen() {
               darum gleich auf den Code lenken statt auf den Link. */}
           {isIos() && isStandalone() ? (
             <p className="hint center" style={{ marginTop: 10 }}>
-              <b>{t("Auf dem iPhone öffnet der Link Safari statt dieser App. Gib hier den 6-stelligen Code aus der Mail ein, dann bist du direkt in der App angemeldet.")}</b>
+              <b>{t("Auf dem iPhone öffnet der Link Safari statt dieser App. Gib hier den Code aus der Mail ein, dann bist du direkt in der App angemeldet.")}</b>
             </p>
           ) : (
             <>
               <p className="hint" style={{ textAlign: "center" }}>
                 {t("Oeffne die Mail auf DIESEM Geraet und tippe auf den Link. Nichts bekommen? Schau in den Spam-Ordner.")}
               </p>
-              <p className="hint center" style={{ marginTop: 10 }}>{t("Oder gib den 6-stelligen Code aus derselben Mail ein:")}</p>
+              <p className="hint center" style={{ marginTop: 10 }}>{t("Oder gib den Code aus derselben Mail ein:")}</p>
             </>
           )}
           <label className="field-label" htmlFor="otp">{t("Code")}</label>
           <div className="mail-row">
             <Lock size={18} className="mail-ico" />
-            <input id="otp" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} placeholder="123456"
+            {/* 6 bis 10 Stellen: die Laenge stellt Supabase ein (Authentication
+                -> Providers -> Email -> "Email OTP Length", 6-10, Prod steht
+                auf 8). Bis 2026-09-26 war hier hart 6 - ein 8-stelliger Code
+                liess sich dann gar nicht eingeben. */}
+            <input id="otp" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={OTP_MAX} placeholder="12345678"
               value={code} autoComplete="one-time-code"
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              onKeyDown={(e) => e.key === "Enter" && code.length === 6 && verifyCode()} />
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, OTP_MAX))}
+              onKeyDown={(e) => e.key === "Enter" && code.length >= OTP_MIN && verifyCode()} />
           </div>
           {codeError && <p className="nick-status err"><X size={14} /> {codeError}</p>}
-          <button className="btn primary" disabled={codeBusy || code.length !== 6} onClick={verifyCode}>
+          <button className="btn primary" disabled={codeBusy || code.length < OTP_MIN} onClick={verifyCode}>
             {codeBusy ? "..." : <>{t("Code bestätigen")} <ArrowRight size={18} /></>}
           </button>
           <p className="hint" style={{ textAlign: "center" }}>
