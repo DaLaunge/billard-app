@@ -117,8 +117,16 @@ async function persistNavAndUpdate(navState, updateSW, { immediate = false } = {
   try { reg = await navigator.serviceWorker?.getRegistration(); } catch { /* ignore */ }
   const activeBefore = reg?.active || null;
   await updateSW(true);
+  // Nie mitten in einer Live-Eingabe: Wurde der Timer im Hintergrund
+  // eingefroren (iOS) und ist inzwischen ein LIVE_ENTRY_TABS-Screen offen
+  // (erkennbar an der Klasse live-entry auf <html>, siehe unten), wartet der
+  // Reload, bis er wieder verlassen ist.
+  const reloadWhenSafe = () => {
+    if (document.documentElement.classList.contains("live-entry")) { setTimeout(reloadWhenSafe, 2000); return; }
+    window.location.reload();
+  };
   setTimeout(() => {
-    if (reg?.active && reg.active !== activeBefore) window.location.reload();
+    if (reg?.active && reg.active !== activeBefore) reloadWhenSafe();
   }, 4000);
 }
 
