@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
+import { Trophy, Radio, Plus, BarChart3, User, RefreshCw } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -16,6 +16,10 @@ import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offli
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
+import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
+import { useHideTabbar } from "./lib/useHideTabbar";
+import { usePullToRefresh } from "./lib/usePullToRefresh";
+import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
@@ -84,15 +88,47 @@ const RESUME_NAV_KEY = "pendingUpdateNav";
 // aus irgendeinem Grund (z.B. eine haengende interne Sperre), darf das
 // NIE das Anwenden des Updates dauerhaft blockieren - lieber nach kurzer
 // Zeit trotzdem weitermachen als gar nicht mehr updaten.
-async function persistNavAndUpdate(navState, updateSW) {
-  try {
-    await Promise.race([
-      supabase.auth.getSession(),
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-    ]);
-  } catch { /* ignore */ }
-  try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ }
-  updateSW(true);
+//
+// immediate (nur Trigger E, App geht in den Hintergrund): OHNE dieses Warten.
+// iOS friert eine Home-Bildschirm-App beim Verlassen praktisch sofort ein -
+// die bis zu 2 s Wartezeit fuehrten dazu, dass die Skip-Waiting-Nachricht
+// nie rausging und das Update dort nie angewendet wurde. Der eigentliche
+// Reload kommt ohnehin erst, wenn der neue Worker uebernimmt (beim
+// Zurueckholen), das Token-Risiko oben ist in diesem Moment also klein.
+//
+// Rueckfall-Reload: Auf iOS (Home-Bildschirm-Modus) kommt das
+// "controlling"-Event, an dem vite-plugin-pwa den Reload aufhaengt, nicht
+// zuverlaessig an - dann ist der neue Worker aktiv, die Seite laeuft aber
+// mit der alten Version weiter, und einen zweiten Versuch gibt es nicht
+// (es wartet ja kein Worker mehr). Darum nach 4 s selbst neu laden - aber
+// NUR, wenn tatsaechlich ein anderer Worker aktiv geworden ist. Ohne diese
+// Bedingung gaebe es eine Reload-Schleife, falls die Aktivierung
+// fehlschlaegt: Trigger D feuert nach jedem Seitenaufruf erneut.
+async function persistNavAndUpdate(navState, updateSW, { immediate = false } = {}) {
+  if (!immediate) {
+    try {
+      await Promise.race([
+        supabase.auth.getSession(),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
+      ]);
+    } catch { /* ignore */ }
+  }
+  if (navState) { try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ } }
+  let reg = null;
+  try { reg = await navigator.serviceWorker?.getRegistration(); } catch { /* ignore */ }
+  const activeBefore = reg?.active || null;
+  await updateSW(true);
+  // Nie mitten in einer Live-Eingabe: Wurde der Timer im Hintergrund
+  // eingefroren (iOS) und ist inzwischen ein LIVE_ENTRY_TABS-Screen offen
+  // (erkennbar an der Klasse live-entry auf <html>, siehe unten), wartet der
+  // Reload, bis er wieder verlassen ist.
+  const reloadWhenSafe = () => {
+    if (document.documentElement.classList.contains("live-entry")) { setTimeout(reloadWhenSafe, 2000); return; }
+    window.location.reload();
+  };
+  setTimeout(() => {
+    if (reg?.active && reg.active !== activeBefore) reloadWhenSafe();
+  }, 4000);
 }
 
 export default function App() {
@@ -162,6 +198,9 @@ export default function App() {
   // beim allerersten Rendern sichern, bevor der Persistenz-Effekt weiter
   // unten den initialen "stats"-Default hineinschreibt und den echten Wert
   // ueberschreiben wuerde.
+  // Ziel aus einem Klick auf eine Push-Nachricht bei geschlossener App
+  // (public/push-sw.js oeffnet dann "/?nav=..."), siehe Startseiten-Block.
+  const [urlNavAtStart] = useState(readUrlNav);
   const [lastMainTabAtStart] = useState(() => {
     try { return localStorage.getItem("lastMainTab"); } catch { return null; }
   });
@@ -285,8 +324,16 @@ export default function App() {
   // persistNavAndUpdate) und beim Neustart wiederhergestellt (resumedNav
   // oben), damit z.B. ein dauerhaft angezeigter Turnier-Bildschirm nach dem
   // Reload auf demselben Screen bleibt statt auf die Startseite zu springen.
+  // Nur noch "auto" oder "manual" (seit 2026-09-26). Vorher gab es "bei
+  // jedem Aufruf" / "alle 30 Min" (Standard) / "alle 60 Min" / "manuell" -
+  // die Zeitintervalle liefen per setInterval, und das steht auf dem iPhone
+  // still, solange die App im Hintergrund eingefroren ist. Bei kurzer
+  // Nutzung kam die 30-Minuten-Marke nie, und iOS beendet die App auf
+  // Geraeten mit viel Speicher tagelang nicht - dort wurde praktisch nie
+  // nach Updates gesucht. Alte gespeicherte Werte: "manual" bleibt, alles
+  // andere wird "auto".
   const [updateInterval, setUpdateInterval] = useState(() => {
-    try { return localStorage.getItem("updateCheckInterval") || "30"; } catch { return "30"; }
+    try { return localStorage.getItem("updateCheckInterval") === "manual" ? "manual" : "auto"; } catch { return "auto"; }
   });
   const [needReload, setNeedReload] = useState(false);
   const swRegistration = useRef(null);
@@ -295,20 +342,50 @@ export default function App() {
     onNeedRefresh() { setNeedReload(true); },
   });
   const checkForUpdate = useCallback(() => { swRegistration.current?.update(); }, []);
+  // Trigger F: Wartet beim Seitenaufruf schon eine neue Version, sofort
+  // einspielen. Gedacht fuer das Neuladen per Herunterziehen (und jeden
+  // anderen Reload): Ein wartender Service Worker wird durch einen normalen
+  // Reload NICHT aktiv - die Seite kam also mit der alten Version zurueck,
+  // und Trigger D verpasste das Update meist, weil onNeedRefresh erst NACH
+  // dem Laden des Spielers ankommt. Hier wird die Registrierung direkt
+  // gefragt und die Skip-Waiting-Nachricht direkt an den wartenden Worker
+  // geschickt (workbox-window kennt die Registrierung so frueh evtl. noch
+  // nicht, updateServiceWorker waere dann wirkungslos). Unbedenklich fuer
+  // LIVE_ENTRY_TABS: direkt nach einem Seitenaufruf liegt noch keine
+  // unbestaetigte Eingabe im Speicher (der Match-Entwurf steht in
+  // localStorage und uebersteht den Reload). resumedNav wird erneut
+  // gesichert, falls dieser Aufruf selbst schon aus einem Update-Reload kam.
+  useEffect(() => {
+    let cancelled = false;
+    navigator.serviceWorker?.getRegistration().then((reg) => {
+      if (cancelled || !reg?.waiting || !reg.active) return;
+      persistNavAndUpdate(resumedNav, () => reg.waiting?.postMessage({ type: "SKIP_WAITING" }));
+    }).catch(() => { /* ignore */ });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const setUpdateCheckInterval = useCallback((v) => {
     setUpdateInterval(v);
     try { localStorage.setItem("updateCheckInterval", v); } catch { /* ignore */ }
   }, []);
+  // "auto": beim Start, bei JEDEM Zurueckholen der App (hoechstens alle
+  // 2 Min - ein Check ist nur ein kleiner Abruf von sw.js bei Vercel) und
+  // zusaetzlich alle 30 Min, solange sie offen bleibt (Desktop-Tab).
+  const lastUpdateCheckRef = useRef(0);
   useEffect(() => {
     if (updateInterval === "manual") return;
-    if (updateInterval === "open") {
+    const check = () => {
+      // Vor onRegisteredSW gibt es noch nichts zu pruefen (die Registrierung
+      // selbst prueft ohnehin) - dann auch die Sperre nicht setzen.
+      if (!swRegistration.current) return;
+      if (Date.now() - lastUpdateCheckRef.current < 2 * 60000) return;
+      lastUpdateCheckRef.current = Date.now();
       checkForUpdate();
-      const onVis = () => { if (document.visibilityState === "visible") checkForUpdate(); };
-      document.addEventListener("visibilitychange", onVis);
-      return () => document.removeEventListener("visibilitychange", onVis);
-    }
-    const id = setInterval(checkForUpdate, Number(updateInterval) * 60000);
-    return () => clearInterval(id);
+    };
+    check();
+    const onVis = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVis);
+    const id = setInterval(check, 30 * 60000);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [updateInterval, checkForUpdate]);
   const currentNavState = useMemo(() => (
     { tab, profileName, protokollMatch, protokollBackTab, vsOpp, tournamentId, winnerStaysId, matchTournamentCtx }
@@ -340,7 +417,7 @@ export default function App() {
       if (document.visibilityState !== "hidden") return;
       if (!needReload || !initialLoadDone || celebrate) return;
       if (LIVE_ENTRY_TABS.includes(tab)) return;
-      persistNavAndUpdate(currentNavState, updateServiceWorker);
+      persistNavAndUpdate(currentNavState, updateServiceWorker, { immediate: true });
     };
     document.addEventListener("visibilitychange", onHidden);
     return () => document.removeEventListener("visibilitychange", onHidden);
@@ -656,7 +733,10 @@ export default function App() {
         // Uebersicht/Statistik-Menue-Umbau) - sonst landet man auf einem
         // tab-Wert, den kein Screen mehr rendert (leere Seite mit Tabbar).
         if (!["stats", "turnier", "live", "profil"].includes(target)) target = null;
-        if (target && target !== "stats") navReplace({ tab: target });
+        if (urlNavAtStart) {
+          navReplace(urlNavAtStart);
+          try { window.history.replaceState(urlNavAtStart, "", window.location.pathname); } catch { /* ignore */ }
+        } else if (target && target !== "stats") navReplace({ tab: target });
         // Trigger D: direkt nachdem sich der Spieler zum ersten Mal in
         // diesem Seitenaufruf angemeldet hat (egal ob frischer Login oder
         // eine bestehende Session, die hier zum ersten Mal geladen wird) -
@@ -831,6 +911,136 @@ export default function App() {
     wasInLiveEntry.current = inLiveEntry;
   }, [inLiveEntry, keepAwakeDefault]);
   useWakeLock(keepAwakeNow && inLiveEntry);
+
+  // Tabbar beim Runterscrollen ausblenden (Geraete-Einstellung, Standard aus -
+  // siehe lib/uiPrefs.js und lib/useHideTabbar.js). Der Hook haengt am
+  // Scroll-Container .content, nicht am Fenster: gescrollt wird in der App
+  // immer dort drin, das Fenster selbst bewegt sich nie.
+  const [hideTabbarPref, setHideTabbarPrefState] = useState(getHideTabbar);
+  const setHideTabbarPref = useCallback((on) => { setHideTabbarPrefState(on); storeHideTabbar(on); }, []);
+  const [contentEl, setContentEl] = useState(null);
+  const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
+  // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
+  // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
+  const ptr = usePullToRefresh(contentEl);
+
+  // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
+  // Stufe pro Geraet: "off" / "inapp" (Posteingang abfragen, solange die App
+  // offen ist) / "push" (zusaetzlich echte Push-Nachrichten). Die Texte
+  // kommen fertig aus der Datenbank (deutsch + englisch).
+  const [notifyMode, setNotifyModeState] = useState(getNotifyMode);
+  const setNotifyMode = useCallback(async (mode) => {
+    if (mode === "push") {
+      try { await enablePush(getLang()); }
+      catch (e) {
+        const why = e?.message;
+        toast(why === "denied" ? t("Benachrichtigungen sind für diese App im Browser/System blockiert.")
+          : why === "ios-install" ? t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")
+          : why === "unsupported" ? t("Dieser Browser unterstützt keine Push-Nachrichten.")
+          : t("Fehler: ") + (why || "?"));
+        return;
+      }
+    } else if (notifyMode === "push") {
+      await disablePush();
+    }
+    // Beim Wechsel auf "inapp" den Posteingang neu einlesen, statt alles seit
+    // dem letzten In-App-Betrieb auf einmal als Toasts nachzuliefern.
+    if (mode === "inapp" && player) { try { localStorage.removeItem("notifySeen:" + player.id); } catch { /* ignore */ } }
+    storeNotifyMode(mode);
+    setNotifyModeState(mode);
+  }, [notifyMode, player, toast]);
+
+  // Abo dieses Geraets dem angemeldeten Spieler + seiner Sprache zuordnen
+  // (anderer Nutzer auf demselben Geraet, Sprache gewechselt). Ist die
+  // Erlaubnis inzwischen weg, still auf "inapp" zurueckfallen.
+  useEffect(() => {
+    if (!player || notifyMode !== "push") return;
+    syncPush(lang).then((ok) => {
+      if (!ok) { storeNotifyMode("inapp"); setNotifyModeState("inapp"); }
+    });
+  }, [player?.id, notifyMode, lang]);
+
+  // Toast fuer eine Benachrichtigung. Mitten in einer Match-/Winner-Stays-
+  // Eingabe ohne "Ansehen": ein Sprung weg wuerde die ungespeicherte Eingabe
+  // verwerfen.
+  const showNotice = useCallback((n) => {
+    if (POPUP_KINDS.has(n.kind)) {
+      // Eigene "Du bist dran"-Popups - nur sofort nachsehen statt erst beim
+      // naechsten 20s-Poll.
+      if (n.kind === "tourney_ready") checkTourneyReady(); else checkWinnerStaysReady();
+      return;
+    }
+    const nav = safeNav(n.nav);
+    const text = n.body ? `${n.title} – ${n.body}` : n.title;
+    toast(text, nav && !LIVE_ENTRY_TABS.includes(tabRef.current)
+      ? { label: t("Ansehen"), onAction: () => navPush(nav) } : null);
+  }, [toast, navPush, checkTourneyReady, checkWinnerStaysReady]);
+
+  // Nachrichten vom Service Worker: Push bei offener App (statt System-
+  // Benachrichtigung) und Klick auf eine Benachrichtigung.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMsg = (e) => {
+      const d = e.data || {};
+      if (d.type === "push-notification" && d.notification) showNotice(d.notification);
+      if (d.type === "push-nav") {
+        const nav = safeNav(d.nav);
+        if (nav && !LIVE_ENTRY_TABS.includes(tabRef.current)) navPush(nav);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", onMsg);
+    return () => navigator.serviceWorker.removeEventListener("message", onMsg);
+  }, [showNotice, navPush]);
+
+  // Modus "inapp": Posteingang alle 30s (und beim Zurueckkommen in die App)
+  // abfragen. Beim allerersten Mal nur den Stand merken, nichts anzeigen.
+  // Was aelter als 15 Minuten ist, wird still als gelesen markiert - "X ist
+  // live" von gestern Abend waere beim Oeffnen am naechsten Tag irrefuehrend,
+  // und Offenes (Herausforderung, Bestaetigung) zeigen die Badges ohnehin.
+  useEffect(() => {
+    if (!player || notifyMode !== "inapp") return;
+    const key = "notifySeen:" + player.id;
+    let busy = false;
+    const poll = async () => {
+      if (busy || document.visibilityState !== "visible") return;
+      busy = true;
+      try {
+        let raw = null;
+        try { raw = localStorage.getItem(key); } catch { /* ignore */ }
+        const seen = raw == null ? NaN : Number(raw);
+        if (!Number.isFinite(seen)) {
+          const { data, error } = await supabase.from("notifications").select("id")
+            .eq("player_id", player.id).order("id", { ascending: false }).limit(1);
+          if (error) return;
+          try { localStorage.setItem(key, String(data?.[0]?.id ?? 0)); } catch { /* ignore */ }
+          return;
+        }
+        const { data, error } = await supabase.from("notifications")
+          .select("id, kind, title_de, body_de, title_en, body_en, nav, created_at")
+          .eq("player_id", player.id).gt("id", seen).order("id", { ascending: true }).limit(20);
+        if (error || !data?.length) return;
+        try { localStorage.setItem(key, String(data[data.length - 1].id)); } catch { /* ignore */ }
+        const en = getLang() === "en";
+        const fresh = data.filter((n) => Date.now() - new Date(n.created_at) < 15 * 60000);
+        if (fresh.length === 0) return;
+        const shown = fresh.filter((n) => !POPUP_KINDS.has(n.kind));
+        fresh.filter((n) => POPUP_KINDS.has(n.kind)).forEach((n) => showNotice({ kind: n.kind }));
+        if (shown.length === 0) return;
+        const last = shown[shown.length - 1];
+        const more = shown.length > 1 ? ` (${t("+{n} weitere", { n: shown.length - 1 })})` : "";
+        showNotice({
+          kind: last.kind, nav: last.nav,
+          title: en ? last.title_en : last.title_de,
+          body: (en ? last.body_en : last.body_de) + more,
+        });
+      } finally { busy = false; }
+    };
+    poll();
+    const id = setInterval(poll, 30000);
+    const onVis = () => { if (document.visibilityState === "visible") poll(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+  }, [player, notifyMode, showNotice]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1028,7 +1238,14 @@ export default function App() {
   const openProfile = (nick) => navPush({ tab: "fremdprofil", profileName: nick });
   const openProtokoll = (m) => navPush({ tab: "protokoll", protokollMatch: m, protokollBackTab: tab });
   const startMatchVs = (opponent) => navPush({ tab: "match", vsOpp: opponent });
-  const logout = async () => { await supabase.auth.signOut(); navReplace({ tab: "stats" }); };
+  // Push-Abo vor dem Abmelden loeschen (braucht noch die Sitzung) - sonst
+  // bekaeme dieses Geraet weiter die Nachrichten des abgemeldeten Spielers.
+  // Die Stufe selbst bleibt stehen; nach dem naechsten Anmelden legt
+  // syncPush() das Abo fuer den dann angemeldeten Spieler neu an.
+  const logout = async () => {
+    if (notifyMode === "push") await disablePush();
+    await supabase.auth.signOut(); navReplace({ tab: "stats" });
+  };
 
   const submitFeedback = async (category, message) => {
     const { error } = await supabase.rpc("submit_feedback", { p_category: category, p_message: message });
@@ -1134,7 +1351,7 @@ export default function App() {
                 </div>
               );
             })()}
-            {tourneyReady && tab !== "match" && !celebrate && (() => {
+            {tourneyReady && notifyMode !== "off" && tab !== "match" && !celebrate && (() => {
               const iAmP1 = tourneyReady.player1_id === player.id;
               const oppName = (iAmP1 ? tourneyReady.player2 : tourneyReady.player1)?.nickname;
               return (
@@ -1159,7 +1376,7 @@ export default function App() {
                 </div>
               );
             })()}
-            {wsReady && tab !== "match" && tab !== "winnerstays" && !celebrate && !tourneyReady && (() => {
+            {wsReady && notifyMode !== "off" && tab !== "match" && tab !== "winnerstays" && !celebrate && !tourneyReady && (() => {
               const nameOfId = (id) => players.find((p) => p.id === id)?.nickname;
               const oppName = [nameOfId(wsReady.oppPlayer1Id), nameOfId(wsReady.oppPlayer2Id)].filter(Boolean).join(" & ");
               return (
@@ -1184,7 +1401,14 @@ export default function App() {
                 </div>
               );
             })()}
-            <main className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
+            {(ptr.pull > 0 || ptr.refreshing) && (
+              <div className={"ptr-indicator" + (ptr.ready || ptr.refreshing ? " ready" : "")}
+                style={{ transform: `translate(-50%, ${ptr.pull - 44}px)` }} aria-hidden="true">
+                <RefreshCw size={18} className={ptr.refreshing ? "ptr-spin" : ""}
+                  style={ptr.refreshing ? undefined : { transform: `rotate(${(ptr.pull / ptr.threshold) * 270}deg)` }} />
+              </div>
+            )}
+            <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
@@ -1249,6 +1473,8 @@ export default function App() {
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
                   keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
+                  hideTabbar={hideTabbarPref} onSetHideTabbar={setHideTabbarPref}
+                  notifyMode={notifyMode} onSetNotifyMode={setNotifyMode}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}
@@ -1308,7 +1534,7 @@ export default function App() {
               const iAmP1 = next.player1_id === player.id;
               const oppName = (iAmP1 ? next.player2 : next.player1)?.nickname;
               return (
-                <button className="tourney-table-banner"
+                <button className={"tourney-table-banner" + (tabbarHidden ? " tabbar-off" : "")}
                   onClick={() => navPush({
                     tab: "match",
                     matchTournamentCtx: {
@@ -1330,7 +1556,7 @@ export default function App() {
               const nameOfId = (id) => players.find((p) => p.id === id)?.nickname;
               const oppName = [nameOfId(next.oppPlayer1Id), nameOfId(next.oppPlayer2Id)].filter(Boolean).join(" & ");
               return (
-                <button className="tourney-table-banner"
+                <button className={"tourney-table-banner" + (tabbarHidden ? " tabbar-off" : "")}
                   onClick={() => navPush({ tab: "winnerstays", winnerStaysId: next.session_id })}>
                   🎱 {next.session.table_number != null ? `${t("Tisch")} ${next.session.table_number} · ` : ""}{t("gegen {name}", { name: oppName || "?" })}
                   {wsReadyList.length > 1 && ` · ${t("+{n} weitere", { n: wsReadyList.length - 1 })}`}
@@ -1339,7 +1565,7 @@ export default function App() {
             })()}
 
             {tab !== "match" && (
-            <nav className="tabbar">
+            <nav className={"tabbar" + (tabbarHidden ? " tabbar-off" : "")}>
               <button className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}

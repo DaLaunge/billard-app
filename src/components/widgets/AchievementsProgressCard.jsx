@@ -1,6 +1,7 @@
 import { Award } from "lucide-react";
 import { t } from "../../lib/i18n";
 import CardMenuButton from "./CardMenuButton";
+import ProgressBar from "./ProgressBar";
 import { upcomingAchievements } from "../../lib/achievements";
 
 /* Eigenstaendiges Modul: die naechsten N noch nicht erreichten Erfolge
@@ -16,10 +17,13 @@ export default function AchievementsProgressCard({ catalog, extras, earnedBadges
       </div>
       {upcoming.length === 0 && <p className="hint" style={{ marginTop: 0 }}>{t("Alle erreichbaren Erfolge freigeschaltet!")}</p>}
       {upcoming.map((c) => (
-        <div key={c.badgeKey} className="side-row">
-          <span className="side-row-emoji">{c.emoji}</span>
-          <span className="side-row-name">{c.name}</span>
-          <span className="side-row-gap">{t("noch {n} {unit}", { n: c.gap, unit: c.unit })}</span>
+        <div key={c.badgeKey} className="side-row-progress">
+          <div className="side-row">
+            <span className="side-row-emoji">{c.emoji}</span>
+            <span className="side-row-name">{c.name}</span>
+            <span className="side-row-gap">{t("noch {n} {unit}", { n: c.gap, unit: c.unit })}</span>
+          </div>
+          <ProgressBar current={c.current} target={c.target} />
         </div>
       ))}
       <button className="btn ghost small" onClick={() => onOpenProfile(nickname)}>{t("Alle Erfolge ansehen")}</button>

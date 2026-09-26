@@ -149,7 +149,10 @@ function closestCandidates(catalog, extras, earnedBadges) {
     if (!p) return;
     const gap = p.target - p.current;
     if (gap <= 0) return;
-    candidates.push({ gap, unit: p.unit, name: t(b.name), badgeKey: b.badge_key, emoji: b.emoji });
+    // current/target wandern mit, damit die Anzeige daraus einen
+    // Fortschrittsbalken bauen kann statt nur den Abstand zu zeigen -
+    // "noch 1 Spiel" heisst etwas voellig anderes bei 9/10 als bei 0/1.
+    candidates.push({ gap, current: p.current, target: p.target, unit: p.unit, name: t(b.name), badgeKey: b.badge_key, emoji: b.emoji });
   });
   candidates.sort((a, b) => a.gap - b.gap);
   return candidates;

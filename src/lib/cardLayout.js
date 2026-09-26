@@ -131,9 +131,14 @@ export const CARD_SCREENS = [
       { id: "headToHead", label: "Head-to-Head", col: "left" },
       { id: "tempo", label: "Spielgeschwindigkeit", col: "right" },
       { id: "erfolge", label: "Erfolge (alle)", col: "middle" },
-      { id: "anmeldung", label: "Anmeldung & Sicherheit", col: "right" },
-      { id: "feedback", label: "Feedback", col: "right" },
-      { id: "tickets", label: "Meine Tickets", col: "right" },
+      // "Anmeldung & Sicherheit", "Feedback" und "Meine Tickets" waren bis
+      // 2026-09-25 ebenfalls frei anordenbare Karten hier. Sie stehen jetzt
+      // fest unter "Profil bearbeiten": das Profil selbst zeigt nur noch,
+      // was ueber DICH etwas aussagt (Erfolge, Ratings, Rekorde), alles
+      // Einstellungs- und Kontoartige liegt hinter dem Zahnrad. Alte
+      // gespeicherte Reihenfolgen/Ausblendungen nennen diese ids noch -
+      // normalizeCardOrder()/normalizeHiddenCards() werfen sie automatisch
+      // raus, weil sie hier nicht mehr stehen.
     ],
   },
 ];

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -7,6 +7,7 @@ import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE, fmtDate, fmtDuration } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
 import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
+import { pushAvailability } from "../lib/notifications";
 import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import AvatarPhotoField from "./AvatarPhotoField";
@@ -17,6 +18,7 @@ import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import CardMenuButton from "./widgets/CardMenuButton";
+import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import { CARD_SCREENS, splitCardColumns } from "../lib/cardLayout";
@@ -32,7 +34,7 @@ const CARD_COLUMN_ICON = { left: AlignStartVertical, middle: AlignCenterVertical
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, achievementCounters }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
@@ -621,22 +623,132 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               <span className="settings-switch-label">{t("Bildschirm während eines Matches anlassen")}</span>
             </label>
             <p className="hint">{t("Verhindert, dass sich das Handy mitten im Spiel sperrt. Gilt nur auf diesem Gerät und nur, solange ein Match oder eine Winner-Stays-Runde offen ist.")}</p>
+            {/* Standard ist AUS (siehe lib/uiPrefs.js): eine Navigation, die
+                von selbst verschwindet, soll niemand ungefragt bekommen. Wer
+                den Platz will, schaltet es hier ein - am Handy sind es rund
+                76px, die sonst dauerhaft ueber dem Inhalt liegen. */}
+            <label className="settings-switch">
+              <input type="checkbox" checked={hideTabbar} onChange={(e) => onSetHideTabbar(e.target.checked)} />
+              <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+              <span className="settings-switch-label">{t("Menüleiste beim Scrollen ausblenden")}</span>
+            </label>
+            <p className="hint">{t("Beim Runterscrollen verschwindet die Leiste am unteren Rand, beim Hochscrollen kommt sie zurück. Mehr Platz für Ranglisten und Grafiken. Gilt nur auf diesem Gerät.")}</p>
+          </section>
+
+          <section className="stat-block">
+            <h3><Bell size={17} /> {t("Benachrichtigungen")}</h3>
+            {/* Eine Stufe fuer alle Ereignisse (Herausforderung, Match
+                bestaetigen, du bist dran, Live/Planung/Zusagen). Gilt pro
+                Geraet, weil auch die Push-Erlaubnis am Geraet haengt. Die
+                Umstellung auf "Push" MUSS aus diesem Klick heraus
+                passieren - iOS fragt die Erlaubnis sonst nicht ab. */}
+            <div className="chips">
+              {[
+                ["off", t("Aus")],
+                ["inapp", t("In der App")],
+                ["push", t("Push")],
+              ].map(([v, label]) => (
+                <button key={v} className={"chip" + (notifyMode === v ? " active" : "")}
+                  disabled={busy} onClick={async () => {
+                    if (v === notifyMode) return;
+                    setBusy(true);
+                    try { await onSetNotifyMode(v); } finally { setBusy(false); }
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="hint">
+              {notifyMode === "off" ? t("Keine Hinweise, auch kein „Du bist dran!“ bei Turnieren und Winner Stays.")
+                : notifyMode === "inapp" ? t("Hinweise erscheinen nur, solange die App geöffnet ist.")
+                : t("Push-Nachrichten kommen auch, wenn die App geschlossen ist. Ist sie offen, erscheint stattdessen ein Hinweis in der App.")}
+              {" "}{t("Gilt nur auf diesem Gerät.")}
+            </p>
+            {notifyMode !== "push" && pushAvailability() === "ios-install" && (
+              <p className="hint">📲 {t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")}</p>
+            )}
           </section>
 
           <section className="stat-block">
             <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
-            <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
-            <select id="updateInterval" className="settings-select" value={updateInterval}
-              onChange={(e) => onSetUpdateInterval(e.target.value)}>
-              <option value="open">{t("Bei jedem Aufruf")}</option>
-              <option value="30">{t("Alle 30 Minuten")}</option>
-              <option value="60">{t("Alle 60 Minuten")}</option>
-              <option value="manual">{t("Manuell")}</option>
-            </select>
+            <label className="settings-switch">
+              <input type="checkbox" checked={updateInterval !== "manual"}
+                onChange={(e) => onSetUpdateInterval(e.target.checked ? "auto" : "manual")} />
+              <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+              <span className="settings-switch-label">{t("Automatisch aktualisieren")}</span>
+            </label>
+            <p className="hint">
+              {updateInterval !== "manual"
+                ? t("Sucht bei jedem Öffnen der App nach einer neuen Version und spielt sie unauffällig ein – nie mitten in einem Match.")
+                : t("Neue Versionen gibt es nur über den Knopf unten.")}
+              {" "}{t("Gilt nur auf diesem Gerät.")}
+            </p>
             <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
               <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
             </button>
           </section>
+
+          {/* Konto und Support. Bis 2026-09-25 waren "Anmeldung & Sicherheit",
+              "Feedback" und "Meine Tickets" frei anordenbare Karten auf dem
+              Profil selbst, und "Verwaltung"/"Abmelden" standen als Knoepfe
+              darunter. Das Profil war damit zwei Dinge gleichzeitig: was ueber
+              dich zu sagen ist (Erfolge, Ratings, Rekorde) UND ein
+              Einstellungs-Sammelbecken. Jetzt liegt alles Zweite hier hinter
+              dem Zahnrad, das Profil zeigt nur noch das Erste. */}
+          <PasswordSection toast={toast} />
+          <section className="stat-block">
+            <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
+            {!feedbackOpen ? (
+              <>
+                <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
+                <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
+                  <MessageCircle size={15} /> {t("Feedback geben")}
+                </button>
+              </>
+            ) : feedbackSent ? (
+              <>
+                <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
+                <div className="sp-controls">
+                  <a className="btn ghost" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">
+                    {t("Per Telegram")}
+                  </a>
+                  <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
+                </div>
+                <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
+              </>
+            ) : (
+              <div className="challenge-form">
+                <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
+                  {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
+                    <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="search-row" style={{ marginBottom: 8 }}>
+                  <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
+                    style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
+                    onChange={(e) => setFeedbackMsg(e.target.value)} />
+                </div>
+                <div className="sp-controls">
+                  <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
+                  <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
+                    {feedbackBusy ? t("Speichere ...") : t("Absenden")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+          <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />
+
+          {/* Am Ende der Einstellungen, nicht dazwischen: das sind die
+              Aktionen, die aus den Einstellungen herausfuehren. */}
+          <div className="pf-account-actions">
+            {meRow?.role === "admin" && (
+              <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
+            )}
+            <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
+          </div>
         </div>
         </div>
 
@@ -798,6 +910,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                       <span className="badge-cat-count">{earnedCount} / {items.length}</span>
                       <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
                     </div>
+                    <ProgressBar current={earnedCount} target={items.length} />
                     {liveStat && <span className="badge-cat-live">{liveStat}</span>}
                   </button>
                   {open && (
@@ -817,9 +930,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                             <span className="badge-name">{t(b.name)}</span>
                             <span className="badge-desc">{t(b.description)}</span>
                             {progress && (
-                              <span className="badge-progress">
-                                {t("Fortschritt: {cur} / {target} {unit}", { cur: progress.current, target: progress.target, unit: progress.unit })}
-                              </span>
+                              <>
+                                <span className="badge-progress">
+                                  {t("Fortschritt: {cur} / {target} {unit}", { cur: progress.current, target: progress.target, unit: progress.unit })}
+                                </span>
+                                <ProgressBar current={progress.current} target={progress.target} />
+                              </>
                             )}
                             {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
                           </button>
@@ -860,56 +976,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             )}
           </section>
     ) : null,
-    anmeldung: isMe ? <PasswordSection toast={toast} onHide={cardHide("anmeldung")} /> : null,
-    feedback: isMe ? (
-          <section className="stat-block">
-            <div className="stat-block-head roomy">
-              <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
-              {cardHide("feedback") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("feedback")} /></div>}
-            </div>
-            {!feedbackOpen ? (
-              <>
-                <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
-                <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
-                  <MessageCircle size={15} /> {t("Feedback geben")}
-                </button>
-              </>
-            ) : feedbackSent ? (
-              <>
-                <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
-                <div className="sp-controls">
-                  <a className="btn ghost" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">
-                    {t("Per Telegram")}
-                  </a>
-                  <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
-                </div>
-                <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
-              </>
-            ) : (
-              <div className="challenge-form">
-                <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
-                  {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
-                    <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <div className="search-row" style={{ marginBottom: 8 }}>
-                  <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
-                    style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
-                    onChange={(e) => setFeedbackMsg(e.target.value)} />
-                </div>
-                <div className="sp-controls">
-                  <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
-                  <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
-                    {feedbackBusy ? t("Speichere ...") : t("Absenden")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-    ) : null,
-    tickets: isMe ? <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} onHide={cardHide("tickets")} /> : null,
   };
   // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
   // durchgehende Liste ueber alle drei Spalten hinweg (siehe CardSlot.jsx).
@@ -924,7 +990,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         {onBack && <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>}
         <div>
           <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
-          <span className="head-note">{isMe ? t("Deine Erfolge, Statistiken und Einstellungen") : t("Erfolge und Statistiken dieses Spielers")}</span>
+          <span className="head-note">{isMe ? t("Deine Erfolge und Statistiken") : t("Erfolge und Statistiken dieses Spielers")}</span>
         </div>
       </header>
 
@@ -943,6 +1009,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
         onHeadClick={heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
         onInvite={isMe ? onInvite : undefined}
+        onSettings={isMe ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : undefined}
         actions={<>
           {!isMe && playerObj && !challengeForm && (
             <div className="sp-controls" style={{ marginBottom: 14 }}>
@@ -972,13 +1039,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               </div>
             </div>
           )}
-          {isMe && (
-            <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => {
-              setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
-            }}>
-              <Pencil size={15} /> {t("Profil bearbeiten")}
-            </button>
-          )}
         </>} />
       </div>
       {renderColumn("left")}
@@ -988,12 +1048,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <div className="pf-col right">
       {renderColumn("right")}
-      {/* Konto-Knoepfe: bewusst KEINE Karten (Abmelden ausblenden zu koennen
-          waere eine Falle), deshalb fest am Ende der rechten Spalte bzw.
-          am Handy ganz unten. */}
+      {/* Nur noch der Weg zu den Turnieren - bewusst KEINE Karte (er traegt
+          den "du bist dran"-Zaehler, den auszublenden eine Falle waere).
+          "Verwaltung" und "Abmelden" standen bis 2026-09-25 hier daneben und
+          liegen jetzt am Ende der Einstellungen hinter dem Zahnrad: sie
+          gehoeren zum Konto, nicht zu dem, was dieses Profil ueber dich
+          aussagt. */}
       {isMe && (
       <div className="pf-account-actions" style={{ order: 9999 }}>
-      {isMe && (
         <button className="btn ghost tournament-ready-btn" onClick={onOpenTurniere}>
           <Trophy size={16} /> {t("Turniere")}
           {/* Bleibt sichtbar, bis das Match tatsaechlich gespielt/gemeldet
@@ -1003,13 +1065,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               Turnierpaarung nicht in Vergessenheit geraet (Nutzer-Feedback). */}
           {tourneyReadyCount > 0 && <span className="badge tournament-ready-badge">{tourneyReadyCount}</span>}
         </button>
-      )}
-      {isMe && meRow?.role === "admin" && (
-        <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
-      )}
-      {isMe && (
-        <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
-      )}
       </div>
       )}
       </div>

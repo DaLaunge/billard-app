@@ -11,6 +11,14 @@
   Tabellenbasiertes Layout mit Inline-Styles statt Flex/Grid, weil
   Mail-Clients (v.a. Outlook Desktop) modernes CSS nicht zuverlaessig
   unterstuetzen - fuer HTML-Mails Branchenstandard.
+
+  {{ .Token }} (seit 2026-09-26): Auf dem iPhone oeffnet der Link immer in
+  Safari, und die Home-Bildschirm-App hat einen von Safari GETRENNTEN
+  Speicher - die Anmeldung landet dann in Safari, die App bleibt
+  ausgeloggt (Android teilt den Speicher, darum dort kein Problem). Der
+  Code wird im LoginScreen per verifyOtp() direkt in der App eingeloest.
+  Die App erwartet genau 6 Stellen (Authentication -> Providers -> Email
+  -> "Email OTP Length" muss 6 sein).
 -->
 <div style="background-color:#f4f1ea;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2ddd0;">
@@ -29,6 +37,12 @@
         <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;background-color:#D6A425;color:#0A2B21;font-weight:bold;font-size:16px;text-decoration:none;padding:14px 32px;border-radius:8px;font-family:Arial,Helvetica,sans-serif;">
           Jetzt anmelden
         </a>
+        <p style="margin:28px 0 6px;font-size:14px;line-height:1.5;color:#444444;font-family:Arial,Helvetica,sans-serif;">
+          <b>iPhone mit Break &amp; Rank am Home-Bildschirm?</b> Dann nicht den Button antippen, sondern diesen Code in der App eingeben:
+        </p>
+        <p style="margin:0;font-size:28px;font-weight:bold;letter-spacing:6px;color:#0A2B21;font-family:monospace;">
+          {{ .Token }}
+        </p>
         <p style="margin:28px 0 0;font-size:13px;color:#888888;font-family:Arial,Helvetica,sans-serif;">
           Button funktioniert nicht? Adresse kopieren und im Browser öffnen:
         </p>

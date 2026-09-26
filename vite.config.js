@@ -19,8 +19,11 @@ export default defineConfig({
       // reagieren kann.
       registerType: "prompt",
       injectRegister: false, // Registrierung laeuft manuell ueber useRegisterSW() in App.jsx
-      workbox: { clientsClaim: true },
-      devOptions: { enabled: true, type: "module" }, // Service Worker auch im `npm run dev` aktiv, zum Testen
+      // push-sw.js (public/) haengt die Push-Handler an den generierten Worker
+      // an. importScripts geht nur in einem klassischen Worker - darum im Dev-
+      // Modus type "classic" statt "module" (fuer generateSW ohnehin egal).
+      workbox: { clientsClaim: true, importScripts: ["push-sw.js"] },
+      devOptions: { enabled: true, type: "classic" }, // Service Worker auch im `npm run dev` aktiv, zum Testen
       includeAssets: ["apple-touch-icon.png"],
       manifest: {
         name: "Break & Rank",
