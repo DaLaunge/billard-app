@@ -112,7 +112,7 @@ async function persistNavAndUpdate(navState, updateSW, { immediate = false } = {
       ]);
     } catch { /* ignore */ }
   }
-  try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ }
+  if (navState) { try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ } }
   let reg = null;
   try { reg = await navigator.serviceWorker?.getRegistration(); } catch { /* ignore */ }
   const activeBefore = reg?.active || null;
@@ -341,6 +341,27 @@ export default function App() {
     onNeedRefresh() { setNeedReload(true); },
   });
   const checkForUpdate = useCallback(() => { swRegistration.current?.update(); }, []);
+  // Trigger F: Wartet beim Seitenaufruf schon eine neue Version, sofort
+  // einspielen. Gedacht fuer das Neuladen per Herunterziehen (und jeden
+  // anderen Reload): Ein wartender Service Worker wird durch einen normalen
+  // Reload NICHT aktiv - die Seite kam also mit der alten Version zurueck,
+  // und Trigger D verpasste das Update meist, weil onNeedRefresh erst NACH
+  // dem Laden des Spielers ankommt. Hier wird die Registrierung direkt
+  // gefragt und die Skip-Waiting-Nachricht direkt an den wartenden Worker
+  // geschickt (workbox-window kennt die Registrierung so frueh evtl. noch
+  // nicht, updateServiceWorker waere dann wirkungslos). Unbedenklich fuer
+  // LIVE_ENTRY_TABS: direkt nach einem Seitenaufruf liegt noch keine
+  // unbestaetigte Eingabe im Speicher (der Match-Entwurf steht in
+  // localStorage und uebersteht den Reload). resumedNav wird erneut
+  // gesichert, falls dieser Aufruf selbst schon aus einem Update-Reload kam.
+  useEffect(() => {
+    let cancelled = false;
+    navigator.serviceWorker?.getRegistration().then((reg) => {
+      if (cancelled || !reg?.waiting || !reg.active) return;
+      persistNavAndUpdate(resumedNav, () => reg.waiting?.postMessage({ type: "SKIP_WAITING" }));
+    }).catch(() => { /* ignore */ });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const setUpdateCheckInterval = useCallback((v) => {
     setUpdateInterval(v);
     try { localStorage.setItem("updateCheckInterval", v); } catch { /* ignore */ }
