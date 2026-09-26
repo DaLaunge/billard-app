@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Trophy, Radio, Plus, BarChart3, User } from "lucide-react";
+import { Trophy, Radio, Plus, BarChart3, User, RefreshCw } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -18,6 +18,7 @@ import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
 import { useHideTabbar } from "./lib/useHideTabbar";
+import { usePullToRefresh } from "./lib/usePullToRefresh";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
@@ -919,6 +920,9 @@ export default function App() {
   const setHideTabbarPref = useCallback((on) => { setHideTabbarPrefState(on); storeHideTabbar(on); }, []);
   const [contentEl, setContentEl] = useState(null);
   const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
+  // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
+  // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
+  const ptr = usePullToRefresh(contentEl);
 
   // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
   // Stufe pro Geraet: "off" / "inapp" (Posteingang abfragen, solange die App
@@ -1397,6 +1401,13 @@ export default function App() {
                 </div>
               );
             })()}
+            {(ptr.pull > 0 || ptr.refreshing) && (
+              <div className={"ptr-indicator" + (ptr.ready || ptr.refreshing ? " ready" : "")}
+                style={{ transform: `translate(-50%, ${ptr.pull - 44}px)` }} aria-hidden="true">
+                <RefreshCw size={18} className={ptr.refreshing ? "ptr-spin" : ""}
+                  style={ptr.refreshing ? undefined : { transform: `rotate(${(ptr.pull / ptr.threshold) * 270}deg)` }} />
+              </div>
+            )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}

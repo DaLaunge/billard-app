@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Settings } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -992,16 +992,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
           <span className="head-note">{isMe ? t("Deine Erfolge und Statistiken") : t("Erfolge und Statistiken dieses Spielers")}</span>
         </div>
-        {/* Zahnrad statt des frueheren breiten "Profil bearbeiten"-Knopfs in
-            der Identitaetskarte: Einstellungen liegen dort, wo sie jeder
-            sucht (oben rechts), und die Karte gewinnt eine ganze Knopfzeile
-            an Platz zurueck. */}
-        {isMe && (
-          <button className="back-btn pf-settings-btn" aria-label={t("Profil bearbeiten")} title={t("Profil bearbeiten")}
-            onClick={() => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); }}>
-            <Settings size={20} />
-          </button>
-        )}
       </header>
 
       <div className="pf-layout">
@@ -1019,6 +1009,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
         onHeadClick={heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
         onInvite={isMe ? onInvite : undefined}
+        onSettings={isMe ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : undefined}
         actions={<>
           {!isMe && playerObj && !challengeForm && (
             <div className="sp-controls" style={{ marginBottom: 14 }}>
