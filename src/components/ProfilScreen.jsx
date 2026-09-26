@@ -671,14 +671,18 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
           <section className="stat-block">
             <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
-            <label className="field-label" htmlFor="updateInterval">{t("Wie oft auf neue Version pruefen?")}</label>
-            <select id="updateInterval" className="settings-select" value={updateInterval}
-              onChange={(e) => onSetUpdateInterval(e.target.value)}>
-              <option value="open">{t("Bei jedem Aufruf")}</option>
-              <option value="30">{t("Alle 30 Minuten")}</option>
-              <option value="60">{t("Alle 60 Minuten")}</option>
-              <option value="manual">{t("Manuell")}</option>
-            </select>
+            <label className="settings-switch">
+              <input type="checkbox" checked={updateInterval !== "manual"}
+                onChange={(e) => onSetUpdateInterval(e.target.checked ? "auto" : "manual")} />
+              <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+              <span className="settings-switch-label">{t("Automatisch aktualisieren")}</span>
+            </label>
+            <p className="hint">
+              {updateInterval !== "manual"
+                ? t("Sucht bei jedem Öffnen der App nach einer neuen Version und spielt sie unauffällig ein – nie mitten in einem Match.")
+                : t("Neue Versionen gibt es nur über den Knopf unten.")}
+              {" "}{t("Gilt nur auf diesem Gerät.")}
+            </p>
             <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
               <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
             </button>

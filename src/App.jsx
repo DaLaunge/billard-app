@@ -87,15 +87,39 @@ const RESUME_NAV_KEY = "pendingUpdateNav";
 // aus irgendeinem Grund (z.B. eine haengende interne Sperre), darf das
 // NIE das Anwenden des Updates dauerhaft blockieren - lieber nach kurzer
 // Zeit trotzdem weitermachen als gar nicht mehr updaten.
-async function persistNavAndUpdate(navState, updateSW) {
-  try {
-    await Promise.race([
-      supabase.auth.getSession(),
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-    ]);
-  } catch { /* ignore */ }
+//
+// immediate (nur Trigger E, App geht in den Hintergrund): OHNE dieses Warten.
+// iOS friert eine Home-Bildschirm-App beim Verlassen praktisch sofort ein -
+// die bis zu 2 s Wartezeit fuehrten dazu, dass die Skip-Waiting-Nachricht
+// nie rausging und das Update dort nie angewendet wurde. Der eigentliche
+// Reload kommt ohnehin erst, wenn der neue Worker uebernimmt (beim
+// Zurueckholen), das Token-Risiko oben ist in diesem Moment also klein.
+//
+// Rueckfall-Reload: Auf iOS (Home-Bildschirm-Modus) kommt das
+// "controlling"-Event, an dem vite-plugin-pwa den Reload aufhaengt, nicht
+// zuverlaessig an - dann ist der neue Worker aktiv, die Seite laeuft aber
+// mit der alten Version weiter, und einen zweiten Versuch gibt es nicht
+// (es wartet ja kein Worker mehr). Darum nach 4 s selbst neu laden - aber
+// NUR, wenn tatsaechlich ein anderer Worker aktiv geworden ist. Ohne diese
+// Bedingung gaebe es eine Reload-Schleife, falls die Aktivierung
+// fehlschlaegt: Trigger D feuert nach jedem Seitenaufruf erneut.
+async function persistNavAndUpdate(navState, updateSW, { immediate = false } = {}) {
+  if (!immediate) {
+    try {
+      await Promise.race([
+        supabase.auth.getSession(),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
+      ]);
+    } catch { /* ignore */ }
+  }
   try { sessionStorage.setItem(RESUME_NAV_KEY, JSON.stringify(navState)); } catch { /* ignore */ }
-  updateSW(true);
+  let reg = null;
+  try { reg = await navigator.serviceWorker?.getRegistration(); } catch { /* ignore */ }
+  const activeBefore = reg?.active || null;
+  await updateSW(true);
+  setTimeout(() => {
+    if (reg?.active && reg.active !== activeBefore) window.location.reload();
+  }, 4000);
 }
 
 export default function App() {
@@ -291,8 +315,16 @@ export default function App() {
   // persistNavAndUpdate) und beim Neustart wiederhergestellt (resumedNav
   // oben), damit z.B. ein dauerhaft angezeigter Turnier-Bildschirm nach dem
   // Reload auf demselben Screen bleibt statt auf die Startseite zu springen.
+  // Nur noch "auto" oder "manual" (seit 2026-09-26). Vorher gab es "bei
+  // jedem Aufruf" / "alle 30 Min" (Standard) / "alle 60 Min" / "manuell" -
+  // die Zeitintervalle liefen per setInterval, und das steht auf dem iPhone
+  // still, solange die App im Hintergrund eingefroren ist. Bei kurzer
+  // Nutzung kam die 30-Minuten-Marke nie, und iOS beendet die App auf
+  // Geraeten mit viel Speicher tagelang nicht - dort wurde praktisch nie
+  // nach Updates gesucht. Alte gespeicherte Werte: "manual" bleibt, alles
+  // andere wird "auto".
   const [updateInterval, setUpdateInterval] = useState(() => {
-    try { return localStorage.getItem("updateCheckInterval") || "30"; } catch { return "30"; }
+    try { return localStorage.getItem("updateCheckInterval") === "manual" ? "manual" : "auto"; } catch { return "auto"; }
   });
   const [needReload, setNeedReload] = useState(false);
   const swRegistration = useRef(null);
@@ -305,16 +337,25 @@ export default function App() {
     setUpdateInterval(v);
     try { localStorage.setItem("updateCheckInterval", v); } catch { /* ignore */ }
   }, []);
+  // "auto": beim Start, bei JEDEM Zurueckholen der App (hoechstens alle
+  // 2 Min - ein Check ist nur ein kleiner Abruf von sw.js bei Vercel) und
+  // zusaetzlich alle 30 Min, solange sie offen bleibt (Desktop-Tab).
+  const lastUpdateCheckRef = useRef(0);
   useEffect(() => {
     if (updateInterval === "manual") return;
-    if (updateInterval === "open") {
+    const check = () => {
+      // Vor onRegisteredSW gibt es noch nichts zu pruefen (die Registrierung
+      // selbst prueft ohnehin) - dann auch die Sperre nicht setzen.
+      if (!swRegistration.current) return;
+      if (Date.now() - lastUpdateCheckRef.current < 2 * 60000) return;
+      lastUpdateCheckRef.current = Date.now();
       checkForUpdate();
-      const onVis = () => { if (document.visibilityState === "visible") checkForUpdate(); };
-      document.addEventListener("visibilitychange", onVis);
-      return () => document.removeEventListener("visibilitychange", onVis);
-    }
-    const id = setInterval(checkForUpdate, Number(updateInterval) * 60000);
-    return () => clearInterval(id);
+    };
+    check();
+    const onVis = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVis);
+    const id = setInterval(check, 30 * 60000);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [updateInterval, checkForUpdate]);
   const currentNavState = useMemo(() => (
     { tab, profileName, protokollMatch, protokollBackTab, vsOpp, tournamentId, winnerStaysId, matchTournamentCtx }
@@ -346,7 +387,7 @@ export default function App() {
       if (document.visibilityState !== "hidden") return;
       if (!needReload || !initialLoadDone || celebrate) return;
       if (LIVE_ENTRY_TABS.includes(tab)) return;
-      persistNavAndUpdate(currentNavState, updateServiceWorker);
+      persistNavAndUpdate(currentNavState, updateServiceWorker, { immediate: true });
     };
     document.addEventListener("visibilitychange", onHidden);
     return () => document.removeEventListener("visibilitychange", onHidden);

@@ -3,6 +3,7 @@ import { Check, X, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { getRef } from "../lib/session";
+import { isIos, isStandalone } from "../lib/notifications";
 import Ball from "./Ball";
 import LegalModal from "./LegalModal";
 
@@ -94,11 +95,23 @@ export default function LoginScreen() {
         <div className="login-card">
           <div className="sent-check"><Check size={28} /></div>
           <p className="sent-text">{t("Link gesendet an")}<br /><b>{email}</b></p>
-          <p className="hint" style={{ textAlign: "center" }}>
-            {t("Oeffne die Mail auf DIESEM Geraet und tippe auf den Link. Nichts bekommen? Schau in den Spam-Ordner.")}
-          </p>
-
-          <p className="hint center" style={{ marginTop: 10 }}>{t("Oder gib den 6-stelligen Code aus derselben Mail ein:")}</p>
+          {/* Home-Bildschirm-App auf dem iPhone: Der Link oeffnet dort IMMER
+              Safari, und Safari hat einen von der App getrennten Speicher -
+              die Anmeldung landete in Safari, die App blieb ausgeloggt (nur
+              iPhones haben das gemeldet, Android teilt den Speicher). Dort
+              darum gleich auf den Code lenken statt auf den Link. */}
+          {isIos() && isStandalone() ? (
+            <p className="hint center" style={{ marginTop: 10 }}>
+              <b>{t("Auf dem iPhone öffnet der Link Safari statt dieser App. Gib hier den 6-stelligen Code aus der Mail ein, dann bist du direkt in der App angemeldet.")}</b>
+            </p>
+          ) : (
+            <>
+              <p className="hint" style={{ textAlign: "center" }}>
+                {t("Oeffne die Mail auf DIESEM Geraet und tippe auf den Link. Nichts bekommen? Schau in den Spam-Ordner.")}
+              </p>
+              <p className="hint center" style={{ marginTop: 10 }}>{t("Oder gib den 6-stelligen Code aus derselben Mail ein:")}</p>
+            </>
+          )}
           <label className="field-label" htmlFor="otp">{t("Code")}</label>
           <div className="mail-row">
             <Lock size={18} className="mail-ico" />
