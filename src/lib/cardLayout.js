@@ -97,6 +97,14 @@ export const CARD_SCREENS = [
     screen: "stats",
     label: "Statistik",
     columns: ["middle", "right"],
+    // Am Handy stehen erst ALLE Mitte-Karten, dann alle rechten (Nutzer-
+    // Feedback 2026-09-30: "wenn ich am PC die Fensterbreite reduziere und
+    // dadurch ein Handy simuliere, erwarte ich, dass die Karten in der Mitte
+    // ganz oben angezeigt werden und die Karten, die rechts stehen, nach
+    // unten rutschen"). Nur auf der Statistik, weil dort das Ziehen raeumlich
+    // ist (Spalte und Platz in einer Geste) - die Einstellungslisten von Live
+    // und Profil sind dagegen ausdruecklich EINE flache Reihenfolge.
+    phoneGrouped: true,
     // "Auswahl fuer alle Statistiken" (Disziplin + Top-N) war bis 2026-09-30
     // eine eigene Karte und sitzt jetzt hinter dem Trichter-Symbol der
     // Bestenlisten-Karte (siehe CardDeck.jsx, Prop "filter"). Alte
@@ -319,6 +327,27 @@ export function deckColumn(columns = {}, ids, screen) {
 export function withoutFolded(list, ids, anchor) {
   const set = new Set(ids);
   return list.filter((id) => !set.has(id) || id === anchor);
+}
+
+// Die ANGEZEIGTE Reihenfolge eines Bildschirms. Fuer Bildschirme mit
+// phoneGrouped (Statistik) ist das die gespeicherte Reihenfolge, stabil nach
+// Spalte gruppiert - erst Mitte, dann rechts, je Spalte in gespeicherter
+// Reihenfolge. Genau das sieht man am Handy, und genau daran muessen Ziehen
+// und die Pfeile in den Einstellungen rechnen: vorher arbeiteten sie auf der
+// rohen Reihenfolge, in der Mitte- und Rechts-Karten beliebig gemischt sein
+// koennen - das Handy zeigte dann eine Reihenfolge, die zu nichts passte, was
+// man am PC gesehen hatte. Alle anderen Bildschirme: unveraendert.
+export function groupOrder(order, columns, screen) {
+  if (!CARD_SCREEN_BY_ID[screen]?.phoneGrouped) return order;
+  const allowed = screenColumns(screen);
+  const rank = (id) => {
+    const i = allowed.indexOf(columns[id]);
+    return i === -1 ? 0 : i;
+  };
+  return order
+    .map((id, i) => ({ id, i, r: rank(id) }))
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .map((x) => x.id);
 }
 
 // Eine Karte in der Reihenfolge um einen Platz nach oben/unten schieben

@@ -909,7 +909,14 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Desktop steht. Am Desktop wirkt derselbe Wert innerhalb der Spalte und
   // aendert dort nichts (die Spalte ist ohnehin schon nach cardOrder
   // sortiert). Ab 10, damit die feste Seitenspalte darunter bleiben kann.
-  const slotOrder = (id) => 10 + visibleOrder.indexOf(id);
+  //
+  // Auf der Statistik stehen am Handy ERST die Mitte-Karten, DANN die
+  // rechten (Nutzer-Feedback 2026-09-30) - deshalb bekommen rechte Karten
+  // einen festen Vorsprung von 1000. Massgeblich ist die Spalte, in der die
+  // Karte am PC WIRKLICH steht (middleCardIds/rightCardIds, also mit der
+  // gemeinsamen Spalte der Bestenlisten-Karte), nicht ihr rohes columns-Feld.
+  const rightSet = new Set(rightCardIds);
+  const slotOrder = (id) => 10 + (rightSet.has(id) ? 1000 : 0) + visibleOrder.indexOf(id);
 
   return (
     <div className="screen">
@@ -1015,7 +1022,10 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           kommt, aber die Sortierung ist danach trotzdem richtig" - das
           Endergebnis stimmte immer schon, nur die Animation dazwischen
           nicht). */}
-      <SortableContext items={wide ? [...middleCardIds, ...rightCardIds] : visibleOrder}
+      {/* Auch am Handy die gruppierte Reihenfolge (erst Mitte, dann rechts):
+          das ist dort die tatsaechliche Bildschirm-Reihenfolge, und die
+          Zieh-Animation rechnet mit der Reihenfolge dieses Arrays. */}
+      <SortableContext items={[...middleCardIds, ...rightCardIds]}
         strategy={wide ? statCardSortingStrategy(middleCardIds.length) : rectSortingStrategy}>
       {/* .stat-right-col buendelt alle rechten Karten (inkl. der globalen
           Auswahl, die seit dem Drag&Drop-Feature ebenfalls nur eine Karte

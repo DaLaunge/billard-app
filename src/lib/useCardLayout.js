@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { t } from "./i18n";
 import {
   normalizeCardOrder, normalizeCardColumns, normalizeHiddenCards,
-  mergeCardLayout, moveInOrder, screenCards, screenColumns, splitCardColumns,
+  mergeCardLayout, moveInOrder, screenCards, screenColumns, splitCardColumns, groupOrder,
 } from "./cardLayout";
 
 /* Karten-Anordnung + Sichtbarkeit EINES Bildschirms - der gemeinsame
@@ -87,10 +87,16 @@ export function useCardLayout(screen, cardLayout, onSetCardLayout, toast) {
   // Ausgeblendete Karten fliegen erst beim Anzeigen raus, nicht schon aus
   // order: ihre Position und ihre Spalte bleiben gespeichert, so steht eine
   // wieder eingeblendete Karte genau dort, wo sie vorher war.
-  const visibleOrder = order.filter((id) => !hidden.has(id));
+  // Angezeigte Reihenfolge (siehe groupOrder() in cardLayout.js): auf der
+  // Statistik nach Spalte gruppiert. Alles, was der Bildschirm oder die
+  // Einstellungen als "die Reihenfolge" lesen, kommt von hier - der rohe
+  // Zustand "order" dient nur noch dem Speichern.
+  const shown = groupOrder(order, columns, screen);
+  const grouped = shown !== order;
+  const visibleOrder = shown.filter((id) => !hidden.has(id));
 
   return {
-    order,
+    order: shown,
     columns,
     hidden,
     visibleOrder,
@@ -104,11 +110,32 @@ export function useCardLayout(screen, cardLayout, onSetCardLayout, toast) {
     canUndo: !!undoSnapshot,
     // Anordnung: einen Platz nach oben/unten (Einstellungen) bzw. eine
     // ganze neue Reihenfolge (Drag & Drop auf der Statistik).
+    //
+    // Auf gruppierten Bildschirmen (Statistik) rechnen die Pfeile auf der
+    // ANGEZEIGTEN Reihenfolge. Ueber die Spaltengrenze hinweg wechselt die
+    // Karte dabei die Spalte und landet direkt hinter (nach oben) bzw. vor
+    // (nach unten) ihrem Nachbarn - dieselbe Bewegung wie beim Ziehen. Ein
+    // reines Vertauschen der Positionen waere dort unsichtbar, weil die
+    // Gruppierung die Karte sofort wieder in ihre alte Spalte einsortiert.
     moveCard: (id, dir) => {
-      const next = moveInOrder(order, id, dir);
-      if (next !== order) withOrder(next);
+      const i = shown.indexOf(id);
+      const nb = shown[i + dir];
+      if (i === -1 || nb === undefined) return;
+      if (!grouped || columns[nb] === columns[id]) {
+        const next = moveInOrder(shown, id, dir);
+        if (next !== shown) withOrder(next);
+        return;
+      }
+      const rest = shown.filter((x) => x !== id);
+      const k = rest.indexOf(nb);
+      const next = [...rest];
+      next.splice(dir < 0 ? k + 1 : k, 0, id);
+      withOrder(next, { ...columns, [id]: columns[nb] });
     },
-    canMove: (id, dir) => moveInOrder(order, id, dir) !== order,
+    canMove: (id, dir) => {
+      const i = shown.indexOf(id);
+      return i !== -1 && shown[i + dir] !== undefined;
+    },
     setLayout: (nextOrder, nextColumns) => withOrder(nextOrder, nextColumns),
     setColumn: (id, col) => {
       if (!allowedColumns.includes(col) || columns[id] === col) return;
