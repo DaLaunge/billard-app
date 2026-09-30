@@ -612,7 +612,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
                 <span className="settings-switch-label">{t("Automatisch aktualisieren")}</span>
               </label>
-              <button type="button" className="round-btn small" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}
+              <button type="button" className="icon-btn small" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}
                 aria-label={t("Jetzt nach Updates suchen")} title={t("Jetzt nach Updates suchen")}>
                 <RefreshCw size={15} />
               </button>
@@ -685,7 +685,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 <MessageCircle size={16} className="acct-ico" />
                 <span className="acct-text">{t("Feedback")}</span>
                 {!feedbackOpen && (
-                  <button type="button" className="round-btn" onClick={() => setFeedbackOpen(true)}
+                  <button type="button" className="icon-btn" onClick={() => setFeedbackOpen(true)}
                     aria-label={t("Feedback geben")} title={t("Feedback geben")}>
                     <MessageSquarePlus size={18} />
                   </button>
@@ -696,10 +696,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 <>
                   <p className="hint" style={{ marginTop: 6 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
                   <div className="acct-actions">
-                    <a className="round-btn" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer"
+                    <a className="icon-btn" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer"
                       aria-label={t("Per Telegram")} title={t("Per Telegram")}><Send size={18} /></a>
-                    <a className="round-btn" href="mailto:dalaunge@gmx.at" aria-label={t("Per E-Mail")} title={t("Per E-Mail")}><Mail size={18} /></a>
-                    <button type="button" className="round-btn primary" onClick={closeFeedback}
+                    <a className="icon-btn" href="mailto:dalaunge@gmx.at" aria-label={t("Per E-Mail")} title={t("Per E-Mail")}><Mail size={18} /></a>
+                    <button type="button" className="icon-btn primary" onClick={closeFeedback}
                       aria-label={t("Fertig")} title={t("Fertig")}><Check size={18} /></button>
                   </div>
                 </>
@@ -718,9 +718,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                       onChange={(e) => setFeedbackMsg(e.target.value)} />
                   </div>
                   <div className="acct-actions">
-                    <button type="button" className="round-btn" onClick={closeFeedback}
+                    <button type="button" className="icon-btn" onClick={closeFeedback}
                       aria-label={t("Abbrechen")} title={t("Abbrechen")}><X size={18} /></button>
-                    <button type="button" className="round-btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}
+                    <button type="button" className="icon-btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}
                       aria-label={feedbackBusy ? t("Speichere ...") : t("Absenden")} title={feedbackBusy ? t("Speichere ...") : t("Absenden")}>
                       <Send size={18} />
                     </button>
@@ -731,10 +731,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />
             <div className="acct-sub acct-actions">
               {meRow?.role === "admin" && (
-                <button type="button" className="round-btn" onClick={onOpenAdmin}
+                <button type="button" className="icon-btn" onClick={onOpenAdmin}
                   aria-label={t("Verwaltung oeffnen")} title={t("Verwaltung oeffnen")}><Shield size={18} /></button>
               )}
-              <button type="button" className="round-btn" onClick={onLogout}
+              <button type="button" className="icon-btn" onClick={onLogout}
                 aria-label={t("Abmelden")} title={t("Abmelden")}><LogOut size={18} /></button>
             </div>
           </section>
@@ -859,7 +859,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             Fundstelle genannt wird. */}
         <div className="pf-edit-foot">
           <span className="pf-edit-reset">
-            <button type="button" className="round-btn" disabled={busy} onClick={resetDefaults}
+            <button type="button" className="icon-btn" disabled={busy} onClick={resetDefaults}
               aria-label={t("Zurücksetzen")} title={t("Zurücksetzen")}>
               <RotateCcw size={18} />
             </button>

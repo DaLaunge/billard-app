@@ -26,9 +26,9 @@ const Person = ({ x, y, s = 1, op = 1 }) => (
   </g>
 );
 
-export function ModeGlyph({ mode, size = 26 }) {
+export function ModeGlyph({ mode, size = 26, className }) {
   return (
-    <svg viewBox="0 0 28 28" width={size} height={size} aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 28 28" width={size} height={size} className={className} aria-hidden="true" focusable="false">
       {mode === "single" && <Person x={14} y={15} s={1.35} />}
       {mode === "double" && (<><Person x={8} y={15} s={1.1} /><Person x={20} y={15} s={1.1} /></>)}
       {mode === "both" && (
@@ -38,6 +38,25 @@ export function ModeGlyph({ mode, size = 26 }) {
         </>
       )}
     </svg>
+  );
+}
+
+/* Einzel / Doppel als Kacheln mit Zeichnung UND Name - dieselben Kacheln wie
+   die Formatwahl in "Neues Turnier" (.fmt-card), damit "Neues Match" und
+   "Neues Turnier" gleich aussehen (Nutzer-Feedback 2026-09-30). Fuer die
+   Formulare, in denen Platz fuer den Namen ist; die schmalen Filterzeilen
+   nehmen weiter ModePick (nur Symbol). */
+export function ModeTiles({ value, onChange }) {
+  return (
+    <div className="fmt-grid two">
+      {MODES.filter(([key]) => key !== "both").map(([key, label]) => (
+        <button key={key} type="button" className={"fmt-card" + (value === key ? " sel" : "")}
+          aria-pressed={value === key} onClick={() => onChange(key)}>
+          <ModeGlyph mode={key} size={30} className="fmt-glyph" />
+          <span>{t(label)}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 

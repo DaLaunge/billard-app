@@ -4,7 +4,8 @@ import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight,
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
-import { LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT } from "../lib/constants";
+import { LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, DEFAULT_DISCIPLINES } from "../lib/constants";
+import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 import { recentOpponentFreq } from "../lib/frequency";
 import { minGhostSeconds } from "../lib/ghostTiming";
 import { savePendingReport, isNetworkError } from "../lib/offlineReport";
@@ -13,6 +14,9 @@ import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import FieldLabel from "./widgets/FieldLabel";
+import DiscBall, { DiscPick, DiscPickRow, sortDisciplines } from "./widgets/DiscBall";
+import { ModeTiles } from "./widgets/ModePick";
 import { rpcRetry } from "../lib/rpcRetry";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
@@ -22,7 +26,17 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [draft] = useState(() => resumeDraft?.match || null);
   const fresh = (o) => (o ? players.find((p) => p.id === o.id) || o : null);
   const dv = (k, d) => (draft && draft[k] !== undefined ? draft[k] : d);
-  const [step, setStep] = useState(dv("step", tournamentCtx ? 2 : (initialOpp ? 1 : 0)));
+  // Die Disziplin steht schon im Formular (Schritt 0); der frueher eigene
+  // Schritt 1 entfaellt. Alte Entwuerfe mit step 1 landen beim Ergebnis (2),
+  // falls sie eine Disziplin hatten, sonst wieder im Formular.
+  const matchDiscs = sortDisciplines((disciplines || DEFAULT_DISCIPLINES).filter((d) => d !== "Doppel" && d !== "Gesamt"));
+  const lastDisc = () => {
+    try { const d = localStorage.getItem("matchDisc"); if (d && matchDiscs.includes(d)) return d; } catch { /* Privatmodus */ }
+    return matchDiscs[0] || DEFAULT_DISCIPLINES[0];
+  };
+  const rememberDisc = (d) => { try { localStorage.setItem("matchDisc", d); } catch { /* Privatmodus */ } };
+  const savedStep = dv("step", tournamentCtx ? 2 : 0);
+  const [step, setStep] = useState(savedStep === 1 ? (dv("disc", null) ? 2 : 0) : savedStep);
   const [opp, setOpp] = useState(draft ? fresh(draft.opp) : (initialOpp || null));
   const [showMyQr, setShowMyQr] = useState(false);
   const [mode, setMode] = useState(dv("mode", "single"));
@@ -30,7 +44,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [opp2, setOpp2] = useState(fresh(dv("opp2", null)));
   const [s1, setS1] = useState(dv("s1", 0));
   const [s2, setS2] = useState(dv("s2", 0));
-  const [disc, setDisc] = useState(dv("disc", tournamentCtx ? tournamentCtx.discipline : null));
+  const [disc, setDisc] = useState(dv("disc", tournamentCtx ? tournamentCtx.discipline : lastDisc()));
   const [hr, setHr] = useState(dv("hr", [null, null]));   // Höchstserie [ich, Gegner] (nur 14/1)
   const [def, setDef] = useState(dv("def", [null, null])); // aufgeholter Rückstand (nur 14/1)
   const [avg, setAvg] = useState(dv("avg", [null, null])); // Offensivschnitt (nur 14/1)
@@ -41,7 +55,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [confirmedNow, setConfirmedNow] = useState(false); // Turniermatch direkt nach dem Melden auf diesem Geraet bestaetigt (siehe confirmNow unten)
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
-  const [leaveWarn, setLeaveWarn] = useState(false);
   const [abortAsk, setAbortAsk] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -62,7 +75,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const slim = (p) => (p ? { id: p.id, nickname: p.nickname, is_guest: !!p.is_guest, is_ghost: !!p.is_ghost } : null);
   const persistDraft = () => {
     if (step === 4) { clearMatchDraft(me.id); return; }
-    if (step < 1 || !opp) return;
+    if (step < 2 || !opp) return;
     saveMatchDraft(me.id, {
       step, mode, opp: slim(opp), partner: slim(partner), opp2: slim(opp2), s1, s2, disc,
       hr, def, avg, tb, runLog, scoreLog, ghostStartedAt, tournamentCtx: tournamentCtx || null,
@@ -72,11 +85,41 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
   const pickPlayer = (p) => {
-    if (mode === "single") { setOpp(p); setStep(1); return; }
+    if (mode === "single") { setOpp(p); start(p); return; }
     if (partner?.id === p.id) { setPartner(null); return; }
     if (opp?.id === p.id) { setOpp(null); return; }
     if (opp2?.id === p.id) { setOpp2(null); return; }
     if (!partner) setPartner(p); else if (!opp) setOpp(p); else if (!opp2) setOpp2(p);
+  };
+
+  // Gewaehlte Spieler des Doppels bzw. der Gegner im Einzel als Platzreihe
+  // ("Du VS Gegner"): gefuellt = Kugel + Name (Tipp entfernt wieder), leer =
+  // gestrichelter Kreis mit Rolle darunter.
+  const slot = (p, role, clear) => (p ? (
+    <button type="button" className={"vs-slot filled" + (clear ? "" : " me")} onClick={clear || undefined}
+      disabled={!clear} title={clear ? `${role} – ${t("Entfernen")}` : role}>
+      <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={44} />
+      <span>{p.nickname}</span>
+    </button>
+  ) : (
+    <span className="vs-slot empty" title={role}>
+      <span className="vs-empty-ball"><Plus size={16} /></span>
+      <span>{role}</span>
+    </span>
+  ));
+  const showStrip = mode === "double" || !!opp;
+  const ready = mode === "double" ? !!(partner && opp && opp2) : !!opp;
+  const chooseMode = (m) => {
+    if (m === mode) return;
+    setMode(m);
+    if (m === "single") { setPartner(null); setOpp2(null); } else setOpp(null);
+  };
+  // Match beginnen: die Disziplin merken (naechstes Mal vorgewaehlt) und zum
+  // Ergebnis. Beim Ghost startet ausserdem die Mindestdauer-Uhr.
+  const start = (o) => {
+    if (o?.is_ghost) setGhostStartedAt(Date.now());
+    rememberDisc(disc);
+    setStep(2);
   };
 
   // Wie oft habe ich in letzter Zeit gegen wen gespielt? (häufigste Gegner zuerst,
@@ -97,6 +140,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const opponents = (!oppQuery.trim() && oppCount !== "all")
     ? allMatchingOpponents.slice(0, oppCount)
     : allMatchingOpponents;
+  // Spielerkacheln blenden sich beim Hineinscrollen ein (nur stabile Werte als
+  // Abhaengigkeit, siehe useRevealOnScroll).
+  const formRef = useRevealOnScroll([step, opponents.length, oppQuery.trim() === "", mode, oppCount]);
 
   // Gast fuers normale Match hinzufuegen (Turniere haben dafuer schon
   // tournament_organizer_add_guest() - dies hier ist das Gegenstueck ohne
@@ -121,7 +167,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const oppRating = opp ? ratingOf(opp.nickname) : 500;
   const prob = winProb(myRating, oppRating);
   const total = s1 + s2;
-  const steps = ["Gegner", "Disziplin", "Ergebnis", "Pruefen"];
+  // Drei Schritte: Match (Disziplin, Modus, Gegner) - Ergebnis - Pruefen.
+  const steps = ["Match", "Ergebnis", "Pruefen"];
+  const dotIdx = step === 0 ? 0 : step === 2 ? 1 : 2;
 
   // --- Punkte-Vorschau (#1) + Gegner-Vorschlag (#2) ---
   const fmtD = (x) => (x >= 0 ? "+" : "−") + Math.abs(Math.round(x));
@@ -146,19 +194,20 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
 
   const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); };
 
-  // Disziplin wählen: bei Wechsel zwischen 8/9/10 bleibt das Ergebnis erhalten;
-  // ein Wechsel zu oder von 14/1 ändert das Punkteschema -> nachfragen.
-  const chooseDisc = (d) => {
-    const from = disc;
-    if (!from || d === from) { setDisc(d); setStep(2); return; }
-    const crosses141 = (from === "14/1 Endlos") !== (d === "14/1 Endlos");
-    if (crosses141 && (s1 > 0 || s2 > 0)) { setPendingDisc(d); return; }
+  // Disziplin wechseln (im Ergebnis-Schritt): zwischen 8/9/10 bleibt das
+  // Ergebnis erhalten; ein Wechsel zu oder von 14/1 aendert das Punkteschema
+  // -> nachfragen, sobald schon etwas gezaehlt wurde (beim laufenden 14/1
+  // steckt der Stand im Scorer, s1/s2 sind dort noch 0 - daher is141).
+  const switchDisc = (d) => {
+    if (d === disc) return;
+    const crosses141 = (disc === "14/1 Endlos") !== (d === "14/1 Endlos");
+    if (crosses141 && (is141 || s1 > 0 || s2 > 0)) { setPendingDisc(d); return; }
     setDisc(d);
+    rememberDisc(d);
     if (crosses141) resetScores();   // Schema-Wechsel ohne bisheriges Ergebnis: sauber starten
-    setStep(2);
   };
   const confirmDiscChange = () => {
-    setDisc(pendingDisc); resetScores(); setPendingDisc(null); setStep(2);
+    setDisc(pendingDisc); rememberDisc(pendingDisc); resetScores(); setPendingDisc(null);
   };
 
   const isGhost = !!opp?.is_ghost;
@@ -308,21 +357,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const StepDots = ({ bottom }) => (
     <div className={"steps" + (bottom ? " bottom" : "")}>
       {steps.map((s, i) => (
-        <div key={s} className={"step-dot" + (i === step ? " cur" : i < step ? " done" : "")}>
-          <span>{i < step ? <Check size={12} /> : i + 1}</span>{t(s)}
+        <div key={s} className={"step-dot" + (i === dotIdx ? " cur" : i < dotIdx ? " done" : "")}>
+          <span>{i < dotIdx ? <Check size={12} /> : i + 1}</span>{t(s)}
         </div>
       ))}
     </div>
-  );
-
-  const DiscChip = () => (
-    tournamentCtx ? (
-      <span className="disc-chip disc-chip-locked"><span>{t(disc)}</span></span>
-    ) : (
-      <button className="disc-chip" onClick={() => { if (is141) setLeaveWarn(true); else setStep(1); }}>
-        <span>{t(disc)}</span><Pencil size={15} />
-      </button>
-    )
   );
 
   if (showInvite) {
@@ -355,160 +394,173 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
         </div>
       )}
 
+      {/* "Neues Match" ist der einfachere Bruder von "Neues Turnier"
+          (Nutzer-Feedback 2026-09-30): dieselbe Reihenfolge (Disziplin als
+          Kugeln zuerst, dann der Modus als Kacheln), dieselben Bausteine
+          (FieldLabel, DiscPick, ModeTiles) und dieselbe Kartenoptik. Links
+          das Match selbst, rechts die Spieler - am Handy untereinander. Der
+          frühere Disziplin-Schritt entfaellt: die Disziplin ist vorgewaehlt
+          (zuletzt gespielte) und wird hier oder waehrend der Aufzeichnung
+          geaendert; ein Tipp auf den Gegner startet das Match sofort. */}
       {step === 0 && (
-        <>
-          <p className="q">{t("Gegen wen trittst du an?")}</p>
-          <div className="match-split">
+        <div className="match-split step-enter" ref={formRef}>
           <div className="match-selectors">
-          <div className="mode-row">
-            <button className={"mode-btn" + (mode === "single" ? " active" : "")}
-              onClick={() => { setMode("single"); setPartner(null); setOpp2(null); }}>{t("Einzel")}</button>
-            <button className={"mode-btn" + (mode === "double" ? " active" : "")}
-              onClick={() => { setMode("double"); setOpp(null); }}>{t("Doppel")}</button>
-          </div>
-
-          {mode === "double" && (
-            <button className="btn primary" disabled={!(partner && opp && opp2)} onClick={() => setStep(1)}>
-              {t("Weiter")} <ArrowRight size={18} />
-            </button>
-          )}
-
-          {mode === "single" && (
-            <>
-              <button className="btn ghost" onClick={() => setShowMyQr((v) => !v)}>
-                <QrCode size={16} /> {showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}
-              </button>
-              {showMyQr && (
-                <div className="my-qr">
-                  <div className="qr-box">
-                    <QRCodeSVG value={`${window.location.origin}/?vs=${me.id}`} size={190} level="M"
-                      bgColor="#F2EDE0" fgColor="#0A2B21" />
-                  </div>
-                  <p className="hint center">{t("Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.")}</p>
+            <section className="stat-block">
+              <div className="turnier-form">
+                <FieldLabel label={t("Disziplin")} />
+                <div className="disc-picks">
+                  {matchDiscs.map((d) => (
+                    <DiscPick key={d} disc={d} selected={disc === d} onSelect={() => setDisc(d)} />
+                  ))}
                 </div>
-              )}
-              {/* Einladen steht bewusst neben "Ihr trefft euch?" - beides
-                  dreht sich darum, den anderen an den Tisch zu bekommen.
-                  Zusaetzlich ueber das QR-Symbol auf der Profilkarte. */}
-              <button className="btn ghost" onClick={() => setShowInvite(true)}>
-                <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
-              </button>
-            </>
-          )}
 
-          {mode === "double" && (
-            <div className="dbl-roster">
-              <div className="dbl-slot"><span>{t("Dein Partner")}</span><b>{partner?.nickname || "–"}</b></div>
-              <div className="dbl-slot"><span>{t("Gegner 1")}</span><b>{opp?.nickname || "–"}</b></div>
-              <div className="dbl-slot"><span>{t("Gegner 2")}</span><b>{opp2?.nickname || "–"}</b></div>
-              <p className="hint">{t("Tippe drei Spieler an: zuerst deinen Partner, dann die beiden Gegner.")}</p>
-            </div>
-          )}
+                <FieldLabel label={t("Modus")} />
+                <ModeTiles value={mode} onChange={chooseMode} />
 
+                {/* Wer gegen wen - gezeichnet statt beschrieben. Im Doppel
+                    die drei Plaetze, die man nacheinander antippt; im Einzel
+                    nur, wenn der Gegner schon feststeht (z.B. per QR-Code
+                    oder Herausforderung). Klappt animiert auf. */}
+                <div className={"collapsible" + (showStrip ? " open" : "")} inert={showStrip ? undefined : ""}>
+                  <div className="collapsible-inner">
+                    <div className="vs-strip">
+                      <div className="vs-team">
+                        {slot(me, t("Du"), null)}
+                        {mode === "double" && slot(partner, t("Partner"), () => setPartner(null))}
+                      </div>
+                      <span className="vs-x">VS</span>
+                      <div className="vs-team">
+                        {slot(opp, mode === "double" ? t("Gegner 1") : t("Gegner"), () => setOpp(null))}
+                        {mode === "double" && slot(opp2, t("Gegner 2"), () => setOpp2(null))}
+                      </div>
+                      <button type="button" className="icon-btn primary vs-go" disabled={!ready} onClick={() => start(opp)}
+                        aria-label={t("Match starten")} title={t("Match starten")}>
+                        <ArrowRight size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {mode === "single" && opp && <PointPreview dsc={disc} />}
+              </div>
+            </section>
           </div>
 
           {/* Reihenfolge (Nutzer-Feedback): Empfehlung, Suche, wie viele
               Spieler, Spieler-Kacheln - und der Ghost ganz am Ende, weil
               Trainingsmatches der Sonderfall sind. */}
           <div className="match-players">
-          {mode === "single" && !oppQuery && suggestions.length > 0 && (
-            <div className="suggest-card">
-              <div className="suggest-title">💡 {t("Empfehlung")}</div>
-              {suggestions.map(({ p, gain }) => (
-                <div key={p.id} className="suggest-row">
-                  <button className="suggest-row-play" onClick={() => { setOpp(p); setStep(1); }}>
-                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={34} />
-                    <span className="suggest-name">{p.nickname}</span>
-                    <span className="suggest-gain">{t("bis zu")} {fmtD(gain)}</span>
-                  </button>
-                  <button className="suggest-challenge-btn" onClick={() => onChallenge(p.id)} title={t("Herausfordern")} aria-label={t("Herausfordern")}>
-                    <Swords size={17} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="search-row">
-            <Search size={16} className="mail-ico" />
-            <input placeholder={t("Spieler suchen oder Gast eingeben …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
-            {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
-          </div>
-          {oppQuery.trim() && opponents.length === 0 && (
-            <div className="guest-empty-card">
-              <div className="ghost-info">
-                <span className="ghost-name">🤔 {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</span>
-                <span className="ghost-sub">{t("Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.")}</span>
-              </div>
-              <button className="btn primary" disabled={guestBusy} onClick={addGuest}>
-                <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: oppQuery.trim() })}
-              </button>
-            </div>
-          )}
-          {!oppQuery.trim() && allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
-            <div className="chips small">
-              {LIST_COUNT_OPTIONS.map((c) => (
-                <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
-                  {c === "all" ? t("Alle") : c}
-                </button>
-              ))}
-            </div>
-          )}
-          {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
-          <div className="opp-grid">
-            {opponents.map((p) => {
-              const role = mode === "double"
-                ? (partner?.id === p.id ? t("Partner") : opp?.id === p.id ? t("Gegner 1") : opp2?.id === p.id ? t("Gegner 2") : null)
-                : (opp?.id === p.id ? "•" : null);
-              return (
-                <button key={p.id} className={"opp-card" + (role ? " sel" : "")} onClick={() => pickPlayer(p)}>
-                  <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
-                  <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
-                  {mode === "double" && role && <span className="dbl-role">{role}</span>}
-                </button>
-              );
-            })}
-          </div>
-          {mode === "single" && ghost && !oppQuery && (
-            <button className="ghost-card" onClick={() => { setOpp(ghost); setGhostStartedAt(Date.now()); setStep(1); }}>
-              <div className="ghost-ball">👻</div>
-              <div className="ghost-info">
-                <span className="ghost-name">{t("Training gegen Ghost")}</span>
-                <span className="ghost-sub">{t("Übungsmatch – zählt nicht fürs Rating")}</span>
-              </div>
-              <ArrowRight size={18} />
-            </button>
-          )}
-          </div>
-          </div>
-        </>
-      )}
+            <section className="stat-block">
+              <div className="turnier-form match-list-form">
+                <FieldLabel label={mode === "double" ? t("Spieler") : t("Gegner")}
+                  info={mode === "double" ? t("Tippe drei Spieler an: zuerst deinen Partner, dann die beiden Gegner.") : undefined}
+                  actions={mode === "single" ? (
+                    <>
+                      <button type="button" className={"icon-btn small" + (showMyQr ? " on" : "")} aria-pressed={showMyQr}
+                        onClick={() => setShowMyQr((v) => !v)}
+                        aria-label={showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}
+                        title={showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}>
+                        <QrCode size={15} />
+                      </button>
+                      {/* Einladen steht bewusst neben dem Code - beides dreht
+                          sich darum, den anderen an den Tisch zu bekommen.
+                          Zusaetzlich ueber das QR-Symbol auf der Profilkarte. */}
+                      <button type="button" className="icon-btn small" onClick={() => setShowInvite(true)}
+                        aria-label={t("Neues Mitglied? Jetzt einladen")} title={t("Neues Mitglied? Jetzt einladen")}>
+                        <UserPlus size={15} />
+                      </button>
+                    </>
+                  ) : undefined} />
 
-      {step === 1 && (
-        <div className="match-center-step">
-          <p className="q">{t("Welche Disziplin?")}</p>
-          <div className="disc-grid">
-            {disciplines.filter((d) => d !== "Doppel" && d !== "Gesamt").map((d) => (
-              <button key={d} className={"disc-card" + (disc === d ? " sel" : "")}
-                onClick={() => chooseDisc(d)}>{t(d)}</button>
-            ))}
-          </div>
-          {pendingDisc ? (
-            <div className="confirm-box">
-              <p>{t("Wechsel zu bzw. von")} <b>{t("14/1 Endlos")}</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>
-              <div className="sp-controls">
-                <button className="btn ghost" onClick={() => setPendingDisc(null)}>{t("Abbrechen")}</button>
-                <button className="btn primary" onClick={confirmDiscChange}>{t("Wechseln & zurücksetzen")}</button>
+                {mode === "single" && (
+                  <div className={"collapsible" + (showMyQr ? " open" : "")} inert={showMyQr ? undefined : ""}>
+                    <div className="collapsible-inner">
+                      <div className="my-qr">
+                        <div className="qr-box">
+                          <QRCodeSVG value={`${window.location.origin}/?vs=${me.id}`} size={190} level="M"
+                            bgColor="#F2EDE0" fgColor="#0A2B21" />
+                        </div>
+                        <p className="hint center">{t("Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.")}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {mode === "single" && !oppQuery && suggestions.length > 0 && (
+                  <div className="suggest-card reveal">
+                    <div className="suggest-title">💡 {t("Empfehlung")}</div>
+                    {suggestions.map(({ p, gain }) => (
+                      <div key={p.id} className="suggest-row">
+                        <button className="suggest-row-play" onClick={() => pickPlayer(p)}>
+                          <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={34} />
+                          <span className="suggest-name">{p.nickname}</span>
+                          <span className="suggest-gain">{t("bis zu")} {fmtD(gain)}</span>
+                        </button>
+                        <button className="suggest-challenge-btn" onClick={() => onChallenge(p.id)} title={t("Herausfordern")} aria-label={t("Herausfordern")}>
+                          <Swords size={17} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="search-row">
+                  <Search size={16} className="mail-ico" />
+                  <input placeholder={t("Spieler suchen oder Gast eingeben …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
+                  {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
+                </div>
+                {oppQuery.trim() && opponents.length === 0 && (
+                  <div className="guest-empty-card">
+                    <div className="ghost-info">
+                      <span className="ghost-name">🤔 {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</span>
+                      <span className="ghost-sub">{t("Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.")}</span>
+                    </div>
+                    <button className="btn primary" disabled={guestBusy} onClick={addGuest}>
+                      <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: oppQuery.trim() })}
+                    </button>
+                  </div>
+                )}
+                {!oppQuery.trim() && allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
+                  <div className="chips small">
+                    {LIST_COUNT_OPTIONS.map((c) => (
+                      <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
+                        {c === "all" ? t("Alle") : c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
+                <div className="opp-grid">
+                  {opponents.map((p, i) => {
+                    const role = mode === "double"
+                      ? (partner?.id === p.id ? t("Partner") : opp?.id === p.id ? t("Gegner 1") : opp2?.id === p.id ? t("Gegner 2") : null)
+                      : (opp?.id === p.id ? "•" : null);
+                    return (
+                      <button key={p.id} className={"opp-card reveal" + (role ? " sel" : "")} style={{ "--i": i % 4 }} onClick={() => pickPlayer(p)}>
+                        <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
+                        <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
+                        {mode === "double" && role && <span className="dbl-role">{role}</span>}
+                      </button>
+                    );
+                  })}
+                  {/* Ghost: als letzte Kachel der Liste statt als breite Karte -
+                      der Sonderfall (Training) soll nicht mehr Platz brauchen
+                      als ein Mitspieler. Erklaerung im Tooltip. */}
+                  {mode === "single" && ghost && !oppQuery && (
+                    <button className="opp-card ghost-tile reveal" style={{ "--i": opponents.length % 4 }}
+                      title={`${t("Training gegen Ghost")} – ${t("Übungsmatch – zählt nicht fürs Rating")}`}
+                      onClick={() => { setOpp(ghost); start(ghost); }}>
+                      <span className="ghost-ball">👻</span>
+                      <span>{t("Ghost")}</span>
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <p className="hint center">{t("Zwischen 8/9/10 Ball bleibt dein Ergebnis beim Wechsel erhalten.")}</p>
-          )}
-          <PointPreview dsc={disc} />
+            </section>
+          </div>
         </div>
       )}
 
       {step === 2 && opp && disc && (
-        <div className="match-score-step">
+        <div className="match-score-step step-enter">
           {/* Reihenfolge bewusst so (Nutzer-Feedback): ganz oben das Match
               selbst (Zaehler bzw. 14/1-Scorer), darunter erst Siegchance,
               Disziplin-Umschalter und die Schrittpunkte. */}
@@ -538,7 +590,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                       ))}
                     </div>
                     <span className="score-name">{name}</span>
-                    <div className="score-num">{v}</div>
+                    <div className="score-num" key={v}>{v}</div>
                     <div className="score-btns">
                       <button className="round-btn" onClick={() => set(Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
                       <button className="round-btn plus" onClick={() => set(v + 1)} aria-label="plus"><Plus size={20} /></button>
@@ -553,17 +605,25 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </>
           )}
           <PointPreview dsc={disc} />
+          {/* Disziplin waehrend der Aufzeichnung: dieselben Kugeln wie im
+              Formular (statt eines Chips, der zurueck in einen eigenen Schritt
+              fuehrte). Ein Wechsel zwischen 8/9/10 Ball behaelt das Ergebnis,
+              von/zu 14/1 aendert das Punkteschema - siehe switchDisc. */}
           <div className="score-head">
-            <DiscChip />
+            {tournamentCtx ? (
+              <span className="disc-chip disc-chip-locked"><DiscBall disc={disc} size={22} /><span>{t(disc)}</span></span>
+            ) : (
+              <DiscPickRow discs={matchDiscs} value={disc} onChange={switchDisc} />
+            )}
           </div>
-          {leaveWarn && (
+          {pendingDisc && (
             <div className="confirm-box">
-              <p>{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
+              {is141
+                ? <p>{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
+                : <p>{t("Wechsel zu bzw. von")} <b>{t("14/1 Endlos")}</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>}
               <div className="sp-controls">
-                <button className="btn ghost" onClick={() => setLeaveWarn(false)}>{t("Weiterspielen")}</button>
-                <button className="btn primary" onClick={() => { setLeaveWarn(false); resetScores(); setDisc(null); setStep(1); }}>
-                  {t("Disziplin wechseln")}
-                </button>
+                <button className="btn ghost" onClick={() => setPendingDisc(null)}>{is141 ? t("Weiterspielen") : t("Abbrechen")}</button>
+                <button className="btn primary" onClick={confirmDiscChange}>{is141 ? t("Disziplin wechseln") : t("Wechseln & zurücksetzen")}</button>
               </div>
             </div>
           )}
@@ -571,7 +631,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       )}
 
       {step === 3 && opp && (
-        <div className="match-center-step">
+        <div className="match-center-step step-enter">
           <div className="summary">
             <div className="sum-vs">
               <div className="sum-side">
@@ -638,7 +698,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       )}
 
       {step === 4 && opp && (
-        <div className="saved match-center-step">
+        <div className="saved match-center-step step-enter">
           <div className="sent-check big"><Check size={34} /></div>
           {offlineQueued ? (
             <>

@@ -282,6 +282,8 @@ const TRANSLATIONS = {
     "Alle Disziplinen": "All disciplines",
     "Karte mit Reitern": "Card with tabs",
     "Aussehen": "Appearance",
+    "Du": "You",
+    "Match": "Match",
     "Allgemein": "General",
     "Dieses Gerät": "This device",
     "Konto & Hilfe": "Account & help",

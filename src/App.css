@@ -730,14 +730,14 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
    Symbolknoepfe direkt darunter. */
 .avatar-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 4px 0 14px; }
 .avatar-photo-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
-.round-btn { flex: 0 0 auto; text-decoration: none; width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid transparent;
+.icon-btn { flex: 0 0 auto; text-decoration: none; width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid transparent;
   background: var(--surface-btn); color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
-.round-btn:hover:not(:disabled) { border-color: var(--btn-border); color: var(--accent); }
-.round-btn:disabled { opacity: .5; cursor: default; }
-.round-btn.warn { color: var(--loss); }
-.round-btn.primary { background: var(--accent); color: var(--accent-ink); }
-.round-btn.primary:hover:not(:disabled) { color: var(--accent-ink); border-color: var(--accent-line); }
-.round-btn.small { width: 30px; height: 30px; }
+.icon-btn:hover:not(:disabled) { border-color: var(--btn-border); color: var(--accent); }
+.icon-btn:disabled { opacity: .5; cursor: default; }
+.icon-btn.warn { color: var(--loss); }
+.icon-btn.primary { background: var(--accent); color: var(--accent-ink); }
+.icon-btn.primary:hover:not(:disabled) { color: var(--accent-ink); border-color: var(--accent-line); }
+.icon-btn.small { width: 30px; height: 30px; }
 /* Profil bearbeiten: Zeilen mit Schalter + Symbolknopf + Info, Zeilen der
    Karte "Konto & Hilfe", Symbolreihen fuer Startseite/Benachrichtigung. */
 .field-label > svg { margin-right: 4px; }
@@ -808,6 +808,34 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 /* Der Ghost steht am Ende der Spielerliste (siehe MatchScreen); die
    Kacheln darueber haben keinen eigenen Abstand nach unten. */
 .match-players .ghost-card { margin: 14px 0 0; }
+/* Neues Match als Formular im Aufbau von "Neues Turnier" (siehe MatchScreen):
+   die Spielerliste ist enger gesetzt als das Turnierformular, weil sie aus
+   vielen gleichartigen Kacheln besteht. */
+.match-list-form { gap: 10px; }
+.field-label-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.field-label-actions .icon-btn { margin: -4px 0; }
+.icon-btn.on { color: var(--accent); border-color: var(--accent-line); }
+/* Zwei Kacheln statt vier (Einzel/Doppel): die 4er-Regel ab 560px darf nicht greifen. */
+.fmt-grid.two { grid-template-columns: repeat(2, 1fr); }
+/* Aufstellung "Du VS Gegner": Kugeln statt Textzeilen. */
+.vs-strip { display: flex; align-items: flex-start; gap: 8px; padding: 12px 10px 8px;
+  border-radius: 14px; background: var(--felt); border: 1px solid var(--line); margin-top: 2px; }
+.vs-team { display: flex; gap: 6px; }
+.vs-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px;
+  background: none; border: none; padding: 0; color: var(--ivory); font-family: inherit;
+  font-size: 10.5px; font-weight: 600; cursor: pointer; }
+.vs-slot > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-slot.me, .vs-slot.empty { cursor: default; }
+.vs-slot:disabled { opacity: 1; }
+.vs-slot.empty { color: var(--ivory-dim); }
+.vs-empty-ball { width: 44px; height: 44px; border-radius: 50%; border: 1.5px dashed var(--btn-border);
+  display: grid; place-items: center; color: var(--ivory-dim); }
+.vs-x { align-self: center; margin-top: -14px; font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800; font-size: 12px; color: var(--ivory-dim); letter-spacing: .06em; }
+.vs-go { margin-left: auto; align-self: center; margin-top: -14px; }
+/* Ghost als Kachel am Ende der Spielerliste. */
+.opp-card.ghost-tile { border-style: dashed; border-color: var(--btn-border); }
+.opp-card .ghost-ball { width: 48px; height: 48px; }
 .guest-empty-card { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 12px;
   background: var(--felt-2); border: 1px dashed var(--btn-border); border-radius: 16px; padding: 12px 14px;
   box-sizing: border-box; }
@@ -1179,7 +1207,7 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 .nick-status.warn { color: var(--accent); }
 .nick-status.err { color: var(--loss); }
 .nick-status.ok { color: var(--win); }
-.field-label { font-size: 13px; color: var(--ivory-dim); display: block; margin-bottom: 8px; }
+.field-label { font-size: 13px; color: var(--ivory-dim); margin-bottom: 8px; }
 .settings-select { width: 100%; box-sizing: border-box; background: var(--felt); color: var(--ivory);
   border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px;
   font-family: inherit; margin-bottom: 10px; }
@@ -1320,6 +1348,29 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .collapsible { transition: grid-template-rows .26s cubic-bezier(.22, .61, .36, 1); }
   .collapsible-inner > * { transition: opacity .2s ease; }
   .collapsible:not(.open) .collapsible-inner > * { opacity: 0; }
+  /* --- Neues Match / Neues Turnier: Bewegung -------------------------
+     Alles nur hier drin (Ruhezustand = sichtbar, siehe .reveal oben). */
+  @keyframes step-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+  @keyframes rise-in { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes ball-pop { 0% { transform: scale(.82); } 55% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes score-bump { 0% { transform: scale(.7); opacity: .4; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes grow-w { from { width: 0; } }
+  @keyframes check-pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.14); opacity: 1; } 100% { transform: scale(1); } }
+  @keyframes go-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--accent-line); } 50% { box-shadow: 0 0 0 7px transparent; } }
+  /* Jeder Schritt gleitet von rechts herein - "eine Seite weiter". */
+  .step-enter { animation: step-in .34s cubic-bezier(.22, .61, .36, 1) both; }
+  /* Spielerkacheln: beim Hineinscrollen von unten aufsteigen, spaltenweise
+     leicht versetzt (--i = Spalte). animation statt transition, damit die
+     Verzoegerung nicht spaeter am Hover-Effekt haengen bleibt. */
+  .opp-card.reveal.is-in, .suggest-card.reveal.is-in {
+    animation: rise-in .38s cubic-bezier(.22, .61, .36, 1) backwards; animation-delay: calc(var(--i, 0) * 32ms); }
+  /* Auswahl bestaetigen: die gewaehlte Kugel/Kachel federt kurz. */
+  .disc-pick.sel .pool-ball, .fmt-card.sel .fmt-glyph, .vs-slot.filled .ball { animation: ball-pop .32s ease-out; }
+  .score-num, .sp-score { animation: score-bump .26s ease-out; }
+  .sum-score { animation: ball-pop .4s ease-out; }
+  .prob-bar div { animation: grow-w .8s cubic-bezier(.22, .61, .36, 1); }
+  .sent-check.big { animation: check-pop .5s cubic-bezier(.34, 1.4, .64, 1) both; }
+  .vs-go:not(:disabled) { animation: go-pulse 1.5s ease-in-out 3; }
   .rank-row, .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn,
   .mini-stepper button, .turnier-stepper-btn, .suggest-challenge-btn, .back-btn,
   .csv-btn, .mem-edit, .mode-btn, .lang-btn,

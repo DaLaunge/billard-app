@@ -5,7 +5,8 @@ import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
-import InfoButton from "./widgets/InfoButton";
+import FieldLabel from "./widgets/FieldLabel";
+import { ModeTiles } from "./widgets/ModePick";
 import DiscBall, { DiscPick } from "./widgets/DiscBall";
 import { FORMAT_GLYPH } from "./widgets/FormatGlyph";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
@@ -28,18 +29,8 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t(
 // Tabellen, siehe WinnerStaysScreen.jsx) - keine Bracket-Struktur, sondern
 // eine dynamische Warteschlange - nur die Oberflaeche tut so, als waere es
 // ein einziges Menü.
-// Feld-Ueberschrift im Anlegen-Formular. Der Erklaertext gehoert in den
-// Info-Knopf daneben und nicht als Dauertext darunter (Nutzer-Feedback:
-// "textuelle Beschreibungen sollten sich generell hinter Info-Buttons
-// verstecken").
-function FieldLabel({ label, info }) {
-  return (
-    <div className="field-label">
-      <span>{label}</span>
-      {info && <InfoButton title={label}>{info}</InfoButton>}
-    </div>
-  );
-}
+// Die Feld-Ueberschrift (Erklaertext im Info-Knopf statt als Dauertext) ist
+// seit 2026-09-30 ein gemeinsames Widget mit "Neues Match" (FieldLabel.jsx).
 
 // Drei Fuellstufen DESSELBEN Akzents statt dreier Farben (siehe CLAUDE.md,
 // "Exactly ONE accent colour"): laufend = volle Flaeche, Anmeldung offen =
@@ -248,11 +239,9 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
 
             {format === "winner_stays" && (
               <>
+                {/* Dieselben Kacheln wie in "Neues Match" (ModeTiles). */}
                 <FieldLabel label={t("Modus")} />
-                <div className="chips small">
-                  <button className={"chip" + (!wsDoubles ? " active" : "")} onClick={() => setWsDoubles(false)}>{t("Einzel")}</button>
-                  <button className={"chip" + (wsDoubles ? " active" : "")} onClick={() => setWsDoubles(true)}>{t("Doppel")}</button>
-                </div>
+                <ModeTiles value={wsDoubles ? "double" : "single"} onChange={(m) => setWsDoubles(m === "double")} />
               </>
             )}
 

@@ -40,7 +40,7 @@ export default function PasswordSection({ toast }) {
           {email ? <><span className="acct-dim">{t("Angemeldet als")}</span> <b>{email}</b></> : t("Anmeldung & Sicherheit")}
         </span>
         {!open && (
-          <button type="button" className="round-btn" onClick={() => setOpen(true)}
+          <button type="button" className="icon-btn" onClick={() => setOpen(true)}
             aria-label={t("Passwort festlegen / ändern")} title={t("Passwort festlegen / ändern")}>
             <KeyRound size={18} />
           </button>
@@ -57,11 +57,11 @@ export default function PasswordSection({ toast }) {
             autoComplete="new-password" onChange={(e) => setPw2(e.target.value)} />
           {msg && <p className="nick-status err"><X size={14} /> {msg}</p>}
           <div className="acct-actions">
-            <button type="button" className="round-btn" aria-label={t("Abbrechen")} title={t("Abbrechen")}
+            <button type="button" className="icon-btn" aria-label={t("Abbrechen")} title={t("Abbrechen")}
               onClick={() => { setOpen(false); setPw(""); setPw2(""); setMsg(""); }}>
               <X size={18} />
             </button>
-            <button type="button" className="round-btn primary" disabled={busy || !pw || !pw2} onClick={save}
+            <button type="button" className="icon-btn primary" disabled={busy || !pw || !pw2} onClick={save}
               aria-label={t("Speichern")} title={t("Speichern")}>
               <Check size={18} />
             </button>
