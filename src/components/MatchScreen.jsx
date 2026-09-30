@@ -4,7 +4,6 @@ import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight,
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
-import { computeAchievementExtras, nextAchievementHint } from "../lib/achievements";
 import { recentOpponentFreq } from "../lib/frequency";
 import { minGhostSeconds } from "../lib/ghostTiming";
 import { savePendingReport, isNetworkError } from "../lib/offlineReport";
@@ -15,7 +14,7 @@ import InviteScreen from "./InviteScreen";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import { rpcRetry } from "../lib/rpcRetry";
 
-export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, catalog, challenges, earnedBadges, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
+export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
   // Anfangswerte aus dem Entwurf statt leer. Spieler werden per id frisch aus
   // der Spielerliste geholt (der Entwurf hat nur eine Kopie von damals).
@@ -138,10 +137,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       lossMax: 4 * nf(D) * (0 - ea),
     };
   };
-  const achievementHint = useMemo(
-    () => nextAchievementHint(catalog, computeAchievementExtras(me.nickname, matches, players, challenges), me.nickname, earnedBadges),
-    [catalog, matches, players, challenges, me.nickname, earnedBadges]
-  );
   const suggestions = opponents
     .filter((p) => !p.is_guest)
     .map((p) => ({ p, gain: previewFor("Gesamt", p.nickname).winMax }))
@@ -306,6 +301,19 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     );
   };
 
+  // Fortschrittspunkte: in den Auswahl-Schritten ganz oben (dort sind sie
+  // Orientierung), waehrend der Aufzeichnung dagegen unten - da gehoert der
+  // Spielstand an die erste Stelle (Nutzer-Feedback).
+  const StepDots = ({ bottom }) => (
+    <div className={"steps" + (bottom ? " bottom" : "")}>
+      {steps.map((s, i) => (
+        <div key={s} className={"step-dot" + (i === step ? " cur" : i < step ? " done" : "")}>
+          <span>{i < step ? <Check size={12} /> : i + 1}</span>{t(s)}
+        </div>
+      ))}
+    </div>
+  );
+
   const DiscChip = () => (
     tournamentCtx ? (
       <span className="disc-chip disc-chip-locked"><span>{t(disc)}</span></span>
@@ -330,6 +338,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
         <h2>{t(tournamentCtx ? "Turnier-Ergebnis" : "Neues Match")}</h2>
         <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
       </header>
+
+      {step < 4 && step !== 2 && <StepDots />}
 
       {abortAsk && (
         <div className="modal-overlay" onClick={() => setAbortAsk(false)}>
@@ -376,6 +386,12 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   <p className="hint center">{t("Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.")}</p>
                 </div>
               )}
+              {/* Einladen steht bewusst neben "Ihr trefft euch?" - beides
+                  dreht sich darum, den anderen an den Tisch zu bekommen.
+                  Zusaetzlich ueber das QR-Symbol auf der Profilkarte. */}
+              <button className="btn ghost" onClick={() => setShowInvite(true)}>
+                <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
+              </button>
             </>
           )}
 
@@ -388,39 +404,12 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </div>
           )}
 
-          {achievementHint && <p className="hint-highlight">🎯 {achievementHint}</p>}
-
-          <div className="search-row">
-            <Search size={16} className="mail-ico" />
-            <input placeholder={t("Spieler suchen oder Gast eingeben …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
-            {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
-          </div>
           </div>
 
+          {/* Reihenfolge (Nutzer-Feedback): Empfehlung, Suche, wie viele
+              Spieler, Spieler-Kacheln - und der Ghost ganz am Ende, weil
+              Trainingsmatches der Sonderfall sind. */}
           <div className="match-players">
-          {mode === "single" && ghost && !oppQuery && (
-            <button className="ghost-card" onClick={() => { setOpp(ghost); setGhostStartedAt(Date.now()); setStep(1); }}>
-              <div className="ghost-ball">👻</div>
-              <div className="ghost-info">
-                <span className="ghost-name">{t("Training gegen Ghost")}</span>
-                <span className="ghost-sub">{t("Übungsmatch – zählt nicht fürs Rating")}</span>
-              </div>
-              <ArrowRight size={18} />
-            </button>
-          )}
-          {oppQuery.trim() && opponents.length === 0 && (
-            <div className="guest-empty-card">
-              <div className="ghost-info">
-                <span className="ghost-name">🤔 {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</span>
-                <span className="ghost-sub">{t("Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.")}</span>
-              </div>
-              <button className="btn primary" disabled={guestBusy} onClick={addGuest}>
-                <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: oppQuery.trim() })}
-              </button>
-            </div>
-          )}
-
-          {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
           {mode === "single" && !oppQuery && suggestions.length > 0 && (
             <div className="suggest-card">
               <div className="suggest-title">💡 {t("Empfehlung")}</div>
@@ -438,6 +427,32 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               ))}
             </div>
           )}
+          <div className="search-row">
+            <Search size={16} className="mail-ico" />
+            <input placeholder={t("Spieler suchen oder Gast eingeben …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
+            {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
+          </div>
+          {oppQuery.trim() && opponents.length === 0 && (
+            <div className="guest-empty-card">
+              <div className="ghost-info">
+                <span className="ghost-name">🤔 {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</span>
+                <span className="ghost-sub">{t("Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.")}</span>
+              </div>
+              <button className="btn primary" disabled={guestBusy} onClick={addGuest}>
+                <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: oppQuery.trim() })}
+              </button>
+            </div>
+          )}
+          {!oppQuery.trim() && allMatchingOpponents.length > 3 && (
+            <div className="chips small">
+              {[3, 10, 20, "all"].map((c) => (
+                <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
+                  {c === "all" ? t("Alle") : c}
+                </button>
+              ))}
+            </div>
+          )}
+          {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
           <div className="opp-grid">
             {opponents.map((p) => {
               const role = mode === "double"
@@ -452,18 +467,16 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               );
             })}
           </div>
-          {!oppQuery.trim() && allMatchingOpponents.length > 3 && (
-            <div className="chips small">
-              {[3, 10, 20, "all"].map((c) => (
-                <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
-                  {c === "all" ? t("Alle") : c}
-                </button>
-              ))}
-            </div>
+          {mode === "single" && ghost && !oppQuery && (
+            <button className="ghost-card" onClick={() => { setOpp(ghost); setGhostStartedAt(Date.now()); setStep(1); }}>
+              <div className="ghost-ball">👻</div>
+              <div className="ghost-info">
+                <span className="ghost-name">{t("Training gegen Ghost")}</span>
+                <span className="ghost-sub">{t("Übungsmatch – zählt nicht fürs Rating")}</span>
+              </div>
+              <ArrowRight size={18} />
+            </button>
           )}
-          <button className="btn ghost" onClick={() => setShowInvite(true)}>
-            <QrCode size={16} /> {t("Neues Mitglied? Jetzt einladen")}
-          </button>
           </div>
           </div>
         </>
@@ -679,17 +692,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           </button>
         </div>
       )}
-      {/* Schrittpunkte bewusst UNTER dem Inhalt (Nutzer-Feedback): oben soll
-          das Match selbst stehen, die Navigationsanzeige ist Beiwerk. */}
-      {step < 4 && (
-        <div className="steps bottom">
-          {steps.map((s, i) => (
-            <div key={s} className={"step-dot" + (i === step ? " cur" : i < step ? " done" : "")}>
-              <span>{i < step ? <Check size={12} /> : i + 1}</span>{t(s)}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Im Ergebnis-Schritt bleiben sie unten: oben steht dort das Match. */}
+      {step === 2 && <StepDots bottom />}
     </div>
   );
 }

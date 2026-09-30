@@ -1435,7 +1435,6 @@ export default function App() {
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onReload={loadData} initialOpp={matchTournamentCtx ? tourOpp : vsOpp} onChallenge={createChallenge}
-                  catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
                   onOpenProtokoll={openProtokoll} tournamentCtx={matchTournamentCtx}
                   keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} resumeDraft={resumeDraft}
                   onDone={() => { clearMatchDraft(player.id); loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}

@@ -672,6 +672,9 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 .ghost-info { display: flex; flex-direction: column; text-align: left; flex: 1; min-width: 0; }
 .ghost-name { font-weight: 700; font-size: 14px; }
 .ghost-sub { font-size: 11.5px; color: var(--ivory-dim); }
+/* Der Ghost steht am Ende der Spielerliste (siehe MatchScreen); die
+   Kacheln darueber haben keinen eigenen Abstand nach unten. */
+.match-players .ghost-card { margin: 14px 0 0; }
 .guest-empty-card { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 12px;
   background: var(--felt-2); border: 1px dashed var(--btn-border); border-radius: 16px; padding: 12px 14px;
   box-sizing: border-box; }
