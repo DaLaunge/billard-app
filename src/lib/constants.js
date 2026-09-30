@@ -21,7 +21,7 @@ export function normalizeListCount(v) {
   const n = Number(v);
   return LIST_COUNT_OPTIONS.includes(n) ? n : DEFAULT_LIST_COUNT;
 }
-export const APP_VERSION = "410";  // bei jedem Release erhöhen
+export const APP_VERSION = "412";  // bei jedem Release erhöhen
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim

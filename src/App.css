@@ -438,7 +438,6 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   background: var(--felt); color: var(--ivory-dim); font-size: 11px; font-weight: 700; line-height: 16px;
   text-align: center; }
 .deck-tabs .chip.active .deck-tab-count { background: rgba(0, 0, 0, 0.22); color: inherit; }
-.card-vis-note { margin: -2px 0 8px; }
 
 .ranking { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .rank-row { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
@@ -727,7 +726,16 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 .legal-link { background: none; border: none; padding: 0; color: var(--ivory-dim); font-size: 12.5px;
   text-decoration: underline; cursor: pointer; font-family: inherit; }
 
-.avatar-photo-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+/* Avatar: eine grosse Kugel mittig, die Foto-Werkzeuge als runde
+   Symbolknoepfe direkt darunter. */
+.avatar-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.avatar-photo-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+.avatar-tool { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid transparent;
+  background: var(--surface-btn); color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
+.avatar-tool:hover:not(:disabled) { border-color: var(--btn-border); color: var(--accent); }
+.avatar-tool:disabled { opacity: .5; cursor: default; }
+.avatar-tool.warn { color: var(--loss); }
+.avatar-busy { flex-basis: 100%; text-align: center; font-size: 12px; color: var(--ivory-dim); }
 
 .ticket-item { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
 .ticket-item:first-child { border-top: none; padding-top: 0; margin-top: 0; }
@@ -934,9 +942,21 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
   font-size: 14px; color: var(--accent); }
 .card-vis-group-count { font-size: 12px; color: var(--ivory-dim); margin-right: auto; }
 .card-vis-group-head .chip { padding: 4px 8px; }
-/* Am PC zweispaltig: die linke Spalte ist breit genug, und 22 Zeilen
-   untereinander wuerden die Einstellungsseite sonst dominieren. */
-.card-vis-list { display: grid; grid-template-columns: 1fr; gap: 2px; }
+/* Am PC zweispaltig: die linke Spalte ist breit genug, und die Zeilen
+   untereinander wuerden die Einstellungsseite sonst dominieren. Die Einheiten
+   (Einzelkarte bzw. Reiter-Karte mit ihren Reitern) sind unteilbar. */
+.card-vis-list { display: block; }
+.card-vis-unit { break-inside: avoid; margin-bottom: 2px; }
+/* Reiter-Karte: Kopfzeile fett, die Reiter darunter eingerueckt an einer
+   Linie in der Akzentfarbe - man sieht, dass sie zur Karte oben gehoeren. */
+.card-vis-unit.is-deck { margin-bottom: 6px; padding-bottom: 2px; }
+.card-vis-deckrow .card-vis-name { font-weight: 600; gap: 6px; }
+.card-vis-deck-icon { color: var(--accent); flex-shrink: 0; }
+.card-vis-parts-count { font-size: 11px; font-weight: 500; color: var(--ivory-dim);
+  background: var(--surface-btn); padding: 1px 6px; border-radius: 8px; flex-shrink: 0; }
+.card-vis-parts { margin: 0 0 2px 22px; padding-left: 8px; border-left: 2px solid var(--accent-line); }
+.card-vis-partrow .card-vis-name { font-size: 12.5px; }
+.card-vis-col-gap { width: 0; }
 /* Eine Zeile je Karte: ganz links die Pfeile fuer die Reihenfolge, dann
    Name + Schalter (der bekannte Schalter aus "Bildschirm", nur mit
    umgedrehter Anzeige-Reihenfolge: im Markup muss der Schieber direkt
@@ -1637,9 +1657,9 @@ button.id-card-head { cursor: pointer; }
      Kartenreihenfolge, und ein Klick auf "nach oben" soll die Zeile auch
      nach oben schieben statt sie zeilenweise in die andere Spalte
      springen zu lassen. --card-vis-rows setzt die Komponente je Liste. */
-  .card-vis-list { grid-template-columns: 1fr 1fr; gap: 2px 14px;
-    grid-auto-flow: column; grid-template-rows: repeat(var(--card-vis-rows, 1), auto); }
+  .card-vis-list { display: block; columns: 2; column-gap: 14px; }
   .card-vis-col { display: inline-flex; }
+  .card-vis-col-gap { width: 20px; }
 
   /* Live: duenn-breit-duenn wie Statistik/Profil - UserPanel links
      (dieselbe Konstante), daneben zwei frei befuellbare Spalten. Standard

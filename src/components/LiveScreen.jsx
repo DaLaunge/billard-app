@@ -10,7 +10,7 @@ import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
 import { useCardLayout } from "../lib/useCardLayout";
-import { foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
+import { deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
 
 // Die drei Bereiche dieses Bildschirms teilen sich seit 2026-09-30 EINE
 // Karte mit Reitern (siehe CardDeck.jsx). Live hatte dabei das umgekehrte
@@ -20,7 +20,7 @@ import { foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder
 // Eintraegen. Jetzt steht die Liste vorne und das Formular hinter einem
 // Knopf; die Zaehler an den Reitern zeigen weiterhin auf einen Blick, wo
 // etwas liegt.
-const LIVE_DECK_IDS = ["duelle", "pings", "planung"];
+const LIVE_DECK_IDS = deckIds("live", "mitspieler");
 const DECK_TAB_KEY = "liveDeckTab";
 const DECK_COLLAPSE_KEY = "liveDeckCollapsed";
 const readLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };

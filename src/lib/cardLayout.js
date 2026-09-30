@@ -102,15 +102,12 @@ export const CARD_SCREENS = [
     // Bestenlisten-Karte (siehe CardDeck.jsx, Prop "filter"). Alte
     // gespeicherte Reihenfolgen nennen die id "globalFilter" noch -
     // normalizeCardOrder() wirft sie automatisch raus.
-    // Die sechs Bestenlisten (Rangliste bis Schnellstes 14/1-Tempo) sind
-    // seit 2026-09-30 EINE Karte mit Reitern (siehe LeaderboardDeck in
-    // StatistikScreen.jsx), bleiben hier aber einzeln stehen: jede laesst
-    // sich weiter fuer sich ein-/ausblenden und verschieben, nur zeigt sich
-    // das jetzt als Reiter statt als eigene Karte. Sie stehen deshalb
-    // zusammenhaengend und alle in derselben Standard-Spalte - die Karte
-    // uebernimmt Platz und Spalte der ERSTEN noch sichtbaren Liste, und so
-    // landet sie unabhaengig davon, welche das gerade ist, immer rechts.
-    note: "Rangliste, Siege, Quote, Serien und die beiden Tempo-Listen bilden zusammen EINE Karte mit Reitern. Aus- und einblenden gilt je Liste, die Reihenfolge bestimmt die Reihenfolge der Reiter.",
+    // Die sechs Bestenlisten sind seit 2026-09-30 EINE Karte mit Reitern
+    // (siehe "decks" unten): jede laesst sich weiter fuer sich ein-/
+    // ausblenden und sortieren, nur zeigt sich das als Reiter.
+    decks: [
+      { id: "bestenlisten", label: "Bestenlisten", ids: ["rangliste", "meisteSiege", "besteSiegquote", "aktuelleSerien", "schnellstesTempo", "schnellste141"] },
+    ],
     cards: [
       { id: "entwicklung", label: "Entwicklung über die Zeit", col: "middle" },
       { id: "letzteMatches", label: "Letzte Matches", col: "middle" },
@@ -130,7 +127,9 @@ export const CARD_SCREENS = [
     // Alle drei teilen sich EINE Karte mit Reitern (siehe CardDeck.jsx) und
     // stehen deshalb in derselben Standard-Spalte - sonst haengt ihr Platz
     // davon ab, welcher Teil gerade der erste sichtbare ist.
-    note: "Duelle, Live und Planung bilden zusammen EINE Karte mit Reitern. Aus- und einblenden gilt je Reiter, die Reihenfolge bestimmt die Reihenfolge der Reiter.",
+    decks: [
+      { id: "mitspieler", label: "Mitspieler finden", ids: ["duelle", "pings", "planung"] },
+    ],
     cards: [
       { id: "duelle", label: "Duelle", col: "middle" },
       { id: "pings", label: "Live", col: "middle" },
@@ -142,15 +141,17 @@ export const CARD_SCREENS = [
     label: "Profil",
     columns: ["left", "middle", "right"],
     // Zwei Gruppen, die sich je EINE Karte mit Reitern teilen (siehe
-    // CardDeck.jsx): "Erfolge (Fortschritt)" + "Erfolge (alle)" und die
-    // vier Zahlen-Karten. Jede Gruppe steht zusammenhaengend und ganz in
-    // DERSELBEN Standard-Spalte - die Karte uebernimmt Platz und Spalte des
-    // ersten sichtbaren Teils, und so landen am Desktop verlaesslich die
+    // "decks" und CardDeck.jsx). Jede Gruppe steht zusammenhaengend und ganz
+    // in DERSELBEN Standard-Spalte - die Karte uebernimmt Platz und Spalte
+    // des ersten sichtbaren Teils, und so landen am Desktop verlaesslich die
     // Zahlen links und die Erfolge in der breiten Mitte, egal welcher Teil
     // der erste sichtbare ist. Steckten sie in verschiedenen Spalten,
-    // saessen beide Karten je nach Ausblendung plotzlich uebereinander in
+    // saessen beide Karten je nach Ausblendung ploetzlich uebereinander in
     // einer Spalte und die anderen blieben leer.
-    note: "Erfolge (Fortschritt) und Erfolge (alle) bilden EINE Karte mit Reitern, ebenso Ratings, Rekorde, Head-to-Head und Spielgeschwindigkeit. Aus- und einblenden gilt je Reiter, die Reihenfolge bestimmt die Reihenfolge der Reiter.",
+    decks: [
+      { id: "erfolge", label: "Erfolge", ids: ["erfolgeFortschritt", "erfolge"] },
+      { id: "zahlen", label: "Meine Zahlen", ids: ["ratings", "rekorde", "headToHead", "tempo"] },
+    ],
     cards: [
       { id: "erfolgeFortschritt", label: "Erfolge (Fortschritt)", col: "middle" },
       { id: "erfolge", label: "Erfolge (alle)", col: "middle" },
@@ -171,6 +172,34 @@ export const CARD_SCREENS = [
 ];
 
 export const CARD_SCREEN_BY_ID = Object.fromEntries(CARD_SCREENS.map((s) => [s.screen, s]));
+
+// Die Katalog-ids einer Reiter-Karte ("deck") eines Bildschirms - die eine
+// Quelle, aus der Bildschirm UND Einstellungen ihre Gruppen lesen.
+export function deckIds(screen, deckId) {
+  return CARD_SCREEN_BY_ID[screen]?.decks?.find((d) => d.id === deckId)?.ids || [];
+}
+
+// Was der Nutzer als EINE Karte erlebt: eine Einzelkarte oder eine ganze
+// Reiter-Karte. Die Einstellungen ordnen, spalten und blenden diese
+// Einheiten (Nutzer-Feedback 2026-09-30: nach der Zusammenlegung standen dort
+// noch die urspruenglichen Einzelkarten - "die Sichtbarkeit muss auch
+// verbessert werden"). Die Einheit steht an der Stelle ihres ERSTEN Teils in
+// "order"; ids in der Reihenfolge von "order" (= Reihenfolge der Reiter).
+export function screenUnits(screen, order) {
+  const decks = CARD_SCREEN_BY_ID[screen]?.decks || [];
+  const deckOf = {};
+  decks.forEach((d) => d.ids.forEach((id) => { deckOf[id] = d; }));
+  const units = [];
+  const seen = new Set();
+  order.forEach((id) => {
+    const d = deckOf[id];
+    if (!d) { units.push({ key: id, ids: [id] }); return; }
+    if (seen.has(d.id)) return;
+    seen.add(d.id);
+    units.push({ key: "deck:" + d.id, deck: d, ids: order.filter((x) => d.ids.includes(x)) });
+  });
+  return units;
+}
 
 export function screenCards(screen) {
   return CARD_SCREEN_BY_ID[screen]?.cards || [];
@@ -268,7 +297,7 @@ export function splitCardColumns(order, columns = {}, screen = STAT_CARD_SCREEN)
 // anderen Bildschirme lesen von dort mit, statt eine eigene Zusammenstellung
 // zu haben. Eine einzige Quelle fuer die Ids, damit Profil und Seitenspalte
 // nie auseinanderlaufen.
-export const NUMBERS_DECK_IDS = ["ratings", "rekorde", "headToHead", "tempo"];
+export const NUMBERS_DECK_IDS = deckIds("profil", "zahlen");
 
 // Die sichtbaren Reiter von "Meine Zahlen" in gespeicherter Reihenfolge, aus
 // dem card_layout-Eintrag des Profils (players.card_layout.profil).

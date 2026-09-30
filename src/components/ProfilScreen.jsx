@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -15,22 +15,20 @@ import MyFeedbackTickets from "./MyFeedbackTickets";
 import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
+import InfoButton from "./widgets/InfoButton";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
 import NumbersDeck from "./widgets/NumbersDeck";
-import { CARD_SCREENS, splitCardColumns, foldedDeck, withoutFolded, deckColumn, phoneSlotOrder } from "../lib/cardLayout";
+import { CARD_SCREENS, screenUnits, deckIds, splitCardColumns, foldedDeck, withoutFolded, deckColumn, phoneSlotOrder } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 
 // Welche Karten des Profils sich je EINE Karte mit Reitern teilen (siehe
 // DECKS weiter unten und CardDeck.jsx). Hier oben, weil die Spaltenwahl
 // schon vor dem Aufbau der Karten feststehen muss.
-const PROFIL_DECK_IDS = [
-  ["erfolgeFortschritt", "erfolge"],
-  ["ratings", "rekorde", "headToHead", "tempo"],
-];
+const PROFIL_DECK_IDS = [deckIds("profil", "erfolge"), deckIds("profil", "zahlen")];
 
 // Spaltenwahl in den Karten-Einstellungen: Symbol + Name je Spalte. Die
 // Symbole zeigen einen Block links/mittig/rechts und damit direkt, wo die
@@ -39,6 +37,63 @@ const PROFIL_DECK_IDS = [
 // eine feste Spalte und daher nur Mitte/Rechts).
 const CARD_COLUMN_LABEL = { left: "Links", middle: "Mitte", right: "Rechts" };
 const CARD_COLUMN_ICON = { left: AlignStartVertical, middle: AlignCenterVertical, right: AlignEndVertical };
+
+// Eine Zeile der Karten-Liste in den Einstellungen: Pfeile links, Name +
+// Schalter in der Mitte, optional die Spaltenwahl rechts. Der Schalter steckt
+// in einem eigenen <label>, die Knoepfe bewusst DANEBEN und nicht darin: ein
+// Knopf innerhalb eines Labels loest dessen Kaestchen mit aus - ein Klick auf
+// "nach oben" wuerde die Karte also gleich mit ausblenden. Reihenfolge im
+// Markup: Kaestchen, Schieber, Name (der Schieber-Zustand haengt am
+// Geschwister-Selektor input:checked + .settings-switch-track); angezeigt
+// wird trotzdem Name links / Schieber rechts (order im CSS).
+function CardVisRow({ shown, label, icon, meta, className = "", canUp, canDown, onUp, onDown, onToggle, col }) {
+  const ColIcon = col ? (CARD_COLUMN_ICON[col.value] || AlignCenterVertical) : null;
+  return (
+    <div className={"card-vis-row" + (shown ? "" : " is-hidden") + (className ? " " + className : "")}>
+      {/* Pfeile statt Ziehen: am Handy waere eine 36px hohe Zeile ein
+          schlechtes Ziehziel, und ein Fehlgriff waere hier besonders
+          aergerlich, weil direkt daneben der Schalter zum Ausblenden sitzt. */}
+      <span className="card-vis-move">
+        <button type="button" className="card-vis-mini" disabled={!canUp} onClick={onUp}
+          aria-label={t("Nach oben")} title={t("Nach oben")}><ChevronUp size={14} /></button>
+        <button type="button" className="card-vis-mini" disabled={!canDown} onClick={onDown}
+          aria-label={t("Nach unten")} title={t("Nach unten")}><ChevronDown size={14} /></button>
+      </span>
+      <label className="settings-switch card-vis-switch"
+        /* Nutzer-Feedback: "wenn ich eine Karte in den Profileinstellungen
+           deaktiviere, scrollt die App automatisch ungewollt". Ein Klick aufs
+           Label fokussiert das unsichtbare Kaestchen (0x0 Pixel), und der
+           Browser scrollt jedes frisch fokussierte Element ins Bild - wegen
+           scroll-behavior:smooth auf .content ist die Korrektur auch noch
+           eine sichtbare Fahrt. preventDefault auf mousedown unterbindet
+           genau diesen Fokus-Schritt; das Umschalten selbst haengt am
+           click bzw. change und funktioniert weiter. Mit der Tastatur (Tab)
+           wird weiterhin normal fokussiert - dort IST das Scrollen
+           erwuenscht. */
+        onMouseDown={(e) => e.preventDefault()}>
+        <input type="checkbox" checked={shown} onChange={onToggle} />
+        <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+        {/* Bewusst kein Auge/durchgestrichenes Auge (Nutzer-Feedback: der
+            Schieberegler ist Information genug). */}
+        <span className="card-vis-name">
+          {icon}
+          <span className="card-vis-label">{label}</span>
+          {meta}
+        </span>
+      </label>
+      {/* Spaltenwahl nur am PC (siehe .card-vis-col in App.css) - am Handy
+          steht ohnehin alles untereinander, dort zaehlt allein die
+          Reihenfolge. */}
+      {col ? (
+        <button type="button" className="card-vis-mini card-vis-col" onClick={col.onCycle}
+          aria-label={t("Spalte wechseln")}
+          title={t("Spalte: {col}", { col: t(CARD_COLUMN_LABEL[col.value] || "Mitte") })}>
+          <ColIcon size={14} />
+        </button>
+      ) : <span className="card-vis-col-gap" />}
+    </div>
+  );
+}
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
@@ -332,6 +387,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     setBusy(false);
   };
   const pickColor = (c) => { setColor(c); persist({ color: c }); };
+  // "Auto" ist zugleich der Weg zurueck zur eigenen Kugel: ein als Avatar
+  // gewaehlter Erfolg wird mit zurueckgesetzt (ersetzt den frueheren Knopf
+  // "Wieder meine Kugel zeigen", Nutzer-Feedback 2026-09-30).
+  const pickAuto = () => { pickColor(null); if (meRow?.selected_badge) onSelectBadge(null); };
 
   const resetDefaults = async () => {
     setBusy(true);
@@ -384,20 +443,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <p className="hint">{t("Hinweis: Dein Name aendert sich ueberall - auch in alten Matches und der Rangliste.")}</p>
           )}
 
-          <label className="field-label">{t("Profilfoto")}</label>
-          <div className="swatch-preview">
-            <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)}
-              photo={photoOf(nickname)} size={56} />
-            <AvatarPhotoField hasPhoto={!!photoOf(nickname)} onReload={onReload} toast={toast} />
-          </div>
-          <p className="hint">{t("Ohne Foto zeigt deine Kugel Initialen in deiner gewählten Farbe.")}</p>
-
-          {meRow?.selected_badge && (
-            <button className="btn ghost" style={{ marginBottom: 14 }} onClick={() => onSelectBadge(null)}>
-              {t("Wieder meine Kugel zeigen")}
-            </button>
-          )}
-
           <label className="field-label" htmlFor="pmotto">{t("Motto (optional)")}</label>
           <div className="mail-row">
             <Pencil size={18} className="mail-ico" />
@@ -413,11 +458,24 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             links bei den Profilangaben und das Design ganz rechts in der
             Seitenspalte, dazwischen Sprache, Karten usw. */}
         <section className="stat-block">
-          <h3><Palette size={17} /> {t("Farben")}</h3>
-          <label className="field-label">{t("Deine Kugel")}</label>
+          <div className="stat-block-head">
+            <h3><Palette size={17} /> {t("Aussehen")}</h3>
+            <InfoButton title={t("Deine Kugel")}>
+              {t("So sehen dich die anderen. Ohne Foto zeigt die Kugel deine Initialen in der gewählten Farbe; \"Auto\" wählt die Farbe selbst und zeigt wieder deine eigene Kugel statt eines Erfolgs.")}
+            </InfoButton>
+          </div>
+          {/* EINE Kugel, gross und mittig, mit den Foto-Werkzeugen darunter -
+              vorher gab es zwei kleine (eine beim Foto, eine bei der Farbe),
+              die dasselbe zeigten (Nutzer-Feedback 2026-09-30). Die Kugel
+              zeigt das fertige Ergebnis inklusive gewaehltem Erfolg-Avatar. */}
+          <div className="avatar-stage">
+            <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)}
+              photo={photoOf(nickname)} badge={meRow?.selected_badge || null} size={112} />
+            <AvatarPhotoField hasPhoto={!!photoOf(nickname)} onReload={onReload} toast={toast} />
+          </div>
           <div className="swatch-row">
-            <button className={"swatch auto" + (color === null ? " sel" : "")}
-              onClick={() => pickColor(null)} aria-label={t("Automatische Farbe")}>{t("Auto")}</button>
+            <button className={"swatch auto" + (color === null && !meRow?.selected_badge ? " sel" : "")}
+              onClick={pickAuto} title={t("Automatische Farbe")} aria-label={t("Automatische Farbe")}>{t("Auto")}</button>
             {BALL_PALETTE.map((c) => (
               <button key={c} className={"swatch" + (color === c ? " sel" : "")}
                 style={{ background: c }} onClick={() => pickColor(c)} aria-label={t("Farbe {c}", { c })}>
@@ -437,14 +495,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 aria-label={t("Eigene Kugelfarbe wählen")} />
             </label>
           </div>
-          <div className="swatch-preview">
-            <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)} size={56} />
-            <span className="hint" style={{ marginTop: 0 }}>
-              {t("So sehen dich die anderen.")}{color && !BALL_PALETTE.includes(color) ? ` ${t("Deine Farbe: {c}", { c: color.toUpperCase() })}` : ""}
-            </span>
-          </div>
-
-
           <label className="field-label">{t("Design")}</label>
           <div className="theme-grid">
             {THEME_KEYS.map((key) => {
@@ -514,97 +564,66 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <p className="hint" style={{ marginTop: 0 }}>
           {t("Reihenfolge, Spalte und Sichtbarkeit der Karten - fuer jeden Bildschirm. Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
         </p>
-        {CARD_SCREENS.map(({ screen, label, cards, note }) => {
+        {CARD_SCREENS.map(({ screen, label, cards }) => {
           const api = layoutByScreen[screen];
           const byId = Object.fromEntries(cards.map((c) => [c.id, c]));
-          const sichtbar = cards.length - api.hiddenCount;
+          // Was auf dem Bildschirm als EINE Karte erscheint: Einzelkarten und
+          // Reiter-Karten (siehe screenUnits) - nicht mehr jeder Katalog-
+          // Eintrag einzeln.
+          const units = screenUnits(screen, api.order);
+          const unitOn = (u) => u.ids.some((id) => !api.isHidden(id));
+          const sichtbar = units.filter(unitOn).length;
           return (
             <div key={screen} className="card-vis-group">
               <div className="card-vis-group-head">
                 <span className="card-vis-group-title">{t(label)}</span>
                 <span className="card-vis-group-count">
-                  {t("{n} von {m} sichtbar", { n: sichtbar, m: cards.length })}
+                  {t("{n} von {m} sichtbar", { n: sichtbar, m: units.length })}
                 </span>
                 <button className="chip chip-icon" onClick={api.showAll} disabled={!api.hiddenCount}
                   aria-label={t("Alle einblenden")} title={t("Alle einblenden")}>
                   <Eye size={15} />
                 </button>
               </div>
-              {/* Hinweis fuer Bildschirme, auf denen mehrere Eintraege
-                  dieser Liste zusammen EINE Karte ergeben (Statistik:
-                  Bestenlisten-Reiter) - sonst wundert man sich, warum das
-                  Einblenden keine neue Karte erzeugt. */}
-              {note && <p className="hint card-vis-note">{t(note)}</p>}
-              <div className="card-vis-list" style={{ "--card-vis-rows": Math.ceil(api.order.length / 2) }}>
-                {api.order.map((id, i) => {
-                  const c = byId[id];
-                  if (!c) return null;
-                  const shown = !api.isHidden(id);
-                  const col = api.columns[id] || "middle";
-                  const ColIcon = CARD_COLUMN_ICON[col] || AlignCenterVertical;
+              <div className="card-vis-list">
+                {units.map((u, i) => {
+                  const col = u.deck ? deckColumn(api.columns, u.deck.ids, screen) : (api.columns[u.ids[0]] || "middle");
+                  const colProps = { value: col, onCycle: () => api.cycleColumn(u.ids) };
+                  if (!u.deck) {
+                    const c = byId[u.ids[0]];
+                    if (!c) return null;
+                    return (
+                      <div key={u.key} className="card-vis-unit">
+                        <CardVisRow shown={!api.isHidden(c.id)} label={t(c.label)}
+                          canUp={i > 0} canDown={i < units.length - 1}
+                          onUp={() => api.moveUnit(u.ids, -1)} onDown={() => api.moveUnit(u.ids, 1)}
+                          onToggle={() => api.toggleCard(c.id)} col={colProps} />
+                      </div>
+                    );
+                  }
+                  const on = unitOn(u);
+                  const nShown = u.ids.filter((id) => !api.isHidden(id)).length;
                   return (
-                    <div key={id} className={"card-vis-row" + (shown ? "" : " is-hidden")}>
-                      {/* Pfeile statt Ziehen: am Handy waere eine 36px hohe
-                          Zeile ein schlechtes Ziehziel, und ein Fehlgriff
-                          waere hier besonders aergerlich, weil direkt
-                          daneben der Schalter zum Ausblenden sitzt. */}
-                      <span className="card-vis-move">
-                        <button type="button" className="card-vis-mini" disabled={i === 0}
-                          onClick={() => api.moveCard(id, -1)}
-                          aria-label={t("Nach oben")} title={t("Nach oben")}><ChevronUp size={14} /></button>
-                        <button type="button" className="card-vis-mini" disabled={i === api.order.length - 1}
-                          onClick={() => api.moveCard(id, 1)}
-                          aria-label={t("Nach unten")} title={t("Nach unten")}><ChevronDown size={14} /></button>
-                      </span>
-                      {/* Der Schalter steckt in einem eigenen <label>, die
-                          Knoepfe links und rechts davon bewusst DANEBEN und
-                          nicht darin: ein Knopf innerhalb eines Labels loest
-                          dessen Kaestchen mit aus - ein Klick auf "nach
-                          oben" wuerde die Karte also gleich mit ausblenden.
-                          Reihenfolge im Markup: Kaestchen, Schieber, Name -
-                          der Schieber-Zustand haengt am Geschwister-
-                          Selektor (input:checked + .settings-switch-track),
-                          deshalb muss er direkt hinter dem input stehen.
-                          Angezeigt wird trotzdem Name links / Schieber
-                          rechts (order im CSS). */}
-                      <label className="settings-switch card-vis-switch"
-                        /* Nutzer-Feedback: "wenn ich eine Karte in den
-                           Profileinstellungen deaktiviere, scrollt die App
-                           automatisch ungewollt". Ein Klick aufs Label
-                           fokussiert das unsichtbare Kaestchen (0x0 Pixel),
-                           und der Browser scrollt jedes frisch fokussierte
-                           Element ins Bild - bei 22 Zeilen liegt staendig
-                           eine davon am Rand des Sichtfensters, und wegen
-                           scroll-behavior:smooth auf .content ist die
-                           Korrektur auch noch eine sichtbare Fahrt.
-                           preventDefault auf mousedown unterbindet genau
-                           diesen Fokus-Schritt; das Umschalten selbst haengt
-                           am click bzw. change und funktioniert weiter. Mit
-                           der Tastatur (Tab) wird weiterhin normal
-                           fokussiert - dort IST das Scrollen erwuenscht. */
-                        onMouseDown={(e) => e.preventDefault()}>
-                        <input type="checkbox" checked={shown} onChange={() => api.toggleCard(id)} />
-                        <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
-                        {/* Bewusst NUR der Name, kein Auge/durchgestrichenes
-                            Auge davor (Nutzer-Feedback: "es ist nicht noetig,
-                            die Sichtbarkeit als durchgestrichenes Auge extra
-                            zu betonen, der Schieberegler ist Information
-                            genug") - das Symbol sagte dasselbe wie der
-                            Schalter direkt daneben. */}
-                        <span className="card-vis-name">
-                          <span className="card-vis-label">{t(c.label)}</span>
-                        </span>
-                      </label>
-                      {/* Spaltenwahl nur am PC (siehe .card-vis-col in
-                          App.css) - am Handy steht ohnehin alles
-                          untereinander, dort zaehlt allein die
-                          Reihenfolge. */}
-                      <button type="button" className="card-vis-mini card-vis-col"
-                        onClick={() => api.cycleColumn(id)}
-                        aria-label={t("Spalte wechseln")}
-                        title={t("Spalte: {col}", { col: t(CARD_COLUMN_LABEL[col] || "Mitte") })}>
-                        <ColIcon size={14} />
-                      </button>
+                    <div key={u.key} className="card-vis-unit is-deck">
+                      {/* Reiter-Karte: die Kopfzeile ordnet, spaltet und
+                          blendet die GANZE Karte; darunter, eingerueckt, die
+                          Reiter mit eigener Reihenfolge und eigenem Schalter.
+                          Symbol + Zaehler ersetzen den frueheren Erklaertext
+                          ("bilden zusammen EINE Karte ..."). */}
+                      <CardVisRow className="card-vis-deckrow" shown={on} label={t(u.deck.label)}
+                        icon={<Layers size={14} className="card-vis-deck-icon" aria-label={t("Karte mit Reitern")} />}
+                        meta={<span className="card-vis-parts-count" title={t("Karte mit Reitern")}>{nShown}/{u.ids.length}</span>}
+                        canUp={i > 0} canDown={i < units.length - 1}
+                        onUp={() => api.moveUnit(u.ids, -1)} onDown={() => api.moveUnit(u.ids, 1)}
+                        onToggle={() => api.setDeckHidden(u.ids, on)} col={colProps} />
+                      <div className="card-vis-parts">
+                        {u.ids.map((id, j) => byId[id] && (
+                          <CardVisRow key={id} className="card-vis-partrow" shown={!api.isHidden(id)} label={t(byId[id].label)}
+                            canUp={j > 0} canDown={j < u.ids.length - 1}
+                            onUp={() => api.moveInDeck(id, u.deck.ids, -1)} onDown={() => api.moveInDeck(id, u.deck.ids, 1)}
+                            onToggle={() => api.toggleCard(id)} />
+                        ))}
+                      </div>
                     </div>
                   );
                 })}

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { t } from "./i18n";
 import {
   normalizeCardOrder, normalizeCardColumns, normalizeHiddenCards,
-  mergeCardLayout, moveInOrder, screenCards, screenColumns, splitCardColumns, groupOrder,
+  mergeCardLayout, moveInOrder, screenCards, screenColumns, splitCardColumns, groupOrder, screenUnits, deckColumn,
 } from "./cardLayout";
 
 /* Karten-Anordnung + Sichtbarkeit EINES Bildschirms - der gemeinsame
@@ -135,6 +135,44 @@ export function useCardLayout(screen, cardLayout, onSetCardLayout, toast) {
     canMove: (id, dir) => {
       const i = shown.indexOf(id);
       return i !== -1 && shown[i + dir] !== undefined;
+    },
+    // Einheiten-Variante von moveCard() fuer die Einstellungen: "ids" ist EINE
+    // Karte oder alle Teile einer Reiter-Karte, die gemeinsam als Block
+    // wandern (und dabei wieder lueckenlos nebeneinander landen). Ueber eine
+    // Spaltengrenze wechselt der Block die Spalte wie beim Ziehen.
+    moveUnit: (ids, dir) => {
+      const units = screenUnits(screen, shown);
+      const i = units.findIndex((u) => u.ids[0] === ids[0]);
+      const nb = units[i + dir];
+      if (i === -1 || !nb) return;
+      const colOf = (u) => (u.deck ? deckColumn(columns, u.deck.ids, screen) : columns[u.ids[0]]);
+      const cross = grouped && colOf(nb) !== colOf(units[i]);
+      const rest = shown.filter((x) => !ids.includes(x));
+      const nbFirst = rest.indexOf(nb.ids[0]);
+      const nbLast = rest.indexOf(nb.ids[nb.ids.length - 1]);
+      // Innerhalb der Spalte: vor bzw. hinter den Nachbarn. Ueber die Grenze:
+      // ans ENDE der vorigen bzw. an den ANFANG der naechsten Spalte.
+      const at = (dir < 0) === !cross ? nbFirst : nbLast + 1;
+      const next = [...rest];
+      next.splice(at, 0, ...ids);
+      withOrder(next, grouped ? { ...columns, ...Object.fromEntries(ids.map((x) => [x, cross ? colOf(nb) : colOf(units[i])])) } : undefined);
+    },
+    // Einen Reiter innerhalb seiner Reiter-Karte einen Platz verschieben.
+    moveInDeck: (id, deckIds, dir) => {
+      const parts = shown.filter((x) => deckIds.includes(x));
+      const j = parts.indexOf(id);
+      const other = parts[j + dir];
+      if (j === -1 || other === undefined) return;
+      const next = [...shown];
+      const a = next.indexOf(id), b = next.indexOf(other);
+      next[a] = other; next[b] = id;
+      withOrder(next);
+    },
+    // Alle Reiter einer Reiter-Karte auf einmal aus-/einblenden.
+    setDeckHidden: (deckIds, hide) => {
+      const n = new Set(hidden);
+      deckIds.forEach((x) => (hide ? n.add(x) : n.delete(x)));
+      withHidden(n);
     },
     setLayout: (nextOrder, nextColumns) => withOrder(nextOrder, nextColumns),
     setColumn: (id, col) => {

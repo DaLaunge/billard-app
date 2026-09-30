@@ -8,7 +8,7 @@ import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount } from "../lib/constants";
-import { STAT_CARD_SCREEN, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
+import { STAT_CARD_SCREEN, deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
@@ -41,7 +41,7 @@ const EMPTY_RIGHT_DROP_ID = "right-empty";
 // Die sechs Bestenlisten teilen sich EINE Karte (siehe CardDeck.jsx) - als
 // Konstante, weil handleDragEnd sie schon braucht, bevor der Katalog der
 // Listen weiter unten gebaut ist.
-const LEADERBOARD_ID_LIST = ["rangliste", "meisteSiege", "besteSiegquote", "aktuelleSerien", "schnellstesTempo", "schnellste141"];
+const LEADERBOARD_ID_LIST = deckIds("stats", "bestenlisten");
 
 // rectSortingStrategy() geht von EINER durchgehenden Liste aus: es simuliert
 // ein arrayMove() ueber ALLE Karten hinweg und verschiebt darauf basierend
