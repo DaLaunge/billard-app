@@ -66,6 +66,10 @@ export default function CardDeck({
                   className={"chip" + (x.id === active.id ? " active" : "")}
                   onClick={() => onActive(x.id)} title={x.title || x.tab}>
                   {x.icon} <span>{x.tab}</span>
+                  {/* Zaehler direkt am Reiter: nur so sieht man ohne
+                      Umschalten, ob hinter einem zugeklappten Teil etwas
+                      liegt (Live: "wartet eine Herausforderung auf mich?"). */}
+                  {x.count != null && <span className="deck-tab-count">{x.count}</span>}
                 </button>
               ))}
             </div>

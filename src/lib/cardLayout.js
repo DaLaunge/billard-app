@@ -123,9 +123,13 @@ export const CARD_SCREENS = [
     screen: "live",
     label: "Live",
     columns: ["middle", "right"],
+    // Alle drei teilen sich EINE Karte mit Reitern (siehe CardDeck.jsx) und
+    // stehen deshalb in derselben Standard-Spalte - sonst haengt ihr Platz
+    // davon ab, welcher Teil gerade der erste sichtbare ist.
+    note: "Duelle, Live und Planung bilden zusammen EINE Karte mit Reitern. Aus- und einblenden gilt je Reiter, die Reihenfolge bestimmt die Reihenfolge der Reiter.",
     cards: [
       { id: "duelle", label: "Duelle", col: "middle" },
-      { id: "pings", label: "Live", col: "right" },
+      { id: "pings", label: "Live", col: "middle" },
       { id: "planung", label: "Planung", col: "middle" },
     ],
   },
