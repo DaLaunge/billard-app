@@ -639,6 +639,19 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   background: #F7F3E8; border-radius: 50%; display: grid; place-items: center;
   font-size: 12px; font-weight: 800; color: #1A1A1A; font-family: 'Bricolage Grotesque', sans-serif; }
 .pool-ball.sel { outline: 3px solid var(--accent); outline-offset: 2px; }
+/* Disziplin als Kugel (widgets/DiscBall.jsx): dieselbe Kugel wie im 14/1-
+   Protokoll, aber in Textzeilen eingebettet und nicht klickbar. */
+.pool-ball.disc-ball { display: inline-block; vertical-align: middle; flex: 0 0 auto; aspect-ratio: auto;
+  cursor: default; margin: 0 1px; box-shadow: inset -1px -2px 3px #00000055, inset 1px 1px 2px #ffffff35; }
+.disc-ball .pb-no { width: 54%; height: 54%; }
+/* Auswahl im Turnierformular: vier Kugeln zum Antippen, die gewaehlte mit Ring
+   wie .pool-ball.sel. */
+.disc-picks { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
+.disc-pick { display: grid; place-items: center; padding: 7px; border-radius: 16px; cursor: pointer;
+  background: var(--surface-btn); border: 1.5px solid transparent; }
+.disc-pick .pool-ball { box-shadow: inset -2px -3px 5px #00000055, inset 2px 2px 4px #ffffff35; }
+.disc-pick.sel { border-color: var(--accent); background: var(--accent-soft); }
+.disc-pick:not(.sel) .pool-ball { opacity: .72; }
 .sp-run-preview { text-align: center; font-size: 14px; }
 .sp-run-preview b { font-size: 20px; color: var(--accent); font-family: 'Bricolage Grotesque', sans-serif; }
 /* "Neu aufbauen" steht direkt neben "Versenkt" (.sp-pot) und war frueher

@@ -8,3 +8,8 @@ export function poolBallStyle(n) {
   if (n <= 8) return { background: c };
   return { background: `linear-gradient(180deg, #F2EDE0 0 30%, ${c} 30% 70%, #F2EDE0 70% 100%)` };
 }
+
+// Welche Kugel eine Disziplin im Bild vertritt (siehe widgets/DiscBall.jsx):
+// die, nach der sie heisst. 14/1 endlos hat keine eigene Kugel, es wird mit
+// allen 15 gespielt - die 14 steht dafuer, wie im Namen.
+export const DISC_BALL = { "8 Ball": 8, "9 Ball": 9, "10 Ball": 10, "14/1 Endlos": 14 };

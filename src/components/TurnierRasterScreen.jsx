@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import DiscBall from "./widgets/DiscBall";
 import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
@@ -483,7 +484,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <h2>{tour.name}</h2>
         </header>
         <p className="hint" style={{ marginTop: -6 }}>
-          {formatLabel(tour.format)} · {t(tour.discipline)} · {t("Anmeldung offen")}
+          {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {t("Anmeldung offen")}
         </p>
         <div className="turnier-organizer-line">
           <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
@@ -625,7 +626,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         <h2>{tour.name}</h2>
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
-        {formatLabel(tour.format)} · {t(tour.discipline)} · {tour.status === "finished" ? t("beendet") : t("läuft")}
+        {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {tour.status === "finished" ? t("beendet") : t("läuft")}
         {tour.status === "finished" && (resultsLocked
           ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
           : <> · {t("Korrekturen noch möglich")}</>)}

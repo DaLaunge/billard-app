@@ -3,9 +3,10 @@ import { ChevronLeft, ChevronRight, Plus, Search, Trophy, X } from "lucide-react
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
-import { DEFAULT_DISCIPLINES, DISC_LABEL } from "../lib/constants";
+import { DEFAULT_DISCIPLINES } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
 import InfoButton from "./widgets/InfoButton";
+import DiscBall from "./widgets/DiscBall";
 import { FORMAT_GLYPH } from "./widgets/FormatGlyph";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 
@@ -243,9 +244,14 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
             )}
 
             <FieldLabel label={t("Disziplin")} />
-            <div className="chips small">
+            <div className="disc-picks">
               {DEFAULT_DISCIPLINES.map((d) => (
-                <button key={d} className={"chip" + (discipline === d ? " active" : "")} onClick={() => setDiscipline(d)}>{t(DISC_LABEL[d] || d)}</button>
+                // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
+                // Akzentfarbe, wie bei der Kugelauswahl im 14/1-Protokoll.
+                <button key={d} type="button" className={"disc-pick" + (discipline === d ? " sel" : "")}
+                  aria-pressed={discipline === d} aria-label={t(d)} title={t(d)} onClick={() => setDiscipline(d)}>
+                  <DiscBall disc={d} size={34} />
+                </button>
               ))}
             </div>
 
@@ -323,7 +329,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
                     <span className={"turnier-status " + statusTone(it.status)}>{statusLabel(it.status)}</span>
                   </span>
                   <span className="turnier-list-row-meta">
-                    {formatLabel(it)} · {t(it.discipline)}
+                    {formatLabel(it)} · <DiscBall disc={it.discipline} size={15} />
                     {it._kind === "winnerstays" && it.table_number != null && ` · ${t("Tisch")} ${it.table_number}`}
                     {" · "}{fmtDate(it.created_at)}
                   </span>
