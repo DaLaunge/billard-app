@@ -14,6 +14,7 @@ import { useWideScreen } from "../lib/useWideScreen";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPickRow } from "./widgets/DiscBall";
+import ModePick from "./widgets/ModePick";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -31,7 +32,7 @@ import CardDeck from "./widgets/CardDeck";
 import EmptyColumnDropZone from "./widgets/EmptyColumnDropZone";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
-const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
+const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
 // Feste ids der beiden EmptyColumnDropZone-Ablageflaechen (siehe dort) -
 // koennen keine echte Karten-id ueberschneiden, da Karten-ids aus
 // cardLayout.js kommen.
@@ -156,13 +157,19 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
 // Nutzer-Feedback, das zu dieser Aufteilung gefuehrt hat (unveraendert
 // gueltig): jede Bestenliste hatte vorher ihre eigenen Top-3/10/Alle-
 // Knoepfe, das waren zu viele Buttons - daher EIN Satz fuer alle.
-function StatFilterContent({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf }) {
+function StatFilterContent({ disc, disciplines, onDisc, mode, onMode, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf }) {
   return (
     <>
       {/* Disziplin als Kugeln (Nutzer-Feedback 2026-09-30: "verwende die Kugeln
           auch bei Statistik-Filtern"), "Alle" und "Doppel" als Chips. */}
+      {/* "Doppel" ist KEINE Disziplin (das Rating dafuer wird nur intern als
+          solche gefuehrt) und steht deshalb nicht in dieser Reihe, sondern als
+          eigene Achse darunter: Einzel / Doppel / Beides. */}
       <div style={{ marginBottom: 8 }}>
-        <DiscPickRow all="Gesamt" discs={disciplines} value={disc} onChange={onDisc} />
+        <DiscPickRow all="Gesamt" discs={disciplines.filter((d) => d !== "Doppel")} value={disc} onChange={onDisc} />
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <ModePick value={mode} onChange={onMode} />
       </div>
       <div className="chips small" style={{ marginBottom: 0 }}>
         {LIST_COUNT_OPTIONS.map((c) => (
@@ -279,7 +286,8 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
 function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokoll, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const [filterPlayer, setFilterPlayer] = useState("");
   const [filterResult, setFilterResult] = useState("all"); // all | win | loss
-  const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ... | "Doppel"
+  const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ...
+  const [filterMode, setFilterMode] = useState("both"); // single | double | both (siehe widgets/ModePick.jsx)
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [matchCount, setMatchCount] = useState(DEFAULT_LIST_COUNT);
@@ -299,20 +307,23 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
             if (filterResult === "loss" && won) return false;
           }
         }
-        if (filterDisc === "Doppel") { if (!isDoubles(m)) return false; }
-        else if (filterDisc !== "all") { if (m.discipline !== filterDisc) return false; }
+        // Disziplin und Einzel/Doppel sind zwei unabhaengige Filter - "8 Ball im
+        // Doppel" ist eine gueltige Auswahl.
+        if (filterMode === "single" && isDoubles(m)) return false;
+        if (filterMode === "double" && !isDoubles(m)) return false;
+        if (filterDisc !== "all" && m.discipline !== filterDisc) return false;
         const day = m.played_at.slice(0, 10);
         if (dateFrom && day < dateFrom) return false;
         if (dateTo && day > dateTo) return false;
         return true;
       })
       .sort((a, b) => new Date(b.played_at) - new Date(a.played_at));
-  }, [matches, hideTournament, filterPlayer, filterResult, filterDisc, dateFrom, dateTo]);
+  }, [matches, hideTournament, filterPlayer, filterResult, filterDisc, filterMode, dateFrom, dateTo]);
 
   const visibleMatches = matchCount === "all" ? filteredMatches : filteredMatches.slice(0, matchCount);
-  const filtersActive = !!(filterPlayer || filterDisc !== "all" || dateFrom || dateTo || hideTournament);
+  const filtersActive = !!(filterPlayer || filterDisc !== "all" || filterMode !== "both" || dateFrom || dateTo || hideTournament);
   const resetFilters = () => {
-    setFilterPlayer(""); setFilterResult("all"); setFilterDisc("all"); setDateFrom(""); setDateTo("");
+    setFilterPlayer(""); setFilterResult("all"); setFilterDisc("all"); setFilterMode("both"); setDateFrom(""); setDateTo("");
     setMatchCount(DEFAULT_LIST_COUNT); setHideTournament(false);
   };
 
@@ -327,6 +338,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
     bit(filterPlayer || null),
     filterPlayer && filterResult !== "all" ? bit(filterResult === "win" ? t("Siege") : t("Niederlagen")) : null,
     filterDisc !== "all" ? bit(DISC_LABEL[filterDisc] || filterDisc, <DiscBall disc={filterDisc} size={15} />) : null,
+    filterMode !== "both" ? bit(t(filterMode === "single" ? "Einzel" : "Doppel")) : null,
     hideTournament ? bit(t("ohne Turnier")) : null,
     dateFrom || dateTo ? bit(t("Zeitraum")) : null,
     matchCount !== DEFAULT_LIST_COUNT ? bit(matchCount === "all" ? t("Alle") : t("Top {n}", { n: matchCount })) : null,
@@ -376,6 +388,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
             </div>
           )}
           <DiscPickRow all="all" discs={MATCH_DISCIPLINES} value={filterDisc} onChange={setFilterDisc} />
+          <ModePick value={filterMode} onChange={setFilterMode} />
           <div className="chips small" style={{ marginBottom: 0 }}>
             <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
               {t("Turniermatches ausblenden")}
@@ -558,8 +571,18 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
   // Globale Auswahl (Disziplin + Top-N/Meine Umgebung): letzte Wahl wird
   // geraeteweise gemerkt, wie bei den Live-Bereichen (siehe LiveScreen).
+  // Disziplin und Einzel/Doppel sind zwei getrennte Achsen. Bis 2026-09-30 war
+  // "Doppel" ein Eintrag in der Disziplin-Reihe (statGlobalDisc = "Doppel") -
+  // ein solcher Altwert wird zu Disziplin "Gesamt" + Modus "double".
   const [globalDisc, setGlobalDisc] = useState(() => {
-    try { return localStorage.getItem("statGlobalDisc") || "Gesamt"; } catch { return "Gesamt"; }
+    try { const v = localStorage.getItem("statGlobalDisc"); return v && v !== "Doppel" ? v : "Gesamt"; } catch { return "Gesamt"; }
+  });
+  const [globalMode, setGlobalMode] = useState(() => {
+    try {
+      const m = localStorage.getItem("statGlobalMode");
+      if (m === "single" || m === "double" || m === "both") return m;
+      return localStorage.getItem("statGlobalDisc") === "Doppel" ? "double" : "both";
+    } catch { return "both"; }
   });
   const [globalCount, setGlobalCount] = useState(() => {
     try { return normalizeListCount(localStorage.getItem("statGlobalCount")); } catch { return DEFAULT_LIST_COUNT; }
@@ -568,20 +591,23 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     try { return localStorage.getItem("statGlobalNearby") === "1"; } catch { return false; }
   });
   useEffect(() => { try { localStorage.setItem("statGlobalDisc", globalDisc); } catch { /* ignore */ } }, [globalDisc]);
+  useEffect(() => { try { localStorage.setItem("statGlobalMode", globalMode); } catch { /* ignore */ } }, [globalMode]);
+  // Welche Rating-"Disziplin" die Auswahl trifft: fuer Doppel gibt es serverseitig
+  // NUR ein Gesamt-Doppel-Rating (keins je Disziplin), sonst gilt die gewaehlte
+  // Disziplin bzw. Gesamt. Fuer Einzel + Alle gibt es ebenfalls nur "Gesamt"
+  // (Einzel und Doppel zusammen) - siehe elo_anchor_rows() in supabase/.
+  const ratingDisc = globalMode === "double" ? "Doppel" : globalDisc;
   useEffect(() => { try { localStorage.setItem("statGlobalCount", String(globalCount)); } catch { /* ignore */ } }, [globalCount]);
   useEffect(() => { try { localStorage.setItem("statGlobalNearby", globalNearby ? "1" : "0"); } catch { /* ignore */ } }, [globalNearby]);
 
-  // Meiste Siege/Beste Siegquote/Aktuelle Serien nach der globalen Disziplin
-  // filtern - computeStats() selbst kennt keine Disziplin, zaehlt aber
-  // ohnehin nur Einzel-Matches (Doppel wird intern uebersprungen), daher
-  // fuer "Doppel" direkt leer lassen statt auf einen nie zutreffenden
-  // matches.discipline-Wert zu filtern.
-  const discFilteredMatches = useMemo(() => {
-    if (globalDisc === "Gesamt") return matches;
-    if (globalDisc === "Doppel") return [];
-    return matches.filter((m) => m.discipline === globalDisc);
-  }, [matches, globalDisc]);
-  const stats = useMemo(() => computeStats(discFilteredMatches), [discFilteredMatches]);
+  // Meiste Siege/Beste Siegquote/Aktuelle Serien nach Disziplin UND Einzel/
+  // Doppel: die Disziplin filtert die Matches, der Modus sagt computeStats(),
+  // welche Art zaehlt (Doppel zaehlt fuer alle vier Beteiligten).
+  const discFilteredMatches = useMemo(
+    () => (globalDisc === "Gesamt" ? matches : matches.filter((m) => m.discipline === globalDisc)),
+    [matches, globalDisc]
+  );
+  const stats = useMemo(() => computeStats(discFilteredMatches, globalMode), [discFilteredMatches, globalMode]);
   const topWins = useMemo(() => Object.values(stats).sort((a, b) => b.siege - a.siege), [stats]);
   const topQuote = useMemo(
     () => Object.values(stats).filter((p) => p.spiele >= 10).sort((a, b) => b.quote - a.quote),
@@ -798,11 +824,11 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const leaderboardById = {
     rangliste: {
       id: "rangliste", tab: t("Rating"), title: t("Rangliste"), icon: <Trophy size={15} />, medals: true,
-      rows: rangliste.filter((r) => r.discipline === globalDisc && r.aktiv && !r.vorlaeufig),
+      rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.vorlaeufig),
       nameOf: (r) => r.nickname, valOf: (r) => r.rating,
       extra: (r) => <DecayBadge player={r} iconSize={15} />,
       emptyText: t("Noch keine Ratings in dieser Disziplin."),
-      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv."),
+      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
     },
     meisteSiege: {
       id: "meisteSiege", tab: t("Siege"), title: t("Meiste Siege"), icon: <Trophy size={15} />,
@@ -811,12 +837,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     besteSiegquote: {
       id: "besteSiegquote", tab: t("Quote"), title: t("Beste Siegquote (ab 10 Spielen)"), icon: <BarChart3 size={15} />,
       rows: topQuote, nameOf: (p) => p.name, valOf: (p) => `${p.quote} %`,
-      info: t("Anteil gewonnener Einzel-Matches (Siege ÷ Spiele) in der aktuell gewählten Disziplin. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl."),
+      info: t("Anteil gewonnener Matches (Siege ÷ Spiele) in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl."),
     },
     aktuelleSerien: {
       id: "aktuelleSerien", tab: t("Serien"), title: t("Aktuelle Serien"), icon: <Flame size={15} />,
       rows: topStreak, nameOf: (p) => p.name, valOf: (p) => `${p.streak} ${t("in Folge")}`,
-      info: t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin."),
+      info: t("Wie viele Matches in Folge gewonnen wurden, seit der letzten Niederlage, in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel."),
     },
     schnellstesTempo: {
       id: "schnellstesTempo", tab: t("Tempo"), title: t("Schnellstes Tempo (Ø pro Spiel)"), icon: <Zap size={15} />,
@@ -835,6 +861,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Trichter-Feld sieht man so, dass die Listen gefiltert sind.
   const pillBits = [
     globalDisc !== "Gesamt" ? <DiscBall key="d" disc={globalDisc} size={15} /> : null,
+    globalMode !== "both" ? t(globalMode === "single" ? "Einzel" : "Doppel") : null,
     globalNearby ? t("Umgebung") : (globalCount !== DEFAULT_LIST_COUNT ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
   ].filter(Boolean);
   const filterPill = pillBits.length
@@ -848,14 +875,14 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const statFilter = {
     label: t("Auswahl fuer alle Statistiken"),
     pill: filterPill,
-    content: <StatFilterContent disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
+    content: <StatFilterContent disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc} mode={globalMode} onMode={setGlobalMode}
       count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
       me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />,
   };
 
   const cardsById = {
     entwicklung: (
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={globalDisc} filter={deckAnchor ? undefined : statFilter} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} {...cardHide("entwicklung")} />
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={ratingDisc} filter={deckAnchor ? undefined : statFilter} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} {...cardHide("entwicklung")} />
     ),
     rekordeClub: (
       <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardCollapse("rekordeClub")} {...cardColumn("rekordeClub")} {...cardHide("rekordeClub")} />
