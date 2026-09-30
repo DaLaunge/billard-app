@@ -98,7 +98,7 @@ All five persist the current navigation state (tab + ids like `tournamentId`/`wi
 
 ## Workflow
 
-Work happens on the `test` branch; changes only go to `main` after the user explicitly asks for a merge. SQL migration files are applied manually by the user (test project first, then prod) — Claude's Supabase access is read-only by design, so schema/data changes always go through a migration file for the user to run, never through direct execution.
+Work happens on the `test` branch; changes only go to `main` after the user explicitly asks for a merge. **Version numbers follow that split:** every push on `test` bumps `APP_VERSION` as `<last prod number>.<minor>` (e.g. `391.26`); when the user approves a merge, the merge commit on `main` sets the next WHOLE number (392, no minor) and `test` continues at `392.0`. Read the current prod number from `origin/main` (`git show origin/main:src/lib/constants.js`), not from a possibly stale local `main`. Name the new version in the reply to every push. SQL migration files are applied manually by the user (test project first, then prod) — Claude's Supabase access is read-only by design, so schema/data changes always go through a migration file for the user to run, never through direct execution.
 
 ## Deployment
 
