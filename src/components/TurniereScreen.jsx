@@ -6,7 +6,7 @@ import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
 import InfoButton from "./widgets/InfoButton";
-import DiscBall from "./widgets/DiscBall";
+import DiscBall, { DiscPick } from "./widgets/DiscBall";
 import { FORMAT_GLYPH } from "./widgets/FormatGlyph";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 
@@ -197,10 +197,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               {DEFAULT_DISCIPLINES.map((d) => (
                 // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
                 // Akzentfarbe, wie bei der Kugelauswahl im 14/1-Protokoll.
-                <button key={d} type="button" className={"disc-pick" + (discipline === d ? " sel" : "")}
-                  aria-pressed={discipline === d} aria-label={t(d)} title={t(d)} onClick={() => setDiscipline(d)}>
-                  <DiscBall disc={d} size={34} />
-                </button>
+                <DiscPick key={d} disc={d} selected={discipline === d} onSelect={() => setDiscipline(d)} />
               ))}
             </div>
 

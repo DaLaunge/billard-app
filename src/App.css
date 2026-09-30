@@ -652,6 +652,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .disc-pick .pool-ball { box-shadow: inset -2px -3px 5px #00000055, inset 2px 2px 4px #ffffff35; }
 .disc-pick.sel { border-color: var(--accent); background: var(--accent-soft); }
 .disc-pick:not(.sel) .pool-ball { opacity: .72; }
+/* Kompakte Variante fuer die Filterfelder der Statistik: Kugeln, "Alle" und
+   "Doppel" (Chip) in EINER Zeile. */
+.disc-picks.compact { gap: 6px; align-items: center; margin-bottom: 0; }
+.disc-pick.compact { padding: 4px; border-radius: 12px; }
+.deck-filter-pill .disc-ball { margin: -2px 0; }
 .sp-run-preview { text-align: center; font-size: 14px; }
 .sp-run-preview b { font-size: 20px; color: var(--accent); font-family: 'Bricolage Grotesque', sans-serif; }
 /* "Neu aufbauen" steht direkt neben "Versenkt" (.sp-pot) und war frueher

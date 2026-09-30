@@ -21,8 +21,52 @@ export default function DiscBall({ disc, size = 18 }) {
   return (
     <span className="pool-ball disc-ball" role="img" aria-label={t(disc)} title={t(disc)}
       style={{ ...poolBallStyle(n), width: size, height: size }}>
-      {/* Nummer nur, wo sie noch lesbar ist - unter ~14px ist sie ein Fleck. */}
-      {size >= 14 && <span className="pb-no" style={{ fontSize: Math.max(6, Math.round(size * 0.34)) }}>{n}</span>}
+      {/* Nummer nur, wo sie noch lesbar ist - unter ~18px ist sie ein Fleck; die
+          kleinen Kugeln in Pillen und Kopfzeilen bleiben dann reine Farbe bzw.
+          Streifen (8 schwarz, 9 gelb, 10 blau, 14 gruen gestreift). */}
+      {size >= 18 && <span className="pb-no" style={{ fontSize: Math.max(6, Math.round(size * 0.34)) }}>{n}</span>}
     </span>
+  );
+}
+
+/* Eine Kugel zum Auswaehlen (Turnierformular, Statistik-Filter): dieselbe
+   Kachel an allen Stellen, gewaehlt = Ring in der Akzentfarbe. "compact" fuer
+   die Filterfelder, wo mehrere Kugeln neben "Alle"/"Doppel" in eine Zeile
+   passen muessen. Disziplinen ohne Kugel (z.B. "Doppel") sind hier KEINE
+   Kachel, sondern ein normaler Chip - die Aufrufer mischen beides in einer
+   Zeile, siehe DiscPickRow. */
+export function DiscPick({ disc, selected, onSelect, compact }) {
+  return (
+    <button type="button" className={"disc-pick" + (compact ? " compact" : "") + (selected ? " sel" : "")}
+      aria-pressed={selected} aria-label={t(disc)} title={t(disc)} onClick={onSelect}>
+      <DiscBall disc={disc} size={compact ? 26 : 34} />
+    </button>
+  );
+}
+
+/* Zeile aus Disziplin-Kugeln plus den Eintraegen OHNE Kugel als Chips.
+   "all": Wert und Beschriftung fuer "Alle" (Gesamt bzw. "all"), sonst kein
+   solcher Chip. Die Reihenfolge ist immer die der Turniere (8, 9, 10, 14/1,
+   dann der Rest wie "Doppel") - die alphabetische aus App.jsx stellte
+   "10 Ball" vor "8 Ball". */
+const ORDER = Object.keys(DISC_BALL);
+export const sortDisciplines = (list) =>
+  [...list].sort((a, b) => {
+    const ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
+  });
+
+export function DiscPickRow({ discs, value, onChange, all }) {
+  return (
+    <div className="disc-picks compact">
+      {all && (
+        <button type="button" className={"chip" + (value === all ? " active" : "")} onClick={() => onChange(all)}>{t("Alle")}</button>
+      )}
+      {sortDisciplines(discs).map((d) => (DISC_BALL[d] != null ? (
+        <DiscPick key={d} disc={d} compact selected={value === d} onSelect={() => onChange(d)} />
+      ) : (
+        <button key={d} type="button" className={"chip" + (value === d ? " active" : "")} onClick={() => onChange(d)}>{t(d)}</button>
+      )))}
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, Plus, Search, X, Check } from "lucide-react";
 import { t } from "../lib/i18n";
-import { DISC_LABEL } from "../lib/constants";
+import DiscBall from "./widgets/DiscBall";
 import { dateMinusDays, todayStr } from "../lib/stats";
 import { initials, readableColor } from "../lib/format";
 import DevChart from "./DevChart";
@@ -170,7 +170,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               zeigt deshalb selbst, was er gerade darstellt. Bewusst in der
               Zeitraum-Zeile statt im Titel: am Handy kuerzte die Pille im
               Kartenkopf den Titel zu "Entwicklung ueber die ...". */}
-          {disc && disc !== "Gesamt" && <span className="deck-filter-pill deck-filter-pill-end">{DISC_LABEL[disc] || disc}</span>}
+          {disc && disc !== "Gesamt" && <span className="deck-filter-pill deck-filter-pill-end"><DiscBall disc={disc} size={16} /></span>}
         </div>
       )}
       {allDates.length === 0 ? (

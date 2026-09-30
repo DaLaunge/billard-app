@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, Zap, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -13,6 +13,7 @@ import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
+import DiscBall, { DiscPickRow } from "./widgets/DiscBall";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -158,10 +159,10 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
 function StatFilterContent({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf }) {
   return (
     <>
-      <div className="chips small" style={{ marginBottom: 8 }}>
-        {["Gesamt", ...disciplines].map((d) => (
-          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => onDisc(d)}>{t(DISC_LABEL[d] || d)}</button>
-        ))}
+      {/* Disziplin als Kugeln (Nutzer-Feedback 2026-09-30: "verwende die Kugeln
+          auch bei Statistik-Filtern"), "Alle" und "Doppel" als Chips. */}
+      <div style={{ marginBottom: 8 }}>
+        <DiscPickRow all="Gesamt" discs={disciplines} value={disc} onChange={onDisc} />
       </div>
       <div className="chips small" style={{ marginBottom: 0 }}>
         {LIST_COUNT_OPTIONS.map((c) => (
@@ -319,17 +320,22 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
   // Kurzfassung der Filter fuer den Kartenkopf, nur wenn etwas vom Standard
   // abweicht. Passt sie nicht in wenige Zeichen (ein langer Spielername), wird
   // sie zur Anzahl - sonst kuerzte sie am Handy den Titel.
+  // Jeder Eintrag: text (zaehlt fuer die Laenge) und node (was gezeigt wird -
+  // die Disziplin als Kugel statt als Kuerzel).
+  const bit = (text, node = text) => (text ? { text, node } : null);
   const filterBits = [
-    filterPlayer || null,
-    filterPlayer && filterResult !== "all" ? (filterResult === "win" ? t("Siege") : t("Niederlagen")) : null,
-    filterDisc !== "all" ? (DISC_LABEL[filterDisc] || filterDisc) : null,
-    hideTournament ? t("ohne Turnier") : null,
-    dateFrom || dateTo ? t("Zeitraum") : null,
-    matchCount !== DEFAULT_LIST_COUNT ? (matchCount === "all" ? t("Alle") : t("Top {n}", { n: matchCount })) : null,
+    bit(filterPlayer || null),
+    filterPlayer && filterResult !== "all" ? bit(filterResult === "win" ? t("Siege") : t("Niederlagen")) : null,
+    filterDisc !== "all" ? bit(DISC_LABEL[filterDisc] || filterDisc, <DiscBall disc={filterDisc} size={15} />) : null,
+    hideTournament ? bit(t("ohne Turnier")) : null,
+    dateFrom || dateTo ? bit(t("Zeitraum")) : null,
+    matchCount !== DEFAULT_LIST_COUNT ? bit(matchCount === "all" ? t("Alle") : t("Top {n}", { n: matchCount })) : null,
   ].filter(Boolean);
-  const filterPillJoined = filterBits.join(" · ");
+  const filterPillLength = filterBits.map((b) => b.text).join(" · ").length;
   const filterPill = filterBits.length === 0 ? null
-    : filterPillJoined.length <= 14 ? filterPillJoined : t("{n} Filter", { n: filterBits.length });
+    : filterPillLength <= 14
+      ? filterBits.map((b, i) => <Fragment key={i}>{i > 0 && " · "}{b.node}</Fragment>)
+      : t("{n} Filter", { n: filterBits.length });
 
   // Zeilen blenden sich beim Hineinscrollen ein - die Liste geht bis
   // "Alle" und wird dann sehr lang (siehe lib/useRevealOnScroll.js).
@@ -369,16 +375,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
               ))}
             </div>
           )}
-          <div className="chips small" style={{ marginBottom: 0 }}>
-            <button className={"chip" + (filterDisc === "all" ? " active" : "")} onClick={() => setFilterDisc("all")}>
-              {t("Alle")}
-            </button>
-            {MATCH_DISCIPLINES.map((d) => (
-              <button key={d} className={"chip" + (filterDisc === d ? " active" : "")} onClick={() => setFilterDisc(d)}>
-                {t(DISC_LABEL[d] || d)}
-              </button>
-            ))}
-          </div>
+          <DiscPickRow all="all" discs={MATCH_DISCIPLINES} value={filterDisc} onChange={setFilterDisc} />
           <div className="chips small" style={{ marginBottom: 0 }}>
             <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
               {t("Turniermatches ausblenden")}
@@ -836,10 +833,13 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Kurzfassung der gewaehlten Filter fuer den Kartenkopf - nur wenn sie vom
   // Standard (Alle Disziplinen, Top 10) abweichen. Bei geschlossenem
   // Trichter-Feld sieht man so, dass die Listen gefiltert sind.
-  const filterPill = [
-    globalDisc !== "Gesamt" ? (DISC_LABEL[globalDisc] || globalDisc) : null,
+  const pillBits = [
+    globalDisc !== "Gesamt" ? <DiscBall key="d" disc={globalDisc} size={15} /> : null,
     globalNearby ? t("Umgebung") : (globalCount !== DEFAULT_LIST_COUNT ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
-  ].filter(Boolean).join(" · ") || null;
+  ].filter(Boolean);
+  const filterPill = pillBits.length
+    ? pillBits.map((b, i) => <Fragment key={i}>{i > 0 && " · "}{b}</Fragment>)
+    : null;
   const LEADERBOARD_IDS = LEADERBOARD_ID_LIST;
   const { parts: deckParts, anchor: deckAnchor } = foldedDeck(cards.visibleOrder, LEADERBOARD_IDS);
   // Der Trichter haengt an der Bestenlisten-Karte. Fehlt sie (alle sechs
