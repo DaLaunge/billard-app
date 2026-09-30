@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical, BarChart3, Star, Target } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -21,8 +21,17 @@ import CardMenuButton from "./widgets/CardMenuButton";
 import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
-import { CARD_SCREENS, splitCardColumns } from "../lib/cardLayout";
+import CardDeck from "./widgets/CardDeck";
+import { CARD_SCREENS, splitCardColumns, foldedDeck, withoutFolded, deckColumn } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
+
+// Welche Karten des Profils sich je EINE Karte mit Reitern teilen (siehe
+// DECKS weiter unten und CardDeck.jsx). Hier oben, weil die Spaltenwahl
+// schon vor dem Aufbau der Karten feststehen muss.
+const PROFIL_DECK_IDS = [
+  ["erfolgeFortschritt", "erfolge"],
+  ["ratings", "rekorde", "headToHead", "tempo"],
+];
 
 // Spaltenwahl in den Karten-Einstellungen: Symbol + Name je Spalte. Die
 // Symbole zeigen einen Block links/mittig/rechts und damit direkt, wo die
@@ -53,8 +62,25 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // undefined => CardMenuButton rendert nichts). Die REIHENFOLGE gilt
   // dagegen auch dort - sie ist die Vorliebe dessen, der gerade schaut.
   const shownOrder = isMe ? cards.visibleOrder : cards.order;
-  const pfColumns = splitCardColumns(shownOrder, cards.columns, "profil");
+  // Die zusammengelegten Karten (siehe DECKS weiter unten) zaehlen am
+  // Desktop als EINE Karte und brauchen daher EINE Spalte - sonst haengt
+  // ihr Platz davon ab, welcher Teil gerade der erste sichtbare ist.
+  const pfDeckColumns = {};
+  PROFIL_DECK_IDS.forEach((ids) => {
+    const col = deckColumn(cards.columns, ids, "profil");
+    ids.forEach((id) => { pfDeckColumns[id] = col; });
+  });
+  const pfColumns = splitCardColumns(shownOrder, { ...cards.columns, ...pfDeckColumns }, "profil");
   const cardHide = (id) => (isMe && onSetCardLayout ? () => cards.hideCard(id) : undefined);
+  // Offener Reiter je Deck-Karte (siehe DECKS weiter unten), geschluesselt
+  // nach deren Anker-id. Eine reine Anzeige-Gewohnheit dieses Geraets, also
+  // localStorage statt Profil - genau wie collapsedCards.
+  const [deckTab, setDeckTab] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("pfDeckTab") || "{}"); } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("pfDeckTab", JSON.stringify(deckTab)); } catch { /* Privatmodus */ }
+  }, [deckTab]);
 
   const catalogByCategory = useMemo(() => {
     const groups = {};
@@ -81,13 +107,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [badgeQuery, setBadgeQuery] = useState("");
   const [badgeStatus, setBadgeStatus] = useState("all"); // "all" | "earned" | "locked"
   const badgeFiltering = badgeQuery.trim() !== "" || badgeStatus !== "all";
-  // "Alle Erfolge ansehen" (unten bei AchievementsProgressCard) fokussiert
-  // statt manuell zu scrollen den "Alle"-Filter-Chip selbst - ein natives
-  // .focus() auf ein Nicht-Eingabefeld loest zuverlaessig (auch am Handy,
-  // siehe Nutzer-Feedback - manuelles scrollIntoView({behavior:"smooth"})
-  // griff dort nicht) das browsereigene Ins-Bild-Scrollen aus, OHNE dabei
-  // wie bei einem <input> die Bildschirmtastatur zu oeffnen. Setzt den
-  // Filter dabei gleich auf "Alle" - passt semantisch zum Button-Namen.
+  // Bis 2026-09-30 sprang "Alle Erfolge ansehen" von der Fortschritts-Karte
+  // hierher (per .focus() auf diesen Chip statt scrollIntoView, weil das am
+  // Handy zuverlaessiger ins Bild scrollt, ohne die Tastatur zu oeffnen).
+  // Der Knopf ist weg, seit beide Teile EINE Karte mit Reitern sind - die
+  // volle Liste ist jetzt der Nachbar-Reiter. Der Ref bleibt als Anker fuer
+  // den "Alle"-Chip erhalten.
   const allFilterRef = useRef(null);
   // Welche Erfolge pro Kategorie beim aktuellen Filter sichtbar sind - fuer
   // die Liste unten UND fuers Auto-Aufklappen (siehe Effekt darunter).
@@ -826,22 +851,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // schlicht - renderColumn ueberspringt sie dann.
   const cardsById = {
     erfolgeFortschritt: (
-        <AchievementsProgressCard catalog={catalog} extras={extendedExtras} earnedBadges={earnedBadges} nickname={nickname}
-          onHide={cardHide("erfolgeFortschritt")}
-          onOpenProfile={() => {
-            // "Alle"-Filter-Chip fokussieren statt manuell zu scrollen (siehe
-            // allFilterRef oben) - klappt bei fremden Profilen nicht (Chips
-            // nur bei isMe gerendert), dort bleibt scrollIntoView als Ersatz.
-            if (allFilterRef.current) { setBadgeStatus("all"); allFilterRef.current.focus(); }
-            else document.getElementById("pf-achievements-full")?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }} />
+        <AchievementsProgressCard embedded catalog={catalog} extras={extendedExtras}
+          earnedBadges={earnedBadges} nickname={nickname} />
     ),
     ratings: (
-        <section className="stat-block">
-          <div className="stat-block-head roomy">
-            <h3><Trophy size={17} /> {t("Ratings nach Disziplin")}</h3>
-            {cardHide("ratings") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("ratings")} /></div>}
-          </div>
+        <>
           {myRows.map((r) => (
             <div key={r.discipline} className="stat-row">
               <span className="stat-name">{t(r.discipline)}</span>
@@ -850,21 +864,17 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </div>
           ))}
           {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
-        </section>
+        </>
     ),
     rekorde: (
-          <RecordsCard extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} onHide={cardHide("rekorde")} />
+          <RecordsCard embedded extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
     ),
     headToHead: (
-          <HeadToHeadCard nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHide={cardHide("headToHead")} />
+          <HeadToHeadCard embedded nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
     ),
     erfolge: (
-        <section className="stat-block" id="pf-achievements-full">
-          <div className="stat-block-head roomy">
-            <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges.size} / {catalog.length})</h3>
-            {cardHide("erfolge") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("erfolge")} /></div>}
-          </div>
+        <>
           {isMe && achievementHint && (
             <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
           )}
@@ -959,14 +969,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             );
           })()}
           {!isMe && !badgeFiltering && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
-        </section>
+        </>
     ),
     tempo: (speedStats.avgGameMs != null || speedStats.avgBallMs != null) ? (
-          <section className="stat-block">
-            <div className="stat-block-head roomy">
-              <h3><Clock size={17} /> {t("Spielgeschwindigkeit")}</h3>
-              {cardHide("tempo") && <div className="stat-block-head-actions"><CardMenuButton onHide={cardHide("tempo")} /></div>}
-            </div>
+          <>
             {speedStats.avgGameMs != null && (
               <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
                 <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
@@ -979,13 +985,70 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                   <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
               </>
             )}
-          </section>
+          </>
     ) : null,
   };
+
+  // Zwei Karten buendeln mehrere Katalog-Eintraege zu je EINER Karte mit
+  // Reitern (siehe CardDeck.jsx) - das Profil hatte zuletzt zwei Karten mit
+  // demselben Titel "Erfolge (20 / 149)" untereinander und daneben vier
+  // kurze Karten, die alle dasselbe beantworten: "was sagen meine Zahlen".
+  // Jeder Teil bleibt einzeln ausblend- und sortierbar; "cardsById" liefert
+  // ab hier nur noch die Inhalte, Rahmen und Kopf kommen von der Deck-Karte.
+  const DECKS = [
+    {
+      ids: PROFIL_DECK_IDS[0],
+      icon: <Award size={17} />,
+      // Der Sammelname stimmt auch, wenn nur ein Reiter uebrig ist - beide
+      // Teile sind "Erfolge", der eine zeigt die naechsten, der andere alle.
+      title: `${t("Erfolge")} (${earnedBadges.size} / ${catalog.length})`,
+      soloTitle: false,
+      domId: "pf-achievements-full",
+      tabs: {
+        erfolgeFortschritt: { tab: t("Als Nächstes"), title: t("Als Nächstes"), icon: <Target size={15} /> },
+        erfolge: { tab: t("Alle"), title: t("Alle Erfolge"), icon: <Award size={15} /> },
+      },
+    },
+    {
+      ids: PROFIL_DECK_IDS[1],
+      icon: <BarChart3 size={17} />,
+      // Auf einem fremden Profil waere "Meine Zahlen" schlicht falsch -
+      // dieselbe Unterscheidung wie im Kopf ("Mein Profil"/"Spielerprofil").
+      title: isMe ? t("Meine Zahlen") : t("Zahlen"),
+      tabs: {
+        ratings: { tab: t("Ratings"), title: t("Ratings nach Disziplin"), icon: <Trophy size={15} /> },
+        rekorde: { tab: t("Rekorde"), title: t("Rekorde"), icon: <Star size={15} /> },
+        headToHead: { tab: t("Gegner"), title: t("Head-to-Head (Match-Siege)"), icon: <Swords size={15} /> },
+        tempo: { tab: t("Tempo"), title: t("Spielgeschwindigkeit"), icon: <Clock size={15} /> },
+      },
+    },
+  ];
+  let deckOrder = shownOrder;
+  let deckColumns = pfColumns;
+  DECKS.forEach((deck) => {
+    // Ein Teil ohne Inhalt (Tempo ohne Protokolldaten) taucht gar nicht
+    // erst als Reiter auf - sonst fuehrte der Reiter ins Leere.
+    const ids = deck.ids.filter((id) => cardsById[id]);
+    const { parts, anchor } = foldedDeck(deckOrder, ids);
+    if (anchor) {
+      const activeId = parts.includes(deckTab[anchor]) ? deckTab[anchor] : parts[0];
+      const bodies = Object.fromEntries(parts.map((id) => [id, cardsById[id]]));
+      cardsById[anchor] = (
+        <CardDeck roomy id={deck.domId} icon={deck.icon} title={deck.title} soloTitle={deck.soloTitle}
+          tabs={parts.map((id) => ({ id, ...deck.tabs[id], render: () => bodies[id] }))}
+          activeId={activeId} onActive={(id) => setDeckTab((d) => ({ ...d, [anchor]: id }))}
+          onHide={cardHide(activeId)} />
+      );
+    }
+    deckOrder = withoutFolded(deckOrder, deck.ids, anchor);
+    Object.keys(deckColumns).forEach((col) => {
+      deckColumns = { ...deckColumns, [col]: withoutFolded(deckColumns[col], deck.ids, anchor) };
+    });
+  });
   // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
   // durchgehende Liste ueber alle drei Spalten hinweg (siehe CardSlot.jsx).
-  const renderColumn = (col) => pfColumns[col].filter((id) => cardsById[id]).map((id) => (
-    <CardSlot key={id} order={10 + shownOrder.indexOf(id)}>{cardsById[id]}</CardSlot>
+  const renderColumn = (col) => deckColumns[col].filter((id) => cardsById[id]).map((id) => (
+    <CardSlot key={id} order={10 + deckOrder.indexOf(id)}>{cardsById[id]}</CardSlot>
   ));
 
 

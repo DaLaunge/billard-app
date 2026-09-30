@@ -8,7 +8,7 @@ import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL } from "../lib/constants";
-import { STAT_CARD_SCREEN } from "../lib/cardLayout";
+import { STAT_CARD_SCREEN, foldedDeck, withoutFolded, deckColumn, splitCardColumns } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
 import Ball from "./Ball";
@@ -24,6 +24,7 @@ import CardCollapseButton from "./widgets/CardCollapseButton";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardColumnButton from "./widgets/CardColumnButton";
+import CardDeck from "./widgets/CardDeck";
 import EmptyColumnDropZone from "./widgets/EmptyColumnDropZone";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
@@ -35,6 +36,10 @@ const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel
 // cardLayout.js kommen.
 const EMPTY_MIDDLE_DROP_ID = "middle-empty";
 const EMPTY_RIGHT_DROP_ID = "right-empty";
+// Die sechs Bestenlisten teilen sich EINE Karte (siehe CardDeck.jsx) - als
+// Konstante, weil handleDragEnd sie schon braucht, bevor der Katalog der
+// Listen weiter unten gebaut ist.
+const LEADERBOARD_ID_LIST = ["rangliste", "meisteSiege", "besteSiegquote", "aktuelleSerien", "schnellstesTempo", "schnellste141"];
 
 // rectSortingStrategy() geht von EINER durchgehenden Liste aus: es simuliert
 // ein arrayMove() ueber ALLE Karten hinweg und verschiebt darauf basierend
@@ -133,55 +138,6 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
         </>
       )}
     </>
-  );
-}
-
-// Sechs fast identische Bestenlisten (Rangliste, Meiste Siege, Beste
-// Siegquote, Aktuelle Serien, Schnellstes Tempo, Schnellstes 14/1-Tempo)
-// als EINE Karte mit Reitern statt als sechs Karten untereinander. Sie
-// hatten alle denselben Kartenkopf, dieselbe globale Auswahl und dieselbe
-// Zeilenform und kosteten zusammen ueber 1000px Hoehe am Handy fuer
-// sechsmal dieselbe Struktur (Nutzer-Feedback 2026-09-30: "Aufgrund der
-// Fuelle an Features ist die App unuebersichtlich geworden").
-//
-// Ausgeblendet wird weiterhin JEDE Liste einzeln (Profil -> "Profil
-// bearbeiten" -> "Karten"): die Reiter sind genau die gerade sichtbaren
-// Listen, ihre Reihenfolge ist die dort gespeicherte, und ist keine mehr
-// sichtbar, faellt die ganze Karte weg. "Karte ausblenden" im Kartenmenue
-// blendet deshalb die GERADE OFFENE Liste aus, nicht alle sechs - sonst
-// waere die Einzel-Auswahl aus den Einstellungen hier nicht erreichbar.
-function LeaderboardDeck({ boards, activeId, onActive, collapsed, onToggleCollapse, column, onToggleColumn, onHide, ...rowProps }) {
-  const active = boards.find((b) => b.id === activeId) || boards[0];
-  if (!active) return null;
-  return (
-    <section className="stat-block">
-      <div className="stat-block-head">
-        <h3><Trophy size={17} /> <span className="stat-block-title-text">{t("Bestenlisten")}</span></h3>
-        <div className="stat-block-head-actions">
-          <CardMenuButton onHide={onHide} label={t("Diese Liste ausblenden")} />
-          {active.info && <InfoButton title={active.title}>{active.info}</InfoButton>}
-          <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
-        </div>
-      </div>
-      {!collapsed && (
-        <>
-          {boards.length > 1 && (
-            <div className="deck-tabs" role="tablist">
-              {boards.map((b) => (
-                <button key={b.id} type="button" role="tab" aria-selected={b.id === active.id}
-                  className={"chip" + (b.id === active.id ? " active" : "")}
-                  onClick={() => onActive(b.id)} title={b.title}>
-                  {b.icon} <span>{b.tab}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          <LeaderboardRows {...rowProps} rows={active.rows} nameOf={active.nameOf} valOf={active.valOf}
-            extra={active.extra} medals={active.medals} emptyText={active.emptyText} />
-        </>
-      )}
-    </section>
   );
 }
 
@@ -555,9 +511,15 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     // leere Spalte selbst als Ziel mit einer der beiden festen ids. Die
     // Reihenfolge bleibt hier unangetastet, nur die Spalte wechselt, genau
     // wie beim CardColumnButton.
+    // Die Bestenlisten-Karte vertritt SECHS ids (siehe CardDeck.jsx): ein
+    // Spaltenwechsel muss alle sechs mitnehmen, sonst zoege das Ziehen nur
+    // den gerade ersten sichtbaren Teil um und die Karte spraenge beim
+    // naechsten Aus-/Einblenden wieder zurueck.
+    const movedIds = LEADERBOARD_ID_LIST.includes(active.id) ? LEADERBOARD_ID_LIST : [active.id];
+    const colPatch = (col) => Object.fromEntries(movedIds.map((id) => [id, col]));
     if (over.id === EMPTY_MIDDLE_DROP_ID || over.id === EMPTY_RIGHT_DROP_ID) {
       const targetColumn = over.id === EMPTY_RIGHT_DROP_ID ? "right" : "middle";
-      cards.setColumn(active.id, targetColumn);
+      cards.setLayout(cardOrder, { ...cardColumns, ...colPatch(targetColumn) });
       return;
     }
     const oldIndex = cardOrder.indexOf(active.id);
@@ -565,8 +527,8 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     if (oldIndex === -1 || newIndex === -1) return;
     const nextOrder = arrayMove(cardOrder, oldIndex, newIndex);
     const overColumn = cardColumns[over.id] === "right" ? "right" : "middle";
-    const activeColumn = cardColumns[active.id] === "right" ? "right" : "middle";
-    const nextColumns = overColumn !== activeColumn ? { ...cardColumns, [active.id]: overColumn } : cardColumns;
+    const activeColumn = deckColumn(cardColumns, movedIds, STAT_CARD_SCREEN) === "right" ? "right" : "middle";
+    const nextColumns = overColumn !== activeColumn ? { ...cardColumns, ...colPatch(overColumn) } : cardColumns;
     cards.setLayout(nextOrder, nextColumns);
   };
 
@@ -891,30 +853,40 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Wichtig fuer @dnd-kit: die SortableContext-Liste unten muss exakt den
   // gerenderten Karten entsprechen - eine id ohne zugehoerigen Knoten wuerde
   // die Zieh-Animation verrechnen.
-  // Die sechs Bestenlisten teilen sich EINE Karte (siehe LeaderboardDeck):
-  // sie steht an der Stelle und in der Spalte der ERSTEN noch sichtbaren
-  // Liste, die uebrigen fuenf ids rendern nichts. Dadurch bleibt die ganze
-  // Sortier- und Spalten-Mechanik unveraendert - die Karte laesst sich
-  // ziehen wie jede andere, und @dnd-kit sieht weiterhin genau die ids, die
-  // auch wirklich als Knoten im DOM stehen.
-  const leaderboardBoards = cards.visibleOrder.filter((id) => leaderboardById[id]).map((id) => leaderboardById[id]);
-  const deckAnchor = leaderboardBoards[0]?.id || null;
-  const deckActive = leaderboardBoards.find((b) => b.id === leaderboardTab) ? leaderboardTab : deckAnchor;
+  // Die sechs Bestenlisten teilen sich EINE Karte (siehe CardDeck.jsx): sie
+  // steht an der Stelle der ERSTEN noch sichtbaren Liste, die uebrigen fuenf
+  // ids rendern nichts. Dadurch bleibt die ganze Sortier-Mechanik
+  // unveraendert - die Karte laesst sich ziehen wie jede andere, und
+  // @dnd-kit sieht weiterhin genau die ids, die auch wirklich als Knoten im
+  // DOM stehen.
+  const LEADERBOARD_IDS = LEADERBOARD_ID_LIST;
+  const { parts: deckParts, anchor: deckAnchor } = foldedDeck(cards.visibleOrder, LEADERBOARD_IDS);
+  // Die zusammengelegte Karte zaehlt am Desktop als EINE Karte und braucht
+  // daher EINE Spalte - unabhaengig davon, welche Liste gerade der erste
+  // sichtbare Teil ist (siehe deckColumn()).
+  const deckCol = deckColumn(cardColumns, LEADERBOARD_IDS, STAT_CARD_SCREEN);
+  const deckActive = deckParts.includes(leaderboardTab) ? leaderboardTab : deckAnchor;
   if (deckAnchor) {
+    const rowProps = { me, count: globalCount, nearby: globalNearby, colorOf, badgeOf, photoOf, onOpenProfile };
     cardsById[deckAnchor] = (
-      <LeaderboardDeck boards={leaderboardBoards} activeId={deckActive}
-        onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
-        me={me} count={globalCount} nearby={globalNearby}
-        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        {...cardCollapse(deckAnchor)} {...cardColumn(deckAnchor)}
+      <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")}
+        tabs={deckParts.map((id) => {
+          const b = leaderboardById[id];
+          return { ...b, render: () => <LeaderboardRows {...rowProps} {...b} /> };
+        })}
+        activeId={deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
+        hideLabel={t("Diese Liste ausblenden")}
+        {...cardCollapse(deckAnchor)}
+        column={deckCol} onToggleColumn={() => cards.cycleColumn(LEADERBOARD_IDS)}
         onHide={() => cards.hideCard(deckActive)} />
     );
   }
-  const withoutFoldedBoards = (ids) => ids.filter((id) => !leaderboardById[id] || id === deckAnchor);
 
-  const visibleOrder = withoutFoldedBoards(cards.visibleOrder);
-  const middleCardIds = withoutFoldedBoards(cards.byColumn.middle);
-  const rightCardIds = withoutFoldedBoards(cards.byColumn.right);
+  const visibleOrder = withoutFolded(cards.visibleOrder, LEADERBOARD_IDS, deckAnchor);
+  const byCol = splitCardColumns(cards.visibleOrder,
+    { ...cardColumns, ...Object.fromEntries(LEADERBOARD_IDS.map((id) => [id, deckCol])) }, STAT_CARD_SCREEN);
+  const middleCardIds = withoutFolded(byCol.middle, LEADERBOARD_IDS, deckAnchor);
+  const rightCardIds = withoutFolded(byCol.right, LEADERBOARD_IDS, deckAnchor);
   // Am Handy legt CSS-"order" die Reihenfolge fest (die Spalten-Huellen sind
   // dort display:contents, siehe App.css) - dadurch ist die sichtbare Liste
   // genau cardOrder, unabhaengig davon, in welcher Spalte eine Karte am

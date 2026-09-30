@@ -17,25 +17,31 @@ const METRICS = [
    Zeigt vor der Zahl das Emoji des dazu bereits erreichten Erfolgs, falls
    vorhanden (catalog/earnedBadges optional - ohne die zwei einfach ohne
    Emoji, z.B. bei fremden Profilen ohne geladenen Erfolgs-Kontext). */
-export default function RecordsCard({ extras, catalog, earnedBadges, onHide }) {
+export default function RecordsCard({ extras, catalog, earnedBadges, onHide, embedded }) {
   if (!extras) return null;
+  const body = (
+    <div className="records-grid">
+      {METRICS.map(([metric, label]) => {
+        const emoji = recordBadgeEmoji(catalog, earnedBadges, metric);
+        return (
+          <div key={metric}>
+            <b>{emoji && <span className="record-emoji">{emoji}</span>}{extras[metric]}</b>
+            <span>{t(label)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+  // In einer Deck-Karte (siehe CardDeck.jsx) liefert das Modul nur seinen
+  // Inhalt - Rahmen, Titel und Kartenmenue gehoeren dort der Deck-Karte.
+  if (embedded) return body;
   return (
     <section className="stat-block">
       <div className="stat-block-head roomy">
         <h3><Star size={17} /> {t("Rekorde")}</h3>
         {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
       </div>
-      <div className="records-grid">
-        {METRICS.map(([metric, label]) => {
-          const emoji = recordBadgeEmoji(catalog, earnedBadges, metric);
-          return (
-            <div key={metric}>
-              <b>{emoji && <span className="record-emoji">{emoji}</span>}{extras[metric]}</b>
-              <span>{t(label)}</span>
-            </div>
-          );
-        })}
-      </div>
+      {body}
     </section>
   );
 }

@@ -117,10 +117,16 @@ export function useCardLayout(screen, cardLayout, onSetCardLayout, toast) {
     // Reihum durch die waehlbaren Spalten dieses Bildschirms - fuer den
     // Spalten-Knopf an der Karte (zwei Spalten = Umschalter) und die
     // Spaltenwahl in den Einstellungen (Profil hat drei).
+    // "ids" darf mehrere Karten umfassen: eine zusammengelegte Karte (siehe
+    // CardDeck.jsx) ist am Desktop EINE Karte, also muessen alle ihre Teile
+    // gemeinsam die Spalte wechseln - sonst zoege der Knopf nur den gerade
+    // ersten sichtbaren Teil um und die Karte spraenge beim naechsten
+    // Ausblenden wieder zurueck.
     cycleColumn: (id) => {
-      const cur = allowedColumns.indexOf(columns[id]);
+      const ids = Array.isArray(id) ? id : [id];
+      const cur = allowedColumns.indexOf(columns[ids[0]]);
       const next = allowedColumns[(cur + 1) % allowedColumns.length];
-      withOrder(order, { ...columns, [id]: next });
+      withOrder(order, { ...columns, ...Object.fromEntries(ids.map((x) => [x, next])) });
     },
     undo: () => {
       if (!undoSnapshot) return;

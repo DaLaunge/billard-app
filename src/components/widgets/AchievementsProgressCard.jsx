@@ -7,14 +7,10 @@ import { upcomingAchievements } from "../../lib/achievements";
 /* Eigenstaendiges Modul: die naechsten N noch nicht erreichten Erfolge
    eines Spielers (Rohdaten aus upcomingAchievements()), plus Link zur
    vollen Erfolgsliste im Profil. */
-export default function AchievementsProgressCard({ catalog, extras, earnedBadges, onOpenProfile, nickname, count = 3, onHide }) {
+export default function AchievementsProgressCard({ catalog, extras, earnedBadges, onOpenProfile, nickname, count = 3, onHide, embedded }) {
   const upcoming = extras ? upcomingAchievements(catalog, extras, earnedBadges, count) : [];
-  return (
-    <section className="stat-block">
-      <div className="stat-block-head roomy">
-        <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges?.size ?? 0} / {catalog?.length ?? 0})</h3>
-        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
-      </div>
+  const body = (
+    <>
       {upcoming.length === 0 && <p className="hint" style={{ marginTop: 0 }}>{t("Alle erreichbaren Erfolge freigeschaltet!")}</p>}
       {upcoming.map((c) => (
         <div key={c.badgeKey} className="side-row-progress">
@@ -26,6 +22,19 @@ export default function AchievementsProgressCard({ catalog, extras, earnedBadges
           <ProgressBar current={c.current} target={c.target} />
         </div>
       ))}
+    </>
+  );
+  // In einer Deck-Karte (siehe CardDeck.jsx) liefert das Modul nur seinen
+  // Inhalt. "Alle Erfolge ansehen" faellt dort weg: die volle Liste ist der
+  // Nachbar-Reiter derselben Karte, nicht mehr eine Karte weiter unten.
+  if (embedded) return body;
+  return (
+    <section className="stat-block">
+      <div className="stat-block-head roomy">
+        <h3><Award size={17} /> {t("Erfolge")} ({earnedBadges?.size ?? 0} / {catalog?.length ?? 0})</h3>
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
+      </div>
+      {body}
       <button className="btn ghost small" onClick={() => onOpenProfile(nickname)}>{t("Alle Erfolge ansehen")}</button>
     </section>
   );

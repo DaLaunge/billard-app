@@ -133,13 +133,23 @@ export const CARD_SCREENS = [
     screen: "profil",
     label: "Profil",
     columns: ["left", "middle", "right"],
+    // Zwei Gruppen, die sich je EINE Karte mit Reitern teilen (siehe
+    // CardDeck.jsx): "Erfolge (Fortschritt)" + "Erfolge (alle)" und die
+    // vier Zahlen-Karten. Jede Gruppe steht zusammenhaengend und ganz in
+    // DERSELBEN Standard-Spalte - die Karte uebernimmt Platz und Spalte des
+    // ersten sichtbaren Teils, und so landen am Desktop verlaesslich die
+    // Zahlen links und die Erfolge in der breiten Mitte, egal welcher Teil
+    // der erste sichtbare ist. Steckten sie in verschiedenen Spalten,
+    // saessen beide Karten je nach Ausblendung plotzlich uebereinander in
+    // einer Spalte und die anderen blieben leer.
+    note: "Erfolge (Fortschritt) und Erfolge (alle) bilden EINE Karte mit Reitern, ebenso Ratings, Rekorde, Head-to-Head und Spielgeschwindigkeit. Aus- und einblenden gilt je Reiter, die Reihenfolge bestimmt die Reihenfolge der Reiter.",
     cards: [
-      { id: "erfolgeFortschritt", label: "Erfolge (Fortschritt)", col: "left" },
+      { id: "erfolgeFortschritt", label: "Erfolge (Fortschritt)", col: "middle" },
+      { id: "erfolge", label: "Erfolge (alle)", col: "middle" },
       { id: "ratings", label: "Ratings nach Disziplin", col: "left" },
       { id: "rekorde", label: "Rekorde", col: "left" },
       { id: "headToHead", label: "Head-to-Head", col: "left" },
-      { id: "tempo", label: "Spielgeschwindigkeit", col: "right" },
-      { id: "erfolge", label: "Erfolge (alle)", col: "middle" },
+      { id: "tempo", label: "Spielgeschwindigkeit", col: "left" },
       // "Anmeldung & Sicherheit", "Feedback" und "Meine Tickets" waren bis
       // 2026-09-25 ebenfalls frei anordenbare Karten hier. Sie stehen jetzt
       // fest unter "Profil bearbeiten": das Profil selbst zeigt nur noch,
@@ -241,6 +251,50 @@ export function splitCardColumns(order, columns = {}, screen = STAT_CARD_SCREEN)
     out[col].push(id);
   });
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Zusammengelegte Karten (siehe CardDeck.jsx): mehrere Katalog-Eintraege
+// teilen sich EINE Karte mit Reitern, bleiben hier aber einzeln stehen und
+// damit einzeln sortier- und ausblendbar.
+//
+// foldedDeck() liefert die noch sichtbaren Teile in der gespeicherten
+// Reihenfolge (= Reihenfolge der Reiter) und den "Anker": an dessen Platz
+// und Spalte steht die gemeinsame Karte. Kein sichtbarer Teil mehr -> anchor
+// ist null, der Bildschirm rendert die Karte dann gar nicht.
+export function foldedDeck(visibleOrder, ids) {
+  const set = new Set(ids);
+  const parts = visibleOrder.filter((id) => set.has(id));
+  return { parts, anchor: parts[0] || null };
+}
+
+// Spalte einer zusammengelegten Karte am Desktop: die Spalte, in der die
+// MEISTEN ihrer Teile stehen; bei Gleichstand die Standard-Spalte des
+// ersten Teils. Einfach die Spalte des Ankers zu nehmen waere kuerzer,
+// haengt aber davon ab, welcher Teil gerade der erste SICHTBARE ist - und
+// bei schon gespeicherten Layouts (die von vor der Zusammenlegung stammen
+// und die Teile quer ueber die Spalten verteilen) landeten dann leicht
+// zwei Karten in derselben Spalte, waehrend eine andere ganz leer blieb.
+export function deckColumn(columns = {}, ids, screen) {
+  const allowed = screenColumns(screen);
+  const defaults = defaultCardColumns(screen);
+  const tally = {};
+  ids.forEach((id) => {
+    const col = allowed.includes(columns[id]) ? columns[id] : defaults[id];
+    if (col) tally[col] = (tally[col] || 0) + 1;
+  });
+  let best = defaults[ids[0]] || allowed[0];
+  let bestN = tally[best] || 0;
+  allowed.forEach((col) => { if ((tally[col] || 0) > bestN) { best = col; bestN = tally[col]; } });
+  return best;
+}
+
+// Entfernt die zusammengelegten ids bis auf den Anker aus einer Liste
+// (Reihenfolge, Spaltenaufteilung, @dnd-kit-"items"). Mehrfach anwendbar,
+// wenn ein Bildschirm mehrere solcher Karten hat.
+export function withoutFolded(list, ids, anchor) {
+  const set = new Set(ids);
+  return list.filter((id) => !set.has(id) || id === anchor);
 }
 
 // Eine Karte in der Reihenfolge um einen Platz nach oben/unten schieben

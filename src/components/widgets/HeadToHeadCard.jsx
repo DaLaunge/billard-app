@@ -12,7 +12,7 @@ const COUNT_OPTIONS = [3, 10, 20, "all"];
    (per Default nur aktive Gegner, analog zur Rangliste). Ueberall gleich
    verwendbar (Profil, Uebersicht, ...) - braucht nur matches + den Namen;
    rangliste ist optional und liefert dafuer die "aktiv"-Flags. */
-export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenProfile, colorOf, badgeOf, photoOf, title, onHide }) {
+export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenProfile, colorOf, badgeOf, photoOf, title, onHide, embedded }) {
   const h2h = useMemo(() => {
     const map = {};
     matches.forEach((m) => {
@@ -44,24 +44,17 @@ export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenPro
   const hiddenCount = h2h.length - filtered.length;
   const visible = count === "all" ? filtered : filtered.slice(0, count);
 
-  return (
-    <section className="stat-block">
-      <div className="stat-block-head">
-        <h3><Swords size={17} /> {title || t("Head-to-Head (Match-Siege)")}</h3>
-        {h2h.length > 0 && (
-          <div className="chips small">
-            {COUNT_OPTIONS.map((c) => (
-              <button key={c} className={"chip" + (count === c ? " active" : "")} onClick={() => setCount(c)}>
-                {c === "all" ? t("Alle") : c}
-              </button>
-            ))}
-          </div>
-        )}
-        {/* Ganz rechts, nach den Filter-Chips: .stat-block-head verteilt per
-            space-between: der Ausblenden-Knopf dazwischen saehe aus, als
-            gehoerte er zum Titel statt zu den Kartenaktionen. */}
-        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
-      </div>
+  const counts = h2h.length > 0 && (
+    <div className="chips small">
+      {COUNT_OPTIONS.map((c) => (
+        <button key={c} className={"chip" + (count === c ? " active" : "")} onClick={() => setCount(c)}>
+          {c === "all" ? t("Alle") : c}
+        </button>
+      ))}
+    </div>
+  );
+  const body = (
+    <>
       {visible.map(({ opp, w, l }) => (
         <button key={opp} className="h2h-row as-btn" onClick={() => onOpenProfile(opp)}>
           <Ball color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} photo={photoOf(opp)} size={34} />
@@ -79,6 +72,23 @@ export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenPro
       {showInactive && h2h.some(({ opp }) => !isActive(opp)) && (
         <button className="btn ghost small" onClick={() => setShowInactive(false)}>{t("Nur aktive Gegner zeigen")}</button>
       )}
+    </>
+  );
+  // In einer Deck-Karte (siehe CardDeck.jsx) liefert das Modul nur seinen
+  // Inhalt; die 3/10/20/Alle-Chips sassen bisher im Kartenkopf und ruecken
+  // dann ueber die Liste, weil der Kopf dort der Deck-Karte gehoert.
+  if (embedded) return <>{counts}{body}</>;
+  return (
+    <section className="stat-block">
+      <div className="stat-block-head">
+        <h3><Swords size={17} /> {title || t("Head-to-Head (Match-Siege)")}</h3>
+        {counts}
+        {/* Ganz rechts, nach den Filter-Chips: .stat-block-head verteilt per
+            space-between: der Ausblenden-Knopf dazwischen saehe aus, als
+            gehoerte er zum Titel statt zu den Kartenaktionen. */}
+        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
+      </div>
+      {body}
     </section>
   );
 }
