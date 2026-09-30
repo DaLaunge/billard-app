@@ -4,6 +4,7 @@ import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight,
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
+import { LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT } from "../lib/constants";
 import { recentOpponentFreq } from "../lib/frequency";
 import { minGhostSeconds } from "../lib/ghostTiming";
 import { savePendingReport, isNetworkError } from "../lib/offlineReport";
@@ -48,7 +49,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [ghostStartedAt, setGhostStartedAt] = useState(dv("ghostStartedAt", null)); // gegen "Durchklicken" beim Ghost-Training
   const [nowTick, setNowTick] = useState(Date.now());
   const [guestBusy, setGuestBusy] = useState(false);
-  const [oppCount, setOppCount] = useState(10); // Standard: nur die haeufigsten Mitspieler zeigen (Nutzer-Feedback: Liste wird lang)
+  const [oppCount, setOppCount] = useState(DEFAULT_LIST_COUNT); // Standard: nur die haeufigsten Mitspieler zeigen (Nutzer-Feedback: Liste wird lang)
 
   const is141 = disc === "14/1 Endlos";
 
@@ -443,9 +444,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </button>
             </div>
           )}
-          {!oppQuery.trim() && allMatchingOpponents.length > 3 && (
+          {!oppQuery.trim() && allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
             <div className="chips small">
-              {[3, 10, 20, "all"].map((c) => (
+              {LIST_COUNT_OPTIONS.map((c) => (
                 <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
                   {c === "all" ? t("Alle") : c}
                 </button>

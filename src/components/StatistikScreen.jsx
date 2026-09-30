@@ -7,7 +7,7 @@ import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
-import { DISC_LABEL } from "../lib/constants";
+import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount } from "../lib/constants";
 import { STAT_CARD_SCREEN, foldedDeck, withoutFolded, deckColumn, splitCardColumns } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
@@ -30,8 +30,6 @@ import CardDeck from "./widgets/CardDeck";
 import EmptyColumnDropZone from "./widgets/EmptyColumnDropZone";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
-const COUNT_OPTIONS = [3, 10, "all"];
-const MATCH_COUNT_OPTIONS = [10, 20, 50, 100, "all"];
 const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos", "Doppel"];
 // Feste ids der beiden EmptyColumnDropZone-Ablageflaechen (siehe dort) -
 // koennen keine echte Karten-id ueberschneiden, da Karten-ids aus
@@ -166,7 +164,7 @@ function StatFilterContent({ disc, disciplines, onDisc, count, nearby, onCount, 
         ))}
       </div>
       <div className="chips small" style={{ marginBottom: 0 }}>
-        {COUNT_OPTIONS.map((c) => (
+        {LIST_COUNT_OPTIONS.map((c) => (
           <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
             onClick={() => { onCount(c); onNearby(false); }}>
             {c === "all" ? t("Alle") : c}
@@ -283,7 +281,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
   const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ... | "Doppel"
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [matchCount, setMatchCount] = useState(10);
+  const [matchCount, setMatchCount] = useState(DEFAULT_LIST_COUNT);
   const [hideTournament, setHideTournament] = useState(false);
 
   const filteredMatches = useMemo(() => {
@@ -314,7 +312,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
   const filtersActive = !!(filterPlayer || filterDisc !== "all" || dateFrom || dateTo || hideTournament);
   const resetFilters = () => {
     setFilterPlayer(""); setFilterResult("all"); setFilterDisc("all"); setDateFrom(""); setDateTo("");
-    setMatchCount(10); setHideTournament(false);
+    setMatchCount(DEFAULT_LIST_COUNT); setHideTournament(false);
   };
 
   const funnel = useFunnel();
@@ -327,7 +325,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
     filterDisc !== "all" ? (DISC_LABEL[filterDisc] || filterDisc) : null,
     hideTournament ? t("ohne Turnier") : null,
     dateFrom || dateTo ? t("Zeitraum") : null,
-    matchCount !== 10 ? (matchCount === "all" ? t("Alle") : t("Top {n}", { n: matchCount })) : null,
+    matchCount !== DEFAULT_LIST_COUNT ? (matchCount === "all" ? t("Alle") : t("Top {n}", { n: matchCount })) : null,
   ].filter(Boolean);
   const filterPillJoined = filterBits.join(" · ");
   const filterPill = filterBits.length === 0 ? null
@@ -357,7 +355,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
           dauerhaft ueber der Liste, vor dem ersten Match. Die Anzahl-Chips
           (10/20/50/100/Alle) sind bewusst mit hineingewandert, so wie Top-N
           bei den Bestenlisten. Die Zeile "x von y Matches" bleibt sichtbar. */}
-      <FunnelPanel funnel={funnel} onReset={filtersActive || matchCount !== 10 ? resetFilters : undefined}>
+      <FunnelPanel funnel={funnel} onReset={filtersActive || matchCount !== DEFAULT_LIST_COUNT ? resetFilters : undefined}>
         <div className="match-filters" style={{ marginBottom: 0 }}>
           <PlayerPicker players={players} matches={matches} me={me} allowAll
             value={filterPlayer || null}
@@ -392,7 +390,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label={t("Bis")} />
           </div>
           <div className="chips small" style={{ marginBottom: 0 }}>
-            {MATCH_COUNT_OPTIONS.map((c) => (
+            {LIST_COUNT_OPTIONS.map((c) => (
               <button key={c} className={"chip" + (matchCount === c ? " active" : "")} onClick={() => setMatchCount(c)}>
                 {c === "all" ? t("Alle") : c}
               </button>
@@ -567,10 +565,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     try { return localStorage.getItem("statGlobalDisc") || "Gesamt"; } catch { return "Gesamt"; }
   });
   const [globalCount, setGlobalCount] = useState(() => {
-    try {
-      const raw = localStorage.getItem("statGlobalCount");
-      return raw === "all" ? "all" : raw ? Number(raw) : 3;
-    } catch { return 3; }
+    try { return normalizeListCount(localStorage.getItem("statGlobalCount")); } catch { return DEFAULT_LIST_COUNT; }
   });
   const [globalNearby, setGlobalNearby] = useState(() => {
     try { return localStorage.getItem("statGlobalNearby") === "1"; } catch { return false; }
@@ -839,11 +834,11 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   };
 
   // Kurzfassung der gewaehlten Filter fuer den Kartenkopf - nur wenn sie vom
-  // Standard (Alle Disziplinen, Top 3) abweichen. Bei geschlossenem
+  // Standard (Alle Disziplinen, Top 10) abweichen. Bei geschlossenem
   // Trichter-Feld sieht man so, dass die Listen gefiltert sind.
   const filterPill = [
     globalDisc !== "Gesamt" ? (DISC_LABEL[globalDisc] || globalDisc) : null,
-    globalNearby ? t("Umgebung") : (globalCount !== 3 ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
+    globalNearby ? t("Umgebung") : (globalCount !== DEFAULT_LIST_COUNT ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
   ].filter(Boolean).join(" · ") || null;
   const LEADERBOARD_IDS = LEADERBOARD_ID_LIST;
   const { parts: deckParts, anchor: deckAnchor } = foldedDeck(cards.visibleOrder, LEADERBOARD_IDS);

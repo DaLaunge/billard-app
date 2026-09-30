@@ -2,10 +2,10 @@ import { useState, useMemo } from "react";
 import { Swords } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { initials } from "../../lib/format";
+import { LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT } from "../../lib/constants";
 import Ball from "../Ball";
 import CardMenuButton from "./CardMenuButton";
 
-const COUNT_OPTIONS = [3, 10, 20, "all"];
 
 /* Eigenstaendiges Modul: Head-to-Head-Bilanz eines Spielers gegen alle
    bisherigen Gegner, mit 3/10/20/Alle-Filter sowie einem Aktiv-Filter
@@ -38,15 +38,15 @@ export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenPro
   }, [rangliste]);
   const isActive = (opp) => !rangliste || !rangliste.some((r) => r.discipline === "Gesamt" && r.nickname === opp) || activeSet.has(opp);
 
-  const [count, setCount] = useState(3);
+  const [count, setCount] = useState(DEFAULT_LIST_COUNT);
   const [showInactive, setShowInactive] = useState(false);
   const filtered = showInactive ? h2h : h2h.filter(({ opp }) => isActive(opp));
   const hiddenCount = h2h.length - filtered.length;
   const visible = count === "all" ? filtered : filtered.slice(0, count);
 
-  const counts = h2h.length > 0 && (
+  const counts = h2h.length > DEFAULT_LIST_COUNT && (
     <div className="chips small">
-      {COUNT_OPTIONS.map((c) => (
+      {LIST_COUNT_OPTIONS.map((c) => (
         <button key={c} className={"chip" + (count === c ? " active" : "")} onClick={() => setCount(c)}>
           {c === "all" ? t("Alle") : c}
         </button>
