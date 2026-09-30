@@ -11,6 +11,7 @@ import { DISC_LABEL } from "../lib/constants";
 import { STAT_CARD_SCREEN, foldedDeck, withoutFolded, deckColumn, splitCardColumns } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
+import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -226,6 +227,7 @@ const breakableValue = (val) => (typeof val === "string" ? val.replace(/:/g, ":â
 
 function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpenProtokoll, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const shown = records.filter((r) => r.holder);
+  const recordsRef = useRevealOnScroll([shown.length, collapsed]);
   return (
     <section className="stat-block">
       <div className="stat-block-head">
@@ -241,7 +243,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
       </div>
       {!collapsed && shown.length === 0 && <p className="hint">{t("Noch keine Rekorde.")}</p>}
       {!collapsed && shown.length > 0 && (
-        <table className="records-table">
+        <table className="records-table" ref={recordsRef}>
           <colgroup>
             <col className="rt-col-label" />
             <col className="rt-col-holder" />
@@ -252,7 +254,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
             {shown.map(({ key, label, holder, fmt, type, info, matchRef }) => {
               const hasProtokoll = matchRef && (matchRef.run_log?.length > 0 || matchRef.tournament_id);
               return (
-                <tr key={key}>
+                <tr key={key} className="reveal">
                   <td className="rt-label">{label}</td>
                   <td className="rt-holder">
                     {type === "match" ? (
@@ -340,8 +342,12 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
     setMatchCount(10); setHideTournament(false);
   };
 
+  // Zeilen blenden sich beim Hineinscrollen ein - die Liste geht bis
+  // "Alle" und wird dann sehr lang (siehe lib/useRevealOnScroll.js).
+  const listRef = useRevealOnScroll([visibleMatches.length, collapsed]);
+
   return (
-    <section className="stat-block">
+    <section className="stat-block" ref={listRef}>
       <div className="stat-block-head">
         <h3><History size={17} /> <span className="stat-block-title-text">{t("Letzte Matches")}</span></h3>
         <div className="stat-block-head-actions">
@@ -406,13 +412,22 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
       </div>
 
       {visibleMatches.map((m) => (
-        <div key={m.id} className="match-row">
+        <div key={m.id} className="match-row reveal">
           <span className="m-date m-datetime">{fmtDateTime(m.played_at)}</span>
           <span className="m-txt">
             {sideNames(m, 1).map((n, i) => (
               <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
             ))}
-            {" "}<b>{m.score1}:{m.score2}</b>{" "}
+            {/* Der Sieger ist eingefaerbt, statt dass man zwei Zahlen
+                vergleichen muss (Nutzer-Vorgabe: lieber visuell). --win ist
+                dafuer die richtige Farbe: sie ist laut Farbsystem
+                ausdruecklich KEINE Themenfarbe, sondern steht ueberall in
+                der App fuer "gewonnen". */}
+            {" "}<b className="m-score">
+              <span className={m.score1 > m.score2 ? "m-win" : undefined}>{m.score1}</span>
+              :
+              <span className={m.score2 > m.score1 ? "m-win" : undefined}>{m.score2}</span>
+            </b>{" "}
             {sideNames(m, 2).map((n, i) => (
               <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
             ))}

@@ -878,11 +878,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           {isMe && achievementHint && (
             <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
           )}
-          {isMe && (
-            <p className="hint" style={{ marginTop: 0, marginBottom: 12 }}>
-              {t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.")}
-            </p>
-          )}
           <div className="search-row" style={{ marginBottom: 8 }}>
             <Search size={16} className="mail-ico" />
             <input placeholder={t("Erfolge durchsuchen …")} value={badgeQuery} onChange={(e) => setBadgeQuery(e.target.value)} />
@@ -1006,7 +1001,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       domId: "pf-achievements-full",
       tabs: {
         erfolgeFortschritt: { tab: t("Als Nächstes"), title: t("Als Nächstes"), icon: <Target size={15} /> },
-        erfolge: { tab: t("Alle"), title: t("Alle Erfolge"), icon: <Award size={15} /> },
+        // Der Satz stand bis 2026-09-30 als Dauertext ueber der Liste -
+        // jetzt im Info-Knopf des Reiters (Nutzer-Vorgabe).
+        erfolge: { tab: t("Alle"), title: t("Alle Erfolge"), icon: <Award size={15} />,
+          info: isMe ? t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.") : undefined },
       },
     },
     {

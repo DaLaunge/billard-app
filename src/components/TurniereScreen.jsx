@@ -95,7 +95,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
   // Zeilen blenden sich beim Hineinscrollen ein (siehe useRevealOnScroll) -
   // neu gefilterte Listen muessen dafuer erneut durchsucht werden, deshalb
   // haengen Filter und Suche in den Abhaengigkeiten.
-  const listRef = useRevealOnScroll([tournaments, wsSessions, statusFilter, query, showForm]);
+  const listRef = useRevealOnScroll([tournaments?.length, wsSessions?.length, statusFilter, query, showForm]);
 
   const combined = useMemo(() => {
     if (tournaments == null || wsSessions == null) return null;
