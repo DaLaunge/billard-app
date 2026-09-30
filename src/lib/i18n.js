@@ -281,6 +281,7 @@ const TRANSLATIONS = {
     "Mitspieler finden": "Find someone to play",
     "Top {n}": "Top {n}",
     "Beides": "Both",
+    "Alle Disziplinen": "All disciplines",
     "Anteil gewonnener Matches (Siege ÷ Spiele) in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.": "Share of matches won (wins ÷ games) in the current selection of discipline and singles/doubles. To be reliable, the rate only counts from 10 games in this selection.",
     "Wie viele Matches in Folge gewonnen wurden, seit der letzten Niederlage, in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel.": "How many matches in a row were won since the last defeat, in the current selection of discipline and singles/doubles.",
     "Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen).": "There is only one overall doubles rating, not one per discipline; without a discipline selected the overall rating counts (singles and doubles together).",

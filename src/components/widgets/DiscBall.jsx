@@ -56,11 +56,35 @@ export const sortDisciplines = (list) =>
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
   });
 
+/* "Alle Disziplinen" als Bild: alle vier Kugeln ueberlappend in einem Haufen
+   (Nutzer-Feedback 2026-09-30: "Alle sollte alle 4 Disziplinen in der Graphik
+   vereinen, gerne auch ueberlappende Kugeln - dann ist sofort klar, dass es
+   sich um alle Disziplinen und nicht alle Modi handelt"). Ohne Nummern: bei
+   der Groesse waeren sie ein Fleck, und der Haufen soll als Ganzes gelesen
+   werden. Reihenfolge = Ueberlappung: die 14 liegt zuoberst. */
+export function DiscAll({ size = 26 }) {
+  const b = Math.round(size * 0.66);
+  const off = size - b;
+  const spots = [[0, 0, 8], [off, 0, 9], [0, off, 10], [off, off, 14]];
+  return (
+    <span className="disc-all" role="img" aria-label={t("Alle Disziplinen")} title={t("Alle Disziplinen")}
+      style={{ width: size, height: size }}>
+      {spots.map(([x, y, n]) => (
+        <span key={n} className="pool-ball disc-ball"
+          style={{ ...poolBallStyle(n), width: b, height: b, position: "absolute", left: x, top: y, margin: 0 }} />
+      ))}
+    </span>
+  );
+}
+
 export function DiscPickRow({ discs, value, onChange, all }) {
   return (
     <div className="disc-picks compact">
       {all && (
-        <button type="button" className={"chip" + (value === all ? " active" : "")} onClick={() => onChange(all)}>{t("Alle")}</button>
+        <button type="button" className={"disc-pick compact" + (value === all ? " sel" : "")}
+          aria-pressed={value === all} aria-label={t("Alle Disziplinen")} title={t("Alle Disziplinen")} onClick={() => onChange(all)}>
+          <DiscAll />
+        </button>
       )}
       {sortDisciplines(discs).map((d) => (DISC_BALL[d] != null ? (
         <DiscPick key={d} disc={d} compact selected={value === d} onSelect={() => onChange(d)} />

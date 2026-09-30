@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter, Check, X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { t } from "../../lib/i18n";
 
 /* Trichter-Symbol im Kartenkopf + das Auswahlfeld, das es aufklappt.
@@ -40,18 +40,17 @@ export function FunnelPanel({ funnel, children, onReset }) {
       <div className="collapsible-inner">
         <div className="deck-filter">
           {children}
-          <div className="deck-filter-foot">
-            {/* Nur wenn es etwas zurueckzusetzen gibt (Letzte Matches) - die
-                Statistik-Auswahl hat immer einen gueltigen Zustand. */}
-            {onReset && (
+          {/* Kein OK-Knopf: Aenderungen gelten sofort, und geschlossen wird
+              per Klick auf den Trichter (Nutzer-Feedback 2026-09-30). Nur wo
+              es etwas zurueckzusetzen gibt (Letzte Matches), bleibt eine Zeile
+              mit diesem einen Knopf. */}
+          {onReset && (
+            <div className="deck-filter-foot">
               <button type="button" className="btn ghost small" onClick={onReset}>
                 <X size={15} /> {t("Filter zurücksetzen")}
               </button>
-            )}
-            <button type="button" className="btn primary small" onClick={funnel.close}>
-              <Check size={15} /> {t("OK")}
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

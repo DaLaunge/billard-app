@@ -656,6 +656,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
    "Doppel" (Chip) in EINER Zeile. */
 .disc-picks.compact { gap: 6px; align-items: center; margin-bottom: 0; }
 .disc-pick.compact { padding: 4px; border-radius: 12px; }
+/* "Alle Disziplinen": vier ueberlappende Kugeln in einer Kachel */
+.disc-all { position: relative; display: inline-block; flex: 0 0 auto; }
+.disc-all .pool-ball { box-shadow: inset -1px -2px 3px #00000066, inset 1px 1px 2px #ffffff35, 0 0 0 1px #00000040; }
+/* Personen-Symbole (Einzel/Doppel/Beides): Farbe kommt aus der Kachel */
+.disc-pick.mode-pick { color: var(--ivory-dim); }
+.disc-pick.mode-pick.sel { color: var(--accent); }
+.disc-pick.mode-pick svg { display: block; }
 .deck-filter-pill .disc-ball { margin: -2px 0; }
 .sp-run-preview { text-align: center; font-size: 14px; }
 .sp-run-preview b { font-size: 20px; color: var(--accent); font-family: 'Bricolage Grotesque', sans-serif; }
