@@ -97,17 +97,26 @@ export const CARD_SCREENS = [
     screen: "stats",
     label: "Statistik",
     columns: ["middle", "right"],
+    // Die sechs Bestenlisten (Rangliste bis Schnellstes 14/1-Tempo) sind
+    // seit 2026-09-30 EINE Karte mit Reitern (siehe LeaderboardDeck in
+    // StatistikScreen.jsx), bleiben hier aber einzeln stehen: jede laesst
+    // sich weiter fuer sich ein-/ausblenden und verschieben, nur zeigt sich
+    // das jetzt als Reiter statt als eigene Karte. Sie stehen deshalb
+    // zusammenhaengend und alle in derselben Standard-Spalte - die Karte
+    // uebernimmt Platz und Spalte der ERSTEN noch sichtbaren Liste, und so
+    // landet sie unabhaengig davon, welche das gerade ist, immer rechts.
+    note: "Rangliste, Siege, Quote, Serien und die beiden Tempo-Listen bilden zusammen EINE Karte mit Reitern. Aus- und einblenden gilt je Liste, die Reihenfolge bestimmt die Reihenfolge der Reiter.",
     cards: [
       { id: "entwicklung", label: "Entwicklung über die Zeit", col: "middle" },
       { id: "letzteMatches", label: "Letzte Matches", col: "middle" },
-      { id: "aktuelleSerien", label: "Aktuelle Serien", col: "middle" },
-      { id: "schnellste141", label: "Schnellstes 14/1-Tempo", col: "middle" },
       { id: "globalFilter", label: "Auswahl fuer alle Statistiken", col: "right" },
-      { id: "rekordeClub", label: "Rekorde", col: "right" },
       { id: "rangliste", label: "Rangliste", col: "right" },
       { id: "meisteSiege", label: "Meiste Siege", col: "right" },
       { id: "besteSiegquote", label: "Beste Siegquote", col: "right" },
+      { id: "aktuelleSerien", label: "Aktuelle Serien", col: "right" },
       { id: "schnellstesTempo", label: "Schnellstes Tempo", col: "right" },
+      { id: "schnellste141", label: "Schnellstes 14/1-Tempo", col: "right" },
+      { id: "rekordeClub", label: "Rekorde", col: "right" },
     ],
   },
   {

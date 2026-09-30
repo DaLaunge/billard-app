@@ -368,6 +368,21 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   white-space: nowrap; font-family: inherit; }
 .chip.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 
+/* Reiterzeile einer Karte, die mehrere gleichartige Listen buendelt (siehe
+   LeaderboardDeck in StatistikScreen.jsx). Bewusst .chip als Knopf, damit
+   die Reiter im selben Button-System liegen wie alle anderen Chips - hier
+   kommt nur dazu, dass die Zeile NICHT umbricht, sondern waagrecht
+   scrollt: sechs Reiter passen am Handy nicht nebeneinander, und eine
+   zweite Zeile wuerde genau die Hoehe zurueckholen, die diese Karte
+   einspart. */
+.deck-tabs { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; margin: 2px 0 10px;
+  padding-bottom: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.deck-tabs::-webkit-scrollbar { display: none; }
+.deck-tabs .chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; font-size: 12.5px; }
+.deck-tabs .chip svg { flex-shrink: 0; }
+.card-vis-note { margin: -2px 0 8px; }
+
 .ranking { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .rank-row { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
   background: var(--felt-2); border: 1px solid var(--line); border-radius: 16px;

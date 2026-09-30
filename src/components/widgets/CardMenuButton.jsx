@@ -15,8 +15,11 @@ import { t } from "../../lib/i18n";
    getroffen wird.
    Der Eintrag ist bewusst Text statt Symbol - im Menue ist Platz dafuer,
    und "Karte ausblenden" ausgeschrieben laesst keinen Zweifel, was
-   passiert. */
-export default function CardMenuButton({ onHide }) {
+   passiert. "label" ueberschreibt diesen Text fuer Karten, die mehrere
+   ausblendbare Teile buendeln (Bestenlisten-Reiter, siehe
+   StatistikScreen.jsx) - dort blendet der Eintrag nur den offenen Teil aus,
+   und das muss er auch sagen. */
+export default function CardMenuButton({ onHide, label }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -49,7 +52,7 @@ export default function CardMenuButton({ onHide }) {
         <div className="card-menu" role="menu">
           <button type="button" className="card-menu-item" role="menuitem"
             onClick={() => { setOpen(false); onHide(); }}>
-            <EyeOff size={15} /> {t("Karte ausblenden")}
+            <EyeOff size={15} /> {label || t("Karte ausblenden")}
           </button>
         </div>
       )}

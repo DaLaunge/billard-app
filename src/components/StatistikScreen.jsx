@@ -80,120 +80,105 @@ function statCardSortingStrategy(middleCount) {
   };
 }
 
-// Eigene Komponente statt Definition innerhalb von StatistikScreen: sonst
-// waere Block bei jedem Render der Eltern-Komponente eine neue Funktion,
-// React wuerde sie als anderen Komponententyp behandeln und ihren
-// useState (die gewaehlte Anzahl) jedes Mal verwerfen.
+// Reiter-Auswahl der Bestenlisten-Karte: eine reine Anzeige-Gewohnheit
+// dieses Geraets, gehoert also wie collapsedCards in den localStorage und
+// nicht aufs Profil (siehe uiPrefs.js / CLAUDE.md).
+const LEADERBOARD_TAB_KEY = "statLeaderboardTab";
+const readTabPref = () => { try { return localStorage.getItem(LEADERBOARD_TAB_KEY) || null; } catch { return null; } };
+const writeTabPref = (v) => { try { localStorage.setItem(LEADERBOARD_TAB_KEY, v); } catch { /* Privatmodus */ } };
+
+// Gemeinsamer Listenkoerper aller Bestenlisten - stand bis 2026-09-30
+// zweimal fast wortgleich da (LeaderboardBlock und RankingBlock).
+// nameOf/valOf/extra sind der ganze Unterschied zwischen einer einfachen
+// Wertliste und der Rangliste (Medaillen + Verfalls-Abzeichen).
 //
-// count/nearby kommen jetzt von AUSSEN (globale Auswahl ganz oben auf der
-// Seite, siehe StatGlobalFilter) statt aus eigenem State - Nutzer-Feedback:
-// jede Bestenliste hatte vorher ihre eigenen Top-3/10/Alle-Knoepfe, das war
-// zu viele Buttons. Die eigene Position bleibt trotzdem IMMER sichtbar -
-// auch bei Top-3/Top-10, nicht nur als Zahl, sondern als echte Zeile mit
+// count/nearby kommen von AUSSEN (globale Auswahl ganz oben auf der Seite,
+// siehe StatGlobalFilter) statt aus eigenem State - Nutzer-Feedback: jede
+// Bestenliste hatte vorher ihre eigenen Top-3/10/Alle-Knoepfe, das waren zu
+// viele Buttons. Die eigene Position bleibt trotzdem IMMER sichtbar - auch
+// bei Top-3/Top-10, nicht nur als Zahl, sondern als echte Zeile mit
 // Name/Wert (Beispiel: "wenn ich Platz 40 bin, will ich das trotzdem in der
 // Top-3-Ansicht sehen"). Der eigene Rang wird deshalb IMMER aus der vollen,
 // ungekuerzten "rows"-Liste ermittelt (nicht aus "visible") - liegt er
 // ausserhalb der gerade sichtbaren Top-N, wird die eigene Zeile per Trenner
 // angehaengt statt nur als Text erwaehnt.
-function LeaderboardBlock({ icon, title, rows, fmt, colorOf, badgeOf, photoOf, onOpenProfile, me, count, nearby, info, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
-  const myIndex = rows.findIndex((p) => p.name === me?.nickname);
+function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, count, nearby, colorOf, badgeOf, photoOf, onOpenProfile }) {
+  const myIndex = rows.findIndex((r) => nameOf(r) === me?.nickname);
   const showNearby = nearby && myIndex >= 0;
   const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
   const visible = showNearby ? rows.slice(sliceStart, myIndex + 3) : (count === "all" ? rows : rows.slice(0, count));
   const myRowShown = showNearby || count === "all" || (myIndex >= 0 && myIndex < count);
   const pinMyRow = myIndex >= 0 && !myRowShown;
+  const row = (r, rank) => {
+    const name = nameOf(r);
+    return (
+      <button key={name} className={"stat-row as-btn" + (name === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(name)}>
+        <span className="medal">{medals && rank < 3 ? MEDAL_EMOJI[rank] : `${rank + 1}.`}</span>
+        <Ball color={colorOf(name)} label={initials(name)} badge={badgeOf(name)} photo={photoOf(name)} size={34} />
+        <span className="stat-name">{name}</span>
+        <span className="stat-val">{valOf(r)}</span>
+        {extra && <span className="stat-decay-slot">{extra(r)}</span>}
+      </button>
+    );
+  };
   return (
-    <section className="stat-block">
-      <div className="stat-block-head">
-        <h3>{icon} <span className="stat-block-title-text">{title}</span></h3>
-        <div className="stat-block-head-actions">
-          <CardMenuButton onHide={onHide} />
-          {info && <InfoButton title={title}>{info}</InfoButton>}
-          <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
-        </div>
-      </div>
-      {!collapsed && (
+    <>
+      {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
+      {visible.length === 0 && <p className="hint">{emptyText || t("Noch keine Daten.")}</p>}
+      {visible.map((r, i) => row(r, sliceStart + i))}
+      {pinMyRow && (
         <>
-          {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
-          {visible.length === 0 && <p className="hint">{t("Noch keine Daten.")}</p>}
-          {visible.map((p, i) => (
-            <button key={p.name} className={"stat-row as-btn" + (p.name === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(p.name)}>
-              <span className="medal">{sliceStart + i + 1}.</span>
-              <Ball color={colorOf(p.name)} label={initials(p.name)} badge={badgeOf(p.name)} photo={photoOf(p.name)} size={34} />
-              <span className="stat-name">{p.name}</span>
-              <span className="stat-val">{fmt(p)}</span>
-            </button>
-          ))}
-          {pinMyRow && (
-            <>
-              <div className="stat-row-sep">···</div>
-              <button className="stat-row as-btn mine" onClick={() => onOpenProfile(rows[myIndex].name)}>
-                <span className="medal">{myIndex + 1}.</span>
-                <Ball color={colorOf(rows[myIndex].name)} label={initials(rows[myIndex].name)} badge={badgeOf(rows[myIndex].name)} photo={photoOf(rows[myIndex].name)} size={34} />
-                <span className="stat-name">{rows[myIndex].name}</span>
-                <span className="stat-val">{fmt(rows[myIndex])}</span>
-              </button>
-            </>
-          )}
+          <div className="stat-row-sep">···</div>
+          {row(rows[myIndex], myIndex)}
         </>
       )}
-    </section>
+    </>
   );
 }
 
-// Die fruehere eigene "Uebersicht"/Rangliste-Seite: hier als weiterer
-// Bestenlisten-Block eingegliedert (gleiches Muster wie "Meiste Siege" &
-// Co.). disc/count/nearby kommen ebenfalls von der globalen Auswahl.
-function RankingBlock({ rangliste, disc, count, nearby, colorOf, badgeOf, photoOf, onOpenProfile, me, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
-  const rows = rangliste.filter((r) => r.discipline === disc && r.aktiv && !r.vorlaeufig);
-  const myIndex = rows.findIndex((r) => r.nickname === me?.nickname);
-  const showNearby = nearby && myIndex >= 0;
-  const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
-  const visible = showNearby ? rows.slice(sliceStart, myIndex + 3) : (count === "all" ? rows : rows.slice(0, count));
-  const myRowShown = showNearby || count === "all" || (myIndex >= 0 && myIndex < count);
-  const pinMyRow = myIndex >= 0 && !myRowShown;
+// Sechs fast identische Bestenlisten (Rangliste, Meiste Siege, Beste
+// Siegquote, Aktuelle Serien, Schnellstes Tempo, Schnellstes 14/1-Tempo)
+// als EINE Karte mit Reitern statt als sechs Karten untereinander. Sie
+// hatten alle denselben Kartenkopf, dieselbe globale Auswahl und dieselbe
+// Zeilenform und kosteten zusammen ueber 1000px Hoehe am Handy fuer
+// sechsmal dieselbe Struktur (Nutzer-Feedback 2026-09-30: "Aufgrund der
+// Fuelle an Features ist die App unuebersichtlich geworden").
+//
+// Ausgeblendet wird weiterhin JEDE Liste einzeln (Profil -> "Profil
+// bearbeiten" -> "Karten"): die Reiter sind genau die gerade sichtbaren
+// Listen, ihre Reihenfolge ist die dort gespeicherte, und ist keine mehr
+// sichtbar, faellt die ganze Karte weg. "Karte ausblenden" im Kartenmenue
+// blendet deshalb die GERADE OFFENE Liste aus, nicht alle sechs - sonst
+// waere die Einzel-Auswahl aus den Einstellungen hier nicht erreichbar.
+function LeaderboardDeck({ boards, activeId, onActive, collapsed, onToggleCollapse, column, onToggleColumn, onHide, ...rowProps }) {
+  const active = boards.find((b) => b.id === activeId) || boards[0];
+  if (!active) return null;
   return (
     <section className="stat-block">
       <div className="stat-block-head">
-        <h3><Trophy size={17} /> <span className="stat-block-title-text">{t("Rangliste")}</span></h3>
+        <h3><Trophy size={17} /> <span className="stat-block-title-text">{t("Bestenlisten")}</span></h3>
         <div className="stat-block-head-actions">
-          <CardMenuButton onHide={onHide} />
-          <InfoButton title={t("Rangliste")}>
-            {t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.")}
-          </InfoButton>
+          <CardMenuButton onHide={onHide} label={t("Diese Liste ausblenden")} />
+          {active.info && <InfoButton title={active.title}>{active.info}</InfoButton>}
           <CardColumnButton column={column} onToggle={onToggleColumn} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
       {!collapsed && (
         <>
-          {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
-          {visible.length === 0 && <p className="hint">{t("Noch keine Ratings in dieser Disziplin.")}</p>}
-          {visible.map((r, i) => {
-            const rank = sliceStart + i;
-            return (
-              <button key={r.nickname + r.discipline} className={"stat-row as-btn" + (r.nickname === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(r.nickname)}>
-                <span className="medal">{rank < 3 ? MEDAL_EMOJI[rank] : `${rank + 1}.`}</span>
-                <Ball color={colorOf(r.nickname)} label={initials(r.nickname)} badge={badgeOf(r.nickname)} photo={photoOf(r.nickname)} size={34} />
-                <span className="stat-name">{r.nickname}</span>
-                <span className="stat-val">{r.rating}</span>
-                <span className="stat-decay-slot"><DecayBadge player={r} iconSize={15} /></span>
-              </button>
-            );
-          })}
-          {pinMyRow && (
-            <>
-              <div className="stat-row-sep">···</div>
-              <button className="stat-row as-btn mine" onClick={() => onOpenProfile(rows[myIndex].nickname)}>
-                <span className="medal">{myIndex + 1}.</span>
-                <Ball color={colorOf(rows[myIndex].nickname)} label={initials(rows[myIndex].nickname)} badge={badgeOf(rows[myIndex].nickname)} photo={photoOf(rows[myIndex].nickname)} size={34} />
-                <span className="stat-name">{rows[myIndex].nickname}</span>
-                <span className="stat-val">{rows[myIndex].rating}</span>
-                <span className="stat-decay-slot"><DecayBadge player={rows[myIndex]} iconSize={15} /></span>
-              </button>
-            </>
+          {boards.length > 1 && (
+            <div className="deck-tabs" role="tablist">
+              {boards.map((b) => (
+                <button key={b.id} type="button" role="tab" aria-selected={b.id === active.id}
+                  className={"chip" + (b.id === active.id ? " active" : "")}
+                  onClick={() => onActive(b.id)} title={b.title}>
+                  {b.icon} <span>{b.tab}</span>
+                </button>
+              ))}
+            </div>
           )}
+          <LeaderboardRows {...rowProps} rows={active.rows} nameOf={active.nameOf} valOf={active.valOf}
+            extra={active.extra} medals={active.medals} emptyText={active.emptyText} />
         </>
       )}
     </section>
@@ -356,7 +341,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
 // wieder zurueck ("wo ist die Spielehistorie verschwunden? Ich wollte sie
 // in den Statistiken in der mittleren Spalte ganz unten haben"), diesmal
 // dauerhaft hier statt zusaetzlich auf Live dupliziert. Eigene Komponente
-// aus demselben Grund wie LeaderboardBlock/RecordsBoard oben: sonst
+// aus demselben Grund wie LeaderboardDeck/RecordsBoard oben: sonst
 // verliert ihr lokaler Filter-State bei jedem Render der Eltern-
 // Komponente seine Identitaet.
 function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokoll, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
@@ -840,19 +825,55 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // auf dem Handy werden beide Gruppen einfach hintereinander gestapelt
   // (erst Mitte, dann rechts - siehe .stat-chart-col/.stat-grid-Reihenfolge
   // in App.css), unabhaengig davon, welche Karte gerade welche Spalte hat.
+  const [leaderboardTab, setLeaderboardTab] = useState(readTabPref);
   const cardCollapse = (id) => ({ collapsed: collapsedCards.has(id), onToggleCollapse: () => toggleCardCollapse(id) });
   const cardColumn = (id) => ({ column: cardColumns[id], onToggleColumn: () => cards.cycleColumn(id) });
   const cardHide = (id) => ({ onHide: () => cards.hideCard(id) });
+  // Katalog der sechs Bestenlisten. Die Reihenfolge hier ist nur ein
+  // Rueckfall - welche Listen es als Reiter gibt und in welcher Reihenfolge,
+  // entscheidet die gespeicherte Kartenreihenfolge (siehe leaderboardBoards
+  // weiter unten).
+  const leaderboardById = {
+    rangliste: {
+      id: "rangliste", tab: t("Rating"), title: t("Rangliste"), icon: <Trophy size={15} />, medals: true,
+      rows: rangliste.filter((r) => r.discipline === globalDisc && r.aktiv && !r.vorlaeufig),
+      nameOf: (r) => r.nickname, valOf: (r) => r.rating,
+      extra: (r) => <DecayBadge player={r} iconSize={15} />,
+      emptyText: t("Noch keine Ratings in dieser Disziplin."),
+      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv."),
+    },
+    meisteSiege: {
+      id: "meisteSiege", tab: t("Siege"), title: t("Meiste Siege"), icon: <Trophy size={15} />,
+      rows: topWins, nameOf: (p) => p.name, valOf: (p) => `${p.siege} ${t("Siege")}`,
+    },
+    besteSiegquote: {
+      id: "besteSiegquote", tab: t("Quote"), title: t("Beste Siegquote (ab 10 Spielen)"), icon: <BarChart3 size={15} />,
+      rows: topQuote, nameOf: (p) => p.name, valOf: (p) => `${p.quote} %`,
+      info: t("Anteil gewonnener Einzel-Matches (Siege ÷ Spiele) in der aktuell gewählten Disziplin. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl."),
+    },
+    aktuelleSerien: {
+      id: "aktuelleSerien", tab: t("Serien"), title: t("Aktuelle Serien"), icon: <Flame size={15} />,
+      rows: topStreak, nameOf: (p) => p.name, valOf: (p) => `${p.streak} ${t("in Folge")}`,
+      info: t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin."),
+    },
+    schnellstesTempo: {
+      id: "schnellstesTempo", tab: t("Tempo"), title: t("Schnellstes Tempo (Ø pro Spiel)"), icon: <Zap size={15} />,
+      rows: topGameSpeed, nameOf: (p) => p.name, valOf: (p) => fmtDuration(p.avgGameMs),
+      info: t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet."),
+    },
+    schnellste141: {
+      id: "schnellste141", tab: t("14/1-Tempo"), title: t("Schnellstes 14/1-Tempo (Ø pro Kugel)"), icon: <Timer size={15} />,
+      rows: topBallSpeed, nameOf: (p) => p.name, valOf: (p) => fmtDuration(p.avgBallMs),
+      info: t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet."),
+    },
+  };
+
   const cardsById = {
     globalFilter: (
       <StatGlobalFilter disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
         count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
         me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} {...cardCollapse("globalFilter")} {...cardColumn("globalFilter")} {...cardHide("globalFilter")}
         onExpandAll={expandAllCards} onCollapseAll={collapseAllCards} canUndo={cards.canUndo} onUndo={cards.undo} />
-    ),
-    rangliste: (
-      <RankingBlock rangliste={rangliste} disc={globalDisc} count={globalCount} nearby={globalNearby} me={me}
-        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} {...cardCollapse("rangliste")} {...cardColumn("rangliste")} {...cardHide("rangliste")} />
     ),
     entwicklung: (
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={globalDisc} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} {...cardHide("entwicklung")} />
@@ -863,30 +884,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     letzteMatches: (
       <MatchHistoryBlock matches={matches} players={players} me={me} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardCollapse("letzteMatches")} {...cardColumn("letzteMatches")} {...cardHide("letzteMatches")} />
     ),
-    meisteSiege: (
-      <LeaderboardBlock icon={<Trophy size={17} />} title={t("Meiste Siege")} rows={topWins} me={me} count={globalCount} nearby={globalNearby}
-        fmt={(p) => `${p.siege} ${t("Siege")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} {...cardCollapse("meisteSiege")} {...cardColumn("meisteSiege")} {...cardHide("meisteSiege")} />
-    ),
-    besteSiegquote: (
-      <LeaderboardBlock icon={<BarChart3 size={17} />} title={t("Beste Siegquote (ab 10 Spielen)")} rows={topQuote} me={me} count={globalCount} nearby={globalNearby}
-        fmt={(p) => `${p.quote} %`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        info={t("Anteil gewonnener Einzel-Matches (Siege ÷ Spiele) in der aktuell gewählten Disziplin. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.")} {...cardCollapse("besteSiegquote")} {...cardColumn("besteSiegquote")} {...cardHide("besteSiegquote")} />
-    ),
-    aktuelleSerien: (
-      <LeaderboardBlock icon={<Flame size={17} />} title={t("Aktuelle Serien")} rows={topStreak} me={me} count={globalCount} nearby={globalNearby}
-        fmt={(p) => `${p.streak} ${t("in Folge")}`} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        info={t("Wie viele Einzel-Matches in Folge gewonnen wurden, seit der letzten Niederlage in der aktuell gewählten Disziplin.")} {...cardCollapse("aktuelleSerien")} {...cardColumn("aktuelleSerien")} {...cardHide("aktuelleSerien")} />
-    ),
-    schnellstesTempo: (
-      <LeaderboardBlock icon={<Zap size={17} />} title={t("Schnellstes Tempo (Ø pro Spiel)")} rows={topGameSpeed} me={me} count={globalCount} nearby={globalNearby}
-        fmt={(p) => fmtDuration(p.avgGameMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        info={t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} {...cardCollapse("schnellstesTempo")} {...cardColumn("schnellstesTempo")} {...cardHide("schnellstesTempo")} />
-    ),
-    schnellste141: (
-      <LeaderboardBlock icon={<Timer size={17} />} title={t("Schnellstes 14/1-Tempo (Ø pro Kugel)")} rows={topBallSpeed} me={me} count={globalCount} nearby={globalNearby}
-        fmt={(p) => fmtDuration(p.avgBallMs)} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-        info={t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.")} {...cardCollapse("schnellste141")} {...cardColumn("schnellste141")} {...cardHide("schnellste141")} />
-    ),
   };
   // Ausgeblendete Karten fliegen erst HIER raus, nicht schon aus cardOrder:
   // ihre Position in der Reihenfolge und ihre Spalte bleiben gespeichert, so
@@ -894,8 +891,30 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Wichtig fuer @dnd-kit: die SortableContext-Liste unten muss exakt den
   // gerenderten Karten entsprechen - eine id ohne zugehoerigen Knoten wuerde
   // die Zieh-Animation verrechnen.
-  const visibleOrder = cards.visibleOrder;
-  const { middle: middleCardIds, right: rightCardIds } = cards.byColumn;
+  // Die sechs Bestenlisten teilen sich EINE Karte (siehe LeaderboardDeck):
+  // sie steht an der Stelle und in der Spalte der ERSTEN noch sichtbaren
+  // Liste, die uebrigen fuenf ids rendern nichts. Dadurch bleibt die ganze
+  // Sortier- und Spalten-Mechanik unveraendert - die Karte laesst sich
+  // ziehen wie jede andere, und @dnd-kit sieht weiterhin genau die ids, die
+  // auch wirklich als Knoten im DOM stehen.
+  const leaderboardBoards = cards.visibleOrder.filter((id) => leaderboardById[id]).map((id) => leaderboardById[id]);
+  const deckAnchor = leaderboardBoards[0]?.id || null;
+  const deckActive = leaderboardBoards.find((b) => b.id === leaderboardTab) ? leaderboardTab : deckAnchor;
+  if (deckAnchor) {
+    cardsById[deckAnchor] = (
+      <LeaderboardDeck boards={leaderboardBoards} activeId={deckActive}
+        onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
+        me={me} count={globalCount} nearby={globalNearby}
+        colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+        {...cardCollapse(deckAnchor)} {...cardColumn(deckAnchor)}
+        onHide={() => cards.hideCard(deckActive)} />
+    );
+  }
+  const withoutFoldedBoards = (ids) => ids.filter((id) => !leaderboardById[id] || id === deckAnchor);
+
+  const visibleOrder = withoutFoldedBoards(cards.visibleOrder);
+  const middleCardIds = withoutFoldedBoards(cards.byColumn.middle);
+  const rightCardIds = withoutFoldedBoards(cards.byColumn.right);
   // Am Handy legt CSS-"order" die Reihenfolge fest (die Spalten-Huellen sind
   // dort display:contents, siehe App.css) - dadurch ist die sichtbare Liste
   // genau cardOrder, unabhaengig davon, in welcher Spalte eine Karte am

@@ -446,7 +446,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <p className="hint" style={{ marginTop: 0 }}>
           {t("Reihenfolge, Spalte und Sichtbarkeit der Karten - fuer jeden Bildschirm. Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
         </p>
-        {CARD_SCREENS.map(({ screen, label, cards }) => {
+        {CARD_SCREENS.map(({ screen, label, cards, note }) => {
           const api = layoutByScreen[screen];
           const byId = Object.fromEntries(cards.map((c) => [c.id, c]));
           const sichtbar = cards.length - api.hiddenCount;
@@ -462,6 +462,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                   <Eye size={15} />
                 </button>
               </div>
+              {/* Hinweis fuer Bildschirme, auf denen mehrere Eintraege
+                  dieser Liste zusammen EINE Karte ergeben (Statistik:
+                  Bestenlisten-Reiter) - sonst wundert man sich, warum das
+                  Einblenden keine neue Karte erzeugt. */}
+              {note && <p className="hint card-vis-note">{t(note)}</p>}
               <div className="card-vis-list" style={{ "--card-vis-rows": Math.ceil(api.order.length / 2) }}>
                 {api.order.map((id, i) => {
                   const c = byId[id];
