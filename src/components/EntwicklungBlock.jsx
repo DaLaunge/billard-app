@@ -11,6 +11,7 @@ import CardCollapseButton from "./widgets/CardCollapseButton";
 import CardColumnButton from "./widgets/CardColumnButton";
 import CardMaximizeButton from "./widgets/CardMaximizeButton";
 import CardMenuButton from "./widgets/CardMenuButton";
+import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 
 const RANGES = [
   { key: "1M", label: "1M", days: 31 },
@@ -26,7 +27,7 @@ const RANGES = [
 // braucht der Graph keine eigenen Disziplin-Buttons mehr. Alle folgenden
 // Werte (Spieler-Reihenfolge, Kurven, verfuegbare Daten) haengen weiterhin
 // von der Disziplin ab.
-export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
+export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, filter, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
@@ -70,6 +71,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     return f;
   }, [matches, me]);
 
+  const funnel = useFunnel();
   const [sel, setSel] = useState(defaultSel);
   const [rangeKey, setRangeKey] = useState("1J");
   const [addOpen, setAddOpen] = useState(false);
@@ -142,6 +144,10 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
         <h3><TrendingUp size={17} /> <span className="stat-block-title-text">{t("Entwicklung über die Zeit")}</span></h3>
         <div className="stat-block-head-actions">
           {!maximized && <CardMenuButton onHide={onHide} />}
+          {/* Nur gesetzt, wenn die Bestenlisten-Karte fehlt (alle sechs
+              ausgeblendet): dort haengt der Trichter sonst, und ohne ihn liesse
+              sich die Disziplin dieses Graphen nicht mehr aendern. */}
+          {filter && !collapsed && <FunnelButton funnel={funnel} label={filter.label} />}
           <InfoButton title={t("Entwicklung über die Zeit")}>
             {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
           </InfoButton>
@@ -152,6 +158,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
       </div>
       {!collapsed && (
       <>
+      {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
       {allDates.length > 0 && (
         <div className="chips small">
           {RANGES.map((r) => (

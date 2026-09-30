@@ -819,9 +819,29 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     },
   };
 
+  // Kurzfassung der gewaehlten Filter fuer den Kartenkopf - nur wenn sie vom
+  // Standard (Alle Disziplinen, Top 3) abweichen. Bei geschlossenem
+  // Trichter-Feld sieht man so, dass die Listen gefiltert sind.
+  const filterPill = [
+    globalDisc !== "Gesamt" ? (DISC_LABEL[globalDisc] || globalDisc) : null,
+    globalNearby ? t("Umgebung") : (globalCount !== 3 ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
+  ].filter(Boolean).join(" · ") || null;
+  const LEADERBOARD_IDS = LEADERBOARD_ID_LIST;
+  const { parts: deckParts, anchor: deckAnchor } = foldedDeck(cards.visibleOrder, LEADERBOARD_IDS);
+  // Der Trichter haengt an der Bestenlisten-Karte. Fehlt sie (alle sechs
+  // Listen ausgeblendet), uebernimmt ihn der Verlaufs-Graph - sonst liesse
+  // sich dessen Disziplin nirgends mehr aendern.
+  const statFilter = {
+    label: t("Auswahl fuer alle Statistiken"),
+    pill: filterPill,
+    content: <StatFilterContent disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
+      count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
+      me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />,
+  };
+
   const cardsById = {
     entwicklung: (
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={globalDisc} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} {...cardHide("entwicklung")} />
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={globalDisc} filter={deckAnchor ? undefined : statFilter} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} {...cardHide("entwicklung")} />
     ),
     rekordeClub: (
       <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardCollapse("rekordeClub")} {...cardColumn("rekordeClub")} {...cardHide("rekordeClub")} />
@@ -842,15 +862,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // unveraendert - die Karte laesst sich ziehen wie jede andere, und
   // @dnd-kit sieht weiterhin genau die ids, die auch wirklich als Knoten im
   // DOM stehen.
-  // Kurzfassung der gewaehlten Filter fuer den Kartenkopf - nur wenn sie vom
-  // Standard (Alle Disziplinen, Top 3) abweichen. Bei geschlossenem
-  // Trichter-Feld sieht man so, dass die Listen gefiltert sind.
-  const filterPill = [
-    globalDisc !== "Gesamt" ? (DISC_LABEL[globalDisc] || globalDisc) : null,
-    globalNearby ? t("Umgebung") : (globalCount !== 3 ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
-  ].filter(Boolean).join(" · ") || null;
-  const LEADERBOARD_IDS = LEADERBOARD_ID_LIST;
-  const { parts: deckParts, anchor: deckAnchor } = foldedDeck(cards.visibleOrder, LEADERBOARD_IDS);
   // Die zusammengelegte Karte zaehlt am Desktop als EINE Karte und braucht
   // daher EINE Spalte - unabhaengig davon, welche Liste gerade der erste
   // sichtbare Teil ist (siehe deckColumn()).
@@ -866,13 +877,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         })}
         activeId={deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
         hideLabel={t("Diese Liste ausblenden")}
-        filter={{
-          label: t("Auswahl fuer alle Statistiken"),
-          pill: filterPill,
-          content: <StatFilterContent disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
-            count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
-            me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />,
-        }}
+        filter={statFilter}
         {...cardCollapse(deckAnchor)}
         column={deckCol} onToggleColumn={() => cards.cycleColumn(LEADERBOARD_IDS)}
         onHide={() => cards.hideCard(deckActive)} />

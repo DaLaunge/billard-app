@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Filter, Check } from "lucide-react";
+import { useFunnel, FunnelButton, FunnelPanel } from "./FilterFunnel";
 import CardMenuButton from "./CardMenuButton";
 import CardCollapseButton from "./CardCollapseButton";
 import CardColumnButton from "./CardColumnButton";
@@ -49,7 +48,7 @@ export default function CardDeck({
   collapsed, onToggleCollapse, column, onToggleColumn, onHide, hideLabel,
   roomy, id, soloTitle = true, filter,
 }) {
-  const [filterOpen, setFilterOpen] = useState(false);
+  const funnel = useFunnel();
   const active = tabs.find((x) => x.id === activeId) || tabs[0];
   if (!active) return null;
   const info = active.info;
@@ -68,13 +67,7 @@ export default function CardDeck({
         </h3>
         <div className="stat-block-head-actions">
           {onHide && <CardMenuButton onHide={onHide} label={solo ? undefined : (hideLabel || t("Diesen Reiter ausblenden"))} />}
-          {filter && !collapsed && (
-            <button type="button" className={"card-filter-btn" + (filterOpen ? " on" : "")}
-              aria-expanded={filterOpen} aria-label={filter.label} title={filter.label}
-              onClick={() => setFilterOpen((o) => !o)}>
-              <Filter size={16} />
-            </button>
-          )}
+          {filter && !collapsed && <FunnelButton funnel={funnel} label={filter.label} />}
           {info && <InfoButton title={active.title || title}>{info}</InfoButton>}
           {onToggleColumn && <CardColumnButton column={column} onToggle={onToggleColumn} />}
           {onToggleCollapse && <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />}
@@ -82,24 +75,7 @@ export default function CardDeck({
       </div>
       {!collapsed && (
         <>
-          {filter && (
-            // Auf-/Zuklappen mit echter Hoehen-Animation (.collapsible, siehe
-            // App.css). "inert" nimmt das geschlossene Feld aus der
-            // Tab-Reihenfolge - es hat Hoehe 0, ist aber weiter im DOM, und
-            // ohne das wuerde die Tastatur unsichtbare Knoepfe ansteuern.
-            <div className={"collapsible" + (filterOpen ? " open" : "")} inert={filterOpen ? undefined : ""}>
-              <div className="collapsible-inner">
-                <div className="deck-filter">
-                  {filter.content}
-                  <div className="deck-filter-foot">
-                    <button type="button" className="btn primary small" onClick={() => setFilterOpen(false)}>
-                      <Check size={15} /> {t("OK")}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
           {tabs.length > 1 && (
             <div className="deck-tabs" role="tablist">
               {tabs.map((x) => (
