@@ -4,6 +4,7 @@ import { ChevronLeft, X, Share2, Copy, RefreshCw } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
+import { myCodeLink } from "../lib/inviteLink";
 
 export default function InviteScreen({ me, onBack, toast }) {
   const [code, setCode] = useState(null);
@@ -18,7 +19,9 @@ export default function InviteScreen({ me, onBack, toast }) {
     })();
   }, []);
 
-  const link = code ? `${window.location.origin}/?ref=${code}` : "";
+  // Derselbe Doppel-Code wie im Match-Screen: Neue werden eingeladen, Mitglieder
+  // starten direkt ein Match gegen dich (lib/inviteLink.js).
+  const link = code ? myCodeLink(code, me.id) : "";
 
   // Der Code bleibt dauerhaft gueltig (mehrere Leute koennen gleichzeitig
   // damit beitreten) - ersetzt wird er nur hier, auf ausdruecklichen Wunsch.
@@ -59,7 +62,7 @@ export default function InviteScreen({ me, onBack, toast }) {
       {error && <p className="nick-status err"><X size={14} /> {error}</p>}
 
       <section className="stat-block invite-card">
-        <p className="invite-lead">{t("Neuer Spieler? Einfach diesen Code mit der Handykamera scannen – das öffnet die App und führt direkt zur Anmeldung.")}</p>
+        <p className="invite-lead">{t("Neuer Spieler? Einfach diesen Code mit der Handykamera scannen – das öffnet die App und führt direkt zur Anmeldung. Mitglieder starten damit sofort ein Match gegen dich.")}</p>
         <div className="qr-box">
           {code ? (
             <QRCodeSVG value={link} size={210} level="M"

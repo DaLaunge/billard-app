@@ -5,7 +5,7 @@ import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs } from "./lib/session";
+import { getVs, clearVs, clearRef } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
@@ -1041,6 +1041,11 @@ export default function App() {
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [player, notifyMode, showNotice]);
+  // Wer schon ein Konto hat und einen Einladungs-Link scannt, hat den Code
+  // (?ref=) unnoetig gemerkt - er soll weder am Login als "eingeladen" noch
+  // spaeter irgendwo gutgeschrieben werden. Ein Neuer hat noch keinen
+  // "player", dessen Code bleibt also bis zur Registrierung erhalten.
+  useEffect(() => { if (player) clearRef(); }, [player]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;

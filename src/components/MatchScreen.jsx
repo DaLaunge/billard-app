@@ -18,6 +18,7 @@ import FieldLabel from "./widgets/FieldLabel";
 import DiscBall, { DiscPick, DiscPickRow, sortDisciplines } from "./widgets/DiscBall";
 import { ModeTiles } from "./widgets/ModePick";
 import { rpcRetry } from "../lib/rpcRetry";
+import { myCodeLink } from "../lib/inviteLink";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
@@ -39,6 +40,18 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [step, setStep] = useState(savedStep === 1 ? (dv("disc", null) ? 2 : 0) : savedStep);
   const [opp, setOpp] = useState(draft ? fresh(draft.opp) : (initialOpp || null));
   const [showMyQr, setShowMyQr] = useState(false);
+  // Der Code hat zwei Funktionen (siehe lib/inviteLink.js): Einladung fuer
+  // Neue, Match-Start fuer Mitglieder. Den Einladungscode holen wir erst, wenn
+  // das Feld aufgeklappt wird - bis er da ist, gilt der Link allein fuer
+  // Mitglieder (?vs=), was schon vorher funktionierte.
+  const [inviteCode, setInviteCode] = useState(null);
+  useEffect(() => {
+    if (!showMyQr || inviteCode) return;
+    let alive = true;
+    supabase.rpc("get_or_create_my_invite").then(({ data, error }) => { if (alive && !error) setInviteCode(data); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMyQr]);
   const [mode, setMode] = useState(dv("mode", "single"));
   const [partner, setPartner] = useState(fresh(dv("partner", null)));
   const [opp2, setOpp2] = useState(fresh(dv("opp2", null)));
@@ -476,10 +489,14 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     <div className="collapsible-inner">
                       <div className="my-qr">
                         <div className="qr-box">
-                          <QRCodeSVG value={`${window.location.origin}/?vs=${me.id}`} size={190} level="M"
+                          <QRCodeSVG value={myCodeLink(inviteCode, me.id)} size={190} level="M"
                             bgColor="#F2EDE0" fgColor="#0A2B21" />
                         </div>
-                        <p className="hint center">{t("Der andere scannt das mit der Handykamera und trägt danach das Ergebnis ein.")}</p>
+                        {/* Zwei Funktionen in einem Code - gezeichnet statt erklaert. */}
+                        <div className="qr-uses">
+                          <span><UserPlus size={14} /> {t("Neu: Einladung")}</span>
+                          <span><Swords size={14} /> {t("Mitglied: Match starten")}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
