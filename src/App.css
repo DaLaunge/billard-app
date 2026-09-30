@@ -381,6 +381,45 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .deck-tabs .chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 11px; font-size: 12.5px; }
 .deck-tabs .chip svg { flex-shrink: 0; }
+
+/* --- Formularfeld-Ueberschrift mit Info-Knopf ---------------------------
+   Erklaertexte stehen nicht mehr als Dauertext unter dem Feld, sondern im
+   Info-Knopf daneben (Nutzer-Feedback 2026-09-30). Der Knopf schiebt sich
+   sonst per margin-left:auto an den rechten Rand - hier soll er direkt
+   neben der Ueberschrift stehen. */
+.field-label { display: flex; align-items: center; gap: 2px; margin: 10px 0 5px;
+  font-size: 12.5px; font-weight: 700; color: var(--ivory-dim); letter-spacing: .02em; }
+.field-label .card-info-btn { margin: -4px 0; }
+
+/* --- Turnierformat als Kacheln mit Struktur-Zeichnung ------------------ */
+.fmt-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.fmt-card { display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 6px 8px; border-radius: 14px; cursor: pointer; font-family: inherit;
+  font-size: 12px; font-weight: 600; color: var(--ivory-dim); text-align: center;
+  background: var(--surface-btn); border: 1.5px solid transparent; }
+.fmt-card .fmt-glyph { width: 100%; height: 30px; color: var(--ivory-dim); }
+.fmt-card.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--ivory); }
+.fmt-card.sel .fmt-glyph { color: var(--accent); }
+@media (min-width: 560px) { .fmt-grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* --- Turnierliste: Zeichnung + Statusabzeichen statt Textkette --------- */
+.turnier-list-row-glyph { flex: 0 0 auto; width: 38px; color: var(--ivory-dim); display: grid; place-items: center; }
+.turnier-list-row-glyph .fmt-glyph { width: 38px; height: 24px; }
+.turnier-list-row-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.turnier-status { flex: 0 0 auto; font-size: 10.5px; font-weight: 700; letter-spacing: .03em;
+  text-transform: uppercase; border-radius: 999px; padding: 2px 8px; border: 1px solid transparent; }
+.turnier-status.live { background: var(--accent); color: var(--accent-ink); }
+.turnier-status.open { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+.turnier-status.done { background: var(--felt-3); color: var(--ivory-dim); }
+
+/* --- Auf-/Zuklappen mit echter Hoehen-Animation ------------------------
+   grid-template-rows 0fr -> 1fr ist der einzige Weg, eine UNBEKANNTE Hoehe
+   zu animieren, ohne sie vorher zu messen. Das innere Element braucht
+   dafuer zwingend overflow:hidden und min-height:0, sonst laesst sich die
+   Zeile nicht unter ihre Inhaltshoehe druecken. */
+.collapsible { display: grid; grid-template-rows: 0fr; }
+.collapsible.open { grid-template-rows: 1fr; }
+.collapsible-inner { overflow: hidden; min-height: 0; }
 /* Zaehler im Reiter: auf dem aktiven Reiter liegt er auf der Akzentflaeche,
    deshalb dort nicht noch einmal eingefaerbt, sondern nur abgedunkelt. */
 .deck-tab-count { flex-shrink: 0; min-width: 16px; padding: 0 4px; border-radius: 999px;
@@ -1158,6 +1197,16 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .content { scroll-behavior: smooth; }
   .tabbar { transition: transform .22s ease; }
   .tourney-table-banner { transition: bottom .22s ease; }
+  /* Einblenden beim Hineinscrollen (siehe lib/useRevealOnScroll.js). Der
+     versteckte Ausgangszustand steht BEWUSST nur hier drin: ohne
+     Animationen - oder falls das JavaScript nie laeuft - ist der Inhalt
+     einfach sofort da. */
+  .reveal { opacity: 0; transform: translateY(10px); }
+  .reveal.is-in { opacity: 1; transform: none;
+    transition: opacity .32s ease, transform .32s cubic-bezier(.22, .61, .36, 1); }
+  .collapsible { transition: grid-template-rows .26s cubic-bezier(.22, .61, .36, 1); }
+  .collapsible-inner > * { transition: opacity .2s ease; }
+  .collapsible:not(.open) .collapsible-inner > * { opacity: 0; }
   .rank-row, .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn,
   .mini-stepper button, .turnier-stepper-btn, .suggest-challenge-btn, .back-btn,
   .csv-btn, .mem-edit, .mode-btn, .lang-btn,
@@ -1669,7 +1718,14 @@ button.id-card-head { cursor: pointer; }
    funktioniert hier also nativ mit.
    ============================================================ */
 .turnier-form { display: flex; flex-direction: column; gap: 14px; }
-.turnier-form input[type="text"], .turnier-form select { font-size: 15px; padding: 12px 14px; }
+/* Die Textfelder hier hatten nie eigene Farben und kamen deshalb im
+   browsereigenen Weiss - auf dem dunklen Hintergrund sah das nach Fehler
+   aus. Jetzt dieselbe Optik wie die Suchfelder (.search-row) und die
+   Punktefelder weiter unten. */
+.turnier-form input[type="text"], .turnier-form input[type="number"], .turnier-form select {
+  font-size: 15px; padding: 12px 14px; background: var(--felt); color: var(--ivory);
+  border: 1px solid var(--line); border-radius: 12px; font-family: inherit; }
+.turnier-form input::placeholder { color: var(--ivory-dim); opacity: .75; }
 
 /* Teilnehmerauswahl (PlayerMultiPicker.jsx) - derselbe Suchfeld+Chips-Stil
    wie PlayerPicker (.search-row/.cand-chip, siehe dort), aber als

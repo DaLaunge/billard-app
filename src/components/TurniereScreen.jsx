@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Plus, Search, Trophy, X, Repeat } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Search, Trophy, X } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES, DISC_LABEL } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
+import InfoButton from "./widgets/InfoButton";
+import { FORMAT_GLYPH } from "./widgets/FormatGlyph";
+import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 
 const formatLabel = (item) =>
   item._kind === "winnerstays"
@@ -24,6 +27,24 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t(
 // Tabellen, siehe WinnerStaysScreen.jsx) - keine Bracket-Struktur, sondern
 // eine dynamische Warteschlange - nur die Oberflaeche tut so, als waere es
 // ein einziges Menü.
+// Feld-Ueberschrift im Anlegen-Formular. Der Erklaertext gehoert in den
+// Info-Knopf daneben und nicht als Dauertext darunter (Nutzer-Feedback:
+// "textuelle Beschreibungen sollten sich generell hinter Info-Buttons
+// verstecken").
+function FieldLabel({ label, info }) {
+  return (
+    <div className="field-label">
+      <span>{label}</span>
+      {info && <InfoButton title={label}>{info}</InfoButton>}
+    </div>
+  );
+}
+
+// Drei Fuellstufen DESSELBEN Akzents statt dreier Farben (siehe CLAUDE.md,
+// "Exactly ONE accent colour"): laufend = volle Flaeche, Anmeldung offen =
+// getoente Flaeche, beendet/abgebrochen = neutral.
+const statusTone = (s) => (s === "setup" ? "open" : s === "finished" || s === "cancelled" ? "done" : "live");
+
 export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerStays, onBack }) {
   const [tournaments, setTournaments] = useState(null);
   const [wsSessions, setWsSessions] = useState(null);
@@ -71,6 +92,11 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
 
   // Beide Listen zu einer gemeinsamen, nach Datum sortierten Liste
   // zusammenfuehren - fuer den Nutzer ist das EIN "Turniere"-Bereich.
+  // Zeilen blenden sich beim Hineinscrollen ein (siehe useRevealOnScroll) -
+  // neu gefilterte Listen muessen dafuer erneut durchsucht werden, deshalb
+  // haengen Filter und Suche in den Abhaengigkeiten.
+  const listRef = useRevealOnScroll([tournaments, wsSessions, statusFilter, query, showForm]);
+
   const combined = useMemo(() => {
     if (tournaments == null || wsSessions == null) return null;
     return [
@@ -140,7 +166,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
 
   return (
     <div className="screen">
-      <div className="turnier-layout">
+      <div className="turnier-layout" ref={listRef}>
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{t("Turniere")}</h2>
@@ -154,27 +180,37 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
           </button>
         </div>
 
-        {showForm && (
+        {/* Auf- und Zuklappen ueber grid-template-rows 0fr/1fr - die einzige
+            Art, eine unbekannte Hoehe wirklich zu animieren, ohne sie vorher
+            zu messen. Unter prefers-reduced-motion schaltet das CSS die
+            Ueberblendung ab, der Inhalt erscheint dann sofort. */}
+        <div className={"collapsible" + (showForm ? " open" : "")}>
+          <div className="collapsible-inner">
           <div className="turnier-form" style={{ marginBottom: 16 }}>
             <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
 
-            <p className="hint" style={{ marginBottom: 4 }}>{t("Format")}</p>
-            <div className="chips small">
-              <button className={"chip" + (format === "ko" ? " active" : "")} onClick={() => chooseFormat("ko")}>{t("K.O.")}</button>
-              <button className={"chip" + (format === "double_ko" ? " active" : "")} onClick={() => chooseFormat("double_ko")}>{t("Doppel-K.O.")}</button>
-              <button className={"chip" + (format === "round_robin" ? " active" : "")} onClick={() => chooseFormat("round_robin")}>{t("Jeder gegen jeden")}</button>
-              <button className={"chip" + (format === "winner_stays" ? " active" : "")} onClick={() => chooseFormat("winner_stays")}><Repeat size={14} /> {t("Winner Stays")}</button>
+            {/* Format als Kacheln mit Struktur-Zeichnung statt als Textchips
+                (Nutzer-Feedback: Erklaerungen lieber visuell). "Doppel-K.O."
+                sagt einem Neuling nichts, ein Baum mit zweitem Pfad darunter
+                schon - der ausgeschriebene Text dazu steckt im Info-Knopf
+                daneben, statt dauerhaft Platz zu kosten. */}
+            <FieldLabel label={t("Format")} info={t("K.O.: eine Niederlage und du bist raus. Doppel-K.O.: erst die zweite Niederlage scheidet aus, bis dahin laeuft eine Verliererrunde mit. Jeder gegen jeden: alle spielen gegen alle, eine Tabelle entscheidet. Winner Stays: ein Tisch, mehrere Leute - der Sieger bleibt, der Verlierer geht ans Ende der Schlange; funktioniert mit 3 oder beliebig vielen Personen, auch im Doppel.")} />
+            <div className="fmt-grid">
+              {[["ko", t("K.O.")], ["double_ko", t("Doppel-K.O.")], ["round_robin", t("Jeder gegen jeden")], ["winner_stays", t("Winner Stays")]].map(([key, label]) => {
+                const Glyph = FORMAT_GLYPH[key];
+                return (
+                  <button key={key} type="button" className={"fmt-card" + (format === key ? " sel" : "")}
+                    aria-pressed={format === key} onClick={() => chooseFormat(key)}>
+                    <Glyph />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
-
-            {format === "winner_stays" && (
-              <p className="hint" style={{ marginTop: 4 }}>
-                {t("Ein Tisch, mehrere Leute: der Sieger bleibt, der Verlierer geht ans Ende der Schlange - funktioniert mit 3 oder beliebig vielen Personen, auch im Doppel.")}
-              </p>
-            )}
 
             {format === "round_robin" && (
               <>
-                <p className="hint" style={{ marginBottom: 4 }}>{t("Spielrunden")}</p>
+                <FieldLabel label={t("Spielrunden")} info={t("Einfach: jede Paarung spielt einmal. Hin & Rueck: jede Paarung spielt zweimal, einmal pro Seite - fairer, dauert aber doppelt so lang.")} />
                 <div className="chips small">
                   <button className={"chip" + (!doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(false)}>{t("Einfach")}</button>
                   <button className={"chip" + (doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(true)}>{t("Hin & Rück")}</button>
@@ -184,7 +220,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
 
             {format !== "ko" && format !== "winner_stays" && (
               <>
-                <p className="hint" style={{ marginBottom: 4 }}>{format === "double_ko" ? t("Finalrunde") : t("Abschluss")}</p>
+                <FieldLabel label={format === "double_ko" ? t("Finalrunde") : t("Abschluss")} info={t("Wie viele der Bestplatzierten spielen den Sieger danach noch im K.O. aus. \"Nur Tabelle\" beendet das Turnier direkt mit dem Tabellenstand.")} />
                 <div className="chips small">
                   {format === "round_robin" && (
                     <button className={"chip" + (playoffSize == null ? " active" : "")} onClick={() => setPlayoffSize(null)}>{t("Nur Tabelle")}</button>
@@ -198,7 +234,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
 
             {format === "winner_stays" && (
               <>
-                <p className="hint" style={{ marginBottom: 4 }}>{t("Modus")}</p>
+                <FieldLabel label={t("Modus")} />
                 <div className="chips small">
                   <button className={"chip" + (!wsDoubles ? " active" : "")} onClick={() => setWsDoubles(false)}>{t("Einzel")}</button>
                   <button className={"chip" + (wsDoubles ? " active" : "")} onClick={() => setWsDoubles(true)}>{t("Doppel")}</button>
@@ -206,7 +242,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               </>
             )}
 
-            <p className="hint" style={{ marginBottom: 4 }}>{t("Disziplin")}</p>
+            <FieldLabel label={t("Disziplin")} />
             <div className="chips small">
               {DEFAULT_DISCIPLINES.map((d) => (
                 <button key={d} className={"chip" + (discipline === d ? " active" : "")} onClick={() => setDiscipline(d)}>{t(DISC_LABEL[d] || d)}</button>
@@ -215,15 +251,14 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
 
             {format === "winner_stays" ? (
               <>
-                <p className="hint" style={{ marginBottom: 4 }}>{t("Tisch (optional)")}</p>
+                <FieldLabel label={t("Tisch (optional)")} info={t("Teilnehmer fuegst du danach direkt in der Runde hinzu.")} />
                 <div className="turnier-score-inputs">
                   <input type="number" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
                 </div>
-                <p className="hint" style={{ marginTop: 10 }}>{t("Teilnehmer fügst du danach direkt in der Runde hinzu.")}</p>
               </>
             ) : (
               <>
-                <p className="hint" style={{ marginBottom: 4 }}>{t("Tische")}</p>
+                <FieldLabel label={t("Tische")} info={t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")} />
                 <div className="chips small">
                   <button className={"chip" + (tableMode === "range" ? " active" : "")} onClick={() => setTableMode("range")}>{t("Von–Bis")}</button>
                   <button className={"chip" + (tableMode === "list" ? " active" : "")} onClick={() => setTableMode("list")}>{t("Liste")}</button>
@@ -237,7 +272,6 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
                 ) : (
                   <input type="text" placeholder={t("z. B. 1, 3, 5")} value={tableList} onChange={(e) => setTableList(e.target.value)} />
                 )}
-                <p className="hint" style={{ marginTop: 10 }}>{t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")}</p>
               </>
             )}
 
@@ -245,7 +279,8 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               {busy ? t("Lege an …") : <><Trophy size={16} /> {t("Turnier anlegen")}</>}
             </button>
           </div>
-        )}
+          </div>
+        </div>
 
         {combined != null && combined.length > 0 && (
           <>
@@ -273,21 +308,31 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
             .filter((it) => !q || it.name.toLowerCase().includes(q));
           return filtered.length === 0 ? (
             <p className="hint">{t("Keine Turniere in diesem Filter.")}</p>
-          ) : filtered.map((it) => (
-            <button key={it.id} className="turnier-list-row"
-              onClick={() => it._kind === "winnerstays" ? onOpenWinnerStays(it.id) : onOpenTournament(it.id)}>
-              <span className="turnier-list-row-main">
-                <b>{it.name}</b>
-                <span className="turnier-list-row-meta">
-                  {formatLabel(it)} · {t(it.discipline)}
-                  {it._kind === "winnerstays" && it.table_number != null && ` · ${t("Tisch")} ${it.table_number}`}
-                  {" · "}{statusLabel(it.status)} · {fmtDate(it.created_at)}
+          ) : filtered.map((it) => {
+            // Die Zeile zeigt das Format als dieselbe Zeichnung wie die
+            // Auswahl im Formular - man erkennt den Turniertyp, ohne das
+            // Wort zu lesen. Der Name steht weiterhin daneben.
+            const Glyph = FORMAT_GLYPH[it._kind === "winnerstays" ? "winner_stays" : it.format] || FORMAT_GLYPH.ko;
+            return (
+              <button key={it.id} className="turnier-list-row reveal"
+                onClick={() => it._kind === "winnerstays" ? onOpenWinnerStays(it.id) : onOpenTournament(it.id)}>
+                <span className="turnier-list-row-glyph" title={formatLabel(it)}><Glyph /></span>
+                <span className="turnier-list-row-main">
+                  <span className="turnier-list-row-title">
+                    <b>{it.name}</b>
+                    <span className={"turnier-status " + statusTone(it.status)}>{statusLabel(it.status)}</span>
+                  </span>
+                  <span className="turnier-list-row-meta">
+                    {formatLabel(it)} · {t(it.discipline)}
+                    {it._kind === "winnerstays" && it.table_number != null && ` · ${t("Tisch")} ${it.table_number}`}
+                    {" · "}{fmtDate(it.created_at)}
+                  </span>
+                  <span className="turnier-list-row-meta">{t("Turnierleitung")}: {it.organizer?.nickname || "?"}</span>
                 </span>
-                <span className="turnier-list-row-meta">{t("Turnierleitung")}: {it.organizer?.nickname || "?"}</span>
-              </span>
-              <ChevronRight size={20} className="turnier-list-row-chevron" />
-            </button>
-          ));
+                <ChevronRight size={20} className="turnier-list-row-chevron" />
+              </button>
+            );
+          });
         })()}
       </section>
       </div>
