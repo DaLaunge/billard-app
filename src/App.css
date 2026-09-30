@@ -730,11 +730,36 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
    Symbolknoepfe direkt darunter. */
 .avatar-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 4px 0 14px; }
 .avatar-photo-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
-.avatar-tool { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid transparent;
+.round-btn { flex: 0 0 auto; text-decoration: none; width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid transparent;
   background: var(--surface-btn); color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
-.avatar-tool:hover:not(:disabled) { border-color: var(--btn-border); color: var(--accent); }
-.avatar-tool:disabled { opacity: .5; cursor: default; }
-.avatar-tool.warn { color: var(--loss); }
+.round-btn:hover:not(:disabled) { border-color: var(--btn-border); color: var(--accent); }
+.round-btn:disabled { opacity: .5; cursor: default; }
+.round-btn.warn { color: var(--loss); }
+.round-btn.primary { background: var(--accent); color: var(--accent-ink); }
+.round-btn.primary:hover:not(:disabled) { color: var(--accent-ink); border-color: var(--accent-line); }
+.round-btn.small { width: 30px; height: 30px; }
+/* Profil bearbeiten: Zeilen mit Schalter + Symbolknopf + Info, Zeilen der
+   Karte "Konto & Hilfe", Symbolreihen fuer Startseite/Benachrichtigung. */
+.field-label > svg { margin-right: 4px; }
+.lang-row.compact { margin-bottom: 4px; }
+.lang-row.compact .lang-btn { padding: 8px 0; }
+.chips.start-icons { flex-wrap: nowrap; gap: 8px; padding-bottom: 0; }
+.chip.chip-icon.seg { padding: 8px 14px; flex: 1 1 0; justify-content: center; }
+.switch-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.switch-row .settings-switch { flex: 1; min-width: 0; margin-bottom: 0; }
+.switch-row .card-info-btn { margin: 0; }
+.acct-sub { padding: 10px 0; }
+.acct-sub:first-of-type { padding-top: 0; }
+.acct-sub + .acct-sub { border-top: 1px solid var(--line); }
+.acct-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.acct-ico { color: var(--ivory-dim); flex-shrink: 0; }
+.acct-text { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-dim { color: var(--ivory-dim); }
+.acct-row .card-info-btn { margin: 0; }
+.acct-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 8px; }
+.pf-edit-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 60px; }
+.pf-edit-reset { display: inline-flex; align-items: center; gap: 6px; }
+.pf-edit-reset .card-info-btn { margin: 0; }
 .avatar-busy { flex-basis: 100%; text-align: center; font-size: 12px; color: var(--ivory-dim); }
 
 .ticket-item { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
@@ -1522,7 +1547,6 @@ button.id-card-head { cursor: pointer; }
 .pf-account-actions > .btn:first-child { margin-top: 0; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-main, .pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
-.pf-edit-save { margin-top: 20px; }
 /* Kontoloeschung: Nutzer-Feedback wollte sie in "Profil bearbeiten" und
    dort moeglichst unauffaellig - kein eigener Kartenrahmen mehr, nur ein
    kleiner gedaempfter Text-Link ganz unten (bewusst derselben stillen

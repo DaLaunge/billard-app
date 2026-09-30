@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, BellOff, BellRing, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -531,6 +531,206 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           )}
         </section>
 
+        </div>
+
+        <div className="pf-edit-side">
+          {/* Drei Karten statt acht (Nutzer-Feedback 2026-09-30: "pruefe ob
+              sich die anderen Karten zusammenfassen lassen"): was das KONTO
+              betrifft (Sprache, Startseite), was nur DIESES GERAET betrifft
+              (Bildschirm, Menueleiste, Benachrichtigungen, Updates) und
+              Konto & Hilfe (Anmeldung, Feedback, Tickets, Abmelden). Alle
+              Erklaertexte stehen hinter Info-Knoepfen, breite Textknoepfe sind
+              runde Symbolknoepfe mit Namen in title/aria-label. */}
+          <section className="stat-block">
+            <h3><SlidersHorizontal size={17} /> {t("Allgemein")}</h3>
+            <div className="lang-row compact">
+              <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch" title="Deutsch">
+                <span className="flag">🇩🇪</span>
+              </button>
+              <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English" title="English">
+                <span className="flag">🇬🇧</span>
+              </button>
+            </div>
+            <div className="field-label">
+              <span>{t("Startseite")}</span>
+              <InfoButton title={t("Startseite")}>{t("Was soll beim Starten der App zuerst angezeigt werden?")}</InfoButton>
+            </div>
+            {/* Dieselben Symbole wie in der Menueleiste unten - so muss man
+                die Woerter nicht lesen. */}
+            <div className="chips start-icons">
+              {[
+                ["stats", t("Statistik"), <BarChart3 size={18} />],
+                ["turnier", t("Turniere"), <Trophy size={18} />],
+                ["live", t("Live"), <Radio size={18} />],
+                ["profil", t("Profil"), <User size={18} />],
+                ["last", t("Zuletzt geöffnet"), <History size={18} />],
+              ].map(([v, label, icon]) => (
+                <button key={v} className={"chip chip-icon seg" + (startTab === v ? " active" : "")}
+                  disabled={busy} onClick={() => pickStartTab(v)} aria-label={label} title={label}>
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="stat-block">
+            <div className="stat-block-head">
+              <h3><Smartphone size={17} /> {t("Dieses Gerät")}</h3>
+              <InfoButton title={t("Dieses Gerät")}>{t("Gilt nur auf diesem Gerät.")}</InfoButton>
+            </div>
+            {/* Standard ist an - waehrend eines Matches liegt das Handy meist
+                unberuehrt am Tisch und soll sich nicht dauernd sperren. Wer das
+                nicht will (Akku), schaltet es hier ab; die Einstellung gilt
+                pro Geraet. */}
+            <div className="switch-row">
+              <label className="settings-switch">
+                <input type="checkbox" checked={keepAwake} onChange={(e) => onSetKeepAwake(e.target.checked)} />
+                <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                <span className="settings-switch-label">{t("Bildschirm während eines Matches anlassen")}</span>
+              </label>
+              <InfoButton title={t("Bildschirm während eines Matches anlassen")}>
+                {t("Verhindert, dass sich das Handy mitten im Spiel sperrt. Gilt nur auf diesem Gerät und nur, solange ein Match oder eine Winner-Stays-Runde offen ist.")}
+              </InfoButton>
+            </div>
+            {/* Standard ist AUS (siehe lib/uiPrefs.js): eine Navigation, die
+                von selbst verschwindet, soll niemand ungefragt bekommen. Wer
+                den Platz will, schaltet es hier ein - am Handy sind es rund
+                76px, die sonst dauerhaft ueber dem Inhalt liegen. */}
+            <div className="switch-row">
+              <label className="settings-switch">
+                <input type="checkbox" checked={hideTabbar} onChange={(e) => onSetHideTabbar(e.target.checked)} />
+                <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                <span className="settings-switch-label">{t("Menüleiste beim Scrollen ausblenden")}</span>
+              </label>
+              <InfoButton title={t("Menüleiste beim Scrollen ausblenden")}>
+                {t("Beim Runterscrollen verschwindet die Leiste am unteren Rand, beim Hochscrollen kommt sie zurück. Mehr Platz für Ranglisten und Grafiken. Gilt nur auf diesem Gerät.")}
+              </InfoButton>
+            </div>
+            {/* Updates: Schalter + Symbolknopf "jetzt suchen" in EINER Zeile
+                statt Schalter, Absatz und Textknopf ueber die volle Breite. */}
+            <div className="switch-row">
+              <label className="settings-switch">
+                <input type="checkbox" checked={updateInterval !== "manual"}
+                  onChange={(e) => onSetUpdateInterval(e.target.checked ? "auto" : "manual")} />
+                <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                <span className="settings-switch-label">{t("Automatisch aktualisieren")}</span>
+              </label>
+              <button type="button" className="round-btn small" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}
+                aria-label={t("Jetzt nach Updates suchen")} title={t("Jetzt nach Updates suchen")}>
+                <RefreshCw size={15} />
+              </button>
+              <InfoButton title={t("App-Updates")}>
+                {updateInterval !== "manual"
+                  ? t("Sucht bei jedem Öffnen der App nach einer neuen Version und spielt sie unauffällig ein – nie mitten in einem Match.")
+                  : t("Neue Versionen gibt es nur über den Knopf unten.")}
+              </InfoButton>
+            </div>
+            {/* Eine Stufe fuer alle Ereignisse (Herausforderung, Match
+                bestaetigen, du bist dran, Live/Planung/Zusagen). Gilt pro
+                Geraet, weil auch die Push-Erlaubnis am Geraet haengt. Die
+                Umstellung auf "Push" MUSS aus diesem Klick heraus
+                passieren - iOS fragt die Erlaubnis sonst nicht ab. */}
+            <div className="field-label">
+              <Bell size={14} />
+              <span>{t("Benachrichtigungen")}</span>
+              <InfoButton title={t("Benachrichtigungen")}>
+                {notifyMode === "off" ? t("Keine Hinweise, auch kein „Du bist dran!“ bei Turnieren und Winner Stays.")
+                  : notifyMode === "inapp" ? t("Hinweise erscheinen nur, solange die App geöffnet ist.")
+                  : t("Push-Nachrichten kommen auch, wenn die App geschlossen ist. Ist sie offen, erscheint stattdessen ein Hinweis in der App.")}
+                {notifyMode !== "push" && pushAvailability() === "ios-install"
+                  ? " 📲 " + t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")
+                  : ""}
+              </InfoButton>
+            </div>
+            <div className="chips start-icons">
+              {[
+                ["off", t("Aus"), <BellOff size={18} />],
+                ["inapp", t("In der App"), <Bell size={18} />],
+                ["push", t("Push"), <BellRing size={18} />],
+              ].map(([v, label, icon]) => (
+                <button key={v} className={"chip chip-icon seg" + (notifyMode === v ? " active" : "")}
+                  aria-label={label} title={label}
+                  disabled={busy} onClick={async () => {
+                    if (v === notifyMode) return;
+                    setBusy(true);
+                    try { await onSetNotifyMode(v); } finally { setBusy(false); }
+                  }}>
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Konto und Support. Bis 2026-09-25 waren "Anmeldung & Sicherheit",
+              "Feedback" und "Meine Tickets" frei anordenbare Karten auf dem
+              Profil selbst, danach drei eigene Karten hier, seit 2026-09-30
+              Zeilen EINER Karte - mit "Verwaltung"/"Abmelden" als runden
+              Symbolknoepfen darunter (aus den Einstellungen herausfuehrende
+              Aktionen stehen am Ende). */}
+          <section className="stat-block">
+            <h3><UserCog size={17} /> {t("Konto & Hilfe")}</h3>
+            <PasswordSection toast={toast} />
+            <div className="acct-sub">
+              <div className="acct-row">
+                <MessageCircle size={16} className="acct-ico" />
+                <span className="acct-text">{t("Feedback")}</span>
+                {!feedbackOpen && (
+                  <button type="button" className="round-btn" onClick={() => setFeedbackOpen(true)}
+                    aria-label={t("Feedback geben")} title={t("Feedback geben")}>
+                    <MessageSquarePlus size={18} />
+                  </button>
+                )}
+                <InfoButton title={t("Feedback")}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</InfoButton>
+              </div>
+              {feedbackOpen && (feedbackSent ? (
+                <>
+                  <p className="hint" style={{ marginTop: 6 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
+                  <div className="acct-actions">
+                    <a className="round-btn" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer"
+                      aria-label={t("Per Telegram")} title={t("Per Telegram")}><Send size={18} /></a>
+                    <a className="round-btn" href="mailto:dalaunge@gmx.at" aria-label={t("Per E-Mail")} title={t("Per E-Mail")}><Mail size={18} /></a>
+                    <button type="button" className="round-btn primary" onClick={closeFeedback}
+                      aria-label={t("Fertig")} title={t("Fertig")}><Check size={18} /></button>
+                  </div>
+                </>
+              ) : (
+                <div className="challenge-form">
+                  <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
+                    {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
+                      <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="search-row" style={{ marginBottom: 8 }}>
+                    <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
+                      style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
+                      onChange={(e) => setFeedbackMsg(e.target.value)} />
+                  </div>
+                  <div className="acct-actions">
+                    <button type="button" className="round-btn" onClick={closeFeedback}
+                      aria-label={t("Abbrechen")} title={t("Abbrechen")}><X size={18} /></button>
+                    <button type="button" className="round-btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}
+                      aria-label={feedbackBusy ? t("Speichere ...") : t("Absenden")} title={feedbackBusy ? t("Speichere ...") : t("Absenden")}>
+                      <Send size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />
+            <div className="acct-sub acct-actions">
+              {meRow?.role === "admin" && (
+                <button type="button" className="round-btn" onClick={onOpenAdmin}
+                  aria-label={t("Verwaltung oeffnen")} title={t("Verwaltung oeffnen")}><Shield size={18} /></button>
+              )}
+              <button type="button" className="round-btn" onClick={onLogout}
+                aria-label={t("Abmelden")} title={t("Abmelden")}><LogOut size={18} /></button>
+            </div>
+          </section>
+        </div>
+        </div>
+
       {/* Karten-Anordnung + -Sichtbarkeit fuer ALLE Bildschirme an einer
           Stelle (Vorgabe: "Lasse dem User in den Usersettings die Anzeige
           der Karten definieren", spaeter: "in jedem Menuepunkt die
@@ -560,10 +760,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           wuerde ein Klick auf "nach oben" die Karte optisch nach rechts
           springen lassen. */}
       <section className="stat-block">
-        <h3><LayoutGrid size={17} /> {t("Karten")}</h3>
-        <p className="hint" style={{ marginTop: 0 }}>
-          {t("Reihenfolge, Spalte und Sichtbarkeit der Karten - fuer jeden Bildschirm. Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
-        </p>
+        <div className="stat-block-head">
+          <h3><LayoutGrid size={17} /> {t("Karten")}</h3>
+          <InfoButton title={t("Karten")}>
+            {t("Reihenfolge, Spalte und Sichtbarkeit der Karten - fuer jeden Bildschirm. Ausgeblendete Karten holst du auch direkt auf dem jeweiligen Bildschirm ganz unten wieder zurueck.")}
+          </InfoButton>
+        </div>
         {CARD_SCREENS.map(({ screen, label, cards }) => {
           const api = layoutByScreen[screen];
           const byId = Object.fromEntries(cards.map((c) => [c.id, c]));
@@ -632,199 +834,29 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           );
         })}
       </section>
-        </div>
 
-        <div className="pf-edit-side">
-          <section className="stat-block">
-            <label className="field-label">{t("Sprache")}</label>
-            <div className="lang-row" style={{ marginBottom: 0 }}>
-              <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch">
-                <span className="flag">🇩🇪</span><span>Deutsch</span>
-              </button>
-              <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English">
-                <span className="flag">🇬🇧</span><span>English</span>
-              </button>
-            </div>
-          </section>
+        {/* Fussleiste: "Zurücksetzen" als Symbolknopf (die Erklaerung, was
+            genau zurueckgesetzt wird, im Info-Knopf) und die Kontoloeschung als
+            kleiner, gedaempfter Text-Link.
 
-
-          <section className="stat-block">
-            <h3><Play size={17} /> {t("Startseite")}</h3>
-            <p className="hint" style={{ marginTop: 0 }}>{t("Was soll beim Starten der App zuerst angezeigt werden?")}</p>
-            <div className="chips">
-              {[
-                ["stats", t("Statistik")],
-                ["turnier", t("Turniere")],
-                ["live", t("Live")],
-                ["profil", t("Profil")],
-                ["last", t("Zuletzt geöffnet")],
-              ].map(([v, label]) => (
-                <button key={v} className={"chip" + (startTab === v ? " active" : "")}
-                  disabled={busy} onClick={() => pickStartTab(v)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="stat-block">
-            <h3><Smartphone size={17} /> {t("Bildschirm")}</h3>
-            {/* Standard ist an - waehrend eines Matches liegt das Handy meist
-                unberuehrt am Tisch und soll sich nicht dauernd sperren. Wer das
-                nicht will (Akku), schaltet es hier ab; die Einstellung gilt
-                pro Geraet. */}
-            <label className="settings-switch">
-              <input type="checkbox" checked={keepAwake} onChange={(e) => onSetKeepAwake(e.target.checked)} />
-              <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
-              <span className="settings-switch-label">{t("Bildschirm während eines Matches anlassen")}</span>
-            </label>
-            <p className="hint">{t("Verhindert, dass sich das Handy mitten im Spiel sperrt. Gilt nur auf diesem Gerät und nur, solange ein Match oder eine Winner-Stays-Runde offen ist.")}</p>
-            {/* Standard ist AUS (siehe lib/uiPrefs.js): eine Navigation, die
-                von selbst verschwindet, soll niemand ungefragt bekommen. Wer
-                den Platz will, schaltet es hier ein - am Handy sind es rund
-                76px, die sonst dauerhaft ueber dem Inhalt liegen. */}
-            <label className="settings-switch">
-              <input type="checkbox" checked={hideTabbar} onChange={(e) => onSetHideTabbar(e.target.checked)} />
-              <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
-              <span className="settings-switch-label">{t("Menüleiste beim Scrollen ausblenden")}</span>
-            </label>
-            <p className="hint">{t("Beim Runterscrollen verschwindet die Leiste am unteren Rand, beim Hochscrollen kommt sie zurück. Mehr Platz für Ranglisten und Grafiken. Gilt nur auf diesem Gerät.")}</p>
-          </section>
-
-          <section className="stat-block">
-            <h3><Bell size={17} /> {t("Benachrichtigungen")}</h3>
-            {/* Eine Stufe fuer alle Ereignisse (Herausforderung, Match
-                bestaetigen, du bist dran, Live/Planung/Zusagen). Gilt pro
-                Geraet, weil auch die Push-Erlaubnis am Geraet haengt. Die
-                Umstellung auf "Push" MUSS aus diesem Klick heraus
-                passieren - iOS fragt die Erlaubnis sonst nicht ab. */}
-            <div className="chips">
-              {[
-                ["off", t("Aus")],
-                ["inapp", t("In der App")],
-                ["push", t("Push")],
-              ].map(([v, label]) => (
-                <button key={v} className={"chip" + (notifyMode === v ? " active" : "")}
-                  disabled={busy} onClick={async () => {
-                    if (v === notifyMode) return;
-                    setBusy(true);
-                    try { await onSetNotifyMode(v); } finally { setBusy(false); }
-                  }}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <p className="hint">
-              {notifyMode === "off" ? t("Keine Hinweise, auch kein „Du bist dran!“ bei Turnieren und Winner Stays.")
-                : notifyMode === "inapp" ? t("Hinweise erscheinen nur, solange die App geöffnet ist.")
-                : t("Push-Nachrichten kommen auch, wenn die App geschlossen ist. Ist sie offen, erscheint stattdessen ein Hinweis in der App.")}
-              {" "}{t("Gilt nur auf diesem Gerät.")}
-            </p>
-            {notifyMode !== "push" && pushAvailability() === "ios-install" && (
-              <p className="hint">📲 {t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")}</p>
-            )}
-          </section>
-
-          <section className="stat-block">
-            <h3><RefreshCw size={17} /> {t("App-Updates")}</h3>
-            <label className="settings-switch">
-              <input type="checkbox" checked={updateInterval !== "manual"}
-                onChange={(e) => onSetUpdateInterval(e.target.checked ? "auto" : "manual")} />
-              <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
-              <span className="settings-switch-label">{t("Automatisch aktualisieren")}</span>
-            </label>
-            <p className="hint">
-              {updateInterval !== "manual"
-                ? t("Sucht bei jedem Öffnen der App nach einer neuen Version und spielt sie unauffällig ein – nie mitten in einem Match.")
-                : t("Neue Versionen gibt es nur über den Knopf unten.")}
-              {" "}{t("Gilt nur auf diesem Gerät.")}
-            </p>
-            <button className="btn ghost" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
-              <RefreshCw size={15} /> {t("Jetzt nach Updates suchen")}
-            </button>
-          </section>
-
-          {/* Konto und Support. Bis 2026-09-25 waren "Anmeldung & Sicherheit",
-              "Feedback" und "Meine Tickets" frei anordenbare Karten auf dem
-              Profil selbst, und "Verwaltung"/"Abmelden" standen als Knoepfe
-              darunter. Das Profil war damit zwei Dinge gleichzeitig: was ueber
-              dich zu sagen ist (Erfolge, Ratings, Rekorde) UND ein
-              Einstellungs-Sammelbecken. Jetzt liegt alles Zweite hier hinter
-              dem Zahnrad, das Profil zeigt nur noch das Erste. */}
-          <PasswordSection toast={toast} />
-          <section className="stat-block">
-            <h3><MessageCircle size={17} /> {t("Feedback")}</h3>
-            {!feedbackOpen ? (
-              <>
-                <p className="hint" style={{ marginTop: 0 }}>{t("Bug gefunden oder eine Idee? Schreib's uns direkt.")}</p>
-                <button className="btn ghost" onClick={() => setFeedbackOpen(true)}>
-                  <MessageCircle size={15} /> {t("Feedback geben")}
-                </button>
-              </>
-            ) : feedbackSent ? (
-              <>
-                <p className="hint" style={{ marginTop: 0 }}>{t("Danke fürs Feedback! Magst du zusätzlich direkt schreiben?")}</p>
-                <div className="sp-controls">
-                  <a className="btn ghost" href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">
-                    {t("Per Telegram")}
-                  </a>
-                  <a className="btn ghost" href="mailto:dalaunge@gmx.at">{t("Per E-Mail")}</a>
-                </div>
-                <button className="btn ghost" style={{ marginTop: 8 }} onClick={closeFeedback}>{t("Fertig")}</button>
-              </>
-            ) : (
-              <div className="challenge-form">
-                <div className="chips small" style={{ paddingBottom: 0, marginBottom: 8 }}>
-                  {[["bug", t("Bug")], ["idea", t("Idee")], ["other", t("Sonstiges")]].map(([v, label]) => (
-                    <button key={v} className={"chip" + (feedbackCat === v ? " active" : "")} onClick={() => setFeedbackCat(v)}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <div className="search-row" style={{ marginBottom: 8 }}>
-                  <textarea rows={3} placeholder={t("Was ist los?")} value={feedbackMsg} maxLength={1000}
-                    style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--ivory)", fontSize: 14, padding: "11px 0", fontFamily: "inherit", resize: "vertical" }}
-                    onChange={(e) => setFeedbackMsg(e.target.value)} />
-                </div>
-                <div className="sp-controls">
-                  <button className="btn ghost" onClick={closeFeedback}>{t("Abbrechen")}</button>
-                  <button className="btn primary" disabled={!feedbackMsg.trim() || feedbackBusy} onClick={sendFeedback}>
-                    {feedbackBusy ? t("Speichere ...") : t("Absenden")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-          <MyFeedbackTickets playerId={meRow.id} toast={toast} refreshKey={ticketsRefresh} />
-
-          {/* Am Ende der Einstellungen, nicht dazwischen: das sind die
-              Aktionen, die aus den Einstellungen herausfuehren. */}
-          <div className="pf-account-actions">
-            {meRow?.role === "admin" && (
-              <button className="btn ghost" onClick={onOpenAdmin}><Shield size={16} /> {t("Verwaltung oeffnen")}</button>
-            )}
-            <button className="btn ghost" onClick={onLogout}><LogOut size={16} /> {t("Abmelden")}</button>
-          </div>
-        </div>
-        </div>
-
-        <div className="pf-edit-save">
-          <button className="btn ghost" disabled={busy} onClick={resetDefaults}>
-            {t("Zurücksetzen")}
-          </button>
-          <p className="hint">{t("Setzt Kugelfarbe, Design, Startseite sowie verschobene und ausgeblendete Karten auf die Standardeinstellungen zurück.")}</p>
-        </div>
-
-        {/* Nutzer-Feedback: "Konto löschen" soll in "Profil bearbeiten" und
+            Nutzer-Feedback: "Konto löschen" soll in "Profil bearbeiten" und
             dort moeglichst unauffaellig sein - statt der bisherigen roten
-            Warnkarte mit Dauertext jetzt nur ein kleiner, gedaempfter
-            Text-Link ganz unten. Die ausfuehrliche Erklaerung, was beim
-            Loeschen mit den Daten passiert, steht stattdessen im ersten
-            Bestaetigungsdialog (siehe deleteStep === 1 unten) - wer nicht
-            klickt, sieht sie also gar nicht erst. Label bleibt "Meine Daten
-            löschen", weil genau dieser Text auch in der Datenschutz-
-            erklaerung (LegalModal.jsx) als Fundstelle genannt wird. */}
-        <div className="pf-edit-danger">
+            Warnkarte mit Dauertext nur ein kleiner Text-Link ganz unten. Die
+            ausfuehrliche Erklaerung, was beim Loeschen mit den Daten
+            passiert, steht im ersten Bestaetigungsdialog (siehe deleteStep
+            === 1 unten). Label bleibt "Meine Daten löschen", weil genau
+            dieser Text auch in der Datenschutzerklaerung (LegalModal.jsx) als
+            Fundstelle genannt wird. */}
+        <div className="pf-edit-foot">
+          <span className="pf-edit-reset">
+            <button type="button" className="round-btn" disabled={busy} onClick={resetDefaults}
+              aria-label={t("Zurücksetzen")} title={t("Zurücksetzen")}>
+              <RotateCcw size={18} />
+            </button>
+            <InfoButton title={t("Zurücksetzen")}>
+              {t("Setzt Kugelfarbe, Design, Startseite sowie verschobene und ausgeblendete Karten auf die Standardeinstellungen zurück.")}
+            </InfoButton>
+          </span>
           <button className="pf-edit-danger-link" onClick={() => setDeleteStep(1)}>
             {t("Meine Daten löschen")}
           </button>

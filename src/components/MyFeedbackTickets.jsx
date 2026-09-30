@@ -3,9 +3,9 @@ import { ChevronDown, MessageSquare } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import FeedbackThread from "./FeedbackThread";
-import CardMenuButton from "./widgets/CardMenuButton";
 
-export default function MyFeedbackTickets({ playerId, toast, refreshKey, onHide }) {
+// Zeile in der Karte "Konto & Hilfe" (Profil bearbeiten), keine eigene Karte.
+export default function MyFeedbackTickets({ playerId, toast, refreshKey }) {
   const [tickets, setTickets] = useState(null);
   const [msgsByTicket, setMsgsByTicket] = useState({});
   const [openId, setOpenId] = useState(null);
@@ -52,10 +52,10 @@ export default function MyFeedbackTickets({ playerId, toast, refreshKey, onHide 
   if (!tickets || tickets.length === 0) return null;
 
   return (
-    <section className="stat-block">
-      <div className="stat-block-head roomy">
-        <h3><MessageSquare size={17} /> {t("Meine Tickets")}</h3>
-        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
+    <div className="acct-sub">
+      <div className="acct-row">
+        <MessageSquare size={16} className="acct-ico" />
+        <span className="acct-text">{t("Meine Tickets")} <span className="acct-dim">{tickets.length}</span></span>
       </div>
       {tickets.map((tk) => (
         <div key={tk.id} className="ticket-item">
@@ -71,6 +71,6 @@ export default function MyFeedbackTickets({ playerId, toast, refreshKey, onHide 
           )}
         </div>
       ))}
-    </section>
+    </div>
   );
 }

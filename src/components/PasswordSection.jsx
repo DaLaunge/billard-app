@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { Lock, X } from "lucide-react";
+import { Lock, X, Check, KeyRound } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import CardMenuButton from "./widgets/CardMenuButton";
+import InfoButton from "./widgets/InfoButton";
 
-export default function PasswordSection({ toast, onHide }) {
+/* Anmeldung & Sicherheit als Zeile in der Karte "Konto & Hilfe" (Profil
+   bearbeiten), keine eigene Karte mehr: die E-Mail-Adresse und ein
+   Schluessel-Symbol statt eines breiten Textknopfs; die Erklaerung steckt im
+   Info-Knopf (Nutzer-Feedback 2026-09-30). */
+export default function PasswordSection({ toast }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -29,30 +33,41 @@ export default function PasswordSection({ toast, onHide }) {
   };
 
   return (
-    <section className="stat-block">
-      <div className="stat-block-head roomy">
-        <h3><Lock size={17} /> {t("Anmeldung & Sicherheit")}</h3>
-        {onHide && <div className="stat-block-head-actions"><CardMenuButton onHide={onHide} /></div>}
+    <div className="acct-sub">
+      <div className="acct-row">
+        <Lock size={16} className="acct-ico" />
+        <span className="acct-text">
+          {email ? <><span className="acct-dim">{t("Angemeldet als")}</span> <b>{email}</b></> : t("Anmeldung & Sicherheit")}
+        </span>
+        {!open && (
+          <button type="button" className="round-btn" onClick={() => setOpen(true)}
+            aria-label={t("Passwort festlegen / ändern")} title={t("Passwort festlegen / ändern")}>
+            <KeyRound size={18} />
+          </button>
+        )}
+        <InfoButton title={t("Anmeldung & Sicherheit")}>
+          {t("Damit meldest du dich künftig mit E-Mail + Passwort an. Passwort vergessen? Der Magic-Link bringt dich immer rein.")}
+        </InfoButton>
       </div>
-      {email && <p className="hint" style={{ marginTop: 0 }}>{t("Angemeldet als")} <b>{email}</b></p>}
-      {!open ? (
-        <button className="btn ghost" onClick={() => setOpen(true)}>{t("Passwort festlegen / ändern")}</button>
-      ) : (
+      {open && (
         <div className="pw-box">
           <input type="password" placeholder={t("Neues Passwort (min. 6 Zeichen)")} value={pw}
             autoComplete="new-password" onChange={(e) => setPw(e.target.value)} />
           <input type="password" placeholder={t("Passwort wiederholen")} value={pw2}
             autoComplete="new-password" onChange={(e) => setPw2(e.target.value)} />
           {msg && <p className="nick-status err"><X size={14} /> {msg}</p>}
-          <div className="sp-controls">
-            <button className="btn ghost" onClick={() => { setOpen(false); setPw(""); setPw2(""); setMsg(""); }}>{t("Abbrechen")}</button>
-            <button className="btn primary" disabled={busy || !pw || !pw2} onClick={save}>
-              {busy ? "..." : t("Speichern")}
+          <div className="acct-actions">
+            <button type="button" className="round-btn" aria-label={t("Abbrechen")} title={t("Abbrechen")}
+              onClick={() => { setOpen(false); setPw(""); setPw2(""); setMsg(""); }}>
+              <X size={18} />
+            </button>
+            <button type="button" className="round-btn primary" disabled={busy || !pw || !pw2} onClick={save}
+              aria-label={t("Speichern")} title={t("Speichern")}>
+              <Check size={18} />
             </button>
           </div>
-          <p className="hint">{t("Damit meldest du dich künftig mit E-Mail + Passwort an. Passwort vergessen? Der Magic-Link bringt dich immer rein.")}</p>
         </div>
       )}
-    </section>
+    </div>
   );
 }

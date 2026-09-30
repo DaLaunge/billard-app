@@ -58,16 +58,16 @@ export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
         onChange={(e) => { handleFile(e.target.files[0]); e.target.value = ""; }} />
       <input ref={galleryRef} type="file" accept="image/*" style={{ display: "none" }}
         onChange={(e) => { handleFile(e.target.files[0]); e.target.value = ""; }} />
-      <button type="button" className="avatar-tool" disabled={busy} onClick={() => cameraRef.current.click()}
+      <button type="button" className="round-btn" disabled={busy} onClick={() => cameraRef.current.click()}
         aria-label={t("Foto aufnehmen")} title={t("Foto aufnehmen")}>
         <Camera size={18} />
       </button>
-      <button type="button" className="avatar-tool" disabled={busy} onClick={() => galleryRef.current.click()}
+      <button type="button" className="round-btn" disabled={busy} onClick={() => galleryRef.current.click()}
         aria-label={t("Aus Galerie wählen")} title={t("Aus Galerie wählen")}>
         <ImageIcon size={18} />
       </button>
       {hasPhoto && (
-        <button type="button" className="avatar-tool warn" disabled={busy} onClick={removePhoto}
+        <button type="button" className="round-btn warn" disabled={busy} onClick={removePhoto}
           aria-label={t("Foto entfernen")} title={t("Foto entfernen")}>
           <Trash2 size={18} />
         </button>
