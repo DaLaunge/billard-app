@@ -24,7 +24,13 @@ export default function DiscBall({ disc, size = 18 }) {
       {/* Nummer nur, wo sie noch lesbar ist - unter ~18px ist sie ein Fleck; die
           kleinen Kugeln in Pillen und Kopfzeilen bleiben dann reine Farbe bzw.
           Streifen (8 schwarz, 9 gelb, 10 blau, 14 gruen gestreift). */}
-      {size >= 18 && <span className="pb-no" style={{ fontSize: Math.max(6, Math.round(size * 0.34)) }}>{n}</span>}
+      {size >= 18
+        ? <span className="pb-no" style={{ fontSize: Math.max(6, Math.round(size * 0.34)) }}>{n}</span>
+        // Kleine Kugel: nur der weisse Kreis OHNE Zahl. Ohne ihn war vor allem die
+        // schwarze 8 auf dem dunklen Grund kaum als Kugel zu erkennen
+        // (Nutzer-Feedback 2026-09-30) - der Kreis macht aus dem dunklen Fleck
+        // eine Billardkugel, auch ohne lesbare Nummer.
+        : <span className="pb-no pb-dot" />}
     </span>
   );
 }

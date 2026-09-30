@@ -13,7 +13,7 @@ import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
-import DiscBall, { DiscPickRow } from "./widgets/DiscBall";
+import DiscBall, { DiscAll, DiscPickRow } from "./widgets/DiscBall";
 import ModePick from "./widgets/ModePick";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
@@ -856,11 +856,14 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     },
   };
 
-  // Kurzfassung der gewaehlten Filter fuer den Kartenkopf - nur wenn sie vom
-  // Standard (Alle Disziplinen, Top 10) abweichen. Bei geschlossenem
-  // Trichter-Feld sieht man so, dass die Listen gefiltert sind.
+  // Kurzfassung der gewaehlten Filter fuer den Kartenkopf: die Disziplin immer,
+  // Einzel/Doppel und die Menge nur, wenn sie vom Standard (Beides, Top 10)
+  // abweichen. Bei geschlossenem Trichter-Feld sieht man so, was die Listen zeigen.
   const pillBits = [
-    globalDisc !== "Gesamt" ? <DiscBall key="d" disc={globalDisc} size={15} /> : null,
+    // Die Disziplin steht IMMER in der Ueberschrift, auch bei "Alle" (dann als
+    // Kugelhaufen) - Nutzer-Feedback 2026-09-30: sonst sieht man bei
+    // "Alle" nicht, dass die Auswahl ueberhaupt eine Disziplin betrifft.
+    globalDisc !== "Gesamt" ? <DiscBall key="d" disc={globalDisc} size={17} /> : <DiscAll key="d" size={20} />,
     globalMode !== "both" ? t(globalMode === "single" ? "Einzel" : "Doppel") : null,
     globalNearby ? t("Umgebung") : (globalCount !== DEFAULT_LIST_COUNT ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
   ].filter(Boolean);

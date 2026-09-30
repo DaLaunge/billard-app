@@ -663,7 +663,10 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .disc-pick.mode-pick { color: var(--ivory-dim); }
 .disc-pick.mode-pick.sel { color: var(--accent); }
 .disc-pick.mode-pick svg { display: block; }
-.deck-filter-pill .disc-ball { margin: -2px 0; }
+.deck-filter-pill .disc-ball { margin: -2px 0; box-shadow: inset -1px -2px 3px #00000066, inset 1px 1px 2px #ffffff35, 0 0 0 1px #ffffff40; }
+.deck-filter-pill .disc-all { vertical-align: middle; margin: -3px 0; }
+/* Der weisse Kreis der kleinen Kugel (ohne Zahl) */
+.disc-ball .pb-dot { width: 44%; height: 44%; }
 .sp-run-preview { text-align: center; font-size: 14px; }
 .sp-run-preview b { font-size: 20px; color: var(--accent); font-family: 'Bricolage Grotesque', sans-serif; }
 /* "Neu aufbauen" steht direkt neben "Versenkt" (.sp-pot) und war frueher
