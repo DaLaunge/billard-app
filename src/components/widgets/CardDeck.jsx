@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Filter, Check } from "lucide-react";
 import CardMenuButton from "./CardMenuButton";
 import CardCollapseButton from "./CardCollapseButton";
 import CardColumnButton from "./CardColumnButton";
@@ -27,6 +29,17 @@ import { t } from "../../lib/i18n";
      von der Karte aus gar nicht mehr erreichbar. Deshalb der abweichende
      Menuetext.
 
+   Optional "filter" ({label, content, pill}): ein Trichter-Symbol im Kartenkopf
+   klappt ueber den Reitern ein Auswahlfeld auf (Nutzer-Feedback 2026-09-30:
+   die "Auswahl fuer alle Statistiken" war eine eigene Karte, obwohl sie nur
+   fuer diese Karte und den Graphen gilt - "hinter einem Funnel-Symbol
+   verstecken, nach OK oder erneutem Klick wieder ausblenden, gewaehlte
+   Filter bleiben natuerlich bestehen"). Der Zustand der Auswahl gehoert dem
+   Aufrufer; hier steckt nur, ob das Feld offen ist. "pill" ist die
+   Kurzfassung der gerade gewaehlten Filter im Kartenkopf - nur gesetzt,
+   wenn sie vom Standard abweichen, damit man bei geschlossenem Feld sieht,
+   dass die Liste gefiltert ist.
+
    Reiter bekommen bewusst die .chip-Klasse: sie liegen damit im selben
    Button-System wie alle anderen Chips (siehe App.css). Neu ist nur, dass
    die Zeile waagrecht scrollt statt umzubrechen - eine zweite Reiterzeile
@@ -34,8 +47,9 @@ import { t } from "../../lib/i18n";
 export default function CardDeck({
   icon, title, tabs, activeId, onActive,
   collapsed, onToggleCollapse, column, onToggleColumn, onHide, hideLabel,
-  roomy, id, soloTitle = true,
+  roomy, id, soloTitle = true, filter,
 }) {
+  const [filterOpen, setFilterOpen] = useState(false);
   const active = tabs.find((x) => x.id === activeId) || tabs[0];
   if (!active) return null;
   const info = active.info;
@@ -49,9 +63,18 @@ export default function CardDeck({
   return (
     <section className="stat-block" id={id}>
       <div className={"stat-block-head" + (roomy ? " roomy" : "")}>
-        <h3>{useSolo ? (active.icon || icon) : icon} <span className="stat-block-title-text">{useSolo ? (active.title || title) : title}</span></h3>
+        <h3>{useSolo ? (active.icon || icon) : icon} <span className="stat-block-title-text">{useSolo ? (active.title || title) : title}</span>
+          {filter?.pill && <span className="deck-filter-pill">{filter.pill}</span>}
+        </h3>
         <div className="stat-block-head-actions">
           {onHide && <CardMenuButton onHide={onHide} label={solo ? undefined : (hideLabel || t("Diesen Reiter ausblenden"))} />}
+          {filter && !collapsed && (
+            <button type="button" className={"card-filter-btn" + (filterOpen ? " on" : "")}
+              aria-expanded={filterOpen} aria-label={filter.label} title={filter.label}
+              onClick={() => setFilterOpen((o) => !o)}>
+              <Filter size={16} />
+            </button>
+          )}
           {info && <InfoButton title={active.title || title}>{info}</InfoButton>}
           {onToggleColumn && <CardColumnButton column={column} onToggle={onToggleColumn} />}
           {onToggleCollapse && <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />}
@@ -59,6 +82,24 @@ export default function CardDeck({
       </div>
       {!collapsed && (
         <>
+          {filter && (
+            // Auf-/Zuklappen mit echter Hoehen-Animation (.collapsible, siehe
+            // App.css). "inert" nimmt das geschlossene Feld aus der
+            // Tab-Reihenfolge - es hat Hoehe 0, ist aber weiter im DOM, und
+            // ohne das wuerde die Tastatur unsichtbare Knoepfe ansteuern.
+            <div className={"collapsible" + (filterOpen ? " open" : "")} inert={filterOpen ? undefined : ""}>
+              <div className="collapsible-inner">
+                <div className="deck-filter">
+                  {filter.content}
+                  <div className="deck-filter-foot">
+                    <button type="button" className="btn primary small" onClick={() => setFilterOpen(false)}>
+                      <Check size={15} /> {t("OK")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           {tabs.length > 1 && (
             <div className="deck-tabs" role="tablist">
               {tabs.map((x) => (

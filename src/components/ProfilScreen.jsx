@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Clock, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical, BarChart3, Star, Target } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Eye, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
-import { initials, hashColor, BALL_PALETTE, fmtDate, fmtDuration } from "../lib/format";
+import { initials, hashColor, BALL_PALETTE, fmtDate } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
 import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
 import { pushAvailability } from "../lib/notifications";
@@ -12,8 +12,6 @@ import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import AvatarPhotoField from "./AvatarPhotoField";
 import MyFeedbackTickets from "./MyFeedbackTickets";
-import HeadToHeadCard from "./widgets/HeadToHeadCard";
-import RecordsCard from "./widgets/RecordsCard";
 import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
@@ -22,6 +20,7 @@ import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
+import NumbersDeck from "./widgets/NumbersDeck";
 import { CARD_SCREENS, splitCardColumns, foldedDeck, withoutFolded, deckColumn } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 
@@ -854,25 +853,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <AchievementsProgressCard embedded catalog={catalog} extras={extendedExtras}
           earnedBadges={earnedBadges} nickname={nickname} />
     ),
-    ratings: (
-        <>
-          {myRows.map((r) => (
-            <div key={r.discipline} className="stat-row">
-              <span className="stat-name">{t(r.discipline)}</span>
-              <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
-              <span className="stat-val">{r.rating}</span>
-            </div>
-          ))}
-          {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
-        </>
-    ),
-    rekorde: (
-          <RecordsCard embedded extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges} />
-    ),
-    headToHead: (
-          <HeadToHeadCard embedded nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-    ),
     erfolge: (
         <>
           {isMe && achievementHint && (
@@ -966,26 +946,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           {!isMe && !badgeFiltering && earnedBadges.size === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
         </>
     ),
-    tempo: (speedStats.avgGameMs != null || speedStats.avgBallMs != null) ? (
-          <>
-            {speedStats.avgGameMs != null && (
-              <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Spiel")}</span>
-                <span className="stat-val">{fmtDuration(speedStats.avgGameMs)}</span></div>
-            )}
-            {speedStats.avgBallMs != null && (
-              <>
-                <div className="stat-row"><span className="stat-name">{t("Ø Zeit pro Kugel (14/1)")}</span>
-                  <span className="stat-val">{fmtDuration(speedStats.avgBallMs)}</span></div>
-                <div className="stat-row"><span className="stat-name">{t("Hochgerechnet pro Rack")}</span>
-                  <span className="stat-val">{fmtDuration(speedStats.avgRackMs)}</span></div>
-              </>
-            )}
-          </>
-    ) : null,
   };
 
   // Zwei Karten buendeln mehrere Katalog-Eintraege zu je EINER Karte mit
-  // Reitern (siehe CardDeck.jsx) - das Profil hatte zuletzt zwei Karten mit
+  // Reitern (siehe CardDeck.jsx; die zweite, "Meine Zahlen", ist NumbersDeck) - das Profil hatte zuletzt zwei Karten mit
   // demselben Titel "Erfolge (20 / 149)" untereinander und daneben vier
   // kurze Karten, die alle dasselbe beantworten: "was sagen meine Zahlen".
   // Jeder Teil bleibt einzeln ausblend- und sortierbar; "cardsById" liefert
@@ -1008,27 +972,33 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       },
     },
     {
+      // "Meine Zahlen" ist keine Deck-Karte aus cardsById-Koerpern mehr,
+      // sondern die gemeinsame Komponente NumbersDeck - dieselbe, die am PC
+      // die linke Spalte auf Statistik und Live baut (Nutzer-Feedback: die
+      // Spalte soll ueberall gleich sein). Hier haengt nur noch das
+      // Ausblenden und Sortieren der Reiter dran.
       ids: PROFIL_DECK_IDS[1],
-      icon: <BarChart3 size={17} />,
-      // Auf einem fremden Profil waere "Meine Zahlen" schlicht falsch -
-      // dieselbe Unterscheidung wie im Kopf ("Mein Profil"/"Spielerprofil").
-      title: isMe ? t("Meine Zahlen") : t("Zahlen"),
-      tabs: {
-        ratings: { tab: t("Ratings"), title: t("Ratings nach Disziplin"), icon: <Trophy size={15} /> },
-        rekorde: { tab: t("Rekorde"), title: t("Rekorde"), icon: <Star size={15} /> },
-        headToHead: { tab: t("Gegner"), title: t("Head-to-Head (Match-Siege)"), icon: <Swords size={15} /> },
-        tempo: { tab: t("Tempo"), title: t("Spielgeschwindigkeit"), icon: <Clock size={15} /> },
-      },
+      numbers: true,
     },
   ];
   let deckOrder = shownOrder;
   let deckColumns = pfColumns;
+  const hasTempoData = speedStats.avgGameMs != null || speedStats.avgBallMs != null;
   DECKS.forEach((deck) => {
     // Ein Teil ohne Inhalt (Tempo ohne Protokolldaten) taucht gar nicht
     // erst als Reiter auf - sonst fuehrte der Reiter ins Leere.
-    const ids = deck.ids.filter((id) => cardsById[id]);
+    const ids = deck.numbers
+      ? deck.ids.filter((id) => id !== "tempo" || hasTempoData)
+      : deck.ids.filter((id) => cardsById[id]);
     const { parts, anchor } = foldedDeck(deckOrder, ids);
-    if (anchor) {
+    if (anchor && deck.numbers) {
+      cardsById[anchor] = (
+        <NumbersDeck nickname={nickname} isMe={isMe} parts={parts} matches={matches} rangliste={rangliste}
+          players={players} challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
+          onOpenProfile={onOpenProfile} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+          onHidePart={isMe && onSetCardLayout ? (id) => cards.hideCard(id) : undefined} />
+      );
+    } else if (anchor) {
       const activeId = parts.includes(deckTab[anchor]) ? deckTab[anchor] : parts[0];
       const bodies = Object.fromEntries(parts.map((id) => [id, cardsById[id]]));
       cardsById[anchor] = (

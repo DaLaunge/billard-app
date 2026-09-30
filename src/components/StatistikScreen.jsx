@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, SlidersHorizontal, Zap, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
+import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, Zap, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { t } from "../lib/i18n";
@@ -142,67 +142,41 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
   );
 }
 
-// EIN Satz Disziplin-/Top-N-Buttons ganz oben auf der Seite statt in jeder
-// einzelnen Bestenliste - Nutzer-Feedback: zu viele Buttons, wenn Rangliste
-// + 3 Bestenlisten je eigene Chips haben. Gilt fuer alle Karten der Seite,
-// inklusive Disziplin fuer den Verlaufs-Graph (der behaelt nur seine
-// eigene Zeitraum-Auswahl, weil die sonst nirgends vorkommt).
-function StatGlobalFilter({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf, collapsed, onToggleCollapse, onExpandAll, onCollapseAll, canUndo, onUndo, column, onToggleColumn, onHide }) {
+// Inhalt des Trichter-Felds der Bestenlisten-Karte: Disziplin und Top-N bzw.
+// "Meine Umgebung" fuer ALLE Bestenlisten und den Verlaufs-Graphen.
+//
+// Bis 2026-09-30 war das eine eigene Karte ("Auswahl fuer alle
+// Statistiken") mit drei Zeilen Chips, dauerhaft aufgeklappt - obwohl man
+// sie selten aendert und alle Bestenlisten inzwischen in EINER Karte
+// stecken. Jetzt klappt sie hinter dem Trichter-Symbol der Bestenlisten-
+// Karte auf (siehe CardDeck.jsx, Prop "filter"). Die Auswahl selbst bleibt
+// unveraendert am Bildschirm (statGlobalDisc/-Count/-Nearby im
+// localStorage), das Feld schliesst sich nur.
+//
+// Nutzer-Feedback, das zu dieser Aufteilung gefuehrt hat (unveraendert
+// gueltig): jede Bestenliste hatte vorher ihre eigenen Top-3/10/Alle-
+// Knoepfe, das waren zu viele Buttons - daher EIN Satz fuer alle.
+function StatFilterContent({ disc, disciplines, onDisc, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf }) {
   return (
-    <section className="stat-block stat-global-filter">
-      <div className="stat-block-head">
-        <h3><SlidersHorizontal size={17} /> <span className="stat-block-title-text">{t("Auswahl fuer alle Statistiken")}</span></h3>
-        <div className="stat-block-head-actions">
-          <CardMenuButton onHide={onHide} />
-          <CardColumnButton column={column} onToggle={onToggleColumn} />
-          <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
-        </div>
+    <>
+      <div className="chips small" style={{ marginBottom: 8 }}>
+        {["Gesamt", ...disciplines].map((d) => (
+          <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => onDisc(d)}>{t(DISC_LABEL[d] || d)}</button>
+        ))}
       </div>
-      {/* Nutzer-Feedback: "es fehlt der Button für 'alles ausklappen' und
-          'alles zuklappen'" - bewusst AUSSERHALB von "{!collapsed && ...}":
-          klappt man diese Karte selbst zu (oder per "Alle zuklappen"), muss
-          "Alle aufklappen" trotzdem erreichbar bleiben, sonst gibt es keinen
-          Weg mehr zurueck ausser jede Karte einzeln aufzuklappen. */}
-      <div className="chips small" style={{ marginBottom: collapsed ? 0 : 8 }}>
-        <button className="chip" onClick={onExpandAll}>
-          <ChevronsDown size={14} /> {t("Alle aufklappen")}
-        </button>
-        <button className="chip" onClick={onCollapseAll}>
-          <ChevronsUp size={14} /> {t("Alle zuklappen")}
-        </button>
-        {/* Nutzer-Feedback: "vergiss nicht, einen Rückgängig Button zu
-            implementieren" - seit die Spaltenwahl nicht mehr automatisch
-            passiert (siehe cardLayout.js), sondern jede Karte einzeln per
-            Knopf umgestellt wird, ist ein Fehlklick leichter moeglich als
-            vorher. Ein Schritt Rueckgaengig (kein ganzer Verlauf) genuegt
-            dafuer - deaktiviert, solange es nichts rueckgaengig zu machen
-            gibt, aus demselben Grund immer sichtbar wie "Alle zuklappen". */}
-        <button className="chip" onClick={onUndo} disabled={!canUndo}>
-          <Undo2 size={14} /> {t("Rückgängig")}
+      <div className="chips small" style={{ marginBottom: 0 }}>
+        {COUNT_OPTIONS.map((c) => (
+          <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
+            onClick={() => { onCount(c); onNearby(false); }}>
+            {c === "all" ? t("Alle") : c}
+          </button>
+        ))}
+        <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => onNearby((n) => !n)}
+          aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
+          <Ball color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
         </button>
       </div>
-      {!collapsed && (
-        <>
-          <div className="chips small" style={{ marginBottom: 8 }}>
-            {["Gesamt", ...disciplines].map((d) => (
-              <button key={d} className={"chip" + (disc === d ? " active" : "")} onClick={() => onDisc(d)}>{t(DISC_LABEL[d] || d)}</button>
-            ))}
-          </div>
-          <div className="chips small" style={{ marginBottom: 0 }}>
-            {COUNT_OPTIONS.map((c) => (
-              <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
-                onClick={() => { onCount(c); onNearby(false); }}>
-                {c === "all" ? t("Alle") : c}
-              </button>
-            ))}
-            <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => onNearby((n) => !n)}
-              aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
-              <Ball color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
-            </button>
-          </div>
-        </>
-      )}
-    </section>
+    </>
   );
 }
 
@@ -846,12 +820,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   };
 
   const cardsById = {
-    globalFilter: (
-      <StatGlobalFilter disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
-        count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
-        me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} {...cardCollapse("globalFilter")} {...cardColumn("globalFilter")} {...cardHide("globalFilter")}
-        onExpandAll={expandAllCards} onCollapseAll={collapseAllCards} canUndo={cards.canUndo} onUndo={cards.undo} />
-    ),
     entwicklung: (
       <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={globalDisc} {...cardCollapse("entwicklung")} {...cardColumn("entwicklung")} {...cardHide("entwicklung")} />
     ),
@@ -874,6 +842,13 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // unveraendert - die Karte laesst sich ziehen wie jede andere, und
   // @dnd-kit sieht weiterhin genau die ids, die auch wirklich als Knoten im
   // DOM stehen.
+  // Kurzfassung der gewaehlten Filter fuer den Kartenkopf - nur wenn sie vom
+  // Standard (Alle Disziplinen, Top 3) abweichen. Bei geschlossenem
+  // Trichter-Feld sieht man so, dass die Listen gefiltert sind.
+  const filterPill = [
+    globalDisc !== "Gesamt" ? (DISC_LABEL[globalDisc] || globalDisc) : null,
+    globalNearby ? t("Umgebung") : (globalCount !== 3 ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
+  ].filter(Boolean).join(" · ") || null;
   const LEADERBOARD_IDS = LEADERBOARD_ID_LIST;
   const { parts: deckParts, anchor: deckAnchor } = foldedDeck(cards.visibleOrder, LEADERBOARD_IDS);
   // Die zusammengelegte Karte zaehlt am Desktop als EINE Karte und braucht
@@ -891,6 +866,13 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         })}
         activeId={deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
         hideLabel={t("Diese Liste ausblenden")}
+        filter={{
+          label: t("Auswahl fuer alle Statistiken"),
+          pill: filterPill,
+          content: <StatFilterContent disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc}
+            count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
+            me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />,
+        }}
         {...cardCollapse(deckAnchor)}
         column={deckCol} onToggleColumn={() => cards.cycleColumn(LEADERBOARD_IDS)}
         onHide={() => cards.hideCard(deckActive)} />
@@ -912,9 +894,33 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
   return (
     <div className="screen">
-      <header className="screen-head">
-        <h2>{t("Statistik")}</h2>
-        <span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span>
+      {/* Die drei Werkzeuge der frueheren Filter-Karte (Alle auf-/zuklappen,
+          Rueckgaengig) wirken auf ALLE Karten dieses Bildschirms und gehoeren
+          daher in den Bildschirmkopf, nicht in eine einzelne Karte - sonst
+          waeren sie weg, sobald die Bestenlisten ausgeblendet sind. Als
+          Symbole statt Textchips (Nutzer-Vorgabe: visuell statt textuell);
+          der Text steckt in title/aria-label. */}
+      <header className="screen-head with-tools">
+        <div>
+          <h2>{t("Statistik")}</h2>
+          <span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span>
+        </div>
+        <div className="head-tools">
+          <button className="chip chip-icon" onClick={expandAllCards} aria-label={t("Alle aufklappen")} title={t("Alle aufklappen")}>
+            <ChevronsDown size={16} />
+          </button>
+          <button className="chip chip-icon" onClick={collapseAllCards} aria-label={t("Alle zuklappen")} title={t("Alle zuklappen")}>
+            <ChevronsUp size={16} />
+          </button>
+          {/* Ein Schritt Rueckgaengig (kein ganzer Verlauf), deaktiviert
+              solange es nichts rueckgaengig zu machen gibt - seit die
+              Spaltenwahl nicht mehr automatisch passiert, ist ein
+              Fehlklick leichter moeglich (Nutzer-Feedback, siehe
+              cardLayout.js). */}
+          <button className="chip chip-icon" onClick={cards.undo} disabled={!cards.canUndo} aria-label={t("Rückgängig")} title={t("Rückgängig")}>
+            <Undo2 size={16} />
+          </button>
+        </div>
       </header>
 
       {pending.map((m) => {
@@ -1018,19 +1024,16 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </div>
 
       <aside className="ov-side">
-        {/* Wie auf Profil: dieselbe UserPanel-Konstante - am Handy
+        {/* Dieselbe linke Spalte wie auf Live und im Profil (UserPanel:
+            Identitaet + "Meine Zahlen" mit Reitern) - am Handy
             ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px sichtbar.
-            hideRatings: die "Ratings nach Disziplin"-Karte duplizierte hier
-            die eigene (angeheftete) Zeile in der Rangliste-Karte rechts,
-            die dank der globalen Disziplin-Auswahl ohnehin jede Disziplin
-            zeigen kann - auf Profil/Live bleibt sie unveraendert sichtbar.
-            Bewusst NICHT Teil der sortierbaren Karten (Nutzer-Feedback:
-            "das Profilmenü ist das einzige, wo sich alle Karten komplett
-            frei verschieben lassen" - hier auf Statistik bleibt die
-            Identitaets-Spalte fix). */}
+            Bis 2026-09-30 liess Statistik hier die Ratings weg (die
+            Bestenlisten-Karte zeigt sie ja auch) - Nutzer-Feedback: die
+            Spalte soll ueberall gleich sein. Bewusst NICHT Teil der
+            sortierbaren Karten: hier bleibt die Identitaets-Spalte fix. */}
         <div className="ov-side-extra">
           <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
-            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} hideRatings
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} cardLayout={me.card_layout}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
         </div>
       </aside>

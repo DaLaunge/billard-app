@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, Plus, Search, X } from "lucide-react";
 import { t } from "../lib/i18n";
+import { DISC_LABEL } from "../lib/constants";
 import { dateMinusDays, todayStr } from "../lib/stats";
 import { initials, readableColor } from "../lib/format";
 import DevChart from "./DevChart";
@@ -157,6 +158,12 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
             <button key={r.key} className={"chip" + (rangeKey === r.key ? " active" : "")}
               onClick={() => setRangeKey(r.key)}>{t(r.label)}</button>
           ))}
+          {/* Die Disziplin wird hinter dem Trichter der Bestenlisten gewaehlt
+              und ist dort bei geschlossenem Feld nicht zu sehen - der Graph
+              zeigt deshalb selbst, was er gerade darstellt. Bewusst in der
+              Zeitraum-Zeile statt im Titel: am Handy kuerzte die Pille im
+              Kartenkopf den Titel zu "Entwicklung ueber die ...". */}
+          {disc && disc !== "Gesamt" && <span className="deck-filter-pill deck-filter-pill-end">{DISC_LABEL[disc] || disc}</span>}
         </div>
       )}
       {allDates.length === 0 ? (

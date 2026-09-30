@@ -184,7 +184,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
             Art, eine unbekannte Hoehe wirklich zu animieren, ohne sie vorher
             zu messen. Unter prefers-reduced-motion schaltet das CSS die
             Ueberblendung ab, der Inhalt erscheint dann sofort. */}
-        <div className={"collapsible" + (showForm ? " open" : "")}>
+        <div className={"collapsible" + (showForm ? " open" : "")} inert={showForm ? undefined : ""}>
           <div className="collapsible-inner">
           <div className="turnier-form" style={{ marginBottom: 16 }}>
             <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />

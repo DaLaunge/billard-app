@@ -274,7 +274,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
       <aside className="ov-side">
         <div className="ov-side-extra">
           <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
-            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
+            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} cardLayout={me.card_layout}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
         </div>
       </aside>

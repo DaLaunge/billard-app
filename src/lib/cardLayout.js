@@ -97,6 +97,11 @@ export const CARD_SCREENS = [
     screen: "stats",
     label: "Statistik",
     columns: ["middle", "right"],
+    // "Auswahl fuer alle Statistiken" (Disziplin + Top-N) war bis 2026-09-30
+    // eine eigene Karte und sitzt jetzt hinter dem Trichter-Symbol der
+    // Bestenlisten-Karte (siehe CardDeck.jsx, Prop "filter"). Alte
+    // gespeicherte Reihenfolgen nennen die id "globalFilter" noch -
+    // normalizeCardOrder() wirft sie automatisch raus.
     // Die sechs Bestenlisten (Rangliste bis Schnellstes 14/1-Tempo) sind
     // seit 2026-09-30 EINE Karte mit Reitern (siehe LeaderboardDeck in
     // StatistikScreen.jsx), bleiben hier aber einzeln stehen: jede laesst
@@ -109,7 +114,6 @@ export const CARD_SCREENS = [
     cards: [
       { id: "entwicklung", label: "Entwicklung über die Zeit", col: "middle" },
       { id: "letzteMatches", label: "Letzte Matches", col: "middle" },
-      { id: "globalFilter", label: "Auswahl fuer alle Statistiken", col: "right" },
       { id: "rangliste", label: "Rangliste", col: "right" },
       { id: "meisteSiege", label: "Meiste Siege", col: "right" },
       { id: "besteSiegquote", label: "Beste Siegquote", col: "right" },
@@ -258,6 +262,22 @@ export function splitCardColumns(order, columns = {}, screen = STAT_CARD_SCREEN)
 }
 
 // ---------------------------------------------------------------------------
+// "Meine Zahlen" (widgets/NumbersDeck.jsx) ist die linke Spalte am PC und
+// soll auf Statistik, Live und Profil dieselbe sein. Die Teile stehen im
+// Katalog des PROFILS - dort wird ausgeblendet und sortiert - und die
+// anderen Bildschirme lesen von dort mit, statt eine eigene Zusammenstellung
+// zu haben. Eine einzige Quelle fuer die Ids, damit Profil und Seitenspalte
+// nie auseinanderlaufen.
+export const NUMBERS_DECK_IDS = ["ratings", "rekorde", "headToHead", "tempo"];
+
+// Die sichtbaren Reiter von "Meine Zahlen" in gespeicherter Reihenfolge, aus
+// dem card_layout-Eintrag des Profils (players.card_layout.profil).
+export function numbersParts(savedProfilLayout) {
+  const hidden = new Set(normalizeHiddenCards(savedProfilLayout, "profil"));
+  return normalizeCardOrder(savedProfilLayout, "profil")
+    .filter((id) => NUMBERS_DECK_IDS.includes(id) && !hidden.has(id));
+}
+
 // Zusammengelegte Karten (siehe CardDeck.jsx): mehrere Katalog-Eintraege
 // teilen sich EINE Karte mit Reitern, bleiben hier aber einzeln stehen und
 // damit einzeln sortier- und ausblendbar.
