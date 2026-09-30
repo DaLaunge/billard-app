@@ -574,10 +574,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           </section>
 
           <section className="stat-block">
-            <div className="stat-block-head">
-              <h3><Smartphone size={17} /> {t("Dieses Gerät")}</h3>
-              <InfoButton title={t("Dieses Gerät")}>{t("Gilt nur auf diesem Gerät.")}</InfoButton>
-            </div>
+            <h3><Smartphone size={17} /> {t("Dieses Gerät")}</h3>
             {/* Standard ist an - waehrend eines Matches liegt das Handy meist
                 unberuehrt am Tisch und soll sich nicht dauernd sperren. Wer das
                 nicht will (Akku), schaltet es hier ab; die Einstellung gilt
@@ -627,38 +624,51 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </div>
             {/* Eine Stufe fuer alle Ereignisse (Herausforderung, Match
                 bestaetigen, du bist dran, Live/Planung/Zusagen). Gilt pro
-                Geraet, weil auch die Push-Erlaubnis am Geraet haengt. Die
-                Umstellung auf "Push" MUSS aus diesem Klick heraus
-                passieren - iOS fragt die Erlaubnis sonst nicht ab. */}
-            <div className="field-label">
-              <Bell size={14} />
-              <span>{t("Benachrichtigungen")}</span>
-              <InfoButton title={t("Benachrichtigungen")}>
-                {notifyMode === "off" ? t("Keine Hinweise, auch kein „Du bist dran!“ bei Turnieren und Winner Stays.")
-                  : notifyMode === "inapp" ? t("Hinweise erscheinen nur, solange die App geöffnet ist.")
-                  : t("Push-Nachrichten kommen auch, wenn die App geschlossen ist. Ist sie offen, erscheint stattdessen ein Hinweis in der App.")}
-                {notifyMode !== "push" && pushAvailability() === "ios-install"
-                  ? " 📲 " + t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")
-                  : ""}
-              </InfoButton>
-            </div>
-            <div className="chips start-icons">
-              {[
-                ["off", t("Aus"), <BellOff size={18} />],
-                ["inapp", t("In der App"), <Bell size={18} />],
-                ["push", t("Push"), <BellRing size={18} />],
-              ].map(([v, label, icon]) => (
-                <button key={v} className={"chip chip-icon seg" + (notifyMode === v ? " active" : "")}
-                  aria-label={label} title={label}
-                  disabled={busy} onClick={async () => {
-                    if (v === notifyMode) return;
-                    setBusy(true);
-                    try { await onSetNotifyMode(v); } finally { setBusy(false); }
-                  }}>
-                  {icon}
-                </button>
-              ))}
-            </div>
+                Geraet, weil auch die Push-Erlaubnis am Geraet haengt. Drei
+                Stufen (aus / in der App / Push) als ZWEI Regler wie alle
+                anderen Einstellungen hier (Nutzer-Feedback 2026-09-30: "Regler
+                zeigen intuitiv, dass es sich um Einstellungsoptionen
+                handelt"): der erste schaltet Hinweise ueberhaupt ein, der zweite
+                dazu Push. Jede der drei Stufen hat ihre Erklaerung hinter einem
+                Info-Knopf. Die Umstellung auf "Push" MUSS aus diesem Klick
+                heraus passieren - iOS fragt die Erlaubnis sonst nicht ab. */}
+            {(() => {
+              const setMode = async (v) => {
+                if (v === notifyMode) return;
+                setBusy(true);
+                try { await onSetNotifyMode(v); } finally { setBusy(false); }
+              };
+              return (
+                <>
+                  <div className="switch-row">
+                    <label className="settings-switch">
+                      <input type="checkbox" checked={notifyMode !== "off"} disabled={busy}
+                        onChange={(e) => setMode(e.target.checked ? "inapp" : "off")} />
+                      <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                      <span className="settings-switch-label">{t("Benachrichtigungen")}</span>
+                    </label>
+                    <InfoButton title={t("Benachrichtigungen")}>
+                      {t("In der App")}: {t("Hinweise erscheinen nur, solange die App geöffnet ist.")}
+                      {" "}{t("Aus")}: {t("Keine Hinweise, auch kein „Du bist dran!“ bei Turnieren und Winner Stays.")}
+                    </InfoButton>
+                  </div>
+                  <div className="switch-row">
+                    <label className="settings-switch">
+                      <input type="checkbox" checked={notifyMode === "push"} disabled={busy}
+                        onChange={(e) => setMode(e.target.checked ? "push" : "inapp")} />
+                      <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                      <span className="settings-switch-label">{t("Push")}</span>
+                    </label>
+                    <InfoButton title={t("Push")}>
+                      {t("Push-Nachrichten kommen auch, wenn die App geschlossen ist. Ist sie offen, erscheint stattdessen ein Hinweis in der App.")}
+                      {notifyMode !== "push" && pushAvailability() === "ios-install"
+                        ? " 📲 " + t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")
+                        : ""}
+                    </InfoButton>
+                  </div>
+                </>
+              );
+            })()}
           </section>
 
           {/* Konto und Support. Bis 2026-09-25 waren "Anmeldung & Sicherheit",
