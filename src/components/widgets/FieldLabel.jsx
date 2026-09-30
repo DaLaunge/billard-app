@@ -9,8 +9,8 @@ export default function FieldLabel({ label, info, actions }) {
   return (
     <div className="field-label">
       <span>{label}</span>
-      {info && <InfoButton title={label}>{info}</InfoButton>}
       {actions && <span className="field-label-actions">{actions}</span>}
+      {info && <InfoButton title={label}>{info}</InfoButton>}
     </div>
   );
 }

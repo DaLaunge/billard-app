@@ -535,7 +535,9 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
       </section>
 
       {versions && (() => {
-        const current = Number(APP_VERSION);
+        // Gemeldet wird nur die ganze Nummer (siehe App.jsx), daher auch hier
+        // die Prod-Basis eines Test-Standes ("391.25" -> 391) zum Vergleichen.
+        const current = Math.floor(Number(APP_VERSION));
         const counts = {};
         versions.forEach((v) => { const k = v.app_version ?? "?"; counts[k] = (counts[k] || 0) + 1; });
         const minV = versions[0]?.min_app_version || 0;
@@ -559,7 +561,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
               ))}
             </div>
             <p className="hint">
-              {t("Aktuell: v{v}.", { v: current })} {minV ? t("Mindestversion: v{v}.", { v: minV }) : t("Keine Mindestversion gesetzt.")}{" "}
+              {t("Aktuell: v{v}.", { v: APP_VERSION })} {minV ? t("Mindestversion: v{v}.", { v: minV }) : t("Keine Mindestversion gesetzt.")}{" "}
               {t("„–“ = App seit v377 nicht geöffnet oder noch eine ältere Version.")}
             </p>
           </section>

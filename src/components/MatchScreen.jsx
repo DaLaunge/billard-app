@@ -15,6 +15,7 @@ import StraightPoolScorer from "./StraightPoolScorer";
 import InviteScreen from "./InviteScreen";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import FieldLabel from "./widgets/FieldLabel";
+import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPick, DiscPickRow, sortDisciplines } from "./widgets/DiscBall";
 import { ModeTiles } from "./widgets/ModePick";
 import { rpcRetry } from "../lib/rpcRetry";
@@ -40,6 +41,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [step, setStep] = useState(savedStep === 1 ? (dv("disc", null) ? 2 : 0) : savedStep);
   const [opp, setOpp] = useState(draft ? fresh(draft.opp) : (initialOpp || null));
   const [showMyQr, setShowMyQr] = useState(false);
+  const [activeSlot, setActiveSlot] = useState(null); // Doppel: "partner" | "opp" | "opp2" - wohin der naechste Tipp geht
+  const [nudge, setNudge] = useState(false);          // Spielerliste leuchtet kurz auf
+  const playersRef = useRef(null);
+  const countFunnel = useFunnel();                    // Trichter im Kopf der Spielerliste: wie viele zeigen
   // Der Code hat zwei Funktionen (siehe lib/inviteLink.js): Einladung fuer
   // Neue, Match-Start fuer Mitglieder. Den Einladungscode holen wir erst, wenn
   // das Feld aufgeklappt wird - bis er da ist, gilt der Link allein fuer
@@ -97,34 +102,68 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, ghostStartedAt]);
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
+  // Spielerwahl. Einzel: ein Tipp startet das Match. Doppel: der Tipp fuellt
+  // den AKTIVEN Platz der Aufstellung (leerer Kreis antippen = dorthin
+  // waehlen, sonst der naechste freie in der Reihenfolge Partner, Gegner 1,
+  // Gegner 2); ein schon gewaehlter Spieler wird wieder entfernt und sein
+  // Platz ist danach der aktive.
   const pickPlayer = (p) => {
     if (mode === "single") { setOpp(p); start(p); return; }
-    if (partner?.id === p.id) { setPartner(null); return; }
-    if (opp?.id === p.id) { setOpp(null); return; }
-    if (opp2?.id === p.id) { setOpp2(null); return; }
-    if (!partner) setPartner(p); else if (!opp) setOpp(p); else if (!opp2) setOpp2(p);
+    const cur = SLOT_ORDER.find((k) => slotVal[k]?.id === p.id);
+    if (cur) { setSlot(cur, null); setActiveSlot(cur); return; }
+    const target = activeKey;
+    if (!target) return;
+    setSlot(target, p);
+    const after = { ...slotVal, [target]: p };
+    setActiveSlot(SLOT_ORDER.find((k) => !after[k]) || null);
   };
 
-  // Gewaehlte Spieler des Doppels bzw. der Gegner im Einzel als Platzreihe
-  // ("Du VS Gegner"): gefuellt = Kugel + Name (Tipp entfernt wieder), leer =
-  // gestrichelter Kreis mit Rolle darunter.
-  const slot = (p, role, clear) => (p ? (
-    <button type="button" className={"vs-slot filled" + (clear ? "" : " me")} onClick={clear || undefined}
-      disabled={!clear} title={clear ? `${role} – ${t("Entfernen")}` : role}>
-      <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={44} />
-      <span>{p.nickname}</span>
-    </button>
-  ) : (
-    <span className="vs-slot empty" title={role}>
-      <span className="vs-empty-ball"><Plus size={16} /></span>
-      <span>{role}</span>
-    </span>
-  ));
-  const showStrip = mode === "double" || !!opp;
+  // Die Aufstellung ("Du VS Gegner") als Platzreihe: gefuellt = Kugel + Name
+  // (Tipp entfernt wieder und macht den Platz zum aktiven), leer =
+  // gestrichelter Kreis, den man antippt, um dort einen Spieler zu waehlen
+  // (Nutzer-Feedback 2026-09-30: "wenn ich darauf klicke, erwarte ich, dass ich
+  // einen Spieler auswaehle"). Der aktive leere Platz ist im Akzent umrandet,
+  // und die Ueberschrift der Spielerliste nennt seine Rolle.
+  const SLOT_ORDER = ["partner", "opp", "opp2"];
+  const slotVal = { partner, opp, opp2 };
+  const setSlot = (k, v) => (k === "partner" ? setPartner(v) : k === "opp" ? setOpp(v) : setOpp2(v));
+  const activeKey = mode === "double"
+    ? ((activeSlot && !slotVal[activeSlot]) ? activeSlot : (SLOT_ORDER.find((k) => !slotVal[k]) || null))
+    : (opp ? null : "opp");
+  const slotRole = { partner: t("Partner"), opp: mode === "double" ? t("Gegner 1") : t("Gegner"), opp2: t("Gegner 2") };
+  // Zur Spielerliste springen und sie kurz aufleuchten lassen - am Handy liegt
+  // sie unter der Aufstellung, am PC daneben.
+  const nudgePlayers = () => {
+    playersRef.current?.scrollIntoView?.({ behavior: "smooth", block: window.innerWidth < 700 ? "start" : "nearest" });
+    setNudge(true);
+    setTimeout(() => setNudge(false), 900);
+  };
+  const slot = (p, key) => {
+    const role = key ? slotRole[key] : t("Du");
+    if (p) {
+      const clear = key ? () => { setSlot(key, null); setActiveSlot(key); nudgePlayers(); } : null;
+      return (
+        <button type="button" className={"vs-slot filled" + (clear ? "" : " me")} onClick={clear || undefined}
+          disabled={!clear} title={clear ? `${role} – ${t("Entfernen")}` : role}>
+          <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={44} />
+          <span>{p.nickname}</span>
+        </button>
+      );
+    }
+    return (
+      <button type="button" className={"vs-slot empty" + (activeKey === key ? " active" : "")}
+        onClick={() => { if (mode === "double") setActiveSlot(key); nudgePlayers(); }}
+        title={`${role} – ${t("Spieler wählen")}`} aria-label={`${role} – ${t("Spieler wählen")}`}>
+        <span className="vs-empty-ball"><Plus size={16} /></span>
+        <span>{role}</span>
+      </button>
+    );
+  };
   const ready = mode === "double" ? !!(partner && opp && opp2) : !!opp;
   const chooseMode = (m) => {
     if (m === mode) return;
     setMode(m);
+    setActiveSlot(null);
     if (m === "single") { setPartner(null); setOpp2(null); } else setOpp(null);
   };
   // Match beginnen: die Disziplin merken (naechstes Mal vorgewaehlt) und zum
@@ -430,28 +469,23 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 <FieldLabel label={t("Modus")} />
                 <ModeTiles value={mode} onChange={chooseMode} />
 
-                {/* Wer gegen wen - gezeichnet statt beschrieben. Im Doppel
-                    die drei Plaetze, die man nacheinander antippt; im Einzel
-                    nur, wenn der Gegner schon feststeht (z.B. per QR-Code
-                    oder Herausforderung). Klappt animiert auf. */}
-                <div className={"collapsible" + (showStrip ? " open" : "")} inert={showStrip ? undefined : ""}>
-                  <div className="collapsible-inner">
-                    <div className="vs-strip">
-                      <div className="vs-team">
-                        {slot(me, t("Du"), null)}
-                        {mode === "double" && slot(partner, t("Partner"), () => setPartner(null))}
-                      </div>
-                      <span className="vs-x">VS</span>
-                      <div className="vs-team">
-                        {slot(opp, mode === "double" ? t("Gegner 1") : t("Gegner"), () => setOpp(null))}
-                        {mode === "double" && slot(opp2, t("Gegner 2"), () => setOpp2(null))}
-                      </div>
-                      <button type="button" className="icon-btn primary vs-go" disabled={!ready} onClick={() => start(opp)}
-                        aria-label={t("Match starten")} title={t("Match starten")}>
-                        <ArrowRight size={18} />
-                      </button>
-                    </div>
+                {/* Wer gegen wen - gezeichnet statt beschrieben, in BEIDEN Modi
+                    sichtbar. Die leeren Kreise sind Knoepfe: antippen = dort
+                    einen Spieler waehlen (springt zur Spielerliste). */}
+                <div className="vs-strip">
+                  <div className="vs-team">
+                    {slot(me, null)}
+                    {mode === "double" && slot(partner, "partner")}
                   </div>
+                  <span className="vs-x">VS</span>
+                  <div className="vs-team">
+                    {slot(opp, "opp")}
+                    {mode === "double" && slot(opp2, "opp2")}
+                  </div>
+                  <button type="button" className="icon-btn primary vs-go" disabled={!ready} onClick={() => start(opp)}
+                    aria-label={t("Match starten")} title={t("Match starten")}>
+                    <ArrowRight size={18} />
+                  </button>
                 </div>
                 {mode === "single" && opp && <PointPreview dsc={disc} />}
               </div>
@@ -461,28 +495,48 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {/* Reihenfolge (Nutzer-Feedback): Empfehlung, Suche, wie viele
               Spieler, Spieler-Kacheln - und der Ghost ganz am Ende, weil
               Trainingsmatches der Sonderfall sind. */}
-          <div className="match-players">
-            <section className="stat-block">
+          <div className="match-players" ref={playersRef}>
+            <section className={"stat-block" + (nudge ? " nudge" : "")}>
               <div className="turnier-form match-list-form">
-                <FieldLabel label={mode === "double" ? t("Spieler") : t("Gegner")}
+                {/* Die Ueberschrift nennt, FUER WEN gerade gewaehlt wird (Rolle des
+                    aktiven Platzes). Rechts: Code, Einladen und - nur bei langer
+                    Liste - der Trichter fuer die Anzahl (statt einer eigenen
+                    Chip-Zeile mitten im Inhalt). */}
+                <FieldLabel label={activeKey ? slotRole[activeKey] : t("Spieler")}
                   info={mode === "double" ? t("Tippe drei Spieler an: zuerst deinen Partner, dann die beiden Gegner.") : undefined}
-                  actions={mode === "single" ? (
+                  actions={(
                     <>
-                      <button type="button" className={"icon-btn small" + (showMyQr ? " on" : "")} aria-pressed={showMyQr}
-                        onClick={() => setShowMyQr((v) => !v)}
-                        aria-label={showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}
-                        title={showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}>
-                        <QrCode size={15} />
-                      </button>
-                      {/* Einladen steht bewusst neben dem Code - beides dreht
-                          sich darum, den anderen an den Tisch zu bekommen.
-                          Zusaetzlich ueber das QR-Symbol auf der Profilkarte. */}
-                      <button type="button" className="icon-btn small" onClick={() => setShowInvite(true)}
-                        aria-label={t("Neues Mitglied? Jetzt einladen")} title={t("Neues Mitglied? Jetzt einladen")}>
-                        <UserPlus size={15} />
-                      </button>
+                      {mode === "single" && (
+                        <>
+                          <button type="button" className={"icon-btn small" + (showMyQr ? " on" : "")} aria-pressed={showMyQr}
+                            onClick={() => setShowMyQr((v) => !v)}
+                            aria-label={showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}
+                            title={showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}>
+                            <QrCode size={15} />
+                          </button>
+                          {/* Einladen steht bewusst neben dem Code - beides dreht
+                              sich darum, den anderen an den Tisch zu bekommen.
+                              Zusaetzlich ueber das QR-Symbol auf der Profilkarte. */}
+                          <button type="button" className="icon-btn small" onClick={() => setShowInvite(true)}
+                            aria-label={t("Neues Mitglied? Jetzt einladen")} title={t("Neues Mitglied? Jetzt einladen")}>
+                            <UserPlus size={15} />
+                          </button>
+                        </>
+                      )}
+                      {!oppQuery.trim() && allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
+                        <FunnelButton funnel={countFunnel} label={t("Filter")} />
+                      )}
                     </>
-                  ) : undefined} />
+                  )} />
+                <FunnelPanel funnel={countFunnel}>
+                  <div className="chips small">
+                    {LIST_COUNT_OPTIONS.map((c) => (
+                      <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
+                        {c === "all" ? t("Alle") : c}
+                      </button>
+                    ))}
+                  </div>
+                </FunnelPanel>
 
                 {mode === "single" && (
                   <div className={"collapsible" + (showMyQr ? " open" : "")} inert={showMyQr ? undefined : ""}>
@@ -533,15 +587,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     <button className="btn primary" disabled={guestBusy} onClick={addGuest}>
                       <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: oppQuery.trim() })}
                     </button>
-                  </div>
-                )}
-                {!oppQuery.trim() && allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
-                  <div className="chips small">
-                    {LIST_COUNT_OPTIONS.map((c) => (
-                      <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
-                        {c === "all" ? t("Alle") : c}
-                      </button>
-                    ))}
                   </div>
                 )}
                 {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}

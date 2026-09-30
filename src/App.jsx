@@ -479,7 +479,9 @@ export default function App() {
     const report = async () => {
       if (Date.now() - lastVersionReportRef.current < 10 * 60000) return;
       lastVersionReportRef.current = Date.now();
-      const { data, error } = await supabase.rpc("report_app_version", { p_version: Number(APP_VERSION) });
+      // Die Spalte ist eine ganze Zahl: Test-Staende ("391.25") melden ihre
+      // Prod-Basis (391), sonst schluege der Aufruf mit einem Typfehler fehl.
+      const { data, error } = await supabase.rpc("report_app_version", { p_version: Math.floor(Number(APP_VERSION)) });
       if (!error && typeof data === "number" && Number(APP_VERSION) < data) setMustUpdate(true);
     };
     report();

@@ -21,7 +21,12 @@ export function normalizeListCount(v) {
   const n = Number(v);
   return LIST_COUNT_OPTIONS.includes(n) ? n : DEFAULT_LIST_COUNT;
 }
-export const APP_VERSION = "416";  // bei jedem Release erhöhen
+// Versionszaehlung (Nutzer-Vorgabe 2026-09-30): GANZE Nummern (391, 392, ...)
+// nur fuer einen ausdruecklich freigegebenen Push von test nach main (Prod).
+// Jeder Push auf test zaehlt dagegen "<letzte Prod-Nummer>.<Minor>", also 391.0,
+// 391.1, ... bis zur Freigabe; danach steht Prod auf 392 und test beginnt bei
+// 392.0. Als STRING, damit "391.10" nicht zu 391.1 wird.
+export const APP_VERSION = "391.25";
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
