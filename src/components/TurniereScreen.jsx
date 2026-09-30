@@ -188,6 +188,22 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
         <div className={"collapsible" + (showForm ? " open" : "")} inert={showForm ? undefined : ""}>
           <div className="collapsible-inner">
           <div className="turnier-form" style={{ marginBottom: 16 }}>
+            {/* Ganz oben: die Disziplin ist die eine Angabe, die IMMER gewaehlt
+                werden muss (Nutzer-Feedback 2026-09-30) - vorher stand sie
+                nach Name und Format, unterhalb der Falz. Sie hat einen
+                Vorgabewert, wird aber bei jedem Turnier bewusst entschieden. */}
+            <FieldLabel label={t("Disziplin")} />
+            <div className="disc-picks">
+              {DEFAULT_DISCIPLINES.map((d) => (
+                // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
+                // Akzentfarbe, wie bei der Kugelauswahl im 14/1-Protokoll.
+                <button key={d} type="button" className={"disc-pick" + (discipline === d ? " sel" : "")}
+                  aria-pressed={discipline === d} aria-label={t(d)} title={t(d)} onClick={() => setDiscipline(d)}>
+                  <DiscBall disc={d} size={34} />
+                </button>
+              ))}
+            </div>
+
             <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
 
             {/* Format als Kacheln mit Struktur-Zeichnung statt als Textchips
@@ -242,18 +258,6 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
                 </div>
               </>
             )}
-
-            <FieldLabel label={t("Disziplin")} />
-            <div className="disc-picks">
-              {DEFAULT_DISCIPLINES.map((d) => (
-                // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
-                // Akzentfarbe, wie bei der Kugelauswahl im 14/1-Protokoll.
-                <button key={d} type="button" className={"disc-pick" + (discipline === d ? " sel" : "")}
-                  aria-pressed={discipline === d} aria-label={t(d)} title={t(d)} onClick={() => setDiscipline(d)}>
-                  <DiscBall disc={d} size={34} />
-                </button>
-              ))}
-            </div>
 
             {format === "winner_stays" ? (
               <>
