@@ -398,6 +398,22 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </button>
           )}
 
+          <label className="field-label" htmlFor="pmotto">{t("Motto (optional)")}</label>
+          <div className="mail-row">
+            <Pencil size={18} className="mail-ico" />
+            <input id="pmotto" value={motto} maxLength={80}
+              placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)}
+              onBlur={() => { if (motto !== (meRow?.motto || "")) persist(); }} />
+          </div>
+        </section>
+
+        {/* Beide Farbwahlen in EINER Karte, direkt untereinander (Nutzer-Feedback
+            2026-09-30: "sorge dafuer, dass die Farben nahe beisammen sind - die
+            Auswahl fuer 'Meine Kugel' und 'Skin'"). Vorher stand die Kugelfarbe
+            links bei den Profilangaben und das Design ganz rechts in der
+            Seitenspalte, dazwischen Sprache, Karten usw. */}
+        <section className="stat-block">
+          <h3><Palette size={17} /> {t("Farben")}</h3>
           <label className="field-label">{t("Deine Kugel")}</label>
           <div className="swatch-row">
             <button className={"swatch auto" + (color === null ? " sel" : "")}
@@ -428,13 +444,41 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </span>
           </div>
 
-          <label className="field-label" htmlFor="pmotto">{t("Motto (optional)")}</label>
-          <div className="mail-row">
-            <Pencil size={18} className="mail-ico" />
-            <input id="pmotto" value={motto} maxLength={80}
-              placeholder={t("z. B. 'Die 9 faellt immer'")} onChange={(e) => setMotto(e.target.value)}
-              onBlur={() => { if (motto !== (meRow?.motto || "")) persist(); }} />
+
+          <label className="field-label">{t("Design")}</label>
+          <div className="theme-grid">
+            {THEME_KEYS.map((key) => {
+              const th = THEME_CATALOG[key];
+              return (
+                <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
+                  style={{ background: th.felt, borderColor: themeKey === key ? th.accent : "transparent" }}
+                  onClick={() => pickPresetTheme(key)} disabled={busy}>
+                  <span className="theme-dot" style={{ background: th.accent }} />
+                  {t(th.name)}
+                  {themeKey === key && <Check size={14} />}
+                </button>
+              );
+            })}
+            <button className={"theme-swatch" + (themeKey === "custom" ? " sel" : "")}
+              style={{ background: customBg, borderColor: themeKey === "custom" ? customAccent : "transparent" }}
+              onClick={() => pickCustomTheme(customBg, customAccent)} disabled={busy}>
+              <span className="theme-dot" style={{ background: customAccent }} />
+              {t("Eigenes")}
+              {themeKey === "custom" && <Check size={14} />}
+            </button>
           </div>
+          {themeKey === "custom" && (
+            <div className="theme-custom-row">
+              <label className="theme-color-field">
+                {t("Hintergrund")}
+                <input type="color" value={customBg} onChange={(e) => pickCustomTheme(e.target.value, customAccent)} />
+              </label>
+              <label className="theme-color-field">
+                {t("Akzent")}
+                <input type="color" value={customAccent} onChange={(e) => pickCustomTheme(customBg, e.target.value)} />
+              </label>
+            </div>
+          )}
         </section>
 
       {/* Karten-Anordnung + -Sichtbarkeit fuer ALLE Bildschirme an einer
@@ -584,42 +628,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </div>
           </section>
 
-          <section className="stat-block">
-            <h3><Palette size={17} /> {t("Design")}</h3>
-            <div className="theme-grid">
-              {THEME_KEYS.map((key) => {
-                const th = THEME_CATALOG[key];
-                return (
-                  <button key={key} className={"theme-swatch" + (themeKey === key ? " sel" : "")}
-                    style={{ background: th.felt, borderColor: themeKey === key ? th.accent : "transparent" }}
-                    onClick={() => pickPresetTheme(key)} disabled={busy}>
-                    <span className="theme-dot" style={{ background: th.accent }} />
-                    {t(th.name)}
-                    {themeKey === key && <Check size={14} />}
-                  </button>
-                );
-              })}
-              <button className={"theme-swatch" + (themeKey === "custom" ? " sel" : "")}
-                style={{ background: customBg, borderColor: themeKey === "custom" ? customAccent : "transparent" }}
-                onClick={() => pickCustomTheme(customBg, customAccent)} disabled={busy}>
-                <span className="theme-dot" style={{ background: customAccent }} />
-                {t("Eigenes")}
-                {themeKey === "custom" && <Check size={14} />}
-              </button>
-            </div>
-            {themeKey === "custom" && (
-              <div className="theme-custom-row">
-                <label className="theme-color-field">
-                  {t("Hintergrund")}
-                  <input type="color" value={customBg} onChange={(e) => pickCustomTheme(e.target.value, customAccent)} />
-                </label>
-                <label className="theme-color-field">
-                  {t("Akzent")}
-                  <input type="color" value={customAccent} onChange={(e) => pickCustomTheme(customBg, e.target.value)} />
-                </label>
-              </div>
-            )}
-          </section>
 
           <section className="stat-block">
             <h3><Play size={17} /> {t("Startseite")}</h3>
