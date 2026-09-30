@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter, Check } from "lucide-react";
+import { Filter, Check, X } from "lucide-react";
 import { t } from "../../lib/i18n";
 
 /* Trichter-Symbol im Kartenkopf + das Auswahlfeld, das es aufklappt.
@@ -34,13 +34,20 @@ export function FunnelButton({ funnel, label }) {
    "inert" nimmt das geschlossene Feld aus der Tab-Reihenfolge - es hat Hoehe
    0, ist aber weiter im DOM, und ohne das wuerde die Tastatur unsichtbare
    Knoepfe ansteuern. */
-export function FunnelPanel({ funnel, children }) {
+export function FunnelPanel({ funnel, children, onReset }) {
   return (
     <div className={"collapsible" + (funnel.open ? " open" : "")} inert={funnel.open ? undefined : ""}>
       <div className="collapsible-inner">
         <div className="deck-filter">
           {children}
           <div className="deck-filter-foot">
+            {/* Nur wenn es etwas zurueckzusetzen gibt (Letzte Matches) - die
+                Statistik-Auswahl hat immer einen gueltigen Zustand. */}
+            {onReset && (
+              <button type="button" className="btn ghost small" onClick={onReset}>
+                <X size={15} /> {t("Filter zurücksetzen")}
+              </button>
+            )}
             <button type="button" className="btn primary small" onClick={funnel.close}>
               <Check size={15} /> {t("OK")}
             </button>

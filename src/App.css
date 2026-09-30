@@ -840,7 +840,7 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
   cursor: pointer; flex-shrink: 0; }
 .card-filter-btn:hover, .card-filter-btn.on { color: var(--accent); background: var(--felt-3); }
 .deck-filter { padding: 2px 0 10px; }
-.deck-filter-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+.deck-filter-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; }
 /* .btn ist sonst volle Breite - ein OK-Balken ueber die ganze Karte waere
    groesser als das Auswahlfeld, das er schliesst. */
 .deck-filter-foot .btn { width: auto; min-width: 84px; padding: 7px 16px; font-size: 13px; border-radius: 12px;

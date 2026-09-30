@@ -12,6 +12,7 @@ import { STAT_CARD_SCREEN, foldedDeck, withoutFolded, deckColumn, splitCardColum
 import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
+import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
@@ -316,6 +317,22 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
     setMatchCount(10); setHideTournament(false);
   };
 
+  const funnel = useFunnel();
+  // Kurzfassung der Filter fuer den Kartenkopf, nur wenn etwas vom Standard
+  // abweicht. Passt sie nicht in wenige Zeichen (ein langer Spielername), wird
+  // sie zur Anzahl - sonst kuerzte sie am Handy den Titel.
+  const filterBits = [
+    filterPlayer || null,
+    filterPlayer && filterResult !== "all" ? (filterResult === "win" ? t("Siege") : t("Niederlagen")) : null,
+    filterDisc !== "all" ? (DISC_LABEL[filterDisc] || filterDisc) : null,
+    hideTournament ? t("ohne Turnier") : null,
+    dateFrom || dateTo ? t("Zeitraum") : null,
+    matchCount !== 10 ? (matchCount === "all" ? t("Alle") : t("Top {n}", { n: matchCount })) : null,
+  ].filter(Boolean);
+  const filterPillJoined = filterBits.join(" · ");
+  const filterPill = filterBits.length === 0 ? null
+    : filterPillJoined.length <= 14 ? filterPillJoined : t("{n} Filter", { n: filterBits.length });
+
   // Zeilen blenden sich beim Hineinscrollen ein - die Liste geht bis
   // "Alle" und wird dann sehr lang (siehe lib/useRevealOnScroll.js).
   const listRef = useRevealOnScroll([visibleMatches.length, collapsed]);
@@ -323,67 +340,69 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
   return (
     <section className="stat-block" ref={listRef}>
       <div className="stat-block-head">
-        <h3><History size={17} /> <span className="stat-block-title-text">{t("Letzte Matches")}</span></h3>
+        <h3><History size={17} /> <span className="stat-block-title-text">{t("Letzte Matches")}</span>
+          {filterPill && <span className="deck-filter-pill">{filterPill}</span>}
+        </h3>
         <div className="stat-block-head-actions">
           <CardMenuButton onHide={onHide} />
+          {!collapsed && <FunnelButton funnel={funnel} label={t("Filter")} />}
           <CardColumnButton column={column} onToggle={onToggleColumn} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
         </div>
       </div>
       {!collapsed && (
       <>
-      <div className="match-filters">
-        <PlayerPicker players={players} matches={matches} me={me} allowAll
-          value={filterPlayer || null}
-          onSelect={(nick) => { setFilterPlayer(nick || ""); setFilterResult("all"); }} />
-        {filterPlayer && (
+      {/* Alle Filter hinter dem Trichter (Nutzer-Feedback 2026-09-30: "so wie bei
+          den ueblichen Statistiken") - vorher standen fuenf Filterzeilen
+          dauerhaft ueber der Liste, vor dem ersten Match. Die Anzahl-Chips
+          (10/20/50/100/Alle) sind bewusst mit hineingewandert, so wie Top-N
+          bei den Bestenlisten. Die Zeile "x von y Matches" bleibt sichtbar. */}
+      <FunnelPanel funnel={funnel} onReset={filtersActive || matchCount !== 10 ? resetFilters : undefined}>
+        <div className="match-filters" style={{ marginBottom: 0 }}>
+          <PlayerPicker players={players} matches={matches} me={me} allowAll
+            value={filterPlayer || null}
+            onSelect={(nick) => { setFilterPlayer(nick || ""); setFilterResult("all"); }} />
+          {filterPlayer && (
+            <div className="chips small" style={{ marginBottom: 0 }}>
+              {["all", "win", "loss"].map((r) => (
+                <button key={r} className={"chip" + (filterResult === r ? " active" : "")} onClick={() => setFilterResult(r)}>
+                  {r === "all" ? t("Alle") : r === "win" ? t("Siege") : t("Niederlagen")}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="chips small" style={{ marginBottom: 0 }}>
-            {["all", "win", "loss"].map((r) => (
-              <button key={r} className={"chip" + (filterResult === r ? " active" : "")} onClick={() => setFilterResult(r)}>
-                {r === "all" ? t("Alle") : r === "win" ? t("Siege") : t("Niederlagen")}
+            <button className={"chip" + (filterDisc === "all" ? " active" : "")} onClick={() => setFilterDisc("all")}>
+              {t("Alle")}
+            </button>
+            {MATCH_DISCIPLINES.map((d) => (
+              <button key={d} className={"chip" + (filterDisc === d ? " active" : "")} onClick={() => setFilterDisc(d)}>
+                {t(DISC_LABEL[d] || d)}
               </button>
             ))}
           </div>
-        )}
-        <div className="chips small" style={{ marginBottom: 0 }}>
-          <button className={"chip" + (filterDisc === "all" ? " active" : "")} onClick={() => setFilterDisc("all")}>
-            {t("Alle")}
-          </button>
-          {MATCH_DISCIPLINES.map((d) => (
-            <button key={d} className={"chip" + (filterDisc === d ? " active" : "")} onClick={() => setFilterDisc(d)}>
-              {t(DISC_LABEL[d] || d)}
+          <div className="chips small" style={{ marginBottom: 0 }}>
+            <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
+              {t("Turniermatches ausblenden")}
             </button>
-          ))}
+          </div>
+          <div className="date-range">
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label={t("Von")} />
+            <span>{t("bis")}</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label={t("Bis")} />
+          </div>
+          <div className="chips small" style={{ marginBottom: 0 }}>
+            {MATCH_COUNT_OPTIONS.map((c) => (
+              <button key={c} className={"chip" + (matchCount === c ? " active" : "")} onClick={() => setMatchCount(c)}>
+                {c === "all" ? t("Alle") : c}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="chips small" style={{ marginBottom: 0 }}>
-          <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
-            {t("Turniermatches ausblenden")}
-          </button>
-        </div>
-        <div className="date-range">
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label={t("Von")} />
-          <span>{t("bis")}</span>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label={t("Bis")} />
-        </div>
-        {filtersActive && (
-          <button className="btn ghost" style={{ marginTop: 0 }} onClick={resetFilters}>
-            <X size={15} /> {t("Filter zurücksetzen")}
-          </button>
-        )}
-      </div>
-
-      <div className="stat-block-head">
-        <p className="filter-count" style={{ marginBottom: 0 }}>
-          {t("{shown} von {total} Matches", { shown: visibleMatches.length, total: filteredMatches.length })}
-        </p>
-        <div className="chips small">
-          {MATCH_COUNT_OPTIONS.map((c) => (
-            <button key={c} className={"chip" + (matchCount === c ? " active" : "")} onClick={() => setMatchCount(c)}>
-              {c === "all" ? t("Alle") : c}
-            </button>
-          ))}
-        </div>
-      </div>
+      </FunnelPanel>
+      <p className="filter-count">
+        {t("{shown} von {total} Matches", { shown: visibleMatches.length, total: filteredMatches.length })}
+      </p>
 
       {visibleMatches.map((m) => (
         <div key={m.id} className="match-row reveal">
