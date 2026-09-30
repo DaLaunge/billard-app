@@ -10,7 +10,7 @@ import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
 import { useCardLayout } from "../lib/useCardLayout";
-import { foldedDeck, withoutFolded, deckColumn, splitCardColumns } from "../lib/cardLayout";
+import { foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
 
 // Die drei Bereiche dieses Bildschirms teilen sich seit 2026-09-30 EINE
 // Karte mit Reitern (siehe CardDeck.jsx). Live hatte dabei das umgekehrte
@@ -259,8 +259,8 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   const visibleOrder = withoutFolded(cards.visibleOrder, LIVE_DECK_IDS, anchor);
   // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
   // durchgehende Liste ueber beide Spalten hinweg (siehe CardSlot.jsx).
-  const renderColumn = (ids) => ids.filter((id) => cardsById[id]).map((id) => (
-    <CardSlot key={id} order={10 + visibleOrder.indexOf(id)}>{cardsById[id]}</CardSlot>
+  const renderColumn = (ids, col) => ids.filter((id) => cardsById[id]).map((id) => (
+    <CardSlot key={id} order={phoneSlotOrder(col, visibleOrder.indexOf(id))}>{cardsById[id]}</CardSlot>
   ));
 
   return (
@@ -284,8 +284,8 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           Luecke zu hinterlassen (Nutzer-Feedback: "die Luecken zwischen den
           Karten sind unnoetig gross, wenn manche dazwischen ausgeblendet
           sind"). */}
-      <div className="live-col middle">{renderColumn(middleCardIds)}</div>
-      <div className="live-col right">{renderColumn(rightCardIds)}</div>
+      <div className="live-col middle">{renderColumn(middleCardIds, "middle")}</div>
+      <div className="live-col right">{renderColumn(rightCardIds, "right")}</div>
       </div>
       <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
       <ImprintFooter />

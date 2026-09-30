@@ -8,7 +8,7 @@ import { computeAchievementExtras } from "../lib/achievements";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount } from "../lib/constants";
-import { STAT_CARD_SCREEN, foldedDeck, withoutFolded, deckColumn, splitCardColumns } from "../lib/cardLayout";
+import { STAT_CARD_SCREEN, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
@@ -910,13 +910,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // aendert dort nichts (die Spalte ist ohnehin schon nach cardOrder
   // sortiert). Ab 10, damit die feste Seitenspalte darunter bleiben kann.
   //
-  // Auf der Statistik stehen am Handy ERST die Mitte-Karten, DANN die
-  // rechten (Nutzer-Feedback 2026-09-30) - deshalb bekommen rechte Karten
-  // einen festen Vorsprung von 1000. Massgeblich ist die Spalte, in der die
+  // Am Handy stehen ERST die Mitte-Karten, DANN die rechten (auf jedem
+  // Bildschirm so, siehe PHONE_COLUMN_ORDER in cardLayout.js). Massgeblich ist die Spalte, in der die
   // Karte am PC WIRKLICH steht (middleCardIds/rightCardIds, also mit der
   // gemeinsamen Spalte der Bestenlisten-Karte), nicht ihr rohes columns-Feld.
   const rightSet = new Set(rightCardIds);
-  const slotOrder = (id) => 10 + (rightSet.has(id) ? 1000 : 0) + visibleOrder.indexOf(id);
+  const slotOrder = (id) => phoneSlotOrder(rightSet.has(id) ? "right" : "middle", visibleOrder.indexOf(id));
 
   return (
     <div className="screen">

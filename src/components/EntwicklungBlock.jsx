@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { TrendingUp, Plus, Search, X } from "lucide-react";
+import { TrendingUp, Plus, Search, X, Check } from "lucide-react";
 import { t } from "../lib/i18n";
 import { DISC_LABEL } from "../lib/constants";
 import { dateMinusDays, todayStr } from "../lib/stats";
@@ -191,14 +191,23 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
                 </div>
               );
             })}
+            {/* Statt eines breiten Knopfs unter dem Graphen: eine Zeile am Ende
+                der Spielerliste, in der Form der Spielerzeilen (Nutzer-
+                Feedback 2026-09-30: passt besser zur sichtbaren Auflistung,
+                spart den Knopf und ist intuitiver). Bei 6 Spielern gibt es
+                nichts mehr hinzuzufuegen. Offen wird sie zu "Fertig". */}
+            {(addOpen || sel.length < 6) && (
+              <button type="button" className="stat-row as-btn dev-add-row"
+                onClick={() => { if (addOpen) setQuery(""); setAddOpen((o) => !o); }}
+                aria-expanded={addOpen}>
+                <span className="dev-add-ico">{addOpen ? <Check size={16} /> : <Plus size={16} />}</span>
+                <span className="stat-name">{addOpen ? t("Fertig") : t("Spieler hinzufügen")}</span>
+              </button>
+            )}
           </div>
-          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
-
-          {!addOpen ? (
-            <button className="btn ghost" onClick={() => setAddOpen(true)}>
-              <Plus size={16} /> {t("Spieler hinzufügen")}
-            </button>
-          ) : (
+          {/* Die Auswahl steht direkt unter der Liste, zu der sie gehoert -
+              nicht erst unter dem Graphen. */}
+          {addOpen && (
             <div className="add-panel">
               <div className="search-row">
                 <Search size={16} className="mail-ico" />
@@ -219,9 +228,9 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
                 ))}
                 {suggestions.length === 0 && <p className="hint">{t("Keine weiteren Spieler.")}</p>}
               </div>
-              <button className="btn ghost" onClick={() => { setAddOpen(false); setQuery(""); }}>{t("Fertig")}</button>
             </div>
           )}
+          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
         </>
       )}
       </>

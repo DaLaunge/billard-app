@@ -97,14 +97,6 @@ export const CARD_SCREENS = [
     screen: "stats",
     label: "Statistik",
     columns: ["middle", "right"],
-    // Am Handy stehen erst ALLE Mitte-Karten, dann alle rechten (Nutzer-
-    // Feedback 2026-09-30: "wenn ich am PC die Fensterbreite reduziere und
-    // dadurch ein Handy simuliere, erwarte ich, dass die Karten in der Mitte
-    // ganz oben angezeigt werden und die Karten, die rechts stehen, nach
-    // unten rutschen"). Nur auf der Statistik, weil dort das Ziehen raeumlich
-    // ist (Spalte und Platz in einer Geste) - die Einstellungslisten von Live
-    // und Profil sind dagegen ausdruecklich EINE flache Reihenfolge.
-    phoneGrouped: true,
     // "Auswahl fuer alle Statistiken" (Disziplin + Top-N) war bis 2026-09-30
     // eine eigene Karte und sitzt jetzt hinter dem Trichter-Symbol der
     // Bestenlisten-Karte (siehe CardDeck.jsx, Prop "filter"). Alte
@@ -329,23 +321,37 @@ export function withoutFolded(list, ids, anchor) {
   return list.filter((id) => !set.has(id) || id === anchor);
 }
 
-// Die ANGEZEIGTE Reihenfolge eines Bildschirms. Fuer Bildschirme mit
-// phoneGrouped (Statistik) ist das die gespeicherte Reihenfolge, stabil nach
-// Spalte gruppiert - erst Mitte, dann rechts, je Spalte in gespeicherter
-// Reihenfolge. Genau das sieht man am Handy, und genau daran muessen Ziehen
-// und die Pfeile in den Einstellungen rechnen: vorher arbeiteten sie auf der
-// rohen Reihenfolge, in der Mitte- und Rechts-Karten beliebig gemischt sein
-// koennen - das Handy zeigte dann eine Reihenfolge, die zu nichts passte, was
-// man am PC gesehen hatte. Alle anderen Bildschirme: unveraendert.
+// Reihenfolge der Spalten am HANDY, auf JEDEM Bildschirm gleich (Nutzer-
+// Feedback 2026-09-30: "Mitte zuerst, dann rechts soll ueber die gesamte App
+// funktionieren. Es sollte alles einheitlich sein" - zuerst nur auf der
+// Statistik gemeldet: "wenn ich am PC die Fensterbreite reduziere und dadurch
+// ein Handy simuliere, erwarte ich, dass die Karten in der Mitte ganz oben
+// angezeigt werden und die Karten, die rechts stehen, nach unten rutschen").
+// Die linke Spalte gibt es nur im Profil; sie ist dort die Seitenspalte
+// neben der Identitaetskarte und kommt am Handy ans Ende, hinter die
+// Hauptinhalte. Die Identitaetskarte selbst steht dort ohnehin fest ganz oben.
+export const PHONE_COLUMN_ORDER = ["middle", "right", "left"];
+export const phoneRank = (col) => {
+  const i = PHONE_COLUMN_ORDER.indexOf(col);
+  return i === -1 ? 0 : i;
+};
+// CSS-"order" einer Karte am Handy: Spaltenrang zuerst, darin die Position.
+// Ab 10, damit feste Elemente (Identitaetskarte 0) davor bleiben koennen; der
+// Vorsprung von 1000 je Spalte ist grosszuegig gegen die Kartenzahl.
+export const phoneSlotOrder = (col, indexInColumn) => 10 + phoneRank(col) * 1000 + indexInColumn;
+
+// Die ANGEZEIGTE Reihenfolge eines Bildschirms: die gespeicherte Reihenfolge,
+// stabil nach Spalte gruppiert (siehe PHONE_COLUMN_ORDER), je Spalte in
+// gespeicherter Reihenfolge. Genau das sieht man am Handy, und genau daran
+// muessen Ziehen und die Pfeile in den Einstellungen rechnen: die rohe
+// Reihenfolge kann Karten verschiedener Spalten beliebig mischen (Ziehen und
+// Spaltenwechsel am PC tun das), und das Handy zeigte dann eine Reihenfolge,
+// die zu nichts passte, was man am PC gesehen hatte. Bildschirme mit nur
+// einer Spalte: unveraendert.
 export function groupOrder(order, columns, screen) {
-  if (!CARD_SCREEN_BY_ID[screen]?.phoneGrouped) return order;
-  const allowed = screenColumns(screen);
-  const rank = (id) => {
-    const i = allowed.indexOf(columns[id]);
-    return i === -1 ? 0 : i;
-  };
+  if (screenColumns(screen).length < 2) return order;
   return order
-    .map((id, i) => ({ id, i, r: rank(id) }))
+    .map((id, i) => ({ id, i, r: phoneRank(columns[id]) }))
     .sort((a, b) => a.r - b.r || a.i - b.i)
     .map((x) => x.id);
 }

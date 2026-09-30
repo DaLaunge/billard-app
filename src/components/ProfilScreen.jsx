@@ -21,7 +21,7 @@ import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
 import NumbersDeck from "./widgets/NumbersDeck";
-import { CARD_SCREENS, splitCardColumns, foldedDeck, withoutFolded, deckColumn } from "../lib/cardLayout";
+import { CARD_SCREENS, splitCardColumns, foldedDeck, withoutFolded, deckColumn, phoneSlotOrder } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 
 // Welche Karten des Profils sich je EINE Karte mit Reitern teilen (siehe
@@ -1016,7 +1016,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
   // durchgehende Liste ueber alle drei Spalten hinweg (siehe CardSlot.jsx).
   const renderColumn = (col) => deckColumns[col].filter((id) => cardsById[id]).map((id) => (
-    <CardSlot key={id} order={10 + deckOrder.indexOf(id)}>{cardsById[id]}</CardSlot>
+    <CardSlot key={id} order={phoneSlotOrder(col, deckOrder.indexOf(id))}>{cardsById[id]}</CardSlot>
   ));
 
 
