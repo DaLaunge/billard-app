@@ -108,13 +108,15 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt]);
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
-  // Spielerwahl. Einzel: ein Tipp startet das Match. Doppel: der Tipp fuellt
+  // Spielerwahl. Einzel: der Tipp waehlt den Gegner (nochmal = abwaehlen), gestartet
+  // wird mit dem immer sichtbaren "Match starten" - wie im Doppel (Nutzer-Feedback
+  // 2026-10-01: konsistent, auch wenn es einen Klick mehr kostet). Doppel: der Tipp fuellt
   // den AKTIVEN Platz der Aufstellung (leerer Kreis antippen = dorthin
   // waehlen, sonst der naechste freie in der Reihenfolge Partner, Gegner 1,
   // Gegner 2); ein schon gewaehlter Spieler wird wieder entfernt und sein
   // Platz ist danach der aktive.
   const pickPlayer = (p) => {
-    if (mode === "single") { setOpp(p); start(p); return; }
+    if (mode === "single") { setOpp(opp?.id === p.id ? null : p); return; }
     const cur = SLOT_ORDER.find((k) => slotVal[k]?.id === p.id);
     if (cur) { setSlot(cur, null); setActiveSlot(cur); return; }
     const target = activeKey;
@@ -556,7 +558,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     aktiven Platzes). Rechts: Code, Einladen und - nur bei langer
                     Liste - der Trichter fuer die Anzahl (statt einer eigenen
                     Chip-Zeile mitten im Inhalt). */}
-                <FieldLabel label={activeKey ? slotRole[activeKey] : t("Spieler")}
+                <FieldLabel label={mode === "single" ? t("Gegner") : (activeKey ? slotRole[activeKey] : t("Spieler"))}
                   info={mode === "double" ? t("Tippe drei Spieler an: zuerst deinen Partner, dann die beiden Gegner.") : undefined}
                   actions={(
                     <>
@@ -654,7 +656,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   {opponents.map((p, i) => {
                     const role = mode === "double"
                       ? (partner?.id === p.id ? t("Partner") : opp?.id === p.id ? t("Gegner 1") : opp2?.id === p.id ? t("Gegner 2") : null)
-                      : (opp?.id === p.id ? "•" : null);
+                      : (opp?.id === p.id ? t("Gegner") : null);
                     return (
                       <div key={p.id} className="opp-cell reveal" style={{ "--i": i % 4 }}>
                         <button className={"opp-card" + (role ? " sel" : "")} onClick={() => pickPlayer(p)}>
@@ -662,7 +664,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                           <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
                           {/* Schon gewaehlt: bleibt in der Liste, Kugel abgedunkelt, die
                               Rolle steht dabei - antippen nimmt den Spieler wieder heraus. */}
-                          {mode === "double" && role && <span className="opp-role">{role}</span>}
+                          {role && <span className="opp-role">{role}</span>}
                         </button>
                       </div>
                     );
@@ -672,9 +674,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                       als ein Mitspieler. Erklaerung im Tooltip. */}
                   {mode === "single" && ghost && !oppQuery && (
                     <div className="opp-cell reveal" style={{ "--i": opponents.length % 4 }}>
-                      <button className="opp-card ghost-tile"
+                      <button className={"opp-card ghost-tile" + (opp?.id === ghost.id ? " sel" : "")}
                         title={`${t("Training gegen Ghost")} – ${t("Übungsmatch – zählt nicht fürs Rating")}`}
-                        onClick={() => { setOpp(ghost); start(ghost); }}>
+                        onClick={() => setOpp(opp?.id === ghost.id ? null : ghost)}>
                         <span className="ghost-ball">👻</span>
                         <span>{t("Ghost")}</span>
                       </button>
@@ -686,17 +688,14 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           </div>
         </div>
         {/* "Match starten" bleibt unten am Bildschirmrand haengen, egal wie weit
-            man in der Spielerliste gescrollt hat (Nutzer-Feedback 2026-10-01:
-            muss immer gut erreichbar sein). Im Doppel immer da (inaktiv, bis alle
-            drei Plaetze besetzt sind), im Einzel nur, wenn der Gegner schon
-            feststeht - sonst startet ja der Tipp auf einen Spieler. */}
-        {(mode === "double" || ready) && (
-          <div className="sticky-cta">
-            <button className="btn primary" disabled={!ready} onClick={() => start(opp)}>
-              <Swords size={18} /> {t("Match starten")}
-            </button>
-          </div>
-        )}
+            man in der Spielerliste gescrollt hat (Nutzer-Feedback 2026-10-01: muss
+            immer gut erreichbar sein) - in BEIDEN Modi, inaktiv, bis der Gegner
+            bzw. alle drei Plaetze feststehen. */}
+        <div className="sticky-cta">
+          <button className="btn primary" disabled={!ready} onClick={() => start(opp)}>
+            <Swords size={18} /> {t("Match starten")}
+          </button>
+        </div>
         </>
       )}
 
