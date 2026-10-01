@@ -291,6 +291,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const start = (o) => {
     if (o?.is_ghost) setGhostStartedAt(Date.now());
     rememberDisc(disc);
+    // Startzeit des Protokolls = jetzt, nicht das Oeffnen des Screens (sonst
+    // zaehlt die Auswahlzeit zur Matchdauer).
+    setScoreLog((l) => (l.length === 1 ? [[0, 0, Date.now()]] : l));
     setStep(2);
   };
 
