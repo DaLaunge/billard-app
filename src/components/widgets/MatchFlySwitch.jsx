@@ -18,7 +18,7 @@ export default function MatchFlySwitch() {
         <span className="settings-switch-label">{label}</span>
       </label>
       <InfoButton title={label}>
-        {t("Wählst du bei „Neues Match“ einen Spieler, springt seine Kugel aus der Kachel in den freien Platz oben – beim Entfernen fliegt sie zurück. Gilt nur auf diesem Gerät und nicht, wenn dein Gerät „Bewegung reduzieren“ eingestellt hat.")}
+        {t("Wählst du bei „Neues Match“ einen Spieler, springt seine Kugel aus der Kachel in den freien Platz oben – beim Entfernen verschwindet sie sanft. Gilt nur auf diesem Gerät und nicht, wenn dein Gerät „Bewegung reduzieren“ eingestellt hat.")}
       </InfoButton>
     </div>
   );

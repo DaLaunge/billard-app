@@ -892,6 +892,10 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 .sticky-cta { position: sticky; bottom: -24px; z-index: 5; margin: 8px -4px 0; padding: 14px 4px calc(34px + env(safe-area-inset-bottom));
   background: linear-gradient(to top, var(--felt) 62%, transparent); }
 .sticky-cta .btn { margin-top: 0; }
+.sticky-cta .pt-preview { margin: 0 0 10px; }
+/* Mit Vorschau: der Verlauf beginnt hoeher und ist unter dem Text schon deckend, sonst
+   laeuft der Text ueber die Spielerkacheln dahinter. */
+.sticky-cta.with-preview { padding-top: 30px; background: linear-gradient(to top, var(--felt) 80%, transparent); }
 /* Kopfzeile des Match-Screens: Disziplin zentriert statt Titel. */
 .match-head-disc { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .match-head-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; }

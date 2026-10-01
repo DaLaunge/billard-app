@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
-import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star } from "lucide-react";
+import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star, Sparkles } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -21,7 +21,8 @@ import { ModeTiles } from "./widgets/ModePick";
 import ExtraCounters, { CountersSummary } from "./widgets/ExtraCounters";
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
 import { rpcRetry } from "../lib/rpcRetry";
-import { flyIn, flyBack, flyEnabled } from "../lib/flyBall";
+import { flyIn, vanishBall, flyEnabled } from "../lib/flyBall";
+import { getMatchFly, storeMatchFly } from "../lib/uiPrefs";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
@@ -151,25 +152,23 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     const ball = tile?.querySelector(".ball");
     if (ball && flyEnabled()) flyRef.current = { key, rect: ball.getBoundingClientRect() };
   };
-  // Rueckweg beim Entfernen: die Kugel im Platz fliegt zur Kachel des Spielers
-  // (falls sie in der Liste steht und im Bild ist).
-  const flyBackSlot = (key) => {
-    const pid = slotVal[key]?.id;
-    if (!pid || !flyEnabled()) return false;
-    return flyBack(
-      document.querySelector(`.vs-slot[data-slot="${key}"] .ball`),
-      document.querySelector(`.opp-cell[data-pid="${pid}"] .opp-card .ball`),
-    );
-  };
+  // Entfernen: die Kugel im Platz schrumpft und verblasst an Ort und Stelle. Kein
+  // Rueckflug zur Kachel - beim Entfernen verschiebt sich die Liste, das Ziel waere
+  // schon beim Start veraltet gewesen und die Kugel neben die Kachel gehuepft.
+  const vanishSlot = (key) => vanishBall(document.querySelector(`.vs-slot[data-slot="${key}"] .ball`));
+  // Kugel-Animation ein/aus (Geraeteeinstellung, siehe uiPrefs.js; auch unter Profil
+  // bearbeiten -> Dieses Geraet). Hier ein Schalter direkt im Optionsfeld der Liste.
+  const [flyOn, setFlyOn] = useState(getMatchFly);
+  const toggleFly = () => { const v = !flyOn; setFlyOn(v); storeMatchFly(v); };
   const pickPlayer = (p, tile) => {
     if (mode === "single") {
-      if (opp?.id === p.id) { flyBackSlot("opp"); setOpp(null); return; }
+      if (opp?.id === p.id) { vanishSlot("opp"); setOpp(null); return; }
       queueFly("opp", tile);
       setOpp(p);
       return;
     }
     const cur = SLOT_ORDER.find((k) => slotVal[k]?.id === p.id);
-    if (cur) { flyBackSlot(cur); setSlot(cur, null); setActiveSlot(cur); return; }
+    if (cur) { vanishSlot(cur); setSlot(cur, null); setActiveSlot(cur); return; }
     const target = activeKey;
     if (!target) return;
     queueFly(target, tile);
@@ -193,7 +192,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const slotRole = { partner: t("Partner"), opp: mode === "double" ? t("Gegner 1") : t("Gegner"), opp2: t("Gegner 2") };
   // Zur Spielerliste springen und sie kurz aufleuchten lassen - am Handy liegt
   // sie unter der Aufstellung, am PC daneben.
-  const nudgePlayers = (scroll = true) => {
+  const nudgePlayers = (soft = false) => {
     const card = playersRef.current;
     const scroller = card?.closest("main.content");
     let scrolled = false;
@@ -206,7 +205,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       // seine Hoehe gehoert zum Abstand dazu.
       const dock = document.querySelector(".vs-dock");
       const dockH = dock && getComputedStyle(dock).position === "sticky" ? dock.offsetHeight : 0;
-      if (scroll && (rel > 120 + dockH || rel < dockH)) {
+      // soft (Platz geleert): nur scrollen, wenn die Karte gar nicht im Bild steht - ein
+      // Scrollen um ein paar Pixel liess die Liste beim Entfernen "wackeln".
+      const farOff = soft ? (rel > scroller.clientHeight - 80 || rel < dockH) : (rel > 120 + dockH || rel < dockH);
+      if (farOff) {
         scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + rel - 12 - dockH), behavior: "smooth" });
         scrolled = true;
       }
@@ -218,11 +220,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const slot = (p, key) => {
     const role = key ? slotRole[key] : t("Du");
     if (p) {
-      // Steht die Kachel des Spielers im Bild, fliegt die Kugel dorthin zurueck und die
-      // Liste bleibt, wo sie ist (ein Scrollen wuerde das Ziel verschieben). Sonst wie
-      // beim leeren Platz: zur Liste scrollen.
       const clear = key ? () => {
-        nudgePlayers(!flyBackSlot(key));
+        vanishSlot(key);
+        nudgePlayers(true);
         setSlot(key, null);
         setActiveSlot(key);
       } : null;
@@ -625,8 +625,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <div className="turnier-form">
                 <FieldLabel label={t("Modus")} />
                 <ModeTiles value={mode} onChange={chooseMode} />
-
-                {mode === "single" && opp && <PointPreview dsc={disc} />}
               </div>
             </section>
             {/* Die Aufstellung bleibt beim Scrollen der Spielerliste OBEN am
@@ -680,6 +678,12 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                         <Icon size={14} style={{ marginRight: 4, verticalAlign: -2 }} />{label}
                       </button>
                     ))}
+                  </div>
+                  <div className="chips small" style={{ marginTop: 8 }}>
+                    <button className={"chip" + (flyOn ? " active" : "")} aria-pressed={flyOn} onClick={toggleFly}
+                      title={t("Kugel springt in die Aufstellung")}>
+                      <Sparkles size={14} style={{ marginRight: 4, verticalAlign: -2 }} />{t("Kugel-Animation")}
+                    </button>
                   </div>
                   {allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
                     <div className="chips small" style={{ marginTop: 8 }}>
@@ -803,7 +807,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             man in der Spielerliste gescrollt hat (Nutzer-Feedback 2026-10-01: muss
             immer gut erreichbar sein) - in BEIDEN Modi, inaktiv, bis der Gegner
             bzw. alle drei Plaetze feststehen. */}
-        <div className="sticky-cta">
+        <div className={"sticky-cta" + (mode === "single" && opp && !isGuestMatch ? " with-preview" : "")}>
+          {/* Die Vorschau steht hier unten und nicht mehr in der Modus-Karte: dort schob
+              sie beim Waehlen eines Gegners alles darunter um ~58 px nach unten (und beim
+              Entfernen wieder hoch) - die Liste "wackelte" unter dem Finger. */}
+          {mode === "single" && opp && <PointPreview dsc={disc} />}
           <button className="btn primary" disabled={!ready} onClick={() => start(opp)}>
             <Swords size={18} /> {t("Match starten")}
           </button>
