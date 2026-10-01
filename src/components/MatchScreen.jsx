@@ -340,7 +340,14 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Spielerkacheln blenden sich beim Hineinscrollen ein (nur stabile Werte als
   // Abhaengigkeit, siehe useRevealOnScroll). Auch die Sortierung gehoert dazu:
   // eine neue Reihenfolge baut die Kacheln neu auf.
-  const formRef = useRevealOnScroll([step, opponents.length, query === "", mode, oppCount, sortMode, disc]);
+  // Die ID-Reihenfolge gehoert in die Abhaengigkeiten: im Doppel haengt der moegliche
+  // Gewinn (und damit bei "Punkte" die Auswahl der ersten N Kacheln) von den schon
+  // gewaehlten Spielern ab. Jede Auswahl kann also neue Kacheln in die Liste bringen -
+  // die tragen "reveal" ohne "is-in" und blieben unsichtbar, solange der Haken nicht neu
+  // sucht (Bug-Meldung 2026-10-01: "einige moegliche Gegner verschwinden, sobald ich
+  // einen angeklickt habe"). Ein String ist stabil, das Array selbst waere es nicht.
+  const shownKey = opponents.map((p) => p.id).join(",");
+  const formRef = useRevealOnScroll([step, shownKey, query === "", mode, oppCount, sortMode, disc]);
 
   // Gast fuers normale Match hinzufuegen (Turniere haben dafuer schon
   // tournament_organizer_add_guest() - dies hier ist das Gegenstueck ohne
