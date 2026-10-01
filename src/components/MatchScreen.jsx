@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
@@ -21,6 +21,7 @@ import { ModeTiles } from "./widgets/ModePick";
 import ExtraCounters, { CountersSummary } from "./widgets/ExtraCounters";
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
 import { rpcRetry } from "../lib/rpcRetry";
+import { flyIn, flyBack, flyEnabled } from "../lib/flyBall";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
@@ -44,6 +45,16 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [activeSlot, setActiveSlot] = useState(null); // Doppel: "partner" | "opp" | "opp2" - wohin der naechste Tipp geht
   const [nudge, setNudge] = useState(false);          // Spielerliste leuchtet kurz auf
   const playersRef = useRef(null);
+  // Kugel-Flug (lib/flyBall.js): beim Antippen einer Kachel merkt sich queueFly den
+  // Platz und den Rahmen der Kachel-Kugel; nach dem Rendern (der Platz ist dann
+  // gefuellt) startet der Effekt unten die Animation.
+  const flyRef = useRef(null);
+  useLayoutEffect(() => {
+    const f = flyRef.current;
+    if (!f) return;
+    flyRef.current = null;
+    flyIn(document.querySelector(`.vs-slot[data-slot="${f.key}"] .ball`), f.rect);
+  });
   const countFunnel = useFunnel();                    // Trichter im Kopf der Spielerliste: wie viele zeigen
   const [mode, setMode] = useState(dv("mode", "single"));
   const [partner, setPartner] = useState(fresh(dv("partner", null)));
@@ -136,12 +147,32 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // waehlen, sonst der naechste freie in der Reihenfolge Partner, Gegner 1,
   // Gegner 2); ein schon gewaehlter Spieler wird wieder entfernt und sein
   // Platz ist danach der aktive.
-  const pickPlayer = (p) => {
-    if (mode === "single") { setOpp(opp?.id === p.id ? null : p); return; }
+  const queueFly = (key, tile) => {
+    const ball = tile?.querySelector(".ball");
+    if (ball && flyEnabled()) flyRef.current = { key, rect: ball.getBoundingClientRect() };
+  };
+  // Rueckweg beim Entfernen: die Kugel im Platz fliegt zur Kachel des Spielers
+  // (falls sie in der Liste steht und im Bild ist).
+  const flyBackSlot = (key) => {
+    const pid = slotVal[key]?.id;
+    if (!pid || !flyEnabled()) return false;
+    return flyBack(
+      document.querySelector(`.vs-slot[data-slot="${key}"] .ball`),
+      document.querySelector(`.opp-cell[data-pid="${pid}"] .opp-card .ball`),
+    );
+  };
+  const pickPlayer = (p, tile) => {
+    if (mode === "single") {
+      if (opp?.id === p.id) { flyBackSlot("opp"); setOpp(null); return; }
+      queueFly("opp", tile);
+      setOpp(p);
+      return;
+    }
     const cur = SLOT_ORDER.find((k) => slotVal[k]?.id === p.id);
-    if (cur) { setSlot(cur, null); setActiveSlot(cur); return; }
+    if (cur) { flyBackSlot(cur); setSlot(cur, null); setActiveSlot(cur); return; }
     const target = activeKey;
     if (!target) return;
+    queueFly(target, tile);
     setSlot(target, p);
     const after = { ...slotVal, [target]: p };
     setActiveSlot(SLOT_ORDER.find((k) => !after[k]) || null);
@@ -162,9 +193,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const slotRole = { partner: t("Partner"), opp: mode === "double" ? t("Gegner 1") : t("Gegner"), opp2: t("Gegner 2") };
   // Zur Spielerliste springen und sie kurz aufleuchten lassen - am Handy liegt
   // sie unter der Aufstellung, am PC daneben.
-  const nudgePlayers = () => {
+  const nudgePlayers = (scroll = true) => {
     const card = playersRef.current;
     const scroller = card?.closest("main.content");
+    let scrolled = false;
     if (card && scroller) {
       // Zielwert selbst berechnen statt scrollIntoView: zuverlaessig auch im
       // Scroll-Container der App, und nur dann scrollen, wenn die Karte nicht
@@ -174,19 +206,28 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       // seine Hoehe gehoert zum Abstand dazu.
       const dock = document.querySelector(".vs-dock");
       const dockH = dock && getComputedStyle(dock).position === "sticky" ? dock.offsetHeight : 0;
-      if (rel > 120 + dockH || rel < dockH) {
+      if (scroll && (rel > 120 + dockH || rel < dockH)) {
         scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + rel - 12 - dockH), behavior: "smooth" });
+        scrolled = true;
       }
     }
     setNudge(true);
     setTimeout(() => setNudge(false), 900);
+    return scrolled;
   };
   const slot = (p, key) => {
     const role = key ? slotRole[key] : t("Du");
     if (p) {
-      const clear = key ? () => { setSlot(key, null); setActiveSlot(key); nudgePlayers(); } : null;
+      // Steht die Kachel des Spielers im Bild, fliegt die Kugel dorthin zurueck und die
+      // Liste bleibt, wo sie ist (ein Scrollen wuerde das Ziel verschieben). Sonst wie
+      // beim leeren Platz: zur Liste scrollen.
+      const clear = key ? () => {
+        nudgePlayers(!flyBackSlot(key));
+        setSlot(key, null);
+        setActiveSlot(key);
+      } : null;
       return (
-        <button type="button" className={"vs-slot filled" + (clear ? "" : " me")} onClick={clear || undefined}
+        <button type="button" className={"vs-slot filled" + (clear ? "" : " me")} data-slot={key || "me"} onClick={clear || undefined}
           disabled={!clear} title={clear ? `${role} – ${t("Entfernen")}` : role}>
           <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={44} />
           <span>{p.nickname}</span>
@@ -194,7 +235,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       );
     }
     return (
-      <button type="button" className={"vs-slot empty" + (activeKey === key ? " active" : "")}
+      <button type="button" data-slot={key} className={"vs-slot empty" + (activeKey === key ? " active" : "")}
         onClick={() => { if (mode === "double") setActiveSlot(key); nudgePlayers(); }}
         title={`${role} – ${t("Spieler wählen")}`} aria-label={`${role} – ${t("Spieler wählen")}`}>
         <span className="vs-empty-ball"><Plus size={16} /></span>
@@ -707,8 +748,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     const g = gainOf(p);
                     const isRec = recIds.has(p.id);
                     return (
-                      <div key={p.id} className="opp-cell reveal" style={{ "--i": i % 4 }}>
-                        <button className={"opp-card" + (role ? " sel" : "") + (isRec ? " rec" : "")} onClick={() => pickPlayer(p)}>
+                      <div key={p.id} data-pid={p.id} className="opp-cell reveal" style={{ "--i": i % 4 }}>
+                        <button className={"opp-card" + (role ? " sel" : "") + (isRec ? " rec" : "")} onClick={(e) => pickPlayer(p, e.currentTarget)}>
                           <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
                           <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
                           {/* Schon gewaehlt: bleibt in der Liste, Kugel abgedunkelt, die

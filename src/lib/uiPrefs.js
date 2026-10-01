@@ -25,3 +25,18 @@ export function getHideTabbar() {
 export function storeHideTabbar(on) {
   try { localStorage.setItem(HIDE_TABBAR_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
+
+/* Kugel-Flug im Match: waehlt man einen Spieler, springt seine Kugel aus der
+   Kachel in den freien Platz der Aufstellung, beim Entfernen zurueck (lib/flyBall.js).
+   Standard ist AN - nur ein ausdrueckliches "aus" wird gespeichert, darum der
+   Vergleich gegen "0" (wie bei getKeepAwake()). Einstellbar unter Profil ->
+   Profil bearbeiten -> Dieses Geraet. */
+const MATCH_FLY_KEY = "matchFlyAnim";
+
+export function getMatchFly() {
+  try { return localStorage.getItem(MATCH_FLY_KEY) !== "0"; } catch { return true; }
+}
+
+export function storeMatchFly(on) {
+  try { localStorage.setItem(MATCH_FLY_KEY, on ? "1" : "0"); } catch { /* ignore */ }
+}

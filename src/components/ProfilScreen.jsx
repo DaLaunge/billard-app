@@ -16,6 +16,7 @@ import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import InfoButton from "./widgets/InfoButton";
+import MatchFlySwitch from "./widgets/MatchFlySwitch";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
@@ -603,6 +604,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 {t("Beim Runterscrollen verschwindet die Leiste am unteren Rand, beim Hochscrollen kommt sie zurück. Mehr Platz für Ranglisten und Grafiken. Gilt nur auf diesem Gerät.")}
               </InfoButton>
             </div>
+            <MatchFlySwitch />
             {/* Updates: Schalter + Symbolknopf "jetzt suchen" in EINER Zeile
                 statt Schalter, Absatz und Textknopf ueber die volle Breite. */}
             <div className="switch-row">
