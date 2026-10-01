@@ -598,12 +598,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   info={mode === "double" ? t("Tippe drei Spieler an: zuerst deinen Partner, dann die beiden Gegner.") : undefined}
                   actions={(
                     <>
-                      <button type="button" className={"icon-btn small" + (showMyQr ? " on" : "")} aria-pressed={showMyQr}
-                        onClick={() => setShowMyQr((v) => !v)}
-                        aria-label={t("QR-Code zeigen: Mitglieder werben und Match starten")}
-                        title={t("QR-Code zeigen: Mitglieder werben und Match starten")}>
-                        <QrCode size={15} />
-                      </button>
                       <FunnelButton funnel={countFunnel} icon={ArrowUpDown} label={t("Sortieren & Anzahl")} />
                     </>
                   )} />
@@ -628,6 +622,20 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   )}
                 </FunnelPanel>
 
+                <div className="search-row">
+                  <Search size={16} className="mail-ico" />
+                  <input placeholder={t("Suchen, eingeben, scannen …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
+                  {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
+                  {/* Das QR-Symbol gehoert zur Suche (Nutzer-Feedback 2026-10-01): einen
+                      Spieler findet man per Suche, per Eingabe eines Gastes - oder indem
+                      er den eigenen QR-Code scannt. */}
+                  <button type="button" className={"icon-btn small" + (showMyQr ? " on" : "")} aria-pressed={showMyQr}
+                    onClick={() => setShowMyQr((v) => !v)}
+                    aria-label={t("QR-Code zeigen: Mitglieder werben und Match starten")}
+                    title={t("QR-Code zeigen: Mitglieder werben und Match starten")}>
+                    <QrCode size={15} />
+                  </button>
+                </div>
                 {/* Aufklappbarer QR-Code (beide Modi). Zwei Funktionen in einem Code -
                     gezeichnet statt erklaert; Teilen/Kopieren als Symbole. */}
                 <div className={"collapsible" + (showMyQr ? " open" : "")} inert={showMyQr ? undefined : ""}>
@@ -650,11 +658,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   </div>
                 </div>
 
-                <div className="search-row">
-                  <Search size={16} className="mail-ico" />
-                  <input placeholder={t("Spieler suchen oder Gast eingeben …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
-                  {oppQuery && <button className="clear-btn" onClick={() => setOppQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
-                </div>
+
                 {oppQuery.trim() && opponents.length === 0 && (
                   <div className="guest-empty-card">
                     <div className="ghost-info">

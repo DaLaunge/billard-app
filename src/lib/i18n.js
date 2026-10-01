@@ -281,6 +281,7 @@ const TRANSLATIONS = {
     "Alle Disziplinen": "All disciplines",
     "Karte mit Reitern": "Card with tabs",
     "Aussehen": "Appearance",
+    "Suchen, eingeben, scannen …": "Search, enter, scan …",
     "Fun-Zahlen": "Fun numbers",
     "Fun": "Fun",
     "{n} Matches mit Zusatzzählern": "{n} matches with extra counters",

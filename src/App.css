@@ -838,7 +838,16 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 /* Neues Match als Formular im Aufbau von "Neues Turnier" (siehe MatchScreen):
    die Spielerliste ist enger gesetzt als das Turnierformular, weil sie aus
    vielen gleichartigen Kacheln besteht. */
-.match-list-form { gap: 10px; }
+/* .turnier-form.match-list-form: die doppelte Klasse, weil .turnier-form (gap 14px)
+   weiter unten in der Datei steht und sonst gewinnt. */
+.turnier-form.match-list-form { gap: 8px; }
+.match-list-form .field-label { margin-bottom: 0; }
+.match-list-form .search-row { margin-bottom: 0; }
+/* Ein zugeklapptes .collapsible hat Hoehe 0, bekommt aber trotzdem den Zeilenabstand
+   des Flex-Containers - zwei davon (Sortierung, QR) machten den Abstand zwischen
+   Ueberschrift und Suchleiste viel zu gross. Der Ausgleich nimmt ihn wieder weg
+   (gleicher Wert wie der gap oben). */
+.match-list-form > .collapsible:not(.open) { margin-bottom: -8px; }
 .field-label-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
 .field-label-actions .icon-btn { margin: -4px 0; }
 .icon-btn.on { color: var(--accent); border-color: var(--accent-line); }
@@ -872,8 +881,7 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
    damit der Streifen Kind der hohen Seite ist. Oben haftet er bei top:0 am
    Bildschirmrand (anders als unten bei .sticky-cta, wo -24px noetig sind). */
 .match-selectors { display: contents; }
-.vs-dock { position: sticky; top: 0; z-index: 6; margin: 0 -4px; padding: calc(16px + env(safe-area-inset-top)) 4px 12px;
-  background: linear-gradient(to bottom, var(--felt) 80%, transparent); }
+.vs-dock { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; }
 .vs-dock .vs-strip { margin-top: 0; box-shadow: 0 6px 16px rgba(0, 0, 0, .25); }
 /* Haupt-Aktion des Match-Screens (Match starten / Beenden / Match speichern):
    haengt unten am Rand des Scroll-Bereichs und ist so immer erreichbar. Der
@@ -1704,7 +1712,11 @@ button.id-card-head { cursor: pointer; }
    demselben Prinzip - am Handy untereinander (Quelltext-Reihenfolge),
    ab 900px zweispaltig. */
 .live-split, .stat-split, .match-split { display: flex; flex-direction: column; gap: var(--card-gap); }
-.match-split { gap: 20px; }
+/* Abstand zwischen den Karten = der Standard der App (--card-gap), wie auf Statistik. */
+.match-split { gap: var(--card-gap); }
+/* Die Karten tragen selbst margin-bottom: var(--card-gap) - hier uebernimmt der gap, sonst
+   waere der Abstand doppelt so gross wie auf den anderen Bildschirmen (siehe CLAUDE.md). */
+.match-split .stat-block { margin-bottom: 0; }
 .stat-chart-col, .stat-grid, .match-selectors, .match-players { min-width: 0; }
 /* Am Handy unsichtbare Spalten-Huellen: ihre Kinder werden dadurch direkte
    Flex-Kinder des Bildschirms und ordnen sich ueber ihr eigenes "order" zu
@@ -1871,9 +1883,9 @@ button.id-card-head { cursor: pointer; }
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }
-  .match-split { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+  .match-split { display: grid; grid-template-columns: 340px 1fr; gap: var(--card-gap); align-items: start; }
   /* Am PC liegen Auswahl und Liste nebeneinander: dort haftet die ganze linke Spalte. */
-  .match-selectors { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 0; }
+  .match-selectors { display: flex; flex-direction: column; gap: var(--card-gap); position: sticky; top: 0; }
   .vs-dock { position: static; margin: 0; padding: 0; background: none; }
 
   /* Verwaltung: keine Identitaets-Spalte noetig (kein "eigener" Fokus wie
