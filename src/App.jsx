@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import TutorialOverlay from "./components/TutorialOverlay";
+import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
+import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
 import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, Check, X, FileText } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
@@ -1153,7 +1156,32 @@ export default function App() {
     setPendingSeen(ids);
     try { sessionStorage.setItem("pendingPopupSeen", JSON.stringify(ids)); } catch { /* Privatmodus */ }
   }, [pendingSeen, pendingForMe]);
-  const showPendingPopup = !!player && notifyMode !== "off" && MAIN_TABS.includes(tab) && !mustUpdate
+  // Tutorial (lib/tutorial/, components/TutorialOverlay.jsx): tutorialRun =
+  // { steps, news } waehrend es laeuft. Automatisch nur auf Hauptbildschirmen
+  // und wenn kein anderes Popup offen ist; neue Nutzer bekommen die ganze Tour,
+  // Bestehende nach einem Update nur die ungesehenen Schritte. Einmal pro
+  // Seitenaufruf geprueft (tutorialCheckedRef), danach nur noch auf Wunsch
+  // ("Tutorial ansehen" im Profil).
+  const [tutorialRun, setTutorialRun] = useState(null);
+  const tutorialCheckedRef = useRef(false);
+  const tutorialBlocked = !player || !initialLoadDone || !MAIN_TABS.includes(tab) || mustUpdate
+    || !!celebrate || !!tourneyReady || !!wsReady || !!draftOffer;
+  useEffect(() => {
+    if (tutorialCheckedRef.current || tutorialBlocked || tutorialRun) return undefined;
+    const timer = setTimeout(() => {
+      tutorialCheckedRef.current = true;
+      const hasOwnMatch = matches.some((m) => [m.player1_id, m.player1b_id, m.player2_id, m.player2b_id].includes(player.id));
+      const run = initialRun(player.id, hasOwnMatch);
+      if (run.steps.length > 0) setTutorialRun(run);
+    }, 1200);   // kurz warten, damit die Startseite zuerst zu sehen ist
+    return () => clearTimeout(timer);
+  }, [tutorialBlocked, tutorialRun, player, matches]);
+  const startTutorial = useCallback(() => setTutorialRun({ steps: TUTORIAL_STEPS, news: false }), []);
+  const finishTutorial = useCallback(() => {
+    if (tutorialRun && player) markSeen(player.id, tutorialRun.steps.map((s) => s.id));
+    setTutorialRun(null);
+  }, [tutorialRun, player]);
+  const showPendingPopup = !!player && notifyMode !== "off" && MAIN_TABS.includes(tab) && !mustUpdate && !tutorialRun
     && !celebrate && !tourneyReady && !wsReady && !draftOffer
     && pendingForMe.some((m) => !pendingSeen.includes(m.id));
 
@@ -1578,7 +1606,7 @@ export default function App() {
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
-                  achievementCounters={achievementCounters}
+                  achievementCounters={achievementCounters} onStartTutorial={startTutorial}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length + wsReadyList.length}
                   lang={lang} onLang={changeLang}
@@ -1677,25 +1705,25 @@ export default function App() {
 
             {tab !== "match" && (
             <nav className={"tabbar" + (tabbarHidden ? " tabbar-off" : "")}>
-              <button className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
+              <button data-tour="tab-stats" className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
-              <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays" ? " on" : "")} onClick={openTurniereMenu}>
+              <button data-tour="tab-turnier" className={"tab" + (tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays" ? " on" : "")} onClick={openTurniereMenu}>
                 <Trophy size={21} /><span>{t("Turniere")}</span>
                 {(tourneyReadyList.length + wsReadyList.length) > 0 && <span className="badge">{tourneyReadyList.length + wsReadyList.length}</span>}
               </button>
-              <button className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
+              <button data-tour="tab-fab" className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
                 <span className="fab-shine" />
                 <Plus size={26} className="fab-plus" />
               </button>
-              <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
+              <button data-tour="tab-live" className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
                 <Radio size={21} /><span>{t("Live")}</span>
                 {pings.length + openChallengesAll.length + plannings.length > 0 && (
                   <span className="badge live">{pings.length + openChallengesAll.length + plannings.length}</span>
                 )}
               </button>
-              <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
+              <button data-tour="tab-profil" className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
                 <User size={21} /><span>{t("Profil")}</span>
                 {openChallengesToMe.length > 0
                   ? <span className="badge" aria-label={t("Offene Herausforderung")} title={t("Offene Herausforderung")}>!</span>
@@ -1704,6 +1732,10 @@ export default function App() {
             </nav>
             )}
           </>
+        )}
+        {tutorialRun && (
+          <TutorialOverlay steps={tutorialRun.steps} news={tutorialRun.news} tab={tab}
+            onGoTab={(tb) => navPush({ tab: tb })} onFinish={finishTutorial} />
         )}
         {toastMsg && (
           <div className={"toast" + (toastMsg.action ? " with-action" : "")}>

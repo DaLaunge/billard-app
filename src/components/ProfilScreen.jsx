@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, BellOff, BellRing, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, BellOff, BellRing, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
@@ -100,7 +100,7 @@ function CardVisRow({ shown, label, icon, meta, className = "", canUp, canDown, 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
@@ -684,6 +684,19 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <section className="stat-block">
             <h3><UserCog size={17} /> {t("Konto & Hilfe")}</h3>
             <PasswordSection toast={toast} />
+            {onStartTutorial && (
+              <div className="acct-sub">
+                <div className="acct-row">
+                  <GraduationCap size={16} className="acct-ico" />
+                  <span className="acct-text">{t("Tutorial")}</span>
+                  <button type="button" className="icon-btn" onClick={onStartTutorial}
+                    aria-label={t("Tutorial ansehen")} title={t("Tutorial ansehen")}>
+                    <Play size={18} />
+                  </button>
+                  <InfoButton title={t("Tutorial")}>{t("Die kurze Tour durch die App – jederzeit wieder abrufbar. Nach einem Update zeigt sie dir automatisch nur die neuen Funktionen.")}</InfoButton>
+                </div>
+              </div>
+            )}
             <div className="acct-sub">
               <div className="acct-row">
                 <MessageCircle size={16} className="acct-ico" />

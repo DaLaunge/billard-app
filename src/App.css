@@ -2640,3 +2640,33 @@ button.id-card-head { cursor: pointer; }
   border-radius: 10px; font-size: 13px; line-height: 1.35; color: var(--warn);
   background: color-mix(in srgb, var(--warn) 12%, transparent); }
 .extra-warn svg { flex: none; margin-top: 2px; }
+
+/* Tutorial-Overlay (components/TutorialOverlay.jsx). Der Ruhezustand ist
+   sichtbar; Bewegung nur im reduced-motion-Block darunter. */
+.tour-root { position: fixed; inset: 0; z-index: 130; }
+.tour-dim { position: absolute; inset: 0; background: rgba(4, 20, 15, 0.78); }
+.tour-spot { position: fixed; border-radius: 16px; border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgba(4, 20, 15, 0.78); pointer-events: none; }
+.tour-card { position: fixed; left: 50%; transform: translateX(-50%); width: min(92vw, 400px);
+  background: var(--felt-3); border: 1px solid var(--accent); border-radius: 18px; padding: 18px 18px 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45); }
+.tour-card.centered { top: 50%; transform: translate(-50%, -50%); }
+.tour-card.at-top { top: max(16px, env(safe-area-inset-top)); }
+.tour-card.at-bottom { bottom: calc(110px + env(safe-area-inset-bottom)); }
+.tour-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding-right: 26px; }
+.tour-head h3 { margin: 0; font-size: 1.1rem; }
+.tour-ico { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  background: var(--accent-soft); color: var(--accent); }
+.tour-card p { margin: 0 0 14px; line-height: 1.45; color: var(--ivory); }
+.tour-x { position: absolute; top: 10px; right: 10px; background: none; border: 0; color: var(--ivory-dim, inherit); padding: 6px; cursor: pointer; }
+.tour-news { display: inline-flex; align-items: center; gap: 5px; margin-bottom: 8px; padding: 2px 9px; border-radius: 99px;
+  font-size: 12px; font-weight: 700; background: var(--accent); color: var(--accent-ink); }
+.tour-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tour-count { font-size: 13px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+.tour-btns { display: flex; align-items: center; gap: 8px; }
+@media (min-width: 900px) { .tour-card.at-bottom { bottom: 110px; } }
+@media (prefers-reduced-motion: no-preference) {
+  .tour-spot { transition: top .25s ease, left .25s ease, width .25s ease, height .25s ease; }
+  .tour-card { animation: tour-in .25s ease both; }
+  @keyframes tour-in { from { opacity: 0; margin-top: 10px; } to { opacity: 1; margin-top: 0; } }
+}
