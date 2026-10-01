@@ -678,7 +678,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} />
               )}
               <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
-                {t("Weiter")} <ArrowRight size={18} />
+                {t("Beenden")} <ArrowRight size={18} />
               </button>
               {s1 === s2 && total > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
             </>
