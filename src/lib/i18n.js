@@ -281,6 +281,8 @@ const TRANSLATIONS = {
     "Alle Disziplinen": "All disciplines",
     "Karte mit Reitern": "Card with tabs",
     "Aussehen": "Appearance",
+    "Zurück zur Auswahl?": "Back to the selection?",
+    "Ja – zurück": "Yes – go back",
     "Zusatzzähler": "Extra counters",
     "optional": "optional",
     "Fluke": "Fluke",

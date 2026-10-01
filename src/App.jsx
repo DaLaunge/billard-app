@@ -1537,7 +1537,20 @@ export default function App() {
                   onOpenProtokoll={openProtokoll} tournamentCtx={matchTournamentCtx}
                   keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} resumeDraft={resumeDraft}
                   onDone={() => { clearMatchDraft(player.id); loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}
-                  onCancel={() => { clearMatchDraft(player.id); allowLeaveMatchRef.current = true; window.history.back(); }} />
+                  onCancel={() => {
+                    clearMatchDraft(player.id);
+                    // Turnierpartie: zurueck zum Turnier (Verlauf). Sonst zum Startmenue
+                    // aus den Einstellungen bzw. - bei "Zuletzt geoeffnet" - zum letzten
+                    // Hauptmenuepunkt VOR der Matchauswahl (Nutzer-Feedback 2026-10-01).
+                    // navReplace statt history.back(): ersetzt den Match-Eintrag, loest
+                    // kein popstate aus und ist unabhaengig davon, was zuvor im Verlauf lag.
+                    // allowLeaveMatchRef bleibt hier bewusst aus - es wird nur von einem
+                    // popstate zurueckgesetzt und wuerde sonst offen bleiben.
+                    if (matchTournamentCtx) { allowLeaveMatchRef.current = true; window.history.back(); return; }
+                    let target = player.start_tab;
+                    if (target === "last") { try { target = localStorage.getItem("lastMainTab"); } catch { target = null; } }
+                    navReplace({ tab: MAIN_TABS.includes(target) ? target : "stats" });
+                  }} />
                 );
               })()}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}

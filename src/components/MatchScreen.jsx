@@ -435,6 +435,26 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     );
   };
 
+  // "Zurueck" im laufenden Match fuehrt zur MATCHAUSWAHL, nicht aus dem Screen
+  // (Nutzer-Feedback 2026-10-01: den Knopf drueckt man meist, weil die
+  // Konfiguration falsch war - dann gibt man aehnliche Angaben neu ein). Spieler,
+  // Modus und Disziplin bleiben dabei vorbelegt, nur Ergebnis, Zaehler und
+  // Protokoll werden verworfen. Nachgefragt wird nur, wenn etwas verloren ginge.
+  // Turnierpartien starten ohne Auswahl im Ergebnis-Schritt: dort bleibt "Zurueck"
+  // das Verlassen des Screens (zurueck zum Turnier).
+  const hasEntered = () => s1 + s2 > 0 || hasCounters(counters) || scoreLog.length > 1 || (is141 && scorerHasProgress());
+  const backToSelection = () => {
+    clearMatchDraft(me.id);
+    resetScores();
+    setRunLog(null); setGhostStartedAt(null); setPendingDisc(null); setAbortAsk(false);
+    setStep(0);
+  };
+  const onBackPress = () => {
+    if (step === 0 || step === 4) { onCancel(); return; }
+    if (tournamentCtx) { setAbortAsk(true); return; }
+    if (hasEntered()) setAbortAsk(true); else backToSelection();
+  };
+
   if (showInvite) {
     return <InviteScreen me={me} toast={toast}
       onBack={() => { setShowInvite(false); onReload && onReload(); }} />;
@@ -447,7 +467,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           die Disziplin ganz oben und zentriert - zur Wahl im Formular, danach als
           Kugel mit Name. */}
       <header className="screen-head with-back match-head">
-        <button className="back-btn" onClick={() => { if (step === 0 || step === 4) onCancel(); else setAbortAsk(true); }} aria-label={t("Zurueck")}>
+        <button className="back-btn" onClick={onBackPress} aria-label={t("Zurueck")}>
           <ChevronLeft size={22} />
         </button>
         <div className="match-head-disc">
@@ -469,10 +489,12 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       {abortAsk && (
         <div className="modal-overlay" onClick={() => setAbortAsk(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <h3>{t("Match abbrechen?")}</h3>
+            <h3>{tournamentCtx ? t("Match abbrechen?") : t("Zurück zur Auswahl?")}</h3>
             <p>{t("Alle Eingaben gehen verloren")}{is141 ? t(" – ein 14/1-Protokoll lässt sich nicht wiederherstellen") : ""}.</p>
             <div className="sp-controls">
-              <button className="btn ghost warn" onClick={() => { setAbortAsk(false); onCancel(); }}>{t("Ja – beenden")}</button>
+              <button className="btn ghost warn" onClick={() => { if (tournamentCtx) { setAbortAsk(false); onCancel(); } else backToSelection(); }}>
+                {tournamentCtx ? t("Ja – beenden") : t("Ja – zurück")}
+              </button>
               <button className="btn primary" onClick={() => setAbortAsk(false)}>{t("Match fortführen")}</button>
             </div>
           </div>
