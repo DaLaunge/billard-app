@@ -1,17 +1,31 @@
-export function computeStats(matches) {
+// mode: "single" (Standard - nur Einzel, wie bisher), "double" (nur Doppel) oder
+// "both". Ein Doppel zaehlt fuer BEIDE Spieler jeder Seite: Sieg, Niederlage,
+// Serie und Racks, jeweils mit dem Ergebnis der eigenen Seite. Gast-Matches
+// zaehlen nie (wie beim Einzel), auch wenn nur EIN Gast beteiligt ist.
+export function computeStats(matches, mode = "single") {
   const s = {};
   const get = (n) => (s[n] ||= { name: n, spiele: 0, siege: 0, racksW: 0, racksT: 0, results: [] });
   const sorted = [...matches].sort((a, b) => new Date(a.played_at) - new Date(b.played_at));
   sorted.forEach((m) => {
-    if (m.player1b_id) return;
-    if (m.p1.is_guest || m.p2.is_guest) return; // Gast-Matches zaehlen wie Ghost-Training nicht fuer Quote/Serien
-    const a = get(m.p1.nickname), b = get(m.p2.nickname);
-    a.spiele++; b.spiele++;
-    a.racksW += m.score1; a.racksT += m.score1 + m.score2;
-    b.racksW += m.score2; b.racksT += m.score1 + m.score2;
-    const aWon = m.score1 > m.score2;
-    if (aWon) a.siege++; else b.siege++;
-    a.results.push(aWon); b.results.push(!aWon);
+    const dbl = !!m.player1b_id;
+    if (dbl ? mode === "single" : mode === "double") return;
+    const side1 = dbl ? [m.p1, m.p1b] : [m.p1];
+    const side2 = dbl ? [m.p2, m.p2b] : [m.p2];
+    if ([...side1, ...side2].some((p) => !p || p.is_guest)) return; // Gast-Matches zaehlen wie Ghost-Training nicht fuer Quote/Serien
+    const total = m.score1 + m.score2;
+    const side1Won = m.score1 > m.score2;
+    side1.forEach((p) => {
+      const x = get(p.nickname);
+      x.spiele++; x.racksW += m.score1; x.racksT += total;
+      if (side1Won) x.siege++;
+      x.results.push(side1Won);
+    });
+    side2.forEach((p) => {
+      const x = get(p.nickname);
+      x.spiele++; x.racksW += m.score2; x.racksT += total;
+      if (!side1Won) x.siege++;
+      x.results.push(!side1Won);
+    });
   });
   Object.values(s).forEach((p) => {
     p.quote = p.spiele ? Math.round((100 * p.siege) / p.spiele) : 0;

@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Trophy, Radio, Plus, BarChart3, User, RefreshCw } from "lucide-react";
+import TutorialOverlay from "./components/TutorialOverlay";
+import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
+import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
+import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, Check, X, FileText } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs } from "./lib/session";
+import { getVs, clearVs, clearRef } from "./lib/session";
 import { fetchAllRows } from "./lib/data";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
 import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
-import { hashColor, initials } from "./lib/format";
+import { hashColor, initials, isDoubles, mSide, fmtDate } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
@@ -19,6 +22,8 @@ import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
 import { useHideTabbar } from "./lib/useHideTabbar";
 import { usePullToRefresh } from "./lib/usePullToRefresh";
+import { usePageTransition } from "./lib/usePageTransition";
+import { useSwipeNav } from "./lib/useSwipeNav";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
@@ -479,7 +484,16 @@ export default function App() {
     const report = async () => {
       if (Date.now() - lastVersionReportRef.current < 10 * 60000) return;
       lastVersionReportRef.current = Date.now();
-      const { data, error } = await supabase.rpc("report_app_version", { p_version: Number(APP_VERSION) });
+      // Die Spalte ist eine ganze Zahl: Test-Staende ("391.25") melden ihre
+      // Prod-Basis (391), sonst schluege der Aufruf mit einem Typfehler fehl.
+      // Zusaetzlich die volle Nummer ("391.25", Spalte app_version_full), damit
+      // der Admin auch Minor-Staende sieht. Kennt die DB p_full noch nicht
+      // (Migration 2026-10-01_app_version_full.sql nicht eingespielt), faellt
+      // der Aufruf auf die alte Form zurueck - sonst gaebe es gar keine
+      // Meldung und keine Mindestversion-Pruefung mehr.
+      const major = Math.floor(Number(APP_VERSION));
+      let { data, error } = await supabase.rpc("report_app_version", { p_version: major, p_full: APP_VERSION });
+      if (error) ({ data, error } = await supabase.rpc("report_app_version", { p_version: major }));
       if (!error && typeof data === "number" && Number(APP_VERSION) < data) setMustUpdate(true);
     };
     report();
@@ -923,6 +937,24 @@ export default function App() {
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
   // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
   const ptr = usePullToRefresh(contentEl);
+  // Seitenwechsel-Animation und Wischgesten (siehe lib/usePageTransition.js und
+  // lib/useSwipeNav.js). Gewischt wird auf den vier Hauptmenuepunkten zwischen
+  // den Nachbarn der Leiste und auf Unterseiten zurueck - NIE waehrend einer
+  // Matcheingabe (dort kostet eine versehentliche Geste das Ergebnis) und nicht
+  // hinter dem Zwangs-Update-Overlay.
+  usePageTransition(contentEl, tab);
+  const mainIdx = MAIN_TABS.indexOf(tab);
+  const goMain = (i) => {
+    const target = MAIN_TABS[i];
+    if (!target || target === tab) return;
+    if (target === "turnier") openTurniereMenu(); else navPush({ tab: target });
+  };
+  useSwipeNav(contentEl, {
+    enabled: !!player && !mustUpdate && !LIVE_ENTRY_TABS.includes(tab),
+    onBack: mainIdx === -1 ? () => window.history.back() : undefined,
+    onPrev: mainIdx > 0 ? () => goMain(mainIdx - 1) : undefined,
+    onNext: mainIdx !== -1 && mainIdx < MAIN_TABS.length - 1 ? () => goMain(mainIdx + 1) : undefined,
+  });
 
   // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
   // Stufe pro Geraet: "off" / "inapp" (Posteingang abfragen, solange die App
@@ -1041,6 +1073,11 @@ export default function App() {
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [player, notifyMode, showNotice]);
+  // Wer schon ein Konto hat und einen Einladungs-Link scannt, hat den Code
+  // (?ref=) unnoetig gemerkt - er soll weder am Login als "eingeladen" noch
+  // spaeter irgendwo gutgeschrieben werden. Ein Neuer hat noch keinen
+  // "player", dessen Code bleibt also bis zur Registrierung erhalten.
+  useEffect(() => { if (player) clearRef(); }, [player]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1108,6 +1145,45 @@ export default function App() {
     else toast(t(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen."));
     loadData();
   };
+
+  // Popup "Match bestaetigen": welche offenen Bestaetigungen in dieser Sitzung
+  // schon gezeigt/weggeschoben wurden. Neue (andere ids) loesen es erneut aus.
+  const [pendingSeen, setPendingSeen] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("pendingPopupSeen") || "[]"); } catch { return []; }
+  });
+  const dismissPending = useCallback(() => {
+    const ids = [...new Set([...pendingSeen, ...pendingForMe.map((m) => m.id)])];
+    setPendingSeen(ids);
+    try { sessionStorage.setItem("pendingPopupSeen", JSON.stringify(ids)); } catch { /* Privatmodus */ }
+  }, [pendingSeen, pendingForMe]);
+  // Tutorial (lib/tutorial/, components/TutorialOverlay.jsx): tutorialRun =
+  // { steps, news } waehrend es laeuft. Automatisch nur auf Hauptbildschirmen
+  // und wenn kein anderes Popup offen ist; neue Nutzer bekommen die ganze Tour,
+  // Bestehende nach einem Update nur die ungesehenen Schritte. Einmal pro
+  // Seitenaufruf geprueft (tutorialCheckedRef), danach nur noch auf Wunsch
+  // ("Tutorial ansehen" im Profil).
+  const [tutorialRun, setTutorialRun] = useState(null);
+  const tutorialCheckedRef = useRef(false);
+  const tutorialBlocked = !player || !initialLoadDone || !MAIN_TABS.includes(tab) || mustUpdate
+    || !!celebrate || !!tourneyReady || !!wsReady || !!draftOffer;
+  useEffect(() => {
+    if (tutorialCheckedRef.current || tutorialBlocked || tutorialRun) return undefined;
+    const timer = setTimeout(() => {
+      tutorialCheckedRef.current = true;
+      const hasOwnMatch = matches.some((m) => [m.player1_id, m.player1b_id, m.player2_id, m.player2b_id].includes(player.id));
+      const run = initialRun(player.id, hasOwnMatch);
+      if (run.steps.length > 0) setTutorialRun(run);
+    }, 1200);   // kurz warten, damit die Startseite zuerst zu sehen ist
+    return () => clearTimeout(timer);
+  }, [tutorialBlocked, tutorialRun, player, matches]);
+  const startTutorial = useCallback(() => setTutorialRun({ steps: TUTORIAL_STEPS, news: false }), []);
+  const finishTutorial = useCallback(() => {
+    if (tutorialRun && player) markSeen(player.id, tutorialRun.steps.map((s) => s.id));
+    setTutorialRun(null);
+  }, [tutorialRun, player]);
+  const showPendingPopup = !!player && notifyMode !== "off" && MAIN_TABS.includes(tab) && !mustUpdate && !tutorialRun
+    && !celebrate && !tourneyReady && !wsReady && !draftOffer
+    && pendingForMe.some((m) => !pendingSeen.includes(m.id));
 
   const selectBadge = async (badgeKey) => {
     const { data, error } = await supabase.rpc("select_badge", { p_badge_key: badgeKey });
@@ -1351,6 +1427,57 @@ export default function App() {
                 </div>
               );
             })()}
+            {/* Offene Bestaetigungen als Popup (Nutzer-Feedback 2026-10-01: die
+                unauffaellige Ansicht im Profil finden die Leute offenbar nicht).
+                Erscheint auf den Hauptmenuepunkten, sobald es etwas Neues zu
+                bestaetigen gibt, und laesst sich mit "Später" fuer diese
+                Sitzung wegschieben (sessionStorage - beim naechsten App-Start
+                kommt es wieder, solange das Match noch offen ist). Passt/Falsch
+                gehen direkt von hier. Wartet, bis ein anderes Popup (Erfolg,
+                "Du bist dran", Entwurf) weg ist, damit nichts uebereinander liegt. */}
+            {showPendingPopup && (
+              <div className="celebrate-overlay" onClick={dismissPending}>
+                <div className="celebrate-card pending-card" onClick={(e) => e.stopPropagation()}>
+                  <div className="celebrate-head">
+                    ✅ {pendingForMe.length === 1 ? t("Ein Match wartet auf deine Bestätigung") : t("{n} Matches warten auf deine Bestätigung", { n: pendingForMe.length })}
+                  </div>
+                  <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>{t("Ohne Bestätigung zählt das Match nicht fürs Rating.")}</p>
+                  <div className="pending-list">
+                    {pendingForMe.map((m) => {
+                      const dbl = isDoubles(m);
+                      const other = dbl ? null : (m.player1_id === player.id ? m.p2.nickname : m.p1.nickname);
+                      const myScore = m.player1_id === player.id ? m.score1 : m.score2;
+                      const otherScore = m.player1_id === player.id ? m.score2 : m.score1;
+                      const hasLog = m.run_log?.length > 0;
+                      return (
+                        <div key={m.id} className="pending-item">
+                          <div className="pending-main">
+                            {!dbl && <Ball color={colorOf(other)} label={initials(other)} badge={badgeOf(other)} photo={photoOf(other)} size={40} />}
+                            <div className="celebrate-txt">
+                              <span className="celebrate-name">
+                                {dbl
+                                  ? <>{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</>
+                                  : <>{other} {t("meldet ein")} <b>{otherScore}:{myScore}</b> {t("gegen dich")}</>}
+                              </span>
+                              <span className="celebrate-desc">{dbl ? `${t("Doppel")} · ` : ""}{t(m.discipline)} · {fmtDate(m.played_at)}</span>
+                            </div>
+                          </div>
+                          <div className="confirm-actions">
+                            {hasLog && (
+                              <button className="chip-btn" onClick={() => { dismissPending(); openProtokoll(m); }}
+                                aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}><FileText size={15} /></button>
+                            )}
+                            <button className="chip-btn ok" onClick={() => confirmMatch(m.id, true)}><Check size={15} /> {t("Passt")}</button>
+                            <button className="chip-btn no" onClick={() => confirmMatch(m.id, false)}><X size={15} /> {t("Falsch")}</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button className="btn ghost" style={{ marginTop: 14 }} onClick={dismissPending}>{t("Später")}</button>
+                </div>
+              </div>
+            )}
             {tourneyReady && notifyMode !== "off" && tab !== "match" && !celebrate && (() => {
               const iAmP1 = tourneyReady.player1_id === player.id;
               const oppName = (iAmP1 ? tourneyReady.player2 : tourneyReady.player1)?.nickname;
@@ -1435,11 +1562,23 @@ export default function App() {
                 <MatchScreen me={player} players={players} matches={matches} disciplines={disciplines}
                   ratingOf={ratingOf} toast={toast} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onReload={loadData} initialOpp={matchTournamentCtx ? tourOpp : vsOpp} onChallenge={createChallenge}
-                  catalog={catalog} challenges={challenges} earnedBadges={badgesOfId(player.id)}
                   onOpenProtokoll={openProtokoll} tournamentCtx={matchTournamentCtx}
                   keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} resumeDraft={resumeDraft}
                   onDone={() => { clearMatchDraft(player.id); loadData(); allowLeaveMatchRef.current = true; window.history.back(); }}
-                  onCancel={() => { clearMatchDraft(player.id); allowLeaveMatchRef.current = true; window.history.back(); }} />
+                  onCancel={() => {
+                    clearMatchDraft(player.id);
+                    // Turnierpartie: zurueck zum Turnier (Verlauf). Sonst zum Startmenue
+                    // aus den Einstellungen bzw. - bei "Zuletzt geoeffnet" - zum letzten
+                    // Hauptmenuepunkt VOR der Matchauswahl (Nutzer-Feedback 2026-10-01).
+                    // navReplace statt history.back(): ersetzt den Match-Eintrag, loest
+                    // kein popstate aus und ist unabhaengig davon, was zuvor im Verlauf lag.
+                    // allowLeaveMatchRef bleibt hier bewusst aus - es wird nur von einem
+                    // popstate zurueckgesetzt und wuerde sonst offen bleiben.
+                    if (matchTournamentCtx) { allowLeaveMatchRef.current = true; window.history.back(); return; }
+                    let target = player.start_tab;
+                    if (target === "last") { try { target = localStorage.getItem("lastMainTab"); } catch { target = null; } }
+                    navReplace({ tab: MAIN_TABS.includes(target) ? target : "stats" });
+                  }} />
                 );
               })()}
               {tab === "stats" && <StatistikScreen matches={matches} onOpenProfile={openProfile}
@@ -1467,7 +1606,7 @@ export default function App() {
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
-                  achievementCounters={achievementCounters}
+                  achievementCounters={achievementCounters} onStartTutorial={startTutorial}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   onOpenTurniere={openTurniereMenu} tourneyReadyCount={tourneyReadyList.length + wsReadyList.length}
                   lang={lang} onLang={changeLang}
@@ -1566,25 +1705,25 @@ export default function App() {
 
             {tab !== "match" && (
             <nav className={"tabbar" + (tabbarHidden ? " tabbar-off" : "")}>
-              <button className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
+              <button data-tour="tab-stats" className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
                 <BarChart3 size={21} /><span>{t("Statistik")}</span>
                 {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
               </button>
-              <button className={"tab" + (tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays" ? " on" : "")} onClick={openTurniereMenu}>
+              <button data-tour="tab-turnier" className={"tab" + (tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays" ? " on" : "")} onClick={openTurniereMenu}>
                 <Trophy size={21} /><span>{t("Turniere")}</span>
                 {(tourneyReadyList.length + wsReadyList.length) > 0 && <span className="badge">{tourneyReadyList.length + wsReadyList.length}</span>}
               </button>
-              <button className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
+              <button data-tour="tab-fab" className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
                 <span className="fab-shine" />
                 <Plus size={26} className="fab-plus" />
               </button>
-              <button className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
+              <button data-tour="tab-live" className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
                 <Radio size={21} /><span>{t("Live")}</span>
                 {pings.length + openChallengesAll.length + plannings.length > 0 && (
                   <span className="badge live">{pings.length + openChallengesAll.length + plannings.length}</span>
                 )}
               </button>
-              <button className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
+              <button data-tour="tab-profil" className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
                 <User size={21} /><span>{t("Profil")}</span>
                 {openChallengesToMe.length > 0
                   ? <span className="badge" aria-label={t("Offene Herausforderung")} title={t("Offene Herausforderung")}>!</span>
@@ -1593,6 +1732,10 @@ export default function App() {
             </nav>
             )}
           </>
+        )}
+        {tutorialRun && (
+          <TutorialOverlay steps={tutorialRun.steps} news={tutorialRun.news} tab={tab}
+            onGoTab={(tb) => navPush({ tab: tb })} onFinish={finishTutorial} />
         )}
         {toastMsg && (
           <div className={"toast" + (toastMsg.action ? " with-action" : "")}>

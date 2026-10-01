@@ -7,6 +7,7 @@ import { computeTurnierLayout, bracketLabel, formatLabel, finalRoundLabel, BOX_W
 import { tmScores } from "./TurnierMatchActions";
 import Ball from "./Ball";
 import MatchProtokollTable from "./MatchProtokollTable";
+import DiscBall from "./widgets/DiscBall";
 
 // "Zeit am Tisch" fuer EIN Turniermatch: bevorzugt aus dem Zeitprotokoll
 // (run_log traegt bei JEDER Disziplin Zeitstempel, siehe matchDurationMs()) -
@@ -184,7 +185,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
       <div className="protokoll-doc turnier-bericht-doc">
         <div className="protokoll-head">
           <h1>{tour.name}</h1>
-          <p className="protokoll-meta">{formatLabel(tour.format)} · {t(tour.discipline)} · {fmtDate(tour.finished_at || tour.created_at)}</p>
+          <p className="protokoll-meta">{formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {fmtDate(tour.finished_at || tour.created_at)}</p>
         </div>
 
         {standingsGrouped && (

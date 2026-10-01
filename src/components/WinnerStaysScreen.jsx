@@ -12,6 +12,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
+import DiscBall from "./widgets/DiscBall";
 
 const POLL_MS = 8000;
 
@@ -274,7 +275,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
-        {t(session.is_doubles ? "Doppel" : "Einzel")} · {t(session.discipline)}
+        {t(session.is_doubles ? "Doppel" : "Einzel")} · <DiscBall disc={session.discipline} size={15} />
         {session.table_number != null && ` · ${t("Tisch")} ${session.table_number}`}
         {" · "}{session.status === "finished" ? t("beendet") : t("läuft")}
       </p>

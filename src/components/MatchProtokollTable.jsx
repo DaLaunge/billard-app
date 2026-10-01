@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
+import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtTime, fmtDuration } from "../lib/format";
 import { runLogEntryParts, isSimpleScoreLog, buildProtocolRows, splitProtocolRowsByPlayer,
-  matchDurationMs, matchPlayTimeMs, matchUnitCount, avgUnitDurationMs } from "../lib/runLog";
+  matchDurationMs, matchPlayTimeMs, matchUnitCount } from "../lib/runLog";
 
 // Eine Tabellenzeile je Spieler+Seite: entweder die vier Datenzellen
 // (Ereignis/Serie/Schnitt/Punkte) oder leer, wenn dieser Spieler diese
@@ -40,7 +42,24 @@ export default function MatchProtokollTable({ match: m, names }) {
   // direkt darueber (siehe matchDurationMs() in lib/runLog.js).
   const playTime = hasTime ? matchPlayTimeMs(m.run_log) : null;
   const units = hasTime ? matchUnitCount(m.run_log) : null;
-  const avgUnit = hasTime ? avgUnitDurationMs(m.run_log, m.discipline) : null;
+  // Ø pro Spiel/Aufnahme = Gesamtdauer geteilt durch die Anzahl (Nutzer-Vorgabe).
+  // Die Plausibilitaetsfilter von avgUnitDurationMs() lassen schnell geklickte
+  // Spiele weg und ergaben so Werte, die nicht zur angezeigten Gesamtdauer
+  // passen - die bleiben der Tempo-Statistik vorbehalten. Bei Winner Stays
+  // gilt die reine Spielzeit der Paarung.
+  const avgBase = playTime ?? duration;
+  const avgUnit = hasTime && units > 0 && avgBase != null ? avgBase / units : null;
+  // Uhr-Dauer aus match_clock (siehe lib/matchClock.js): ohne und mit Pause.
+  // Fehlt der Eintrag (aeltere Matches, Tabelle nicht da), bleibt es still.
+  const [clock, setClock] = useState(null);
+  useEffect(() => {
+    setClock(null);
+    if (!m?.id) return;
+    let alive = true;
+    supabase.from("match_clock").select("net_ms, total_ms").eq("match_id", m.id).maybeSingle()
+      .then(({ data }) => { if (alive && data) setClock(data); }, () => {});
+    return () => { alive = false; };
+  }, [m?.id]);
 
   return (
     <>
@@ -86,6 +105,12 @@ export default function MatchProtokollTable({ match: m, names }) {
         </div>
       )}
 
+      {clock && (
+        <div className="protokoll-duration">
+          <span>{t("Spielzeit ohne Pause")}: <b>{fmtDuration(clock.net_ms)}</b></span>
+          <span>{t("Dauer mit Pause")}: <b>{fmtDuration(clock.total_ms)}</b></span>
+        </div>
+      )}
       {(duration != null || playTime != null) && (
         <div className="protokoll-duration">
           {duration != null && <span>{t("Gesamtdauer")}: <b>{fmtDuration(duration)}</b></span>}

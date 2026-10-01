@@ -1,3 +1,4 @@
+import { MoveHorizontal } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
@@ -82,7 +83,14 @@ export default function DevChart({ dates, lines, onActiveChange }) {
     <div className="dev-wrap">
       <div className="dev-readout">
         {active == null ? (
-          <span className="dev-hint">{t("Zum Ablesen über den Graphen ziehen")}</span>
+          // Statt des ausgeschriebenen Satzes nur noch die Geste als
+          // Symbol (Nutzer-Vorgabe: lieber visuell erklaeren). Der Text
+          // bleibt als title/aria-label erhalten, damit Vorlesehilfen und
+          // ein laengeres Antippen ihn weiterhin liefern.
+          <span className="dev-hint" title={t("Zum Ablesen über den Graphen ziehen")}
+            aria-label={t("Zum Ablesen über den Graphen ziehen")}>
+            <MoveHorizontal size={15} aria-hidden="true" />
+          </span>
         ) : (
           <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
         )}

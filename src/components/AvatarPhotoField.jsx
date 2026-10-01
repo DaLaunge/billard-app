@@ -48,24 +48,31 @@ export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
     setBusy(false);
   };
 
+  // Nur Symbole, keine Textknoepfe (Nutzer-Feedback 2026-09-30: "Foto
+  // aufnehmen und Aus Galerie waehlen braucht keinen textuellen Button und
+  // kann sich in die Ansicht besser integrieren"). Die Namen stecken in
+  // title/aria-label; die Reihe sitzt zentriert direkt unter der Kugel.
   return (
     <div className="avatar-photo-actions">
       <input ref={cameraRef} type="file" accept="image/*" capture="user" style={{ display: "none" }}
         onChange={(e) => { handleFile(e.target.files[0]); e.target.value = ""; }} />
       <input ref={galleryRef} type="file" accept="image/*" style={{ display: "none" }}
         onChange={(e) => { handleFile(e.target.files[0]); e.target.value = ""; }} />
-      <button type="button" className="btn ghost" disabled={busy} onClick={() => cameraRef.current.click()}>
-        <Camera size={15} /> {t("Foto aufnehmen")}
+      <button type="button" className="icon-btn" disabled={busy} onClick={() => cameraRef.current.click()}
+        aria-label={t("Foto aufnehmen")} title={t("Foto aufnehmen")}>
+        <Camera size={18} />
       </button>
-      <button type="button" className="btn ghost" disabled={busy} onClick={() => galleryRef.current.click()}>
-        <ImageIcon size={15} /> {t("Aus Galerie wählen")}
+      <button type="button" className="icon-btn" disabled={busy} onClick={() => galleryRef.current.click()}
+        aria-label={t("Aus Galerie wählen")} title={t("Aus Galerie wählen")}>
+        <ImageIcon size={18} />
       </button>
       {hasPhoto && (
-        <button type="button" className="btn ghost warn" disabled={busy} onClick={removePhoto}>
-          <Trash2 size={15} /> {t("Foto entfernen")}
+        <button type="button" className="icon-btn warn" disabled={busy} onClick={removePhoto}
+          aria-label={t("Foto entfernen")} title={t("Foto entfernen")}>
+          <Trash2 size={18} />
         </button>
       )}
-      {busy && <p className="hint" style={{ marginTop: 6, marginBottom: 0, flexBasis: "100%" }}>{t("Verarbeite Foto ...")}</p>}
+      {busy && <span className="avatar-busy">{t("Verarbeite Foto ...")}</span>}
     </div>
   );
 }

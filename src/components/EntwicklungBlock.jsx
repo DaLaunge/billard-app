@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { TrendingUp, Plus, Search, X } from "lucide-react";
+import { TrendingUp, Plus, Search, X, Check } from "lucide-react";
 import { t } from "../lib/i18n";
+import DiscBall from "./widgets/DiscBall";
 import { dateMinusDays, todayStr } from "../lib/stats";
 import { initials, readableColor } from "../lib/format";
 import DevChart from "./DevChart";
@@ -10,6 +11,7 @@ import CardCollapseButton from "./widgets/CardCollapseButton";
 import CardColumnButton from "./widgets/CardColumnButton";
 import CardMaximizeButton from "./widgets/CardMaximizeButton";
 import CardMenuButton from "./widgets/CardMenuButton";
+import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 
 const RANGES = [
   { key: "1M", label: "1M", days: 31 },
@@ -25,7 +27,7 @@ const RANGES = [
 // braucht der Graph keine eigenen Disziplin-Buttons mehr. Alle folgenden
 // Werte (Spieler-Reihenfolge, Kurven, verfuegbare Daten) haengen weiterhin
 // von der Disziplin ab.
-export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
+export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, filter, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
@@ -69,6 +71,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     return f;
   }, [matches, me]);
 
+  const funnel = useFunnel();
   const [sel, setSel] = useState(defaultSel);
   const [rangeKey, setRangeKey] = useState("1J");
   const [addOpen, setAddOpen] = useState(false);
@@ -141,6 +144,10 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
         <h3><TrendingUp size={17} /> <span className="stat-block-title-text">{t("Entwicklung über die Zeit")}</span></h3>
         <div className="stat-block-head-actions">
           {!maximized && <CardMenuButton onHide={onHide} />}
+          {/* Nur gesetzt, wenn die Bestenlisten-Karte fehlt (alle sechs
+              ausgeblendet): dort haengt der Trichter sonst, und ohne ihn liesse
+              sich die Disziplin dieses Graphen nicht mehr aendern. */}
+          {filter && !collapsed && <FunnelButton funnel={funnel} label={filter.label} />}
           <InfoButton title={t("Entwicklung über die Zeit")}>
             {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
           </InfoButton>
@@ -151,12 +158,19 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
       </div>
       {!collapsed && (
       <>
+      {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
       {allDates.length > 0 && (
         <div className="chips small">
           {RANGES.map((r) => (
             <button key={r.key} className={"chip" + (rangeKey === r.key ? " active" : "")}
               onClick={() => setRangeKey(r.key)}>{t(r.label)}</button>
           ))}
+          {/* Die Disziplin wird hinter dem Trichter der Bestenlisten gewaehlt
+              und ist dort bei geschlossenem Feld nicht zu sehen - der Graph
+              zeigt deshalb selbst, was er gerade darstellt. Bewusst in der
+              Zeitraum-Zeile statt im Titel: am Handy kuerzte die Pille im
+              Kartenkopf den Titel zu "Entwicklung ueber die ...". */}
+          {disc && disc !== "Gesamt" && <span className="deck-filter-pill deck-filter-pill-end"><DiscBall disc={disc} size={16} /></span>}
         </div>
       )}
       {allDates.length === 0 ? (
@@ -177,14 +191,23 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
                 </div>
               );
             })}
+            {/* Statt eines breiten Knopfs unter dem Graphen: eine Zeile am Ende
+                der Spielerliste, in der Form der Spielerzeilen (Nutzer-
+                Feedback 2026-09-30: passt besser zur sichtbaren Auflistung,
+                spart den Knopf und ist intuitiver). Bei 6 Spielern gibt es
+                nichts mehr hinzuzufuegen. Offen wird sie zu "Fertig". */}
+            {(addOpen || sel.length < 6) && (
+              <button type="button" className="stat-row as-btn dev-add-row"
+                onClick={() => { if (addOpen) setQuery(""); setAddOpen((o) => !o); }}
+                aria-expanded={addOpen}>
+                <span className="dev-add-ico">{addOpen ? <Check size={16} /> : <Plus size={16} />}</span>
+                <span className="stat-name">{addOpen ? t("Fertig") : t("Spieler hinzufügen")}</span>
+              </button>
+            )}
           </div>
-          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
-
-          {!addOpen ? (
-            <button className="btn ghost" onClick={() => setAddOpen(true)}>
-              <Plus size={16} /> {t("Spieler hinzufügen")}
-            </button>
-          ) : (
+          {/* Die Auswahl steht direkt unter der Liste, zu der sie gehoert -
+              nicht erst unter dem Graphen. */}
+          {addOpen && (
             <div className="add-panel">
               <div className="search-row">
                 <Search size={16} className="mail-ico" />
@@ -205,9 +228,9 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
                 ))}
                 {suggestions.length === 0 && <p className="hint">{t("Keine weiteren Spieler.")}</p>}
               </div>
-              <button className="btn ghost" onClick={() => { setAddOpen(false); setQuery(""); }}>{t("Fertig")}</button>
             </div>
           )}
+          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
         </>
       )}
       </>

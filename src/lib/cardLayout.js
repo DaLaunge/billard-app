@@ -97,26 +97,42 @@ export const CARD_SCREENS = [
     screen: "stats",
     label: "Statistik",
     columns: ["middle", "right"],
+    // "Auswahl fuer alle Statistiken" (Disziplin + Top-N) war bis 2026-09-30
+    // eine eigene Karte und sitzt jetzt hinter dem Trichter-Symbol der
+    // Bestenlisten-Karte (siehe CardDeck.jsx, Prop "filter"). Alte
+    // gespeicherte Reihenfolgen nennen die id "globalFilter" noch -
+    // normalizeCardOrder() wirft sie automatisch raus.
+    // Die sechs Bestenlisten sind seit 2026-09-30 EINE Karte mit Reitern
+    // (siehe "decks" unten): jede laesst sich weiter fuer sich ein-/
+    // ausblenden und sortieren, nur zeigt sich das als Reiter.
+    decks: [
+      { id: "bestenlisten", label: "Bestenlisten", ids: ["rangliste", "meisteSiege", "besteSiegquote", "aktuelleSerien", "schnellstesTempo", "schnellste141"] },
+    ],
     cards: [
       { id: "entwicklung", label: "Entwicklung über die Zeit", col: "middle" },
       { id: "letzteMatches", label: "Letzte Matches", col: "middle" },
-      { id: "aktuelleSerien", label: "Aktuelle Serien", col: "middle" },
-      { id: "schnellste141", label: "Schnellstes 14/1-Tempo", col: "middle" },
-      { id: "globalFilter", label: "Auswahl fuer alle Statistiken", col: "right" },
-      { id: "rekordeClub", label: "Rekorde", col: "right" },
       { id: "rangliste", label: "Rangliste", col: "right" },
       { id: "meisteSiege", label: "Meiste Siege", col: "right" },
       { id: "besteSiegquote", label: "Beste Siegquote", col: "right" },
+      { id: "aktuelleSerien", label: "Aktuelle Serien", col: "right" },
       { id: "schnellstesTempo", label: "Schnellstes Tempo", col: "right" },
+      { id: "schnellste141", label: "Schnellstes 14/1-Tempo", col: "right" },
+      { id: "rekordeClub", label: "Rekorde", col: "right" },
     ],
   },
   {
     screen: "live",
     label: "Live",
     columns: ["middle", "right"],
+    // Alle drei teilen sich EINE Karte mit Reitern (siehe CardDeck.jsx) und
+    // stehen deshalb in derselben Standard-Spalte - sonst haengt ihr Platz
+    // davon ab, welcher Teil gerade der erste sichtbare ist.
+    decks: [
+      { id: "mitspieler", label: "Mitspieler finden", ids: ["duelle", "pings", "planung"] },
+    ],
     cards: [
       { id: "duelle", label: "Duelle", col: "middle" },
-      { id: "pings", label: "Live", col: "right" },
+      { id: "pings", label: "Live", col: "middle" },
       { id: "planung", label: "Planung", col: "middle" },
     ],
   },
@@ -124,13 +140,26 @@ export const CARD_SCREENS = [
     screen: "profil",
     label: "Profil",
     columns: ["left", "middle", "right"],
+    // Zwei Gruppen, die sich je EINE Karte mit Reitern teilen (siehe
+    // "decks" und CardDeck.jsx). Jede Gruppe steht zusammenhaengend und ganz
+    // in DERSELBEN Standard-Spalte - die Karte uebernimmt Platz und Spalte
+    // des ersten sichtbaren Teils, und so landen am Desktop verlaesslich die
+    // Zahlen links und die Erfolge in der breiten Mitte, egal welcher Teil
+    // der erste sichtbare ist. Steckten sie in verschiedenen Spalten,
+    // saessen beide Karten je nach Ausblendung ploetzlich uebereinander in
+    // einer Spalte und die anderen blieben leer.
+    decks: [
+      { id: "erfolge", label: "Erfolge", ids: ["erfolgeFortschritt", "erfolge"] },
+      { id: "zahlen", label: "Meine Zahlen", ids: ["ratings", "rekorde", "headToHead", "tempo", "fun"] },
+    ],
     cards: [
-      { id: "erfolgeFortschritt", label: "Erfolge (Fortschritt)", col: "left" },
+      { id: "erfolgeFortschritt", label: "Erfolge (Fortschritt)", col: "middle" },
+      { id: "erfolge", label: "Erfolge (alle)", col: "middle" },
       { id: "ratings", label: "Ratings nach Disziplin", col: "left" },
       { id: "rekorde", label: "Rekorde", col: "left" },
       { id: "headToHead", label: "Head-to-Head", col: "left" },
-      { id: "tempo", label: "Spielgeschwindigkeit", col: "right" },
-      { id: "erfolge", label: "Erfolge (alle)", col: "middle" },
+      { id: "tempo", label: "Spielgeschwindigkeit", col: "left" },
+      { id: "fun", label: "Fun-Zahlen", col: "left" },
       // "Anmeldung & Sicherheit", "Feedback" und "Meine Tickets" waren bis
       // 2026-09-25 ebenfalls frei anordenbare Karten hier. Sie stehen jetzt
       // fest unter "Profil bearbeiten": das Profil selbst zeigt nur noch,
@@ -144,6 +173,34 @@ export const CARD_SCREENS = [
 ];
 
 export const CARD_SCREEN_BY_ID = Object.fromEntries(CARD_SCREENS.map((s) => [s.screen, s]));
+
+// Die Katalog-ids einer Reiter-Karte ("deck") eines Bildschirms - die eine
+// Quelle, aus der Bildschirm UND Einstellungen ihre Gruppen lesen.
+export function deckIds(screen, deckId) {
+  return CARD_SCREEN_BY_ID[screen]?.decks?.find((d) => d.id === deckId)?.ids || [];
+}
+
+// Was der Nutzer als EINE Karte erlebt: eine Einzelkarte oder eine ganze
+// Reiter-Karte. Die Einstellungen ordnen, spalten und blenden diese
+// Einheiten (Nutzer-Feedback 2026-09-30: nach der Zusammenlegung standen dort
+// noch die urspruenglichen Einzelkarten - "die Sichtbarkeit muss auch
+// verbessert werden"). Die Einheit steht an der Stelle ihres ERSTEN Teils in
+// "order"; ids in der Reihenfolge von "order" (= Reihenfolge der Reiter).
+export function screenUnits(screen, order) {
+  const decks = CARD_SCREEN_BY_ID[screen]?.decks || [];
+  const deckOf = {};
+  decks.forEach((d) => d.ids.forEach((id) => { deckOf[id] = d; }));
+  const units = [];
+  const seen = new Set();
+  order.forEach((id) => {
+    const d = deckOf[id];
+    if (!d) { units.push({ key: id, ids: [id] }); return; }
+    if (seen.has(d.id)) return;
+    seen.add(d.id);
+    units.push({ key: "deck:" + d.id, deck: d, ids: order.filter((x) => d.ids.includes(x)) });
+  });
+  return units;
+}
 
 export function screenCards(screen) {
   return CARD_SCREEN_BY_ID[screen]?.cards || [];
@@ -232,6 +289,101 @@ export function splitCardColumns(order, columns = {}, screen = STAT_CARD_SCREEN)
     out[col].push(id);
   });
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// "Meine Zahlen" (widgets/NumbersDeck.jsx) ist die linke Spalte am PC und
+// soll auf Statistik, Live und Profil dieselbe sein. Die Teile stehen im
+// Katalog des PROFILS - dort wird ausgeblendet und sortiert - und die
+// anderen Bildschirme lesen von dort mit, statt eine eigene Zusammenstellung
+// zu haben. Eine einzige Quelle fuer die Ids, damit Profil und Seitenspalte
+// nie auseinanderlaufen.
+export const NUMBERS_DECK_IDS = deckIds("profil", "zahlen");
+
+// Die sichtbaren Reiter von "Meine Zahlen" in gespeicherter Reihenfolge, aus
+// dem card_layout-Eintrag des Profils (players.card_layout.profil).
+export function numbersParts(savedProfilLayout) {
+  const hidden = new Set(normalizeHiddenCards(savedProfilLayout, "profil"));
+  return normalizeCardOrder(savedProfilLayout, "profil")
+    .filter((id) => NUMBERS_DECK_IDS.includes(id) && !hidden.has(id));
+}
+
+// Zusammengelegte Karten (siehe CardDeck.jsx): mehrere Katalog-Eintraege
+// teilen sich EINE Karte mit Reitern, bleiben hier aber einzeln stehen und
+// damit einzeln sortier- und ausblendbar.
+//
+// foldedDeck() liefert die noch sichtbaren Teile in der gespeicherten
+// Reihenfolge (= Reihenfolge der Reiter) und den "Anker": an dessen Platz
+// und Spalte steht die gemeinsame Karte. Kein sichtbarer Teil mehr -> anchor
+// ist null, der Bildschirm rendert die Karte dann gar nicht.
+export function foldedDeck(visibleOrder, ids) {
+  const set = new Set(ids);
+  const parts = visibleOrder.filter((id) => set.has(id));
+  return { parts, anchor: parts[0] || null };
+}
+
+// Spalte einer zusammengelegten Karte am Desktop: die Spalte, in der die
+// MEISTEN ihrer Teile stehen; bei Gleichstand die Standard-Spalte des
+// ersten Teils. Einfach die Spalte des Ankers zu nehmen waere kuerzer,
+// haengt aber davon ab, welcher Teil gerade der erste SICHTBARE ist - und
+// bei schon gespeicherten Layouts (die von vor der Zusammenlegung stammen
+// und die Teile quer ueber die Spalten verteilen) landeten dann leicht
+// zwei Karten in derselben Spalte, waehrend eine andere ganz leer blieb.
+export function deckColumn(columns = {}, ids, screen) {
+  const allowed = screenColumns(screen);
+  const defaults = defaultCardColumns(screen);
+  const tally = {};
+  ids.forEach((id) => {
+    const col = allowed.includes(columns[id]) ? columns[id] : defaults[id];
+    if (col) tally[col] = (tally[col] || 0) + 1;
+  });
+  let best = defaults[ids[0]] || allowed[0];
+  let bestN = tally[best] || 0;
+  allowed.forEach((col) => { if ((tally[col] || 0) > bestN) { best = col; bestN = tally[col]; } });
+  return best;
+}
+
+// Entfernt die zusammengelegten ids bis auf den Anker aus einer Liste
+// (Reihenfolge, Spaltenaufteilung, @dnd-kit-"items"). Mehrfach anwendbar,
+// wenn ein Bildschirm mehrere solcher Karten hat.
+export function withoutFolded(list, ids, anchor) {
+  const set = new Set(ids);
+  return list.filter((id) => !set.has(id) || id === anchor);
+}
+
+// Reihenfolge der Spalten am HANDY, auf JEDEM Bildschirm gleich (Nutzer-
+// Feedback 2026-09-30: "Mitte zuerst, dann rechts soll ueber die gesamte App
+// funktionieren. Es sollte alles einheitlich sein" - zuerst nur auf der
+// Statistik gemeldet: "wenn ich am PC die Fensterbreite reduziere und dadurch
+// ein Handy simuliere, erwarte ich, dass die Karten in der Mitte ganz oben
+// angezeigt werden und die Karten, die rechts stehen, nach unten rutschen").
+// Die linke Spalte gibt es nur im Profil; sie ist dort die Seitenspalte
+// neben der Identitaetskarte und kommt am Handy ans Ende, hinter die
+// Hauptinhalte. Die Identitaetskarte selbst steht dort ohnehin fest ganz oben.
+export const PHONE_COLUMN_ORDER = ["middle", "right", "left"];
+export const phoneRank = (col) => {
+  const i = PHONE_COLUMN_ORDER.indexOf(col);
+  return i === -1 ? 0 : i;
+};
+// CSS-"order" einer Karte am Handy: Spaltenrang zuerst, darin die Position.
+// Ab 10, damit feste Elemente (Identitaetskarte 0) davor bleiben koennen; der
+// Vorsprung von 1000 je Spalte ist grosszuegig gegen die Kartenzahl.
+export const phoneSlotOrder = (col, indexInColumn) => 10 + phoneRank(col) * 1000 + indexInColumn;
+
+// Die ANGEZEIGTE Reihenfolge eines Bildschirms: die gespeicherte Reihenfolge,
+// stabil nach Spalte gruppiert (siehe PHONE_COLUMN_ORDER), je Spalte in
+// gespeicherter Reihenfolge. Genau das sieht man am Handy, und genau daran
+// muessen Ziehen und die Pfeile in den Einstellungen rechnen: die rohe
+// Reihenfolge kann Karten verschiedener Spalten beliebig mischen (Ziehen und
+// Spaltenwechsel am PC tun das), und das Handy zeigte dann eine Reihenfolge,
+// die zu nichts passte, was man am PC gesehen hatte. Bildschirme mit nur
+// einer Spalte: unveraendert.
+export function groupOrder(order, columns, screen) {
+  if (screenColumns(screen).length < 2) return order;
+  return order
+    .map((id, i) => ({ id, i, r: phoneRank(columns[id]) }))
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .map((x) => x.id);
 }
 
 // Eine Karte in der Reihenfolge um einen Platz nach oben/unten schieben
