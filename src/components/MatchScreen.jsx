@@ -265,7 +265,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const query = oppQuery.trim().toLowerCase();
   const matching = players
     .filter((p) => p.id !== me.id && !p.is_ghost && !p.blocked)
-    .filter((p) => p.nickname.toLowerCase().includes(query));
+    .filter((p) => p.nickname.toLowerCase().includes(query))
+    // Gaeste stehen NICHT in der Standardliste (Nutzer-Wunsch 2026-10-01: sie sollen
+    // sich lieber selbst anmelden). Per Suche sind sie weiter zu finden, und ein neuer
+    // Gast wird ueber die Suche angelegt.
+    .filter((p) => query || !p.is_guest);
   // Empfehlung: die zwei Gegner mit dem hoechsten moeglichen Gewinn. Sie sind
   // KEINE eigene Karte mehr, sondern stehen als normale, nur hervorgehobene
   // Kacheln in der Liste.
