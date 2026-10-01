@@ -250,10 +250,20 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Ergebnis erhalten; ein Wechsel zu oder von 14/1 aendert das Punkteschema
   // -> nachfragen, sobald schon etwas gezaehlt wurde (beim laufenden 14/1
   // steckt der Stand im Scorer, s1/s2 sind dort noch 0 - daher is141).
+  //
+  // Nachgefragt wird NUR, wenn dabei wirklich etwas verloren ginge (Nutzer-
+  // Feedback 2026-10-01): im laufenden Match UND beim Wechsel zu/von 14/1 UND
+  // erst, wenn schon etwas gezaehlt wurde. Ein 14/1-Scorer, der noch im Aufbau
+  // steht (Zielpunkte waehlen, noch nichts gespielt), wird ohne Frage gewechselt.
+  // In "Neues Match" vor dem Start und im Turnierformular gibt es nie eine Frage.
+  const scorerHasProgress = () => {
+    const st = scorerStateRef.current;
+    return !!st && !!st.started && ((st.log?.length || 0) > 0 || ((st.sc?.[0] || 0) + (st.sc?.[1] || 0)) > 0);
+  };
   const switchDisc = (d) => {
     if (d === disc) return;
     const crosses141 = (disc === "14/1 Endlos") !== (d === "14/1 Endlos");
-    if (crosses141 && (is141 || s1 > 0 || s2 > 0)) { setPendingDisc(d); return; }
+    if (crosses141 && (is141 ? scorerHasProgress() : (s1 > 0 || s2 > 0))) { setPendingDisc(d); return; }
     setDisc(d);
     rememberDisc(d);
     if (crosses141) resetScores();   // Schema-Wechsel ohne bisheriges Ergebnis: sauber starten
@@ -455,7 +465,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           (zuletzt gespielte) und wird hier oder waehrend der Aufzeichnung
           geaendert; ein Tipp auf den Gegner startet das Match sofort. */}
       {step === 0 && (
-        <div className="match-split step-enter" ref={formRef}>
+        <div className="match-split" ref={formRef}>
           <div className="match-selectors">
             <section className="stat-block">
               <div className="turnier-form">

@@ -692,6 +692,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   display: grid; place-items: center; padding: 24px; animation: fadeIn 0.2s ease; }
 .celebrate-card { background: var(--felt-3); border: 1px solid var(--accent); border-radius: 18px;
   padding: 22px 20px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+/* Popup "Match bestaetigen": mehrere Eintraege, jeder mit Passt/Falsch. */
+.celebrate-card.pending-card { max-width: 400px; }
+.pending-list { display: flex; flex-direction: column; gap: 10px; max-height: 52vh; overflow-y: auto; text-align: left; }
+.pending-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: var(--felt-2); }
+.pending-main { display: flex; align-items: center; gap: 12px; }
+.pending-item .confirm-actions { justify-content: flex-end; }
 .celebrate-head { font-size: 19px; font-weight: 800; color: var(--accent); margin-bottom: 14px; }
 /* Erzwungenes Update (siehe mustUpdate in App.jsx): ueber allem, auch ueber dem Erfolgs-Popup. */
 .celebrate-overlay.force-update { z-index: 200; }
@@ -1383,6 +1389,12 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .sent-check.big { animation: check-pop .5s cubic-bezier(.34, 1.4, .64, 1) both; }
   .vs-go:not(:disabled) { animation: go-pulse 1.5s ease-in-out 3; }
   .vs-slot.empty.active .vs-empty-ball { animation: go-pulse 1.4s ease-in-out infinite; }
+  /* Seitenwechsel wie beim iPhone: die neue Seite gleitet kurz herein (siehe
+     lib/usePageTransition.js - die Klasse sitzt nur waehrend der Animation). */
+  @keyframes page-in-right { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+  @keyframes page-in-left { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+  .page-in-right { animation: page-in-right .28s cubic-bezier(.22, .61, .36, 1); }
+  .page-in-left { animation: page-in-left .28s cubic-bezier(.22, .61, .36, 1); }
   .stat-block.nudge { animation: go-pulse .9s ease-out; }
   .rank-row, .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn,
   .mini-stepper button, .turnier-stepper-btn, .suggest-challenge-btn, .back-btn,

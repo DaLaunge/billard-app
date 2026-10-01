@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Trophy, Radio, Plus, BarChart3, User, RefreshCw } from "lucide-react";
+import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, Check, X, FileText } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -11,7 +11,7 @@ import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
 import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
-import { hashColor, initials } from "./lib/format";
+import { hashColor, initials, isDoubles, mSide, fmtDate } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
@@ -19,6 +19,8 @@ import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
 import { useHideTabbar } from "./lib/useHideTabbar";
 import { usePullToRefresh } from "./lib/usePullToRefresh";
+import { usePageTransition } from "./lib/usePageTransition";
+import { useSwipeNav } from "./lib/useSwipeNav";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
@@ -932,6 +934,24 @@ export default function App() {
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
   // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
   const ptr = usePullToRefresh(contentEl);
+  // Seitenwechsel-Animation und Wischgesten (siehe lib/usePageTransition.js und
+  // lib/useSwipeNav.js). Gewischt wird auf den vier Hauptmenuepunkten zwischen
+  // den Nachbarn der Leiste und auf Unterseiten zurueck - NIE waehrend einer
+  // Matcheingabe (dort kostet eine versehentliche Geste das Ergebnis) und nicht
+  // hinter dem Zwangs-Update-Overlay.
+  usePageTransition(contentEl, tab);
+  const mainIdx = MAIN_TABS.indexOf(tab);
+  const goMain = (i) => {
+    const target = MAIN_TABS[i];
+    if (!target || target === tab) return;
+    if (target === "turnier") openTurniereMenu(); else navPush({ tab: target });
+  };
+  useSwipeNav(contentEl, {
+    enabled: !!player && !mustUpdate && !LIVE_ENTRY_TABS.includes(tab),
+    onBack: mainIdx === -1 ? () => window.history.back() : undefined,
+    onPrev: mainIdx > 0 ? () => goMain(mainIdx - 1) : undefined,
+    onNext: mainIdx !== -1 && mainIdx < MAIN_TABS.length - 1 ? () => goMain(mainIdx + 1) : undefined,
+  });
 
   // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
   // Stufe pro Geraet: "off" / "inapp" (Posteingang abfragen, solange die App
@@ -1122,6 +1142,20 @@ export default function App() {
     else toast(t(ok ? "Match bestaetigt - Ranking wird neu berechnet." : "Match zurueckgewiesen."));
     loadData();
   };
+
+  // Popup "Match bestaetigen": welche offenen Bestaetigungen in dieser Sitzung
+  // schon gezeigt/weggeschoben wurden. Neue (andere ids) loesen es erneut aus.
+  const [pendingSeen, setPendingSeen] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("pendingPopupSeen") || "[]"); } catch { return []; }
+  });
+  const dismissPending = useCallback(() => {
+    const ids = [...new Set([...pendingSeen, ...pendingForMe.map((m) => m.id)])];
+    setPendingSeen(ids);
+    try { sessionStorage.setItem("pendingPopupSeen", JSON.stringify(ids)); } catch { /* Privatmodus */ }
+  }, [pendingSeen, pendingForMe]);
+  const showPendingPopup = !!player && notifyMode !== "off" && MAIN_TABS.includes(tab) && !mustUpdate
+    && !celebrate && !tourneyReady && !wsReady && !draftOffer
+    && pendingForMe.some((m) => !pendingSeen.includes(m.id));
 
   const selectBadge = async (badgeKey) => {
     const { data, error } = await supabase.rpc("select_badge", { p_badge_key: badgeKey });
@@ -1365,6 +1399,57 @@ export default function App() {
                 </div>
               );
             })()}
+            {/* Offene Bestaetigungen als Popup (Nutzer-Feedback 2026-10-01: die
+                unauffaellige Ansicht im Profil finden die Leute offenbar nicht).
+                Erscheint auf den Hauptmenuepunkten, sobald es etwas Neues zu
+                bestaetigen gibt, und laesst sich mit "Später" fuer diese
+                Sitzung wegschieben (sessionStorage - beim naechsten App-Start
+                kommt es wieder, solange das Match noch offen ist). Passt/Falsch
+                gehen direkt von hier. Wartet, bis ein anderes Popup (Erfolg,
+                "Du bist dran", Entwurf) weg ist, damit nichts uebereinander liegt. */}
+            {showPendingPopup && (
+              <div className="celebrate-overlay" onClick={dismissPending}>
+                <div className="celebrate-card pending-card" onClick={(e) => e.stopPropagation()}>
+                  <div className="celebrate-head">
+                    ✅ {pendingForMe.length === 1 ? t("Ein Match wartet auf deine Bestätigung") : t("{n} Matches warten auf deine Bestätigung", { n: pendingForMe.length })}
+                  </div>
+                  <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>{t("Ohne Bestätigung zählt das Match nicht fürs Rating.")}</p>
+                  <div className="pending-list">
+                    {pendingForMe.map((m) => {
+                      const dbl = isDoubles(m);
+                      const other = dbl ? null : (m.player1_id === player.id ? m.p2.nickname : m.p1.nickname);
+                      const myScore = m.player1_id === player.id ? m.score1 : m.score2;
+                      const otherScore = m.player1_id === player.id ? m.score2 : m.score1;
+                      const hasLog = m.run_log?.length > 0;
+                      return (
+                        <div key={m.id} className="pending-item">
+                          <div className="pending-main">
+                            {!dbl && <Ball color={colorOf(other)} label={initials(other)} badge={badgeOf(other)} photo={photoOf(other)} size={40} />}
+                            <div className="celebrate-txt">
+                              <span className="celebrate-name">
+                                {dbl
+                                  ? <>{mSide(m, 1)} <b>{m.score1}:{m.score2}</b> {mSide(m, 2)}</>
+                                  : <>{other} {t("meldet ein")} <b>{otherScore}:{myScore}</b> {t("gegen dich")}</>}
+                              </span>
+                              <span className="celebrate-desc">{dbl ? `${t("Doppel")} · ` : ""}{t(m.discipline)} · {fmtDate(m.played_at)}</span>
+                            </div>
+                          </div>
+                          <div className="confirm-actions">
+                            {hasLog && (
+                              <button className="chip-btn" onClick={() => { dismissPending(); openProtokoll(m); }}
+                                aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}><FileText size={15} /></button>
+                            )}
+                            <button className="chip-btn ok" onClick={() => confirmMatch(m.id, true)}><Check size={15} /> {t("Passt")}</button>
+                            <button className="chip-btn no" onClick={() => confirmMatch(m.id, false)}><X size={15} /> {t("Falsch")}</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button className="btn ghost" style={{ marginTop: 14 }} onClick={dismissPending}>{t("Später")}</button>
+                </div>
+              </div>
+            )}
             {tourneyReady && notifyMode !== "off" && tab !== "match" && !celebrate && (() => {
               const iAmP1 = tourneyReady.player1_id === player.id;
               const oppName = (iAmP1 ? tourneyReady.player2 : tourneyReady.player1)?.nickname;

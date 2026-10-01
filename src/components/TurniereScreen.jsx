@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Plus, Search, Trophy, X } from "lucide-react";
+import { ChevronRight, Plus, Search, Trophy, X } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
@@ -159,8 +159,10 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
   return (
     <div className="screen">
       <div className="turnier-layout" ref={listRef}>
-      <header className="screen-head with-back">
-        <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
+      {/* Kein Zurueck-Knopf: "Turniere" ist ein Hauptmenuepunkt der Leiste
+          unten (Nutzer-Feedback 2026-10-01: unnoetig, und er fuehrte nirgends
+          sinnvoll hin). Die Detailseiten eines Turniers behalten ihren. */}
+      <header className="screen-head">
         <h2>{t("Turniere")}</h2>
       </header>
 

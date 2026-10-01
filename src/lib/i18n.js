@@ -281,6 +281,8 @@ const TRANSLATIONS = {
     "Alle Disziplinen": "All disciplines",
     "Karte mit Reitern": "Card with tabs",
     "Aussehen": "Appearance",
+    "Ein Match wartet auf deine Bestätigung": "A match is waiting for your confirmation",
+    "{n} Matches warten auf deine Bestätigung": "{n} matches are waiting for your confirmation",
     "Du": "You",
     "Match": "Match",
     "Allgemein": "General",
