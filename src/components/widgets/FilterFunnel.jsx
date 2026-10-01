@@ -21,11 +21,11 @@ export function useFunnel() {
   return { open, toggle: () => setOpen((o) => !o), close: () => setOpen(false) };
 }
 
-export function FunnelButton({ funnel, label }) {
+export function FunnelButton({ funnel, label, icon: Icon = Filter }) {
   return (
     <button type="button" className={"card-filter-btn" + (funnel.open ? " on" : "")}
       aria-expanded={funnel.open} aria-label={label} title={label} onClick={funnel.toggle}>
-      <Filter size={16} />
+      <Icon size={16} />
     </button>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy } from "lucide-react";
+import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -102,6 +102,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [ghostStartedAt, setGhostStartedAt] = useState(dv("ghostStartedAt", null)); // gegen "Durchklicken" beim Ghost-Training
   const [nowTick, setNowTick] = useState(Date.now());
   const [guestBusy, setGuestBusy] = useState(false);
+  // Sortierung der Gegnerliste (pro Geraet gemerkt): "freq" haeufig, "gain" Punkte, "name" A-Z.
+  const [oppSort, setOppSort] = useState(() => {
+    try { const v = localStorage.getItem("matchOppSort"); return ["freq", "gain", "name"].includes(v) ? v : "freq"; } catch { return "freq"; }
+  });
+  const chooseSort = (v) => { setOppSort(v); try { localStorage.setItem("matchOppSort", v); } catch { /* Privatmodus */ } };
   const [oppCount, setOppCount] = useState(DEFAULT_LIST_COUNT); // Standard: nur die haeufigsten Mitspieler zeigen (Nutzer-Feedback: Liste wird lang)
 
   const is141 = disc === "14/1 Endlos";
@@ -216,23 +221,63 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // dieselbe Logik wie im PlayerPicker – siehe lib/frequency.js)
   const freqByNick = useMemo(() => recentOpponentFreq(matches, me), [matches, me]);
 
+  // --- Punkte-Vorschau ---
+  const fmtD = (x) => (x >= 0 ? "+" : "−") + Math.abs(Math.round(x));
+  const previewFor = (dsc, oppNick) => {
+    const ea = winProb(ratingOf(me.nickname, dsc), ratingOf(oppNick, dsc));
+    const is141d = dsc === "14/1 Endlos";
+    const D = is141d ? 50 : 4;
+    const nf = (tot) => Math.min(tot, 16);
+    return {
+      ea, is141d,
+      winMin: 4 * nf(2 * D - 1) * (D / (2 * D - 1) - ea),
+      winMax: 4 * nf(D) * (1 - ea),
+      lossMin: 4 * nf(2 * D - 1) * ((D - 1) / (2 * D - 1) - ea),
+      lossMax: 4 * nf(D) * (0 - ea),
+    };
+  };
+
   const ghost = players.find((p) => p.is_ghost);
-  // Alle passenden Gegner (haeufigste zuerst) - ungekuerzt, u.a. um zu wissen,
-  // ob ueberhaupt noch mehr hinter "10"/"20"/"Alle" steckt.
-  const allMatchingOpponents = players
+  // Moegliche Rating-Punkte bei einem Sieg je Gegner in der gewaehlten Disziplin
+  // (nur im Einzel; Gaeste zaehlen nicht fuers Rating und haben keine). Grundlage
+  // fuer die Anzeige auf JEDER Kachel, die Sortierung "Punkte" und die
+  // Hervorhebung der Empfehlung (Nutzer-Feedback 2026-10-01).
+  const gainOf = (p) => (mode === "single" && !p.is_guest ? previewFor(disc || "Gesamt", p.nickname).winMax : null);
+  const byFreq = (a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname);
+  const query = oppQuery.trim().toLowerCase();
+  const matching = players
     .filter((p) => p.id !== me.id && !p.is_ghost && !p.blocked)
-    .filter((p) => p.nickname.toLowerCase().includes(oppQuery.trim().toLowerCase()))
-    .sort((a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname));
+    .filter((p) => p.nickname.toLowerCase().includes(query));
+  // Empfehlung: die zwei Gegner mit dem hoechsten moeglichen Gewinn. Sie sind
+  // KEINE eigene Karte mehr, sondern stehen als normale, nur hervorgehobene
+  // Kacheln in der Liste.
+  const recList = mode === "single"
+    ? matching.filter((p) => !p.is_guest).sort((a, b) => gainOf(b) - gainOf(a)).slice(0, 2)
+    : [];
+  const recIds = new Set(recList.map((p) => p.id));
+  // Sortierung: "freq" = haeufigste Gegner zuerst (wie bisher), "gain" = meiste
+  // moegliche Punkte zuerst (nur Einzel), "name" = A-Z.
+  const sortMode = mode === "double" && oppSort === "gain" ? "freq" : oppSort;
+  const cmp = sortMode === "name" ? (a, b) => a.nickname.localeCompare(b.nickname)
+    : sortMode === "gain" ? (a, b) => (gainOf(b) ?? -Infinity) - (gainOf(a) ?? -Infinity) || byFreq(a, b)
+    : byFreq;
+  let allMatchingOpponents = [...matching].sort(cmp);
+  // Bei "haeufig" stehen die Empfehlungen zuerst (sonst waeren sie unter vielen
+  // Spielern ohne gemeinsame Matches nicht zu finden); bei "Punkte" ohnehin vorn.
+  if (!query && sortMode === "freq") {
+    allMatchingOpponents = [...recList, ...allMatchingOpponents.filter((p) => !recIds.has(p.id))];
+  }
   // Ohne aktive Suche nur die Top-N zeigen (Nutzer-Feedback: Spielerliste
   // wird mit der Zeit sehr lang) - waehrend einer Suche wird IMMER die volle
   // Trefferliste gezeigt, sonst faende man jemanden mit wenigen gemeinsamen
   // Matches nie.
-  const opponents = (!oppQuery.trim() && oppCount !== "all")
+  const opponents = (!query && oppCount !== "all")
     ? allMatchingOpponents.slice(0, oppCount)
     : allMatchingOpponents;
   // Spielerkacheln blenden sich beim Hineinscrollen ein (nur stabile Werte als
-  // Abhaengigkeit, siehe useRevealOnScroll).
-  const formRef = useRevealOnScroll([step, opponents.length, oppQuery.trim() === "", mode, oppCount]);
+  // Abhaengigkeit, siehe useRevealOnScroll). Auch die Sortierung gehoert dazu:
+  // eine neue Reihenfolge baut die Kacheln neu auf.
+  const formRef = useRevealOnScroll([step, opponents.length, query === "", mode, oppCount, sortMode, disc]);
 
   // Gast fuers normale Match hinzufuegen (Turniere haben dafuer schon
   // tournament_organizer_add_guest() - dies hier ist das Gegenstueck ohne
@@ -257,27 +302,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const oppRating = opp ? ratingOf(opp.nickname) : 500;
   const prob = winProb(myRating, oppRating);
   const total = s1 + s2;
-
-  // --- Punkte-Vorschau (#1) + Gegner-Vorschlag (#2) ---
-  const fmtD = (x) => (x >= 0 ? "+" : "−") + Math.abs(Math.round(x));
-  const previewFor = (dsc, oppNick) => {
-    const ea = winProb(ratingOf(me.nickname, dsc), ratingOf(oppNick, dsc));
-    const is141d = dsc === "14/1 Endlos";
-    const D = is141d ? 50 : 4;
-    const nf = (tot) => Math.min(tot, 16);
-    return {
-      ea, is141d,
-      winMin: 4 * nf(2 * D - 1) * (D / (2 * D - 1) - ea),
-      winMax: 4 * nf(D) * (1 - ea),
-      lossMin: 4 * nf(2 * D - 1) * ((D - 1) / (2 * D - 1) - ea),
-      lossMax: 4 * nf(D) * (0 - ea),
-    };
-  };
-  const suggestions = opponents
-    .filter((p) => !p.is_guest)
-    .map((p) => ({ p, gain: previewFor("Gesamt", p.nickname).winMax }))
-    .sort((a, b) => b.gain - a.gain)
-    .slice(0, 2);
 
   const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); };
 
@@ -580,19 +604,28 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                         title={t("QR-Code zeigen: Mitglieder werben und Match starten")}>
                         <QrCode size={15} />
                       </button>
-                      {!oppQuery.trim() && allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
-                        <FunnelButton funnel={countFunnel} label={t("Filter")} />
-                      )}
+                      <FunnelButton funnel={countFunnel} icon={ArrowUpDown} label={t("Sortieren & Anzahl")} />
                     </>
                   )} />
                 <FunnelPanel funnel={countFunnel}>
+                  {/* Sortierung - als Symbole mit Namen. "Punkte" gibt es nur im Einzel
+                      (im Doppel gibt es keine einzelne Vorschau). */}
                   <div className="chips small">
-                    {LIST_COUNT_OPTIONS.map((c) => (
-                      <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
-                        {c === "all" ? t("Alle") : c}
+                    {[["freq", t("Häufig"), History], ...(mode === "single" ? [["gain", t("Punkte"), TrendingUp]] : []), ["name", t("A–Z"), ArrowDownAZ]].map(([key, label, Icon]) => (
+                      <button key={key} className={"chip" + (sortMode === key ? " active" : "")} onClick={() => chooseSort(key)}>
+                        <Icon size={14} style={{ marginRight: 4, verticalAlign: -2 }} />{label}
                       </button>
                     ))}
                   </div>
+                  {allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
+                    <div className="chips small" style={{ marginTop: 8 }}>
+                      {LIST_COUNT_OPTIONS.map((c) => (
+                        <button key={c} className={"chip" + (oppCount === c ? " active" : "")} onClick={() => setOppCount(c)}>
+                          {c === "all" ? t("Alle") : c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </FunnelPanel>
 
                 {/* Aufklappbarer QR-Code (beide Modi). Zwei Funktionen in einem Code -
@@ -617,23 +650,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   </div>
                 </div>
 
-                {mode === "single" && !oppQuery && suggestions.length > 0 && (
-                  <div className="suggest-card reveal">
-                    <div className="suggest-title">💡 {t("Empfehlung")}</div>
-                    {suggestions.map(({ p, gain }) => (
-                      <div key={p.id} className="suggest-row">
-                        <button className="suggest-row-play" onClick={() => pickPlayer(p)}>
-                          <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={34} />
-                          <span className="suggest-name">{p.nickname}</span>
-                          <span className="suggest-gain">{t("bis zu")} {fmtD(gain)}</span>
-                        </button>
-                        <button className="suggest-challenge-btn" onClick={() => onChallenge(p.id)} title={t("Herausfordern")} aria-label={t("Herausfordern")}>
-                          <Swords size={17} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
                 <div className="search-row">
                   <Search size={16} className="mail-ico" />
                   <input placeholder={t("Spieler suchen oder Gast eingeben …")} value={oppQuery} onChange={(e) => setOppQuery(e.target.value)} />
@@ -662,15 +678,32 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     const role = mode === "double"
                       ? (partner?.id === p.id ? t("Partner") : opp?.id === p.id ? t("Gegner 1") : opp2?.id === p.id ? t("Gegner 2") : null)
                       : (opp?.id === p.id ? t("Gegner") : null);
+                    const g = gainOf(p);
+                    const isRec = recIds.has(p.id);
                     return (
                       <div key={p.id} className="opp-cell reveal" style={{ "--i": i % 4 }}>
-                        <button className={"opp-card" + (role ? " sel" : "")} onClick={() => pickPlayer(p)}>
+                        <button className={"opp-card" + (role ? " sel" : "") + (isRec ? " rec" : "")} onClick={() => pickPlayer(p)}>
                           <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
                           <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
                           {/* Schon gewaehlt: bleibt in der Liste, Kugel abgedunkelt, die
-                              Rolle steht dabei - antippen nimmt den Spieler wieder heraus. */}
-                          {role && <span className="opp-role">{role}</span>}
+                              Rolle steht dabei - antippen nimmt den Spieler wieder heraus.
+                              Sonst: moegliche Punkte bei einem Sieg (Einzel). */}
+                          {role
+                            ? <span className="opp-role">{role}</span>
+                            : g != null && (
+                              <span className="opp-gain" title={`${t("bis zu")} ${fmtD(g)}`}>
+                                <TrendingUp size={11} /> {fmtD(g)}
+                              </span>
+                            )}
+                          {isRec && <span className="opp-rec" title={t("Empfehlung")}><Star size={11} fill="currentColor" /></span>}
                         </button>
+                        {/* Herausfordern bleibt an den empfohlenen Gegnern erreichbar - als
+                            kleines Symbol neben der Karte, nicht darin (ein Knopf im Knopf
+                            ist ungueltig). */}
+                        {isRec && (
+                          <button type="button" className="opp-challenge" onClick={() => onChallenge(p.id)}
+                            title={t("Herausfordern")} aria-label={t("Herausfordern")}><Swords size={13} /></button>
+                        )}
                       </div>
                     );
                   })}
