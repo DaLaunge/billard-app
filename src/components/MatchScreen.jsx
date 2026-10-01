@@ -140,7 +140,17 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Zur Spielerliste springen und sie kurz aufleuchten lassen - am Handy liegt
   // sie unter der Aufstellung, am PC daneben.
   const nudgePlayers = () => {
-    playersRef.current?.scrollIntoView?.({ behavior: "smooth", block: window.innerWidth < 700 ? "start" : "nearest" });
+    const card = playersRef.current;
+    const scroller = card?.closest("main.content");
+    if (card && scroller) {
+      // Zielwert selbst berechnen statt scrollIntoView: zuverlaessig auch im
+      // Scroll-Container der App, und nur dann scrollen, wenn die Karte nicht
+      // ohnehin oben im Bild steht (am PC liegt sie neben der Aufstellung).
+      const rel = card.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      if (rel > 120 || rel < 0) {
+        scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + rel - 12), behavior: "smooth" });
+      }
+    }
     setNudge(true);
     setTimeout(() => setNudge(false), 900);
   };
@@ -474,6 +484,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           (zuletzt gespielte) und wird hier oder waehrend der Aufzeichnung
           geaendert; ein Tipp auf den Gegner startet das Match sofort. */}
       {step === 0 && (
+        <>
         <div className="match-split" ref={formRef}>
           <div className="match-selectors">
             <section className="stat-block">
@@ -494,10 +505,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     {slot(opp, "opp")}
                     {mode === "double" && slot(opp2, "opp2")}
                   </div>
-                  <button type="button" className="icon-btn primary vs-go" disabled={!ready} onClick={() => start(opp)}
-                    aria-label={t("Match starten")} title={t("Match starten")}>
-                    <ArrowRight size={18} />
-                  </button>
                 </div>
                 {mode === "single" && opp && <PointPreview dsc={disc} />}
               </div>
@@ -631,6 +638,19 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </section>
           </div>
         </div>
+        {/* "Match starten" bleibt unten am Bildschirmrand haengen, egal wie weit
+            man in der Spielerliste gescrollt hat (Nutzer-Feedback 2026-10-01:
+            muss immer gut erreichbar sein). Im Doppel immer da (inaktiv, bis alle
+            drei Plaetze besetzt sind), im Einzel nur, wenn der Gegner schon
+            feststeht - sonst startet ja der Tipp auf einen Spieler. */}
+        {(mode === "double" || ready) && (
+          <div className="sticky-cta">
+            <button className="btn primary" disabled={!ready} onClick={() => start(opp)}>
+              <Swords size={18} /> {t("Match starten")}
+            </button>
+          </div>
+        )}
+        </>
       )}
 
       {step === 2 && opp && disc && (
@@ -677,9 +697,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               {!isGhost && (
                 <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} />
               )}
-              <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
-                {t("Beenden")} <ArrowRight size={18} />
-              </button>
+              <div className="sticky-cta">
+                <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
+                  {t("Beenden")} <ArrowRight size={18} />
+                </button>
+              </div>
               {s1 === s2 && total > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
             </>
           )}
@@ -755,13 +777,15 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {!isGhost && is141 && (
             <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} />
           )}
-          <button className="btn primary" disabled={busy || !ghostReady} onClick={save}>
-            {busy ? t("Speichere ...")
-              : isGhost && !ghostReady ? <>
-                  <Clock size={18} /> {t("Noch {time} …", { time: `${Math.floor(ghostRemainingSec / 60)}:${String(ghostRemainingSec % 60).padStart(2, "0")}` })}
-                </>
-              : isGhost ? <>{t("Training abschließen")} <Check size={18} /></> : <>{t("Match speichern")} <Check size={18} /></>}
-          </button>
+          <div className="sticky-cta">
+            <button className="btn primary" disabled={busy || !ghostReady} onClick={save}>
+              {busy ? t("Speichere ...")
+                : isGhost && !ghostReady ? <>
+                    <Clock size={18} /> {t("Noch {time} …", { time: `${Math.floor(ghostRemainingSec / 60)}:${String(ghostRemainingSec % 60).padStart(2, "0")}` })}
+                  </>
+                : isGhost ? <>{t("Training abschließen")} <Check size={18} /></> : <>{t("Match speichern")} <Check size={18} /></>}
+            </button>
+          </div>
           {isGhost && !ghostReady && (
             <p className="hint center">{t("Ein echtes Training dauert länger – bitte warte, bis der Timer abgelaufen ist.")}</p>
           )}

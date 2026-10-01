@@ -846,10 +846,18 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
   display: grid; place-items: center; color: var(--ivory-dim); }
 .vs-x { align-self: center; margin-top: -14px; font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 800; font-size: 12px; color: var(--ivory-dim); letter-spacing: .06em; }
-.vs-go { margin-left: auto; align-self: center; margin-top: -14px; }
 /* Ghost als Kachel am Ende der Spielerliste. */
 .opp-card.ghost-tile { border-style: dashed; border-color: var(--btn-border); }
 .opp-card .ghost-ball { width: 48px; height: 48px; }
+/* Haupt-Aktion des Match-Screens (Match starten / Beenden / Match speichern):
+   haengt unten am Rand des Scroll-Bereichs und ist so immer erreichbar. Der
+   Verlauf dahinter verdeckt scrollenden Inhalt weich statt hart. */
+/* bottom: -24px = der Innenabstand von .content - Chrome/Safari rechnen die Haft-
+   position vom Inhaltsrand, nicht vom Bildschirmrand; ohne den Ausgleich blieb unter
+   dem Streifen ein Band, durch das der scrollende Inhalt hervorschaute. */
+.sticky-cta { position: sticky; bottom: -24px; z-index: 5; margin: 8px -4px 0; padding: 14px 4px calc(34px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--felt) 62%, transparent); }
+.sticky-cta .btn { margin-top: 0; }
 /* Kopfzeile des Match-Screens: Disziplin zentriert statt Titel. */
 .match-head-disc { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .match-head-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; }
@@ -1415,7 +1423,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .sum-score { animation: ball-pop .4s ease-out; }
   .prob-bar div { animation: grow-w .8s cubic-bezier(.22, .61, .36, 1); }
   .sent-check.big { animation: check-pop .5s cubic-bezier(.34, 1.4, .64, 1) both; }
-  .vs-go:not(:disabled) { animation: go-pulse 1.5s ease-in-out 3; }
+  .sticky-cta .btn.primary:not(:disabled) { animation: go-pulse 1.5s ease-in-out 3; }
   .vs-slot.empty.active .vs-empty-ball { animation: go-pulse 1.4s ease-in-out infinite; }
   /* Seitenwechsel wie beim iPhone: die neue Seite gleitet kurz herein (siehe
      lib/usePageTransition.js - die Klasse sitzt nur waehrend der Animation). */
