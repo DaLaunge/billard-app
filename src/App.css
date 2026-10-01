@@ -195,8 +195,11 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .dbl-slot span { color: var(--ivory-dim); font-size: 12.5px; }
 .dbl-roster .hint { margin: 6px 0 0; }
 .opp-card { position: relative; }
-.dbl-role { position: absolute; top: 4px; right: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--accent-ink); background: var(--accent); border-radius: 999px; padding: 1px 6px; }
+.opp-cell { display: flex; }
+.opp-cell > .opp-card { width: 100%; }
+/* Schon gewaehlter Spieler im Doppel: bleibt sichtbar, Kugel gedaempft, Rolle als Text. */
+.opp-card.sel .ball { opacity: .45; }
+.opp-role { font-size: 11px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--accent); }
 .sum-avatars { display: flex; gap: 4px; justify-content: center; }
 .add-match { display: flex; flex-direction: column; gap: 10px; }
 .add-match select, .add-match input[type="date"] { width: 100%; box-sizing: border-box;
@@ -1414,7 +1417,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   /* Spielerkacheln: beim Hineinscrollen von unten aufsteigen, spaltenweise
      leicht versetzt (--i = Spalte). animation statt transition, damit die
      Verzoegerung nicht spaeter am Hover-Effekt haengen bleibt. */
-  .opp-card.reveal.is-in, .suggest-card.reveal.is-in {
+  .opp-cell.reveal.is-in, .suggest-card.reveal.is-in {
     animation: rise-in .38s cubic-bezier(.22, .61, .36, 1) backwards; animation-delay: calc(var(--i, 0) * 32ms); }
   /* Auswahl bestaetigen: die gewaehlte Kugel/Kachel federt kurz. */
   .disc-pick.sel .pool-ball, .fmt-card.sel .fmt-glyph, .vs-slot.filled .ball { animation: ball-pop .32s ease-out; }

@@ -610,28 +610,40 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 )}
                 {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
                 <div className="opp-grid">
+                  {/* Die Einblend-Klasse "reveal" sitzt auf einem Wrapper mit FESTEM
+                      Klassennamen, nicht auf der Karte: useRevealOnScroll setzt "is-in"
+                      direkt am Element, und ein sich aenderndes className (Auswahl!)
+                      schreibt React neu - dann war "is-in" weg und die Karte blieb
+                      unsichtbar (Bug-Meldung 2026-10-01: gewaehlter Spieler
+                      verschwindet und kommt nach dem Abwaehlen nicht wieder). */}
                   {opponents.map((p, i) => {
                     const role = mode === "double"
                       ? (partner?.id === p.id ? t("Partner") : opp?.id === p.id ? t("Gegner 1") : opp2?.id === p.id ? t("Gegner 2") : null)
                       : (opp?.id === p.id ? "•" : null);
                     return (
-                      <button key={p.id} className={"opp-card reveal" + (role ? " sel" : "")} style={{ "--i": i % 4 }} onClick={() => pickPlayer(p)}>
-                        <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
-                        <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
-                        {mode === "double" && role && <span className="dbl-role">{role}</span>}
-                      </button>
+                      <div key={p.id} className="opp-cell reveal" style={{ "--i": i % 4 }}>
+                        <button className={"opp-card" + (role ? " sel" : "")} onClick={() => pickPlayer(p)}>
+                          <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
+                          <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
+                          {/* Schon gewaehlt: bleibt in der Liste, Kugel abgedunkelt, die
+                              Rolle steht dabei - antippen nimmt den Spieler wieder heraus. */}
+                          {mode === "double" && role && <span className="opp-role">{role}</span>}
+                        </button>
+                      </div>
                     );
                   })}
                   {/* Ghost: als letzte Kachel der Liste statt als breite Karte -
                       der Sonderfall (Training) soll nicht mehr Platz brauchen
                       als ein Mitspieler. Erklaerung im Tooltip. */}
                   {mode === "single" && ghost && !oppQuery && (
-                    <button className="opp-card ghost-tile reveal" style={{ "--i": opponents.length % 4 }}
-                      title={`${t("Training gegen Ghost")} – ${t("Übungsmatch – zählt nicht fürs Rating")}`}
-                      onClick={() => { setOpp(ghost); start(ghost); }}>
-                      <span className="ghost-ball">👻</span>
-                      <span>{t("Ghost")}</span>
-                    </button>
+                    <div className="opp-cell reveal" style={{ "--i": opponents.length % 4 }}>
+                      <button className="opp-card ghost-tile"
+                        title={`${t("Training gegen Ghost")} – ${t("Übungsmatch – zählt nicht fürs Rating")}`}
+                        onClick={() => { setOpp(ghost); start(ghost); }}>
+                        <span className="ghost-ball">👻</span>
+                        <span>{t("Ghost")}</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
