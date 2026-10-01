@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus } from "lucide-react";
+import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { winProb, initials } from "../lib/format";
@@ -11,7 +12,7 @@ import { savePendingReport, isNetworkError } from "../lib/offlineReport";
 import { saveMatchDraft, clearMatchDraft } from "../lib/matchDraft";
 import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
-import InviteScreen from "./InviteScreen";
+import { myCodeLink } from "../lib/inviteLink";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import FieldLabel from "./widgets/FieldLabel";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
@@ -65,7 +66,37 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [oppQuery, setOppQuery] = useState("");
   const [pendingDisc, setPendingDisc] = useState(null);
   const [abortAsk, setAbortAsk] = useState(false);
-  const [showInvite, setShowInvite] = useState(false);
+  // EIN QR-Code fuer alles (siehe lib/inviteLink.js): Neue werden eingeladen,
+  // Mitglieder starten ein Match gegen dich. Er klappt UNTER der Zeile "Gegner"
+  // aus - wie ein verstecktes Menue, ohne den Screen zu verlassen (Nutzer-
+  // Feedback 2026-10-01: besser als die eigene Seite, und im Doppel koennen
+  // mehrere nacheinander scannen). Den Einladungscode holen wir erst beim
+  // ersten Aufklappen; bis er da ist, gilt der Link allein fuer Mitglieder (?vs=).
+  const [showMyQr, setShowMyQr] = useState(false);
+  const [inviteCode, setInviteCode] = useState(null);
+  useEffect(() => {
+    if (!showMyQr || inviteCode) return;
+    let alive = true;
+    supabase.rpc("get_or_create_my_invite").then(({ data, error }) => { if (alive && !error) setInviteCode(data); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMyQr]);
+  const myLink = myCodeLink(inviteCode, me.id);
+  const shareLink = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Break & Rank",
+          text: t("{name} lädt dich zum Billard-Ranking ein! Tippe auf den Link, um mitzumachen:", { name: me.nickname }),
+          url: myLink,
+        });
+      } catch { /* abgebrochen */ }
+    } else copyLink();
+  };
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(myLink); toast(t("Link kopiert!")); }
+    catch { toast(t("Kopieren nicht möglich – Link markieren und kopieren.")); }
+  };
   const [busy, setBusy] = useState(false);
   const [offlineQueued, setOfflineQueued] = useState(false); // Match konnte mangels Verbindung nicht gemeldet werden, wartet lokal
   const [ghostStartedAt, setGhostStartedAt] = useState(dv("ghostStartedAt", null)); // gegen "Durchklicken" beim Ghost-Training
@@ -201,11 +232,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     : allMatchingOpponents;
   // Spielerkacheln blenden sich beim Hineinscrollen ein (nur stabile Werte als
   // Abhaengigkeit, siehe useRevealOnScroll).
-  // showInvite gehoert dazu: die Einladungsseite ersetzt das ganze Formular
-  // (fruehes return unten), danach entstehen alle Karten NEU und tragen "reveal"
-  // ohne "is-in" - ohne neuen Durchlauf blieben sie unsichtbar (Bug-Meldung
-  // 2026-10-01: "wenn ich zurueckkomme, ist alles leer").
-  const formRef = useRevealOnScroll([step, opponents.length, oppQuery.trim() === "", mode, oppCount, showInvite]);
+  const formRef = useRevealOnScroll([step, opponents.length, oppQuery.trim() === "", mode, oppCount]);
 
   // Gast fuers normale Match hinzufuegen (Turniere haben dafuer schon
   // tournament_organizer_add_guest() - dies hier ist das Gegenstueck ohne
@@ -446,10 +473,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (hasEntered()) setAbortAsk(true); else backToSelection();
   };
 
-  if (showInvite) {
-    return <InviteScreen me={me} toast={toast}
-      onBack={() => { setShowInvite(false); onReload && onReload(); }} />;
-  }
 
   return (
     <div className="screen">
@@ -551,19 +574,12 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   info={mode === "double" ? t("Tippe drei Spieler an: zuerst deinen Partner, dann die beiden Gegner.") : undefined}
                   actions={(
                     <>
-                      {mode === "single" && (
-                        <>
-                          {/* EIN QR-Code fuer alles (Nutzer-Feedback 2026-10-01): Neue
-                              werden eingeladen, Mitglieder starten ein Match gegen
-                              dich - siehe InviteScreen. Frueher gab es hier zusaetzlich
-                              einen zweiten, eingeklappten Code. */}
-                          <button type="button" className="icon-btn small" onClick={() => setShowInvite(true)}
-                            aria-label={t("QR-Code zeigen: Mitglieder werben und Match starten")}
-                            title={t("QR-Code zeigen: Mitglieder werben und Match starten")}>
-                            <QrCode size={15} />
-                          </button>
-                        </>
-                      )}
+                      <button type="button" className={"icon-btn small" + (showMyQr ? " on" : "")} aria-pressed={showMyQr}
+                        onClick={() => setShowMyQr((v) => !v)}
+                        aria-label={t("QR-Code zeigen: Mitglieder werben und Match starten")}
+                        title={t("QR-Code zeigen: Mitglieder werben und Match starten")}>
+                        <QrCode size={15} />
+                      </button>
                       {!oppQuery.trim() && allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
                         <FunnelButton funnel={countFunnel} label={t("Filter")} />
                       )}
@@ -578,6 +594,28 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     ))}
                   </div>
                 </FunnelPanel>
+
+                {/* Aufklappbarer QR-Code (beide Modi). Zwei Funktionen in einem Code -
+                    gezeichnet statt erklaert; Teilen/Kopieren als Symbole. */}
+                <div className={"collapsible" + (showMyQr ? " open" : "")} inert={showMyQr ? undefined : ""}>
+                  <div className="collapsible-inner">
+                    <div className="my-qr">
+                      <div className="qr-box">
+                        <QRCodeSVG value={myLink} size={190} level="M" bgColor="#F2EDE0" fgColor="#0A2B21" />
+                      </div>
+                      <div className="qr-uses">
+                        <span><UserPlus size={14} /> {t("Neu: Einladung")}</span>
+                        <span><Swords size={14} /> {t("Mitglied: Match starten")}</span>
+                      </div>
+                      <div className="qr-share">
+                        <button type="button" className="icon-btn small" onClick={shareLink}
+                          aria-label={t("Einladung teilen")} title={t("Einladung teilen")}><Share2 size={15} /></button>
+                        <button type="button" className="icon-btn small" onClick={copyLink}
+                          aria-label={t("Link kopieren")} title={t("Link kopieren")}><Copy size={15} /></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {mode === "single" && !oppQuery && suggestions.length > 0 && (
                   <div className="suggest-card reveal">

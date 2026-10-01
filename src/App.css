@@ -186,6 +186,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .qr-uses { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 12px; color: var(--ivory-dim); }
 .qr-uses span { display: inline-flex; align-items: center; gap: 5px; }
 .qr-uses svg { color: var(--accent); }
+.qr-share { display: flex; justify-content: center; gap: 10px; }
 .mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
 .mode-btn { flex: 1; border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
   border-radius: 12px; padding: 10px 0; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
