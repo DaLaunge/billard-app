@@ -854,7 +854,7 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 /* Zwei Kacheln statt vier (Einzel/Doppel): die 4er-Regel ab 560px darf nicht greifen. */
 .fmt-grid.two { grid-template-columns: repeat(2, 1fr); }
 /* Aufstellung "Du VS Gegner": Kugeln statt Textzeilen. */
-.vs-strip { display: flex; align-items: flex-start; gap: 8px; padding: 12px 10px 8px;
+.vs-strip { display: flex; align-items: flex-start; justify-content: center; gap: 8px; padding: 12px 10px 8px;
   border-radius: 14px; background: var(--felt); border: 1px solid var(--line); margin-top: 2px; }
 .vs-team { display: flex; gap: 6px; }
 .vs-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px;
