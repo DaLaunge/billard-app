@@ -917,7 +917,11 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 .extra-names span:last-child { text-align: right; }
 .extra-label { display: inline-flex; align-items: center; gap: 5px; justify-content: center; font-size: 12.5px; font-weight: 700; min-width: 74px; color: var(--ivory); }
 .extra-label svg { color: var(--accent); }
-.extra-step { display: inline-flex; align-items: center; justify-content: space-between; gap: 4px; }
+/* Beide Zaehler sind gleich kompakt (-, Zahl, +) und sitzen aussen: links buendig, rechts
+   buendig. Vorher dehnte sich der linke ueber die ganze Spalte (space-between) und
+   zog - und + weit auseinander, der rechte blieb eng. */
+.extra-step { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.extra-row .extra-step:first-child { justify-self: start; }
 .extra-row .extra-step:last-child { justify-self: end; }
 .extra-step button { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid transparent; background: var(--surface-btn);
   color: var(--ivory); display: grid; place-items: center; cursor: pointer; }
