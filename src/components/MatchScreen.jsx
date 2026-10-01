@@ -16,7 +16,7 @@ import InviteScreen from "./InviteScreen";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import FieldLabel from "./widgets/FieldLabel";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
-import DiscBall, { DiscPick, DiscPickRow, sortDisciplines } from "./widgets/DiscBall";
+import DiscBall, { DiscPick, sortDisciplines } from "./widgets/DiscBall";
 import { ModeTiles } from "./widgets/ModePick";
 import ExtraCounters, { CountersSummary } from "./widgets/ExtraCounters";
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
@@ -437,9 +437,15 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <ChevronLeft size={22} />
         </button>
         <div className="match-head-disc">
-          {step === 0
+          {/* Wahl der Disziplin: im Formular und waehrend der Aufzeichnung
+              (Ergebnis-Schritt) direkt hier oben - dort stand sie vorher ein
+              zweites Mal unter dem Zaehler (Nutzer-Feedback 2026-10-01:
+              "redundant"). Bei Turnierpartien ist sie vorgegeben, auf der
+              Pruefseite und danach nur noch zur Anzeige. */}
+          {(step === 0 || (step === 2 && !tournamentCtx))
             ? matchDiscs.map((d) => (
-              <DiscPick key={d} disc={d} size={30} selected={disc === d} onSelect={() => setDisc(d)} />
+              <DiscPick key={d} disc={d} size={30} selected={disc === d}
+                onSelect={() => (step === 0 ? setDisc(d) : switchDisc(d))} />
             ))
             : disc && (<><DiscBall disc={disc} size={34} /><span className="match-head-name">{t(disc)}</span></>)}
         </div>
@@ -678,17 +684,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </>
           )}
           <PointPreview dsc={disc} />
-          {/* Disziplin waehrend der Aufzeichnung: dieselben Kugeln wie im
-              Formular (statt eines Chips, der zurueck in einen eigenen Schritt
-              fuehrte). Ein Wechsel zwischen 8/9/10 Ball behaelt das Ergebnis,
-              von/zu 14/1 aendert das Punkteschema - siehe switchDisc. */}
-          <div className="score-head">
-            {tournamentCtx ? (
-              <span className="disc-chip disc-chip-locked"><DiscBall disc={disc} size={22} /><span>{t(disc)}</span></span>
-            ) : (
-              <DiscPickRow discs={matchDiscs} value={disc} onChange={switchDisc} />
-            )}
-          </div>
           {pendingDisc && (
             <div className="confirm-box">
               {is141

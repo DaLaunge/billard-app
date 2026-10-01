@@ -26,7 +26,7 @@ export function normalizeListCount(v) {
 // Jeder Push auf test zaehlt dagegen "<letzte Prod-Nummer>.<Minor>", also 391.0,
 // 391.1, ... bis zur Freigabe; danach steht Prod auf 392 und test beginnt bei
 // 392.0. Als STRING, damit "391.10" nicht zu 391.1 wird.
-export const APP_VERSION = "391.28";
+export const APP_VERSION = "391.29";
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
