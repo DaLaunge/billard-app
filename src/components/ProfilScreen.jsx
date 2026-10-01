@@ -17,6 +17,7 @@ import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import InfoButton from "./widgets/InfoButton";
 import MatchFlySwitch from "./widgets/MatchFlySwitch";
+import FiltersOpenSwitch from "./widgets/FiltersOpenSwitch";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
@@ -605,6 +606,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               </InfoButton>
             </div>
             <MatchFlySwitch />
+            <FiltersOpenSwitch />
             {/* Updates: Schalter + Symbolknopf "jetzt suchen" in EINER Zeile
                 statt Schalter, Absatz und Textknopf ueber die volle Breite. */}
             <div className="switch-row">

@@ -26,6 +26,20 @@ export function storeHideTabbar(on) {
   try { localStorage.setItem(HIDE_TABBAR_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
 
+/* Filter-Felder (Trichter-Symbol im Kartenkopf) beim Oeffnen eines Screens
+   gleich aufgeklappt zeigen. Standard ist AUS (zu), nur ein ausdrueckliches
+   "an" wird gespeichert. Ein- und Ausklappen per Trichter geht in beiden
+   Faellen weiter - die Einstellung bestimmt nur den Anfangszustand. */
+const FILTERS_OPEN_KEY = "filtersAlwaysOpen";
+
+export function getFiltersOpen() {
+  try { return localStorage.getItem(FILTERS_OPEN_KEY) === "1"; } catch { return false; }
+}
+
+export function storeFiltersOpen(on) {
+  try { localStorage.setItem(FILTERS_OPEN_KEY, on ? "1" : "0"); } catch { /* ignore */ }
+}
+
 /* Kugel-Flug im Match: waehlt man einen Spieler, springt seine Kugel aus der
    Kachel in den freien Platz der Aufstellung, beim Entfernen zurueck (lib/flyBall.js).
    Standard ist AN - nur ein ausdrueckliches "aus" wird gespeichert, darum der

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Filter, X } from "lucide-react";
 import { t } from "../../lib/i18n";
+import { getFiltersOpen } from "../../lib/uiPrefs";
 
 /* Trichter-Symbol im Kartenkopf + das Auswahlfeld, das es aufklappt.
 
@@ -17,7 +18,7 @@ import { t } from "../../lib/i18n";
    kann die Karte das Feld z.B. beim Zuklappen selbst mit ausblenden. Die
    Auswahl selbst (Disziplin, Top-N) lebt weiter im Bildschirm. */
 export function useFunnel() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(getFiltersOpen);
   return { open, toggle: () => setOpen((o) => !o), close: () => setOpen(false) };
 }
 
