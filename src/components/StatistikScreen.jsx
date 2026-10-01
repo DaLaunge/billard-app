@@ -5,6 +5,8 @@ import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortab
 import { t } from "../lib/i18n";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
+import { loadMatchCounters } from "../lib/counterCache";
+import { computeFunRecords } from "../lib/funStats";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount } from "../lib/constants";
@@ -216,7 +218,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
         <div className="stat-block-head-actions">
           <CardMenuButton onHide={onHide} />
           <InfoButton title={t("Rekorde")}>
-            {t("Aktuelle Bestwerte der gesamten Gruppe - wer hält gerade welchen Rekord? Jede Zeile hat rechts ihr eigenes Info-Symbol mit genauerer Erklärung (und, wenn vorhanden, dem zugehörigen Match-Protokoll).")}
+            {t("Aktuelle Bestwerte der gesamten Gruppe - wer hält gerade welchen Rekord? Jede Zeile hat rechts ihr eigenes Info-Symbol mit genauerer Erklärung (und, wenn vorhanden, dem zugehörigen Match-Protokoll). Zeilen mit dem Zeichen FUN stammen aus den optionalen Zusatzzählern (Fluke, Runout, Scratch, Foul) und sind reiner Spaß.")}
           </InfoButton>
           <CardColumnButton column={column} onToggle={onToggleColumn} />
           <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />
@@ -232,11 +234,11 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
             <col className="rt-col-info" />
           </colgroup>
           <tbody>
-            {shown.map(({ key, label, holder, fmt, type, info, matchRef }) => {
+            {shown.map(({ key, label, holder, fmt, type, info, matchRef, fun }) => {
               const hasProtokoll = matchRef && (matchRef.run_log?.length > 0 || matchRef.tournament_id);
               return (
                 <tr key={key} className="reveal">
-                  <td className="rt-label">{label}</td>
+                  <td className="rt-label">{label}{fun && <span className="fun-tag" title={t("Fun-Stat: aus den optionalen Zusatzzählern, ohne Einfluss auf Rating und Erfolge")}>FUN</span>}</td>
                   <td className="rt-holder">
                     {type === "match" ? (
                       <span className="rt-match">
@@ -656,6 +658,16 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     () => players.map((p) => ({ name: p.nickname, ...computeAchievementExtras(p.nickname, matches, players, challenges) })),
     [players, matches, challenges]
   );
+  // Fun-Stats aus den optionalen Zusatzzaehlern (Fluke/Runout/Scratch/Foul), siehe
+  // lib/funStats.js. Die Zaehler liegen in einer eigenen Tabelle und kommen per
+  // Delta-Cache (lib/counterCache.js); neu laden, wenn sich die Matchzahl aendert.
+  const [counterRows, setCounterRows] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    loadMatchCounters().then((r) => { if (alive) setCounterRows(r); });
+    return () => { alive = false; };
+  }, [matches.length]);
+  const funRecords = useMemo(() => computeFunRecords(matches, counterRows), [matches, counterRows]);
   const topExtra = (metric) => extrasAll.filter((p) => p[metric] > 0).sort((a, b) => b[metric] - a[metric])[0] || null;
 
   // Groesster Punkteabstand in einem Einzel-Match (wie computeStats/
@@ -803,6 +815,8 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       info: t("Kürzeste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll; bei Winner Stays die reine Spielzeit dieser Paarung), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
     { key: "longestMatch", label: t("Längstes Match"), holder: longestMatch, fmt: (h) => fmtDuration(h.ms), type: "match", matchRef: longestMatch?.match,
       info: t("Längste Gesamtdauer eines Matches (erster bis letzter Zeitstempel im gespeicherten Zeit-Protokoll; bei Winner Stays die reine Spielzeit dieser Paarung), unabhängig von der Disziplin. Nur Matches mit digitalem Zähler-Protokoll zählen.") },
+    // Fun-Stats (mit FUN-Zeichen), erscheinen erst, wenn jemand die Zusatzzaehler benutzt hat.
+    ...funRecords,
   ];
 
   // Registry aller per Drag & Drop sortierbaren Karten dieser Seite (Nutzer-

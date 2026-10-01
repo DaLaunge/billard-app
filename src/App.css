@@ -200,6 +200,10 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .opp-cell > .opp-card { width: 100%; }
 /* Schon gewaehlter Spieler im Doppel: bleibt sichtbar, Kugel gedaempft, Rolle als Text. */
 .opp-card.sel .ball { opacity: .45; }
+/* FUN-Zeichen an Rekord-Zeilen, die aus den optionalen Zusatzzaehlern stammen. */
+.fun-tag { margin-left: 6px; padding: 1px 5px; border-radius: 999px; vertical-align: middle; white-space: nowrap;
+  font-size: 9px; font-weight: 800; letter-spacing: .07em; color: var(--accent);
+  background: var(--accent-soft); border: 1px solid var(--accent-line); }
 .opp-role { font-size: 11px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--accent); }
 /* Moegliche Rating-Punkte bei einem Sieg, auf jeder Kachel (Einzel). */
 .opp-gain { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 700; color: var(--win); }
@@ -1988,9 +1992,11 @@ button.id-card-head { cursor: pointer; }
 .pmp-chip:hover { background: var(--felt-3); }
 .pmp-chip.sel { border-color: var(--accent); background: var(--felt-3); }
 .pmp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
-.guest-tag { margin-left: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+/* "Gast" bricht nie mitten im Wort um; in Spielerkacheln steht es unter dem Namen. */
+.guest-tag { white-space: nowrap; word-break: normal; margin-left: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
   color: var(--ivory-dim); background: var(--felt-3); border-radius: 5px; padding: 1px 5px; }
 .turnier-organizer-line { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; }
+.opp-card .guest-tag { display: block; margin: 3px auto 0; width: fit-content; }
 .pmp-check { color: var(--accent); flex-shrink: 0; }
 /* Entfernen-Button in der Angemeldet-Liste (Turnierleitung, Anmeldephase) -
    die Roster-Chips dort sind (anders als im PlayerMultiPicker) keine
