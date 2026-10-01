@@ -29,8 +29,10 @@ const read = () => {
 const write = (c) => { try { localStorage.setItem(KEY, JSON.stringify(c)); } catch { /* Speicher voll */ } };
 
 let inflight = null;
-// Liefert { [match_id]: counters }.
-export function loadMatchCounters() {
+let last = null; // { at, rows } - kurzer Speicher gegen Mehrfach-Anfragen beim Bildschirmwechsel
+// Liefert { [match_id]: counters }. maxAgeMs > 0: ein frisches Ergebnis wiederverwenden.
+export function loadMatchCounters({ maxAgeMs = 0 } = {}) {
+  if (maxAgeMs > 0 && last && Date.now() - last.at < maxAgeMs) return Promise.resolve(last.rows);
   if (inflight) return inflight;
   inflight = (async () => {
     const cache = read();
@@ -53,6 +55,7 @@ export function loadMatchCounters() {
       v: VERSION, rows, since: newest ? new Date(newest).toISOString() : null,
       fullAt: full ? Date.now() : cache.fullAt,
     });
+    last = { at: Date.now(), rows };
     return rows;
   })().finally(() => { inflight = null; });
   return inflight;

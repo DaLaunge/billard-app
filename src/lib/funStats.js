@@ -18,13 +18,14 @@ import { t } from "./i18n";
 const KEYS = ["fluke", "runout", "scratch", "foul"];
 const MIN_MATCHES_FAIR = 3; // "Fairplay" erst ab so vielen Matches mit Zaehlern
 
-export function computeFunRecords(matches, rows) {
-  if (!rows) return [];
+// Gemeinsame Grundlage fuer die Rekorde UND die eigenen Fun-Zahlen: die Zaehler
+// jedes Einzel-Matches den beiden Spielern zuordnen.
+function aggregate(matches, rows) {
   const per = {};     // Name -> Summen
   const sides = [];   // jede (Spieler, Match)-Seite einzeln, fuer Bestwerte je Match
   const chaos = [];   // je Match: Fouls + Scratches beider Seiten
 
-  matches.forEach((m) => {
+  (rows ? matches : []).forEach((m) => {
     const c = rows[m.id];
     if (!c || m.player1b_id) return;
     if (!m.p1 || !m.p2 || m.p1.is_guest || m.p2.is_guest || m.p1.is_ghost || m.p2.is_ghost) return;
@@ -43,6 +44,36 @@ export function computeFunRecords(matches, rows) {
     chaos.push({ match: m, p1Name: m.p1.nickname, p2Name: m.p2.nickname, discipline: m.discipline,
       total: val("foul", 0) + val("foul", 1) + val("scratch", 0) + val("scratch", 1) });
   });
+  return { per, sides, chaos };
+}
+
+// Die eigenen Fun-Zahlen einer Person ("Meine Zahlen" -> Fun): je Kennzahl die
+// Summe, der Schnitt pro Match, der Bestwert in einem Match und der Platz unter
+// allen, die diese Kennzahl ueberhaupt haben (nur sinnvoll ab zwei Personen).
+// null, solange die Person kein Match mit Zaehlern hat.
+export function computeFunForPlayer(matches, rows, nickname) {
+  const { per, sides } = aggregate(matches, rows);
+  const me = per[nickname];
+  if (!me) return null;
+  const all = Object.values(per);
+  const stats = {};
+  KEYS.forEach((k) => {
+    const have = all.filter((p) => p[k] > 0);
+    const best = Math.max(0, ...sides.filter((s) => s.name === nickname).map((s) => s[k]));
+    stats[k] = {
+      total: me[k],
+      avg: me.n ? me[k] / me.n : 0,
+      best,
+      rank: me[k] > 0 ? 1 + have.filter((p) => p[k] > me[k]).length : null,
+      of: have.length,
+    };
+  });
+  return { n: me.n, stats };
+}
+
+export function computeFunRecords(matches, rows) {
+  if (!rows) return [];
+  const { per, sides, chaos } = aggregate(matches, rows);
 
   const players = Object.values(per);
   const earlier = (a, b) => new Date(a.played_at) < new Date(b.played_at);

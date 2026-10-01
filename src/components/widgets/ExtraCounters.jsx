@@ -9,7 +9,7 @@ import { COUNTER_KEYS, hasCounters } from "../../lib/matchCounters";
    am Kopf, damit man auch zugeklappt sieht, dass etwas mitgezaehlt wird. Die
    Erklaerung steckt im Info-Knopf. Gespeichert wird nur, wenn mindestens ein
    Zaehler > 0 ist (siehe lib/matchCounters.js). */
-const META = {
+export const META = {
   fluke: { icon: Clover, label: "Fluke" },
   runout: { icon: Zap, label: "Runout" },
   scratch: { icon: CircleSlash, label: "Scratch" },

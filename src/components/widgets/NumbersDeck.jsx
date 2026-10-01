@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
-import { BarChart3, Trophy, Star, Swords, Clock } from "lucide-react";
+import { BarChart3, Trophy, Star, Swords, Clock, PartyPopper } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { fmtDuration } from "../../lib/format";
 import { computeAchievementExtras } from "../../lib/achievements";
 import { computeSpeedStats } from "../../lib/runLog";
+import { computeFunForPlayer } from "../../lib/funStats";
+import { useMatchCounters } from "../../lib/useMatchCounters";
+import { COUNTER_KEYS } from "../../lib/matchCounters";
+import { META as COUNTER_META } from "./ExtraCounters";
 import CardDeck from "./CardDeck";
 import RecordsCard from "./RecordsCard";
 import HeadToHeadCard from "./HeadToHeadCard";
@@ -45,11 +49,15 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
   );
   const speed = useMemo(() => computeSpeedStats(matches, playerObj?.id), [matches, playerObj?.id]);
   const hasTempo = speed.avgGameMs != null || speed.avgBallMs != null;
+  // Fun-Zahlen aus den optionalen Zusatzzaehlern (siehe lib/funStats.js). Wie
+  // Tempo erscheint der Reiter erst, wenn es etwas zu zeigen gibt.
+  const counterRows = useMatchCounters(matches.length);
+  const fun = useMemo(() => computeFunForPlayer(matches, counterRows, nickname), [matches, counterRows, nickname]);
   const [tab, setTab] = useState(readTab);
 
   // Ein Reiter ohne Inhalt (Tempo ohne Protokolldaten) taucht gar nicht erst
   // auf - sonst fuehrte er ins Leere.
-  const shown = parts.filter((id) => id !== "tempo" || hasTempo);
+  const shown = parts.filter((id) => (id !== "tempo" || hasTempo) && (id !== "fun" || fun));
   if (shown.length === 0) return null;
   const activeId = shown.includes(tab) ? tab : shown[0];
 
@@ -87,12 +95,33 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
         )}
       </>
     ),
+    fun: fun && (
+      <>
+        <p className="hint fun-note"><span className="fun-tag" style={{ marginLeft: 0 }}>FUN</span> {t("{n} Matches mit Zusatzzählern", { n: fun.n })}</p>
+        {COUNTER_KEYS.map((k) => {
+          const Icon = COUNTER_META[k].icon;
+          const st = fun.stats[k];
+          const avg = (Math.round(st.avg * 10) / 10).toString().replace(".", ",");
+          return (
+            <div key={k} className="stat-row">
+              <span className="stat-name"><Icon size={14} style={{ marginRight: 6, verticalAlign: -2, color: "var(--accent)" }} />{t(COUNTER_META[k].label)}</span>
+              <span className="rank-meta" style={{ marginRight: 10 }}>
+                Ø {avg} · max {st.best}{st.rank != null && st.of > 1 ? ` · ${t("Platz")} ${st.rank}` : ""}
+              </span>
+              <span className="stat-val">{st.total}</span>
+            </div>
+          );
+        })}
+      </>
+    ),
   };
   const meta = {
     ratings: { tab: t("Ratings"), title: t("Ratings nach Disziplin"), icon: <Trophy size={15} /> },
     rekorde: { tab: t("Rekorde"), title: t("Rekorde"), icon: <Star size={15} /> },
     headToHead: { tab: t("Gegner"), title: t("Head-to-Head (Match-Siege)"), icon: <Swords size={15} /> },
     tempo: { tab: t("Tempo"), title: t("Spielgeschwindigkeit"), icon: <Clock size={15} /> },
+    fun: { tab: t("Fun"), title: t("Fun-Zahlen"), icon: <PartyPopper size={15} />,
+      info: t("Aus den optionalen Zusatzzählern (Fluke, Runout, Scratch, Foul): Summe, Schnitt pro Match, Bestwert in einem Match und dein Platz unter allen, die den Zähler benutzt haben. Zählt nur Einzel-Matches, in denen die Zähler benutzt wurden – reiner Spaß, ohne Einfluss auf Rating und Erfolge.") },
   };
 
   return (
