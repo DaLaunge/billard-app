@@ -987,6 +987,8 @@ const TRANSLATIONS = {
     "Alle Erfolge ansehen": "View all achievements",
     "Zum Erfolg": "Go to achievement",
     "Pause": "Pause",
+    "{name}: {n} Runout(s), aber nur {g} gewonnene(s) Spiel(e) – ein Runout ist ein gewonnenes Spiel. Stimmt die Eingabe?": "{name}: {n} runout(s) but only {g} game(s) won – a runout is a won game. Is this correct?",
+    "{name}: 3 Fouls hintereinander im selben Spiel – bei {disc} ist das der Spielverlust. Stimmt die Eingabe?": "{name}: 3 fouls in a row in the same game – in {disc} that loses the game. Is this correct?",
     "Spielzeit ohne Pause": "Playing time without pauses",
     "Dauer mit Pause": "Duration with pauses",
     "Filter immer anzeigen": "Always show filters",

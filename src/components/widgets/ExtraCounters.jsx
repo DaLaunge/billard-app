@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clover, Zap, CircleSlash, Flag, ChevronDown, Minus, Plus } from "lucide-react";
+import { Clover, Zap, CircleSlash, Flag, ChevronDown, Minus, Plus, AlertTriangle } from "lucide-react";
 import { t } from "../../lib/i18n";
 import InfoButton from "./InfoButton";
 import { COUNTER_KEYS, hasCounters } from "../../lib/matchCounters";
@@ -16,7 +16,7 @@ export const META = {
   foul: { icon: Flag, label: "Foul" },
 };
 
-export default function ExtraCounters({ value, onBump, names, defaultOpen = false }) {
+export default function ExtraCounters({ value, onBump, names, defaultOpen = false, warnings = [] }) {
   const [open, setOpen] = useState(defaultOpen);
   const total = COUNTER_KEYS.reduce((n, k) => n + (value[k]?.[0] || 0) + (value[k]?.[1] || 0), 0);
   return (
@@ -52,7 +52,19 @@ export default function ExtraCounters({ value, onBump, names, defaultOpen = fals
           </div>
         </div>
       </div>
+      <Warnings list={warnings} />
     </section>
+  );
+}
+
+/* Hinweise zu unplausiblen Eingaben (lib/matchCounters.js counterWarnings) -
+   auch bei zugeklapptem Feld sichtbar, blockieren nichts. */
+export function Warnings({ list }) {
+  if (!list?.length) return null;
+  return (
+    <div className="extra-warn" role="status">
+      {list.map((w) => <p key={w.id}><AlertTriangle size={15} /> <span>{w.text}</span></p>)}
+    </div>
   );
 }
 
@@ -67,14 +79,17 @@ function Step({ label, v, onMinus, onPlus }) {
 }
 
 /* Schmale Zusammenfassung fuer die Pruef-Seite: nur Zaehler mit Wert. */
-export function CountersSummary({ value }) {
+export function CountersSummary({ value, warnings }) {
   if (!hasCounters(value)) return null;
   return (
+    <>
     <div className="sum-counters">
       {COUNTER_KEYS.filter((k) => (value[k][0] + value[k][1]) > 0).map((k) => {
         const Icon = META[k].icon;
         return <span key={k} title={t(META[k].label)}><Icon size={14} /> {t(META[k].label)} {value[k][0]}:{value[k][1]}</span>;
       })}
     </div>
+    <Warnings list={warnings} />
+    </>
   );
 }

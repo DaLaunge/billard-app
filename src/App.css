@@ -2633,3 +2633,10 @@ button.id-card-head { cursor: pointer; }
   .match-clock.paused .match-clock-time { animation: clock-blink 1.2s ease-in-out infinite; }
   @keyframes clock-blink { 50% { opacity: 0.25; } }
 }
+
+/* Plausibilitaets-Hinweise zu den Zusatzzaehlern (lib/matchCounters.js). */
+.extra-warn { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.extra-warn p { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 10px;
+  border-radius: 10px; font-size: 13px; line-height: 1.35; color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.extra-warn svg { flex: none; margin-top: 2px; }

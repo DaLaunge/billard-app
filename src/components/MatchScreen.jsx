@@ -16,6 +16,7 @@ import { myCodeLink } from "../lib/inviteLink";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import MatchClock from "./widgets/MatchClock";
 import { saveMatchClock } from "../lib/matchClock";
+import { counterWarnings } from "../lib/matchCounters";
 import FieldLabel from "./widgets/FieldLabel";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPick, sortDisciplines } from "./widgets/DiscBall";
@@ -74,7 +75,18 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Optionale Zusatzzaehler (Fluke/Runout/Scratch/Foul), siehe lib/matchCounters.js.
   // Gehoeren in den Entwurf, sonst gingen sie bei einem Neuladen verloren.
   const [counters, setCounters] = useState(() => normalizeCounters(dv("counters", null)));
-  const bump = (key, side, delta) => setCounters((c) => bumpCounter(c, key, side, delta));
+  // Reihenfolge der Fouls/Scratches mit Spielnummer, nur fuer die Plausibilitaetshinweise
+  // (counterWarnings): drei hintereinander im selben Spiel = Spielverlust.
+  const [foulLog, setFoulLog] = useState(dv("foulLog", []));
+  const bump = (key, side, delta) => {
+    setCounters((c) => bumpCounter(c, key, side, delta));
+    if (key !== "foul" && key !== "scratch") return;
+    setFoulLog((l) => {
+      if (delta > 0) return [...l, [key, side, s1 + s2]];
+      const at = l.map((e) => e[0] === key && e[1] === side).lastIndexOf(true);
+      return at < 0 ? l : l.filter((_, i) => i !== at);
+    });
+  };
   const [savedMatch, setSavedMatch] = useState(null); // gerade gespeichertes Match, fuers direkte "Protokoll"-Ansehen
   const [confirmedNow, setConfirmedNow] = useState(false); // Turniermatch direkt nach dem Melden auf diesem Geraet bestaetigt (siehe confirmNow unten)
   const [oppQuery, setOppQuery] = useState("");
@@ -171,11 +183,12 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (step < 2 || !opp) return;
     saveMatchDraft(me.id, {
       step, mode, opp: slim(opp), partner: slim(partner), opp2: slim(opp2), s1, s2, disc,
-      hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt, clk, tournamentCtx: tournamentCtx || null,
+      hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk, tournamentCtx: tournamentCtx || null,
     }, is141 ? scorerStateRef.current : null);
   };
-  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt, clk]);
+  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk]);
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
+  const warnings = () => counterWarnings({ counters, foulLog, scores: [s1, s2], disc, names: [teamA, teamB], t });
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
   // Spielerwahl. Einzel: der Tipp waehlt den Gegner (nochmal = abwaehlen), gestartet
   // wird mit dem immer sichtbaren "Match starten" - wie im Doppel (Nutzer-Feedback
@@ -412,7 +425,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const prob = winProb(myRating, oppRating);
   const total = s1 + s2;
 
-  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); setClk({ acc: 0, since: null, paused: false, pausedAt: null, pauseMs: 0 }); };
+  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); setFoulLog([]); setClk({ acc: 0, since: null, paused: false, pausedAt: null, pauseMs: 0 }); };
 
   // Disziplin wechseln (im Ergebnis-Schritt): zwischen 8/9/10 bleibt das
   // Ergebnis erhalten; ein Wechsel zu oder von 14/1 aendert das Punkteschema
@@ -905,7 +918,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               {/* Optionale Zusatzzaehler (Fluke/Runout/Scratch/Foul), zugeklappt.
                   Hier, waehrend des Spiels, nicht erst am Ende. */}
               {!isGhost && (
-                <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} />
+                <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} warnings={warnings()} />
               )}
               <div className="sticky-cta">
                 <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
@@ -959,7 +972,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </div>
             </div>
             <div className="sum-disc">{t(disc)}{isGhost ? t(" · Training") : isGuestMatch ? t(" · Gast") : ""}</div>
-            {!isGhost && !is141 && <CountersSummary value={counters} />}
+            {!isGhost && !is141 && <CountersSummary value={counters} warnings={warnings()} />}
             {is141 && (hr[0] != null || hr[1] != null) && (
               <div className="sum-141">
                 {t("Höchstserie:")} {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}
@@ -985,7 +998,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {/* 14/1: der Scorer ist voll belegt, deshalb werden die Zusatzzaehler
               hier nachgetragen (die anderen Disziplinen zaehlen sie live). */}
           {!isGhost && is141 && (
-            <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} />
+            <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} warnings={warnings()} />
           )}
           <div className="sticky-cta">
             <button className="btn primary" disabled={busy || !ghostReady} onClick={save}>

@@ -39,6 +39,39 @@ export const bumpCounter = (c, key, side, delta) => ({
   [key]: c[key].map((v, i) => (i === side ? clamp(v + delta) : v)),
 });
 
+/* Plausibilitaets-HINWEISE zu den Zaehlern - blockieren nie etwas, sie sagen nur,
+   dass eine Eingabe nicht stimmen kann (Nutzer-Wunsch 2026-10-01). Gespeichert
+   wird trotzdem, was der Nutzer eingibt.
+
+   - Runout = ein gewonnenes Spiel: mehr Runouts als gewonnene Spiele einer Seite
+     geht nicht (nicht bei 14/1, dort sind die Punkte keine Spiele).
+   - Drei Fouls (Foul oder Scratch) derselben Seite hintereinander im selben Spiel
+     sind bei 9 und 10 Ball der Spielverlust (Drei-Foul-Regel). foulLog =
+     [[key, side, Spielnummer beim Klick]] in Eingabereihenfolge; "hintereinander"
+     heisst: kein Foul der Gegenseite dazwischen.
+   Rueckgabe: Liste von {id, text} (text bereits uebersetzt). */
+export function counterWarnings({ counters, foulLog, scores, disc, names, t }) {
+  const out = [];
+  if (!counters || disc === "14/1 Endlos") return out;
+  [0, 1].forEach((i) => {
+    const runouts = counters.runout?.[i] || 0;
+    if (runouts > (scores?.[i] || 0)) {
+      out.push({ id: "runout" + i, text: t("{name}: {n} Runout(s), aber nur {g} gewonnene(s) Spiel(e) – ein Runout ist ein gewonnenes Spiel. Stimmt die Eingabe?", { name: names[i], n: runouts, g: scores?.[i] || 0 }) });
+    }
+  });
+  if (disc === "9 Ball" || disc === "10 Ball") {
+    const flagged = new Set();
+    let run = { game: null, side: null, n: 0 };
+    (foulLog || []).forEach(([, side, game]) => {
+      if (run.game === game && run.side === side) run.n += 1;
+      else run = { game, side, n: 1 };
+      if (run.n >= 3) flagged.add(side);
+    });
+    flagged.forEach((side) => out.push({ id: "foul3" + side, text: t("{name}: 3 Fouls hintereinander im selben Spiel – bei {disc} ist das der Spielverlust. Stimmt die Eingabe?", { name: names[side], disc }) }));
+  }
+  return out;
+}
+
 // Nach dem Melden aufrufen. Nichts zu speichern -> keine Anfrage. Ein Fehler
 // (z.B. Migration noch nicht eingespielt) darf das gemeldete Match nie
 // beeintraechtigen: das Match steht schon, die Zaehler sind Beiwerk.
