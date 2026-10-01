@@ -392,6 +392,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .deck-tabs .chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 11px; font-size: 12.5px; }
 .deck-tabs .chip svg { flex-shrink: 0; }
+/* Symbolstreifen (siehe CardDeck, ab vier Reitern): inaktive Reiter nur als
+   Symbol, der aktive nimmt den Rest der Zeile mit seinem Namen. */
+.deck-tabs.compact { overflow-x: visible; }
+.deck-tabs.compact .chip { padding: 6px 10px; justify-content: center; }
+.deck-tabs.compact .chip:not(.active) .deck-tab-label { display: none; }
+.deck-tabs.compact .chip.active { flex: 1 1 auto; min-width: 0; }
+.deck-tabs.compact .chip.active .deck-tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* --- Formularfeld-Ueberschrift mit Info-Knopf ---------------------------
    Erklaertexte stehen nicht mehr als Dauertext unter dem Feld, sondern im

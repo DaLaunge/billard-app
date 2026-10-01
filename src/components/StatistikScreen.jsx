@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
-import { Trophy, BarChart3, Flame, X, FileText, Check, Clock, Zap, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
+import { Trophy, BarChart3, Gauge, Percent, Flame, X, FileText, Check, Clock, Zap, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { t } from "../lib/i18n";
@@ -823,7 +823,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // weiter unten).
   const leaderboardById = {
     rangliste: {
-      id: "rangliste", tab: t("Rating"), title: t("Rangliste"), icon: <Trophy size={15} />, medals: true,
+      id: "rangliste", tab: t("Rating"), title: t("Rangliste"), icon: <Gauge size={15} />, medals: true,
       rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.vorlaeufig),
       nameOf: (r) => r.nickname, valOf: (r) => r.rating,
       extra: (r) => <DecayBadge player={r} iconSize={15} />,
@@ -835,7 +835,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       rows: topWins, nameOf: (p) => p.name, valOf: (p) => `${p.siege} ${t("Siege")}`,
     },
     besteSiegquote: {
-      id: "besteSiegquote", tab: t("Quote"), title: t("Beste Siegquote (ab 10 Spielen)"), icon: <BarChart3 size={15} />,
+      id: "besteSiegquote", tab: t("Quote"), title: t("Beste Siegquote (ab 10 Spielen)"), icon: <Percent size={15} />,
       rows: topQuote, nameOf: (p) => p.name, valOf: (p) => `${p.quote} %`,
       info: t("Anteil gewonnener Matches (Siege ÷ Spiele) in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl."),
     },
@@ -845,12 +845,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       info: t("Wie viele Matches in Folge gewonnen wurden, seit der letzten Niederlage, in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel."),
     },
     schnellstesTempo: {
-      id: "schnellstesTempo", tab: t("Tempo"), title: t("Schnellstes Tempo (Ø pro Spiel)"), icon: <Zap size={15} />,
+      id: "schnellstesTempo", tab: t("Tempo"), title: t("Schnellstes Tempo (Ø pro Spiel)"), icon: <Timer size={15} />,
       rows: topGameSpeed, nameOf: (p) => p.name, valOf: (p) => fmtDuration(p.avgGameMs),
       info: t("Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet."),
     },
     schnellste141: {
-      id: "schnellste141", tab: t("14/1-Tempo"), title: t("Schnellstes 14/1-Tempo (Ø pro Kugel)"), icon: <Timer size={15} />,
+      id: "schnellste141", tab: t("14/1-Tempo"), title: t("Schnellstes 14/1-Tempo (Ø pro Kugel)"), icon: <DiscBall disc="14/1 Endlos" size={16} />,
       rows: topBallSpeed, nameOf: (p) => p.name, valOf: (p) => fmtDuration(p.avgBallMs),
       info: t("Durchschnittliche Zeit pro versenkter Kugel bei 14/1-Endlos-Matches mit gespeichertem Protokoll. Fouls zählen nicht mit. Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet."),
     },
@@ -863,7 +863,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     // Die Disziplin steht IMMER in der Ueberschrift, auch bei "Alle" (dann als
     // Kugelhaufen) - Nutzer-Feedback 2026-09-30: sonst sieht man bei
     // "Alle" nicht, dass die Auswahl ueberhaupt eine Disziplin betrifft.
-    globalDisc !== "Gesamt" ? <DiscBall key="d" disc={globalDisc} size={17} /> : <DiscAll key="d" size={20} />,
+    globalDisc !== "Gesamt" ? <DiscBall key="d" disc={globalDisc} size={20} /> : <DiscAll key="d" size={26} />,
     globalMode !== "both" ? t(globalMode === "single" ? "Einzel" : "Doppel") : null,
     globalNearby ? t("Umgebung") : (globalCount !== DEFAULT_LIST_COUNT ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
   ].filter(Boolean);

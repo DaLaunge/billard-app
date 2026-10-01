@@ -58,6 +58,11 @@ export default function CardDeck({
   // Kartenmenue sagt wieder schlicht "Karte ausblenden". soloTitle={false}
   // fuer Decks, deren Sammelname auch allein stimmt ("Erfolge (20 / 149)").
   const solo = tabs.length === 1;
+  // Ab vier Reitern (und wenn jeder ein Symbol hat) als Symbolstreifen: nur der
+  // aktive Reiter zeigt seinen Namen, die uebrigen sind Symbole mit Tooltip.
+  // Sechs beschriftete Reiter passten am Handy nie nebeneinander und scrollten
+  // zur Haelfte aus dem Bild (Nutzer-Feedback 2026-10-01).
+  const compact = tabs.length >= 4 && tabs.every((x) => x.icon);
   const useSolo = solo && soloTitle;
   return (
     <section className="stat-block" id={id}>
@@ -77,12 +82,12 @@ export default function CardDeck({
         <>
           {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
           {tabs.length > 1 && (
-            <div className="deck-tabs" role="tablist">
+            <div className={"deck-tabs" + (compact ? " compact" : "")} role="tablist">
               {tabs.map((x) => (
                 <button key={x.id} type="button" role="tab" aria-selected={x.id === active.id}
                   className={"chip" + (x.id === active.id ? " active" : "")}
-                  onClick={() => onActive(x.id)} title={x.title || x.tab}>
-                  {x.icon} <span>{x.tab}</span>
+                  onClick={() => onActive(x.id)} title={x.title || x.tab} aria-label={x.title || x.tab}>
+                  {x.icon} <span className="deck-tab-label">{x.tab}</span>
                   {/* Zaehler direkt am Reiter: nur so sieht man ohne
                       Umschalten, ob hinter einem zugeklappten Teil etwas
                       liegt (Live: "wartet eine Herausforderung auf mich?"). */}
