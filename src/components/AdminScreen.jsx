@@ -555,7 +555,12 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                   <span>{v.nickname}</span>
                   <span className="version-meta">
                     {v.app_version_at ? fmtAgo(v.app_version_at) : ""}
-                    <code className={v.app_version === current ? "" : "outdated"}>{v.app_version != null ? "v" + v.app_version : "–"}</code>
+                    {/* Volle Nummer (391.25), sobald die Migration
+                        2026-10-01_app_version_full.sql eingespielt ist und das
+                        Geraet damit gemeldet hat; sonst nur die ganze Zahl. */}
+                    <code className={(v.app_version_full ? v.app_version_full === APP_VERSION : v.app_version === current) ? "" : "outdated"}>
+                      {v.app_version != null ? "v" + (v.app_version_full || v.app_version) : "–"}
+                    </code>
                   </span>
                 </div>
               ))}

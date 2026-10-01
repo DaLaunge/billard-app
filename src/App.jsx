@@ -481,7 +481,14 @@ export default function App() {
       lastVersionReportRef.current = Date.now();
       // Die Spalte ist eine ganze Zahl: Test-Staende ("391.25") melden ihre
       // Prod-Basis (391), sonst schluege der Aufruf mit einem Typfehler fehl.
-      const { data, error } = await supabase.rpc("report_app_version", { p_version: Math.floor(Number(APP_VERSION)) });
+      // Zusaetzlich die volle Nummer ("391.25", Spalte app_version_full), damit
+      // der Admin auch Minor-Staende sieht. Kennt die DB p_full noch nicht
+      // (Migration 2026-10-01_app_version_full.sql nicht eingespielt), faellt
+      // der Aufruf auf die alte Form zurueck - sonst gaebe es gar keine
+      // Meldung und keine Mindestversion-Pruefung mehr.
+      const major = Math.floor(Number(APP_VERSION));
+      let { data, error } = await supabase.rpc("report_app_version", { p_version: major, p_full: APP_VERSION });
+      if (error) ({ data, error } = await supabase.rpc("report_app_version", { p_version: major }));
       if (!error && typeof data === "number" && Number(APP_VERSION) < data) setMustUpdate(true);
     };
     report();
