@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { ChevronLeft, Check, X, Minus, Plus, Pencil, Search, QrCode, ArrowRight, Swords, Clock, UserPlus } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -21,7 +20,6 @@ import { ModeTiles } from "./widgets/ModePick";
 import ExtraCounters, { CountersSummary } from "./widgets/ExtraCounters";
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
 import { rpcRetry } from "../lib/rpcRetry";
-import { myCodeLink } from "../lib/inviteLink";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
@@ -42,23 +40,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const savedStep = dv("step", tournamentCtx ? 2 : 0);
   const [step, setStep] = useState(savedStep === 1 ? (dv("disc", null) ? 2 : 0) : savedStep);
   const [opp, setOpp] = useState(draft ? fresh(draft.opp) : (initialOpp || null));
-  const [showMyQr, setShowMyQr] = useState(false);
   const [activeSlot, setActiveSlot] = useState(null); // Doppel: "partner" | "opp" | "opp2" - wohin der naechste Tipp geht
   const [nudge, setNudge] = useState(false);          // Spielerliste leuchtet kurz auf
   const playersRef = useRef(null);
   const countFunnel = useFunnel();                    // Trichter im Kopf der Spielerliste: wie viele zeigen
-  // Der Code hat zwei Funktionen (siehe lib/inviteLink.js): Einladung fuer
-  // Neue, Match-Start fuer Mitglieder. Den Einladungscode holen wir erst, wenn
-  // das Feld aufgeklappt wird - bis er da ist, gilt der Link allein fuer
-  // Mitglieder (?vs=), was schon vorher funktionierte.
-  const [inviteCode, setInviteCode] = useState(null);
-  useEffect(() => {
-    if (!showMyQr || inviteCode) return;
-    let alive = true;
-    supabase.rpc("get_or_create_my_invite").then(({ data, error }) => { if (alive && !error) setInviteCode(data); });
-    return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showMyQr]);
   const [mode, setMode] = useState(dv("mode", "single"));
   const [partner, setPartner] = useState(fresh(dv("partner", null)));
   const [opp2, setOpp2] = useState(fresh(dv("opp2", null)));
@@ -216,7 +201,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     : allMatchingOpponents;
   // Spielerkacheln blenden sich beim Hineinscrollen ein (nur stabile Werte als
   // Abhaengigkeit, siehe useRevealOnScroll).
-  const formRef = useRevealOnScroll([step, opponents.length, oppQuery.trim() === "", mode, oppCount]);
+  // showInvite gehoert dazu: die Einladungsseite ersetzt das ganze Formular
+  // (fruehes return unten), danach entstehen alle Karten NEU und tragen "reveal"
+  // ohne "is-in" - ohne neuen Durchlauf blieben sie unsichtbar (Bug-Meldung
+  // 2026-10-01: "wenn ich zurueckkomme, ist alles leer").
+  const formRef = useRevealOnScroll([step, opponents.length, oppQuery.trim() === "", mode, oppCount, showInvite]);
 
   // Gast fuers normale Match hinzufuegen (Turniere haben dafuer schon
   // tournament_organizer_add_guest() - dies hier ist das Gegenstueck ohne
@@ -564,18 +553,14 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     <>
                       {mode === "single" && (
                         <>
-                          <button type="button" className={"icon-btn small" + (showMyQr ? " on" : "")} aria-pressed={showMyQr}
-                            onClick={() => setShowMyQr((v) => !v)}
-                            aria-label={showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}
-                            title={showMyQr ? t("Code ausblenden") : t("Ihr trefft euch? Meinen Code zeigen")}>
-                            <QrCode size={15} />
-                          </button>
-                          {/* Einladen steht bewusst neben dem Code - beides dreht
-                              sich darum, den anderen an den Tisch zu bekommen.
-                              Zusaetzlich ueber das QR-Symbol auf der Profilkarte. */}
+                          {/* EIN QR-Code fuer alles (Nutzer-Feedback 2026-10-01): Neue
+                              werden eingeladen, Mitglieder starten ein Match gegen
+                              dich - siehe InviteScreen. Frueher gab es hier zusaetzlich
+                              einen zweiten, eingeklappten Code. */}
                           <button type="button" className="icon-btn small" onClick={() => setShowInvite(true)}
-                            aria-label={t("Neues Mitglied? Jetzt einladen")} title={t("Neues Mitglied? Jetzt einladen")}>
-                            <UserPlus size={15} />
+                            aria-label={t("QR-Code zeigen: Mitglieder werben und Match starten")}
+                            title={t("QR-Code zeigen: Mitglieder werben und Match starten")}>
+                            <QrCode size={15} />
                           </button>
                         </>
                       )}
@@ -593,24 +578,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     ))}
                   </div>
                 </FunnelPanel>
-
-                {mode === "single" && (
-                  <div className={"collapsible" + (showMyQr ? " open" : "")} inert={showMyQr ? undefined : ""}>
-                    <div className="collapsible-inner">
-                      <div className="my-qr">
-                        <div className="qr-box">
-                          <QRCodeSVG value={myCodeLink(inviteCode, me.id)} size={190} level="M"
-                            bgColor="#F2EDE0" fgColor="#0A2B21" />
-                        </div>
-                        {/* Zwei Funktionen in einem Code - gezeichnet statt erklaert. */}
-                        <div className="qr-uses">
-                          <span><UserPlus size={14} /> {t("Neu: Einladung")}</span>
-                          <span><Swords size={14} /> {t("Mitglied: Match starten")}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {mode === "single" && !oppQuery && suggestions.length > 0 && (
                   <div className="suggest-card reveal">
