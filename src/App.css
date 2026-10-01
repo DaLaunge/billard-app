@@ -852,6 +852,14 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 /* Ghost als Kachel am Ende der Spielerliste. */
 .opp-card.ghost-tile { border-style: dashed; border-color: var(--btn-border); }
 .opp-card .ghost-ball { width: 48px; height: 48px; }
+/* Aufstellung "Du VS Gegner": haengt am Handy oben am Bildschirm, die Spielerliste
+   scrollt darunter durch. .match-selectors loest sich dort auf (display:contents),
+   damit der Streifen Kind der hohen Seite ist. Oben haftet er bei top:0 am
+   Bildschirmrand (anders als unten bei .sticky-cta, wo -24px noetig sind). */
+.match-selectors { display: contents; }
+.vs-dock { position: sticky; top: 0; z-index: 6; margin: 0 -4px; padding: calc(16px + env(safe-area-inset-top)) 4px 12px;
+  background: linear-gradient(to bottom, var(--felt) 80%, transparent); }
+.vs-dock .vs-strip { margin-top: 0; box-shadow: 0 6px 16px rgba(0, 0, 0, .25); }
 /* Haupt-Aktion des Match-Screens (Match starten / Beenden / Match speichern):
    haengt unten am Rand des Scroll-Bereichs und ist so immer erreichbar. Der
    Verlauf dahinter verdeckt scrollenden Inhalt weich statt hart. */
@@ -1849,6 +1857,9 @@ button.id-card-head { cursor: pointer; }
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }
   .match-split { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+  /* Am PC liegen Auswahl und Liste nebeneinander: dort haftet die ganze linke Spalte. */
+  .match-selectors { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 0; }
+  .vs-dock { position: static; margin: 0; padding: 0; background: none; }
 
   /* Verwaltung: keine Identitaets-Spalte noetig (kein "eigener" Fokus wie
      bei Live/Statistik/Profil), stattdessen ein lockeres

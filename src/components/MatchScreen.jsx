@@ -147,8 +147,12 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       // Scroll-Container der App, und nur dann scrollen, wenn die Karte nicht
       // ohnehin oben im Bild steht (am PC liegt sie neben der Aufstellung).
       const rel = card.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
-      if (rel > 120 || rel < 0) {
-        scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + rel - 12), behavior: "smooth" });
+      // Der haftende Streifen oben (am Handy) verdeckt den Anfang der Karte:
+      // seine Hoehe gehoert zum Abstand dazu.
+      const dock = document.querySelector(".vs-dock");
+      const dockH = dock && getComputedStyle(dock).position === "sticky" ? dock.offsetHeight : 0;
+      if (rel > 120 + dockH || rel < dockH) {
+        scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + rel - 12 - dockH), behavior: "smooth" });
       }
     }
     setNudge(true);
@@ -492,23 +496,32 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 <FieldLabel label={t("Modus")} />
                 <ModeTiles value={mode} onChange={chooseMode} />
 
-                {/* Wer gegen wen - gezeichnet statt beschrieben, in BEIDEN Modi
-                    sichtbar. Die leeren Kreise sind Knoepfe: antippen = dort
-                    einen Spieler waehlen (springt zur Spielerliste). */}
-                <div className="vs-strip">
-                  <div className="vs-team">
-                    {slot(me, null)}
-                    {mode === "double" && slot(partner, "partner")}
-                  </div>
-                  <span className="vs-x">VS</span>
-                  <div className="vs-team">
-                    {slot(opp, "opp")}
-                    {mode === "double" && slot(opp2, "opp2")}
-                  </div>
-                </div>
                 {mode === "single" && opp && <PointPreview dsc={disc} />}
               </div>
             </section>
+            {/* Die Aufstellung bleibt beim Scrollen der Spielerliste OBEN am
+                Bildschirm haengen (Nutzer-Feedback 2026-10-01: die gewaehlten
+                Spieler sollen nie wegscrollen). Deshalb steht sie nicht in der
+                Karte darueber: ein haftendes Element bleibt nur innerhalb
+                seines Elternelements haften, und .match-selectors wird am Handy
+                per display:contents aufgeloest, damit der Streifen Kind der
+                hohen Seite ist. Am PC haftet stattdessen die ganze linke Spalte. */}
+            <div className="vs-dock">
+                    {/* Wer gegen wen - gezeichnet statt beschrieben, in BEIDEN Modi
+                        sichtbar. Die leeren Kreise sind Knoepfe: antippen = dort
+                        einen Spieler waehlen (springt zur Spielerliste). */}
+                    <div className="vs-strip">
+                      <div className="vs-team">
+                        {slot(me, null)}
+                        {mode === "double" && slot(partner, "partner")}
+                      </div>
+                      <span className="vs-x">VS</span>
+                      <div className="vs-team">
+                        {slot(opp, "opp")}
+                        {mode === "double" && slot(opp2, "opp2")}
+                      </div>
+                    </div>
+            </div>
           </div>
 
           {/* Reihenfolge (Nutzer-Feedback): Empfehlung, Suche, wie viele
