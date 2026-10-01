@@ -987,6 +987,8 @@ const TRANSLATIONS = {
     "Alle Erfolge ansehen": "View all achievements",
     "Zum Erfolg": "Go to achievement",
     "Pause": "Pause",
+    "Spielzeit ohne Pause": "Playing time without pauses",
+    "Dauer mit Pause": "Duration with pauses",
     "Filter immer anzeigen": "Always show filters",
     "Die Filter (Trichter-Symbol) sind beim Öffnen eines Bildschirms gleich aufgeklappt, statt zugeklappt. Mit dem Trichter lassen sie sich weiterhin ein- und ausklappen. Gilt nur auf diesem Gerät und ab dem nächsten Öffnen des Bildschirms.": "Filters (funnel icon) are already unfolded when a screen opens instead of folded. You can still fold and unfold them with the funnel. Applies to this device only and from the next time the screen opens.",
     "Aktuell gegen: {name}": "Currently vs.: {name}",

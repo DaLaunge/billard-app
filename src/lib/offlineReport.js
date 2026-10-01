@@ -4,6 +4,7 @@
 // Bestaetigungslogik (RPCs bleiben identisch) - nur der Versand wird robuster.
 import { rpcRetry } from "./rpcRetry";
 import { saveMatchCounters } from "./matchCounters";
+import { saveMatchClock } from "./matchClock";
 
 const KEY = "pendingMatchReport";
 
@@ -42,6 +43,10 @@ export async function sendPendingReport() {
   if (report.counters) {
     const row = Array.isArray(data) ? data[0] : data;
     await saveMatchCounters(row?.id, report.counters);
+  }
+  if (report.clock) {
+    const row = Array.isArray(data) ? data[0] : data;
+    await saveMatchClock(row?.id, report.clock);
   }
   return { ok: true, data, report };
 }

@@ -15,6 +15,7 @@ import StraightPoolScorer from "./StraightPoolScorer";
 import { myCodeLink } from "../lib/inviteLink";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import MatchClock from "./widgets/MatchClock";
+import { saveMatchClock } from "../lib/matchClock";
 import FieldLabel from "./widgets/FieldLabel";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPick, sortDisciplines } from "./widgets/DiscBall";
@@ -117,21 +118,37 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Spieldauer-Uhr (widgets/MatchClock.jsx): laeuft, solange der Ergebnis-Schritt
   // offen ist und nicht per Pause angehalten wurde. acc = bisher gezaehlte ms,
   // since = Start des laufenden Abschnitts (null = steht). Gehoert in den Entwurf.
-  const [clk, setClk] = useState(dv("clk", { acc: 0, since: null, paused: false }));
+  // pauseMs = angehaltene Zeit (nur waehrend des Ergebnis-Schritts gezaehlt),
+  // pausedAt = Beginn der laufenden Pause. Beides fuer "Dauer mit Pause".
+  const [clk, setClk] = useState(dv("clk", { acc: 0, since: null, paused: false, pausedAt: null, pauseMs: 0 }));
   const clockRunning = clk.since != null;
   useEffect(() => {
-    if (step === 2 && !clk.paused && clk.since == null) setClk((c) => ({ ...c, since: Date.now() }));
-    else if (step !== 2 && clk.since != null) setClk((c) => ({ acc: c.acc + (Date.now() - c.since), since: null, paused: c.paused }));
-  }, [step, clk.paused, clk.since]);
+    const now = Date.now();
+    if (step === 2) {
+      if (!clk.paused && clk.since == null) setClk((c) => ({ ...c, since: now }));
+      else if (clk.paused && clk.pausedAt == null) setClk((c) => ({ ...c, pausedAt: now }));
+    } else if (clk.since != null) setClk((c) => ({ ...c, acc: c.acc + (now - c.since), since: null }));
+    else if (clk.pausedAt != null) setClk((c) => ({ ...c, pauseMs: (c.pauseMs || 0) + (now - c.pausedAt), pausedAt: null }));
+  }, [step, clk.paused, clk.since, clk.pausedAt]);
   useEffect(() => {
     if (!clockRunning) return;
     const id = setInterval(() => setNowTick(Date.now()), 1000);
     return () => clearInterval(id);
   }, [clockRunning]);
-  const toggleClock = () => setClk((c) => (c.since != null
-    ? { acc: c.acc + (Date.now() - c.since), since: null, paused: true }
-    : { ...c, since: Date.now(), paused: false }));
+  const toggleClock = () => setClk((c) => {
+    const now = Date.now();
+    return c.since != null
+      ? { ...c, acc: c.acc + (now - c.since), since: null, paused: true, pausedAt: now }
+      : { ...c, since: now, paused: false, pausedAt: null, pauseMs: (c.pauseMs || 0) + (c.pausedAt != null ? now - c.pausedAt : 0) };
+  });
   const clockMs = clk.acc + (clk.since != null ? Math.max(0, nowTick - clk.since) : 0);
+  // Fuers Speichern: ohne Pause (net) und mit Pause (+ angehaltene Zeit).
+  const clockResult = () => {
+    const now = Date.now();
+    const net = clk.acc + (clk.since != null ? now - clk.since : 0);
+    const paused = (clk.pauseMs || 0) + (clk.pausedAt != null ? now - clk.pausedAt : 0);
+    return net >= 1000 ? { net, total: net + paused } : undefined;
+  };
   const [guestBusy, setGuestBusy] = useState(false);
   // Sortierung der Gegnerliste (pro Geraet gemerkt): "freq" haeufig, "gain" Punkte, "name" A-Z.
   const [oppSort, setOppSort] = useState(() => {
@@ -392,7 +409,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const prob = winProb(myRating, oppRating);
   const total = s1 + s2;
 
-  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); setClk({ acc: 0, since: null, paused: false }); };
+  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); setClk({ acc: 0, since: null, paused: false, pausedAt: null, pauseMs: 0 }); };
 
   // Disziplin wechseln (im Ergebnis-Schritt): zwischen 8/9/10 bleibt das
   // Ergebnis erhalten; ein Wechsel zu oder von 14/1 aendert das Punkteschema
@@ -454,6 +471,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const save = async () => {
     // Nur mitschicken, wenn wirklich etwas gezaehlt wurde (alles optional).
     const cnt = hasCounters(counters) ? counters : undefined;
+    const clock = clockResult();
     if (mode === "double") {
       setBusy(true);
       const params = {
@@ -465,13 +483,14 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       setBusy(false);
       if (error) {
         if (isNetworkError(error)) {
-          savePendingReport({ type: "double", params, counters: cnt });
+          savePendingReport({ type: "double", params, counters: cnt, clock });
           setOfflineQueued(true); setStep(4); return;
         }
         toast(t("Fehler: ") + error.message); return;
       }
       const row = Array.isArray(data) ? data[0] : data;
       await saveMatchCounters(row?.id, cnt);
+      await saveMatchClock(row?.id, clock);
       setSavedMatch({ ...row, p1: { nickname: me.nickname }, p1b: { nickname: partner.nickname },
         p2: { nickname: opp.nickname }, p2b: { nickname: opp2.nickname } });
       setStep(4); return;
@@ -498,13 +517,14 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       setBusy(false);
       if (error) {
         if (isNetworkError(error)) {
-          savePendingReport({ type: "tournament", rpc, params, counters: cnt });
+          savePendingReport({ type: "tournament", rpc, params, counters: cnt, clock });
           setOfflineQueued(true); setStep(4); return;
         }
         toast(t("Fehler: ") + error.message); return;
       }
       const tRow = Array.isArray(data) ? data[0] : data;
       await saveMatchCounters(tRow?.id, cnt);
+      await saveMatchClock(tRow?.id, clock);
       setSavedMatch({ ...tRow, p1: { nickname: me.nickname }, p2: { nickname: opp.nickname } });
       setStep(4); return;
     }
@@ -521,13 +541,14 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     setBusy(false);
     if (error) {
       if (isNetworkError(error)) {
-        savePendingReport({ type: "single", params, counters: cnt });
+        savePendingReport({ type: "single", params, counters: cnt, clock });
         setOfflineQueued(true); setStep(4); return;
       }
       toast(t("Fehler: ") + error.message); return;
     }
     const row = Array.isArray(data) ? data[0] : data;
     await saveMatchCounters(row?.id, cnt);
+    await saveMatchClock(row?.id, clock);
     setSavedMatch({ ...row, p1: { nickname: me.nickname }, p2: { nickname: opp.nickname } });
     setStep(4);
   };
