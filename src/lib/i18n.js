@@ -986,6 +986,7 @@ const TRANSLATIONS = {
     "Alle erreichbaren Erfolge freigeschaltet!": "All available achievements unlocked!",
     "Alle Erfolge ansehen": "View all achievements",
     "Zum Erfolg": "Go to achievement",
+    "Pause": "Pause",
     "Aktuell gegen: {name}": "Currently vs.: {name}",
     "Fortschritt: {cur} / {target} {unit}": "Progress: {cur} / {target} {unit}",
     "Aktuell: {name} ({desc})": "Currently: {name} ({desc})",

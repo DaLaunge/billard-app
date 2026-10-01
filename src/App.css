@@ -2623,3 +2623,13 @@ button.id-card-head { cursor: pointer; }
   .tb-rank--3 { background: #EBD2B8 !important; color: #8A4E1E !important; }
   .tb-log-match { background: #fafafa !important; border-color: #ddd !important; }
 }
+
+/* Spieldauer-Uhr im Ergebnis-Schritt (widgets/MatchClock.jsx). */
+.match-clock { display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 0 auto 10px; color: var(--ivory-dim, inherit); }
+.match-clock-time { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.15rem; min-width: 3.4em; text-align: center; }
+.match-clock.paused .match-clock-time { opacity: 0.55; animation: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .match-clock.paused .match-clock-time { animation: clock-blink 1.2s ease-in-out infinite; }
+  @keyframes clock-blink { 50% { opacity: 0.25; } }
+}

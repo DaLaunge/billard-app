@@ -14,6 +14,7 @@ import Ball from "./Ball";
 import StraightPoolScorer from "./StraightPoolScorer";
 import { myCodeLink } from "../lib/inviteLink";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import MatchClock from "./widgets/MatchClock";
 import FieldLabel from "./widgets/FieldLabel";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPick, sortDisciplines } from "./widgets/DiscBall";
@@ -113,6 +114,24 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [offlineQueued, setOfflineQueued] = useState(false); // Match konnte mangels Verbindung nicht gemeldet werden, wartet lokal
   const [ghostStartedAt, setGhostStartedAt] = useState(dv("ghostStartedAt", null)); // gegen "Durchklicken" beim Ghost-Training
   const [nowTick, setNowTick] = useState(Date.now());
+  // Spieldauer-Uhr (widgets/MatchClock.jsx): laeuft, solange der Ergebnis-Schritt
+  // offen ist und nicht per Pause angehalten wurde. acc = bisher gezaehlte ms,
+  // since = Start des laufenden Abschnitts (null = steht). Gehoert in den Entwurf.
+  const [clk, setClk] = useState(dv("clk", { acc: 0, since: null, paused: false }));
+  const clockRunning = clk.since != null;
+  useEffect(() => {
+    if (step === 2 && !clk.paused && clk.since == null) setClk((c) => ({ ...c, since: Date.now() }));
+    else if (step !== 2 && clk.since != null) setClk((c) => ({ acc: c.acc + (Date.now() - c.since), since: null, paused: c.paused }));
+  }, [step, clk.paused, clk.since]);
+  useEffect(() => {
+    if (!clockRunning) return;
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [clockRunning]);
+  const toggleClock = () => setClk((c) => (c.since != null
+    ? { acc: c.acc + (Date.now() - c.since), since: null, paused: true }
+    : { ...c, since: Date.now(), paused: false }));
+  const clockMs = clk.acc + (clk.since != null ? Math.max(0, nowTick - clk.since) : 0);
   const [guestBusy, setGuestBusy] = useState(false);
   // Sortierung der Gegnerliste (pro Geraet gemerkt): "freq" haeufig, "gain" Punkte, "name" A-Z.
   const [oppSort, setOppSort] = useState(() => {
@@ -135,10 +154,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (step < 2 || !opp) return;
     saveMatchDraft(me.id, {
       step, mode, opp: slim(opp), partner: slim(partner), opp2: slim(opp2), s1, s2, disc,
-      hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt, tournamentCtx: tournamentCtx || null,
+      hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt, clk, tournamentCtx: tournamentCtx || null,
     }, is141 ? scorerStateRef.current : null);
   };
-  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt]);
+  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt, clk]);
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
   // Spielerwahl. Einzel: der Tipp waehlt den Gegner (nochmal = abwaehlen), gestartet
@@ -373,7 +392,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const prob = winProb(myRating, oppRating);
   const total = s1 + s2;
 
-  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); };
+  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); setClk({ acc: 0, since: null, paused: false }); };
 
   // Disziplin wechseln (im Ergebnis-Schritt): zwischen 8/9/10 bleibt das
   // Ergebnis erhalten; ein Wechsel zu oder von 14/1 aendert das Punkteschema
@@ -821,6 +840,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
 
       {step === 2 && opp && disc && (
         <div className="match-score-step step-enter">
+          <MatchClock elapsedMs={clockMs} paused={clk.paused} onToggle={toggleClock} />
           {/* Reihenfolge bewusst so (Nutzer-Feedback): ganz oben das Match
               selbst (Zaehler bzw. 14/1-Scorer), darunter erst Siegchance,
               Disziplin-Umschalter und die Schrittpunkte. */}
