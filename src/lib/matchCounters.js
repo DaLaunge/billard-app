@@ -1,0 +1,51 @@
+import { rpcRetry } from "./rpcRetry";
+
+/* Optionale Zusatzzaehler pro Match (Nutzer-Wunsch 2026-10-01: Fluke, Runout,
+   Scratch, Foul - "alle optional, aber pro Match abspeichern, eventuell bauen
+   wir danach eine Statistik daraus").
+
+   Form: { fluke: [a, b], runout: [a, b], scratch: [a, b], foul: [a, b] } -
+   Index 0 = die MELDENDE Seite (matches.reported_by, im Doppel deren Team),
+   Index 1 = die andere Seite. Bewusst relativ zur meldenden Person und nicht
+   zu score1/score2: bei Turnierpartien steht die meldende Person nicht immer
+   auf Platz 1 der Partie, reported_by ist dagegen immer eindeutig.
+
+   Gespeichert wird in einer EIGENEN Tabelle (match_counters, siehe supabase/
+   2026-10-01_match_counters.sql), nicht als Spalte an matches: jedes UPDATE
+   auf matches loest per Trigger eine komplette Neuberechnung aller Ratings
+   aus, und die Zaehler duerfen das Rating weder beruehren noch verteuern. */
+export const COUNTER_KEYS = ["fluke", "runout", "scratch", "foul"];
+export const MAX_COUNT = 99;
+
+export const emptyCounters = () => ({ fluke: [0, 0], runout: [0, 0], scratch: [0, 0], foul: [0, 0] });
+
+const clamp = (n) => Math.max(0, Math.min(MAX_COUNT, Math.floor(Number(n) || 0)));
+
+// Aus einem Entwurf/gespeicherten Wert wieder eine vollstaendige Form machen.
+export function normalizeCounters(c) {
+  const out = emptyCounters();
+  if (c && typeof c === "object") {
+    COUNTER_KEYS.forEach((k) => {
+      if (Array.isArray(c[k])) out[k] = [clamp(c[k][0]), clamp(c[k][1])];
+    });
+  }
+  return out;
+}
+
+export const hasCounters = (c) => !!c && COUNTER_KEYS.some((k) => (c[k]?.[0] || 0) + (c[k]?.[1] || 0) > 0);
+
+export const bumpCounter = (c, key, side, delta) => ({
+  ...c,
+  [key]: c[key].map((v, i) => (i === side ? clamp(v + delta) : v)),
+});
+
+// Nach dem Melden aufrufen. Nichts zu speichern -> keine Anfrage. Ein Fehler
+// (z.B. Migration noch nicht eingespielt) darf das gemeldete Match nie
+// beeintraechtigen: das Match steht schon, die Zaehler sind Beiwerk.
+export async function saveMatchCounters(matchId, counters) {
+  if (!matchId || !hasCounters(counters)) return;
+  try {
+    const { error } = await rpcRetry("set_match_counters", { p_match_id: matchId, p_counters: counters });
+    if (error) console.warn("Zusatzzaehler nicht gespeichert:", error.message);
+  } catch (e) { console.warn("Zusatzzaehler nicht gespeichert:", e?.message || e); }
+}

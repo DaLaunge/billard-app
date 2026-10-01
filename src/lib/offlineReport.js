@@ -3,6 +3,7 @@
 // sobald wieder eine Verbindung besteht. Aendert nichts an der eigentlichen
 // Bestaetigungslogik (RPCs bleiben identisch) - nur der Versand wird robuster.
 import { rpcRetry } from "./rpcRetry";
+import { saveMatchCounters } from "./matchCounters";
 
 const KEY = "pendingMatchReport";
 
@@ -36,5 +37,11 @@ export async function sendPendingReport() {
   const { data, error } = await rpcRetry(fn, report.params);
   if (error) return { ok: false, error, report };
   clearPendingReport();
+  // Optionale Zusatzzaehler (siehe lib/matchCounters.js) nach dem Melden
+  // nachtragen; ein Fehler dort laesst das gemeldete Match unberuehrt.
+  if (report.counters) {
+    const row = Array.isArray(data) ? data[0] : data;
+    await saveMatchCounters(row?.id, report.counters);
+  }
   return { ok: true, data, report };
 }

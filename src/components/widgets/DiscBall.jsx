@@ -41,11 +41,11 @@ export default function DiscBall({ disc, size = 18 }) {
    passen muessen. Disziplinen ohne Kugel (z.B. "Doppel") sind hier KEINE
    Kachel, sondern ein normaler Chip - die Aufrufer mischen beides in einer
    Zeile, siehe DiscPickRow. */
-export function DiscPick({ disc, selected, onSelect, compact }) {
+export function DiscPick({ disc, selected, onSelect, compact, size }) {
   return (
     <button type="button" className={"disc-pick" + (compact ? " compact" : "") + (selected ? " sel" : "")}
       aria-pressed={selected} aria-label={t(disc)} title={t(disc)} onClick={onSelect}>
-      <DiscBall disc={disc} size={compact ? 26 : 34} />
+      <DiscBall disc={disc} size={size || (compact ? 26 : 34)} />
     </button>
   );
 }

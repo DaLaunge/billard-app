@@ -18,6 +18,8 @@ import FieldLabel from "./widgets/FieldLabel";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPick, DiscPickRow, sortDisciplines } from "./widgets/DiscBall";
 import { ModeTiles } from "./widgets/ModePick";
+import ExtraCounters, { CountersSummary } from "./widgets/ExtraCounters";
+import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
 import { rpcRetry } from "../lib/rpcRetry";
 import { myCodeLink } from "../lib/inviteLink";
 
@@ -69,6 +71,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [tb, setTb] = useState(dv("tb", [null, null]));   // Zwei-Kugel-Räumungen (nur 14/1)
   const [runLog, setRunLog] = useState(dv("runLog", null));   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
   const [scoreLog, setScoreLog] = useState(dv("scoreLog", [[0, 0, Date.now()]])); // Punktestand + Zeitpunkt nach jedem Zaehler-Klick (alle anderen Disziplinen)
+  // Optionale Zusatzzaehler (Fluke/Runout/Scratch/Foul), siehe lib/matchCounters.js.
+  // Gehoeren in den Entwurf, sonst gingen sie bei einem Neuladen verloren.
+  const [counters, setCounters] = useState(() => normalizeCounters(dv("counters", null)));
+  const bump = (key, side, delta) => setCounters((c) => bumpCounter(c, key, side, delta));
   const [savedMatch, setSavedMatch] = useState(null); // gerade gespeichertes Match, fuers direkte "Protokoll"-Ansehen
   const [confirmedNow, setConfirmedNow] = useState(false); // Turniermatch direkt nach dem Melden auf diesem Geraet bestaetigt (siehe confirmNow unten)
   const [oppQuery, setOppQuery] = useState("");
@@ -96,10 +102,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (step < 2 || !opp) return;
     saveMatchDraft(me.id, {
       step, mode, opp: slim(opp), partner: slim(partner), opp2: slim(opp2), s1, s2, disc,
-      hr, def, avg, tb, runLog, scoreLog, ghostStartedAt, tournamentCtx: tournamentCtx || null,
+      hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt, tournamentCtx: tournamentCtx || null,
     }, is141 ? scorerStateRef.current : null);
   };
-  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, ghostStartedAt]);
+  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, ghostStartedAt]);
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
   // Spielerwahl. Einzel: ein Tipp startet das Match. Doppel: der Tipp fuellt
@@ -219,9 +225,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const oppRating = opp ? ratingOf(opp.nickname) : 500;
   const prob = winProb(myRating, oppRating);
   const total = s1 + s2;
-  // Drei Schritte: Match (Disziplin, Modus, Gegner) - Ergebnis - Pruefen.
-  const steps = ["Match", "Ergebnis", "Pruefen"];
-  const dotIdx = step === 0 ? 0 : step === 2 ? 1 : 2;
 
   // --- Punkte-Vorschau (#1) + Gegner-Vorschlag (#2) ---
   const fmtD = (x) => (x >= 0 ? "+" : "−") + Math.abs(Math.round(x));
@@ -244,7 +247,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     .sort((a, b) => b.gain - a.gain)
     .slice(0, 2);
 
-  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); };
+  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); };
 
   // Disziplin wechseln (im Ergebnis-Schritt): zwischen 8/9/10 bleibt das
   // Ergebnis erhalten; ein Wechsel zu oder von 14/1 aendert das Punkteschema
@@ -304,6 +307,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const ghostReady = !isGhost || ghostRemainingSec === 0;
 
   const save = async () => {
+    // Nur mitschicken, wenn wirklich etwas gezaehlt wurde (alles optional).
+    const cnt = hasCounters(counters) ? counters : undefined;
     if (mode === "double") {
       setBusy(true);
       const params = {
@@ -315,12 +320,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       setBusy(false);
       if (error) {
         if (isNetworkError(error)) {
-          savePendingReport({ type: "double", params });
+          savePendingReport({ type: "double", params, counters: cnt });
           setOfflineQueued(true); setStep(4); return;
         }
         toast(t("Fehler: ") + error.message); return;
       }
       const row = Array.isArray(data) ? data[0] : data;
+      await saveMatchCounters(row?.id, cnt);
       setSavedMatch({ ...row, p1: { nickname: me.nickname }, p1b: { nickname: partner.nickname },
         p2: { nickname: opp.nickname }, p2b: { nickname: opp2.nickname } });
       setStep(4); return;
@@ -347,12 +353,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       setBusy(false);
       if (error) {
         if (isNetworkError(error)) {
-          savePendingReport({ type: "tournament", rpc, params });
+          savePendingReport({ type: "tournament", rpc, params, counters: cnt });
           setOfflineQueued(true); setStep(4); return;
         }
         toast(t("Fehler: ") + error.message); return;
       }
       const tRow = Array.isArray(data) ? data[0] : data;
+      await saveMatchCounters(tRow?.id, cnt);
       setSavedMatch({ ...tRow, p1: { nickname: me.nickname }, p2: { nickname: opp.nickname } });
       setStep(4); return;
     }
@@ -369,12 +376,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     setBusy(false);
     if (error) {
       if (isNetworkError(error)) {
-        savePendingReport({ type: "single", params });
+        savePendingReport({ type: "single", params, counters: cnt });
         setOfflineQueued(true); setStep(4); return;
       }
       toast(t("Fehler: ") + error.message); return;
     }
     const row = Array.isArray(data) ? data[0] : data;
+    await saveMatchCounters(row?.id, cnt);
     setSavedMatch({ ...row, p1: { nickname: me.nickname }, p2: { nickname: opp.nickname } });
     setStep(4);
   };
@@ -413,19 +421,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     );
   };
 
-  // Fortschrittspunkte: in den Auswahl-Schritten ganz oben (dort sind sie
-  // Orientierung), waehrend der Aufzeichnung dagegen unten - da gehoert der
-  // Spielstand an die erste Stelle (Nutzer-Feedback).
-  const StepDots = ({ bottom }) => (
-    <div className={"steps" + (bottom ? " bottom" : "")}>
-      {steps.map((s, i) => (
-        <div key={s} className={"step-dot" + (i === dotIdx ? " cur" : i < dotIdx ? " done" : "")}>
-          <span>{i < dotIdx ? <Check size={12} /> : i + 1}</span>{t(s)}
-        </div>
-      ))}
-    </div>
-  );
-
   if (showInvite) {
     return <InviteScreen me={me} toast={toast}
       onBack={() => { setShowInvite(false); onReload && onReload(); }} />;
@@ -433,15 +428,23 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
 
   return (
     <div className="screen">
-      <header className="screen-head with-back">
+      {/* Kopfzeile: statt eines Titels "Neues Match" (Nutzer-Feedback
+          2026-10-01: unnoetig, es ist klar, dass hier ein Match entsteht) steht
+          die Disziplin ganz oben und zentriert - zur Wahl im Formular, danach als
+          Kugel mit Name. */}
+      <header className="screen-head with-back match-head">
         <button className="back-btn" onClick={() => { if (step === 0 || step === 4) onCancel(); else setAbortAsk(true); }} aria-label={t("Zurueck")}>
           <ChevronLeft size={22} />
         </button>
-        <h2>{t(tournamentCtx ? "Turnier-Ergebnis" : "Neues Match")}</h2>
+        <div className="match-head-disc">
+          {step === 0
+            ? matchDiscs.map((d) => (
+              <DiscPick key={d} disc={d} size={30} selected={disc === d} onSelect={() => setDisc(d)} />
+            ))
+            : disc && (<><DiscBall disc={disc} size={34} /><span className="match-head-name">{t(disc)}</span></>)}
+        </div>
         <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
       </header>
-
-      {step < 4 && step !== 2 && <StepDots />}
 
       {abortAsk && (
         <div className="modal-overlay" onClick={() => setAbortAsk(false)}>
@@ -469,13 +472,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           <div className="match-selectors">
             <section className="stat-block">
               <div className="turnier-form">
-                <FieldLabel label={t("Disziplin")} />
-                <div className="disc-picks">
-                  {matchDiscs.map((d) => (
-                    <DiscPick key={d} disc={d} selected={disc === d} onSelect={() => setDisc(d)} />
-                  ))}
-                </div>
-
                 <FieldLabel label={t("Modus")} />
                 <ModeTiles value={mode} onChange={chooseMode} />
 
@@ -670,6 +666,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   </div>
                 ))}
               </div>
+              {/* Optionale Zusatzzaehler (Fluke/Runout/Scratch/Foul), zugeklappt.
+                  Hier, waehrend des Spiels, nicht erst am Ende. */}
+              {!isGhost && (
+                <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} />
+              )}
               <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
                 {t("Weiter")} <ArrowRight size={18} />
               </button>
@@ -731,6 +732,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </div>
             </div>
             <div className="sum-disc">{t(disc)}{isGhost ? t(" · Training") : isGuestMatch ? t(" · Gast") : ""}</div>
+            {!isGhost && !is141 && <CountersSummary value={counters} />}
             {is141 && (hr[0] != null || hr[1] != null) && (
               <div className="sum-141">
                 {t("Höchstserie:")} {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}
@@ -753,6 +755,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </div>
             )}
           </div>
+          {/* 14/1: der Scorer ist voll belegt, deshalb werden die Zusatzzaehler
+              hier nachgetragen (die anderen Disziplinen zaehlen sie live). */}
+          {!isGhost && is141 && (
+            <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} />
+          )}
           <button className="btn primary" disabled={busy || !ghostReady} onClick={save}>
             {busy ? t("Speichere ...")
               : isGhost && !ghostReady ? <>
@@ -825,8 +832,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           </button>
         </div>
       )}
-      {/* Im Ergebnis-Schritt bleiben sie unten: oben steht dort das Match. */}
-      {step === 2 && <StepDots bottom />}
     </div>
   );
 }
