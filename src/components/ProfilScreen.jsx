@@ -919,10 +919,30 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // Eine Karte, die es gerade ueberhaupt nicht gibt (Tempo ohne
   // Protokolldaten, die Konto-Karten auf einem fremden Profil), fehlt hier
   // schlicht - renderColumn ueberspringt sie dann.
+  // Sprung aus "Als Naechstes" zum echten Erfolg: Reiter "Alle" oeffnen,
+  // Filter zuruecksetzen, Kategorie aufklappen, hinscrollen, kurz markieren.
+  // erfolgeAnchor wird in der DECKS-Schleife unten gesetzt (Closure, laeuft erst beim Klick).
+  let erfolgeAnchor = null;
+  const openBadge = (key) => {
+    const b = catalog.find((x) => x.badge_key === key);
+    if (!b || !erfolgeAnchor) return;
+    setBadgeQuery(""); setBadgeStatus("all");
+    setOpenCats((prev) => new Set(prev).add(b.category));
+    setDeckTab((d) => ({ ...d, [erfolgeAnchor]: "erfolge" }));
+    let tries = 0;
+    const go = () => {
+      const el = document.querySelector(`[data-badge-key="${key}"]`);
+      if (!el) { if (++tries < 20) setTimeout(go, 50); return; }
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.classList.add("flash");
+      setTimeout(() => el.classList.remove("flash"), 2200);
+    };
+    setTimeout(go, 50);
+  };
   const cardsById = {
     erfolgeFortschritt: (
         <AchievementsProgressCard embedded catalog={catalog} extras={extendedExtras}
-          earnedBadges={earnedBadges} nickname={nickname} />
+          earnedBadges={earnedBadges} nickname={nickname} onOpenBadge={openBadge} />
     ),
     erfolge: (
         <>
@@ -981,8 +1001,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                         const earned = earnedBadges.has(key);
                         const selected = meRow?.selected_badge === key && isMe;
                         const progress = isMe && !earned ? badgeProgress(b.description, extendedExtras) : null;
+                        // "Derselbe Gegner": der Gegner, bei dem der Stand gerade am hoechsten ist.
+                        const oppNick = progress
+                          ? (/Siege in Folge gegen denselben Gegner$/.test(b.description) ? extendedExtras.maxOpponentStreakNick
+                            : /Matches gegen denselben Gegner/.test(b.description) ? extendedExtras.maxVsOpponentNick : null)
+                          : null;
                         return (
-                          <button key={key}
+                          <button key={key} data-badge-key={key}
                             className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
                             disabled={!isMe || !earned}
                             onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
@@ -996,6 +1021,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                                   {t("Fortschritt: {cur} / {target} {unit}", { cur: progress.current, target: progress.target, unit: progress.unit })}
                                 </span>
                                 <ProgressBar current={progress.current} target={progress.target} />
+                                {oppNick && <span className="badge-progress">{t("Aktuell gegen: {name}", { name: oppNick })}</span>}
                               </>
                             )}
                             {selected && <span className="badge-active">{t("Als Avatar aktiv")}</span>}
@@ -1070,6 +1096,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           onHidePart={isMe && onSetCardLayout ? (id) => cards.hideCard(id) : undefined} />
       );
     } else if (anchor) {
+      if (parts.includes("erfolge")) erfolgeAnchor = anchor;
       const activeId = parts.includes(deckTab[anchor]) ? deckTab[anchor] : parts[0];
       const bodies = Object.fromEntries(parts.map((id) => [id, cardsById[id]]));
       cardsById[anchor] = (

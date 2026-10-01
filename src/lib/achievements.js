@@ -44,7 +44,12 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
     else oppBroken[oppNick] = true;
   });
 
+  // Wer der "derselbe Gegner" der Bestmarke ist (bei Gleichstand der erste).
+  const argmax = (o) => Object.entries(o).reduce((best, e) => (!best || e[1] > best[1] ? e : best), null)?.[0] ?? null;
+
   return {
+    maxVsOpponentNick: argmax(perOpp),
+    maxOpponentStreakNick: argmax(oppStreak),
     streak: s.streak,
     longestStreak: s.longestStreak,
     siege: s.siege,

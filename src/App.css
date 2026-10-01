@@ -390,6 +390,13 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
   padding: 6px 0; border-bottom: 1px solid var(--line); }
 .side-row-progress:last-of-type { border-bottom: none; }
 .side-row-progress .side-row { padding: 0; border-bottom: none; }
+/* Antippbare Zeile (fuehrt zum Erfolg in der Liste "Alle"): Button-Look weg. */
+button.side-row-progress { width: 100%; background: none; border-width: 0 0 1px; border-style: solid;
+  border-color: var(--line); border-radius: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+button.side-row-progress:last-of-type { border-bottom: none; }
+button.side-row-progress:hover .side-row-name { color: var(--accent); }
+/* Kurz hervorgehobener Erfolg nach dem Sprung aus "Als Naechstes". */
+.badge-chip.flash { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .chip { border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);

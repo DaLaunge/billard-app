@@ -7,21 +7,29 @@ import { upcomingAchievements } from "../../lib/achievements";
 /* Eigenstaendiges Modul: die naechsten N noch nicht erreichten Erfolge
    eines Spielers (Rohdaten aus upcomingAchievements()), plus Link zur
    vollen Erfolgsliste im Profil. */
-export default function AchievementsProgressCard({ catalog, extras, earnedBadges, onOpenProfile, nickname, count = 3, onHide, embedded }) {
+export default function AchievementsProgressCard({ catalog, extras, earnedBadges, onOpenProfile, nickname, count = 3, onHide, embedded, onOpenBadge }) {
   const upcoming = extras ? upcomingAchievements(catalog, extras, earnedBadges, count) : [];
   const body = (
     <>
       {upcoming.length === 0 && <p className="hint" style={{ marginTop: 0 }}>{t("Alle erreichbaren Erfolge freigeschaltet!")}</p>}
-      {upcoming.map((c) => (
-        <div key={c.badgeKey} className="side-row-progress">
-          <div className="side-row">
-            <span className="side-row-emoji">{c.emoji}</span>
-            <span className="side-row-name">{c.name}</span>
-            <span className="side-row-gap">{t("noch {n} {unit}", { n: c.gap, unit: c.unit })}</span>
-          </div>
-          <ProgressBar current={c.current} target={c.target} />
-        </div>
-      ))}
+      {upcoming.map((c) => {
+        const inner = (
+          <>
+            <div className="side-row">
+              <span className="side-row-emoji">{c.emoji}</span>
+              <span className="side-row-name">{c.name}</span>
+              <span className="side-row-gap">{t("noch {n} {unit}", { n: c.gap, unit: c.unit })}</span>
+            </div>
+            <ProgressBar current={c.current} target={c.target} />
+          </>
+        );
+        // Mit onOpenBadge fuehrt die Zeile zum echten Erfolg (Beschreibung,
+        // Fortschritt) in der Liste "Alle".
+        return onOpenBadge
+          ? <button key={c.badgeKey} type="button" className="side-row-progress" onClick={() => onOpenBadge(c.badgeKey)}
+              title={t("Zum Erfolg")} aria-label={`${c.name} – ${t("Zum Erfolg")}`}>{inner}</button>
+          : <div key={c.badgeKey} className="side-row-progress">{inner}</div>;
+      })}
     </>
   );
   // In einer Deck-Karte (siehe CardDeck.jsx) liefert das Modul nur seinen
