@@ -242,7 +242,25 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // (nur im Einzel; Gaeste zaehlen nicht fuers Rating und haben keine). Grundlage
   // fuer die Anzeige auf JEDER Kachel, die Sortierung "Punkte" und die
   // Hervorhebung der Empfehlung (Nutzer-Feedback 2026-10-01).
-  const gainOf = (p) => (mode === "single" && !p.is_guest ? previewFor(disc || "Gesamt", p.nickname).winMax : null);
+  // Im Doppel zaehlt der Durchschnitt der beiden Teams (wie rebuild_elo(): beide
+  // Partner bekommen dasselbe Delta, bewertet wird mit dem "Doppel"-Rating). Die
+  // Kachel zeigt, was ein Sieg braeuchte, wenn dieser Spieler den gerade aktiven
+  // Platz (Partner / Gegner 1 / Gegner 2) bekaeme; noch leere Plaetze zaehlen wie
+  // im Rating selbst mit der Startwertung 500. Ein Gast im Match macht es
+  // ungewertet - dann gibt es nirgends eine Zahl.
+  const doublesGain = (p) => {
+    if (!activeKey || p.is_guest) return null;
+    const seats = { ...slotVal, [activeKey]: p };
+    if (Object.values(seats).some((x) => x?.is_guest)) return null;
+    const r = (x) => (x ? ratingOf(x.nickname, "Doppel") : 500);
+    const tA = (ratingOf(me.nickname, "Doppel") + r(seats.partner)) / 2;
+    const tB = (r(seats.opp) + r(seats.opp2)) / 2;
+    const D = disc === "14/1 Endlos" ? 50 : 4;
+    return 4 * Math.min(D, 16) * (1 - winProb(tA, tB));
+  };
+  const gainOf = (p) => (mode === "single"
+    ? (p.is_guest ? null : previewFor(disc || "Gesamt", p.nickname).winMax)
+    : doublesGain(p));
   const byFreq = (a, b) => (freqByNick[b.nickname] || 0) - (freqByNick[a.nickname] || 0) || a.nickname.localeCompare(b.nickname);
   const query = oppQuery.trim().toLowerCase();
   const matching = players
@@ -257,7 +275,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const recIds = new Set(recList.map((p) => p.id));
   // Sortierung: "freq" = haeufigste Gegner zuerst (wie bisher), "gain" = meiste
   // moegliche Punkte zuerst (nur Einzel), "name" = A-Z.
-  const sortMode = mode === "double" && oppSort === "gain" ? "freq" : oppSort;
+  const sortMode = oppSort;
   const cmp = sortMode === "name" ? (a, b) => a.nickname.localeCompare(b.nickname)
     : sortMode === "gain" ? (a, b) => (gainOf(b) ?? -Infinity) - (gainOf(a) ?? -Infinity) || byFreq(a, b)
     : byFreq;
@@ -605,7 +623,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                   {/* Sortierung - als Symbole mit Namen. "Punkte" gibt es nur im Einzel
                       (im Doppel gibt es keine einzelne Vorschau). */}
                   <div className="chips small">
-                    {[["freq", t("Häufig"), History], ...(mode === "single" ? [["gain", t("Punkte"), TrendingUp]] : []), ["name", t("A–Z"), ArrowDownAZ]].map(([key, label, Icon]) => (
+                    {[["freq", t("Häufig"), History], ["gain", t("Punkte"), TrendingUp], ["name", t("A–Z"), ArrowDownAZ]].map(([key, label, Icon]) => (
                       <button key={key} className={"chip" + (sortMode === key ? " active" : "")} onClick={() => chooseSort(key)}>
                         <Icon size={14} style={{ marginRight: 4, verticalAlign: -2 }} />{label}
                       </button>
