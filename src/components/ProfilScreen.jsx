@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronD
 import { t } from "../lib/i18n";
 import { APP_VERSION } from "../lib/constants";
 import { computeStats } from "../lib/stats";
-import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
+import { computeAchievementExtras, badgeProgress } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE, fmtDate } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
@@ -31,7 +31,9 @@ import { useCardLayout } from "../lib/useCardLayout";
 // Welche Karten des Profils sich je EINE Karte mit Reitern teilen (siehe
 // DECKS weiter unten und CardDeck.jsx). Hier oben, weil die Spaltenwahl
 // schon vor dem Aufbau der Karten feststehen muss.
-const PROFIL_DECK_IDS = [deckIds("profil", "erfolge"), deckIds("profil", "zahlen")];
+// Erfolge ist seit 2026-10-03 EINE Karte (kein Reiter-Deck mehr), steht hier aber weiter
+// als Ein-Teil-Gruppe, damit Spalte und Anker wie bei den anderen Karten laufen.
+const PROFIL_DECK_IDS = [["erfolge"], deckIds("profil", "zahlen")];
 
 // Spaltenwahl in den Karten-Einstellungen: Symbol + Name je Spalte. Die
 // Symbole zeigen einen Block links/mittig/rechts und damit direkt, wo die
@@ -312,7 +314,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     tournament2nd: achievementCounters?.tournament_2nd ?? null,
     tournament3rd: achievementCounters?.tournament_3rd ?? null,
   }), [liveExtras, playerObj?.created_at, achievementCounters]);
-  const achievementHint = useMemo(() => nextAchievementHint(catalog, extendedExtras, nickname, earnedBadges), [catalog, extendedExtras, nickname, earnedBadges]);
 
   // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
   // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB
@@ -979,16 +980,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // Eine Karte, die es gerade ueberhaupt nicht gibt (Tempo ohne
   // Protokolldaten, die Konto-Karten auf einem fremden Profil), fehlt hier
   // schlicht - renderColumn ueberspringt sie dann.
-  // Sprung aus "Als Naechstes" zum echten Erfolg: Reiter "Alle" oeffnen,
-  // Filter zuruecksetzen, Kategorie aufklappen, hinscrollen, kurz markieren.
-  // erfolgeAnchor wird in der DECKS-Schleife unten gesetzt (Closure, laeuft erst beim Klick).
-  let erfolgeAnchor = null;
+  // Sprung von den drei naechsten Erfolgen (oben in der Karte) zum echten Erfolg in der
+  // Liste darunter: Filter zuruecksetzen, Kategorie aufklappen, hinscrollen, kurz markieren.
   const openBadge = (key) => {
     const b = catalog.find((x) => x.badge_key === key);
-    if (!b || !erfolgeAnchor) return;
+    if (!b) return;
     setBadgeQuery(""); setBadgeStatus("all");
     setOpenCats((prev) => new Set(prev).add(b.category));
-    setDeckTab((d) => ({ ...d, [erfolgeAnchor]: "erfolge" }));
     let tries = 0;
     const go = () => {
       const el = document.querySelector(`[data-badge-key="${key}"]`);
@@ -1000,14 +998,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     setTimeout(go, 50);
   };
   const cardsById = {
-    erfolgeFortschritt: (
-        <AchievementsProgressCard embedded catalog={catalog} extras={extendedExtras}
-          earnedBadges={earnedBadges} nickname={nickname} onOpenBadge={openBadge} />
-    ),
     erfolge: (
         <>
-          {isMe && achievementHint && (
-            <p className="hint-highlight" style={{ marginTop: 0, marginBottom: 10 }}>🎯 {achievementHint}</p>
+          {isMe && (
+            <div className="ach-next">
+              <AchievementsProgressCard embedded catalog={catalog} extras={extendedExtras}
+                earnedBadges={earnedBadges} nickname={nickname} onOpenBadge={openBadge} />
+            </div>
           )}
           <div className="search-row" style={{ marginBottom: 8 }}>
             <Search size={16} className="mail-ico" />
@@ -1115,16 +1112,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     {
       ids: PROFIL_DECK_IDS[0],
       icon: <Award size={17} />,
-      // Der Sammelname stimmt auch, wenn nur ein Reiter uebrig ist - beide
-      // Teile sind "Erfolge", der eine zeigt die naechsten, der andere alle.
       title: `${t("Erfolge")} (${earnedBadges.size} / ${catalog.length})`,
       soloTitle: false,
       domId: "pf-achievements-full",
       tabs: {
-        erfolgeFortschritt: { tab: t("Als Nächstes"), title: t("Als Nächstes"), icon: <Target size={15} /> },
         // Der Satz stand bis 2026-09-30 als Dauertext ueber der Liste -
         // jetzt im Info-Knopf des Reiters (Nutzer-Vorgabe).
-        erfolge: { tab: t("Alle"), title: t("Alle Erfolge"), icon: <Award size={15} />,
+        erfolge: { tab: t("Alle"), title: t("Erfolge"), icon: <Award size={15} />,
           info: isMe ? t("Tippe einen freigeschalteten Erfolg an, um ihn als Avatar zu zeigen.") : undefined },
       },
     },
@@ -1156,7 +1150,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           onHidePart={isMe && onSetCardLayout ? (id) => cards.hideCard(id) : undefined} />
       );
     } else if (anchor) {
-      if (parts.includes("erfolge")) erfolgeAnchor = anchor;
       const activeId = parts.includes(deckTab[anchor]) ? deckTab[anchor] : parts[0];
       const bodies = Object.fromEntries(parts.map((id) => [id, cardsById[id]]));
       cardsById[anchor] = (
