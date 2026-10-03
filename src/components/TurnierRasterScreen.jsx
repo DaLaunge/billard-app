@@ -495,6 +495,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         </header>
         <p className="hint" style={{ marginTop: -6 }}>
           {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {t("Anmeldung offen")}
+          {breakApplies(tour.discipline) && (
+            <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer ? toggleBreakRule : undefined} /></>
+          )}
         </p>
         <div className="turnier-organizer-line">
           <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
