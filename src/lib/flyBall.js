@@ -61,9 +61,27 @@ export function flyIn(el, from) {
   const b = centerOf(to);
   // Die CSS-Einblendung der frisch gesetzten Kugel wuerde sonst mitlaufen.
   el.style.animation = "none";
-  el.style.willChange = "transform";
-  const anim = el.animate(path(a.x - b.x, a.y - b.y, from.width / to.width), { duration: DURATION, easing: "linear", fill: "backwards" });
-  anim.onfinish = () => { el.style.willChange = ""; };
+  // Geflogen wird mit einer KOPIE direkt unter <body>, nicht mit der Kugel im Platz:
+  // die Aufstellung sitzt am PC in einer "sticky"-Spalte, und die bildet einen eigenen
+  // Stapelkontext - die Kugel wurde deshalb hinter der Spielerkarte daneben gezeichnet
+  // (Nutzer-Feedback 2026-10-02). Die echte Kugel bleibt bis zur Landung unsichtbar.
+  const ghost = el.cloneNode(true);
+  Object.assign(ghost.style, {
+    position: "fixed", left: `${to.left}px`, top: `${to.top}px`, margin: "0",
+    width: `${to.width}px`, height: `${to.height}px`, zIndex: "9999", pointerEvents: "none",
+    willChange: "transform", animation: "none", visibility: "visible",
+  });
+  document.body.appendChild(ghost);
+  const prev = el.style.visibility;
+  el.style.visibility = "hidden";
+  let done = false;
+  const end = () => { if (done) return; done = true; ghost.remove(); el.style.visibility = prev; };
+  const anim = ghost.animate(path(a.x - b.x, a.y - b.y, from.width / to.width), { duration: DURATION, easing: "linear", fill: "forwards" });
+  anim.onfinish = end;
+  anim.oncancel = end;
+  // Sicherheitsnetz: pausiert der Browser die Animation (Tab im Hintergrund), soll die
+  // echte Kugel nicht unsichtbar bleiben.
+  setTimeout(end, DURATION * 2);
 }
 
 // Entfernen: eine Kopie der Kugel schrumpft an ihrem Platz und verblasst, waehrend
@@ -75,7 +93,7 @@ export function vanishBall(slotBall) {
   const ghost = slotBall.cloneNode(true);
   Object.assign(ghost.style, {
     position: "fixed", left: `${from.left}px`, top: `${from.top}px`, margin: "0",
-    width: `${from.width}px`, height: `${from.height}px`, zIndex: "60", pointerEvents: "none",
+    width: `${from.width}px`, height: `${from.height}px`, zIndex: "9999", pointerEvents: "none",
     willChange: "transform, opacity", animation: "none",
   });
   document.body.appendChild(ghost);

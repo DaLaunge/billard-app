@@ -10,6 +10,7 @@ import PlayerMultiPicker from "./PlayerMultiPicker";
 import { ScoreStepper } from "./TurnierMatchActions";
 import ImprintFooter from "./widgets/ImprintFooter";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
@@ -230,6 +231,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     await load();
   };
 
+  // Anstoss-Regel (Wechselbreak/Winner-Break): Leitung kann sie umstellen, solange die Runde laeuft.
+  const toggleBreakRule = async () => {
+    const next = normalizeBreakRule(session.break_rule) === "winner" ? "alternate" : "winner";
+    const { error } = await supabase.rpc("set_break_rule", { p_kind: "winner_stays", p_id: sessionId, p_rule: next });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await load();
+  };
+
   const removeEntry = async (entryId) => {
     if (!(await appConfirm(t("Diese Person/dieses Team aus der Runde nehmen?")))) return;
     setBusy(true);
@@ -278,6 +287,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         {t(session.is_doubles ? "Doppel" : "Einzel")} · <DiscBall disc={session.discipline} size={15} />
         {session.table_number != null && ` · ${t("Tisch")} ${session.table_number}`}
         {" · "}{session.status === "finished" ? t("beendet") : t("läuft")}
+        {breakApplies(session.discipline) && (
+          <> · <BreakPill rule={session.break_rule} onClick={isOrganizer && session.status !== "finished" ? toggleBreakRule : undefined} /></>
+        )}
       </p>
       <div className="turnier-organizer-line">
         <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>

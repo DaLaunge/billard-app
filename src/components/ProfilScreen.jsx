@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, BellOff, BellRing, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
 import { t } from "../lib/i18n";
+import { APP_VERSION } from "../lib/constants";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
@@ -98,7 +99,7 @@ function CardVisRow({ shown, label, icon, meta, className = "", canUp, canDown, 
 }
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
-  players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
+  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
@@ -217,6 +218,23 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [color, setColor] = useState(meRow?.avatar_color || null);
   const [motto, setMotto] = useState(meRow?.motto || "");
   const [busy, setBusy] = useState(false);
+  // Update-Zeile: idle | checking | found | current | error | unavailable
+  const [updState, setUpdState] = useState("idle");
+  const [updCheckedAt, setUpdCheckedAt] = useState("");
+  const updTimer = useRef(null);
+  useEffect(() => () => clearTimeout(updTimer.current), []);
+  const runUpdateCheck = async () => {
+    clearTimeout(updTimer.current);
+    setUpdState("checking");
+    // Mindestens 1,2 s, sonst blitzt der Laufbalken nur kurz auf, wenn die
+    // Pruefung sofort fertig ist - und man weiss nicht, ob ueberhaupt geprueft wurde.
+    const [res] = await Promise.all([onCheckUpdate(), new Promise((r) => setTimeout(r, 1200))]);
+    setUpdState(res || "error");
+    if (res !== "found") {
+      setUpdCheckedAt(new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }));
+      updTimer.current = setTimeout(() => setUpdState("idle"), 7000);
+    }
+  };
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackCat, setFeedbackCat] = useState("bug");
   const [feedbackMsg, setFeedbackMsg] = useState("");
@@ -423,6 +441,37 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <h2>{t("Profil bearbeiten")}</h2>
         </header>
 
+        {/* Update-Knopf: ueber dem Layout und OHNE Karte, damit er weder
+            ausgeblendet noch verschoben werden kann (kein Eintrag in
+            CARD_SCREENS, kein Schalter). Nutzerwunsch 2026-10-03: "gut
+            sichtbar, darf niemals ausgeblendet werden koennen, der einzige
+            Button, der eine ganze Zeile einnehmen darf". */}
+        <button type="button" className={"update-row " + updState} data-tour="update-btn"
+          disabled={updState === "checking" || updState === "found"} onClick={runUpdateCheck}>
+          <span className="update-row-ico" aria-hidden="true">
+            {updState === "found" || updState === "current" ? <Check size={22} />
+              : updState === "error" || updState === "unavailable" ? <X size={22} />
+              : <RefreshCw size={20} className={updState === "checking" ? "spin" : ""} />}
+          </span>
+          <span className="update-row-text" aria-live="polite">
+            <strong>
+              {updState === "checking" ? t("Suche nach Updates …")
+                : updState === "found" ? t("Update gefunden – wird installiert …")
+                : updState === "current" ? t("Du hast die neueste Version.")
+                : updState === "error" ? t("Prüfung fehlgeschlagen – bist du online?")
+                : updState === "unavailable" ? t("Updates können hier nicht geprüft werden.")
+                : t("Nach Updates suchen")}
+            </strong>
+            <small>
+              {t("Version")} {APP_VERSION}
+              {updCheckedAt && updState !== "checking" && updState !== "found" ? ` · ${t("geprüft um {time}", { time: updCheckedAt })}` : ""}
+            </small>
+          </span>
+          {(updState === "checking" || updState === "found") && (
+            <span className={"update-bar" + (updState === "found" ? " full" : "")} aria-hidden="true"><span /></span>
+          )}
+        </button>
+
         <div className="pf-edit-layout">
         {/* Linke Spalte: Profilangaben + Karten-Sichtbarkeit. Beide stecken
             in EINEM Grid-Feld, das sie per Flexbox stapelt - sonst faengt
@@ -616,14 +665,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
                 <span className="settings-switch-label">{t("Automatisch aktualisieren")}</span>
               </label>
-              <button type="button" className="icon-btn small" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}
-                aria-label={t("Jetzt nach Updates suchen")} title={t("Jetzt nach Updates suchen")}>
-                <RefreshCw size={15} />
-              </button>
               <InfoButton title={t("App-Updates")}>
                 {updateInterval !== "manual"
                   ? t("Sucht bei jedem Öffnen der App nach einer neuen Version und spielt sie unauffällig ein – nie mitten in einem Match.")
-                  : t("Neue Versionen gibt es nur über den Knopf unten.")}
+                  : t("Neue Versionen gibt es nur über den Knopf „Nach Updates suchen“ ganz oben.")}
               </InfoButton>
             </div>
             {/* Eine Stufe fuer alle Ereignisse (Herausforderung, Match
@@ -1197,25 +1242,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <div className="pf-col right">
       {renderColumn("right")}
-      {/* Nur noch der Weg zu den Turnieren - bewusst KEINE Karte (er traegt
-          den "du bist dran"-Zaehler, den auszublenden eine Falle waere).
-          "Verwaltung" und "Abmelden" standen bis 2026-09-25 hier daneben und
-          liegen jetzt am Ende der Einstellungen hinter dem Zahnrad: sie
-          gehoeren zum Konto, nicht zu dem, was dieses Profil ueber dich
-          aussagt. */}
-      {isMe && (
-      <div className="pf-account-actions" style={{ order: 9999 }}>
-        <button className="btn ghost tournament-ready-btn" onClick={onOpenTurniere}>
-          <Trophy size={16} /> {t("Turniere")}
-          {/* Bleibt sichtbar, bis das Match tatsaechlich gespielt/gemeldet
-              wurde (tourneyReadyCount kommt direkt aus der DB, siehe
-              checkTourneyReady in App.jsx) - anders als das "Du bist dran"-
-              Popup NICHT per "Später" wegklickbar, damit eine bereite
-              Turnierpaarung nicht in Vergessenheit geraet (Nutzer-Feedback). */}
-          {tourneyReadyCount > 0 && <span className="badge tournament-ready-badge">{tourneyReadyCount}</span>}
-        </button>
-      </div>
-      )}
       </div>
       </div>
 

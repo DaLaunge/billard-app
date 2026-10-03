@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DiscBall from "./widgets/DiscBall";
+import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
 import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
@@ -251,6 +252,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // nur noch das Overlay an (siehe pendingReport/confirmPendingReport unten)
   // statt selbst zu blockieren - die eigentliche RPC laeuft erst nach
   // Bestaetigung im Overlay.
+  // Anstoss-Regel (Wechselbreak/Winner-Break): die Turnierleitung kann sie
+  // in der Kopfzeile umstellen, solange das Turnier nicht beendet ist.
+  const toggleBreakRule = async () => {
+    const next = normalizeBreakRule(tour.break_rule) === "winner" ? "alternate" : "winner";
+    const { error } = await supabase.rpc("set_break_rule", { p_kind: "tournament", p_id: tournamentId, p_rule: next });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await load();
+  };
+
   const organizerReport = (tm, s1, s2, onDone) => {
     setPendingReport({ tm, s1, s2, onDone });
   };
@@ -485,6 +495,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         </header>
         <p className="hint" style={{ marginTop: -6 }}>
           {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {t("Anmeldung offen")}
+          {breakApplies(tour.discipline) && (
+            <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer ? toggleBreakRule : undefined} /></>
+          )}
         </p>
         <div className="turnier-organizer-line">
           <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
@@ -611,7 +624,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           </span>
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
-        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked} nameOf={nameOf}
+        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked} format={tour.format} nameOf={nameOf}
           busyId={busyId} onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
           onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} onMarkNoShow={markNoShow} />
       </div>
@@ -630,6 +643,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         {tour.status === "finished" && (resultsLocked
           ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
           : <> · {t("Korrekturen noch möglich")}</>)}
+        {breakApplies(tour.discipline) && (
+          <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer && tour.status !== "finished" ? toggleBreakRule : undefined} /></>
+        )}
       </p>
       <div className="turnier-organizer-line">
         <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
@@ -818,7 +834,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                   const won = tm.winner_id === journeyPlayerId;
                   let statusText;
                   if (tm.is_bye) statusText = t("Freilos");
-                  else if (!tm.match_id) statusText = !oppName ? t("Wartet auf Gegner …") : tm.table_number == null ? t("Tisch wird noch zugeteilt") : t("Ausstehend");
+                  else if (!tm.match_id) statusText = !oppName ? t("Wartet auf Gegner …") : (tm.table_number == null && !(tour.format === "round_robin" && tm.bracket === "main")) ? t("Tisch wird noch zugeteilt") : t("Ausstehend");
                   else if (!tm.match.confirmed) statusText = t("Wartet auf Bestätigung ...");
                   else statusText = won ? t("Sieg") : t("Niederlage");
                   const roundLabel = tm.bracket === "final" ? finalRoundLabel(tm.round, finalTotalRounds) : `${t("Runde")} ${tm.round}`;

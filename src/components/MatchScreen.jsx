@@ -22,6 +22,7 @@ import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPick, sortDisciplines } from "./widgets/DiscBall";
 import { ModeTiles } from "./widgets/ModePick";
 import ExtraCounters, { CountersSummary } from "./widgets/ExtraCounters";
+import { BreakGlyph, BreakPill, BreakSwitch, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
 import { rpcRetry } from "../lib/rpcRetry";
 import { flyIn, vanishBall, flyEnabled } from "../lib/flyBall";
@@ -72,6 +73,25 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [tb, setTb] = useState(dv("tb", [null, null]));   // Zwei-Kugel-Räumungen (nur 14/1)
   const [runLog, setRunLog] = useState(dv("runLog", null));   // Aufnahme-Protokoll (nur 14/1) - fuers Speichern vorbereitet
   const [scoreLog, setScoreLog] = useState(dv("scoreLog", [[0, 0, Date.now()]])); // Punktestand + Zeitpunkt nach jedem Zaehler-Klick (alle anderen Disziplinen)
+  // Anstoss-Regel (Wechselbreak/Winner-Break) + wer das ERSTE Rack anstoesst (Seite 0/1).
+  // Bei Turnierpartien kommt die Regel vom Turnier (siehe Effekt unten), sonst ist es
+  // eine pro Geraet gemerkte Vorgabe (Wechselbreak). Nur Anzeige-/Merkhilfe waehrend
+  // der Aufzeichnung - wird nicht mit dem Match gespeichert.
+  const [breakRule, setBreakRule] = useState(() => {
+    const d = dv("breakRule", null);
+    if (d) return normalizeBreakRule(d);
+    try { return normalizeBreakRule(localStorage.getItem("matchBreakRule")); } catch { return normalizeBreakRule(null); }
+  });
+  const [breakFirst, setBreakFirst] = useState(dv("breakFirst", 0));
+  const chooseBreakRule = (r) => { setBreakRule(r); try { localStorage.setItem("matchBreakRule", r); } catch { /* Privatmodus */ } };
+  useEffect(() => {
+    if (!tournamentCtx) return;
+    if (tournamentCtx.breakRule) { setBreakRule(normalizeBreakRule(tournamentCtx.breakRule)); return; }
+    let alive = true;
+    supabase.from("tournament_matches").select("tournament:tournaments(break_rule)").eq("id", tournamentCtx.tournamentMatchId).maybeSingle()
+      .then(({ data }) => { if (alive && data?.tournament?.break_rule) setBreakRule(normalizeBreakRule(data.tournament.break_rule)); });
+    return () => { alive = false; };
+  }, [tournamentCtx?.tournamentMatchId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Optionale Zusatzzaehler (Fluke/Runout/Scratch/Foul), siehe lib/matchCounters.js.
   // Gehoeren in den Entwurf, sonst gingen sie bei einem Neuladen verloren.
   const [counters, setCounters] = useState(() => normalizeCounters(dv("counters", null)));
@@ -170,6 +190,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const [oppCount, setOppCount] = useState(DEFAULT_LIST_COUNT); // Standard: nur die haeufigsten Mitspieler zeigen (Nutzer-Feedback: Liste wird lang)
 
   const is141 = disc === "14/1 Endlos";
+  // Anstoss-Anzeige nur dort, wo Racks gezaehlt werden (nicht beim 14/1, nicht im Ghost-Training).
+  const showBreak = breakApplies(disc) && !opp?.is_ghost;
+  const breakNow = nextBreaker(breakRule, breakFirst, [s1, s2], scoreLog);
+  // Umstellen darf man: beim Wechselbreak jederzeit (korrigiert die Reihenfolge), beim
+  // Winner-Break nur vor dem ersten Rack (danach entscheidet der Sieger des letzten Racks).
+  const canPickBreak = breakRule === "alternate" || s1 + s2 === 0;
+  const pickBreaker = (side) => setBreakFirst((s1 + s2) % 2 === 0 ? side : 1 - side);
 
   // Laufenden Stand bei jeder Aenderung sichern (Schritt 1-3 = Gegner gewaehlt,
   // noch nicht gemeldet), nach dem Melden (Schritt 4) loeschen. Den 14/1-Stand
@@ -183,10 +210,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (step < 2 || !opp) return;
     saveMatchDraft(me.id, {
       step, mode, opp: slim(opp), partner: slim(partner), opp2: slim(opp2), s1, s2, disc,
-      hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk, tournamentCtx: tournamentCtx || null,
+      hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk, breakRule, breakFirst, tournamentCtx: tournamentCtx || null,
     }, is141 ? scorerStateRef.current : null);
   };
-  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk]);
+  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk, breakRule, breakFirst]);
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const warnings = () => counterWarnings({ counters, foulLog, scores: [s1, s2], disc, names: [teamA, teamB], t });
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
@@ -878,6 +905,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       {step === 2 && opp && disc && (
         <div className="match-score-step step-enter">
           <MatchClock elapsedMs={clockMs} paused={clk.paused} onToggle={toggleClock} />
+          {/* Anstoss-Regel: eine schmale Zeile direkt unter der Uhr. Bei Turnierpartien
+              nur zur Anzeige (die Regel gehoert dem Turnier), sonst umschaltbar. */}
+          {showBreak && (
+            <div className="break-bar">
+              {tournamentCtx ? <BreakPill rule={breakRule} /> : <BreakSwitch value={breakRule} onChange={chooseBreakRule} />}
+            </div>
+          )}
           {/* Reihenfolge bewusst so (Nutzer-Feedback): ganz oben das Match
               selbst (Zaehler bzw. 14/1-Scorer), darunter erst Siegchance,
               Disziplin-Umschalter und die Schrittpunkte. */}
@@ -899,8 +933,14 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                      { members: [opp, opp2], name: teamB, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
                   : [{ members: [me], name: me.nickname, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
                      { members: [opp], name: opp.nickname, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
-                ).map(({ members, name, v, set }) => (
+                ).map(({ members, name, v, set }, idx) => (
                   <div key={name} className="score-col">
+                    {showBreak && (breakNow === idx
+                      ? <span className="break-slot on" key={"b" + breakNow + breakRule} title={t("{name} stößt an", { name })}><BreakGlyph width={26} /></span>
+                      : canPickBreak && (
+                        <button type="button" className="break-slot off" title={t("{name} stößt an", { name })}
+                          aria-label={t("{name} stößt an", { name })} onClick={() => pickBreaker(idx)}><BreakGlyph width={26} /></button>
+                      ))}
                     <div className="sc-avatars">
                       {members.map((pl) => (
                         <Ball key={pl.id} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={56} />
