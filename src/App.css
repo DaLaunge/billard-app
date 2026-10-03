@@ -2670,3 +2670,28 @@ button.id-card-head { cursor: pointer; }
   .tour-card { animation: tour-in .25s ease both; }
   @keyframes tour-in { from { opacity: 0; margin-top: 10px; } to { opacity: 1; margin-top: 0; } }
 }
+
+/* Anstoss-Regel (Wechselbreak / Winner-Break), siehe widgets/BreakRule.jsx.
+   Laengliches Queue-mit-Kugel-Symbol plus kleines Regel-Icon und Kurztext -
+   eine Zeile, auch am Handy. */
+.break-glyph { display: block; flex: 0 0 auto; }
+.break-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600;
+  color: var(--accent); vertical-align: middle; white-space: nowrap; font-family: inherit; background: none; border: 0; padding: 0; }
+.break-pill.editable { cursor: pointer; padding: 3px 9px; border-radius: 999px; background: var(--surface-btn); }
+.break-switch { display: inline-flex; gap: 4px; }
+.break-opt { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px;
+  border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory-dim);
+  font-size: 12px; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.break-opt.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.break-bar { display: flex; justify-content: center; margin: 0 0 12px; }
+/* Anstoss-Markierung an der Spielerkarte: gefuellt = stoesst das naechste Rack an,
+   gestrichelt = antippen, damit diese Seite anstoesst. */
+.score-col { position: relative; }
+.break-slot { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 6px; border-radius: 999px; border: 1.5px solid var(--accent-line); background: var(--accent-soft);
+  color: var(--accent); font-family: inherit; }
+button.break-slot { cursor: pointer; }
+.break-slot.off { background: transparent; border-style: dashed; color: var(--ivory-dim); opacity: 0.55; }
+@media (prefers-reduced-motion: no-preference) {
+  .break-slot.on { animation: ball-pop .3s ease; }
+}

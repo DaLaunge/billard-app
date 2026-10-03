@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DiscBall from "./widgets/DiscBall";
+import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
 import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
@@ -251,6 +252,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // nur noch das Overlay an (siehe pendingReport/confirmPendingReport unten)
   // statt selbst zu blockieren - die eigentliche RPC laeuft erst nach
   // Bestaetigung im Overlay.
+  // Anstoss-Regel (Wechselbreak/Winner-Break): die Turnierleitung kann sie
+  // in der Kopfzeile umstellen, solange das Turnier nicht beendet ist.
+  const toggleBreakRule = async () => {
+    const next = normalizeBreakRule(tour.break_rule) === "winner" ? "alternate" : "winner";
+    const { error } = await supabase.rpc("set_break_rule", { p_kind: "tournament", p_id: tournamentId, p_rule: next });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await load();
+  };
+
   const organizerReport = (tm, s1, s2, onDone) => {
     setPendingReport({ tm, s1, s2, onDone });
   };
@@ -630,6 +640,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         {tour.status === "finished" && (resultsLocked
           ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
           : <> · {t("Korrekturen noch möglich")}</>)}
+        {breakApplies(tour.discipline) && (
+          <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer && tour.status !== "finished" ? toggleBreakRule : undefined} /></>
+        )}
       </p>
       <div className="turnier-organizer-line">
         <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>

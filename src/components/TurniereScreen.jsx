@@ -8,6 +8,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 import FieldLabel from "./widgets/FieldLabel";
 import { ModeTiles } from "./widgets/ModePick";
 import DiscBall, { DiscPick } from "./widgets/DiscBall";
+import { BreakSwitch, DEFAULT_BREAK_RULE, breakApplies } from "./widgets/BreakRule";
 import { FORMAT_GLYPH } from "./widgets/FormatGlyph";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 
@@ -63,6 +64,9 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
   // Tisch, statt der Playoff-/Mehrtisch-Felder oben.
   const [wsDoubles, setWsDoubles] = useState(false);
   const [wsTable, setWsTable] = useState("");
+  // Wer das naechste Rack anstoesst (Wechselbreak/Winner-Break), fuer ALLE Formate;
+  // wird nach dem Anlegen per set_break_rule() gesetzt, siehe create().
+  const [breakRule, setBreakRule] = useState(DEFAULT_BREAK_RULE);
 
   const load = async () => {
     // organizer(nickname) per Inline-Join statt eines eigenen players-Props
@@ -117,7 +121,16 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
 
   const resetForm = () => {
     setShowForm(false);
-    setName(""); setTableFrom(""); setTableTo(""); setTableList(""); setWsTable(""); setWsDoubles(false);
+    setName(""); setTableFrom(""); setTableTo(""); setTableList(""); setWsTable(""); setWsDoubles(false); setBreakRule(DEFAULT_BREAK_RULE);
+  };
+
+  // Die Vorgabe (Wechselbreak) steht schon als Spaltenvorgabe in der DB - nur eine
+  // abweichende Wahl braucht den zusaetzlichen Aufruf. Scheitert er, ist das Turnier
+  // trotzdem angelegt (die Leitung kann die Regel danach in der Kopfzeile umstellen).
+  const applyBreakRule = async (kind, id) => {
+    if (breakRule === DEFAULT_BREAK_RULE || !breakApplies(discipline)) return;
+    const { error } = await supabase.rpc("set_break_rule", { p_kind: kind, p_id: id, p_rule: breakRule });
+    if (error) toast(t("Fehler: ") + error.message);
   };
 
   const create = async () => {
@@ -133,6 +146,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
       });
       setBusy(false);
       if (error) { toast(t("Fehler: ") + error.message); return; }
+      await applyBreakRule("winner_stays", data.id);
       toast(t("Winner-Stays-Runde erstellt."));
       resetForm();
       await loadWs();
@@ -150,6 +164,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
     });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
+    await applyBreakRule("tournament", data.id);
     toast(t("Turnier erstellt – Anmeldung ist jetzt offen."));
     resetForm();
     await load();
@@ -185,7 +200,9 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
                 werden muss (Nutzer-Feedback 2026-09-30) - vorher stand sie
                 nach Name und Format, unterhalb der Falz. Sie hat einen
                 Vorgabewert, wird aber bei jedem Turnier bewusst entschieden. */}
-            <FieldLabel label={t("Disziplin")} />
+            {/* Der Anstoss-Schalter sitzt rechts in derselben Zeile (kostet keine Hoehe)
+                und entfaellt beim 14/1, wo es kein Rack-fuer-Rack-Anstossen gibt. */}
+            <FieldLabel label={t("Disziplin")} actions={breakApplies(discipline) ? <BreakSwitch value={breakRule} onChange={setBreakRule} /> : null} />
             <div className="disc-picks">
               {DEFAULT_DISCIPLINES.map((d) => (
                 // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
