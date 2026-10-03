@@ -436,17 +436,51 @@ export default function App() {
   // die Absicherung dafuer, dass ein kuenftiger Aufrufer von einem Live-
   // Eingabe-Screen aus nur PRUEFT und nicht unbestaetigte Eingabe wegreisst.
   const forceApplyRef = useRef(false);
-  const requestUpdateNow = useCallback(() => {
-    if (LIVE_ENTRY_TABS.includes(tab)) { checkForUpdate(); return; }
-    if (needReload) { persistNavAndUpdate(currentNavState, updateServiceWorker); return; }
+  // Liefert das Ergebnis fuer die Update-Zeile im Profil: "found" (neue Version
+  // gefunden, wird gleich eingespielt), "current" (bereits aktuell), "error"
+  // (Pruefung fehlgeschlagen/offline), "unavailable" (kein Service Worker,
+  // z. B. im Browser ohne PWA-Unterstuetzung). Die Anwendung selbst erfolgt
+  // bewusst erst ~1,8 s spaeter, damit das Ergebnis noch lesbar ist.
+  const requestUpdateNow = useCallback(async () => {
+    if (LIVE_ENTRY_TABS.includes(tab)) { checkForUpdate(); return "current"; }
+    if (needReload) {
+      setTimeout(() => persistNavAndUpdate(currentNavState, updateServiceWorker), 1800);
+      return "found";
+    }
+    const reg = swRegistration.current;
+    if (!reg) return "unavailable";
     forceApplyRef.current = true;
-    checkForUpdate();
+    try {
+      await Promise.race([
+        reg.update(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 15000)),
+      ]);
+      if (reg.waiting) return "found";
+      const w = reg.installing;
+      if (w) {
+        await new Promise((res) => {
+          const f = () => { if (["installed", "activated", "redundant"].includes(w.state)) { w.removeEventListener("statechange", f); res(); } };
+          w.addEventListener("statechange", f);
+          f();
+        });
+        if (w.state === "redundant") { forceApplyRef.current = false; return "error"; }
+        return "found";
+      }
+      forceApplyRef.current = false;
+      return "current";
+    } catch {
+      forceApplyRef.current = false;
+      return "error";
+    }
   }, [tab, needReload, currentNavState, updateServiceWorker, checkForUpdate]);
   useEffect(() => {
     if (!needReload || !forceApplyRef.current) return;
-    forceApplyRef.current = false;
-    if (LIVE_ENTRY_TABS.includes(tab)) return;
-    persistNavAndUpdate(currentNavState, updateServiceWorker);
+    const id = setTimeout(() => {
+      forceApplyRef.current = false;
+      if (LIVE_ENTRY_TABS.includes(tab)) return;
+      persistNavAndUpdate(currentNavState, updateServiceWorker);
+    }, 1800);
+    return () => clearTimeout(id);
   }, [needReload, tab, currentNavState, updateServiceWorker]);
   // Trigger C: direkt nach jedem loadData()-Durchlauf (siehe loadGen dort) -
   // deckt "Match/Turnier gespeichert" ab, respektiert aber weiterhin

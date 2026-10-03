@@ -218,6 +218,23 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [color, setColor] = useState(meRow?.avatar_color || null);
   const [motto, setMotto] = useState(meRow?.motto || "");
   const [busy, setBusy] = useState(false);
+  // Update-Zeile: idle | checking | found | current | error | unavailable
+  const [updState, setUpdState] = useState("idle");
+  const [updCheckedAt, setUpdCheckedAt] = useState("");
+  const updTimer = useRef(null);
+  useEffect(() => () => clearTimeout(updTimer.current), []);
+  const runUpdateCheck = async () => {
+    clearTimeout(updTimer.current);
+    setUpdState("checking");
+    // Mindestens 1,2 s, sonst blitzt der Laufbalken nur kurz auf, wenn die
+    // Pruefung sofort fertig ist - und man weiss nicht, ob ueberhaupt geprueft wurde.
+    const [res] = await Promise.all([onCheckUpdate(), new Promise((r) => setTimeout(r, 1200))]);
+    setUpdState(res || "error");
+    if (res !== "found") {
+      setUpdCheckedAt(new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }));
+      updTimer.current = setTimeout(() => setUpdState("idle"), 7000);
+    }
+  };
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackCat, setFeedbackCat] = useState("bug");
   const [feedbackMsg, setFeedbackMsg] = useState("");
@@ -429,13 +446,30 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             CARD_SCREENS, kein Schalter). Nutzerwunsch 2026-10-03: "gut
             sichtbar, darf niemals ausgeblendet werden koennen, der einzige
             Button, der eine ganze Zeile einnehmen darf". */}
-        <button type="button" className="update-row" data-tour="update-btn"
-          onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
-          <RefreshCw size={20} />
-          <span className="update-row-text">
-            <strong>{t("Nach Updates suchen")}</strong>
-            <small>{t("Version")} {APP_VERSION}</small>
+        <button type="button" className={"update-row " + updState} data-tour="update-btn"
+          disabled={updState === "checking" || updState === "found"} onClick={runUpdateCheck}>
+          <span className="update-row-ico" aria-hidden="true">
+            {updState === "found" || updState === "current" ? <Check size={22} />
+              : updState === "error" || updState === "unavailable" ? <X size={22} />
+              : <RefreshCw size={20} className={updState === "checking" ? "spin" : ""} />}
           </span>
+          <span className="update-row-text" aria-live="polite">
+            <strong>
+              {updState === "checking" ? t("Suche nach Updates …")
+                : updState === "found" ? t("Update gefunden – wird installiert …")
+                : updState === "current" ? t("Du hast die neueste Version.")
+                : updState === "error" ? t("Prüfung fehlgeschlagen – bist du online?")
+                : updState === "unavailable" ? t("Updates können hier nicht geprüft werden.")
+                : t("Nach Updates suchen")}
+            </strong>
+            <small>
+              {t("Version")} {APP_VERSION}
+              {updCheckedAt && updState !== "checking" && updState !== "found" ? ` · ${t("geprüft um {time}", { time: updCheckedAt })}` : ""}
+            </small>
+          </span>
+          {(updState === "checking" || updState === "found") && (
+            <span className={"update-bar" + (updState === "found" ? " full" : "")} aria-hidden="true"><span /></span>
+          )}
         </button>
 
         <div className="pf-edit-layout">
