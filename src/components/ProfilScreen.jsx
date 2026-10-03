@@ -99,7 +99,7 @@ function CardVisRow({ shown, label, icon, meta, className = "", canUp, canDown, 
 }
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
-  players, meRow, onSaveProfile, onOpenAdmin, onOpenTurniere, tourneyReadyCount, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
+  players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
@@ -1208,25 +1208,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
       <div className="pf-col right">
       {renderColumn("right")}
-      {/* Nur noch der Weg zu den Turnieren - bewusst KEINE Karte (er traegt
-          den "du bist dran"-Zaehler, den auszublenden eine Falle waere).
-          "Verwaltung" und "Abmelden" standen bis 2026-09-25 hier daneben und
-          liegen jetzt am Ende der Einstellungen hinter dem Zahnrad: sie
-          gehoeren zum Konto, nicht zu dem, was dieses Profil ueber dich
-          aussagt. */}
-      {isMe && (
-      <div className="pf-account-actions" style={{ order: 9999 }}>
-        <button className="btn ghost tournament-ready-btn" onClick={onOpenTurniere}>
-          <Trophy size={16} /> {t("Turniere")}
-          {/* Bleibt sichtbar, bis das Match tatsaechlich gespielt/gemeldet
-              wurde (tourneyReadyCount kommt direkt aus der DB, siehe
-              checkTourneyReady in App.jsx) - anders als das "Du bist dran"-
-              Popup NICHT per "Später" wegklickbar, damit eine bereite
-              Turnierpaarung nicht in Vergessenheit geraet (Nutzer-Feedback). */}
-          {tourneyReadyCount > 0 && <span className="badge tournament-ready-badge">{tourneyReadyCount}</span>}
-        </button>
-      </div>
-      )}
       </div>
       </div>
 

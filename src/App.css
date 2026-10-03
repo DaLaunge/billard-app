@@ -1400,8 +1400,6 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
    schmalen Tabbar-Icons wie oben - .badge dort ist auf eine Icon-Spalte
    zentriert (right:18%), hier stattdessen rechtsbuendig und vertikal
    zentriert am Button selbst. */
-.tournament-ready-btn { position: relative; }
-.tournament-ready-btn .tournament-ready-badge { top: 50%; right: 14px; transform: translateY(-50%); }
 
 /* Flex-Zeile statt reinem Text, seit ein Toast eine Aktion tragen kann
    (.toast-action, siehe toast() in App.jsx - Nutzer-Feedback: "mach ein
@@ -1714,8 +1712,6 @@ button.id-card-head { cursor: pointer; }
 /* Konto-Knoepfe (Turniere/Verwaltung/Abmelden): keine Karten, deshalb per
    festem "order" immer ganz am Ende. Den Abstand machen die Knoepfe selbst
    (.btn.ghost hat margin-top), nur der erste braucht keinen. */
-.pf-account-actions { display: flex; flex-direction: column; }
-.pf-account-actions > .btn:first-child { margin-top: 0; }
 .pf-edit-layout { display: flex; flex-direction: column; gap: 20px; }
 .pf-edit-main, .pf-edit-side { display: flex; flex-direction: column; gap: 20px; }
 /* Kontoloeschung: Nutzer-Feedback wollte sie in "Profil bearbeiten" und
