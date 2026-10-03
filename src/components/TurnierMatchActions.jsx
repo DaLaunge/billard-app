@@ -27,15 +27,23 @@ export function ScoreStepper({ value, onChange, compact }) {
 // eintragen/bestaetigen/erzwingen/korrigieren) - von hasTurnierAction(), der
 // Komponente selbst UND TurnierGraph.jsx (Inline-Eingabe direkt in der Box)
 // genutzt, damit es nur eine einzige gepflegte Kopie dieser Bedingungen gibt.
-export function turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked) {
+export function turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked, format) {
   const confirmed = tm.match?.confirmed;
   const isMyMatch = me.id === tm.player1_id || me.id === tm.player2_id;
+  // Jeder gegen jeden (Gruppenphase = bracket 'main'): alle Paarungen stehen
+  // von Anfang an fest und die Spieler suchen sich selbst aus, wer gerade frei
+  // ist - der Tisch ist hier nur ein Vorschlag (siehe
+  // tournament_assign_free_tables()), kein Muss. Frueher gab es "Melden" nur
+  // fuer Paarungen MIT zugeteiltem Tisch; wer eine andere Paarung spielte,
+  // konnte nichts melden und die Turnierleitung musste nachtragen (ohne
+  // Protokoll). Serverseitig verlangt keine Melde-RPC einen Tisch.
+  const tableOptional = format === "round_robin" && tm.bracket === "main";
   // !tm.void: beide Seiten haben ein doppeltes Nichterscheinen gemeldet
   // bekommen (siehe tournament_mark_no_show()) - dieses Match ist damit
   // endgueltig erledigt (niemand kommt weiter, die Baumstelle wird zum
   // Freilos fuer die Gegenseite), keine weiteren Aktionen mehr moeglich.
-  const openSlot = !tm.is_bye && !tm.void && tm.player1_id && tm.player2_id && tm.table_number != null && !tm.match_id && tourStatus === "running";
-  const waitingForTable = !tm.is_bye && !tm.void && tm.player1_id && tm.player2_id && tm.table_number == null && !tm.match_id && tourStatus === "running";
+  const openSlot = !tm.is_bye && !tm.void && tm.player1_id && tm.player2_id && (tm.table_number != null || tableOptional) && !tm.match_id && tourStatus === "running";
+  const waitingForTable = !tableOptional && !tm.is_bye && !tm.void && tm.player1_id && tm.player2_id && tm.table_number == null && !tm.match_id && tourStatus === "running";
   const canReport = openSlot && isMyMatch;
   const canOrganizerReport = openSlot && !isMyMatch && isOrganizer;
   const canConfirm = tm.match_id && !confirmed && tm.match?.reported_by !== me.id && isMyMatch;
@@ -90,7 +98,7 @@ export function tmScores(tm) {
 // eintragen, bestaetigen/ablehnen, erzwingen) - aus TurnierRasterScreen.jsx
 // herausgezogen, damit Listen- und Grafikansicht (TurnierGraph.jsx) exakt
 // dieselben Regeln und Buttons verwenden statt zweier gepflegter Kopien.
-export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, resultsLocked, busyId, nameOf, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, onMarkNoShow }) {
+export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, resultsLocked, format, busyId, nameOf, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, onMarkNoShow }) {
   const [editing, setEditing] = useState(false);
   const [es1, setEs1] = useState(0);
   const [es2, setEs2] = useState(0);
@@ -99,7 +107,7 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, r
   const [noShowPicking, setNoShowPicking] = useState(false);
   const [absent1, setAbsent1] = useState(false);
   const [absent2, setAbsent2] = useState(false);
-  const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit, canMarkNoShow } = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked);
+  const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit, canMarkNoShow } = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked, format);
   const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
 
   const resetNoShow = () => { setNoShowPicking(false); setAbsent1(false); setAbsent2(false); };

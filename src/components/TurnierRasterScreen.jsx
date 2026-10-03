@@ -611,7 +611,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           </span>
         </div>
         {tm.table_number != null && <span className="m-disc">{t("Tisch")} {tm.table_number}</span>}
-        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked} nameOf={nameOf}
+        <TurnierMatchActions tm={tm} me={me} isOrganizer={isOrganizer} tourStatus={tour.status} resultsLocked={resultsLocked} format={tour.format} nameOf={nameOf}
           busyId={busyId} onOpenMatchScreen={openMatchScreen} onOrganizerReport={organizerReport}
           onConfirm={confirm} onForceConfirm={forceConfirm} onEditMatch={editMatch} onMarkNoShow={markNoShow} />
       </div>
@@ -818,7 +818,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                   const won = tm.winner_id === journeyPlayerId;
                   let statusText;
                   if (tm.is_bye) statusText = t("Freilos");
-                  else if (!tm.match_id) statusText = !oppName ? t("Wartet auf Gegner …") : tm.table_number == null ? t("Tisch wird noch zugeteilt") : t("Ausstehend");
+                  else if (!tm.match_id) statusText = !oppName ? t("Wartet auf Gegner …") : (tm.table_number == null && !(tour.format === "round_robin" && tm.bracket === "main")) ? t("Tisch wird noch zugeteilt") : t("Ausstehend");
                   else if (!tm.match.confirmed) statusText = t("Wartet auf Bestätigung ...");
                   else statusText = won ? t("Sieg") : t("Niederlage");
                   const roundLabel = tm.bracket === "final" ? finalRoundLabel(tm.round, finalTotalRounds) : `${t("Runde")} ${tm.round}`;
