@@ -1265,6 +1265,16 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
   cursor: pointer; font-family: 'Bricolage Grotesque', sans-serif; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); }
 .btn.primary:disabled { opacity: 0.4; cursor: default; }
+/* Update-Zeile in "Profil bearbeiten": der einzige Knopf in voller Breite,
+   bewusst keine Karte (nicht ausblendbar). */
+.update-row { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 18px;
+  margin-bottom: 20px; border: none; border-radius: 16px; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); text-align: left;
+  font-family: 'Bricolage Grotesque', sans-serif; }
+.update-row .update-row-text { display: flex; flex-direction: column; gap: 2px; }
+.update-row strong { font-size: 16px; font-weight: 700; }
+.update-row small { font-size: 12px; opacity: 0.75; }
+.update-row:active { transform: scale(0.99); }
 .btn.ghost { background: transparent; border: 1px dashed var(--line); color: var(--ivory-dim);
   font-size: 14px; margin-top: 8px; padding: 12px; }
 .btn.danger { background: var(--loss); color: #fff; }

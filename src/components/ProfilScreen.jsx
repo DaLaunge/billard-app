@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, BellOff, BellRing, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
 import { t } from "../lib/i18n";
+import { APP_VERSION } from "../lib/constants";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, nextAchievementHint, badgeProgress } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
@@ -423,6 +424,20 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <h2>{t("Profil bearbeiten")}</h2>
         </header>
 
+        {/* Update-Knopf: ueber dem Layout und OHNE Karte, damit er weder
+            ausgeblendet noch verschoben werden kann (kein Eintrag in
+            CARD_SCREENS, kein Schalter). Nutzerwunsch 2026-10-03: "gut
+            sichtbar, darf niemals ausgeblendet werden koennen, der einzige
+            Button, der eine ganze Zeile einnehmen darf". */}
+        <button type="button" className="update-row" data-tour="update-btn"
+          onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}>
+          <RefreshCw size={20} />
+          <span className="update-row-text">
+            <strong>{t("Nach Updates suchen")}</strong>
+            <small>{t("Version")} {APP_VERSION}</small>
+          </span>
+        </button>
+
         <div className="pf-edit-layout">
         {/* Linke Spalte: Profilangaben + Karten-Sichtbarkeit. Beide stecken
             in EINEM Grid-Feld, das sie per Flexbox stapelt - sonst faengt
@@ -616,14 +631,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
                 <span className="settings-switch-label">{t("Automatisch aktualisieren")}</span>
               </label>
-              <button type="button" className="icon-btn small" onClick={() => { onCheckUpdate(); toast(t("Suche nach Updates …")); }}
-                aria-label={t("Jetzt nach Updates suchen")} title={t("Jetzt nach Updates suchen")}>
-                <RefreshCw size={15} />
-              </button>
               <InfoButton title={t("App-Updates")}>
                 {updateInterval !== "manual"
                   ? t("Sucht bei jedem Öffnen der App nach einer neuen Version und spielt sie unauffällig ein – nie mitten in einem Match.")
-                  : t("Neue Versionen gibt es nur über den Knopf unten.")}
+                  : t("Neue Versionen gibt es nur über den Knopf „Nach Updates suchen“ ganz oben.")}
               </InfoButton>
             </div>
             {/* Eine Stufe fuer alle Ereignisse (Herausforderung, Match
