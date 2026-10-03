@@ -210,7 +210,7 @@ const breakableValue = (val) => (typeof val === "string" ? val.replace(/:/g, ":â
 
 function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpenProtokoll, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
   const shown = records.filter((r) => r.holder);
-  const recordsRef = useRevealOnScroll([shown.length, collapsed]);
+  const recordsRef = useRevealOnScroll([shown.map((r) => r.key).join(), collapsed]);
   return (
     <section className="stat-block">
       <div className="stat-block-head">
@@ -353,7 +353,11 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
 
   // Zeilen blenden sich beim Hineinscrollen ein - die Liste geht bis
   // "Alle" und wird dann sehr lang (siehe lib/useRevealOnScroll.js).
-  const listRef = useRevealOnScroll([visibleMatches.length, collapsed]);
+  // Schluessel = die ids der gezeigten Zeilen, NICHT nur deren Anzahl: Schaltet
+  // man "Turniermatches ausblenden" an und wieder aus, bleibt die Anzahl bei 10,
+  // die Zeilen sind aber neu eingehaengt (ohne is-in, also opacity 0) - der
+  // Haken lief nicht erneut und die Liste blieb leer mit riesigen Luecken.
+  const listRef = useRevealOnScroll([visibleMatches.map((m) => m.id).join(), collapsed]);
 
   return (
     <section className="stat-block" ref={listRef}>
