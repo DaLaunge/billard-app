@@ -59,7 +59,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "achievements", icon: "achievements", tab: "profil", target: "#pf-achievements-full",
     title: "Erfolge",
-    body: "Unter „Als Nächstes“ siehst du, was dir noch fehlt – tippe einen Eintrag an, um die genaue Bedingung zu lesen. Freigeschaltete Erfolge kannst du als Avatar zeigen.",
+    body: "Ganz oben stehen die drei Erfolge, die dir am nächsten sind – tippe einen an, um die genaue Bedingung zu lesen. Freigeschaltete Erfolge kannst du als Avatar zeigen.",
   },
   {
     id: "customize", icon: "customize", tab: "profil",

@@ -2719,3 +2719,7 @@ button.break-slot { cursor: pointer; }
 @media (prefers-reduced-motion: no-preference) {
   .break-slot.on { animation: ball-pop .3s ease; }
 }
+
+/* Die drei naechsten Erfolge oben in der Erfolge-Karte (klickbar). */
+.ach-next { margin-bottom: 10px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.ach-next .side-row-progress:last-of-type { border-bottom: none; }
