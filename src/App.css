@@ -715,7 +715,10 @@ button.side-row-progress:hover .side-row-name { color: var(--accent); }
 .celebrate-card { background: var(--felt-3); border: 1px solid var(--accent); border-radius: 18px;
   padding: 22px 20px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
 /* Popup "Match bestaetigen": mehrere Eintraege, jeder mit Passt/Falsch. */
-.celebrate-card.pending-card { max-width: 400px; }
+.celebrate-card.pending-card { max-width: 400px; border-width: 2px; border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft), 0 0 42px var(--accent-line), 0 12px 40px rgba(0,0,0,0.5); }
+.pending-burst { width: 64px; height: 64px; margin: -6px auto 10px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 34px; background: var(--accent-soft); border: 2px solid var(--accent); }
 .pending-list { display: flex; flex-direction: column; gap: 10px; max-height: 52vh; overflow-y: auto; text-align: left; }
 .pending-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: var(--felt-2); }
 .pending-main { display: flex; align-items: center; gap: 12px; }
@@ -1483,6 +1486,11 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   @keyframes score-bump { 0% { transform: scale(.7); opacity: .4; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
   @keyframes grow-w { from { width: 0; } }
   @keyframes check-pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.14); opacity: 1; } 100% { transform: scale(1); } }
+  @keyframes pend-in { 0% { opacity: 0; transform: translateY(26px) scale(.86); } 60% { transform: translateY(-4px) scale(1.03); } 100% { opacity: 1; transform: none; } }
+  @keyframes pend-ring { 0% { box-shadow: 0 0 0 0 var(--accent-line); } 100% { box-shadow: 0 0 0 20px transparent; } }
+  @keyframes pend-wiggle { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-14deg); } 86% { transform: rotate(12deg); } 94% { transform: rotate(-6deg); } }
+  .celebrate-card.pending-card { animation: pend-in .5s cubic-bezier(.2,.9,.3,1.2); }
+  .pending-burst { animation: pend-ring 1.6s ease-out infinite, pend-wiggle 2.6s ease-in-out 0.6s infinite; }
   @keyframes go-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--accent-line); } 50% { box-shadow: 0 0 0 7px transparent; } }
   /* Jeder Schritt gleitet von rechts herein - "eine Seite weiter". */
   .step-enter { animation: step-in .34s cubic-bezier(.22, .61, .36, 1) both; }

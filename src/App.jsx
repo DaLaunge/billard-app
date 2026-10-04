@@ -24,6 +24,7 @@ import { useHideTabbar } from "./lib/useHideTabbar";
 import { usePullToRefresh } from "./lib/usePullToRefresh";
 import { usePageTransition } from "./lib/usePageTransition";
 import { useSwipeNav } from "./lib/useSwipeNav";
+import { getPendingPopup, storePendingPopup } from "./lib/uiPrefs";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
@@ -995,6 +996,11 @@ export default function App() {
   // offen ist) / "push" (zusaetzlich echte Push-Nachrichten). Die Texte
   // kommen fertig aus der Datenbank (deutsch + englisch).
   const [notifyMode, setNotifyModeState] = useState(getNotifyMode);
+  // Popup "Match bestaetigen" ein/aus (pro Geraet, unabhaengig von notifyMode).
+  const [pendingPopupOn, setPendingPopupOn] = useState(getPendingPopup);
+  const pendingPopupOnRef = useRef(pendingPopupOn);
+  pendingPopupOnRef.current = pendingPopupOn;
+  const setPendingPopup = useCallback((on) => { storePendingPopup(on); setPendingPopupOn(on); }, []);
   const setNotifyMode = useCallback(async (mode) => {
     if (mode === "push") {
       try { await enablePush(getLang()); }
@@ -1030,6 +1036,12 @@ export default function App() {
   // Eingabe ohne "Ansehen": ein Sprung weg wuerde die ungespeicherte Eingabe
   // verwerfen.
   const showNotice = useCallback((n) => {
+    if (n.kind === "match_confirm" && pendingPopupOnRef.current) {
+      // Neues Match zum Bestaetigen: sofort nachladen, das Popup (showPendingPopup)
+      // erscheint dann von selbst - kein zusaetzlicher Toast.
+      loadData();
+      return;
+    }
     if (POPUP_KINDS.has(n.kind)) {
       // Eigene "Du bist dran"-Popups - nur sofort nachsehen statt erst beim
       // naechsten 20s-Poll.
@@ -1040,7 +1052,7 @@ export default function App() {
     const text = n.body ? `${n.title} – ${n.body}` : n.title;
     toast(text, nav && !LIVE_ENTRY_TABS.includes(tabRef.current)
       ? { label: t("Ansehen"), onAction: () => navPush(nav) } : null);
-  }, [toast, navPush, checkTourneyReady, checkWinnerStaysReady]);
+  }, [toast, navPush, checkTourneyReady, checkWinnerStaysReady, loadData]);
 
   // Nachrichten vom Service Worker: Push bei offener App (statt System-
   // Benachrichtigung) und Klick auf eine Benachrichtigung.
@@ -1180,16 +1192,26 @@ export default function App() {
     loadData();
   };
 
-  // Popup "Match bestaetigen": welche offenen Bestaetigungen in dieser Sitzung
-  // schon gezeigt/weggeschoben wurden. Neue (andere ids) loesen es erneut aus.
-  const [pendingSeen, setPendingSeen] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem("pendingPopupSeen") || "[]"); } catch { return []; }
-  });
+  // Popup "Match bestaetigen": welche offenen Bestaetigungen seit dem Einstieg
+  // schon weggeschoben ("Später") wurden. Bewusst NUR im Arbeitsspeicher: jeder
+  // Seitenaufruf (App-Start, Update-Reload, Neuladen) zaehlt als neuer Einstieg
+  // und zeigt das Popup erneut, solange etwas offen ist (Nutzer-Feedback
+  // 2026-10-04). Ebenso das Zurueckkehren aus dem Hintergrund nach >= 2 Minuten.
+  // Neu eintreffende Matches (andere ids) loesen es sofort aus.
+  const [pendingSeen, setPendingSeen] = useState([]);
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt >= 2 * 60000) setPendingSeen([]);
+      hiddenAt = 0;
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
   const dismissPending = useCallback(() => {
-    const ids = [...new Set([...pendingSeen, ...pendingForMe.map((m) => m.id)])];
-    setPendingSeen(ids);
-    try { sessionStorage.setItem("pendingPopupSeen", JSON.stringify(ids)); } catch { /* Privatmodus */ }
-  }, [pendingSeen, pendingForMe]);
+    setPendingSeen((prev) => [...new Set([...prev, ...pendingForMe.map((m) => m.id)])]);
+  }, [pendingForMe]);
   // Tutorial (lib/tutorial/, components/TutorialOverlay.jsx): tutorialRun =
   // { steps, news } waehrend es laeuft. Automatisch nur auf Hauptbildschirmen
   // und wenn kein anderes Popup offen ist; neue Nutzer bekommen die ganze Tour,
@@ -1215,7 +1237,7 @@ export default function App() {
     if (tutorialRun && player) markSeen(player.id, tutorialRun.steps.map((s) => s.id));
     setTutorialRun(null);
   }, [tutorialRun, player]);
-  const showPendingPopup = !!player && notifyMode !== "off" && MAIN_TABS.includes(tab) && !mustUpdate && !tutorialRun
+  const showPendingPopup = !!player && pendingPopupOn && MAIN_TABS.includes(tab) && !mustUpdate && !tutorialRun
     && !celebrate && !tourneyReady && !wsReady && !draftOffer
     && pendingForMe.some((m) => !pendingSeen.includes(m.id));
 
@@ -1472,8 +1494,9 @@ export default function App() {
             {showPendingPopup && (
               <div className="celebrate-overlay" onClick={dismissPending}>
                 <div className="celebrate-card pending-card" onClick={(e) => e.stopPropagation()}>
+                  <div className="pending-burst" aria-hidden="true">🎱</div>
                   <div className="celebrate-head">
-                    ✅ {pendingForMe.length === 1 ? t("Ein Match wartet auf deine Bestätigung") : t("{n} Matches warten auf deine Bestätigung", { n: pendingForMe.length })}
+                    {pendingForMe.length === 1 ? t("Ein Match wartet auf deine Bestätigung") : t("{n} Matches warten auf deine Bestätigung", { n: pendingForMe.length })}
                   </div>
                   <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>{t("Ohne Bestätigung zählt das Match nicht fürs Rating.")}</p>
                   <div className="pending-list">
@@ -1647,6 +1670,7 @@ export default function App() {
                   keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
                   hideTabbar={hideTabbarPref} onSetHideTabbar={setHideTabbarPref}
                   notifyMode={notifyMode} onSetNotifyMode={setNotifyMode}
+                  pendingPopup={pendingPopupOn} onSetPendingPopup={setPendingPopup}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
                   onSetTheme={setTheme}
                   onSetStartTab={setStartTab}

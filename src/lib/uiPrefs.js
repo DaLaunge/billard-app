@@ -54,3 +54,17 @@ export function getMatchFly() {
 export function storeMatchFly(on) {
   try { localStorage.setItem(MATCH_FLY_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
+
+/* Popup "Match wartet auf deine Bestaetigung" (App.jsx, showPendingPopup).
+   Standard ist AN - nur ein ausdrueckliches "aus" wird gespeichert. Pro Geraet,
+   unabhaengig von den Benachrichtigungen; die Bestaetigung im Profil bleibt
+   in jedem Fall. */
+const PENDING_POPUP_KEY = "pendingPopup";
+
+export function getPendingPopup() {
+  try { return localStorage.getItem(PENDING_POPUP_KEY) !== "0"; } catch { return true; }
+}
+
+export function storePendingPopup(on) {
+  try { localStorage.setItem(PENDING_POPUP_KEY, on ? "1" : "0"); } catch { /* ignore */ }
+}
