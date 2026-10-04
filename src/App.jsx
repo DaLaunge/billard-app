@@ -1192,31 +1192,26 @@ export default function App() {
     loadData();
   };
 
-  // Popup "Match bestaetigen": welche offenen Bestaetigungen in dieser Sitzung
-  // schon gezeigt/weggeschoben wurden. Neue (andere ids) loesen es erneut aus.
-  const [pendingSeen, setPendingSeen] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem("pendingPopupSeen") || "[]"); } catch { return []; }
-  });
-  // "Später" gilt nicht fuer immer: kommt man nach >= 10 Minuten in die App
-  // zurueck und es ist noch etwas offen, erscheint das Popup erneut.
+  // Popup "Match bestaetigen": welche offenen Bestaetigungen seit dem Einstieg
+  // schon weggeschoben ("Später") wurden. Bewusst NUR im Arbeitsspeicher: jeder
+  // Seitenaufruf (App-Start, Update-Reload, Neuladen) zaehlt als neuer Einstieg
+  // und zeigt das Popup erneut, solange etwas offen ist (Nutzer-Feedback
+  // 2026-10-04). Ebenso das Zurueckkehren aus dem Hintergrund nach >= 2 Minuten.
+  // Neu eintreffende Matches (andere ids) loesen es sofort aus.
+  const [pendingSeen, setPendingSeen] = useState([]);
   useEffect(() => {
     let hiddenAt = 0;
     const onVis = () => {
       if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
-      if (hiddenAt && Date.now() - hiddenAt >= 10 * 60000) {
-        setPendingSeen([]);
-        try { sessionStorage.removeItem("pendingPopupSeen"); } catch { /* ignore */ }
-      }
+      if (hiddenAt && Date.now() - hiddenAt >= 2 * 60000) setPendingSeen([]);
       hiddenAt = 0;
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
   }, []);
   const dismissPending = useCallback(() => {
-    const ids = [...new Set([...pendingSeen, ...pendingForMe.map((m) => m.id)])];
-    setPendingSeen(ids);
-    try { sessionStorage.setItem("pendingPopupSeen", JSON.stringify(ids)); } catch { /* Privatmodus */ }
-  }, [pendingSeen, pendingForMe]);
+    setPendingSeen((prev) => [...new Set([...prev, ...pendingForMe.map((m) => m.id)])]);
+  }, [pendingForMe]);
   // Tutorial (lib/tutorial/, components/TutorialOverlay.jsx): tutorialRun =
   // { steps, news } waehrend es laeuft. Automatisch nur auf Hauptbildschirmen
   // und wenn kein anderes Popup offen ist; neue Nutzer bekommen die ganze Tour,
