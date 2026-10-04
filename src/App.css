@@ -523,6 +523,7 @@ button.side-row-progress:hover .side-row-name { color: var(--accent); }
 .chip-btn.no { background: transparent; border: 1px solid var(--loss); color: var(--loss); }
 .chip-btn:not(.ok):not(.no) { background: transparent; border: 1px solid var(--line); color: var(--ivory-dim); }
 .open-reports { margin-bottom: 14px; }
+.open-reports .m-date { width: auto; white-space: nowrap; }
 
 .q { font-size: 17px; font-weight: 600; margin-bottom: 14px; }
 .q-sub { font-weight: 400; font-size: 13px; color: var(--ivory-dim); }
