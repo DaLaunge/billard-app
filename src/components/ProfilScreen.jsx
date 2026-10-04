@@ -18,6 +18,7 @@ import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import InfoButton from "./widgets/InfoButton";
 import MatchFlySwitch from "./widgets/MatchFlySwitch";
+import PendingPopupSwitch from "./widgets/PendingPopupSwitch";
 import FiltersOpenSwitch from "./widgets/FiltersOpenSwitch";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ProgressBar from "./widgets/ProgressBar";
@@ -102,7 +103,7 @@ function CardVisRow({ shown, label, icon, meta, className = "", canUp, canDown, 
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
-  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
+  onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
@@ -656,6 +657,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               </InfoButton>
             </div>
             <MatchFlySwitch />
+            <PendingPopupSwitch on={pendingPopup} onChange={onSetPendingPopup} />
             <FiltersOpenSwitch />
             {/* Updates: Schalter + Symbolknopf "jetzt suchen" in EINER Zeile
                 statt Schalter, Absatz und Textknopf ueber die volle Breite. */}
