@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Check, X, ShieldAlert, Pencil, Minus, Plus, UserX } from "lucide-react";
+import { ShieldAlert, Pencil, Minus, Plus, UserX } from "lucide-react";
 import { t } from "../lib/i18n";
+import ConfirmRoundButtons from "./widgets/ConfirmRoundButtons";
 
 // Kompakter +/- Zaehler fuer die schnelle Turnierleitungs-Eingabe (Melden/
 // Korrigieren) - bewusst kein grosser Zaehler wie im normalen MatchScreen,
@@ -146,8 +147,8 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, r
       )}
       {canConfirm && (
         <div className="confirm-actions">
-          <button className="chip-btn ok" disabled={busyId === tm.id} onClick={() => onConfirm(tm, true)}><Check size={15} /> {t("Bestätigen")}</button>
-          <button className="chip-btn no" disabled={busyId === tm.id} onClick={() => onConfirm(tm, false)}><X size={15} /> {t("Ablehnen")}</button>
+          <ConfirmRoundButtons disabled={busyId === tm.id} yesLabel={t("Bestätigen")} noLabel={t("Ablehnen")}
+            onYes={() => onConfirm(tm, true)} onNo={() => onConfirm(tm, false)} />
         </div>
       )}
       {canForce && (

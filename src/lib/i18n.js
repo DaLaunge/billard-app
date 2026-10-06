@@ -580,6 +580,7 @@ const TRANSLATIONS = {
     "In der App": "In app",
     "Push": "Push",
     "Keine Hinweise, auch kein „Du bist dran!“ bei Turnieren und Winner Stays.": "No alerts at all, not even “You're up!” in tournaments and Winner Stays.",
+    "Stimmt das gemeldete Ergebnis? Haken = bestätigen, Kreuz = zurückweisen. Ohne Bestätigung zählt das Match nicht fürs Rating.": "Is the reported result correct? Check = confirm, cross = reject. Without confirmation the match does not count toward the rating.",
     "Popup bei offener Bestätigung": "Popup for pending confirmations",
     "Sobald jemand ein Match gegen dich einträgt, erscheint sofort ein Popup, in dem du es bestätigen oder zurückweisen kannst – oder mit „Später“ wegschiebst. Ausgeschaltet bestätigst du wie gewohnt im Profil. Gilt nur auf diesem Gerät.": "As soon as someone enters a match against you, a popup appears right away where you can confirm or reject it – or postpone it with “Later”. Switched off, you confirm in your profile as usual. Applies to this device only.",
     "Hinweise erscheinen nur, solange die App geöffnet ist.": "Alerts only appear while the app is open.",

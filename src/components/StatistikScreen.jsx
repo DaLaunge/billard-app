@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
-import { Trophy, BarChart3, Gauge, Percent, Flame, X, FileText, Check, Clock, Zap, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
+import { Trophy, BarChart3, Gauge, Percent, Flame, FileText, Clock, Zap, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
+import ConfirmRoundButtons from "./widgets/ConfirmRoundButtons";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { t } from "../lib/i18n";
@@ -1005,8 +1006,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
                 <span className="confirm-warn"> {t("Nur bestätigen, wenn du dieses Doppel wirklich gespielt hast.")}</span>
               </div>
               <div className="confirm-actions">
-                <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> {t("Passt")}</button>
-                <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> {t("Falsch")}</button>
+                <ConfirmRoundButtons onYes={() => onConfirm(m.id, true)} onNo={() => onConfirm(m.id, false)} />
               </div>
             </div>
           );
@@ -1024,8 +1024,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
                   <FileText size={15} />
                 </button>
               )}
-              <button className="chip-btn ok" onClick={() => onConfirm(m.id, true)}><Check size={15} /> {t("Passt")}</button>
-              <button className="chip-btn no" onClick={() => onConfirm(m.id, false)}><X size={15} /> {t("Falsch")}</button>
+              <ConfirmRoundButtons onYes={() => onConfirm(m.id, true)} onNo={() => onConfirm(m.id, false)} />
             </div>
           </div>
         );

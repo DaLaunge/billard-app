@@ -516,7 +516,20 @@ button.side-row-progress:hover .side-row-name { color: var(--accent); }
 .confirm-banner { background: var(--accent-soft); border: 1px solid var(--accent-deep);
   border-radius: 14px; padding: 12px 14px; font-size: 13.5px; margin-bottom: 14px;
   display: flex; flex-direction: column; gap: 10px; line-height: 1.45; }
-.confirm-actions { display: flex; gap: 8px; }
+.confirm-actions { display: flex; gap: 8px; align-items: center; }
+/* Runde Zustimmen/Ablehnen-Knoepfe (widgets/ConfirmRoundButtons.jsx), 54px wie
+   die grossen Rundknoepfe im Match. Ablehnen = roter Kreis mit Kreuz,
+   Zustimmen = gruen gefuellt mit Haken. */
+.confirm-round { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  flex-shrink: 0; padding: 0; transition: transform .12s ease, background .15s ease, color .15s ease; }
+.confirm-round.yes { background: var(--win); color: #06231A; border: 2px solid var(--win); }
+.confirm-round.no { background: transparent; color: var(--loss); border: 2px solid var(--loss); }
+.confirm-round:active:not(:disabled) { transform: scale(.92); }
+.confirm-round:disabled { opacity: .5; cursor: default; }
+@media (hover: hover) {
+  .confirm-round.yes:hover:not(:disabled) { filter: brightness(1.1); }
+  .confirm-round.no:hover:not(:disabled) { background: var(--loss); color: #fff; }
+}
 .chip-btn { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px;
   padding: 6px 13px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
 .chip-btn.ok { background: var(--win); color: #06231A; }
@@ -723,7 +736,7 @@ button.side-row-progress:hover .side-row-name { color: var(--accent); }
 .pending-list { display: flex; flex-direction: column; gap: 10px; max-height: 52vh; overflow-y: auto; text-align: left; }
 .pending-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: var(--felt-2); }
 .pending-main { display: flex; align-items: center; gap: 12px; }
-.pending-item .confirm-actions { justify-content: flex-end; }
+.pending-item .confirm-actions { justify-content: flex-end; gap: 14px; }
 .celebrate-head { font-size: 19px; font-weight: 800; color: var(--accent); margin-bottom: 14px; }
 /* Erzwungenes Update (siehe mustUpdate in App.jsx): ueber allem, auch ueber dem Erfolgs-Popup. */
 .celebrate-overlay.force-update { z-index: 200; }

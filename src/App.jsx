@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import TutorialOverlay from "./components/TutorialOverlay";
 import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
 import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
-import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, Check, X, FileText } from "lucide-react";
+import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, FileText } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -24,6 +24,7 @@ import { useHideTabbar } from "./lib/useHideTabbar";
 import { usePullToRefresh } from "./lib/usePullToRefresh";
 import { usePageTransition } from "./lib/usePageTransition";
 import { useSwipeNav } from "./lib/useSwipeNav";
+import ConfirmRoundButtons from "./components/widgets/ConfirmRoundButtons";
 import { getPendingPopup, storePendingPopup } from "./lib/uiPrefs";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
@@ -1498,7 +1499,7 @@ export default function App() {
                   <div className="celebrate-head">
                     {pendingForMe.length === 1 ? t("Ein Match wartet auf deine Bestätigung") : t("{n} Matches warten auf deine Bestätigung", { n: pendingForMe.length })}
                   </div>
-                  <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>{t("Ohne Bestätigung zählt das Match nicht fürs Rating.")}</p>
+                  <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>{t("Stimmt das gemeldete Ergebnis? Haken = bestätigen, Kreuz = zurückweisen. Ohne Bestätigung zählt das Match nicht fürs Rating.")}</p>
                   <div className="pending-list">
                     {pendingForMe.map((m) => {
                       const dbl = isDoubles(m);
@@ -1524,8 +1525,7 @@ export default function App() {
                               <button className="chip-btn" onClick={() => { dismissPending(); openProtokoll(m); }}
                                 aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}><FileText size={15} /></button>
                             )}
-                            <button className="chip-btn ok" onClick={() => confirmMatch(m.id, true)}><Check size={15} /> {t("Passt")}</button>
-                            <button className="chip-btn no" onClick={() => confirmMatch(m.id, false)}><X size={15} /> {t("Falsch")}</button>
+                            <ConfirmRoundButtons onYes={() => confirmMatch(m.id, true)} onNo={() => confirmMatch(m.id, false)} />
                           </div>
                         </div>
                       );
