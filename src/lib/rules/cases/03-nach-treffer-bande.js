@@ -14,7 +14,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die Weiße spielt die 4 an.", focus: ["4"] },
       { text: "Der Stoß geht gerade auf die 4.", aim: [W, P4] },
-      { text: "Beide Kugeln bleiben mitten auf dem Tisch liegen.", moves: [a.w, a.obj], mark: { at: [140, 60], kind: "foul", afterEnd: "4" } },
+      { text: "Beide Kugeln bleiben mitten auf dem Tisch liegen.", expectRail: false, moves: [a.w, a.obj], mark: { at: [140, 60], kind: "foul", afterEnd: "4" } },
     ],
   },
   {
@@ -24,7 +24,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die Weiße spielt die 4 an.", focus: ["4"] },
       { text: "Der Stoß geht gerade auf die 4.", aim: [W, P4] },
-      { text: "Die 4 läuft bis zur Bande.", moves: [b.w, b.obj], mark: { at: [204.5, 60], kind: "ok", afterEnd: "4" } },
+      { text: "Die 4 läuft bis zur Bande.", expectRail: true, moves: [b.w, b.obj], mark: { at: [204.5, 60], kind: "ok", afterEnd: "4" } },
     ],
   },
 ];

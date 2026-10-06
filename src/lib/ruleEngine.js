@@ -14,6 +14,8 @@
      focus   Kugel-ids, die einen Ring bekommen (z.B. "die niedrigste Kugel")
      aim     [[x,y], ...] gestrichelte Ziellinie (mehrere Punkte = Knick an der Bande)
      moves   [{id, to, via?, out?, delay?, after?, hitLeg?, place?}]
+               from    Startpunkt, der von der Lage des vorigen Schritts abweicht
+                       (Ball in Hand: die Weisse wird dort hingelegt und rollt dann)
                place   Kugel wird hingelegt statt gerollt (Neuaufbau des Racks, Ball in
                        Hand): sie blendet am Ziel ein. Ein Ball kann in `balls` mit
                        hidden: true beginnen (liegt noch nicht auf dem Tisch).
@@ -107,7 +109,7 @@ export function timeline(step, fromPos) {
       // Platzieren statt Rollen (Neuaufbau, Ball in Hand): die Kugel erscheint am Ziel (Einblenden im Player).
       return (info[m.id] = { path: [m.to, m.to], legs: [0], vs: [0], ve: [0], times: [350], hitLeg: 0, dur: 350, place: true });
     }
-    const path = [fromPos[m.id], ...(m.via || []), m.to];
+    const path = [m.from || fromPos[m.id], ...(m.via || []), m.to];
     const legs = path.slice(1).map((p, i) => dist(path[i], p));
     const last = legs.length - 1;
     // Tempo im Treffmoment, wenn diese Kugel eine andere anstoesst. Der Treffer
@@ -140,12 +142,50 @@ export function timeline(step, fromPos) {
   return tl;
 }
 
+/* Uhr: ein Schritt kann `clock: {to: Sekunden}` tragen. Der Player zaehlt dann
+   mit einer Uhr bis zu diesem Wert hoch, je Sekunde CLOCK_MS (kein Echtzeit-Warten:
+   fuenf Sekunden dauern in der Animation gut zwei). Der Wert gilt bis zum naechsten
+   Schritt mit eigener Uhr weiter. Bewegungen, die auf die Uhr warten sollen
+   (Kugel faellt nach 5 s), bekommen `delay` = Sekunden * CLOCK_MS. */
+export const CLOCK_MS = 450;
+export const clockAt = (scene, idx) => {
+  let v = 0;
+  for (let i = 0; i <= idx; i++) if (scene.steps[i].clock) v = scene.steps[i].clock.to;
+  return v;
+};
+export const hasClock = (scene) => scene.steps.some((s) => s.clock);
+
 export const stepMs = (scene, idx) => {
   if (idx === 0) return 0;
   const tl = timeline(scene.steps[idx], stateAt(scene, idx - 1).pos);
-  return Math.max(0, ...Object.values(tl).map((m) => m.delay + m.dur));
+  const mv = Math.max(0, ...Object.values(tl).map((m) => m.delay + m.dur));
+  const clk = Math.max(0, clockAt(scene, idx) - clockAt(scene, idx - 1)) * CLOCK_MS;
+  return Math.max(mv, clk);
 };
 
+/* Wohin mit der Sprechblase (step.say)? Sie darf keine Kugel verdecken: von vier
+   Ecken im Tuch wird die mit dem groessten Abstand zu allen sichtbaren Kugeln
+   gewaehlt (Stand vor und nach dem Schritt). clear = Abstand zur naechsten Kugel
+   (Kugelrand), der Check verlangt mindestens 2. */
+export function bubbleSpot(scene, idx, w, h = 11) {
+  const balls = [];
+  for (const i of [Math.max(0, idx - 1), idx]) {
+    const st = stateAt(scene, i);
+    for (const b of scene.balls) if (!st.out[b.id]) balls.push(st.pos[b.id]);
+  }
+  const cands = [[207 - w, 13], [13, 13], [207 - w, 107 - h], [13, 107 - h]];
+  let best = cands[0], bestD = -Infinity;
+  for (const [x, y] of cands) {
+    let d = Infinity;
+    for (const p of balls) {
+      const dx = Math.max(x - p[0], 0, p[0] - (x + w)), dy = Math.max(y - p[1], 0, p[1] - (y + h));
+      d = Math.min(d, Math.hypot(dx, dy) - BALL_R);
+    }
+    if (d > bestD + 0.01) { bestD = d; best = [x, y]; }
+  }
+  return { x: best[0], y: best[1], clear: bestD };
+}
+export const bubbleWidth = (text) => String(text).length * 4.4 + 8;
 
 /* ---- Zeichenhilfen fuer die Faelle --------------------------------------- */
 const hypot = Math.hypot;
@@ -180,7 +220,7 @@ export const cue = (x, y) => ball(0, x, y);
      objTo   Ziel der Objektkugel (legt die Mittelpunktslinie fest)
      opts    {out: Objektkugel faellt, delay: ms Verzoegerung der Weissen,
               striker: id der stossenden Kugel (Standard "w"; fuer Ketten wie 3 trifft 1),
-              strikerAfter: deren `after`, bank: Bandenpunkt VOR dem Treffer (siehe bankPoint)}
+              strikerAfter: deren `after`, hand: true = Ball in Hand (Weisse wird bei `from` hingelegt), bank: Bandenpunkt VOR dem Treffer (siehe bankPoint)}
    Liefert {contact, w, obj, rail}: die beiden moves, den Treffpunkt und, falls
    die Weisse nach dem Treffer an eine Bande laeuft, deren Punkt. */
 const LO = 15.5, HI_X = 204.5, HI_Y = 104.5;
@@ -199,6 +239,7 @@ export function cut(from, target, objTo, opts = {}) {
   const w = { id: opts.striker || "w", to: contact };
   if (opts.delay) w.delay = opts.delay;
   if (opts.strikerAfter) w.after = opts.strikerAfter;
+  if (opts.hand) w.from = from; // Ball in Hand: die Weisse wird an `from` gelegt
   const wId = w.id;
   let rail = null;
   if (len >= 3) {
@@ -248,7 +289,7 @@ export function contactErrors(step, fromPos) {
     const obj = (step.moves || []).find((o) => o.after === m.id);
     if (!obj || m.stop) continue;
     const hitLeg = m.hitLeg ?? 0;
-    const path = [fromPos[m.id], ...(m.via || []), m.to];
+    const path = [m.from || fromPos[m.id], ...(m.via || []), m.to];
     const a = path[hitLeg], c = path[hitLeg + 1];
     const nrm = unit(c, fromPos[obj.id]);
     const od = unit(fromPos[obj.id], (obj.via && obj.via[0]) || obj.to);
@@ -291,4 +332,26 @@ export function cutAngle(from, target, deg, len, opts = {}) {
   const dir = [d[0] * Math.cos(a) - d[1] * Math.sin(a), d[0] * Math.sin(a) + d[1] * Math.cos(a)];
   const objTo = [r2(target.at[0] + dir[0] * len), r2(target.at[1] + dir[1] * len)];
   return cut(from, target, objTo, opts);
+}
+
+/* Beruehrt nach dem Erstkontakt irgendeine Kugel (Weisse oder Objektkugel) eine Bande
+   oder faellt in eine Tasche? Genau das fragt die Regel 3.3 - und genau das muss die
+   Szene wirklich zeigen, wenn ihr Text "keine Bande" oder "laeuft an die Bande" sagt
+   (step.expectRail). Gezaehlt wird nur ab dem Treffer: die Weisse vor dem Treffer
+   (Stoss ueber die Bande) zaehlt nicht, der Startpunkt einer an der Bande liegenden
+   Kugel auch nicht. Liefert null, wenn der Schritt keinen Treffer enthaelt. */
+export function railAfterContact(step, fromPos) {
+  const moves = step.moves || [];
+  if (!moves.some((m) => m.after)) return null;
+  const onWall = (p) => p[0] <= 16.1 || p[0] >= 203.9 || p[1] <= 16.1 || p[1] >= 103.9;
+  const tl = timeline(step, fromPos);
+  for (const m of moves) {
+    const x = tl[m.id];
+    if (!x) continue;
+    if (x.out && m.id !== "w") return true; // eine versenkte Weisse (Scratch) erfuellt 3.3 nicht
+    const striker = moves.some((o) => o.after === m.id);
+    const first = striker ? x.hitLeg + 1 : 1; // erster Wegpunkt nach dem Treffer (Weisse) bzw. nach dem Start (Objektkugel)
+    for (let i = first; i < x.path.length; i++) if (onWall(x.path[i])) return true;
+  }
+  return false;
 }

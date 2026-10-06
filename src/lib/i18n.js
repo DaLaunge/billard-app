@@ -1409,6 +1409,8 @@ const TRANSLATIONS = {
     "Quelle:": "Source:",
     "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026": "ÖPBV/WPA rules of play, effective 12 Feb 2026",
     "Regel": "Rule",
+    "Zeit: {s} Sekunden": "Time: {s} seconds",
+    "Grenze erreicht": "Limit reached",
   },
 };
 export function setLangGlobal(l) {

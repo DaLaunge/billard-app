@@ -19,7 +19,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die Weiße spielt die 5 an.", focus: ["5"] },
       { text: "Die Weiße wird dünn auf die 5 gespielt.", aim: [WA, a.contact] },
-      { text: "Erst der Treffer, danach läuft die Weiße an die Bande – regelgerecht.", moves: [a.w, a.obj], mark: { at: a.rail || a.w.to, kind: "ok", afterEnd: "w", delay: -300 } },
+      { text: "Erst der Treffer, danach läuft die Weiße an die Bande – regelgerecht.", expectRail: true, moves: [a.w, a.obj], mark: { at: a.rail || a.w.to, kind: "ok", afterEnd: "w", delay: -300 } },
     ],
   },
   {
@@ -29,7 +29,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die Weiße spielt die 5 an.", focus: ["5"] },
       { text: "Die Weiße wird erst über die untere Bande auf die 5 gespielt.", aim: [WB, bankB, b.contact] },
-      { text: "Die Weiße berührt die Bande vor dem Treffer. Danach erreicht keine Kugel eine Bande.", moves: [b.w, b.obj], mark: { at: b.contact, kind: "foul", after: "w" } },
+      { text: "Die Weiße berührt die Bande vor dem Treffer. Danach erreicht keine Kugel eine Bande.", expectRail: false, moves: [b.w, b.obj], mark: { at: b.contact, kind: "foul", after: "w" } },
     ],
   },
 ];

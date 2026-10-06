@@ -3,7 +3,7 @@ import { D8 } from "../meta.js";
 
 const W = [60, 60], B8 = [135, 36], B3 = [130, 72], B12 = [165, 95];
 const balls = () => [cue(...W), ball(8, ...B8), ball(3, ...B3), ball(12, ...B12), ball(10, 185, 62)];
-const a = cut(W, { id: "8", at: B8 }, [172, 24]);
+const a = cut(W, { id: "8", at: B8 }, [172, 15.5]);
 const b = cut(W, { id: "3", at: B3 }, [152, 104.5]);
 
 const variants = [
@@ -14,7 +14,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Der Tisch ist offen, noch hat niemand eine Gruppe.", focus: ["8"] },
       { text: "Die Weiße wird auf die 8 gespielt.", aim: [W, B8] },
-      { text: "Die Weiße berührt zuerst die 8 – bei offenem Tisch ein Foul.", moves: [a.w, a.obj], mark: { at: B8, kind: "foul", after: "w" } },
+      { text: "Die Weiße berührt zuerst die 8 – bei offenem Tisch ein Foul.", wrongFirst: true, expectRail: true, moves: [a.w, a.obj], mark: { at: B8, kind: "foul", after: "w" } },
     ],
   },
   {
@@ -24,7 +24,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Der Tisch ist offen, noch hat niemand eine Gruppe.", focus: ["8"] },
       { text: "Die Weiße wird auf die 3 gespielt.", aim: [W, B3] },
-      { text: "Die Weiße berührt die 3, die danach an die Bande läuft – regelgerecht.", moves: [b.w, b.obj], mark: { at: B3, kind: "ok", after: "w" } },
+      { text: "Die Weiße berührt die 3, die danach an die Bande läuft – regelgerecht.", expectRail: true, moves: [b.w, b.obj], mark: { at: B3, kind: "ok", after: "w" } },
     ],
   },
 ];

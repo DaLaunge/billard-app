@@ -13,13 +13,50 @@ import { readdirSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { stateAt, timeline, pathFrames, contactErrors, posAt } from "../src/lib/ruleEngine.js";
+import { stateAt, timeline, pathFrames, contactErrors, posAt, bubbleSpot, bubbleWidth, railAfterContact } from "../src/lib/ruleEngine.js";
 import { ALL_DISCS, TOPICS } from "../src/lib/rules/meta.js";
 
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), "../src/lib/rules/cases");
 const errors = [];
 const err = (id, msg) => errors.push(`${id}: ${msg}`);
 const MIN_DIST = 10.5;
+const D89 = ["9 Ball", "10 Ball"];
+
+/* Pflicht in JEDEM Stoss, den eine Szene zeigt (Regel 3.2 und 3.3):
+   1. Die Weisse trifft zuerst eine ZULAESSIGE Kugel: bei 9/10 Ball die niedrigste auf dem
+      Tisch, bei 8 Ball eine der eigenen Gruppe (Etikett "Du spielst Volle": 1-7, "Offener
+      Tisch": alles ausser der 8), beim 14/1 jede. Ausnahme nur, wenn genau das gezeigt wird:
+      step.wrongFirst: true.
+   2. Danach beruehrt mindestens eine Kugel die Bande oder faellt (eine versenkte Weisse
+      zaehlt nicht). Ausnahme nur, wenn der Schritt ausdruecklich "keine Bande" zeigt
+      (expectRail: false UND "Bande" im Text oder Grund) oder beim Push Out
+      (waiveRail: "pushout"). Eine ehrliche Aussage wird zusaetzlich gegen die Wege geprueft.
+   Damit zeigt jede Szene nur den EINEN Fehler, um den es geht. */
+function shotRules(v, st, s, i, id) {
+  const prev = stateAt(v, i - 1);
+  const striker = (s.moves || []).find((m) => m.id === "w" && (s.moves || []).some((o) => o.after === "w"));
+  if (!striker) return; // kein Treffer in diesem Schritt (z. B. Kugel rollt aus, Platzieren)
+  const got = railAfterContact(s, prev.pos);
+  if (s.expectRail !== undefined && got !== s.expectRail) err(id, `${v.label} Schritt ${i}: erwartet ${s.expectRail ? "Bande/Tasche nach dem Treffer" : "KEINE Bande/Tasche nach dem Treffer"}, die Szene zeigt ${got ? "eine" : "keine"}`);
+  const mentionsRail = /bande/i.test(`${s.text} ${v.reason}`);
+  if (!got && !(s.expectRail === false && (s.waiveRail === "pushout" || mentionsRail))) {
+    err(id, `${v.label} Schritt ${i}: nach dem Treffer beruehrt keine Kugel die Bande (Regel 3.3) - nur erlaubt mit expectRail: false und "Bande" im Text oder Grund, beim Push Out mit waiveRail`);
+  }
+  if (striker.stop) return; // Doppeltreffer/Break: kein einzelner Erstkontakt
+  const obj = (s.moves || []).find((o) => o.after === "w");
+  const num = Number(obj.id);
+  const visible = Object.keys(prev.pos).filter((b) => b !== "w" && !prev.out[b]).map(Number);
+  let legal = true, why = "";
+  if ((st.discs || []).length && st.discs.every((d) => D89.includes(d))) {
+    const low = Math.min(...visible);
+    legal = num === low; why = `bei 9/10 Ball muss die niedrigste Kugel (${low}) zuerst getroffen werden`;
+  } else if ((st.discs || []).length === 1 && st.discs[0] === "8 Ball") {
+    if (/Volle/.test(st.tag || "")) { legal = num >= 1 && num <= 7; why = "beim 8 Ball muss eine eigene Kugel (Volle 1-7) zuerst getroffen werden"; }
+    else if (/Offener Tisch/.test(st.tag || "")) { legal = num !== 8; why = "bei offenem Tisch darf die 8 nicht zuerst getroffen werden"; }
+  }
+  if (!legal && !s.wrongFirst) err(id, `${v.label} Schritt ${i}: erster Kontakt mit ${obj.id} ist nicht zulaessig (${why}); wrongFirst: true setzen, wenn genau das gezeigt wird`);
+  if (legal && s.wrongFirst) err(id, `${v.label} Schritt ${i}: wrongFirst gesetzt, der erste Kontakt (${obj.id}) ist aber zulaessig`);
+}
 // Texte, die bewusst nicht uebersetzt werden muessen (gleich in beiden Sprachen oder Zahlen).
 const SKIP = new Set(["Break", "No Rail", "Pushout"]);
 // Allgemeine Texte (Fall A/B, Scratch, Bande ...) stehen schon in src/lib/i18n.js.
@@ -45,7 +82,7 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
     (st.discs || []).forEach((d) => { if (!ALL_DISCS.includes(d)) err(id, `Satz: unbekannte Disziplin ${d}`); });
     if (st.tag) texts.add(st.tag);
   }
-  for (const v of [...new Set(sets.flatMap((st) => st.variants || []))]) {
+  for (const { v, st } of sets.flatMap((st) => (st.variants || []).map((v) => ({ v, st })))) {
     texts.add(v.label); texts.add(v.reason); if (v.verdictLabel) texts.add(v.verdictLabel);
     if (!["foul", "ok"].includes(v.verdict)) err(id, `${v.label}: verdict`);
     const ids = v.balls.map((b) => b.id);
@@ -63,13 +100,20 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
     };
     v.steps.forEach((s, i) => {
       texts.add(s.text); if (s.say) texts.add(s.say);
-      const st = stateAt(v, i);
-      check(st.pos, st.out, `Schritt ${i}`);
+      // Die Sprechblase darf keine Kugel verdecken (auch nicht mit der laengeren englischen Beschriftung).
+      if (s.say) {
+        const w = bubbleWidth(en[s.say] && en[s.say].length > s.say.length ? en[s.say] : s.say);
+        const sp = bubbleSpot(v, i, w);
+        if (sp.clear < 2) err(id, `${v.label} Schritt ${i}: Sprechblase "${s.say}" verdeckt eine Kugel (Abstand ${sp.clear.toFixed(1)})`);
+      }
+      const stNow = stateAt(v, i);
+      check(stNow.pos, stNow.out, `Schritt ${i}`);
       const mv = s.moves || [];
       for (const mo of mv) {
         if (!ids.includes(mo.id)) err(id, `${v.label} Schritt ${i}: Kugel ${mo.id} unbekannt`);
         if (mo.after && !mv.some((o) => o.id === mo.after)) err(id, `${v.label} Schritt ${i}: after ${mo.after} nicht im Schritt`);
       }
+      if (i > 0 && mv.length) shotRules(v, st, s, i, id);
       if (i > 0 && mv.length) {
         for (const e of contactErrors(s, stateAt(v, i - 1).pos)) {
           err(id, `${v.label} Schritt ${i}: ` + (e.kind === "objekt"

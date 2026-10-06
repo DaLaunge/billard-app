@@ -7,7 +7,7 @@ import { D8, D141, tagSets } from "../meta.js";
    Weisse ueberquert die Kopflinie - ok. */
 const W = [32, 62];
 const A7 = [50, 38], B7 = [118, 52];
-const a = cut(W, { id: "7", at: A7 }, [58, 20]);
+const a = cut(W, { id: "7", at: A7 }, [56, 15.5]);
 const b = cut(W, { id: "7", at: B7 }, [204.5, 30]);
 const others = () => [ball(12, 140, 76), ball(3, 100, 92)];
 
@@ -20,7 +20,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die Weiße liegt im Kopffeld, die 7 ebenfalls.", focus: ["7"] },
       { text: "Die Weiße wird auf die 7 gespielt.", aim: [W, A7] },
-      { text: "Die Weiße berührt die 7, ohne vorher das Kopffeld zu verlassen – Foul.", moves: [a.w, a.obj], mark: { at: A7, kind: "foul", after: "w" } },
+      { text: "Die Weiße berührt die 7, ohne vorher das Kopffeld zu verlassen – Foul.", expectRail: true, moves: [a.w, a.obj], mark: { at: A7, kind: "foul", after: "w" } },
     ],
   },
   {
@@ -31,7 +31,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die Weiße liegt im Kopffeld, die 7 außerhalb.", focus: ["7"] },
       { text: "Die Weiße wird auf die 7 gespielt.", aim: [W, B7] },
-      { text: "Die Weiße überquert die Kopflinie und trifft die 7, die danach an die Bande läuft – regelgerecht.", moves: [b.w, b.obj], mark: { at: B7, kind: "ok", after: "w" } },
+      { text: "Die Weiße überquert die Kopflinie und trifft die 7, die danach an die Bande läuft – regelgerecht.", expectRail: true, moves: [b.w, b.obj], mark: { at: B7, kind: "ok", after: "w" } },
     ],
   },
 ];

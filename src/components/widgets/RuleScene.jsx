@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useId } from "react";
 import { ChevronLeft, ChevronRight, Play, Pause, RotateCcw, Check, X } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { POOL_COLORS } from "../../lib/pool";
-import { BALL_R, POCKETS, stateAt, timeline, stepMs, pathFrames } from "../../lib/ruleEngine";
+import { BALL_R, POCKETS, stateAt, timeline, stepMs, pathFrames, CLOCK_MS, clockAt, hasClock, bubbleSpot, bubbleWidth } from "../../lib/ruleEngine";
 
 /* Spielt eine Regelszene (lib/ruleScenes.js) als SVG ab - speicherfreundlich:
    keine Videos, keine Bibliothek, keine Animationsschleife.
@@ -32,6 +32,32 @@ function BallShape({ n, grad }) {
   );
 }
 
+/* Uhr mit Sekundenzaehler: Zifferblatt mit Fortschrittsbogen und Zeiger (eine
+   Umdrehung = Grenze), grosse Zahl und je Sekunde ein Punkt. Steht ausserhalb des
+   Tisches, verdeckt also nie eine Kugel. */
+function Clock({ s, limit = 5 }) {
+  const p = Math.min(1, s / limit), over = s >= limit;
+  return (
+    <div className={"rs-clock" + (over ? " over" : "")} role="timer" aria-label={t("Zeit: {s} Sekunden", { s })}>
+      <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
+        <circle className="rs-clock-face" cx="18" cy="18" r="15" />
+        <circle className="rs-clock-arc" cx="18" cy="18" r="15" pathLength="100" strokeDasharray={`${p * 100} 100`} transform="rotate(-90 18 18)" />
+        {Array.from({ length: limit }, (_, i) => {
+          const a = (i / limit) * Math.PI * 2;
+          return <line key={i} className="rs-clock-tick" x1={18 + Math.sin(a) * 12.5} y1={18 - Math.cos(a) * 12.5} x2={18 + Math.sin(a) * 14.5} y2={18 - Math.cos(a) * 14.5} />;
+        })}
+        <line className="rs-clock-hand" x1="18" y1="18" x2="18" y2="8.5" style={{ transform: `rotate(${p * 360}deg)`, transformOrigin: "18px 18px" }} />
+        <circle className="rs-clock-pin" cx="18" cy="18" r="1.7" />
+      </svg>
+      <span className="rs-clock-num">{s}<small> s</small></span>
+      <span className="rs-clock-dots" aria-hidden="true">
+        {Array.from({ length: limit }, (_, i) => <i key={i} className={i < s ? "on" : ""} />)}
+      </span>
+      {over && <span className="rs-clock-flag">{t("Grenze erreicht")}</span>}
+    </div>
+  );
+}
+
 export default function RuleScene({ scene }) {
   const uid = useId().replace(/:/g, "");
   const last = scene.steps.length - 1;
@@ -40,6 +66,22 @@ export default function RuleScene({ scene }) {
   const rootRef = useRef(null);
   const els = useRef({});
   const prevIdx = useRef(0);
+
+  // Uhr: zaehlt beim Schrittwechsel sichtbar bis zum Zielwert hoch (rueckwaerts/ohne Animation sofort).
+  const withClock = hasClock(scene);
+  const clockTarget = clockAt(scene, idx);
+  const [clockShown, setClockShown] = useState(clockTarget);
+  const clockRef = useRef(clockTarget);
+  useEffect(() => {
+    if (!withClock) return;
+    if (clockTarget <= clockRef.current || reducedMotion()) { clockRef.current = clockTarget; setClockShown(clockTarget); return; }
+    const id = setInterval(() => {
+      clockRef.current += 1;
+      setClockShown(clockRef.current);
+      if (clockRef.current >= clockTarget) clearInterval(id);
+    }, CLOCK_MS);
+    return () => clearInterval(id);
+  }, [clockTarget, withClock]);
 
   const { pos, out } = stateAt(scene, idx);
   const step = scene.steps[idx];
@@ -114,6 +156,7 @@ export default function RuleScene({ scene }) {
         <span className="rs-label">{t(scene.label)}</span>
         {scene.tag && <span className="rs-tagchip">{t(scene.tag)}</span>}
       </div>
+      {withClock && <Clock s={clockShown} limit={scene.clockLimit || 5} />}
       <svg className="rs-table" viewBox="0 0 220 120" role="button" tabIndex={0} aria-label={t(step.text)}
         onClick={togglePlay} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlay(); } }}>
         <defs>
@@ -149,21 +192,28 @@ export default function RuleScene({ scene }) {
           </g>
         ))}
 
-        {step.say && (
-          <g key={"say" + idx} className="rs-say">
-            <rect x={207 - (String(t(step.say)).length * 4.4 + 8)} y="13" rx="3" height="11" width={String(t(step.say)).length * 4.4 + 8} />
-            <text x={211 - (String(t(step.say)).length * 4.4 + 8)} y="18.6" dominantBaseline="central">{t(step.say)}</text>
-          </g>
-        )}
+        {step.say && (() => {
+          const w = bubbleWidth(t(step.say));
+          const spot = bubbleSpot(scene, idx, w);
+          return (
+            <g key={"say" + idx} className="rs-say">
+              <rect x={spot.x} y={spot.y} rx="3" height="11" width={w} />
+              <text x={spot.x + 4} y={spot.y + 5.6} dominantBaseline="central">{t(step.say)}</text>
+            </g>
+          );
+        })()}
 
         {step.mark && (
           <g key={"mark" + idx} className={"rs-mark " + step.mark.kind}
             style={{ transform: tr(step.mark.at), animationDelay: `${markDelay}ms` }}>
             <g className="rs-mark-in" style={{ animationDelay: `${markDelay}ms` }}>
-              <circle r="9" />
-              {step.mark.kind === "foul"
-                ? <path d="M-3.5 -3.5 L3.5 3.5 M3.5 -3.5 L-3.5 3.5" />
-                : <path d="M-4 0.4 L-1.2 3.2 L4 -3" />}
+              <circle className="rs-ring" r="8.6" />
+              <g transform="translate(7.6 -7.6)">
+                <circle className="rs-badge-bg" r="4.7" />
+                {step.mark.kind === "foul"
+                  ? <path d="M-2 -2 L2 2 M2 -2 L-2 2" />
+                  : <path d="M-2.3 0.2 L-0.6 1.9 L2.3 -1.7" />}
+              </g>
             </g>
           </g>
         )}

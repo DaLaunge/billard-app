@@ -8,7 +8,7 @@ const W = [60, 60];
 // 9 / 10 Ball
 const P1 = [130, 45], P3 = [125, 80];
 const nine = (() => {
-  const a = cut(W, { id: "3", at: P3 }, [160, 98]);
+  const a = cut(W, { id: "3", at: P3 }, [150, 104.5]);
   const b = cut(W, { id: "1", at: P1 }, [204.5, 29]);
   const balls = () => [cue(...W), ball(1, ...P1), ball(3, ...P3), ball(2, 165, 62), ball(9, 188, 100)];
   return [
@@ -19,7 +19,7 @@ const nine = (() => {
       steps: [
         { text: "Ausgangslage: Die 1 ist die niedrigste Kugel auf dem Tisch.", focus: ["1"] },
         { text: "Die Weiße wird auf die 3 gespielt.", aim: [W, P3] },
-        { text: "Die Weiße berührt zuerst die 3 – nicht die 1.", moves: [a.w, a.obj], mark: { at: P3, kind: "foul", after: "w" } },
+        { text: "Die Weiße berührt zuerst die 3 – nicht die 1.", wrongFirst: true, expectRail: true, moves: [a.w, a.obj], mark: { at: P3, kind: "foul", after: "w" } },
       ],
     },
     {
@@ -29,16 +29,16 @@ const nine = (() => {
       steps: [
         { text: "Ausgangslage: Die 1 ist die niedrigste Kugel auf dem Tisch.", focus: ["1"] },
         { text: "Die Weiße wird auf die 1 gespielt.", aim: [W, P1] },
-        { text: "Die Weiße berührt zuerst die 1, diese läuft danach an die Bande.", moves: [b.w, b.obj], mark: { at: P1, kind: "ok", after: "w" } },
+        { text: "Die Weiße berührt zuerst die 1, diese läuft danach an die Bande.", expectRail: true, moves: [b.w, b.obj], mark: { at: P1, kind: "ok", after: "w" } },
       ],
     },
   ];
 })();
 
 // 8 Ball: eigene Volle 5 und 2, Gegner Halbe 11 und 13, dazu die 8
-const M5 = [130, 48], O11 = [125, 78];
+const M5 = [148, 38], O11 = [125, 78];
 const eight = (() => {
-  const a = cut(W, { id: "11", at: O11 }, [157, 96]);
+  const a = cut(W, { id: "11", at: O11 }, [150, 104.5]);
   const b = cut(W, { id: "5", at: M5 }, [204.5, 31]);
   const balls = () => [cue(...W), ball(5, ...M5), ball(2, 180, 84), ball(11, ...O11), ball(13, 168, 62), ball(8, 190, 102)];
   return [
@@ -49,7 +49,7 @@ const eight = (() => {
       steps: [
         { text: "Ausgangslage: Du spielst Volle (1–7), der Gegner Halbe (9–15).", focus: ["5", "2"] },
         { text: "Die Weiße wird auf die 11 gespielt – eine Kugel des Gegners.", aim: [W, O11] },
-        { text: "Die Weiße berührt zuerst die 11 – Foul.", moves: [a.w, a.obj], mark: { at: O11, kind: "foul", after: "w" } },
+        { text: "Die Weiße berührt zuerst die 11 – Foul.", wrongFirst: true, expectRail: true, moves: [a.w, a.obj], mark: { at: O11, kind: "foul", after: "w" } },
       ],
     },
     {
@@ -59,7 +59,7 @@ const eight = (() => {
       steps: [
         { text: "Ausgangslage: Du spielst Volle (1–7), der Gegner Halbe (9–15).", focus: ["5", "2"] },
         { text: "Die Weiße wird auf die 5 gespielt – eine eigene Kugel.", aim: [W, M5] },
-        { text: "Die Weiße berührt zuerst die 5, diese läuft an die Bande – regelgerecht.", moves: [b.w, b.obj], mark: { at: M5, kind: "ok", after: "w" } },
+        { text: "Die Weiße berührt zuerst die 5, diese läuft an die Bande – regelgerecht.", expectRail: true, moves: [b.w, b.obj], mark: { at: M5, kind: "ok", after: "w" } },
       ],
     },
   ];

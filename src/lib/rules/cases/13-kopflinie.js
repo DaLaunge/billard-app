@@ -1,25 +1,38 @@
 import { cue } from "../../ruleEngine.js";
 import { D8, ALL_DISCS } from "../meta.js";
-import { rack, R15, R9, R10, HIT } from "../racks.js";
+import { rack, brake, R15, R9, R10, HIT } from "../racks.js";
 
 /* Anstoss: die Weisse liegt mit Ball in Hand im Kopffeld. Fall A: genau AUF der
-   Kopflinie (Foul), Fall B: dahinter (ok). Das Rack bleibt stehen, die Weisse
-   rollt nur zur Spitze - es geht um den Ausgangsort. */
-const build = (rows, startText) => {
+   Kopflinie (Foul), Fall B: dahinter (ok). Der Anstoss selbst ist in beiden Faellen
+   ein regelgerechter Break (Weisse trifft die Spitze, vier Kugeln bzw. beim 14/1 die
+   Weisse und zwei Kugeln laufen an die Bande) - gezeigt wird nur EIN Fehler: der
+   Ausgangsort der Weissen. */
+const onWall = (m) => m.id !== "w" && (m.to[0] >= 204.4 || m.to[0] <= 15.6 || m.to[1] <= 15.6 || m.to[1] >= 104.4);
+
+const build = (rows, rails, startText, fourteenOne = false) => {
   const balls = rack(rows).map((b) => ({ id: String(b.n), n: b.n, x: b.p[0], y: b.p[1] }));
-  const mk = (label, verdict, wx, reason, markKind, text) => ({
+  const moves = brake(rows, rack(rows), rails);
+  if (moves.filter(onWall).length !== rails.length) throw new Error("Kopflinie: Bandenzahl des Anstosses stimmt nicht");
+  // 14/1: die Weisse laeuft zusaetzlich zurueck zur Kopfbande (Weisse + zwei Kugeln je an eine Bande)
+  if (fourteenOne) moves[0] = { id: "w", via: [HIT], to: [15.5, 60], stop: true };
+  const mk = (label, verdict, wx, reason, text) => ({
     label, verdict, reason,
     table: { headLine: true },
     balls: [cue(wx, 60), ...balls],
     steps: [
       { text: startText },
       { text, aim: [[wx, 60], HIT] },
-      { text: verdict === "foul" ? "Der Stoß beginnt von der Kopflinie aus – Foul." : "Der Stoß beginnt hinter der Kopflinie – regelgerecht.", moves: [{ id: "w", to: HIT }], mark: { at: [wx, 60], kind: markKind, delay: 0 } },
+      {
+        text: verdict === "foul" ? "Der Stoß beginnt von der Kopflinie aus – Foul, obwohl der Anstoß sonst regelgerecht ist." : "Der Stoß beginnt hinter der Kopflinie – regelgerecht.",
+        expectRail: true,
+        moves,
+        mark: { at: [wx, 60], kind: verdict === "foul" ? "foul" : "ok", delay: 0 },
+      },
     ],
   });
   return [
-    mk("Fall A", "foul", 60, "Die Weiße lag genau auf der Kopflinie.", "foul", "Die Weiße liegt genau auf der Kopflinie."),
-    mk("Fall B", "ok", 42, "Die Weiße lag im Kopffeld hinter der Kopflinie.", "ok", "Die Weiße liegt hinter der Kopflinie."),
+    mk("Fall A", "foul", 60, "Die Weiße lag genau auf der Kopflinie.", "Die Weiße liegt genau auf der Kopflinie."),
+    mk("Fall B", "ok", 42, "Die Weiße lag im Kopffeld hinter der Kopflinie.", "Die Weiße liegt hinter der Kopflinie."),
   ];
 };
 
@@ -35,10 +48,10 @@ export default {
   title: "Anstoß: Weiße auf der Kopflinie",
   rule: "Muss die Weiße mit Ball in Hand aus dem Kopffeld gespielt werden (zum Beispiel beim Anstoß), ist es ein Foul, sie genau auf der Kopflinie oder davor zu spielen. Im Zweifel kann der Spieler vor dem Stoß den Schiedsrichter bitten, die Lage zu prüfen. Das Kopffeld ist der Bereich zwischen Kopfbande und Kopflinie, die Linie selbst gehört nicht dazu.",
   sets: [
-    { discs: D8, tag: "8-Ball-Dreieck", variants: build(R15, start) },
-    { discs: ["9 Ball"], tag: "9-Ball-Raute", variants: build(R9, start) },
-    { discs: ["10 Ball"], tag: "10-Ball-Dreieck", variants: build(R10, start) },
-    { discs: ["14/1 Endlos"], tag: "14/1 · Eröffnungsstoß", variants: build(R15, start) },
+    { discs: D8, tag: "8-Ball-Dreieck", variants: build(R15, [11, 6, 15, 12], start) },
+    { discs: ["9 Ball"], tag: "9-Ball-Raute", variants: build(R9, [4, 5, 7, 8], start) },
+    { discs: ["10 Ball"], tag: "10-Ball-Dreieck", variants: build(R10, [6, 9, 8, 2], start) },
+    { discs: ["14/1 Endlos"], tag: "14/1 · Eröffnungsstoß", variants: build(R15, [11, 6], start, true) },
   ],
 };
 
@@ -61,6 +74,6 @@ export const en = {
   "Ausgangslage: Anstoß. Die Weiße muss im Kopffeld liegen, also hinter der Kopflinie.": "Starting position: break. The cue ball must lie in the kitchen, i.e. behind the head string.",
   "Die Weiße liegt genau auf der Kopflinie.": "The cue ball lies exactly on the head string.",
   "Die Weiße liegt hinter der Kopflinie.": "The cue ball lies behind the head string.",
-  "Der Stoß beginnt von der Kopflinie aus – Foul.": "The shot starts from the head string – foul.",
+  "Der Stoß beginnt von der Kopflinie aus – Foul, obwohl der Anstoß sonst regelgerecht ist.": "The shot starts from the head string – foul, although the break is otherwise legal.",
   "Der Stoß beginnt hinter der Kopflinie – regelgerecht.": "The shot starts behind the head string – legal.",
 };

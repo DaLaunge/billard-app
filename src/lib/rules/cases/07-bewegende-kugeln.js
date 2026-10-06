@@ -3,7 +3,7 @@ import { D89, D8, D141, ALL_DISCS, tagSets } from "../meta.js";
 
 const W = [60, 78], P3 = [125, 80];
 const roll7 = { id: "7", to: [190, 40] };
-const a = cut(W, { id: "3", at: P3 }, [160, 100], { delay: 220 });
+const a = cut(W, { id: "3", at: P3 }, [152, 104.5], { delay: 220 });
 const b = cut(W, { id: "3", at: P3 }, [143, 104.5]);
 const balls = () => [cue(...W), ball(3, ...P3), ball(7, 150, 30), ball(9, 185, 95)];
 
@@ -14,7 +14,7 @@ const variants = [
     balls: balls(),
     steps: [
       { text: "Ausgangslage: Die 7 rollt noch langsam aus.", focus: ["7"] },
-      { text: "Der Spieler stößt schon, obwohl die 7 noch rollt – Foul.", moves: [roll7, a.w, a.obj], mark: { at: W, kind: "foul", delay: 220 } },
+      { text: "Der Spieler stößt schon, obwohl die 7 noch rollt – Foul.", expectRail: true, moves: [roll7, a.w, a.obj], mark: { at: W, kind: "foul", delay: 220 } },
     ],
   },
   {
@@ -24,7 +24,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die 7 rollt noch langsam aus.", focus: ["7"] },
       { text: "Der Spieler wartet, bis die 7 liegen bleibt.", moves: [roll7] },
-      { text: "Jetzt ruht alles. Der Stoß ist regelgerecht.", moves: [b.w, b.obj], mark: { at: P3, kind: "ok", after: "w" } },
+      { text: "Jetzt ruht alles. Der Stoß ist regelgerecht.", expectRail: true, moves: [b.w, b.obj], mark: { at: P3, kind: "ok", after: "w" } },
     ],
   },
 ];

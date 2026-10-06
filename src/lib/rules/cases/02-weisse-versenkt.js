@@ -4,10 +4,10 @@ import { D89, D8, D141, ALL_DISCS, tagSets } from "../meta.js";
 /* Duenner Treffer auf die 5: die Weisse laeuft tangential weiter (90-Grad-Regel).
    Fall A: in einem steilen Winkel - sie rollt in die Ecktasche (Scratch).
    Fall B: flacherer Winkel - sie laeuft weniger weit und bleibt liegen. */
-const T = [155.4, 54.6], OBJ = [170, 80.7];
-const A0 = [66, 36], B0 = [75.2, 16.7];
+const T = [165, 55], OBJ = [198.8, 104.5];
+const A0 = [90.1, 32.5], B0 = [93.4, 21.2];
 const a = cut(A0, { id: "5", at: T }, OBJ);
-a.w.to = [207, 12.5];
+a.w.to = [207, 13];
 a.w.out = true;
 const b = cut(B0, { id: "5", at: T }, OBJ);
 
@@ -19,7 +19,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die Weiße liegt links oben, die 5 vor der Ecktasche.", focus: ["5"] },
       { text: "Die Weiße trifft die 5 nur dünn.", aim: [A0, a.contact] },
-      { text: "Die 5 läuft nach unten weg, die Weiße rollt in die Ecktasche – Scratch.", moves: [a.w, a.obj], mark: { at: [200, 19], kind: "foul", afterEnd: "w", delay: -250 } },
+      { text: "Die 5 läuft an die untere Bande, die Weiße rollt in die Ecktasche – Scratch, trotz richtiger Kugel und Bande.", expectRail: true, moves: [a.w, a.obj], mark: { at: [200, 19], kind: "foul", afterEnd: "w", delay: -250 } },
     ],
   },
   {
@@ -29,7 +29,7 @@ const variants = [
     steps: [
       { text: "Ausgangslage: Die Weiße liegt links oben, die 5 vor der Ecktasche.", focus: ["5"] },
       { text: "Die Weiße trifft die 5 unter einem anderen Winkel.", aim: [B0, b.contact] },
-      { text: "Die 5 läuft nach unten weg, die Weiße läuft aus und bleibt liegen – kein Foul.", moves: [b.w, b.obj], mark: { at: T, kind: "ok", after: "w" } },
+      { text: "Die 5 läuft an die untere Bande, die Weiße läuft aus und bleibt liegen – kein Foul.", expectRail: true, moves: [b.w, b.obj], mark: { at: T, kind: "ok", after: "w" } },
     ],
   },
 ];
@@ -66,7 +66,7 @@ export const en = {
   "Die Weiße bleibt auf dem Tisch.": "The cue ball stays on the table.",
   "Ausgangslage: Die Weiße liegt links oben, die 5 vor der Ecktasche.": "Starting position: the cue ball is at the top left, the 5 in front of the corner pocket.",
   "Die Weiße trifft die 5 nur dünn.": "The cue ball hits the 5 only thinly.",
-  "Die 5 läuft nach unten weg, die Weiße rollt in die Ecktasche – Scratch.": "The 5 runs off downwards, the cue ball rolls into the corner pocket – scratch.",
+  "Die 5 läuft an die untere Bande, die Weiße rollt in die Ecktasche – Scratch, trotz richtiger Kugel und Bande.": "The 5 runs to the lower cushion, the cue ball rolls into the corner pocket – scratch, despite the right ball and a cushion.",
   "Die Weiße trifft die 5 unter einem anderen Winkel.": "The cue ball hits the 5 at a different angle.",
-  "Die 5 läuft nach unten weg, die Weiße läuft aus und bleibt liegen – kein Foul.": "The 5 runs off downwards, the cue ball rolls out and stays – no foul.",
+  "Die 5 läuft an die untere Bande, die Weiße läuft aus und bleibt liegen – kein Foul.": "The 5 runs to the lower cushion, the cue ball rolls out and stays – no foul.",
 };

@@ -17,6 +17,8 @@ const variants = [
       {
         text: "Die Weiße trifft die 5 statt der 2 und es läuft keine Kugel an die Bande. Als Push Out erlaubt.",
         say: "Push Out",
+        wrongFirst: true, waiveRail: "pushout",
+        expectRail: false,
         moves: [shot.w, shot.obj],
         mark: { at: B5, kind: "ok", after: "w" },
       },
@@ -31,6 +33,8 @@ const variants = [
       { text: "Der Spieler sagt nichts an und spielt die 5 an.", aim: [W, B5] },
       {
         text: "Die Weiße trifft die 5 statt der 2 und es läuft keine Kugel an die Bande – Foul.",
+        wrongFirst: true,
+        expectRail: false,
         moves: [shot.w, shot.obj],
         mark: { at: B5, kind: "foul", after: "w" },
       },

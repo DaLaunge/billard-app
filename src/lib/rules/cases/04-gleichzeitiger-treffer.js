@@ -27,6 +27,7 @@ const build = (legal, other, texts) => {
         { text: "Die Weiße zielt genau zwischen die beiden Kugeln.", aim: [W, [130, 60]] },
         {
           text: texts.doubleHit,
+          expectRail: true,
           moves: [
             { id: "w", to: hitA, stop: true },
             { id: legal, to: toL, after: "w" },
@@ -45,6 +46,8 @@ const build = (legal, other, texts) => {
         { text: texts.aimB, aim: [W, F] },
         {
           text: texts.hitB,
+          wrongFirst: true,
+          expectRail: true,
           moves: [c1.w, { ...c2.w, after: "w" }, c2.obj],
           mark: { at: F, kind: "foul", after: "w" },
         },

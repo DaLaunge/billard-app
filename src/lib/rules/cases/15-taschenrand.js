@@ -1,4 +1,4 @@
-import { cue, ball } from "../../ruleEngine.js";
+import { cue, ball, CLOCK_MS } from "../../ruleEngine.js";
 import { ALL_DISCS } from "../meta.js";
 
 /* Eine Kugel bleibt am Rand der Ecktasche haengen. Bleibt sie fuenf Sekunden oder
@@ -13,9 +13,9 @@ const variants = [
     reason: "Die Kugel lag fünf Sekunden still, sie gilt nicht als versenkt.",
     balls: balls(),
     steps: [
-      { text: "Ausgangslage: Die 4 bleibt am Rand der Ecktasche liegen.", focus: ["4"], say: "0 s" },
-      { text: "Fünf Sekunden vergehen, die Kugel bewegt sich nicht.", say: "5 s" },
-      { text: "Jetzt fällt sie doch noch in die Tasche …", say: "7 s", moves: [{ id: "4", to: POCKET, out: true }] },
+      { text: "Ausgangslage: Die 4 bleibt am Rand der Ecktasche liegen. Die Uhr läuft.", focus: ["4"], clock: { to: 0 } },
+      { text: "Fünf Sekunden vergehen, die Kugel bewegt sich nicht.", clock: { to: 5 } },
+      { text: "Jetzt fällt sie doch noch in die Tasche …", clock: { to: 7 }, moves: [{ id: "4", to: POCKET, out: true, delay: 2 * CLOCK_MS }] },
       { text: "… gilt aber nicht als versenkt und wird so nah wie möglich an ihrer letzten Position zurückgelegt.", moves: [{ id: "4", to: LIP }], mark: { at: LIP, kind: "foul", delay: 500 } },
     ],
   },
@@ -24,8 +24,8 @@ const variants = [
     reason: "Die Kugel ist gefallen, bevor fünf Sekunden vergangen waren.",
     balls: balls(),
     steps: [
-      { text: "Ausgangslage: Die 4 bleibt am Rand der Ecktasche liegen.", focus: ["4"], say: "0 s" },
-      { text: "Nach zwei Sekunden fällt die Kugel in die Tasche – versenkt.", say: "2 s", moves: [{ id: "4", to: POCKET, out: true }], mark: { at: [200, 19], kind: "ok", delay: 350 } },
+      { text: "Ausgangslage: Die 4 bleibt am Rand der Ecktasche liegen. Die Uhr läuft.", focus: ["4"], clock: { to: 0 } },
+      { text: "Nach zwei Sekunden fällt die Kugel in die Tasche – versenkt.", clock: { to: 2 }, moves: [{ id: "4", to: POCKET, out: true, delay: 2 * CLOCK_MS }], mark: { at: LIP, kind: "ok", delay: 2 * CLOCK_MS + 500 } },
     ],
   },
 ];
@@ -56,13 +56,9 @@ export const en = {
   "am Loch": "at the hole",
   "Nicht versenkt": "Not pocketed",
   "Versenkt": "Pocketed",
-  "0 s": "0 s",
-  "2 s": "2 s",
-  "5 s": "5 s",
-  "7 s": "7 s",
   "Die Kugel lag fünf Sekunden still, sie gilt nicht als versenkt.": "The ball lay still for five seconds, it does not count as pocketed.",
   "Die Kugel ist gefallen, bevor fünf Sekunden vergangen waren.": "The ball fell before five seconds had passed.",
-  "Ausgangslage: Die 4 bleibt am Rand der Ecktasche liegen.": "Starting position: the 4 stays on the edge of the corner pocket.",
+  "Ausgangslage: Die 4 bleibt am Rand der Ecktasche liegen. Die Uhr läuft.": "Starting position: the 4 stays on the edge of the corner pocket. The clock is running.",
   "Fünf Sekunden vergehen, die Kugel bewegt sich nicht.": "Five seconds pass, the ball does not move.",
   "Jetzt fällt sie doch noch in die Tasche …": "Now it does fall into the pocket after all …",
   "… gilt aber nicht als versenkt und wird so nah wie möglich an ihrer letzten Position zurückgelegt.": "… but does not count as pocketed and is placed back as near as possible to its last position.",
