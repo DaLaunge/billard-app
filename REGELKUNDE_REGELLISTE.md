@@ -325,7 +325,7 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 1.7 Ansage, Sicherheit | ✅ `sicherheit`, `falsche-tasche` |
 | 1.8 Kugel fällt von selbst, 3.30 | ✅ `kugel-faellt-von-selbst` |
 | 1.10 Störung von außen | ✅ `stoerung-von-aussen` |
-| 1.13 Patt | ⬜ |
+| 1.13 Patt | ✅ `patt` |
 | 2.2 Kugel am Taschenrand (5 s, mit Uhr) | ✅ `taschenrand` |
 | 2.2 Weiße berührt versenkte Kugel; 3.32 eingeklemmte Kugeln | 🟨 |
 | 2.7 Bande anlaufen, press liegende Kugel | ✅ `press-bande`, `bande-vor-dem-treffer` |
@@ -335,7 +335,8 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 3.4 Fuß am Boden | ✅ `fuss-am-boden` |
 | 3.6 Kugel berührt (Hand) | ✅ `kugel-beruehrt` |
 | 3.8 Schieben | ✅ `schieben` |
-| 3.12 außerhalb der Aufnahme, 3.15 Aufbauhilfe, 3.16 Unsportliches | 🟨 |
+| 3.12 außerhalb der Aufnahme | ✅ `ausserhalb-aufnahme` |
+| 3.15 Aufbauhilfe, 3.16 Unsportliches | 🟨 |
 | 3.5 Kugel springt vom Tisch | ✅ `kugel-vom-tisch` |
 | 3.7 Doppelstoß | ✅ `doppelstoss` |
 | 3.9 Stoß bei rollender Kugel | ✅ `bewegende-kugeln` |
@@ -351,8 +352,8 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 7.3 14/1-Eröffnungsstoß | ✅ `anstoss-vierzehn-eins` |
 | 7.6 / 7.8 Neuaufbau nach der 14. Kugel, jeweils mit dem Folgestoß (jede Kugel darf zuerst angespielt werden; Kugel im Kopffeld nur bei Ball in Hand zu meiden) | ✅ `neuaufbau-fuenfzehnte`, `neuaufbau-kugel-behindert`, `neuaufbau-weisse-behindert`, `neuaufbau-beide` |
 | OS19 6.7 Roll-up an der Bande (14/1) | ✅ `roll-up` |
-| OS19 6.7 absichtliches Fangen einer Kugel (14/1) | 🟨 |
-| WR16 10 Verwechseln der Gruppen | ⬜ |
-| Doppel (DP) | ⬜ |
+| OS19 6.7 absichtliches Fangen einer Kugel (14/1) | ✅ `kugel-gefangen` |
+| WR16 10 Verwechseln der Gruppen | ✅ `gruppen-verwechselt` |
+| Doppel (DP): richtiger Spieler stößt | ✅ `doppel-reihenfolge` |
 
 **Pflichten für jede Animation** (vom Prüfskript `scripts/checkRules.mjs` erzwungen): Jeder gezeigte Stoß trifft zuerst eine **zulässige** Kugel und danach läuft eine Kugel an die Bande oder fällt – außer die Szene zeigt genau das Gegenteil als Thema (`wrongFirst`, `expectRail: false`) oder es ist ein Push Out. Die Kugeln laufen physikalisch plausibel (Rollreibung, Mittelpunktslinie, Weiße setzt nach Schnitt tangential fort, keine Kollisionen während der Bewegung). Die Situation passt zur Disziplin (Etikett „Du spielst Volle“, „Niedrigste Kugel: n“, Rack je Disziplin). Eine Sprechblase oder ein Siegel darf nie die betroffene Kugel verdecken. Neue Fälle: eine Datei in `src/lib/rules/cases/`, Suchanfragen in `scripts/checkSearch.mjs`, danach beide Skripte laufen lassen.

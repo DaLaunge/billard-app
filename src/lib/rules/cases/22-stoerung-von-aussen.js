@@ -18,7 +18,7 @@ const variants = [
       { text: "Ausgangslage: Die Weiße wird auf die 3 gespielt.", focus: ["3"], aim: [W, P3] },
       {
         text: "Mitten im Stoß stößt ein Zuschauer an den Tisch, die 5 wird verschoben.",
-        say: "Störung",
+        say: "Störung", sayIcon: "hand",
         expectRail: true,
         moves: [shot.w, shot.obj, { id: "5", to: SHIFTED, delay: 120 }],
       },
@@ -38,7 +38,7 @@ const variants = [
     balls: balls(),
     steps: [
       { text: "Ausgangslage: Die Weiße wird auf die 3 gespielt.", focus: ["3"], aim: [W, P3] },
-      { text: "Vor dem Stoß stößt ein Zuschauer an den Tisch, die 5 wird verschoben.", say: "Störung", moves: [{ id: "5", to: SHIFTED }] },
+      { text: "Vor dem Stoß stößt ein Zuschauer an den Tisch, die 5 wird verschoben.", say: "Störung", sayIcon: "hand", moves: [{ id: "5", to: SHIFTED }] },
       { text: "Die Störung hatte keinen Einfluss auf den Stoß: Der Schiedsrichter legt nur die 5 zurück, dann wird weitergespielt.", moves: [{ id: "5", to: P5, place: true }] },
     ],
   },

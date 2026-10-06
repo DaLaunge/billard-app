@@ -61,6 +61,25 @@ function Figure({ f, tl }) {
   );
 }
 
+/* Symbol in der Sprechblase: Mund = es wird gesprochen/angesagt, Hand = es wird eingegriffen (Stoerung). */
+function SayIcon({ kind, x, y }) {
+  return (
+    <g className="rs-sayicon" transform={`translate(${x} ${y})`} aria-hidden="true">
+      {kind === "hand" ? (
+        <>
+          <rect x="1.6" y="3.6" width="5" height="4" rx="1.2" />
+          <path d="M2.2 3.8 V1.2 M3.8 3.4 V0.6 M5.4 3.4 V0.8 M7 3.8 V1.6" />
+        </>
+      ) : (
+        <>
+          <path d="M0.8 4.5 Q2.6 1.7 4 2.9 Q5.4 1.7 7.2 4.5 Q4 8.1 0.8 4.5 Z" />
+          <path d="M0.9 4.5 H7.1" />
+        </>
+      )}
+    </g>
+  );
+}
+
 /* Standbild von der Seite (Regel 3.4): Boden, Tischkante, Spieler mit Queue. air = beide Fuesse in der Luft. */
 function Stance({ mode }) {
   const ok = mode === "ok";
@@ -259,12 +278,13 @@ export default function RuleScene({ scene }) {
         {(step.figs || []).map((f, i) => <Figure key={"fig" + idx + "-" + i} f={f} tl={tl} />)}
 
         {step.say && (() => {
-          const w = bubbleWidth(t(step.say));
+          const w = bubbleWidth(t(step.say), step.sayIcon);
           const spot = bubbleSpot(scene, idx, w);
           return (
             <g key={"say" + idx} className="rs-say">
               <rect x={spot.x} y={spot.y} rx="3" height="11" width={w} />
-              <text x={spot.x + 4} y={spot.y + 5.6} dominantBaseline="central">{t(step.say)}</text>
+              {step.sayIcon && <SayIcon kind={step.sayIcon} x={spot.x + 3} y={spot.y + 1.5} />}
+              <text x={spot.x + (step.sayIcon ? 14 : 4)} y={spot.y + 5.6} dominantBaseline="central">{t(step.say)}</text>
             </g>
           );
         })()}

@@ -21,7 +21,7 @@ const variants = [
     reason: "Nach dem Treffer berührt keine Kugel eine andere Bande: die 4 ist nur von ihrer eigenen Bande abgeprallt.",
     balls: balls(),
     steps: [
-      { text: "Ausgangslage: Die 4 liegt press an der unteren Bande, der Schiedsrichter hat das angesagt.", say: "press an der Bande", focus: ["4"] },
+      { text: "Ausgangslage: Die 4 liegt press an der unteren Bande, der Schiedsrichter hat das angesagt.", say: "press an der Bande", sayIcon: "mouth", focus: ["4"] },
       { text: "Die Weiße trifft die 4 und drückt sie leicht in die Bande.", aim: [W, a.contact] },
       { text: "Die 4 prallt von der Bande ab und bleibt auf dem Tisch. Keine Kugel berührt eine andere Bande – Foul.", expectRail: false, moves: [a.w, a.obj], mark: { at: T, kind: "foul", after: "w" } },
     ],
@@ -31,7 +31,7 @@ const variants = [
     reason: "Die 4 läuft nach dem Abprall an eine andere Bande: die Bedingung ist erfüllt.",
     balls: balls(),
     steps: [
-      { text: "Ausgangslage: Die 4 liegt press an der unteren Bande, der Schiedsrichter hat das angesagt.", say: "press an der Bande", focus: ["4"] },
+      { text: "Ausgangslage: Die 4 liegt press an der unteren Bande, der Schiedsrichter hat das angesagt.", say: "press an der Bande", sayIcon: "mouth", focus: ["4"] },
       { text: "Die Weiße trifft die 4 und drückt sie leicht in die Bande.", aim: [W, b.contact] },
       { text: "Die 4 prallt ab und läuft bis zur rechten Bande – einer anderen als der, an der sie lag. Regelgerecht.", expectRail: true, moves: [b.w, b.obj], mark: { at: T, kind: "ok", after: "w" } },
     ],

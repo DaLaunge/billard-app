@@ -16,7 +16,7 @@ const build = (opp, tx, respot) => [
     reason: tx.reasonA,
     balls: [cue(...WA), ball(4, ...T), ball(opp, 60, 95)],
     steps: [
-      { text: "Ausgangslage: Der Spieler sagt die 4 in die Ecktasche rechts oben an.", say: "Ansage: 4 → rechts oben", focus: ["4"] },
+      { text: "Ausgangslage: Der Spieler sagt die 4 in die Ecktasche rechts oben an.", say: "Ansage: 4 → rechts oben", sayIcon: "mouth", focus: ["4"] },
       { text: "Die Weiße spielt die 4 an.", aim: [WA, a.contact] },
       { text: "Die 4 fällt in die Mitteltasche, nicht in die angesagte Tasche – sie zählt nicht.", expectRail: true, moves: [a.w, a.obj], mark: { at: [112, 14], kind: "foul", after: "w", delay: 400 } },
       ...(respot ? [{ text: "Die Kugel wird wieder aufgebaut (Fußpunkt), es gibt keine Strafe.", moves: [{ id: "4", to: FOOT, place: true }] }] : []),
@@ -27,7 +27,7 @@ const build = (opp, tx, respot) => [
     reason: tx.reasonB,
     balls: [cue(...WB), ball(4, ...T), ball(opp, 60, 95)],
     steps: [
-      { text: "Ausgangslage: Der Spieler sagt die 4 in die Ecktasche rechts oben an.", say: "Ansage: 4 → rechts oben", focus: ["4"] },
+      { text: "Ausgangslage: Der Spieler sagt die 4 in die Ecktasche rechts oben an.", say: "Ansage: 4 → rechts oben", sayIcon: "mouth", focus: ["4"] },
       { text: "Die Weiße spielt die 4 an.", aim: [WB, b.contact] },
       { text: "Die 4 fällt in die angesagte Tasche – gewertet, der Spieler spielt weiter.", expectRail: true, moves: [b.w, b.obj], mark: { at: [200, 19], kind: "ok", after: "w", delay: 400 } },
     ],

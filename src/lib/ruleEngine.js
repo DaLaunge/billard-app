@@ -11,6 +11,8 @@
    Schritt-Felder:
      text    Untertitel (Deutsch, wird im Player durch t() uebersetzt)
      say     kurzes Sprechblasen-Etikett im Bild (z.B. "Push Out")
+     sayIcon "mouth" = jemand SPRICHT/ruft an (Ansage, Foul, Schiedsrichter), "hand" = jemand/etwas
+             greift ein (Stoerung von aussen); das Symbol steht links in der Blase
      focus   Kugel-ids, die einen Ring bekommen (z.B. "die niedrigste Kugel")
      aim     [[x,y], ...] gestrichelte Ziellinie (mehrere Punkte = Knick an der Bande)
      moves   [{id, to, via?, out?, delay?, after?, hitLeg?, place?}]
@@ -194,7 +196,7 @@ export function bubbleSpot(scene, idx, w, h = 11) {
   }
   return { x: best[0], y: best[1], clear: bestD };
 }
-export const bubbleWidth = (text) => String(text).length * 4.4 + 8;
+export const bubbleWidth = (text, icon) => String(text).length * 4.4 + 8 + (icon ? 10 : 0);
 
 /* ---- Zeichenhilfen fuer die Faelle --------------------------------------- */
 const hypot = Math.hypot;

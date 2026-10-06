@@ -20,7 +20,7 @@ const variants = [
       },
       {
         text: "Der Schiedsrichter legt Weiße und 4 an ihre alten Plätze zurück, der Stoß wird wiederholt.",
-        say: "Stoß wiederholen",
+        say: "Stoß wiederholen", sayIcon: "mouth",
         moves: [{ id: "w", to: W, place: true }, { id: "4", to: LIP, place: true, delay: 150 }],
       },
     ],

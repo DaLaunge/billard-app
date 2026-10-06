@@ -29,7 +29,7 @@ const build = (lowId, wrongId, extra, soft, tx, inHand = true) => {
       balls: balls(),
       steps: [
         { text: tx.start, focus: [lowId] },
-        { ...foul, say: "Foul!", text: tx.foulCalled },
+        { ...foul, say: "Foul!", sayIcon: "mouth", text: tx.foulCalled },
         inHand
           ? { text: "Der Gegner hat die Weiße in der Hand und legt sie, wohin er will.", moves: [{ id: "w", to: [98, 64], place: true }] }
           : { text: "Dem Spieler wird ein Punkt abgezogen, der Gegner spielt die Weiße von dort, wo sie liegt." },

@@ -134,6 +134,7 @@ export const CARD_SCREENS = [
       { id: "duelle", label: "Duelle", col: "middle" },
       { id: "pings", label: "Live", col: "middle" },
       { id: "planung", label: "Planung", col: "middle" },
+      { id: "regelkunde", label: "Regelkunde", col: "right" },
     ],
   },
   {

@@ -27,7 +27,7 @@ const variants = [
     balls: [cue(...W), ball(8, ...T), ball(11, 110, 95), ball(13, 60, 30)],
     steps: [
       { text: "Ausgangslage: Alle Vollen sind versenkt, nur noch die 8 und zwei Halbe des Gegners liegen auf dem Tisch.", focus: ["8"] },
-      { text: "Der Spieler sagt die 8 in die Ecktasche rechts oben an.", say: "Ansage: 8 → rechts oben", aim: [W, shot.contact] },
+      { text: "Der Spieler sagt die 8 in die Ecktasche rechts oben an.", say: "Ansage: 8 → rechts oben", sayIcon: "mouth", aim: [W, shot.contact] },
       { text: "Die 8 fällt in die angesagte Tasche, ohne Foul – der Spieler gewinnt das Spiel.", expectRail: true, moves: [shot.w, shot.obj], mark: { at: [200, 19], kind: "ok", after: "w", delay: 300 } },
     ],
   },

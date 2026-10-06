@@ -16,7 +16,7 @@ const build = (opp, tx, respot) => [
     balls: balls(opp),
     steps: [
       { text: "Ausgangslage: Die 5 liegt vor der Ecktasche, der Spieler könnte sie versenken.", focus: ["5"] },
-      { text: "Der Spieler sagt „Sicherheit“ an und spielt die 5 an.", say: "Sicherheit", aim: [W, shot.contact] },
+      { text: "Der Spieler sagt „Sicherheit“ an und spielt die 5 an.", say: "Sicherheit", sayIcon: "mouth", aim: [W, shot.contact] },
       { text: tx.shotA, expectRail: true, moves: [shot.w, shot.obj], mark: { at: [200, 19], kind: "ok", after: "w", delay: 300 } },
       ...(respot ? [{ text: "Weil Sicherheit angesagt war, wird die 5 wieder aufgebaut (Fußpunkt), die Aufnahme ist beendet.", moves: [{ id: "5", to: FOOT, place: true }] }] : []),
     ],

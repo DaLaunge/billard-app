@@ -36,21 +36,21 @@ const build = (lowId, wrong1, wrong3, nineMode, tx) => {
   const balls = () => [cue(...W0), ball(Number(lowId), ...T), ball(Number(wrong1), ...P1), ball(Number(wrong3), ...P3), ball(9, ...P9)];
   const head = [
     { text: tx.start, focus: [lowId] },
-    { text: tx.f1, say: "Foul 1/3", shot: { n: 1, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 1, of: 3 }, wrongFirst: nineMode, expectRail: nineMode, moves: [s1.w, s1.obj], mark: { at: P1, kind: "foul", after: "w" } },
-    { text: tx.f2, say: "Foul 2/3", shot: { n: 2, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 2, of: 3 }, expectRail: true, moves: [s2.w, s2.obj], mark: { at: [200, 19], kind: "foul", afterEnd: "w", delay: -300 } },
+    { text: tx.f1, say: "Foul 1/3", sayIcon: "mouth", shot: { n: 1, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 1, of: 3 }, wrongFirst: nineMode, expectRail: nineMode, moves: [s1.w, s1.obj], mark: { at: P1, kind: "foul", after: "w" } },
+    { text: tx.f2, say: "Foul 2/3", sayIcon: "mouth", shot: { n: 2, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 2, of: 3 }, expectRail: true, moves: [s2.w, s2.obj], mark: { at: [200, 19], kind: "foul", afterEnd: "w", delay: -300 } },
   ];
   return [
     {
       label: "Fall A", verdict: "foul", verdictLabel: tx.lossLabel,
       reason: tx.reasonA,
       balls: balls(),
-      steps: [...head, { text: tx.f3a, say: "Foul 3/3", shot: { n: 3, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 3, of: 3 }, wrongFirst: nineMode, expectRail: nineMode, moves: [a3.w, a3.obj], mark: { at: P3, kind: "foul", after: "w" } }],
+      steps: [...head, { text: tx.f3a, say: "Foul 3/3", sayIcon: "mouth", shot: { n: 3, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 3, of: 3 }, wrongFirst: nineMode, expectRail: nineMode, moves: [a3.w, a3.obj], mark: { at: P3, kind: "foul", after: "w" } }],
     },
     {
       label: "Fall B", verdict: "ok", verdictLabel: tx.okLabel,
       reason: "Ein regelgerechter Stoß setzt den Zähler zurück.",
       balls: balls(),
-      steps: [...head, { text: tx.f3b, say: "Zähler: 0", shot: { n: 3, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 0, of: 3 }, expectRail: true, moves: [b3.w, b3.obj], mark: { at: OBJ, kind: "ok", after: "w" } }],
+      steps: [...head, { text: tx.f3b, say: "Zähler: 0", sayIcon: "mouth", shot: { n: 3, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 0, of: 3 }, expectRail: true, moves: [b3.w, b3.obj], mark: { at: OBJ, kind: "ok", after: "w" } }],
     },
   ];
 };

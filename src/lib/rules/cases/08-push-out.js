@@ -13,10 +13,10 @@ const variants = [
     balls: balls(),
     steps: [
       { text: "Ausgangslage: Zweiter Stoß nach dem Anstoß. Die 2 ist die niedrigste Kugel.", focus: ["2"] },
-      { text: "Der Spieler sagt „Push Out“ an und spielt die 5 an.", say: "Push Out", aim: [W, B5] },
+      { text: "Der Spieler sagt „Push Out“ an und spielt die 5 an.", say: "Push Out", sayIcon: "mouth", aim: [W, B5] },
       {
         text: "Die Weiße trifft die 5 statt der 2 und es läuft keine Kugel an die Bande. Als Push Out erlaubt.",
-        say: "Push Out",
+        say: "Push Out", sayIcon: "mouth",
         wrongFirst: true, waiveRail: "pushout",
         expectRail: false,
         moves: [shot.w, shot.obj],

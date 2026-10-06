@@ -1,5 +1,5 @@
-import { useState, useEffect, lazy, Suspense } from "react";
-import { ChevronLeft, Check, BookOpen, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, Smartphone } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, Smartphone } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -10,12 +10,9 @@ import PlayerPicker from "./PlayerPicker";
 import FeedbackThread from "./FeedbackThread";
 import { rpcRetry } from "../lib/rpcRetry";
 
-// Regelkunde-Prototyp: eigener Chunk, wird erst nach dem Aufklappen geladen.
-const RuleHelp = lazy(() => import("./RuleHelp"));
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
   const [busy, setBusy] = useState(false);
-  const [showRules, setShowRules] = useState(false);
   const [busyBadges, setBusyBadges] = useState(false);
   const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
   const [busyUser, setBusyUser] = useState(false);
@@ -576,18 +573,6 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           </section>
         );
       })()}
-
-      <section className="stat-block">
-        <h3><BookOpen size={17} /> {t("Regelkunde (Prototyp)")}</h3>
-        {!showRules ? (
-          <>
-            <p className="hint">{t("Animierte Regelfälle – bisher nur hier sichtbar.")}</p>
-            <button className="btn ghost" onClick={() => setShowRules(true)}>{t("Animationen öffnen")}</button>
-          </>
-        ) : (
-          <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}><RuleHelp onlyReleased={false} /></Suspense>
-        )}
-      </section>
 
       <section className="stat-block">
         <h3><Shield size={17} /> {t("Diagnose")}</h3>

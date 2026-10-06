@@ -23,7 +23,7 @@ const pocket = cut([100, 88], { id: "5", at: Ts[2] }, [207, 107.5], { out: true,
 const who = "Derselbe Spieler";
 const balls = () => [cue(...fromFor(T0)), ball(5, ...T0), ball(9, 170, 40), ball(12, 60, 32)];
 const first = [
-  { text: "Ausgangslage: Die angesagte 5 liegt nahe an der Bande, aber nicht press. Der Spieler spielt einen Roll-up.", say: "nicht press", focus: ["5"] },
+  { text: "Ausgangslage: Die angesagte 5 liegt nahe an der Bande, aber nicht press. Der Spieler spielt einen Roll-up.", say: "nicht press", sayIcon: "mouth", focus: ["5"] },
   { text: "Roll-up 1: Die Weiße trifft die 5 dünn, sie rollt an der Bande entlang, die Weiße läuft an die Bande. Erlaubt.", shot: { n: 1, of: 3, who }, count: { label: "Roll-ups", n: 1, of: 2 }, aim: [fromFor(T0), r[0].contact], expectRail: true, moves: [r[0].w, r[0].obj] },
   { text: "Roll-up 2: Wieder derselbe Stoß, nachdem der Gegner gespielt hat. Das zweite und letzte erlaubte Mal.", shot: { n: 2, of: 3, who }, count: { label: "Roll-ups", n: 2, of: 2 }, aim: [fromFor(Ts[1]), r[1].contact], expectRail: true, moves: [r[1].w, r[1].obj] },
 ];
