@@ -11,7 +11,7 @@ import FeedbackThread from "./FeedbackThread";
 import { rpcRetry } from "../lib/rpcRetry";
 
 // Regelkunde-Prototyp: eigener Chunk, wird erst nach dem Aufklappen geladen.
-const RuleScenesAdmin = lazy(() => import("./RuleScenesAdmin"));
+const RuleHelp = lazy(() => import("./RuleHelp"));
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
   const [busy, setBusy] = useState(false);
@@ -585,7 +585,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             <button className="btn ghost" onClick={() => setShowRules(true)}>{t("Animationen öffnen")}</button>
           </>
         ) : (
-          <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}><RuleScenesAdmin /></Suspense>
+          <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}><RuleHelp onlyReleased={false} /></Suspense>
         )}
       </section>
 

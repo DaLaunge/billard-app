@@ -2795,3 +2795,7 @@ button.break-slot { cursor: pointer; }
 .rs-tags { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; }
 .rs-case-head { flex-wrap: wrap; }
 .rs-cases > .disc-picks { margin: -6px 0 2px; }
+.rs-say rect { fill: var(--accent); }
+.rs-say text { font-size: 6.2px; font-weight: 700; fill: var(--accent-ink); font-family: inherit; }
+.rs-help-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rs-topic { margin: -4px 0 8px; font-size: 12px; color: var(--ivory-dim); }

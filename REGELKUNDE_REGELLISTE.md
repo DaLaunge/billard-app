@@ -50,18 +50,19 @@ Mit „Foul / kein Foul“-Gegenüberstellung (A/B). Status: ✅ im Prototyp, �
 | 1 | Erste Berührung | 9, 10 (8: eigene Gruppe) | 3.2, 5.7, 6.9, 4.9 | ✅ |
 | 2 | Kugel und Weiße in der Tasche | alle | 3.1 | ✅ |
 | 3 | Nach dem Erstkontakt: Bande oder Tasche | alle | 3.3, 2.7 | ✅ |
-| 4 | Weiße trifft ungefähr gleichzeitig zulässige und unzulässige Kugel | alle mit 3.2 | 3.2 (im Zweifel zulässige zuerst) | 🟦 |
-| 5 | Weiße trifft ungefähr gleichzeitig Kugel und Bande | alle | 3.3 (im Zweifel Kugel zuerst) | 🟦 |
-| 6 | Objektkugel springt vom Tisch | alle | 3.5, 2.6 | 🟦 |
-| 7 | Stoß, während sich noch eine Kugel bewegt | alle | 3.9 | 🟦 |
+| 4 | Weiße trifft ungefähr gleichzeitig zulässige und unzulässige Kugel | alle mit 3.2 | 3.2 (im Zweifel zulässige zuerst) | ✅ |
+| 5 | Bande vor dem Treffer zählt nicht (Weiße prallt erst an die Bande) | alle | 3.3, 2.7 | ✅ |
+| 5b | Weiße trifft ungefähr gleichzeitig Kugel und Bande | alle | 3.3 (im Zweifel Kugel zuerst) | 🟦 |
+| 6 | Objektkugel springt vom Tisch | alle | 3.5, 2.6 | ✅ |
+| 7 | Stoß, während sich noch eine Kugel bewegt | alle | 3.9 | ✅ |
 | 8 | Weiße berührt versenkte Kugel in der Tasche | alle | 2.2 | 🟦 |
 | 9 | Press liegende Kugel an der Bande: muss erst weg und wieder hin | alle | 2.7, 3.3 | 🟦 |
 | 10 | Kugel hängt am Taschenrand: nach 5 Sekunden nicht versenkt | alle | 2.2 | 🟨 |
-| 11 | Push Out: 3.2 und 3.3 entfallen | 9, 10 | 5.4, 6.4 | 🟦 |
-| 12 | Anstoß: mindestens vier Kugeln an die Bande, sonst Foul | 8, 9, 10 | 4.3d, 5.3b, 6.3b | 🟦 |
+| 11 | Push Out: 3.2 und 3.3 entfallen | 9, 10 | 5.4, 6.4 | ✅ |
+| 12 | Anstoß: mindestens vier Kugeln an die Bande, sonst Foul | 8, 9, 10 | 4.3d, 5.3b, 6.3b | ✅ |
 | 13 | 14/1-Anstoß: Weiße und zwei Kugeln je an eine Bande, sonst Anstoßfoul (−2) | 14/1 | 7.3b | 🟦 |
 | 14 | Dry Break bei 3-Punkte-Regel (ÖPBV-Abweichung) | 9 | 5.3c | 🟨 |
-| 15 | Offener Tisch: erst die 8 spielen ist Foul | 8 | 4.4 | 🟦 |
+| 15 | Offener Tisch: erst die 8 spielen ist Foul | 8 | 4.4 | ✅ |
 | 16 | Spielen aus dem Kopffeld: Kopflinie und erste Kugel im Kopffeld | 8, 14/1 | 3.10, 3.11 | 🟨 |
 | 17 | Drei Fouls in Folge (Ablauf in Schritten) | 9, 10, 14/1 | 3.13 | 🟨 (Zähler) |
 | 18 | Durchstoß / Schieben / Weiße press an Kugel | alle | 3.7, 3.8 | 🟨 (Queue) |

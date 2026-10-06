@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useId } from "react";
 import { ChevronLeft, ChevronRight, Play, Pause, RotateCcw, Check, X } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { POOL_COLORS } from "../../lib/pool";
-import { BALL_R, POCKETS, stateAt, timeline, stepMs, pathFrames } from "../../lib/ruleScenes";
+import { BALL_R, POCKETS, stateAt, timeline, stepMs, pathFrames } from "../../lib/ruleEngine";
 
 /* Spielt eine Regelszene (lib/ruleScenes.js) als SVG ab - speicherfreundlich:
    keine Videos, keine Bibliothek, keine Animationsschleife.
@@ -98,7 +98,11 @@ export default function RuleScene({ scene }) {
     setPlaying(true);
   };
   const go = (i) => { setPlaying(false); setIdx(Math.max(0, Math.min(last, i))); };
-  const markDelay = step.mark && step.mark.after && tl[step.mark.after] ? tl[step.mark.after].firstEnd : 0;
+  // Siegel-Zeitpunkt: im Treffmoment (after) bzw. am Bewegungsende (afterEnd) einer Kugel, plus delay.
+  const mk = step.mark || {};
+  const markDelay = (mk.delay || 0)
+    + (mk.after && tl[mk.after] ? tl[mk.after].firstEnd : 0)
+    + (mk.afterEnd && tl[mk.afterEnd] ? tl[mk.afterEnd].delay + tl[mk.afterEnd].dur : 0);
   const stripes = [...new Set(scene.balls.map((x) => x.n).filter((n) => n > 8))];
 
   return (
@@ -121,7 +125,7 @@ export default function RuleScene({ scene }) {
         {POCKETS.map((p, i) => <circle key={i} className="rs-pocket" cx={p[0]} cy={p[1]} r="6.5" />)}
 
         {step.aim && (
-          <line key={"aim" + idx} className="rs-aim" x1={step.aim[0][0]} y1={step.aim[0][1]} x2={step.aim[1][0]} y2={step.aim[1][1]} />
+          <polyline key={"aim" + idx} className="rs-aim" fill="none" points={step.aim.map((p) => p.join(",")).join(" ")} />
         )}
 
         {scene.balls.map((ball) => (
@@ -131,6 +135,13 @@ export default function RuleScene({ scene }) {
             <BallShape n={ball.n} grad={`${uid}s${ball.n}`} />
           </g>
         ))}
+
+        {step.say && (
+          <g key={"say" + idx} className="rs-say">
+            <rect x="13" y="13" rx="3" height="11" width={String(t(step.say)).length * 4.4 + 8} />
+            <text x="17" y="18.6" dominantBaseline="central">{t(step.say)}</text>
+          </g>
+        )}
 
         {step.mark && (
           <g key={"mark" + idx} className={"rs-mark " + step.mark.kind}

@@ -1404,51 +1404,22 @@ const TRANSLATIONS = {
     "Schritt {n}": "Step {n}",
     "Fall A": "Case A",
     "Fall B": "Case B",
-    "Erste Berührung": "First contact",
-    "Beim 9-Ball und 10-Ball muss die Weiße zuerst die niedrigste Kugel berühren, die noch auf dem Tisch liegt. Sonst ist es ein Foul (der Gegner bekommt die Weiße in die Hand) – auch wenn danach die richtige Kugel getroffen oder eine Kugel versenkt wird. Beim Push Out entfällt diese Regel. Beim 8-Ball gilt stattdessen: die erste berührte Kugel muss zur eigenen Gruppe gehören (bei offenem Tisch jede außer der 8). Beim 14/1 Endlos gibt es diese Vorgabe nicht.": "In 9-ball and 10-ball the cue ball must first touch the lowest ball still on the table. Otherwise it is a foul (the opponent gets ball in hand) – even if the right ball is hit afterwards or a ball is pocketed. On a push out this rule does not apply. In 8-ball the first ball touched must belong to the player's own group instead (any ball except the 8 on an open table). 14.1 continuous has no such requirement.",
-    "Die 3 wurde vor der 1 berührt.": "The 3 was touched before the 1.",
-    "Die 1 wurde zuerst berührt und läuft danach zur Bande.": "The 1 was touched first and then runs to the cushion.",
-    "Ausgangslage: Die 1 ist die niedrigste Kugel auf dem Tisch.": "Starting position: the 1 is the lowest ball on the table.",
-    "Die Weiße wird auf die 3 gespielt.": "The cue ball is played at the 3.",
-    "Die Weiße berührt zuerst die 3 – nicht die 1.": "The cue ball touches the 3 first – not the 1.",
-    "Die Weiße wird auf die 1 gespielt.": "The cue ball is played at the 1.",
-    "Die Weiße berührt zuerst die 1, diese läuft danach an die Bande.": "The cue ball touches the 1 first, which then runs to the cushion.",
-    "Kugel und Weiße in der Tasche": "Object ball and cue ball pocketed",
-    "Fällt die Weiße in eine Tasche oder springt sie vom Tisch, ist das immer ein Foul – auch wenn im selben Stoß eine Kugel regulär fällt. Beim 8-Ball, 9-Ball und 10-Ball bekommt der Gegner die Weiße in die Hand und darf sie überall auf dem Tisch platzieren. Beim 14/1 Endlos wird dem Spieler ein Punkt abgezogen, und der Gegner spielt die Weiße aus dem Kopffeld.": "If the cue ball falls into a pocket or leaves the table it is always a foul – even if an object ball is legally pocketed on the same shot. In 8-ball, 9-ball and 10-ball the opponent gets ball in hand and may place the cue ball anywhere on the table. In 14.1 continuous one point is deducted and the opponent plays the cue ball from the kitchen.",
-    "Die Weiße ist mitgefallen – Scratch.": "The cue ball went in too – scratch.",
-    "Die 5 ist gefallen, die Weiße bleibt auf dem Tisch.": "The 5 was pocketed, the cue ball stays on the table.",
-    "Ausgangslage: Die 5 liegt vor der Ecktasche.": "Starting position: the 5 sits in front of the corner pocket.",
-    "Die Weiße wird voll auf die 5 gespielt, mit Nachlauf.": "The cue ball is played full at the 5, with follow.",
-    "Die 5 fällt, aber die Weiße läuft hinterher in dieselbe Tasche.": "The 5 drops, but the cue ball follows it into the same pocket.",
-    "Die Weiße wird voll auf die 5 gespielt, mit Rückläufer.": "The cue ball is played full at the 5, with draw.",
-    "Die 5 fällt, die Weiße läuft zurück und bleibt liegen.": "The 5 drops, the cue ball rolls back and stays on the table.",
-    "Nach dem Treffer: Bande oder Tasche": "After contact: cushion or pocket",
-    "Wird bei einem Stoß keine Kugel versenkt, muss die Weiße eine Objektkugel berühren, und danach muss mindestens eine Kugel (Weiße oder Objektkugel) eine Bande anlaufen. Sonst ist es ein Foul. Eine versenkte Kugel zählt dabei als Bandenberührung. Die Regel gilt bei 8-Ball, 9-Ball, 10-Ball und 14/1 Endlos, beim Push Out entfällt sie. Folgen: wie beim Scratch (Ball in Hand bzw. ein Punkt Abzug beim 14/1).": "If no ball is pocketed on a shot, the cue ball must touch an object ball, and afterwards at least one ball (cue ball or object ball) must reach a cushion. Otherwise it is a foul. A pocketed ball counts as touching a cushion. The rule applies in 8-ball, 9-ball, 10-ball and 14.1 continuous; it does not apply on a push out. Consequences: as for a scratch (ball in hand, or one point deducted in 14.1).",
-    "Keine Kugel versenkt und keine Bande berührt.": "No ball pocketed and no cushion touched.",
-    "Die 4 berührt die Bande.": "The 4 touches the cushion.",
-    "Ausgangslage: Die Weiße spielt eine Kugel ihrer Gruppe an.": "Starting position: the cue ball plays a ball of its group.",
-    "Der Stoß geht gerade auf die 4.": "The shot goes straight at the 4.",
-    "Beide Kugeln bleiben mitten auf dem Tisch liegen.": "Both balls stay in the middle of the table.",
-    "Die 4 läuft bis zur Bande.": "The 4 runs to the cushion.",
     "Regel suchen …": "Search rules …",
     "Keine passende Regel gefunden.": "No matching rule found.",
-    "Erstkontakt": "First contact",
-    "falsche Kugel": "wrong ball",
-    "niedrigste Kugel": "lowest ball",
-    "Weiße versenkt": "Cue ball pocketed",
-    "Weiße in der Tasche": "Cue ball in pocket",
-    "Bande": "Cushion",
-    "Tasche": "Pocket",
-    "kein Bandenkontakt": "no cushion contact",
-    "No Rail": "No Rail",
     "Quelle:": "Source:",
     "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026": "ÖPBV/WPA rules of play, effective 12 Feb 2026",
+    "Regel": "Rule",
   },
 };
 export function setLangGlobal(l) {
   _LANG = l;
   try { localStorage.setItem("lang", l); } catch {}
   try { document.documentElement.lang = l; } catch {}
+}
+/* Uebersetzungen nachtraeglich anmelden (z.B. die Regelfaelle in lib/rules/, die
+   samt ihren Texten erst mit ihrem Chunk geladen werden). */
+export function addTranslations(lang, dict) {
+  TRANSLATIONS[lang] = Object.assign(TRANSLATIONS[lang] || {}, dict);
 }
 export function t(s, vars) {
   let out = (_LANG !== "de" && TRANSLATIONS[_LANG] && TRANSLATIONS[_LANG][s] != null) ? TRANSLATIONS[_LANG][s] : s;
