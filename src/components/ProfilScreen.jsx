@@ -847,7 +847,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           // Was auf dem Bildschirm als EINE Karte erscheint: Einzelkarten und
           // Reiter-Karten (siehe screenUnits) - nicht mehr jeder Katalog-
           // Eintrag einzeln.
-          const units = screenUnits(screen, api.order);
+          // Die Regelkunde-Karte (Live) gibt es vorerst nur fuer Admins - sonst stuende sie als wirkungslose Zeile in der Liste.
+          const units = screenUnits(screen, api.order).filter((u) => u.key !== "regelkunde" || meRow?.role === "admin");
           const unitOn = (u) => u.ids.some((id) => !api.isHidden(id));
           const sichtbar = units.filter(unitOn).length;
           return (

@@ -516,13 +516,27 @@ button.side-row-progress:hover .side-row-name { color: var(--accent); }
 .confirm-banner { background: var(--accent-soft); border: 1px solid var(--accent-deep);
   border-radius: 14px; padding: 12px 14px; font-size: 13.5px; margin-bottom: 14px;
   display: flex; flex-direction: column; gap: 10px; line-height: 1.45; }
-.confirm-actions { display: flex; gap: 8px; }
+.confirm-actions { display: flex; gap: 8px; align-items: center; }
+/* Runde Zustimmen/Ablehnen-Knoepfe (widgets/ConfirmRoundButtons.jsx), 54px wie
+   die grossen Rundknoepfe im Match. Ablehnen = roter Kreis mit Kreuz,
+   Zustimmen = gruen gefuellt mit Haken. */
+.confirm-round { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  flex-shrink: 0; padding: 0; transition: transform .12s ease, background .15s ease, color .15s ease; }
+.confirm-round.yes { background: var(--win); color: #06231A; border: 2px solid var(--win); }
+.confirm-round.no { background: transparent; color: var(--loss); border: 2px solid var(--loss); }
+.confirm-round:active:not(:disabled) { transform: scale(.92); }
+.confirm-round:disabled { opacity: .5; cursor: default; }
+@media (hover: hover) {
+  .confirm-round.yes:hover:not(:disabled) { filter: brightness(1.1); }
+  .confirm-round.no:hover:not(:disabled) { background: var(--loss); color: #fff; }
+}
 .chip-btn { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px;
   padding: 6px 13px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
 .chip-btn.ok { background: var(--win); color: #06231A; }
 .chip-btn.no { background: transparent; border: 1px solid var(--loss); color: var(--loss); }
 .chip-btn:not(.ok):not(.no) { background: transparent; border: 1px solid var(--line); color: var(--ivory-dim); }
 .open-reports { margin-bottom: 14px; }
+.open-reports .m-date { width: auto; white-space: nowrap; }
 
 .q { font-size: 17px; font-weight: 600; margin-bottom: 14px; }
 .q-sub { font-weight: 400; font-size: 13px; color: var(--ivory-dim); }
@@ -722,7 +736,7 @@ button.side-row-progress:hover .side-row-name { color: var(--accent); }
 .pending-list { display: flex; flex-direction: column; gap: 10px; max-height: 52vh; overflow-y: auto; text-align: left; }
 .pending-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: var(--felt-2); }
 .pending-main { display: flex; align-items: center; gap: 12px; }
-.pending-item .confirm-actions { justify-content: flex-end; }
+.pending-item .confirm-actions { justify-content: flex-end; gap: 14px; }
 .celebrate-head { font-size: 19px; font-weight: 800; color: var(--accent); margin-bottom: 14px; }
 /* Erzwungenes Update (siehe mustUpdate in App.jsx): ueber allem, auch ueber dem Erfolgs-Popup. */
 .celebrate-overlay.force-update { z-index: 200; }
@@ -2731,3 +2745,128 @@ button.break-slot { cursor: pointer; }
 /* Die drei naechsten Erfolge oben in der Erfolge-Karte (klickbar). */
 .ach-next { margin-bottom: 10px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
 .ach-next .side-row-progress:last-of-type { border-bottom: none; }
+
+/* ---- Regelkunde-Animationen (widgets/RuleScene.jsx, lib/ruleScenes.js) ----
+   Tisch in festen Tuchfarben (kein Theme-Token: Filz ist Filz). Marken und
+   Urteil nutzen --win/--loss. Alle Bewegung kommt per Web Animations API aus
+   dem Player; hier nur der Einstieg der Marken und Ziellinien, im
+   reduced-motion-Block, damit der Ruhezustand ohne Animation sichtbar bleibt. */
+.rs-cases { display: flex; flex-direction: column; gap: 18px; }
+.rs-case-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.rs-case-head h4 { margin: 0; font-size: 15px; flex: 1 1 auto; min-width: 0; }
+.rs-case-head .card-info-btn { margin: 0; }
+.rs-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft);
+  border: 1px solid var(--accent-line); color: var(--accent); white-space: nowrap; }
+.rs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--card-gap); }
+.rs-player { min-width: 0; }
+.rs-label { font-size: 12px; font-weight: 700; color: var(--ivory-dim); text-transform: uppercase; letter-spacing: .06em; }
+.rs-table { cursor: pointer; -webkit-tap-highlight-color: transparent; display: block; width: 100%; height: auto; margin-top: 4px; border-radius: 10px; }
+.rs-rail { fill: #4A2F1D; }
+.rs-cloth { fill: #1B6B45; }
+.rs-pocket { fill: #101010; }
+.rs-ball { will-change: transform; }
+.rs-no { font-size: 3.6px; font-weight: 800; fill: #161616; font-family: inherit; }
+.rs-focus { fill: none; stroke: var(--accent); stroke-width: 1.3; }
+.rs-aim { stroke: #F2EDE0; stroke-width: 1; stroke-dasharray: 3 3; opacity: .75; }
+.rs-mark circle { fill: rgba(0,0,0,.35); stroke-width: 1.6; }
+.rs-mark path { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.rs-mark.foul circle, .rs-mark.foul path { stroke: var(--loss); }
+.rs-mark.ok circle, .rs-mark.ok path { stroke: var(--win); }
+.rs-caption { margin: 8px 0 0; font-size: 13px; line-height: 1.4; min-height: 2.8em; }
+.rs-verdict { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; padding: 6px 10px;
+  border-radius: 8px; font-size: 13px; border: 1.5px solid currentColor; }
+.rs-verdict.foul { color: var(--loss); }
+.rs-verdict.ok { color: var(--win); }
+.rs-verdict span { color: var(--ivory); }
+.rs-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 10px; }
+.rs-controls .icon-btn { width: 48px; height: 48px; }
+.rs-controls .icon-btn.big { width: 60px; height: 60px; }
+.rs-dots { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
+.rs-dot { width: 10px; height: 10px; padding: 0; border-radius: 50%; border: 1.5px solid var(--btn-border);
+  background: transparent; cursor: pointer; }
+.rs-dot.past { background: var(--accent-line); }
+.rs-dot.on { background: var(--accent); border-color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .rs-mark-in { animation: rs-mark-in .35s cubic-bezier(.2,1.4,.4,1) backwards; transform-box: fill-box; transform-origin: center; }
+  .rs-aim { animation: rs-fade .4s ease backwards; }
+  .rs-focus { animation: rs-pulse 1.4s ease-in-out infinite; }
+}
+@keyframes rs-mark-in { from { opacity: 0; transform: scale(.3); } }
+@keyframes rs-fade { from { opacity: 0; } }
+@keyframes rs-pulse { 50% { opacity: .35; } }
+.rs-tags { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; }
+.rs-case-head { flex-wrap: wrap; }
+.rs-cases > .disc-picks { margin: -6px 0 2px; }
+.rs-say rect { fill: var(--accent); }
+.rs-sayicon path, .rs-sayicon rect { fill: none; stroke: var(--accent-ink); stroke-width: .9; stroke-linecap: round; stroke-linejoin: round; }
+.rs-say text { font-size: 6.2px; font-weight: 700; fill: var(--accent-ink); font-family: inherit; }
+.rs-help-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rs-topic { margin: -4px 0 8px; font-size: 12px; color: var(--ivory-dim); }
+.rs-table:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rs-tag rect { fill: rgba(0,0,0,.55); }
+.rs-tag text { font-size: 5.6px; font-weight: 700; fill: #F2EDE0; font-family: inherit; }
+.rs-tags .rs-tagbtn { padding: 0; border: 2px solid transparent; border-radius: 50%; background: none; cursor: pointer; display: inline-flex; }
+.rs-tags .rs-tagbtn.on { border-color: var(--accent); }
+.rs-seq { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 6px; min-height: 22px; }
+.rs-shot { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--surface-btn); color: var(--ivory); white-space: nowrap; }
+.rs-count { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--ivory-dim, var(--ivory)); }
+.rs-count-dots { display: inline-flex; gap: 3px; }
+.rs-count-dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--accent-line); background: transparent; }
+.rs-count-dots i.on { background: var(--accent); border-color: var(--accent); }
+.rs-count.good { color: var(--win); }
+.rs-count.good .rs-count-dots i.on { background: var(--win); border-color: var(--win); }
+.rs-count.full { color: var(--loss); }
+.rs-count.full .rs-count-dots i.on { background: var(--loss); border-color: var(--loss); }
+@media (prefers-reduced-motion: no-preference) { .rs-count-dots i.on:last-child, .rs-count-dots i.on { animation: ball-pop .25s ease-out; } }
+.rs-fig { pointer-events: none; }
+.rs-cue-shaft { stroke: #C8A46A; stroke-width: 2.2; stroke-linecap: butt; }
+.rs-cue-tip { stroke: #9EC7E8; stroke-width: 2.2; }
+.rs-hand { fill: #E3B58F; stroke: rgba(0,0,0,.45); stroke-width: .5; }
+.rs-stancebox { display: flex; justify-content: center; min-height: 70px; margin-top: 6px; }
+.rs-stance { height: 68px; width: auto; }
+.rs-stance .rs-floor { stroke: var(--ivory); stroke-width: 1.4; opacity: .7; }
+.rs-stance .rs-tablex { fill: var(--surface-btn); stroke: var(--ivory); stroke-width: 1; opacity: .9; }
+.rs-stance .rs-body { fill: none; stroke: var(--ivory); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.rs-stance circle.rs-body { fill: var(--ivory); }
+.rs-stance-mark { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.rs-stance-mark.ok { stroke: var(--win); }
+.rs-stance-mark.air { stroke: var(--loss); }
+@media (prefers-reduced-motion: no-preference) {
+  .rs-fig { animation: rs-fig-move var(--dur) linear var(--del) backwards, rs-fig-fade .2s ease-out backwards; }
+  @keyframes rs-fig-move { from { transform: translate(var(--fx), var(--fy)); } }
+  @keyframes rs-fig-fade { from { opacity: 0; } }
+}
+.rs-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rs-tagchip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft);
+  border: 1px solid var(--accent-line); color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-lines line { stroke: #F2EDE0; stroke-width: .8; stroke-dasharray: 2.5 2.5; opacity: .55; }
+.rs-lines circle { fill: #F2EDE0; opacity: .55; }
+.rs-kitchen { fill: rgba(255,255,255,.05); }
+.rs-triangle { fill: none; stroke: #F2EDE0; stroke-width: .8; stroke-dasharray: 2.5 2.5; opacity: .55; }
+
+/* Siegel: Ring um die Kugel + kleines Abzeichen daneben - die Kugel selbst bleibt sichtbar. */
+.rs-mark .rs-ring { fill: none; stroke-width: 1.6; }
+.rs-mark .rs-badge-bg { fill: #101010; stroke-width: 1.3; }
+.rs-mark path { stroke-width: 1.7; }
+.rs-mark.foul .rs-ring, .rs-mark.foul .rs-badge-bg, .rs-mark.foul path { stroke: var(--loss); }
+.rs-mark.ok .rs-ring, .rs-mark.ok .rs-badge-bg, .rs-mark.ok path { stroke: var(--win); }
+/* Uhr mit Sekundenzaehler (ueber dem Tisch, deckt keine Kugel ab) */
+.rs-clock { display: flex; align-items: center; gap: 10px; min-height: 40px; margin-top: 4px; }
+.rs-clock-face { fill: var(--felt-3); stroke: var(--btn-border); stroke-width: 1.5; }
+.rs-clock-arc { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+.rs-clock-tick { stroke: var(--ivory-dim); stroke-width: 1.2; }
+.rs-clock-hand { stroke: var(--ivory); stroke-width: 1.8; stroke-linecap: round; }
+.rs-clock-pin { fill: var(--ivory); }
+.rs-clock-num { font-size: 22px; font-weight: 800; line-height: 1; min-width: 44px; font-variant-numeric: tabular-nums; }
+.rs-clock-num small { font-size: 13px; font-weight: 600; color: var(--ivory-dim); }
+.rs-clock-dots { display: inline-flex; gap: 5px; }
+.rs-clock-dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--btn-border); }
+.rs-clock-dots i.on { background: var(--accent); border-color: var(--accent); }
+.rs-clock-flag { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--loss); }
+.rs-clock.over .rs-clock-arc { stroke: var(--loss); }
+.rs-clock.over .rs-clock-dots i.on { background: var(--loss); border-color: var(--loss); }
+.rs-clock.over .rs-clock-num { color: var(--loss); }
+@media (prefers-reduced-motion: no-preference) {
+  .rs-clock-hand { transition: transform .4s linear; }
+  .rs-clock-arc { transition: stroke-dasharray .4s linear; }
+}

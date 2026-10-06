@@ -580,6 +580,7 @@ const TRANSLATIONS = {
     "In der App": "In app",
     "Push": "Push",
     "Keine Hinweise, auch kein „Du bist dran!“ bei Turnieren und Winner Stays.": "No alerts at all, not even “You're up!” in tournaments and Winner Stays.",
+    "Stimmt das gemeldete Ergebnis? Haken = bestätigen, Kreuz = zurückweisen. Ohne Bestätigung zählt das Match nicht fürs Rating.": "Is the reported result correct? Check = confirm, cross = reject. Without confirmation the match does not count toward the rating.",
     "Popup bei offener Bestätigung": "Popup for pending confirmations",
     "Sobald jemand ein Match gegen dich einträgt, erscheint sofort ein Popup, in dem du es bestätigen oder zurückweisen kannst – oder mit „Später“ wegschiebst. Ausgeschaltet bestätigst du wie gewohnt im Profil. Gilt nur auf diesem Gerät.": "As soon as someone enters a match against you, a popup appears right away where you can confirm or reject it – or postpone it with “Later”. Switched off, you confirm in your profile as usual. Applies to this device only.",
     "Hinweise erscheinen nur, solange die App geöffnet ist.": "Alerts only appear while the app is open.",
@@ -1390,12 +1391,38 @@ const TRANSLATIONS = {
     "Pausiert.": "Paused.",
     "pausiert": "paused",
     "Nur die Person selbst oder die Leitung kann hier pausieren.": "Only the person themselves or the organizer can pause them.",
+    "Regelkunde": "Rules",
+    "Lädt …": "Loading …",
+    "nur Verwaltung": "admin only",
+    "Kein Foul": "No foul",
+    "Schritt zurück": "Previous step",
+    "Nächster Schritt": "Next step",
+    "Abspielen": "Play",
+    "Schritte": "Steps",
+    "Schritt {n}": "Step {n}",
+    "Fall A": "Case A",
+    "Fall B": "Case B",
+    "Regel suchen …": "Search rules …",
+    "Keine passende Regel gefunden.": "No matching rule found.",
+    "Quelle:": "Source:",
+    "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026": "ÖPBV/WPA rules of play, effective 12 Feb 2026",
+    "Regel": "Rule",
+    "Zeit: {s} Sekunden": "Time: {s} seconds",
+    "Stoß {n} von {of}": "Shot {n} of {of}",
+    "Mindestens ein Fuß am Boden": "At least one foot on the floor",
+    "Beide Füße in der Luft": "Both feet off the floor",
+    "Grenze erreicht": "Limit reached",
   },
 };
 export function setLangGlobal(l) {
   _LANG = l;
   try { localStorage.setItem("lang", l); } catch {}
   try { document.documentElement.lang = l; } catch {}
+}
+/* Uebersetzungen nachtraeglich anmelden (z.B. die Regelfaelle in lib/rules/, die
+   samt ihren Texten erst mit ihrem Chunk geladen werden). */
+export function addTranslations(lang, dict) {
+  TRANSLATIONS[lang] = Object.assign(TRANSLATIONS[lang] || {}, dict);
 }
 export function t(s, vars) {
   let out = (_LANG !== "de" && TRANSLATIONS[_LANG] && TRANSLATIONS[_LANG][s] != null) ? TRANSLATIONS[_LANG][s] : s;
