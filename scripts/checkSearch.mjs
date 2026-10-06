@@ -239,6 +239,12 @@ const T = [
   ["8 springt vom tisch", ["acht-verloren", "kugel-vom-tisch"], 2],
   ["wann habe ich beim 8 ball verloren", ["acht-verloren"], 2],
   ["8 pocketed", ["acht-verloren"], 1, { lang: "en" }],
+  // --- 8-Ball-Anstoss
+  ["8 ball anstoß", ["acht-anstoss", "anstoss-vier-kugeln"], 2],
+  ["weiße fällt beim anstoß", ["acht-anstoss"]],
+  ["kugel springt beim anstoß", ["acht-anstoss"], 2],
+  ["tisch offen anstoß", ["acht-anstoss", "offener-tisch-acht"], 2],
+  ["cue ball falls on the break", ["acht-anstoss"], 2, { lang: "en" }],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],

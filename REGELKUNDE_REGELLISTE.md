@@ -340,7 +340,7 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 3.13 Drei Fouls in Folge | ✅ `drei-fouls` |
 | 3.14 Zeitspiel (Shot Clock) | 🟨 (Uhr ist vorhanden) |
 | Foul zu spät erkannt | ✅ `foul-zu-spaet` |
-| 4.3 8-Ball-Anstoß (8 fällt, Weiße fällt, Kugel springt) | ⬜ |
+| 4.3 8-Ball-Anstoß (Kugel fällt, Weiße fällt, Kugel springt; die 8 fällt noch offen) | ✅ `acht-anstoss` |
 | 4.4 Offener Tisch | ✅ `offener-tisch-acht` |
 | 4.8 Spielverlust beim 8-Ball | ✅ `acht-verloren` |
 | 5.3 9-Ball-Anstoß; Kitchen Rule / Dry Break | ✅ `anstoss-vier-kugeln`; Kitchen Rule ⬜ |
