@@ -26,6 +26,10 @@
                after   startet im Treffmoment der Kugel mit dieser id
                hitLeg  an welchem Wegabschnitt-Ende diese Kugel trifft (Standard 0)
              Tempo und Dauer folgen aus der Physik (FRICTION), nicht aus Zeitangaben.
+     shot    {n, of, who?}  Stossfolge: "Stoss n von of · who" als Chip ueber dem Tisch (nicht im SVG,
+               verdeckt also nie eine Kugel). Jeder Schritt mit moves IST ein Stoss; die Zuege des
+               Gegners dazwischen werden uebersprungen (die Weisse kommt per hand/from neu hin).
+     count   {label, n, of}  Zaehler als Punkte (z.B. Fouls 2/3); bei n >= of rot.
      mark    {at:[x,y], kind:"foul"|"ok", after?, afterEnd?, delay?}
                Siegel am Ort; after = im Treffmoment dieser Kugel, afterEnd = wenn
                ihre Bewegung endet, delay = zusaetzliche ms.

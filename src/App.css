@@ -2806,6 +2806,15 @@ button.break-slot { cursor: pointer; }
 .rs-tag text { font-size: 5.6px; font-weight: 700; fill: #F2EDE0; font-family: inherit; }
 .rs-tags .rs-tagbtn { padding: 0; border: 2px solid transparent; border-radius: 50%; background: none; cursor: pointer; display: inline-flex; }
 .rs-tags .rs-tagbtn.on { border-color: var(--accent); }
+.rs-seq { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 6px; min-height: 22px; }
+.rs-shot { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--surface-btn); color: var(--ivory); white-space: nowrap; }
+.rs-count { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--ivory-dim, var(--ivory)); }
+.rs-count-dots { display: inline-flex; gap: 3px; }
+.rs-count-dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--accent-line); background: transparent; }
+.rs-count-dots i.on { background: var(--accent); border-color: var(--accent); }
+.rs-count.full { color: var(--loss); }
+.rs-count.full .rs-count-dots i.on { background: var(--loss); border-color: var(--loss); }
+@media (prefers-reduced-motion: no-preference) { .rs-count-dots i.on:last-child, .rs-count-dots i.on { animation: ball-pop .25s ease-out; } }
 .rs-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rs-tagchip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft);
   border: 1px solid var(--accent-line); color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

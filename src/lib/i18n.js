@@ -1410,6 +1410,7 @@ const TRANSLATIONS = {
     "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026": "ÖPBV/WPA rules of play, effective 12 Feb 2026",
     "Regel": "Rule",
     "Zeit: {s} Sekunden": "Time: {s} seconds",
+    "Stoß {n} von {of}": "Shot {n} of {of}",
     "Grenze erreicht": "Limit reached",
   },
 };

@@ -347,7 +347,8 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 5.4 / 6.4 Push Out | ✅ `push-out` |
 | 7.3 14/1-Eröffnungsstoß | ✅ `anstoss-vierzehn-eins` |
 | 7.6 / 7.8 Neuaufbau nach der 14. Kugel | ✅ `neuaufbau-fuenfzehnte`, `neuaufbau-kugel-behindert`, `neuaufbau-weisse-behindert`, `neuaufbau-beide` |
-| OS19 6.7 Roll-up an der Bande, absichtliches Fangen einer Kugel (14/1) | ⬜ |
+| OS19 6.7 Roll-up an der Bande (14/1) | ✅ `roll-up` |
+| OS19 6.7 absichtliches Fangen einer Kugel (14/1) | 🟨 |
 | WR16 10 Verwechseln der Gruppen | ⬜ |
 | Doppel (DP) | ⬜ |
 

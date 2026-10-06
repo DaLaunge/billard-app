@@ -245,6 +245,12 @@ const T = [
   ["kugel springt beim anstoß", ["acht-anstoss"], 2],
   ["tisch offen anstoß", ["acht-anstoss", "offener-tisch-acht"], 2],
   ["cue ball falls on the break", ["acht-anstoss"], 2, { lang: "en" }],
+  // --- Roll-up
+  ["roll up", ["roll-up"]],
+  ["roll-up", ["roll-up"], 2],
+  ["abstand zur bande", ["roll-up"], 2],
+  ["dritter roll up", ["roll-up"]],
+  ["roll up limit", ["roll-up"], 2, { lang: "en" }],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],

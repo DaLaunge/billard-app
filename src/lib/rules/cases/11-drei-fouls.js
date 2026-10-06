@@ -36,21 +36,21 @@ const build = (lowId, wrong1, wrong3, nineMode, tx) => {
   const balls = () => [cue(...W0), ball(Number(lowId), ...T), ball(Number(wrong1), ...P1), ball(Number(wrong3), ...P3), ball(9, ...P9)];
   const head = [
     { text: tx.start, focus: [lowId] },
-    { text: tx.f1, say: "Foul 1/3", wrongFirst: nineMode, expectRail: nineMode, moves: [s1.w, s1.obj], mark: { at: P1, kind: "foul", after: "w" } },
-    { text: tx.f2, say: "Foul 2/3", expectRail: true, moves: [s2.w, s2.obj], mark: { at: [200, 19], kind: "foul", afterEnd: "w", delay: -300 } },
+    { text: tx.f1, say: "Foul 1/3", shot: { n: 1, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 1, of: 3 }, wrongFirst: nineMode, expectRail: nineMode, moves: [s1.w, s1.obj], mark: { at: P1, kind: "foul", after: "w" } },
+    { text: tx.f2, say: "Foul 2/3", shot: { n: 2, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 2, of: 3 }, expectRail: true, moves: [s2.w, s2.obj], mark: { at: [200, 19], kind: "foul", afterEnd: "w", delay: -300 } },
   ];
   return [
     {
       label: "Fall A", verdict: "foul", verdictLabel: tx.lossLabel,
       reason: tx.reasonA,
       balls: balls(),
-      steps: [...head, { text: tx.f3a, say: "Foul 3/3", wrongFirst: nineMode, expectRail: nineMode, moves: [a3.w, a3.obj], mark: { at: P3, kind: "foul", after: "w" } }],
+      steps: [...head, { text: tx.f3a, say: "Foul 3/3", shot: { n: 3, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 3, of: 3 }, wrongFirst: nineMode, expectRail: nineMode, moves: [a3.w, a3.obj], mark: { at: P3, kind: "foul", after: "w" } }],
     },
     {
       label: "Fall B", verdict: "ok", verdictLabel: tx.okLabel,
       reason: "Ein regelgerechter Stoß setzt den Zähler zurück.",
       balls: balls(),
-      steps: [...head, { text: tx.f3b, say: "Zähler: 0", expectRail: true, moves: [b3.w, b3.obj], mark: { at: OBJ, kind: "ok", after: "w" } }],
+      steps: [...head, { text: tx.f3b, say: "Zähler: 0", shot: { n: 3, of: 3, who: "Derselbe Spieler" }, count: { label: "Fouls in Folge", n: 0, of: 3 }, expectRail: true, moves: [b3.w, b3.obj], mark: { at: OBJ, kind: "ok", after: "w" } }],
     },
   ];
 };
@@ -93,6 +93,8 @@ export default {
 };
 
 export const en = {
+  "Derselbe Spieler": "Same player",
+  "Fouls in Folge": "Fouls in a row",
   "Drei Fouls in Folge": "Three consecutive fouls",
   "Begeht ein Spieler drei Fouls, ohne dazwischen einen regelgerechten Stoß auszuführen, ist das ein schwerwiegendes Foul. Der Schiedsrichter muss ihn nach dem zweiten Foul warnen, sonst zählt ein drittes Foul nur als zweites. Beim 9-Ball und 10-Ball bedeutet es den Verlust des Spiels (die drei Fouls müssen im selben Spiel fallen). Beim 14/1 Endlos werden zum üblichen Punkt zusätzlich 15 Punkte abgezogen, die Fouls sind danach aufgehoben, alle Kugeln werden neu aufgebaut und der Spieler stößt neu an; ein Anstoßfoul zählt dafür nicht mit. Beim 8-Ball gibt es diese Regel nicht.":
     "If a player commits three fouls without a legal shot in between, it is a serious foul. The referee must warn the player after the second foul, otherwise a third foul only counts as a second. In 9-ball and 10-ball it means loss of the game (the three fouls must fall in the same game). In 14.1 continuous 15 further points are deducted in addition to the usual point, the fouls are then cleared, all balls are re-racked and the player breaks again; a break foul does not count towards this. 8-ball has no such rule.",

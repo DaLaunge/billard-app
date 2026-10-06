@@ -106,7 +106,7 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
       }
     };
     v.steps.forEach((s, i) => {
-      texts.add(s.text); if (s.say) texts.add(s.say);
+      texts.add(s.text); if (s.say) texts.add(s.say); if (s.shot && s.shot.who) texts.add(s.shot.who); if (s.count) texts.add(s.count.label);
       // Die Sprechblase darf keine Kugel verdecken (auch nicht mit der laengeren englischen Beschriftung).
       if (s.say) {
         const w = bubbleWidth(en[s.say] && en[s.say].length > s.say.length ? en[s.say] : s.say);

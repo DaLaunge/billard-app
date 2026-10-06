@@ -156,6 +156,19 @@ export default function RuleScene({ scene }) {
         <span className="rs-label">{t(scene.label)}</span>
         {scene.tag && <span className="rs-tagchip">{t(scene.tag)}</span>}
       </div>
+      {(step.shot || step.count) && (
+        <div className="rs-seq" key={"seq" + idx}>
+          {step.shot && <span className="rs-shot">{t("Stoß {n} von {of}", { n: step.shot.n, of: step.shot.of })}{step.shot.who ? " · " + t(step.shot.who) : ""}</span>}
+          {step.count && (
+            <span className={"rs-count" + (step.count.n >= step.count.of ? " full" : "")} aria-label={t(step.count.label) + " " + step.count.n + "/" + step.count.of}>
+              {t(step.count.label)}
+              <span className="rs-count-dots" aria-hidden="true">
+                {Array.from({ length: step.count.of }, (_, i) => <i key={i} className={i < step.count.n ? "on" : ""} />)}
+              </span>
+            </span>
+          )}
+        </div>
+      )}
       {withClock && <Clock s={clockShown} limit={scene.clockLimit || 5} />}
       <svg className="rs-table" viewBox="0 0 220 120" role="button" tabIndex={0} aria-label={t(step.text)}
         onClick={togglePlay} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlay(); } }}>
