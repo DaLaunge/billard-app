@@ -51,7 +51,7 @@ export default function RuleScenesAdmin() {
             <h4>{t(c.title)}</h4>
             <DiscTags discs={c.discs} />
             {!c.released && <span className="rs-badge">{t("nur Verwaltung")}</span>}
-            <InfoButton title={t(c.title)}>{t(c.rule)}</InfoButton>
+            <InfoButton title={t(c.title)}>{t(c.rule)} {t("Quelle:")} {t(c.source)}</InfoButton>
           </div>
           <div className="rs-pair">
             {c.variants.map((v) => <RuleScene key={c.id + v.label} scene={v} />)}

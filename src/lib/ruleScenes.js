@@ -29,6 +29,7 @@
               filtert danach; alle vier = ein Haufen-Tag (DiscAll).
    title      eigener Name des Falls, durchsuchbar; keywords = weitere
               Suchbegriffe/Synonyme (Scratch, Bande, ...).
+   rule/source  Regeltext in eigenen Worten + Fundstelle (Regelwerk, Abschnitt).
    released: false = nur Verwaltung. Spaeter entscheidet dieses Flag (oder eine
    Tabelle), welche Faelle alle Nutzer sehen. */
 
@@ -149,7 +150,8 @@ export const RULE_CASES = [
     discs: ["9 Ball", "10 Ball"],
     keywords: ["Erstkontakt", "falsche Kugel", "niedrigste Kugel"],
     title: "Erste Berührung",
-    rule: "Beim 9-Ball und 10-Ball muss die Weiße zuerst die Kugel mit der niedrigsten Nummer berühren, die noch auf dem Tisch liegt. Berührt sie zuerst eine andere, ist es ein Foul – auch wenn danach die richtige Kugel getroffen oder eine Kugel versenkt wird. Danach muss eine Kugel versenkt werden oder eine Kugel die Bande berühren.",
+    rule: "Beim 9-Ball und 10-Ball muss die Weiße zuerst die niedrigste Kugel berühren, die noch auf dem Tisch liegt. Sonst ist es ein Foul (der Gegner bekommt die Weiße in die Hand) – auch wenn danach die richtige Kugel getroffen oder eine Kugel versenkt wird. Beim Push Out entfällt diese Regel. Beim 8-Ball gilt stattdessen: die erste berührte Kugel muss zur eigenen Gruppe gehören (bei offenem Tisch jede außer der 8). Beim 14/1 Endlos gibt es diese Vorgabe nicht.",
+    source: "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026",
     variants: [
       {
         label: "Fall A", verdict: "foul",
@@ -193,7 +195,8 @@ export const RULE_CASES = [
     discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
     keywords: ["Scratch", "Weiße versenkt", "Weiße in der Tasche"],
     title: "Kugel und Weiße in der Tasche",
-    rule: "Versenkt die Weiße (Scratch), ist es immer ein Foul – selbst wenn im selben Stoß eine Kugel regulär fällt. Welche Folgen das hat (z. B. Ball in Hand oder Punktabzug), hängt von der Disziplin ab.",
+    rule: "Fällt die Weiße in eine Tasche oder springt sie vom Tisch, ist das immer ein Foul – auch wenn im selben Stoß eine Kugel regulär fällt. Beim 8-Ball, 9-Ball und 10-Ball bekommt der Gegner die Weiße in die Hand und darf sie überall auf dem Tisch platzieren. Beim 14/1 Endlos wird dem Spieler ein Punkt abgezogen, und der Gegner spielt die Weiße aus dem Kopffeld.",
+    source: "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026",
     variants: [
       {
         label: "Fall A", verdict: "foul",
@@ -234,10 +237,11 @@ export const RULE_CASES = [
   {
     id: "keine-bande",
     released: false,
-    discs: ["8 Ball", "9 Ball", "10 Ball"],
+    discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
     keywords: ["Bande", "Tasche", "kein Bandenkontakt", "No Rail"],
     title: "Nach dem Treffer: Bande oder Tasche",
-    rule: "Nach dem Berühren einer Kugel muss entweder eine Kugel versenkt werden oder mindestens eine Kugel (Weiße oder Zielkugel) die Bande berühren. Passiert beides nicht, ist es ein Foul.",
+    rule: "Wird bei einem Stoß keine Kugel versenkt, muss die Weiße eine Objektkugel berühren, und danach muss mindestens eine Kugel (Weiße oder Objektkugel) eine Bande anlaufen. Sonst ist es ein Foul. Eine versenkte Kugel zählt dabei als Bandenberührung. Die Regel gilt bei 8-Ball, 9-Ball, 10-Ball und 14/1 Endlos, beim Push Out entfällt sie. Folgen: wie beim Scratch (Ball in Hand bzw. ein Punkt Abzug beim 14/1).",
+    source: "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026",
     variants: [
       {
         label: "Fall A", verdict: "foul",
