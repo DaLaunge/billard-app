@@ -24,6 +24,11 @@
    Das Urteil der Variante (verdict) zeigt der Player erst im letzten Schritt,
    damit man vorher selbst raten kann.
 
+   discs      Disziplinen, fuer die der Fall gilt (Scratch: alle vier, 3-Foul-Regel:
+              nur 9 Ball/10 Ball). Die Verwaltung zeigt sie als Kugel-Tags und
+              filtert danach; alle vier = ein Haufen-Tag (DiscAll).
+   title      eigener Name des Falls, durchsuchbar; keywords = weitere
+              Suchbegriffe/Synonyme (Scratch, Bande, ...).
    released: false = nur Verwaltung. Spaeter entscheidet dieses Flag (oder eine
    Tabelle), welche Faelle alle Nutzer sehen. */
 
@@ -113,9 +118,10 @@ export const RULE_CASES = [
   {
     id: "erste-beruehrung",
     released: false,
-    disc: "9 Ball",
+    discs: ["9 Ball", "10 Ball"],
+    keywords: ["Erstkontakt", "falsche Kugel", "niedrigste Kugel"],
     title: "Erste Berührung",
-    rule: "Beim 9-Ball muss die Weiße zuerst die Kugel mit der niedrigsten Nummer berühren, die noch auf dem Tisch liegt. Berührt sie zuerst eine andere, ist es ein Foul – auch wenn danach die richtige Kugel getroffen oder eine Kugel versenkt wird. Danach muss eine Kugel versenkt werden oder eine Kugel die Bande berühren.",
+    rule: "Beim 9-Ball und 10-Ball muss die Weiße zuerst die Kugel mit der niedrigsten Nummer berühren, die noch auf dem Tisch liegt. Berührt sie zuerst eine andere, ist es ein Foul – auch wenn danach die richtige Kugel getroffen oder eine Kugel versenkt wird. Danach muss eine Kugel versenkt werden oder eine Kugel die Bande berühren.",
     variants: [
       {
         label: "Fall A", verdict: "foul",
@@ -156,9 +162,10 @@ export const RULE_CASES = [
   {
     id: "weisse-versenkt",
     released: false,
-    disc: "9 Ball",
+    discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
+    keywords: ["Scratch", "Weiße versenkt", "Weiße in der Tasche"],
     title: "Kugel und Weiße in der Tasche",
-    rule: "Versenkt die Weiße (Scratch), ist es immer ein Foul – selbst wenn im selben Stoß eine Kugel regulär fällt. Die Kugel wird beim 9-Ball dann nicht gutgeschrieben bzw. die Gegnerin oder der Gegner hat Ball in Hand.",
+    rule: "Versenkt die Weiße (Scratch), ist es immer ein Foul – selbst wenn im selben Stoß eine Kugel regulär fällt. Welche Folgen das hat (z. B. Ball in Hand oder Punktabzug), hängt von der Disziplin ab.",
     variants: [
       {
         label: "Fall A", verdict: "foul",
@@ -199,7 +206,8 @@ export const RULE_CASES = [
   {
     id: "keine-bande",
     released: false,
-    disc: "8 Ball",
+    discs: ["8 Ball", "9 Ball", "10 Ball"],
+    keywords: ["Bande", "Tasche", "kein Bandenkontakt", "No Rail"],
     title: "Nach dem Treffer: Bande oder Tasche",
     rule: "Nach dem Berühren einer Kugel muss entweder eine Kugel versenkt werden oder mindestens eine Kugel (Weiße oder Zielkugel) die Bande berühren. Passiert beides nicht, ist es ein Foul.",
     variants: [

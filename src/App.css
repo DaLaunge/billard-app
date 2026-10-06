@@ -2792,3 +2792,6 @@ button.break-slot { cursor: pointer; }
 @keyframes rs-mark-in { from { opacity: 0; transform: scale(.3); } }
 @keyframes rs-fade { from { opacity: 0; } }
 @keyframes rs-pulse { 50% { opacity: .35; } }
+.rs-tags { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; }
+.rs-case-head { flex-wrap: wrap; }
+.rs-cases > .disc-picks { margin: -6px 0 2px; }
