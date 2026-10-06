@@ -165,7 +165,7 @@ const T = [
   ["stoß verboten wenn kugel rollt", ["bewegende-kugeln"]],
   ["wie viele kugeln beim anstoß", ["anstoss-vier-kugeln", "anstoss-vierzehn-eins"], 2],
   // Regeln, die es noch nicht gibt: lieber "nichts gefunden" als etwas Falsches
-  ["fuß auf dem boden", null],
+  ["fuß auf dem boden", ["fuss-am-boden"], 1],
   ["kleiderordnung", null],
   ["queue", ["doppelstoss"], 1],
   ["jump shot", null],
@@ -251,6 +251,19 @@ const T = [
   ["abstand zur bande", ["roll-up"], 2],
   ["dritter roll up", ["roll-up"]],
   ["roll up limit", ["roll-up"], 2, { lang: "en" }],
+  // --- Haltung und Stoss: Fuss, Schieben, Kugel beruehrt
+  ["fuß am boden", ["fuss-am-boden"]],
+  ["knie auf dem tisch", ["fuss-am-boden"]],
+  ["kein fuß auf dem boden", ["fuss-am-boden"]],
+  ["foot on the floor", ["fuss-am-boden"], 1, { lang: "en" }],
+  ["schieben", ["schieben"]],
+  ["queue schiebt die weiße", ["schieben"]],
+  ["pomeranze bleibt an der weißen", ["schieben"]],
+  ["pushing the cue ball", ["schieben"], 2, { lang: "en" }],
+  ["kugel mit der hand berührt", ["kugel-beruehrt"]],
+  ["ärmel", ["kugel-beruehrt"]],
+  ["kugel versehentlich bewegt", ["kugel-beruehrt"], 2],
+  ["touched a ball with my hand", ["kugel-beruehrt"], 2, { lang: "en" }],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],

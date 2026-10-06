@@ -18,6 +18,7 @@ export const TOPICS = {
   anstoss: "Anstoß",
   ablauf: "Ablauf & Reihenfolge",
   tisch: "Kugeln & Tisch",
+  stoss: "Haltung & Stoß",
 };
 
 export const TOPICS_EN = {
@@ -27,6 +28,7 @@ export const TOPICS_EN = {
   "Anstoß": "Break",
   "Ablauf & Reihenfolge": "Procedure & order",
   "Kugeln & Tisch": "Balls & table",
+  "Haltung & Stoß": "Stance & stroke",
 };
 
 /* Dieselben Varianten fuer mehrere Disziplin-Gruppen, nur mit anderem Etikett am

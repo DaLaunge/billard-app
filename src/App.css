@@ -2815,6 +2815,24 @@ button.break-slot { cursor: pointer; }
 .rs-count.full { color: var(--loss); }
 .rs-count.full .rs-count-dots i.on { background: var(--loss); border-color: var(--loss); }
 @media (prefers-reduced-motion: no-preference) { .rs-count-dots i.on:last-child, .rs-count-dots i.on { animation: ball-pop .25s ease-out; } }
+.rs-fig { pointer-events: none; }
+.rs-cue-shaft { stroke: #C8A46A; stroke-width: 2.2; stroke-linecap: butt; }
+.rs-cue-tip { stroke: #9EC7E8; stroke-width: 2.2; }
+.rs-hand { fill: #E3B58F; stroke: rgba(0,0,0,.45); stroke-width: .5; }
+.rs-stancebox { display: flex; justify-content: center; min-height: 70px; margin-top: 6px; }
+.rs-stance { height: 68px; width: auto; }
+.rs-stance .rs-floor { stroke: var(--ivory); stroke-width: 1.4; opacity: .7; }
+.rs-stance .rs-tablex { fill: var(--surface-btn); stroke: var(--ivory); stroke-width: 1; opacity: .9; }
+.rs-stance .rs-body { fill: none; stroke: var(--ivory); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.rs-stance circle.rs-body { fill: var(--ivory); }
+.rs-stance-mark { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.rs-stance-mark.ok { stroke: var(--win); }
+.rs-stance-mark.air { stroke: var(--loss); }
+@media (prefers-reduced-motion: no-preference) {
+  .rs-fig { animation: rs-fig-move var(--dur) linear var(--del) backwards, rs-fig-fade .2s ease-out backwards; }
+  @keyframes rs-fig-move { from { transform: translate(var(--fx), var(--fy)); } }
+  @keyframes rs-fig-fade { from { opacity: 0; } }
+}
 .rs-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rs-tagchip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft);
   border: 1px solid var(--accent-line); color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

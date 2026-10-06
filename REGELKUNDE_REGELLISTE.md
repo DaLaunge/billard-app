@@ -332,7 +332,10 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 3.1 Weiße in der Tasche | ✅ `weisse-versenkt` |
 | 3.2 Falsche Kugel, gleichzeitiger Treffer | ✅ `erste-beruehrung`, `gleichzeitiger-treffer` |
 | 3.3 Keine Bande nach der Karambolage | ✅ `nach-treffer-bande`, `bande-vor-dem-treffer` |
-| 3.4 Fuß am Boden, 3.6 Berühren, 3.8 Schieben, 3.12 außerhalb der Aufnahme, 3.15 Aufbauhilfe, 3.16 Unsportliches | 🟨 |
+| 3.4 Fuß am Boden | ✅ `fuss-am-boden` |
+| 3.6 Kugel berührt (Hand) | ✅ `kugel-beruehrt` |
+| 3.8 Schieben | ✅ `schieben` |
+| 3.12 außerhalb der Aufnahme, 3.15 Aufbauhilfe, 3.16 Unsportliches | 🟨 |
 | 3.5 Kugel springt vom Tisch | ✅ `kugel-vom-tisch` |
 | 3.7 Doppelstoß | ✅ `doppelstoss` |
 | 3.9 Stoß bei rollender Kugel | ✅ `bewegende-kugeln` |

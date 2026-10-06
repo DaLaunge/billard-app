@@ -1411,6 +1411,8 @@ const TRANSLATIONS = {
     "Regel": "Rule",
     "Zeit: {s} Sekunden": "Time: {s} seconds",
     "Stoß {n} von {of}": "Shot {n} of {of}",
+    "Mindestens ein Fuß am Boden": "At least one foot on the floor",
+    "Beide Füße in der Luft": "Both feet off the floor",
     "Grenze erreicht": "Limit reached",
   },
 };

@@ -32,6 +32,56 @@ function BallShape({ n, grad, fill }) {
   );
 }
 
+/* Figuren (Queue, Hand): gezeichnet wie ein Kugelsymbol, nie Teil der Physik. Pose = Spitze/Handgelenk
+   `at`, Blickrichtung `angle` (Grad, 0 = nach rechts). Beim Schrittwechsel gleitet die Figur von `from`
+   nach `at` (CSS-Animation, nur im Bewegungs-Block; der Ruhezustand ist die Endpose).
+   until: "hit" = bis zum Treffmoment der Weissen (Schieben), sonst dur ms. */
+function Figure({ f, tl }) {
+  const to = f.at, from = f.from || f.at;
+  const w = tl && tl.w;
+  const dur = f.until === "hit" && w ? w.firstEnd : f.dur || 300;
+  const style = { transform: tr(to), "--fx": from[0] + "px", "--fy": from[1] + "px", "--dur": dur + "ms", "--del": (f.delay || 0) + "ms" };
+  return (
+    <g className="rs-fig" style={style} aria-hidden="true">
+      <g transform={`rotate(${f.angle || 0})`}>
+        {f.kind === "cue" ? (
+          <>
+            <line className="rs-cue-shaft" x1="-72" y1="0" x2="-3" y2="0" />
+            <line className="rs-cue-tip" x1="-3.2" y1="0" x2="0" y2="0" />
+          </>
+        ) : (
+          <>
+            <circle className="rs-hand" r="4" />
+            {[-4, -1.8, 0.4, 2.6].map((y) => <rect key={y} className="rs-hand" x="2.5" y={y - 0.3} width="7.5" height="1.9" rx="0.95" />)}
+            <rect className="rs-hand" x="0" y="3.6" width="5.2" height="2" rx="1" transform="rotate(35 0 3.6)" />
+          </>
+        )}
+      </g>
+    </g>
+  );
+}
+
+/* Standbild von der Seite (Regel 3.4): Boden, Tischkante, Spieler mit Queue. air = beide Fuesse in der Luft. */
+function Stance({ mode }) {
+  const ok = mode === "ok";
+  return (
+    <svg className={"rs-stance " + (ok ? "ok" : "air")} viewBox="0 0 110 62" role="img" aria-label={t(ok ? "Mindestens ein Fuß am Boden" : "Beide Füße in der Luft")}>
+      <line className="rs-floor" x1="2" y1="58" x2="108" y2="58" />
+      <rect className="rs-tablex" x="72" y="30" width="36" height="28" rx="2" />
+      <circle className="rs-body" cx="22" cy="10" r="5" />
+      <path className="rs-body" d="M22 15 L32 33 M28 24 L50 28 M40 27 L106 27" />
+      {ok ? (
+        <path className="rs-body" d="M32 33 L27 57 L35 57 M32 33 L44 44 L40 52" />
+      ) : (
+        <path className="rs-body" d="M32 33 L46 44 L38 50 M32 33 L50 40 L44 48" />
+      )}
+      {ok
+        ? <path className="rs-stance-mark ok" d="M44 53 L48 57 L56 49" />
+        : <path className="rs-stance-mark air" d="M44 50 L56 62 M56 50 L44 62" />}
+    </svg>
+  );
+}
+
 /* Uhr mit Sekundenzaehler: Zifferblatt mit Fortschrittsbogen und Zeiger (eine
    Umdrehung = Grenze), grosse Zahl und je Sekunde ein Punkt. Steht ausserhalb des
    Tisches, verdeckt also nie eine Kugel. */
@@ -169,6 +219,7 @@ export default function RuleScene({ scene }) {
           )}
         </div>
       )}
+      {scene.steps.some((x) => x.stance) && <div className="rs-stancebox">{step.stance && <Stance mode={step.stance} />}</div>}
       {withClock && <Clock s={clockShown} limit={scene.clockLimit || 5} />}
       <svg className="rs-table" viewBox="0 0 220 120" role="button" tabIndex={0} aria-label={t(step.text)}
         onClick={togglePlay} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlay(); } }}>
@@ -204,6 +255,8 @@ export default function RuleScene({ scene }) {
             <BallShape n={ball.n} grad={`${uid}s${ball.n}`} fill={ball.fill} />
           </g>
         ))}
+
+        {(step.figs || []).map((f, i) => <Figure key={"fig" + idx + "-" + i} f={f} tl={tl} />)}
 
         {step.say && (() => {
           const w = bubbleWidth(t(step.say));
