@@ -280,7 +280,9 @@ export function cut(from, target, objTo, opts = {}) {
       der Kontakt "falsch" aus.
    2. Trifft die Weisse unter Winkel und bleibt einfach stehen, obwohl sie
       tangential weiterlaufen muesste, ist das unnatuerlich.
-   Beides loest cut() (siehe oben). Ein Stoss kann mit `stop: true` am move der
+   Beides loest cut() (siehe oben). Eine Kugel, die an der Bande liegt und von der Weissen in
+   die Bande gedrueckt wird, prallt zurueck (rebound: true am move der Objektkugel) und laeuft
+   dann nicht auf der Mittelpunktslinie. Ein Stoss kann mit `stop: true` am move der
    Weissen als bewusster Halt (z.B. Doppeltreffer) von der Pruefung ausgenommen
    werden. Liefert eine Liste von Fehlern {kind, ...}. */
 export function contactErrors(step, fromPos) {
@@ -294,7 +296,7 @@ export function contactErrors(step, fromPos) {
     const nrm = unit(c, fromPos[obj.id]);
     const od = unit(fromPos[obj.id], (obj.via && obj.via[0]) || obj.to);
     const dev = (Math.acos(Math.max(-1, Math.min(1, nrm[0] * od[0] + nrm[1] * od[1]))) * 180) / Math.PI;
-    if (dev > 6) out.push({ kind: "objekt", id: obj.id, dev: Math.round(dev) });
+    if (dev > 6 && !obj.rebound) out.push({ kind: "objekt", id: obj.id, dev: Math.round(dev) });
     if (m.id === "w" && !(m.via && m.via.length) && hitLeg === 0) {
       const inc = unit(a, c);
       const cos = Math.max(0.2, Math.min(1, inc[0] * nrm[0] + inc[1] * nrm[1]));
@@ -351,7 +353,11 @@ export function railAfterContact(step, fromPos) {
     if (x.out && m.id !== "w") return true; // eine versenkte Weisse (Scratch) erfuellt 3.3 nicht
     const striker = moves.some((o) => o.after === m.id);
     const first = striker ? x.hitLeg + 1 : 1; // erster Wegpunkt nach dem Treffer (Weisse) bzw. nach dem Start (Objektkugel)
-    for (let i = first; i < x.path.length; i++) if (onWall(x.path[i])) return true;
+    // Eine Kugel, die schon press an einer Bande lag, muss eine ANDERE Bande anlaufen (Regel 2.7, 3.37):
+    // Punkte auf derselben Bande zaehlen nicht.
+    const st = x.path[0];
+    const sameWall = (p) => (st[0] <= 16.1 && p[0] <= 16.1) || (st[0] >= 203.9 && p[0] >= 203.9) || (st[1] <= 16.1 && p[1] <= 16.1) || (st[1] >= 103.9 && p[1] >= 103.9);
+    for (let i = first; i < x.path.length; i++) if (onWall(x.path[i]) && !(m.id !== "w" && sameWall(x.path[i]))) return true;
   }
   return false;
 }

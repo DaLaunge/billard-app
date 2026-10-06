@@ -83,7 +83,7 @@ export default {
   discs: ["9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
   ref: "3.13, 3.1, 5.8, 6.10, 7.11",
-  keywords: ["drei Fouls", "3-Foul-Regel", "Foul in Folge", "dritte Foul", "Spielverlust", "Verwarnung", "Warnung", "wie oft Foul", "Fouls hintereinander", "mehrere Fouls"],
+  keywords: ["drei Fouls", "3-Foul-Regel", "Foul in Folge", "dritte Foul", "Spielverlust", "Verwarnung", "Warnung", "wie oft Foul", "Fouls hintereinander", "mehrere Fouls", "15 Punkte Abzug", "minus 15 Punkte", "Strafpunkte"],
   title: "Drei Fouls in Folge",
   rule: "Begeht ein Spieler drei Fouls, ohne dazwischen einen regelgerechten Stoß auszuführen, ist das ein schwerwiegendes Foul. Der Schiedsrichter muss ihn nach dem zweiten Foul warnen, sonst zählt ein drittes Foul nur als zweites. Beim 9-Ball und 10-Ball bedeutet es den Verlust des Spiels (die drei Fouls müssen im selben Spiel fallen). Beim 14/1 Endlos werden zum üblichen Punkt zusätzlich 15 Punkte abgezogen, die Fouls sind danach aufgehoben, alle Kugeln werden neu aufgebaut und der Spieler stößt neu an; ein Anstoßfoul zählt dafür nicht mit. Beim 8-Ball gibt es diese Regel nicht.",
   sets: [
@@ -104,6 +104,9 @@ export const en = {
   "Verwarnung": "caution",
   "Warnung": "warning",
   "wie oft Foul": "how many fouls",
+  "15 Punkte Abzug": "15 points deducted",
+  "minus 15 Punkte": "minus 15 points",
+  "Strafpunkte": "penalty points",
   "Fouls hintereinander": "fouls in a row",
   "mehrere Fouls": "several fouls",
   "Niedrigste Kugel: 2": "Lowest ball: 2",

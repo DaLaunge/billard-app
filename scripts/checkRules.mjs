@@ -32,7 +32,8 @@ const D89 = ["9 Ball", "10 Ball"];
       (expectRail: false UND "Bande" im Text oder Grund) oder beim Push Out
       (waiveRail: "pushout"). Eine ehrliche Aussage wird zusaetzlich gegen die Wege geprueft.
    Damit zeigt jede Szene nur den EINEN Fehler, um den es geht. */
-function shotRules(v, st, s, i, id) {
+function shotRules(v, st0, s, i, id) {
+  const st = { ...st0, tag: v.tag || st0.tag }; // ein Variant kann sein eigenes Etikett haben
   const prev = stateAt(v, i - 1);
   const striker = (s.moves || []).find((m) => m.id === "w" && (s.moves || []).some((o) => o.after === "w"));
   if (!striker) return; // kein Treffer in diesem Schritt (z. B. Kugel rollt aus, Platzieren)
@@ -51,7 +52,12 @@ function shotRules(v, st, s, i, id) {
     const low = Math.min(...visible);
     legal = num === low; why = `bei 9/10 Ball muss die niedrigste Kugel (${low}) zuerst getroffen werden`;
   } else if ((st.discs || []).length === 1 && st.discs[0] === "8 Ball") {
-    if (/Volle/.test(st.tag || "")) { legal = num >= 1 && num <= 7; why = "beim 8 Ball muss eine eigene Kugel (Volle 1-7) zuerst getroffen werden"; }
+    if (/nur noch die 8/.test(st.tag || "")) { legal = num === 8; why = "wenn nur noch die 8 uebrig ist, muss sie getroffen werden"; }
+    else if (/Volle/.test(st.tag || "")) {
+      // step.opponent: der Gegner (Halbe 9-15) ist am Tisch
+      legal = s.opponent ? num >= 9 && num <= 15 : num >= 1 && num <= 7;
+      why = s.opponent ? "der Gegner muss beim 8 Ball eine Halbe (9-15) zuerst treffen" : "beim 8 Ball muss eine eigene Kugel (Volle 1-7) zuerst getroffen werden";
+    }
     else if (/Offener Tisch/.test(st.tag || "")) { legal = num !== 8; why = "bei offenem Tisch darf die 8 nicht zuerst getroffen werden"; }
   }
   if (!legal && !s.wrongFirst) err(id, `${v.label} Schritt ${i}: erster Kontakt mit ${obj.id} ist nicht zulaessig (${why}); wrongFirst: true setzen, wenn genau das gezeigt wird`);
@@ -81,6 +87,7 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
     if (!st.discs || !st.discs.length || !st.variants) err(id, "Satz ohne discs/variants");
     (st.discs || []).forEach((d) => { if (!ALL_DISCS.includes(d)) err(id, `Satz: unbekannte Disziplin ${d}`); });
     if (st.tag) texts.add(st.tag);
+    for (const vv of st.variants || []) if (vv.tag) texts.add(vv.tag);
   }
   for (const { v, st } of sets.flatMap((st) => (st.variants || []).map((v) => ({ v, st })))) {
     texts.add(v.label); texts.add(v.reason); if (v.verdictLabel) texts.add(v.verdictLabel);

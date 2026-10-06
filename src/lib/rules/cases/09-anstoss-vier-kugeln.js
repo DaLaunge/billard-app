@@ -1,5 +1,5 @@
 import { cue } from "../../ruleEngine.js";
-import { rack, brake, R15, R9, R10, W, HIT } from "../racks.js";
+import { rack, brake, hitOf, R15, R9, R10, W } from "../racks.js";
 
 /* Anstoss: je Disziplin das richtige Rack (8 Ball: 15er-Dreieck, 9 Ball: Raute,
    10 Ball: 10er-Dreieck) am Fusspunkt. Beide Varianten brechen gleich; nur eine
@@ -24,7 +24,7 @@ const variants = (rows, railsA, railsB) => {
       balls: start(),
       steps: [
         { text: "Ausgangslage: Der Anstoß. Es wird keine Kugel versenkt." },
-        { text: "Die Weiße bricht das Rack.", aim: [W, HIT] },
+        { text: "Die Weiße bricht das Rack.", aim: [W, hitOf(rows)] },
         { text: "Nur drei Kugeln laufen an eine Bande – zu wenig.", moves: withRails(brake(rows, balls, railsA), 3), mark: { at: [176, 60], kind: "foul", after: "w", delay: 450 } },
       ],
     },
@@ -34,7 +34,7 @@ const variants = (rows, railsA, railsB) => {
       balls: start(),
       steps: [
         { text: "Ausgangslage: Der Anstoß. Es wird keine Kugel versenkt." },
-        { text: "Die Weiße bricht das Rack.", aim: [W, HIT] },
+        { text: "Die Weiße bricht das Rack.", aim: [W, hitOf(rows)] },
         { text: "Vier Kugeln laufen an eine Bande – regelgerecht.", moves: withRails(brake(rows, balls, railsB), 4), mark: { at: [176, 60], kind: "ok", after: "w", delay: 450 } },
       ],
     },

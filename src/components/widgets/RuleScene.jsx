@@ -20,8 +20,8 @@ const tr = (p) => `translate(${p[0]}px, ${p[1]}px)`;
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const CREAM = "#F2EDE0";
 
-function BallShape({ n, grad }) {
-  if (n === 0) return <circle r={BALL_R} fill="#E7E0CE" />;
+function BallShape({ n, grad, fill }) {
+  if (n === 0) return <circle r={BALL_R} fill={fill || "#E7E0CE"} />;
   const c = POOL_COLORS[n];
   return (
     <>
@@ -188,7 +188,7 @@ export default function RuleScene({ scene }) {
           <g key={ball.id} ref={(el) => { els.current[ball.id] = el; }} className="rs-ball"
             style={{ transform: tr(pos[ball.id]), opacity: out[ball.id] ? 0 : 1 }}>
             {(step.focus || []).includes(ball.id) && <circle className="rs-focus" r={BALL_R + 2.6} />}
-            <BallShape n={ball.n} grad={`${uid}s${ball.n}`} />
+            <BallShape n={ball.n} grad={`${uid}s${ball.n}`} fill={ball.fill} />
           </g>
         ))}
 

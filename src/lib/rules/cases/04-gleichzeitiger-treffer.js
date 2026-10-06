@@ -81,7 +81,7 @@ export default {
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "kontakt",
   ref: "3.2",
-  keywords: ["gleichzeitig", "Doppeltreffer", "zulässige Kugel", "im Zweifel", "zwei Kugeln getroffen"],
+  keywords: ["gleichzeitig", "Doppeltreffer", "zulässige Kugel", "im Zweifel", "zwei Kugeln getroffen", "mehrere Kugeln gleichzeitig getroffen"],
   title: "Zwei Kugeln gleichzeitig getroffen",
   rule: "Trifft die Weiße ungefähr gleichzeitig eine zulässige und eine unzulässige Kugel und lässt sich nicht feststellen, welche zuerst berührt wurde, gilt die zulässige Kugel als zuerst getroffen – kein Foul. Wurde die unzulässige Kugel erkennbar zuerst berührt, ist es ein Foul.",
   sets: [
@@ -99,6 +99,7 @@ export const en = {
   "zulässige Kugel": "legal ball",
   "im Zweifel": "in doubt",
   "zwei Kugeln getroffen": "two balls hit",
+  "mehrere Kugeln gleichzeitig getroffen": "several balls hit at the same time",
   "Niedrigste Kugel: 1": "Lowest ball: 1",
   "Du spielst Volle": "You play solids",
   "Die Weiße zielt genau zwischen die beiden Kugeln.": "The cue ball aims exactly between the two balls.",

@@ -2,6 +2,10 @@
    Ein Regelfall (cases/*.js) verweist nur per Schluessel darauf. */
 
 export const SOURCE = "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026";
+/* Weitere Quellen fuer Faelle, die in den Spielregeln 2026 fehlen oder dort anders stehen.
+   Ein Fall gibt sie mit `src` an; die Fundstelle steht in `ref`. */
+export const SOURCE_OBERSCHIRI = "ÖPBV Oberschiedsrichter-Lehrunterlagen (Okt. 2019)";
+export const SOURCE_REGULARIEN = "WPA-Regularien (Version 29.07.2016)";
 
 export const ALL_DISCS = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
 
@@ -34,3 +38,9 @@ export const tagSets = (variants, spec) => spec.map(([discs, tag]) => ({ discs, 
 export const D89 = ["9 Ball", "10 Ball"];
 export const D8 = ["8 Ball"];
 export const D141 = ["14/1 Endlos"];
+
+export const SOURCES_EN = {
+  "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026": "ÖPBV/WPA rules of play, effective 12 Feb 2026",
+  "ÖPBV Oberschiedsrichter-Lehrunterlagen (Okt. 2019)": "ÖPBV head referee training material (Oct 2019)",
+  "WPA-Regularien (Version 29.07.2016)": "WPA regulations (version 29 Jul 2016)",
+};

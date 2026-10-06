@@ -1,6 +1,6 @@
 import { addTranslations, t, getLang } from "../i18n";
 import { indexCase, searchIndexed } from "./search.js";
-import { ALL_DISCS, TOPICS, TOPICS_EN, SOURCE } from "./meta.js";
+import { ALL_DISCS, TOPICS, TOPICS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 
 /* Regelkunde-Katalog. Ein Regelfall = EINE Datei in ./cases/ (Dateiname
    bestimmt die Reihenfolge, daher die Nummer davor), die diese Dinge exportiert:
@@ -18,6 +18,7 @@ import { ALL_DISCS, TOPICS, TOPICS_EN, SOURCE } from "./meta.js";
 const files = import.meta.glob("./cases/*.js", { eager: true });
 const modules = Object.keys(files).sort().map((k) => files[k]);
 addTranslations("en", TOPICS_EN);
+addTranslations("en", SOURCES_EN);
 modules.forEach((m) => addTranslations("en", m.en || {}));
 
 export const RULE_CASES = modules.map((m) => m.default);
@@ -32,7 +33,7 @@ export const setsOf = (c) => c.sets || [{ discs: c.discs, variants: c.variants }
 /* Welcher Satz gilt fuer diese Disziplin (sonst der erste)? */
 export const setFor = (c, disc) => setsOf(c).find((s) => disc && s.discs.includes(disc)) || setsOf(c)[0];
 
-export const sourceLine = (c) => `${t(SOURCE)}, ${t("Regel")} ${c.ref}`;
+export const sourceLine = (c) => `${t(c.src || SOURCE)}, ${t("Regel")} ${c.ref}`;
 
 /* Faelle fuer eine Disziplin (disc leer = alle). onlyReleased: nur freigegebene
    (fuer alle Nutzer), die Verwaltung zeigt auch die anderen. */

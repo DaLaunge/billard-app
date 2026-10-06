@@ -35,7 +35,7 @@ export default {
   discs: ALL_DISCS,
   topic: "bande",
   ref: "3.3, 2.7",
-  keywords: ["Bande", "Tasche", "kein Bandenkontakt", "keine Bande", "No Rail", "Kugel bleibt liegen"],
+  keywords: ["Bande", "Tasche", "kein Bandenkontakt", "keine Bande", "No Rail", "Kugel bleibt liegen", "Bande nach dem Treffer"],
   title: "Nach dem Treffer: Bande oder Tasche",
   rule: "Wird bei einem Stoß keine Kugel versenkt, muss die Weiße eine Objektkugel berühren, und danach muss mindestens eine Kugel (Weiße oder Objektkugel) eine Bande anlaufen. Sonst ist es ein Foul. Eine versenkte Kugel zählt dabei als Bandenberührung. Die Regel gilt bei 8-Ball, 9-Ball, 10-Ball und 14/1 Endlos, beim Push Out entfällt sie. Folgen: wie beim Scratch (Ball in Hand bzw. ein Punkt Abzug beim 14/1).",
   sets: tagSets(variants, [
@@ -54,6 +54,7 @@ export const en = {
   "kein Bandenkontakt": "no cushion contact",
   "keine Bande": "no cushion",
   "No Rail": "No Rail",
+  "Bande nach dem Treffer": "cushion after contact",
   "Kugel bleibt liegen": "ball stays put",
   "Niedrigste Kugel: 4": "Lowest ball: 4",
   "Du spielst Volle": "You play solids",

@@ -34,7 +34,7 @@ const STOP = new Set(norm(`
  wann ich du wir mein meine meinen ist es ein eine einen einer eines der die das den dem des wie was wo wer bei beim und oder mit ohne wenn
  zu zum zur im in am an auf ob man darf muss soll kann sind wird werden hat habe haben gibt gilt
  regel regeln frage fragen welche welcher welches wieso warum wegen fuer von aus um auch noch nur dann
- the a an is are it its when how what which if do does can must on in of to for and or with without rule rules
+ spielen spiele spielt machen macht gemacht tun the a an is are it its when how what which if do does can must on in of to for and or with without rule rules
  `).split(" "));
 
 /* Synonyme (normalisiert): ein Suchwort trifft auch diese Woerter. Einseitig reicht,
@@ -158,8 +158,15 @@ export const indexCase = (c, { tr = (s) => s, topics = {}, sets = (x) => x.sets 
   const both = (list) => list.filter(Boolean).flatMap((s) => [s, tr(s)]);
   const setList = sets(c);
   const discs = c.discs.flatMap((d) => [d, discNames[d]]);
+  // Phrasen (Name und Suchbegriffe, beide Sprachen): eine ganze Wendung wie "falsche Kugel" soll
+  // den Fall mit genau dieser Wendung nach vorn bringen, nicht den mit zufaellig beiden Woertern.
+  const phrases = [...new Set(both([c.title, ...(c.keywords || [])]))].map((txt) => {
+    const text = norm(txt);
+    return { text, title: txt === c.title || txt === tr(c.title), content: text.split(" ").filter((w) => w && !STOP.has(w)) };
+  });
   return {
     c,
+    phrases,
     title: tokensOf(both([c.title])),
     keys: tokensOf(both(c.keywords || [])),
     ref: tokensOf((c.ref || "").split(/[,\s]+/).filter(Boolean).map((r) => "regel " + r)),
@@ -191,9 +198,19 @@ export const queryWords = (q) => {
 export const searchIndexed = (indexed, q) => {
   const words = queryWords(q);
   if (!words.length) return indexed.map((x) => x.c);
+  const qn = norm(q);
+  const phraseBonus = (ix) => {
+    if (words.length < 2) return 0;
+    let best = 0;
+    for (const p of ix.phrases) {
+      if ((" " + p.text + " ").includes(" " + qn + " ")) best = Math.max(best, 12); // genau diese Wendung
+      else if (p.content.length >= 2 && p.content.every((w) => words.includes(w))) best = Math.max(best, p.title ? 10 : 8); // alle Inhaltswoerter der Wendung stehen in der Frage
+    }
+    return best;
+  };
   const rows = indexed.map((ix, order) => {
     const scores = words.map((w) => wordScore(w, ix));
-    return { ix, order, scores, all: scores.every((s) => s > 0), sum: scores.reduce((a, b) => a + b, 0), hit: scores.filter((s) => s > 0).length };
+    return { ix, order, scores, all: scores.every((s) => s > 0), sum: scores.reduce((a, b) => a + b, 0) + phraseBonus(ix), hit: scores.filter((s) => s > 0).length };
   });
   let res = rows.filter((r) => r.all);
   // ODER-Auffangnetz nur bei laengeren Fragen und wenn die meisten Woerter treffen - sonst lieber nichts als etwas Irrefuehrendes

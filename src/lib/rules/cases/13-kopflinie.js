@@ -1,6 +1,6 @@
 import { cue } from "../../ruleEngine.js";
 import { D8, ALL_DISCS } from "../meta.js";
-import { rack, brake, R15, R9, R10, HIT } from "../racks.js";
+import { rack, brake, hitOf, R15, R9, R10 } from "../racks.js";
 
 /* Anstoss: die Weisse liegt mit Ball in Hand im Kopffeld. Fall A: genau AUF der
    Kopflinie (Foul), Fall B: dahinter (ok). Der Anstoss selbst ist in beiden Faellen
@@ -14,14 +14,14 @@ const build = (rows, rails, startText, fourteenOne = false) => {
   const moves = brake(rows, rack(rows), rails);
   if (moves.filter(onWall).length !== rails.length) throw new Error("Kopflinie: Bandenzahl des Anstosses stimmt nicht");
   // 14/1: die Weisse laeuft zusaetzlich zurueck zur Kopfbande (Weisse + zwei Kugeln je an eine Bande)
-  if (fourteenOne) moves[0] = { id: "w", via: [HIT], to: [15.5, 60], stop: true };
+  if (fourteenOne) moves[0] = { id: "w", via: [hitOf(rows)], to: [15.5, 60], stop: true };
   const mk = (label, verdict, wx, reason, text) => ({
     label, verdict, reason,
     table: { headLine: true },
     balls: [cue(wx, 60), ...balls],
     steps: [
       { text: startText },
-      { text, aim: [[wx, 60], HIT] },
+      { text, aim: [[wx, 60], hitOf(rows)] },
       {
         text: verdict === "foul" ? "Der Stoß beginnt von der Kopflinie aus – Foul, obwohl der Anstoß sonst regelgerecht ist." : "Der Stoß beginnt hinter der Kopflinie – regelgerecht.",
         expectRail: true,

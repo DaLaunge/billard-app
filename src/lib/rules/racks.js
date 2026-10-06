@@ -1,12 +1,19 @@
 import { ball, BALL_R } from "../ruleEngine.js";
 
 /* Racks und Break-Bewegung, gemeinsam fuer die Anstoss-Faelle (cases/09, 12, 13).
-   Racks stehen am Fusspunkt (160, 60); die Spitzenkugel (1) liegt vorn. */
+   Racks stehen am Fusspunkt (160, 60). 8 Ball, 10 Ball, 14/1: die Spitze liegt AUF dem
+   Fusspunkt. 9 Ball (Regel 5.2, seit 2026): die 9 in der Mitte der Raute liegt auf dem
+   Fusspunkt, die Spitze (1) davor - die Raute ist also nach vorn verschoben. */
 const X0 = 160, DX = 2 * BALL_R * 0.866, DY = BALL_R;
 const W = [70, 60], HIT = [149, 60];
 const r2 = (n) => Math.round(n * 100) / 100;
 
-const rack = (rows) => rows.flatMap((row, r) => row.map((n, k) => ({ n, p: [r2(X0 + r * DX), r2(60 + (k - (row.length - 1) / 2) * 2 * DY)] })));
+const R9 = [[1], [2, 3], [4, 9, 5], [6, 7], [8]];
+const tipX = (rows) => (rows === R9 ? r2(X0 - 2 * DX) : X0);
+/* Der Treffpunkt der Weissen an der Spitze des Racks. */
+const hitOf = (rows) => [r2(tipX(rows) - 2 * BALL_R), 60];
+/* shift verschiebt das ganze Rack in x (nur fuer fehlerhaft aufgebaute Racks). */
+const rack = (rows, shift = 0) => rows.flatMap((row, r) => row.map((n, k) => ({ n, p: [r2(tipX(rows) + shift + r * DX), r2(60 + (k - (row.length - 1) / 2) * 2 * DY)] })));
 
 /* Der Break: nur die Kugeln am RAND des Racks laufen los, und zwar radial vom
    Schwerpunkt weg - so kreuzen sich ihre Wege nie. Die Kugeln im Inneren und die
@@ -25,8 +32,8 @@ const brake = (rows, balls, rails) => {
   const cy = balls.reduce((a, b) => a + b.p[1], 0) / balls.length;
   const rim = new Set();
   rows.forEach((row, r) => row.forEach((n, k) => { if (r > 0 && (k === 0 || k === row.length - 1 || r === rows.length - 1)) rim.add(n); }));
-  const tip = [X0, 60];
-  const moves = [{ id: "w", to: HIT, stop: true }];
+  const tip = [tipX(rows), 60];
+  const moves = [{ id: "w", to: hitOf(rows), stop: true }];
   balls.filter((b) => rim.has(b.n)).forEach((b, i) => {
     let d = [b.p[0] - cx, b.p[1] - cy];
     let l = Math.hypot(...d);
@@ -45,12 +52,11 @@ const brake = (rows, balls, rails) => {
 
 
 export const R15 = [[1], [9, 2], [3, 8, 10], [11, 4, 5, 12], [6, 13, 7, 14, 15]];
-export const R9 = [[1], [2, 3], [4, 9, 5], [6, 7], [8]];
 export const R10 = [[1], [2, 3], [4, 10, 5], [6, 7, 8, 9]];
 
 /* Kugeln eines Racks als Szenen-Kugeln. */
 export const rackBalls = (rows) => rack(rows).map((b) => ball(b.n, ...b.p));
-export { rack, brake, X0, W, HIT };
+export { R9, rack, brake, hitOf, X0, W, HIT };
 
 /* 14/1: 14 Kugeln (1-14) im Dreieck, die Spitze am Fusspunkt bleibt fuer die 15. frei. */
 export const R14 = [[null], [9, 2], [3, 8, 10], [11, 4, 5, 12], [6, 13, 7, 14, 1]];

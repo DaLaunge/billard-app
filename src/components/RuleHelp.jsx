@@ -65,7 +65,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
             </div>
             <p className="rs-topic">{t(TOPICS[c.topic])}</p>
             <div className="rs-pair">
-              {set.variants.map((v) => <RuleScene key={c.id + set.discs.join() + v.label} scene={{ ...v, tag: set.tag }} />)}
+              {set.variants.map((v) => <RuleScene key={c.id + set.discs.join() + v.label} scene={{ ...v, tag: v.tag || set.tag }} />)}
             </div>
           </div>
         );
