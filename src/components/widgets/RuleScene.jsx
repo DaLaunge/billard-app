@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useId } from "react";
 import { ChevronLeft, ChevronRight, Play, Pause, RotateCcw, Check, X } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { POOL_COLORS } from "../../lib/pool";
-import { BALL_R, POCKETS, stateAt, timeline, stepMs } from "../../lib/ruleScenes";
+import { BALL_R, POCKETS, stateAt, timeline, stepMs, pathFrames } from "../../lib/ruleScenes";
 
 /* Spielt eine Regelszene (lib/ruleScenes.js) als SVG ab - speicherfreundlich:
    keine Videos, keine Bibliothek, keine Animationsschleife.
@@ -61,12 +61,8 @@ export default function RuleScene({ scene }) {
       const wasOut = !!from.out[ball.id], isOut = !!to.out[ball.id];
       const m = plan && plan[ball.id];
       if (m) {
-        let acc = 0;
-        const frames = m.path.map((p, i) => {
-          if (i > 0) acc += m.legs[i - 1];
-          return { transform: tr(p), offset: i === m.path.length - 1 ? 1 : acc / m.total };
-        });
-        // Konstante Geschwindigkeit je Abschnitt: linear, sonst "stottert" die Kugel an den Knicken.
+        // Bremskurve ist in die Keyframes eingerechnet (lib/ruleScenes.js), daher linear abspielen.
+        const frames = pathFrames(m).map((f) => ({ transform: tr(f.p), offset: f.offset }));
         const opts = { duration: m.dur, delay: m.delay, easing: "linear", fill: "backwards" };
         el.animate(frames, opts);
         if (m.out) el.animate([{ opacity: 1 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], opts);

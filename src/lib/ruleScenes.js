@@ -29,9 +29,42 @@
 
 export const BALL_R = 5.5;
 export const POCKETS = [[10, 10], [110, 8], [210, 10], [10, 110], [110, 112], [210, 110]];
-const SPEED = 0.14; // px pro ms
+const SPEED = 0.1; // mittlere Geschwindigkeit in px pro ms (Anfangstempo ca. doppelt so hoch)
 
 const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+
+/* Rollreibung: eine Kugel wird gleichmaessig langsamer, der zurueckgelegte
+   Weg ist also quadratisch in der Zeit. p(u) = (1+c)u - c u^2 (u = Zeit 0..1,
+   p = Weganteil 0..1): c = 1 laeuft bis zum Stillstand aus, kleineres c laesst
+   noch Restgeschwindigkeit am Ende (1-c) - so fallen Kugeln mit Tempo in die
+   Tasche statt zu schleichen. invEase rechnet "wie weit" in "wann" um; damit
+   beginnt die gestossene Kugel genau im Treffmoment (firstEnd). */
+const SLOW = 1, POCKET_SLOW = 0.4;
+const ease = (u, c) => (1 + c) * u - c * u * u;
+const invEase = (p, c) => (c < 1e-6 ? p : ((1 + c) - Math.sqrt(Math.max(0, (1 + c) * (1 + c) - 4 * c * p))) / (2 * c));
+
+/* Keyframes einer Bewegung: Zeitpunkte gleichmaessig verteilt plus exakt die
+   Eckpunkte (Treffpunkt), Position aus der Bremskurve. Der Player spielt sie
+   mit easing "linear" ab - ein Easing je Abschnitt liesse die Kugel an jedem
+   Knick fast stehen bleiben (siehe lib/flyBall.js). */
+export function pathFrames(m, n = 24) {
+  const at = (s) => {
+    let rest = s;
+    for (let i = 0; i < m.legs.length; i++) {
+      if (rest <= m.legs[i] || i === m.legs.length - 1) {
+        const f = m.legs[i] ? Math.min(1, rest / m.legs[i]) : 1;
+        return [m.path[i][0] + (m.path[i + 1][0] - m.path[i][0]) * f, m.path[i][1] + (m.path[i + 1][1] - m.path[i][1]) * f];
+      }
+      rest -= m.legs[i];
+    }
+    return m.path[m.path.length - 1];
+  };
+  const us = new Set();
+  for (let k = 0; k <= n; k++) us.add(k / n);
+  let acc = 0;
+  m.legs.forEach((l) => { acc += l; us.add(invEase(acc / m.total, m.c)); });
+  return [...us].sort((a, b) => a - b).map((u) => ({ p: at(ease(u, m.c) * m.total), offset: Math.min(1, u) }));
+}
 
 /* Zustand nach Schritt idx: Position und "in der Tasche" je Kugel. */
 export function stateAt(scene, idx) {
@@ -57,7 +90,8 @@ export function timeline(step, fromPos) {
     const total = legs.reduce((a, b) => a + b, 0) || 1;
     const dur = m.dur ?? Math.max(350, total / SPEED);
     const delay = (m.delay || 0) + (m.after && tl[m.after] ? tl[m.after].firstEnd : 0);
-    tl[m.id] = { path, legs, total, dur, delay, out: !!m.out, firstEnd: delay + dur * (legs[0] / total) };
+    const c = m.out ? POCKET_SLOW : SLOW;
+    tl[m.id] = { path, legs, total, dur, delay, c, out: !!m.out, firstEnd: delay + dur * invEase(legs[0] / total, c) };
   }
   return tl;
 }
