@@ -1,4 +1,5 @@
-import { addTranslations, t } from "../i18n";
+import { addTranslations, t, getLang } from "../i18n";
+import { indexCase, searchIndexed } from "./search.js";
 import { ALL_DISCS, TOPICS, TOPICS_EN, SOURCE } from "./meta.js";
 
 /* Regelkunde-Katalog. Ein Regelfall = EINE Datei in ./cases/ (Dateiname
@@ -23,6 +24,14 @@ export const RULE_CASES = modules.map((m) => m.default);
 export { ALL_DISCS, TOPICS, SOURCE };
 
 /* Zeile fuer die Quellenangabe, z. B. "ÖPBV/WPA-Spielregeln, ... , Regel 3.2". */
+/* Ein Fall hat einen oder mehrere SAETZE (sets): je Satz die Disziplinen, fuer die
+   er gilt, ein Etikett fuer den Tisch (tag) und zwei Varianten. Ein Fall ohne
+   sets hat genau einen (variants + discs). */
+export const setsOf = (c) => c.sets || [{ discs: c.discs, variants: c.variants }];
+
+/* Welcher Satz gilt fuer diese Disziplin (sonst der erste)? */
+export const setFor = (c, disc) => setsOf(c).find((s) => disc && s.discs.includes(disc)) || setsOf(c)[0];
+
 export const sourceLine = (c) => `${t(SOURCE)}, ${t("Regel")} ${c.ref}`;
 
 /* Faelle fuer eine Disziplin (disc leer = alle). onlyReleased: nur freigegebene
@@ -30,25 +39,19 @@ export const sourceLine = (c) => `${t(SOURCE)}, ${t("Regel")} ${c.ref}`;
 export const casesForDisc = (disc, { onlyReleased = true, ids } = {}) =>
   RULE_CASES.filter((c) => (!onlyReleased || c.released) && (!disc || c.discs.includes(disc)) && (!ids || ids.includes(c.id)));
 
-/* Suche, deutsch und in der aktuellen Sprache, mehrere Woerter muessen ALLE
-   vorkommen. Zwei Stufen, damit ein Begriff nicht alles trifft: ein Regeltext
-   erwaehnt andere Regeln ("wie beim Scratch"), deshalb zaehlen zuerst nur Name,
-   Suchbegriffe, Thema und Disziplin. Nur wenn dort nichts passt, wird der
-   volle Text (Regel, Untertitel, Begruendungen) durchsucht - so findet auch
-   "Ball in Hand" noch etwas. Treffer im Namen stehen vor Treffern in den
-   Suchbegriffen. */
-const lower = (list) => list.filter(Boolean).flatMap((s) => [s, t(s)]).join("\n").toLowerCase();
-const nameHay = (c) => lower([c.title]);
-const tagHay = (c) => lower([...c.keywords, TOPICS[c.topic], ...c.discs]);
-const textHay = (c) => lower([c.rule, ...c.variants.flatMap((v) => [v.reason, ...v.steps.map((s) => s.text)])]);
-const hasAll = (hay, words) => words.every((w) => hay.includes(w));
-
-export const searchCases = (list, q) => {
-  const words = (q || "").trim().toLowerCase().split(/\s+/).filter((w) => w.length > 1); // 1 Zeichen filtert nur Rauschen
-  if (!words.length) return list;
-  const byName = list.filter((c) => hasAll(nameHay(c), words));
-  const byTag = list.filter((c) => !byName.includes(c) && hasAll(nameHay(c) + "\n" + tagHay(c), words));
-  const primary = [...byName, ...byTag];
-  if (primary.length) return primary;
-  return list.filter((c) => hasAll(nameHay(c) + "\n" + tagHay(c) + "\n" + textHay(c), words));
+/* Suche: siehe search.js (gewichtete Felder, Umlaut-/Tippfehler-Toleranz, Synonyme,
+   Regelnummern). Der Index je Fall wird pro Sprache gemerkt. */
+const DISC_NAMES = {
+  "8 Ball": "Achtball eight ball 8-ball",
+  "9 Ball": "Neunball nine ball 9-ball",
+  "10 Ball": "Zehnball ten ball 10-ball",
+  "14/1 Endlos": "Straight Pool 14.1 14-1 endlos",
 };
+const _ix = new WeakMap();
+const indexFor = (c) => {
+  const lang = getLang();
+  let m = _ix.get(c);
+  if (!m) _ix.set(c, (m = {}));
+  return m[lang] || (m[lang] = indexCase(c, { tr: t, topics: TOPICS, sets: setsOf, discNames: DISC_NAMES }));
+};
+export const searchCases = (list, q) => searchIndexed(list.map(indexFor), q);

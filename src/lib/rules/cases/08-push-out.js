@@ -1,53 +1,53 @@
-import { cue, ball, touch } from "../../ruleEngine.js";
+import { cue, ball, cut } from "../../ruleEngine.js";
+import { D89 } from "../meta.js";
 
 /* Beide Faelle spielen denselben Stoss: nur die Ansage unterscheidet sie. */
 const W = [70, 60], B2 = [140, 36], B5 = [130, 80];
-const balls = () => [cue(...W), ball(2, ...B2), ball(5, ...B5), ball(8, 175, 62)];
-const shot = [
-  { id: "w", to: touch(W, B5) },
-  { id: "5", to: [150, 88], after: "w" },
+const balls = () => [cue(...W), ball(2, ...B2), ball(5, ...B5), ball(8, 175, 62), ball(9, 190, 100)];
+const shot = cut(W, { id: "5", at: B5 }, [150, 88]);
+
+const variants = [
+  {
+    label: "Mit Ansage", verdict: "ok",
+    reason: "Als Push Out angesagt: 3.2 und 3.3 gelten nicht.",
+    balls: balls(),
+    steps: [
+      { text: "Ausgangslage: Zweiter Stoß nach dem Anstoß. Die 2 ist die niedrigste Kugel.", focus: ["2"] },
+      { text: "Der Spieler sagt „Push Out“ an und spielt die 5 an.", say: "Push Out", aim: [W, B5] },
+      {
+        text: "Die Weiße trifft die 5 statt der 2 und es läuft keine Kugel an die Bande. Als Push Out erlaubt.",
+        say: "Push Out",
+        moves: [shot.w, shot.obj],
+        mark: { at: B5, kind: "ok", after: "w" },
+      },
+    ],
+  },
+  {
+    label: "Ohne Ansage", verdict: "foul",
+    reason: "Ohne Ansage zählt der Stoß normal: falsche Kugel, keine Bande.",
+    balls: balls(),
+    steps: [
+      { text: "Ausgangslage: Zweiter Stoß nach dem Anstoß. Die 2 ist die niedrigste Kugel.", focus: ["2"] },
+      { text: "Der Spieler sagt nichts an und spielt die 5 an.", aim: [W, B5] },
+      {
+        text: "Die Weiße trifft die 5 statt der 2 und es läuft keine Kugel an die Bande – Foul.",
+        moves: [shot.w, shot.obj],
+        mark: { at: B5, kind: "foul", after: "w" },
+      },
+    ],
+  },
 ];
 
 export default {
   id: "push-out",
   released: false,
-  discs: ["9 Ball", "10 Ball"],
+  discs: D89,
   topic: "ablauf",
   ref: "5.4, 6.4",
-  keywords: ["Push-Out", "zweiter Stoß", "Ansage", "Pushout"],
+  keywords: ["Push-Out", "zweiter Stoß", "Ansage", "Pushout", "nach dem Anstoß"],
   title: "Push Out",
   rule: "Nach einem regelgerechten Anstoß darf die Spielerin oder der Spieler am Tisch den zweiten Stoß als Push Out spielen, muss ihn aber vorher dem Schiedsrichter oder dem Gegner ansagen. Beim Push Out entfallen Erste Berührung (3.2) und Bande nach dem Treffer (3.3): die Weiße darf irgendwohin gespielt werden. Danach wählt der Gegner, ob er die Lage übernimmt oder zurückgibt. Ohne Ansage ist es ein normaler Stoß, und dann gelten alle Regeln.",
-  variants: [
-    {
-      label: "Mit Ansage", verdict: "ok",
-      reason: "Als Push Out angesagt: 3.2 und 3.3 gelten nicht.",
-      balls: balls(),
-      steps: [
-        { text: "Ausgangslage: Zweiter Stoß nach dem Anstoß. Die 2 ist die niedrigste Kugel.", focus: ["2"] },
-        { text: "Der Spieler sagt „Push Out“ an und spielt die 5 an.", say: "Push Out", aim: [W, B5] },
-        {
-          text: "Die Weiße trifft die 5 statt der 2 und es läuft keine Kugel an die Bande. Als Push Out erlaubt.",
-          say: "Push Out",
-          moves: shot,
-          mark: { at: B5, kind: "ok", after: "w" },
-        },
-      ],
-    },
-    {
-      label: "Ohne Ansage", verdict: "foul",
-      reason: "Ohne Ansage zählt der Stoß normal: falsche Kugel, keine Bande.",
-      balls: balls(),
-      steps: [
-        { text: "Ausgangslage: Zweiter Stoß nach dem Anstoß. Die 2 ist die niedrigste Kugel.", focus: ["2"] },
-        { text: "Der Spieler sagt nichts an und spielt die 5 an.", aim: [W, B5] },
-        {
-          text: "Die Weiße trifft die 5 statt der 2 und es läuft keine Kugel an die Bande – Foul.",
-          moves: shot,
-          mark: { at: B5, kind: "foul", after: "w" },
-        },
-      ],
-    },
-  ],
+  sets: [{ discs: D89, tag: "Niedrigste Kugel: 2", variants }],
 };
 
 export const en = {
@@ -58,6 +58,8 @@ export const en = {
   "zweiter Stoß": "second shot",
   "Ansage": "announcement",
   "Pushout": "Pushout",
+  "nach dem Anstoß": "after the break",
+  "Niedrigste Kugel: 2": "Lowest ball: 2",
   "Mit Ansage": "With announcement",
   "Ohne Ansage": "Without announcement",
   "Als Push Out angesagt: 3.2 und 3.3 gelten nicht.": "Announced as a push out: 3.2 and 3.3 do not apply.",

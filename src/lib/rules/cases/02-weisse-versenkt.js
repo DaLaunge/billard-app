@@ -1,5 +1,38 @@
-import { cue, ball } from "../../ruleEngine.js";
-import { ALL_DISCS } from "../meta.js";
+import { cue, ball, cut } from "../../ruleEngine.js";
+import { D89, D8, D141, ALL_DISCS, tagSets } from "../meta.js";
+
+/* Duenner Treffer auf die 5: die Weisse laeuft tangential weiter (90-Grad-Regel).
+   Fall A: in einem steilen Winkel - sie rollt in die Ecktasche (Scratch).
+   Fall B: flacherer Winkel - sie laeuft weniger weit und bleibt liegen. */
+const T = [155.4, 54.6], OBJ = [170, 80.7];
+const A0 = [66, 36], B0 = [75.2, 16.7];
+const a = cut(A0, { id: "5", at: T }, OBJ);
+a.w.to = [207, 12.5];
+a.w.out = true;
+const b = cut(B0, { id: "5", at: T }, OBJ);
+
+const variants = [
+  {
+    label: "Fall A", verdict: "foul",
+    reason: "Die Weiße ist in die Tasche gelaufen – Scratch.",
+    balls: [cue(...A0), ball(5, ...T), ball(9, 60, 95)],
+    steps: [
+      { text: "Ausgangslage: Die Weiße liegt links oben, die 5 vor der Ecktasche.", focus: ["5"] },
+      { text: "Die Weiße trifft die 5 nur dünn.", aim: [A0, a.contact] },
+      { text: "Die 5 läuft nach unten weg, die Weiße rollt in die Ecktasche – Scratch.", moves: [a.w, a.obj], mark: { at: [200, 19], kind: "foul", afterEnd: "w", delay: -250 } },
+    ],
+  },
+  {
+    label: "Fall B", verdict: "ok",
+    reason: "Die Weiße bleibt auf dem Tisch.",
+    balls: [cue(...B0), ball(5, ...T), ball(9, 60, 95)],
+    steps: [
+      { text: "Ausgangslage: Die Weiße liegt links oben, die 5 vor der Ecktasche.", focus: ["5"] },
+      { text: "Die Weiße trifft die 5 unter einem anderen Winkel.", aim: [B0, b.contact] },
+      { text: "Die 5 läuft nach unten weg, die Weiße läuft aus und bleibt liegen – kein Foul.", moves: [b.w, b.obj], mark: { at: T, kind: "ok", after: "w" } },
+    ],
+  },
+];
 
 export default {
   id: "weisse-versenkt",
@@ -7,58 +40,33 @@ export default {
   discs: ALL_DISCS,
   topic: "weisse",
   ref: "3.1, 4.9, 5.7, 6.9, 7.9",
-  keywords: ["Scratch", "Weiße versenkt", "Weiße in der Tasche"],
-  title: "Kugel und Weiße in der Tasche",
+  keywords: ["Scratch", "Weiße versenkt", "Weiße in der Tasche", "Weiße gefallen", "Weiße im Loch", "Ball in Hand"],
+  title: "Weiße in der Tasche (Scratch)",
   rule: "Fällt die Weiße in eine Tasche oder springt sie vom Tisch, ist das immer ein Foul – auch wenn im selben Stoß eine Kugel regulär fällt. Beim 8-Ball, 9-Ball und 10-Ball bekommt der Gegner die Weiße in die Hand und darf sie überall auf dem Tisch platzieren. Beim 14/1 Endlos wird dem Spieler ein Punkt abgezogen, und der Gegner spielt die Weiße aus dem Kopffeld.",
-  variants: [
-    {
-      label: "Fall A", verdict: "foul",
-      reason: "Die Weiße ist mitgefallen – Scratch.",
-      balls: [cue(68, 17), ball(5, 140, 64), ball(9, 60, 90)],
-      steps: [
-        { text: "Ausgangslage: Die 5 liegt vor der Ecktasche.", focus: ["5"] },
-        { text: "Die Weiße wird voll auf die 5 gespielt, mit Nachlauf.", aim: [[68, 17], [140, 64]] },
-        {
-          text: "Die 5 fällt, aber die Weiße läuft hinterher in dieselbe Tasche.",
-          moves: [
-            { id: "w", via: [[130.8, 58]], to: [207, 107], out: true },
-            { id: "5", to: [207, 107], out: true, after: "w" },
-          ],
-          mark: { at: [200, 100], kind: "foul", after: "w" },
-        },
-      ],
-    },
-    {
-      label: "Fall B", verdict: "ok",
-      reason: "Die 5 ist gefallen, die Weiße bleibt auf dem Tisch.",
-      balls: [cue(68, 17), ball(5, 140, 64), ball(9, 60, 90)],
-      steps: [
-        { text: "Ausgangslage: Die 5 liegt vor der Ecktasche.", focus: ["5"] },
-        { text: "Die Weiße wird voll auf die 5 gespielt, mit Rückläufer.", aim: [[68, 17], [140, 64]] },
-        {
-          text: "Die 5 fällt, die Weiße läuft zurück und bleibt liegen.",
-          moves: [
-            { id: "w", via: [[130.8, 58]], to: [118, 49] },
-            { id: "5", to: [207, 107], out: true, after: "w" },
-          ],
-          mark: { at: [200, 100], kind: "ok", after: "w" },
-        },
-      ],
-    },
-  ],
+  sets: tagSets(variants, [
+    [D89, "Niedrigste Kugel: 5"],
+    [D8, "Du spielst Volle"],
+    [D141, "14/1 · Sicherheit angesagt"],
+  ]),
 };
 
 export const en = {
-  "Kugel und Weiße in der Tasche": "Object ball and cue ball pocketed",
+  "Weiße in der Tasche (Scratch)": "Cue ball in the pocket (scratch)",
   "Fällt die Weiße in eine Tasche oder springt sie vom Tisch, ist das immer ein Foul – auch wenn im selben Stoß eine Kugel regulär fällt. Beim 8-Ball, 9-Ball und 10-Ball bekommt der Gegner die Weiße in die Hand und darf sie überall auf dem Tisch platzieren. Beim 14/1 Endlos wird dem Spieler ein Punkt abgezogen, und der Gegner spielt die Weiße aus dem Kopffeld.":
     "If the cue ball falls into a pocket or leaves the table it is always a foul – even if an object ball is legally pocketed on the same shot. In 8-ball, 9-ball and 10-ball the opponent gets ball in hand and may place the cue ball anywhere on the table. In 14.1 continuous one point is deducted and the opponent plays the cue ball from the kitchen.",
   "Weiße versenkt": "Cue ball pocketed",
   "Weiße in der Tasche": "Cue ball in pocket",
-  "Die Weiße ist mitgefallen – Scratch.": "The cue ball went in too – scratch.",
-  "Die 5 ist gefallen, die Weiße bleibt auf dem Tisch.": "The 5 was pocketed, the cue ball stays on the table.",
-  "Ausgangslage: Die 5 liegt vor der Ecktasche.": "Starting position: the 5 sits in front of the corner pocket.",
-  "Die Weiße wird voll auf die 5 gespielt, mit Nachlauf.": "The cue ball is played full at the 5, with follow.",
-  "Die 5 fällt, aber die Weiße läuft hinterher in dieselbe Tasche.": "The 5 drops, but the cue ball follows it into the same pocket.",
-  "Die Weiße wird voll auf die 5 gespielt, mit Rückläufer.": "The cue ball is played full at the 5, with draw.",
-  "Die 5 fällt, die Weiße läuft zurück und bleibt liegen.": "The 5 drops, the cue ball rolls back and stays on the table.",
+  "Weiße gefallen": "cue ball dropped",
+  "Weiße im Loch": "cue ball in the hole",
+  "Ball in Hand": "ball in hand",
+  "Niedrigste Kugel: 5": "Lowest ball: 5",
+  "Du spielst Volle": "You play solids",
+  "14/1 · Sicherheit angesagt": "14.1 · safety announced",
+  "Die Weiße ist in die Tasche gelaufen – Scratch.": "The cue ball ran into the pocket – scratch.",
+  "Die Weiße bleibt auf dem Tisch.": "The cue ball stays on the table.",
+  "Ausgangslage: Die Weiße liegt links oben, die 5 vor der Ecktasche.": "Starting position: the cue ball is at the top left, the 5 in front of the corner pocket.",
+  "Die Weiße trifft die 5 nur dünn.": "The cue ball hits the 5 only thinly.",
+  "Die 5 läuft nach unten weg, die Weiße rollt in die Ecktasche – Scratch.": "The 5 runs off downwards, the cue ball rolls into the corner pocket – scratch.",
+  "Die Weiße trifft die 5 unter einem anderen Winkel.": "The cue ball hits the 5 at a different angle.",
+  "Die 5 läuft nach unten weg, die Weiße läuft aus und bleibt liegen – kein Foul.": "The 5 runs off downwards, the cue ball rolls out and stays – no foul.",
 };

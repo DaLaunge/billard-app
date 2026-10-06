@@ -13,7 +13,10 @@
      say     kurzes Sprechblasen-Etikett im Bild (z.B. "Push Out")
      focus   Kugel-ids, die einen Ring bekommen (z.B. "die niedrigste Kugel")
      aim     [[x,y], ...] gestrichelte Ziellinie (mehrere Punkte = Knick an der Bande)
-     moves   [{id, to, via?, out?, delay?, after?, hitLeg?}]
+     moves   [{id, to, via?, out?, delay?, after?, hitLeg?, place?}]
+               place   Kugel wird hingelegt statt gerollt (Neuaufbau des Racks, Ball in
+                       Hand): sie blendet am Ziel ein. Ein Ball kann in `balls` mit
+                       hidden: true beginnen (liegt noch nicht auf dem Tisch).
                via     Zwischenpunkte; ein Knick ohne Treffer ist eine Bande
                out     Kugel verschwindet am Ziel (Tasche, oder ausserhalb des
                        Tisches = vom Tisch gesprungen)
@@ -54,28 +57,34 @@ const CUSHION = 0.85;
    Eckpunkte, Position aus der Bremskurve je Abschnitt. Der Player spielt sie
    mit easing "linear" ab - ein Easing je Abschnitt liesse die Kugel an jedem
    Knick fast stehen bleiben (siehe lib/flyBall.js). */
+export function posAt(m, time) {
+  const starts = [];
+  let acc = 0;
+  m.times.forEach((tt) => { starts.push(acc); acc += tt; });
+  if (time <= 0) return m.path[0];
+  if (time >= m.dur) return m.path[m.path.length - 1];
+  let i = m.legs.length - 1;
+  while (i > 0 && time < starts[i]) i--;
+  const tau = Math.max(0, time - starts[i]);
+  const sDone = Math.min(m.legs[i], m.vs[i] * tau - FRICTION * tau * tau / 2);
+  const f = m.legs[i] ? sDone / m.legs[i] : 1;
+  return [m.path[i][0] + (m.path[i + 1][0] - m.path[i][0]) * f, m.path[i][1] + (m.path[i + 1][1] - m.path[i][1]) * f];
+}
+
 export function pathFrames(m, n = 24) {
   const starts = [];
   let acc = 0;
   m.times.forEach((tt) => { starts.push(acc); acc += tt; });
-  const at = (time) => {
-    let i = m.legs.length - 1;
-    while (i > 0 && time < starts[i]) i--;
-    const tau = Math.max(0, time - starts[i]);
-    const sDone = Math.min(m.legs[i], m.vs[i] * tau - FRICTION * tau * tau / 2);
-    const f = m.legs[i] ? sDone / m.legs[i] : 1;
-    return [m.path[i][0] + (m.path[i + 1][0] - m.path[i][0]) * f, m.path[i][1] + (m.path[i + 1][1] - m.path[i][1]) * f];
-  };
   const ts = new Set();
   for (let k = 0; k <= n; k++) ts.add((k / n) * m.dur);
   starts.slice(1).forEach((t0) => ts.add(t0));
-  return [...ts].sort((a, b) => a - b).map((time) => ({ p: at(time), offset: Math.min(1, time / m.dur) }));
+  return [...ts].sort((a, b) => a - b).map((time) => ({ p: posAt(m, time), offset: Math.min(1, time / m.dur) }));
 }
 
 /* Zustand nach Schritt idx: Position und "in der Tasche" je Kugel. */
 export function stateAt(scene, idx) {
   const pos = {}, out = {};
-  scene.balls.forEach((b) => { pos[b.id] = [b.x, b.y]; });
+  scene.balls.forEach((b) => { pos[b.id] = [b.x, b.y]; if (b.hidden) out[b.id] = true; });
   for (let i = 1; i <= idx; i++) {
     for (const m of scene.steps[i].moves || []) {
       pos[m.id] = m.to;
@@ -94,6 +103,10 @@ export function timeline(step, fromPos) {
   const info = {};
   const speeds = (m) => {
     if (info[m.id]) return info[m.id];
+    if (m.place) {
+      // Platzieren statt Rollen (Neuaufbau, Ball in Hand): die Kugel erscheint am Ziel (Einblenden im Player).
+      return (info[m.id] = { path: [m.to, m.to], legs: [0], vs: [0], ve: [0], times: [350], hitLeg: 0, dur: 350, place: true });
+    }
     const path = [fromPos[m.id], ...(m.via || []), m.to];
     const legs = path.slice(1).map((p, i) => dist(path[i], p));
     const last = legs.length - 1;
@@ -152,3 +165,130 @@ export const along = (from, to, len) => {
 export const clampTable = (p) => [Math.min(204.5, Math.max(15.5, p[0])), Math.min(104.5, Math.max(15.5, p[1]))].map(r2);
 export const ball = (n, x, y) => ({ id: n === 0 ? "w" : String(n), n, x, y });
 export const cue = (x, y) => ball(0, x, y);
+
+/* Naturlicher Stoss mit Winkel (Schnitt). Trifft die Weisse eine Kugel nicht
+   voll, geht die Objektkugel entlang der MITTELPUNKTSLINIE weg (Richtung
+   target -> objTo), die Weisse laeuft tangential weiter (90-Grad-Regel, ohne
+   Effet): sie behaelt die Geschwindigkeitskomponente quer zur Mittelpunkts-
+   linie, also v_Weisse = v_Treffer * sin(phi) = v_Objekt * tan(phi). Aus dem
+   Weg der Objektkugel folgt damit auch, wie weit die Weisse weiterlaeuft:
+   L = v_Objekt^2 * tan(phi)^2 / (2 * FRICTION). Bei vollem Treffer (phi ~ 0)
+   bleibt sie stehen (Stoppball). Stoesst die Weisse unterwegs an eine Bande,
+   wird sie dort mit CUSHION-Verlust reflektiert.
+     from    Startpunkt der Weissen
+     target  {id, at:[x,y]} getroffene Kugel
+     objTo   Ziel der Objektkugel (legt die Mittelpunktslinie fest)
+     opts    {out: Objektkugel faellt, delay: ms Verzoegerung der Weissen,
+              striker: id der stossenden Kugel (Standard "w"; fuer Ketten wie 3 trifft 1),
+              strikerAfter: deren `after`, bank: Bandenpunkt VOR dem Treffer (siehe bankPoint)}
+   Liefert {contact, w, obj, rail}: die beiden moves, den Treffpunkt und, falls
+   die Weisse nach dem Treffer an eine Bande laeuft, deren Punkt. */
+const LO = 15.5, HI_X = 204.5, HI_Y = 104.5;
+export function cut(from, target, objTo, opts = {}) {
+  const n = unit(target.at, objTo);
+  const g = 2 * BALL_R;
+  const contact = [r2(target.at[0] - n[0] * g), r2(target.at[1] - n[1] * g)];
+  const inc = unit(from, contact);
+  const cos = Math.max(0.2, Math.min(1, inc[0] * n[0] + inc[1] * n[1]));
+  const sin = Math.sqrt(1 - cos * cos);
+  const ve = opts.out ? POCKET_V : 0;
+  const vo2 = ve * ve + 2 * FRICTION * dist(target.at, objTo);
+  const len = (vo2 * (sin / cos) ** 2) / (2 * FRICTION);
+  const side = Math.sign(-n[1] * inc[0] + n[0] * inc[1]) || 1;
+  let dir = [-n[1] * side, n[0] * side];
+  const w = { id: opts.striker || "w", to: contact };
+  if (opts.delay) w.delay = opts.delay;
+  if (opts.strikerAfter) w.after = opts.strikerAfter;
+  const wId = w.id;
+  let rail = null;
+  if (len >= 3) {
+    // Weg der Weissen nach dem Treffer, mit hoechstens einer Bandenreflexion.
+    const t = (p, d) => {
+      const tx = d[0] > 0 ? (HI_X - p[0]) / d[0] : d[0] < 0 ? (LO - p[0]) / d[0] : Infinity;
+      const ty = d[1] > 0 ? (HI_Y - p[1]) / d[1] : d[1] < 0 ? (LO - p[1]) / d[1] : Infinity;
+      return Math.min(tx, ty);
+    };
+    const th = t(contact, dir);
+    w.via = [contact];
+    if (th >= len) w.to = [r2(contact[0] + dir[0] * len), r2(contact[1] + dir[1] * len)];
+    else {
+      const hit = [r2(contact[0] + dir[0] * th), r2(contact[1] + dir[1] * th)];
+      rail = hit;
+      const refl = Math.abs(dir[0] * th) > 0 && hit[0] <= LO + 0.01 || hit[0] >= HI_X - 0.01 ? [-dir[0], dir[1]] : [dir[0], -dir[1]];
+      const rest = (len - th) * CUSHION * CUSHION;
+      w.via = [contact, hit];
+      const end = [hit[0] + refl[0] * rest, hit[1] + refl[1] * rest];
+      w.to = [r2(Math.min(HI_X, Math.max(LO, end[0]))), r2(Math.min(HI_Y, Math.max(LO, end[1])))];
+      // Die Reflexion ist nur beim Verlassen der Bande gueltig; eine zweite Bande wird abgeschnitten (clamp).
+    }
+  }
+  if (opts.bank) {
+    // Weisse prallt erst an die Bande (bank = Bandenpunkt) und trifft dann: Treffer am Ende von Abschnitt 1.
+    w.via = [opts.bank, ...(w.via || [])];
+    w.hitLeg = 1;
+  }
+  const obj = { id: target.id, to: objTo, after: wId };
+  if (opts.out) obj.out = true;
+  return { contact, w, obj, rail, phi: Math.acos(cos), cueLen: len };
+}
+
+/* Naturlichkeits-Check fuer Szenen (scripts/checkRules.mjs). Prueft fuer jeden
+   Treffer, ob er physikalisch stimmt:
+   1. Die Objektkugel muss entlang der Mittelpunktslinie (Treffpunkt -> ihr
+      Mittelpunkt) weglaufen; weicht ihre Laufrichtung mehr als 6 Grad ab, sieht
+      der Kontakt "falsch" aus.
+   2. Trifft die Weisse unter Winkel und bleibt einfach stehen, obwohl sie
+      tangential weiterlaufen muesste, ist das unnatuerlich.
+   Beides loest cut() (siehe oben). Ein Stoss kann mit `stop: true` am move der
+   Weissen als bewusster Halt (z.B. Doppeltreffer) von der Pruefung ausgenommen
+   werden. Liefert eine Liste von Fehlern {kind, ...}. */
+export function contactErrors(step, fromPos) {
+  const out = [];
+  for (const m of step.moves || []) {
+    const obj = (step.moves || []).find((o) => o.after === m.id);
+    if (!obj || m.stop) continue;
+    const hitLeg = m.hitLeg ?? 0;
+    const path = [fromPos[m.id], ...(m.via || []), m.to];
+    const a = path[hitLeg], c = path[hitLeg + 1];
+    const nrm = unit(c, fromPos[obj.id]);
+    const od = unit(fromPos[obj.id], (obj.via && obj.via[0]) || obj.to);
+    const dev = (Math.acos(Math.max(-1, Math.min(1, nrm[0] * od[0] + nrm[1] * od[1]))) * 180) / Math.PI;
+    if (dev > 6) out.push({ kind: "objekt", id: obj.id, dev: Math.round(dev) });
+    if (m.id === "w" && !(m.via && m.via.length) && hitLeg === 0) {
+      const inc = unit(a, c);
+      const cos = Math.max(0.2, Math.min(1, inc[0] * nrm[0] + inc[1] * nrm[1]));
+      const ve = obj.out ? POCKET_V : 0;
+      const vo2 = ve * ve + 2 * FRICTION * dist(fromPos[obj.id], obj.to);
+      const need = (vo2 * (Math.sqrt(1 - cos * cos) / cos) ** 2) / (2 * FRICTION);
+      if (need > 4) out.push({ kind: "weisse", need: Math.round(need), phi: Math.round((Math.acos(cos) * 180) / Math.PI) });
+    }
+  }
+  return out;
+}
+
+/* Bandenpunkt fuer einen Stoss ueber eine Bande: die Weisse laeuft von `from`
+   an die Bande `rail` ("top" | "bottom" | "left" | "right") und von dort so,
+   dass sie `contact` erreicht (Spiegelungstrick, Einfallswinkel = Ausfallswinkel). */
+export function bankPoint(from, contact, rail) {
+  const wall = { top: ["y", LO], bottom: ["y", HI_Y], left: ["x", LO], right: ["x", HI_X] }[rail];
+  if (wall[0] === "y") {
+    const mc = [contact[0], 2 * wall[1] - contact[1]];
+    const t = (wall[1] - from[1]) / (mc[1] - from[1]);
+    return [r2(from[0] + (mc[0] - from[0]) * t), wall[1]];
+  }
+  const mc = [2 * wall[1] - contact[0], contact[1]];
+  const t = (wall[1] - from[0]) / (mc[0] - from[0]);
+  return [wall[1], r2(from[1] + (mc[1] - from[1]) * t)];
+}
+
+/* Wie cut(), aber der Schnitt wird als Winkel vorgegeben statt als Zielpunkt:
+   die Objektkugel laeuft `len` weit in der Richtung, die um `deg` Grad (positiv =
+   im Uhrzeigersinn auf dem Bildschirm) von der Linie Weisse -> Kugel abweicht.
+   Praktisch, wenn der Ort der Weissen aus vorigen Stoessen folgt. */
+export function cutAngle(from, target, deg, len, opts = {}) {
+  const d = unit(from, target.at);
+  const a = (deg * Math.PI) / 180;
+  const dir = [d[0] * Math.cos(a) - d[1] * Math.sin(a), d[0] * Math.sin(a) + d[1] * Math.cos(a)];
+  const objTo = [r2(target.at[0] + dir[0] * len), r2(target.at[1] + dir[1] * len)];
+  return cut(from, target, objTo, opts);
+}

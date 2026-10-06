@@ -60,7 +60,10 @@ export default function RuleScene({ scene }) {
       const a = from.pos[ball.id], z = to.pos[ball.id];
       const wasOut = !!from.out[ball.id], isOut = !!to.out[ball.id];
       const m = plan && plan[ball.id];
-      if (m) {
+      if (m && m.place) {
+        // Hingelegt: am Ziel einblenden statt zu rollen.
+        el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: m.dur, delay: m.delay, fill: "backwards", easing: "ease-out" });
+      } else if (m) {
         // Bremskurve ist in die Keyframes eingerechnet (lib/ruleScenes.js), daher linear abspielen.
         const frames = pathFrames(m).map((f) => ({ transform: tr(f.p), offset: f.offset }));
         const opts = { duration: m.dur, delay: m.delay, easing: "linear", fill: "backwards" };
@@ -109,6 +112,7 @@ export default function RuleScene({ scene }) {
     <div className="rs-player" ref={rootRef}>
       <div className="rs-head">
         <span className="rs-label">{t(scene.label)}</span>
+        {scene.tag && <span className="rs-tagchip">{t(scene.tag)}</span>}
       </div>
       <svg className="rs-table" viewBox="0 0 220 120" role="button" tabIndex={0} aria-label={t(step.text)}
         onClick={togglePlay} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlay(); } }}>
@@ -123,6 +127,14 @@ export default function RuleScene({ scene }) {
         </defs>
         <rect className="rs-rail" x="0" y="0" width="220" height="120" rx="9" />
         <rect className="rs-cloth" x="9" y="9" width="202" height="102" rx="2" />
+        {scene.table && scene.table.headLine && (
+          <g className="rs-lines" aria-hidden="true">
+            <rect className="rs-kitchen" x="10" y="10" width="50" height="100" />
+            <line x1="60" y1="10" x2="60" y2="110" />
+            <circle cx="60" cy="60" r="1.2" /><circle cx="110" cy="60" r="1.2" /><circle cx="160" cy="60" r="1.2" />
+          </g>
+        )}
+        {scene.table && scene.table.triangle && <polygon className="rs-triangle" points="149,60 203.6,28.5 203.6,91.5" />}
         {POCKETS.map((p, i) => <circle key={i} className="rs-pocket" cx={p[0]} cy={p[1]} r="6.5" />)}
 
         {step.aim && (
@@ -139,8 +151,8 @@ export default function RuleScene({ scene }) {
 
         {step.say && (
           <g key={"say" + idx} className="rs-say">
-            <rect x="13" y="13" rx="3" height="11" width={String(t(step.say)).length * 4.4 + 8} />
-            <text x="17" y="18.6" dominantBaseline="central">{t(step.say)}</text>
+            <rect x={207 - (String(t(step.say)).length * 4.4 + 8)} y="13" rx="3" height="11" width={String(t(step.say)).length * 4.4 + 8} />
+            <text x={211 - (String(t(step.say)).length * 4.4 + 8)} y="18.6" dominantBaseline="central">{t(step.say)}</text>
           </g>
         )}
 
@@ -161,7 +173,7 @@ export default function RuleScene({ scene }) {
       {done && (
         <p className={"rs-verdict " + scene.verdict}>
           {scene.verdict === "foul" ? <X size={15} /> : <Check size={15} />}
-          <b>{scene.verdict === "foul" ? t("Foul") : t("Kein Foul")}</b>
+          <b>{scene.verdictLabel ? t(scene.verdictLabel) : scene.verdict === "foul" ? t("Foul") : t("Kein Foul")}</b>
           <span>{t(scene.reason)}</span>
         </p>
       )}

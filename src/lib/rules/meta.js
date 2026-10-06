@@ -24,3 +24,13 @@ export const TOPICS_EN = {
   "Ablauf & Reihenfolge": "Procedure & order",
   "Kugeln & Tisch": "Balls & table",
 };
+
+/* Dieselben Varianten fuer mehrere Disziplin-Gruppen, nur mit anderem Etikett am
+   Tisch: tagSets(varianten, [[["9 Ball","10 Ball"], "Niedrigste Kugel: 5"], ...]).
+   Das Etikett sagt, in welcher Situation man sich befindet (z. B. welche Gruppe
+   man beim 8-Ball spielt) - die Kugeln der Szene muessen dazu passen. */
+export const tagSets = (variants, spec) => spec.map(([discs, tag]) => ({ discs, tag, variants }));
+
+export const D89 = ["9 Ball", "10 Ball"];
+export const D8 = ["8 Ball"];
+export const D141 = ["14/1 Endlos"];

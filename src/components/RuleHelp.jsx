@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, X } from "lucide-react";
-import { RULE_CASES, ALL_DISCS, TOPICS, casesForDisc, searchCases, sourceLine } from "../lib/rules";
+import { RULE_CASES, ALL_DISCS, TOPICS, casesForDisc, searchCases, sourceLine, setsOf, setFor } from "../lib/rules";
 import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
 import InfoButton from "./widgets/InfoButton";
@@ -9,12 +9,18 @@ import DiscBall, { DiscAll, DiscPickRow } from "./widgets/DiscBall";
 const ALL = "alle";
 
 /* Disziplinen eines Falls als Kugel-Tags: nur die Kugeln, ohne Text. Gilt der
-   Fall fuer alle vier, genuegt der Haufen (DiscAll) - das spart Platz. */
-export function DiscTags({ discs }) {
+   Fall fuer alle vier, genuegt der Haufen (DiscAll) - das spart Platz. Hat der
+   Fall mehrere Saetze (je Disziplin eine passende Situation), sind die Kugeln
+   zugleich der Umschalter: die Kugeln des gezeigten Satzes sind umrandet. */
+export function DiscTags({ discs, active, onPick }) {
   const all = ALL_DISCS.every((d) => discs.includes(d));
+  if (all && !onPick) return <span className="rs-tags"><DiscAll size={22} /></span>;
   return (
     <span className="rs-tags">
-      {all ? <DiscAll size={22} /> : discs.map((d) => <DiscBall key={d} disc={d} size={16} />)}
+      {discs.map((d) => (onPick
+        ? <button key={d} type="button" className={"rs-tagbtn" + (active.includes(d) ? " on" : "")} onClick={() => onPick(d)}
+            aria-pressed={active.includes(d)} aria-label={t(d)} title={t(d)}><DiscBall disc={d} size={16} /></button>
+        : <DiscBall key={d} disc={d} size={16} />))}
     </span>
   );
 }
@@ -32,6 +38,7 @@ export function DiscTags({ discs }) {
 export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyReleased = true }) {
   const [q, setQ] = useState("");
   const [disc, setDisc] = useState(discProp || ALL);
+  const [pick, setPick] = useState({}); // Fall-id -> Disziplin, deren Satz gezeigt wird
 
   const pool = casesForDisc(disc === ALL ? null : disc, { onlyReleased, ids });
   const shown = searchCases(pool, q);
@@ -45,20 +52,24 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
       </div>
       {!lockDisc && <DiscPickRow discs={ALL_DISCS} value={disc} onChange={setDisc} all={ALL} />}
       {shown.length === 0 && <p className="hint">{t("Keine passende Regel gefunden.")}</p>}
-      {shown.map((c) => (
-        <div key={c.id} className="rs-case">
-          <div className="rs-case-head">
-            <h4>{t(c.title)}</h4>
-            <DiscTags discs={c.discs} />
-            {!c.released && <span className="rs-badge">{t("nur Verwaltung")}</span>}
-            <InfoButton title={t(c.title)}>{t(c.rule)} {t("Quelle:")} {sourceLine(c)}</InfoButton>
+      {shown.map((c) => {
+        const set = setFor(c, pick[c.id] || (disc === ALL ? null : disc));
+        const multi = setsOf(c).length > 1;
+        return (
+          <div key={c.id} className="rs-case">
+            <div className="rs-case-head">
+              <h4>{t(c.title)}</h4>
+              <DiscTags discs={c.discs} active={set.discs} onPick={multi ? (d) => setPick((p) => ({ ...p, [c.id]: d })) : undefined} />
+              {!c.released && <span className="rs-badge">{t("nur Verwaltung")}</span>}
+              <InfoButton title={t(c.title)}>{t(c.rule)} {t("Quelle:")} {sourceLine(c)}</InfoButton>
+            </div>
+            <p className="rs-topic">{t(TOPICS[c.topic])}</p>
+            <div className="rs-pair">
+              {set.variants.map((v) => <RuleScene key={c.id + set.discs.join() + v.label} scene={{ ...v, tag: set.tag }} />)}
+            </div>
           </div>
-          <p className="rs-topic">{t(TOPICS[c.topic])}</p>
-          <div className="rs-pair">
-            {c.variants.map((v) => <RuleScene key={c.id + v.label} scene={v} />)}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

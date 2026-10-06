@@ -1,5 +1,33 @@
-import { cue, ball } from "../../ruleEngine.js";
-import { ALL_DISCS } from "../meta.js";
+import { cue, ball, cut } from "../../ruleEngine.js";
+import { D89, D8, D141, ALL_DISCS, tagSets } from "../meta.js";
+
+const W = [50, 60], P4 = [110, 60];
+const a = cut(W, { id: "4", at: P4 }, [140, 60]);
+const b = cut(W, { id: "4", at: P4 }, [204.5, 60]);
+const balls = () => [cue(...W), ball(4, ...P4), ball(9, 150, 92)];
+
+const variants = [
+  {
+    label: "Fall A", verdict: "foul",
+    reason: "Keine Kugel versenkt und keine Bande berührt.",
+    balls: balls(),
+    steps: [
+      { text: "Ausgangslage: Die Weiße spielt die 4 an.", focus: ["4"] },
+      { text: "Der Stoß geht gerade auf die 4.", aim: [W, P4] },
+      { text: "Beide Kugeln bleiben mitten auf dem Tisch liegen.", moves: [a.w, a.obj], mark: { at: [140, 60], kind: "foul", afterEnd: "4" } },
+    ],
+  },
+  {
+    label: "Fall B", verdict: "ok",
+    reason: "Die 4 berührt die Bande.",
+    balls: balls(),
+    steps: [
+      { text: "Ausgangslage: Die Weiße spielt die 4 an.", focus: ["4"] },
+      { text: "Der Stoß geht gerade auf die 4.", aim: [W, P4] },
+      { text: "Die 4 läuft bis zur Bande.", moves: [b.w, b.obj], mark: { at: [204.5, 60], kind: "ok", afterEnd: "4" } },
+    ],
+  },
+];
 
 export default {
   id: "nach-treffer-bande",
@@ -7,45 +35,14 @@ export default {
   discs: ALL_DISCS,
   topic: "bande",
   ref: "3.3, 2.7",
-  keywords: ["Bande", "Tasche", "kein Bandenkontakt", "No Rail"],
+  keywords: ["Bande", "Tasche", "kein Bandenkontakt", "keine Bande", "No Rail", "Kugel bleibt liegen"],
   title: "Nach dem Treffer: Bande oder Tasche",
   rule: "Wird bei einem Stoß keine Kugel versenkt, muss die Weiße eine Objektkugel berühren, und danach muss mindestens eine Kugel (Weiße oder Objektkugel) eine Bande anlaufen. Sonst ist es ein Foul. Eine versenkte Kugel zählt dabei als Bandenberührung. Die Regel gilt bei 8-Ball, 9-Ball, 10-Ball und 14/1 Endlos, beim Push Out entfällt sie. Folgen: wie beim Scratch (Ball in Hand bzw. ein Punkt Abzug beim 14/1).",
-  variants: [
-    {
-      label: "Fall A", verdict: "foul",
-      reason: "Keine Kugel versenkt und keine Bande berührt.",
-      balls: [cue(50, 60), ball(4, 110, 60), ball(12, 150, 90)],
-      steps: [
-        { text: "Ausgangslage: Die Weiße spielt eine Kugel ihrer Gruppe an.", focus: ["4"] },
-        { text: "Der Stoß geht gerade auf die 4.", aim: [[50, 60], [110, 60]] },
-        {
-          text: "Beide Kugeln bleiben mitten auf dem Tisch liegen.",
-          moves: [
-            { id: "w", to: [99, 60] },
-            { id: "4", to: [140, 60], after: "w" },
-          ],
-          mark: { at: [140, 60], kind: "foul", afterEnd: "4" },
-        },
-      ],
-    },
-    {
-      label: "Fall B", verdict: "ok",
-      reason: "Die 4 berührt die Bande.",
-      balls: [cue(50, 60), ball(4, 110, 60), ball(12, 150, 90)],
-      steps: [
-        { text: "Ausgangslage: Die Weiße spielt eine Kugel ihrer Gruppe an.", focus: ["4"] },
-        { text: "Der Stoß geht gerade auf die 4.", aim: [[50, 60], [110, 60]] },
-        {
-          text: "Die 4 läuft bis zur Bande.",
-          moves: [
-            { id: "w", to: [99, 60] },
-            { id: "4", to: [204.5, 60], after: "w" },
-          ],
-          mark: { at: [204.5, 60], kind: "ok", afterEnd: "4" },
-        },
-      ],
-    },
-  ],
+  sets: tagSets(variants, [
+    [D89, "Niedrigste Kugel: 4"],
+    [D8, "Du spielst Volle"],
+    [D141, "14/1 · Sicherheit angesagt"],
+  ]),
 };
 
 export const en = {
@@ -55,10 +52,15 @@ export const en = {
   "Bande": "Cushion",
   "Tasche": "Pocket",
   "kein Bandenkontakt": "no cushion contact",
+  "keine Bande": "no cushion",
   "No Rail": "No Rail",
+  "Kugel bleibt liegen": "ball stays put",
+  "Niedrigste Kugel: 4": "Lowest ball: 4",
+  "Du spielst Volle": "You play solids",
+  "14/1 · Sicherheit angesagt": "14.1 · safety announced",
   "Keine Kugel versenkt und keine Bande berührt.": "No ball pocketed and no cushion touched.",
   "Die 4 berührt die Bande.": "The 4 touches the cushion.",
-  "Ausgangslage: Die Weiße spielt eine Kugel ihrer Gruppe an.": "Starting position: the cue ball plays a ball of its group.",
+  "Ausgangslage: Die Weiße spielt die 4 an.": "Starting position: the cue ball plays the 4.",
   "Der Stoß geht gerade auf die 4.": "The shot goes straight at the 4.",
   "Beide Kugeln bleiben mitten auf dem Tisch liegen.": "Both balls stay in the middle of the table.",
   "Die 4 läuft bis zur Bande.": "The 4 runs to the cushion.",

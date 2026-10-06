@@ -57,17 +57,23 @@ Mit „Foul / kein Foul“-Gegenüberstellung (A/B). Status: ✅ im Prototyp, �
 | 7 | Stoß, während sich noch eine Kugel bewegt | alle | 3.9 | ✅ |
 | 8 | Weiße berührt versenkte Kugel in der Tasche | alle | 2.2 | 🟦 |
 | 9 | Press liegende Kugel an der Bande: muss erst weg und wieder hin | alle | 2.7, 3.3 | 🟦 |
-| 10 | Kugel hängt am Taschenrand: nach 5 Sekunden nicht versenkt | alle | 2.2 | 🟨 |
+| 10 | Kugel hängt am Taschenrand: nach 5 Sekunden nicht versenkt | alle | 2.2 | ✅ |
 | 11 | Push Out: 3.2 und 3.3 entfallen | 9, 10 | 5.4, 6.4 | ✅ |
 | 12 | Anstoß: mindestens vier Kugeln an die Bande, sonst Foul | 8, 9, 10 | 4.3d, 5.3b, 6.3b | ✅ |
-| 13 | 14/1-Anstoß: Weiße und zwei Kugeln je an eine Bande, sonst Anstoßfoul (−2) | 14/1 | 7.3b | 🟦 |
+| 13 | 14/1-Anstoß: Weiße und zwei Kugeln je an eine Bande, sonst Anstoßfoul (−2) | 14/1 | 7.3b | ✅ |
 | 14 | Dry Break bei 3-Punkte-Regel (ÖPBV-Abweichung) | 9 | 5.3c | 🟨 |
 | 15 | Offener Tisch: erst die 8 spielen ist Foul | 8 | 4.4 | ✅ |
-| 16 | Spielen aus dem Kopffeld: Kopflinie und erste Kugel im Kopffeld | 8, 14/1 | 3.10, 3.11 | 🟨 |
-| 17 | Drei Fouls in Folge (Ablauf in Schritten) | 9, 10, 14/1 | 3.13 | 🟨 (Zähler) |
+| 16 | Spielen aus dem Kopffeld: Kopflinie und erste Kugel im Kopffeld | 8, 14/1 | 3.10, 3.11 | ✅ |
+| 17 | Drei Fouls in Folge (Ablauf in Schritten) | 9, 10, 14/1 | 3.13 | ✅ |
 | 18 | Durchstoß / Schieben / Weiße press an Kugel | alle | 3.7, 3.8 | 🟨 (Queue) |
 | 19 | Fuß nicht am Boden | alle | 3.4 | 🟨 (Figur) |
 | 20 | Kugel berühren / Lauf verändern | alle | 3.6 | 🟨 (Hand) |
+| 21 | 14/1 Neuaufbau: 15. Kugel mit der 14. versenkt (15 oder 14 Kugeln) | 14/1 | 7.4, 7.6, 7.8a | ✅ |
+| 22 | 14/1 Neuaufbau: 15. Kugel behindert (Kopfpunkt / Mittelpunkt) | 14/1 | 7.8c | ✅ |
+| 23 | 14/1 Neuaufbau: Weiße behindert (Ball in Hand / Kopfpunkt) | 14/1 | 7.8d | ✅ |
+| 24 | 14/1 Neuaufbau: beide behindern (15 Kugeln, Weiße aus dem Kopffeld) | 14/1 | 7.8a, 7.8b | ✅ |
+
+Noch offen: 5b (gleichzeitig Kugel und Bande), 8 (Weiße berührt versenkte Kugel), 9 (press liegende Kugel an der Bande), 14 (Dry Break bei der ÖPBV-3-Punkte-Regel), 18 bis 20 (brauchen gezeichnete Queue, Hand und Fuß).
 
 ## 4. Doppel (Doppel_Matchregeln.pdf, Club-/Verbandsregel)
 
