@@ -2812,6 +2812,8 @@ button.break-slot { cursor: pointer; }
 .rs-count-dots { display: inline-flex; gap: 3px; }
 .rs-count-dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--accent-line); background: transparent; }
 .rs-count-dots i.on { background: var(--accent); border-color: var(--accent); }
+.rs-count.good { color: var(--win); }
+.rs-count.good .rs-count-dots i.on { background: var(--win); border-color: var(--win); }
 .rs-count.full { color: var(--loss); }
 .rs-count.full .rs-count-dots i.on { background: var(--loss); border-color: var(--loss); }
 @media (prefers-reduced-motion: no-preference) { .rs-count-dots i.on:last-child, .rs-count-dots i.on { animation: ball-pop .25s ease-out; } }

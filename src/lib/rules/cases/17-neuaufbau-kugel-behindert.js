@@ -1,4 +1,4 @@
-import { cue, ball } from "../../ruleEngine.js";
+import { cue, ball, cut } from "../../ruleEngine.js";
 import { D141 } from "../meta.js";
 import { hiddenRack14, placeRack14, HEAD, CENTER } from "../racks.js";
 
@@ -7,6 +7,10 @@ import { hiddenRack14, placeRack14, HEAD, CENTER } from "../racks.js";
    auf den Mittelpunkt. */
 const L15 = [176, 60];
 const table = { headLine: true, triangle: true };
+// Danach darf jede Kugel zuerst angespielt werden - hier die 15. Kugel auf dem Kopfpunkt bzw. Mittelpunkt
+const WA = [100, 84];
+const shotA = cut(WA, { id: "15", at: HEAD }, [44, 15.5]);
+const shotB = cut(HEAD, { id: "15", at: CENTER }, [125, 104.5]);
 
 const variants = [
   {
@@ -21,6 +25,7 @@ const variants = [
         moves: [...placeRack14(), { id: "15", to: HEAD, place: true, delay: 400 }],
         mark: { at: HEAD, kind: "ok", delay: 900 },
       },
+      { text: "Danach darf der Spieler jede Kugel zuerst anspielen – auch die 15. Kugel im Kopffeld, denn die Weiße wurde nicht mit Ball in Hand aus dem Kopffeld gespielt.", say: "jede Kugel erlaubt", aim: [WA, shotA.contact], expectRail: true, moves: [shotA.w, shotA.obj] },
     ],
   },
   {
@@ -35,6 +40,7 @@ const variants = [
         moves: [...placeRack14(), { id: "15", to: CENTER, place: true, delay: 400 }],
         mark: { at: CENTER, kind: "ok", delay: 900 },
       },
+      { text: "Danach darf der Spieler jede Kugel zuerst anspielen – hier die 15. Kugel auf dem Mittelpunkt.", say: "jede Kugel erlaubt", aim: [HEAD, shotB.contact], expectRail: true, moves: [shotB.w, shotB.obj] },
     ],
   },
 ];
@@ -52,6 +58,9 @@ export default {
 };
 
 export const en = {
+  "jede Kugel erlaubt": "any ball allowed",
+  "Danach darf der Spieler jede Kugel zuerst anspielen – auch die 15. Kugel im Kopffeld, denn die Weiße wurde nicht mit Ball in Hand aus dem Kopffeld gespielt.": "Afterwards the player may play any ball first – also the 15th ball in the kitchen, because the cue ball was not played from the kitchen with ball in hand.",
+  "Danach darf der Spieler jede Kugel zuerst anspielen – hier die 15. Kugel auf dem Mittelpunkt.": "Afterwards the player may play any ball first – here the 15th ball on the center spot.",
   "14/1: 15. Kugel behindert den Neuaufbau": "14.1: 15th ball obstructs the re-rack",
   "Liegt die 15. Kugel innerhalb der Dreiecksmarkierung oder ragt sie hinein, behindert sie den Aufbau der 14 anderen Kugeln. Behindert nur sie (nicht die Weiße), wird sie auf den Kopfpunkt gelegt, oder auf den Mittelpunkt, wenn die Weiße den Kopfpunkt blockiert. Der Schiedsrichter sagt, ob eine Kugel im Dreieck liegt. Die Weiße bleibt, wo sie liegt.":
     "If the 15th ball lies inside the triangle marking or overlaps it, it obstructs the racking of the other 14 balls. If only it obstructs (not the cue ball), it is placed on the head spot, or on the center spot if the cue ball blocks the head spot. The referee tells whether a ball is in the triangle. The cue ball stays where it is.",

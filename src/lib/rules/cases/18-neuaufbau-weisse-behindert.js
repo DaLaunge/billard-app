@@ -8,6 +8,9 @@ import { hiddenRack14, placeRack14, HEAD } from "../racks.js";
    Weisse kommt auf den Kopfpunkt. */
 const W = [184, 66];
 const table = { headLine: true, triangle: true };
+// Fall A: Ball in Hand aus dem Kopffeld, die 15. liegt ausserhalb: sie darf angespielt werden
+const WH = [36, 62], L15A = [122, 38];
+const shotA = cut(WH, { id: "15", at: L15A }, [150, 15.5], { hand: true });
 // Fall B: Die Weisse steht auf dem Kopfpunkt, die 15. liegt im Kopffeld und darf direkt angespielt werden.
 const K15 = [36, 28];
 const direct = cut(HEAD, { id: "15", at: K15 }, [15.5, 24]);
@@ -17,7 +20,7 @@ const variants = [
     label: "Fall A", verdict: "ok", verdictLabel: "Weiße: Ball in Hand (Kopffeld)",
     reason: "Die 15. Kugel liegt außerhalb des Kopffelds: die Weiße wird aus dem Kopffeld gespielt.",
     table,
-    balls: [cue(...W), ...hiddenRack14(), ball(15, 122, 38)],
+    balls: [cue(...W), ...hiddenRack14(), ball(15, ...L15A)],
     steps: [
       { text: "Ausgangslage: Die 14. Kugel fällt. Die Weiße liegt im Dreieck, die 15. Kugel außerhalb des Kopffelds.", focus: ["15"] },
       {
@@ -26,6 +29,7 @@ const variants = [
         moves: [...placeRack14(), { id: "w", to: [36, 62], place: true, delay: 400 }],
         mark: { at: [36, 62], kind: "ok", delay: 900 },
       },
+      { text: "Die 15. Kugel liegt außerhalb des Kopffelds, deshalb darf der Spieler sie direkt anspielen. (Läge eine Kugel im Kopffeld, müsste die Weiße es erst verlassen: Regel 3.11.)", aim: [WH, shotA.contact], expectRail: true, moves: [shotA.w, shotA.obj] },
     ],
   },
   {
@@ -58,6 +62,7 @@ export default {
 };
 
 export const en = {
+  "Die 15. Kugel liegt außerhalb des Kopffelds, deshalb darf der Spieler sie direkt anspielen. (Läge eine Kugel im Kopffeld, müsste die Weiße es erst verlassen: Regel 3.11.)": "The 15th ball lies outside the kitchen, so the player may play it directly. (If a ball lay in the kitchen, the cue ball would have to leave it first: rule 3.11.)",
   "14/1: Weiße behindert den Neuaufbau": "14.1: cue ball obstructs the re-rack",
   "Liegt nur die Weiße im Dreieck (oder ragt hinein) und behindert den Aufbau, hängt es von der 15. Kugel ab: Liegt die 15. Kugel außerhalb des Kopffelds oder genau auf der Kopflinie, wird die Weiße mit Ball in Hand aus dem Kopffeld gespielt. Liegt die 15. Kugel im Kopffeld, kommt die Weiße auf den Kopfpunkt, bei besetztem Kopfpunkt auf den Mittelpunkt. Der Spieler darf danach jede Kugel zuerst anspielen. Liegt die 15. Kugel im Kopffeld und steht die Weiße auf dem Kopfpunkt, hat der Spieler keine Lageverbesserung aus dem Kopffeld: er darf die Kugel im Kopffeld direkt anspielen (auch nach hinten), Regel 3.11 gilt dann nicht. Hat er dagegen Ball in Hand aus dem Kopffeld, muss die Weiße das Kopffeld erst verlassen, bevor sie eine Kugel im Kopffeld berührt.":
     "If only the cue ball lies in the triangle (or overlaps it) and obstructs the rack, it depends on the 15th ball: if the 15th ball lies outside the kitchen or exactly on the head string, the cue ball is played from the kitchen with ball in hand. If the 15th ball lies in the kitchen, the cue ball is placed on the head spot, or on the center spot if the head spot is taken. The player may then play any ball first. If the 15th ball lies in the kitchen and the cue ball stands on the head spot, the player does not have ball in hand from the kitchen: he may play the ball in the kitchen directly (also backwards), rule 3.11 does not apply. With ball in hand from the kitchen, however, the cue ball must first leave the kitchen before it touches a ball in the kitchen.",

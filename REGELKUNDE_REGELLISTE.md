@@ -346,10 +346,10 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 4.3 8-Ball-Anstoß (Kugel fällt, Weiße fällt, Kugel springt; die 8 fällt noch offen) | ✅ `acht-anstoss` |
 | 4.4 Offener Tisch | ✅ `offener-tisch-acht` |
 | 4.8 Spielverlust beim 8-Ball | ✅ `acht-verloren` |
-| 5.3 9-Ball-Anstoß; Kitchen Rule / Dry Break | ✅ `anstoss-vier-kugeln`; Kitchen Rule ⬜ |
+| 5.3 9-Ball-Anstoß; Kitchen Rule / Dry Break | ✅ `anstoss-vier-kugeln`; Kitchen Rule ✅ `kitchen-rule` |
 | 5.4 / 6.4 Push Out | ✅ `push-out` |
 | 7.3 14/1-Eröffnungsstoß | ✅ `anstoss-vierzehn-eins` |
-| 7.6 / 7.8 Neuaufbau nach der 14. Kugel | ✅ `neuaufbau-fuenfzehnte`, `neuaufbau-kugel-behindert`, `neuaufbau-weisse-behindert`, `neuaufbau-beide` |
+| 7.6 / 7.8 Neuaufbau nach der 14. Kugel, jeweils mit dem Folgestoß (jede Kugel darf zuerst angespielt werden; Kugel im Kopffeld nur bei Ball in Hand zu meiden) | ✅ `neuaufbau-fuenfzehnte`, `neuaufbau-kugel-behindert`, `neuaufbau-weisse-behindert`, `neuaufbau-beide` |
 | OS19 6.7 Roll-up an der Bande (14/1) | ✅ `roll-up` |
 | OS19 6.7 absichtliches Fangen einer Kugel (14/1) | 🟨 |
 | WR16 10 Verwechseln der Gruppen | ⬜ |

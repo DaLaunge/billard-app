@@ -210,7 +210,7 @@ export default function RuleScene({ scene }) {
         <div className="rs-seq" key={"seq" + idx}>
           {step.shot && <span className="rs-shot">{t("Stoß {n} von {of}", { n: step.shot.n, of: step.shot.of })}{step.shot.who ? " · " + t(step.shot.who) : ""}</span>}
           {step.count && (
-            <span className={"rs-count" + (step.count.n >= step.count.of ? " full" : "")} aria-label={t(step.count.label) + " " + step.count.n + "/" + step.count.of}>
+            <span className={"rs-count" + (step.count.good ? " good" : step.count.n >= step.count.of ? " full" : "")} aria-label={t(step.count.label) + " " + step.count.n + "/" + step.count.of}>
               {t(step.count.label)}
               <span className="rs-count-dots" aria-hidden="true">
                 {Array.from({ length: step.count.of }, (_, i) => <i key={i} className={i < step.count.n ? "on" : ""} />)}

@@ -47,7 +47,7 @@ export default {
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "anstoss",
   ref: "4.3, 5.3, 6.3",
-  keywords: ["Break", "Anstoß", "vier Kugeln", "Bande", "Dry Break", "Anstoß ungültig", "Rack"],
+  keywords: ["Break", "Anstoß", "vier Kugeln", "Bande", "Anstoß ungültig", "Rack"],
   title: "Anstoß: vier Kugeln an die Bande",
   rule: "Beim Anstoß muss entweder eine Kugel versenkt werden oder mindestens vier Objektkugeln müssen eine Bande anlaufen. Sonst ist der Anstoß nicht regelgerecht. Beim 8-Ball ist er dann unzulässig: der Gegner wählt, ob er die Lage übernimmt oder neu aufbauen lässt (und selbst anstößt oder den Anstoßenden erneut anstoßen lässt). Beim 9-Ball und 10-Ball gilt der Stoß als Foul.",
   sets: [
@@ -65,7 +65,6 @@ export const en = {
   "Break": "Break",
   "Anstoß": "Break",
   "vier Kugeln": "four balls",
-  "Dry Break": "Dry break",
   "Anstoß ungültig": "invalid break",
   "Rack": "Rack",
   "8-Ball-Dreieck": "8-ball triangle",

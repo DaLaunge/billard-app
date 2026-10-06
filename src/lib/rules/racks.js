@@ -65,3 +65,9 @@ export const rack14 = () => rack(R14).filter((b) => b.n != null);
 export const hiddenRack14 = () => rack14().map((b) => ({ id: String(b.n), n: b.n, x: b.p[0], y: b.p[1], hidden: true }));
 export const placeRack14 = () => rack14().map((b, i) => ({ id: String(b.n), to: b.p, place: true, delay: i * 25 }));
 export const FOOT = [160, 60], HEAD = [60, 60], CENTER = [110, 60];
+
+/* 14/1: das frisch aufgebaute 15er-Dreieck (die 15. an der Spitze) und der Stoss hinein. Die Weisse
+   laeuft zur Spitze, die Randkugeln laufen radial weg (siehe brake); rails = Kugeln, die die Bande
+   erreichen. Der Spieler darf nach dem Neuaufbau jede Kugel zuerst anspielen - hier das Dreieck. */
+export const R15F = [[15], [9, 2], [3, 8, 10], [11, 4, 5, 12], [6, 13, 7, 14, 1]];
+export const reRackBreak = (rails) => brake(R15F, rack(R15F), rails);

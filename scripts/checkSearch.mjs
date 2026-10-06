@@ -94,7 +94,6 @@ const T = [
   ["anstoß vier kugeln", ["anstoss-vier-kugeln"]],
   ["anstoß", ["anstoss-vier-kugeln", "anstoss-vierzehn-eins", "kopflinie"], 3],
   ["break", ["anstoss-vier-kugeln"], 3],
-  ["dry break", ["anstoss-vier-kugeln"], 2],
   ["4 kugeln bande anstoß", ["anstoss-vier-kugeln"], 2],
   ["anstoß ungültig", ["anstoss-vier-kugeln"], 2],
   ["four balls break", ["anstoss-vier-kugeln"], 2, { lang: "en" }],
@@ -267,6 +266,13 @@ const T = [
   // --- Kugel im Kopffeld nach Neuaufbau
   ["kugel im kopffeld anspielen", ["neuaufbau-weisse-behindert", "spiel-aus-dem-kopffeld"], 2],
   ["15. kugel im kopffeld direkt spielen", ["neuaufbau-weisse-behindert", "spiel-aus-dem-kopffeld"], 3],
+  // --- Kitchen Rule
+  ["kitchen rule", ["kitchen-rule"]],
+  ["dry break", ["kitchen-rule"]],
+  ["drei punkte regel", ["kitchen-rule"]],
+  ["3 punkte regel", ["kitchen-rule"]],
+  ["wie viele kugeln muessen ins kopffeld", ["kitchen-rule"], 2],
+  ["kitchen rule dry break", ["kitchen-rule"], 1, { lang: "en" }],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],
