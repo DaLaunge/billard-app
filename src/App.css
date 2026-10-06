@@ -2760,7 +2760,7 @@ button.break-slot { cursor: pointer; }
 .rs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--card-gap); }
 .rs-player { min-width: 0; }
 .rs-label { font-size: 12px; font-weight: 700; color: var(--ivory-dim); text-transform: uppercase; letter-spacing: .06em; }
-.rs-table { display: block; width: 100%; height: auto; margin-top: 4px; border-radius: 10px; }
+.rs-table { cursor: pointer; -webkit-tap-highlight-color: transparent; display: block; width: 100%; height: auto; margin-top: 4px; border-radius: 10px; }
 .rs-rail { fill: #4A2F1D; }
 .rs-cloth { fill: #1B6B45; }
 .rs-pocket { fill: #101010; }
@@ -2778,8 +2778,10 @@ button.break-slot { cursor: pointer; }
 .rs-verdict.foul { color: var(--loss); }
 .rs-verdict.ok { color: var(--win); }
 .rs-verdict span { color: var(--ivory); }
-.rs-controls { display: flex; align-items: center; gap: 4px; margin-top: 8px; }
-.rs-dots { display: inline-flex; gap: 6px; margin-left: auto; padding-right: 4px; }
+.rs-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 10px; }
+.rs-controls .icon-btn { width: 48px; height: 48px; }
+.rs-controls .icon-btn.big { width: 60px; height: 60px; }
+.rs-dots { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
 .rs-dot { width: 10px; height: 10px; padding: 0; border-radius: 50%; border: 1.5px solid var(--btn-border);
   background: transparent; cursor: pointer; }
 .rs-dot.past { background: var(--accent-line); }
@@ -2799,3 +2801,4 @@ button.break-slot { cursor: pointer; }
 .rs-say text { font-size: 6.2px; font-weight: 700; fill: var(--accent-ink); font-family: inherit; }
 .rs-help-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rs-topic { margin: -4px 0 8px; font-size: 12px; color: var(--ivory-dim); }
+.rs-table:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

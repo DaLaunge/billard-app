@@ -110,7 +110,8 @@ export default function RuleScene({ scene }) {
       <div className="rs-head">
         <span className="rs-label">{t(scene.label)}</span>
       </div>
-      <svg className="rs-table" viewBox="0 0 220 120" role="img" aria-label={t(step.text)}>
+      <svg className="rs-table" viewBox="0 0 220 120" role="button" tabIndex={0} aria-label={t(step.text)}
+        onClick={togglePlay} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlay(); } }}>
         <defs>
           {stripes.map((n) => (
             <linearGradient key={n} id={`${uid}s${n}`} x1="0" y1="0" x2="0" y2="1">
@@ -166,21 +167,21 @@ export default function RuleScene({ scene }) {
       )}
 
       <div className="rs-controls">
-        <button type="button" className="icon-btn small" onClick={() => go(idx - 1)} disabled={idx === 0}
-          title={t("Schritt zurück")} aria-label={t("Schritt zurück")}><ChevronLeft size={18} /></button>
-        <button type="button" className="icon-btn small primary" onClick={togglePlay}
+        <button type="button" className="icon-btn" onClick={() => go(idx - 1)} disabled={idx === 0}
+          title={t("Schritt zurück")} aria-label={t("Schritt zurück")}><ChevronLeft size={26} /></button>
+        <button type="button" className="icon-btn primary big" onClick={togglePlay}
           title={playing ? t("Pause") : t("Abspielen")} aria-label={playing ? t("Pause") : t("Abspielen")}>
-          {playing ? <Pause size={16} /> : done ? <RotateCcw size={16} /> : <Play size={16} />}
+          {playing ? <Pause size={26} /> : done ? <RotateCcw size={26} /> : <Play size={26} />}
         </button>
-        <button type="button" className="icon-btn small" onClick={() => go(idx + 1)} disabled={done}
-          title={t("Nächster Schritt")} aria-label={t("Nächster Schritt")}><ChevronRight size={18} /></button>
-        <span className="rs-dots" role="group" aria-label={t("Schritte")}>
-          {scene.steps.map((_, i) => (
-            <button key={i} type="button" className={"rs-dot" + (i === idx ? " on" : i < idx ? " past" : "")}
-              onClick={() => go(i)} aria-label={t("Schritt {n}", { n: i + 1 })} aria-current={i === idx ? "step" : undefined} />
-          ))}
-        </span>
+        <button type="button" className="icon-btn" onClick={() => go(idx + 1)} disabled={done}
+          title={t("Nächster Schritt")} aria-label={t("Nächster Schritt")}><ChevronRight size={26} /></button>
       </div>
+      <span className="rs-dots" role="group" aria-label={t("Schritte")}>
+        {scene.steps.map((_, i) => (
+          <button key={i} type="button" className={"rs-dot" + (i === idx ? " on" : i < idx ? " past" : "")}
+            onClick={() => go(i)} aria-label={t("Schritt {n}", { n: i + 1 })} aria-current={i === idx ? "step" : undefined} />
+        ))}
+      </span>
     </div>
   );
 }
