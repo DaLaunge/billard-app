@@ -16,7 +16,7 @@
      moves   [{id, to, via?, out?, dur?, delay?, after?}]
                via    Zwischenpunkte (Weisse trifft, laeuft dann weiter)
                out    Kugel faellt in die Tasche und verschwindet
-               dur    ms; ohne Angabe aus der Weglaenge (konstante Geschwindigkeit)
+               (Tempo und Dauer ergeben sich aus der Physik, siehe FRICTION)
                delay  zusaetzliche Verzoegerung in ms
                after  startet, wenn die Kugel mit dieser id ihren ERSTEN
                       Wegabschnitt beendet hat (= der Treffmoment)
@@ -34,41 +34,48 @@
 
 export const BALL_R = 5.5;
 export const POCKETS = [[10, 10], [110, 8], [210, 10], [10, 110], [110, 112], [210, 110]];
-const SPEED = 0.1; // mittlere Geschwindigkeit in px pro ms (Anfangstempo ca. doppelt so hoch)
 
 const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+const unit = (a, b) => { const d = dist(a, b) || 1; return [(b[0] - a[0]) / d, (b[1] - a[1]) / d]; };
 
-/* Rollreibung: eine Kugel wird gleichmaessig langsamer, der zurueckgelegte
-   Weg ist also quadratisch in der Zeit. p(u) = (1+c)u - c u^2 (u = Zeit 0..1,
-   p = Weganteil 0..1): c = 1 laeuft bis zum Stillstand aus, kleineres c laesst
-   noch Restgeschwindigkeit am Ende (1-c) - so fallen Kugeln mit Tempo in die
-   Tasche statt zu schleichen. invEase rechnet "wie weit" in "wann" um; damit
-   beginnt die gestossene Kugel genau im Treffmoment (firstEnd). */
-const SLOW = 1, POCKET_SLOW = 0.4;
-const ease = (u, c) => (1 + c) * u - c * u * u;
-const invEase = (p, c) => (c < 1e-6 ? p : ((1 + c) - Math.sqrt(Math.max(0, (1 + c) * (1 + c) - 4 * c * p))) / (2 * c));
+/* Physik in Kurzform. Alle Kugeln haben dieselbe Rollreibung: gleichmaessige
+   Verzoegerung FRICTION (px/ms^2). Eine Kugel mit Anfangstempo v laeuft also
+   v^2 / (2*FRICTION) weit - und umgekehrt: aus der Strecke, die eine Kugel
+   laufen soll, folgt ihr Anfangstempo.
+   - Eine gestossene Kugel startet mit dem Tempo, das ihre Strecke verlangt.
+   - Die stossende Kugel muss im Treffmoment genau so schnell sein, dass die
+     getroffene dieses Tempo bekommt: v_Treffer = v_Ziel / cos(Schnittwinkel)
+     (nur die Komponente entlang der Mittelpunktslinie wird uebertragen;
+     voller Treffer: cos = 1, gleiche Masse = gleiches Tempo).
+   - Hat die stossende Kugel nur einen Abschnitt, bleibt sie am Treffpunkt
+     stehen (Stoppball); mit Zwischenpunkt (via) laeuft sie danach mit dem
+     Tempo weiter, das ihre restliche Strecke verlangt (Nachlauf/Rueckläufer).
+   - Kugeln, die in die Tasche fallen, haben dort noch POCKET_V.
+   - Ein Knick ohne Treffer ist eine Bande: danach 85 % des Tempos. */
+const FRICTION = 0.0003;
+const POCKET_V = 0.05;
+const CUSHION = 0.85;
 
-/* Keyframes einer Bewegung: Zeitpunkte gleichmaessig verteilt plus exakt die
-   Eckpunkte (Treffpunkt), Position aus der Bremskurve. Der Player spielt sie
+/* Keyframes einer Bewegung: gleichmaessig verteilte Zeitpunkte plus exakt die
+   Eckpunkte, Position aus der Bremskurve je Abschnitt. Der Player spielt sie
    mit easing "linear" ab - ein Easing je Abschnitt liesse die Kugel an jedem
    Knick fast stehen bleiben (siehe lib/flyBall.js). */
 export function pathFrames(m, n = 24) {
-  const at = (s) => {
-    let rest = s;
-    for (let i = 0; i < m.legs.length; i++) {
-      if (rest <= m.legs[i] || i === m.legs.length - 1) {
-        const f = m.legs[i] ? Math.min(1, rest / m.legs[i]) : 1;
-        return [m.path[i][0] + (m.path[i + 1][0] - m.path[i][0]) * f, m.path[i][1] + (m.path[i + 1][1] - m.path[i][1]) * f];
-      }
-      rest -= m.legs[i];
-    }
-    return m.path[m.path.length - 1];
-  };
-  const us = new Set();
-  for (let k = 0; k <= n; k++) us.add(k / n);
+  const starts = [];
   let acc = 0;
-  m.legs.forEach((l) => { acc += l; us.add(invEase(acc / m.total, m.c)); });
-  return [...us].sort((a, b) => a - b).map((u) => ({ p: at(ease(u, m.c) * m.total), offset: Math.min(1, u) }));
+  m.times.forEach((tt) => { starts.push(acc); acc += tt; });
+  const at = (time) => {
+    let i = m.legs.length - 1;
+    while (i > 0 && time < starts[i]) i--;
+    const tau = Math.max(0, time - starts[i]);
+    const sDone = Math.min(m.legs[i], m.vs[i] * tau - FRICTION * tau * tau / 2);
+    const f = m.legs[i] ? sDone / m.legs[i] : 1;
+    return [m.path[i][0] + (m.path[i + 1][0] - m.path[i][0]) * f, m.path[i][1] + (m.path[i + 1][1] - m.path[i][1]) * f];
+  };
+  const ts = new Set();
+  for (let k = 0; k <= n; k++) ts.add((k / n) * m.dur);
+  starts.slice(1).forEach((t0) => ts.add(t0));
+  return [...ts].sort((a, b) => a - b).map((time) => ({ p: at(time), offset: Math.min(1, time / m.dur) }));
 }
 
 /* Zustand nach Schritt idx: Position und "in der Tasche" je Kugel. */
@@ -84,19 +91,40 @@ export function stateAt(scene, idx) {
   return { pos, out };
 }
 
-/* Zeitplan eines Schritts aus der Ausgangsposition: je Kugel Weg, Start,
-   Dauer und Ende des ersten Abschnitts. Der Player animiert danach, und die
-   automatische Wiedergabe weiss, wie lange sie warten muss. */
+/* Zeitplan eines Schritts aus der Ausgangsposition: je Kugel Weg, Tempo je
+   Abschnitt, Start, Dauer und Ende des ersten Abschnitts (= Treffmoment). Der
+   Player animiert danach, die automatische Wiedergabe weiss, wie lange sie
+   warten muss. */
 export function timeline(step, fromPos) {
-  const tl = {};
-  for (const m of step.moves || []) {
+  const moves = step.moves || [];
+  const info = {};
+  const speeds = (m) => {
+    if (info[m.id]) return info[m.id];
     const path = [fromPos[m.id], ...(m.via || []), m.to];
     const legs = path.slice(1).map((p, i) => dist(path[i], p));
-    const total = legs.reduce((a, b) => a + b, 0) || 1;
-    const dur = m.dur ?? Math.max(350, total / SPEED);
+    const last = legs.length - 1;
+    // Tempo im Treffmoment, wenn diese Kugel eine andere anstoesst.
+    const obj = moves.find((o) => o.after === m.id);
+    let hit = null;
+    if (obj) {
+      const d1 = unit(path[0], path[1]), nrm = unit(path[1], fromPos[obj.id]);
+      const cos = Math.min(1, Math.max(0.25, d1[0] * nrm[0] + d1[1] * nrm[1]));
+      hit = speeds(obj).vs[0] / cos;
+    }
+    const vs = [], ve = [];
+    ve[last] = hit != null && last === 0 ? hit : (m.out ? POCKET_V : 0);
+    for (let i = last; i >= 0; i--) {
+      vs[i] = Math.sqrt(ve[i] * ve[i] + 2 * FRICTION * legs[i]);
+      if (i > 0) ve[i - 1] = i - 1 === 0 && hit != null ? hit : vs[i] / CUSHION;
+    }
+    const times = legs.map((_, i) => (vs[i] - ve[i]) / FRICTION);
+    return (info[m.id] = { path, legs, vs, ve, times, dur: times.reduce((a, b) => a + b, 0) });
+  };
+  const tl = {};
+  for (const m of moves) {
+    const sp = speeds(m);
     const delay = (m.delay || 0) + (m.after && tl[m.after] ? tl[m.after].firstEnd : 0);
-    const c = m.out ? POCKET_SLOW : SLOW;
-    tl[m.id] = { path, legs, total, dur, delay, c, out: !!m.out, firstEnd: delay + dur * invEase(legs[0] / total, c) };
+    tl[m.id] = { ...sp, delay, out: !!m.out, firstEnd: delay + sp.times[0] };
   }
   return tl;
 }
