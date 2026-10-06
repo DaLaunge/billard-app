@@ -264,6 +264,9 @@ const T = [
   ["ärmel", ["kugel-beruehrt"]],
   ["kugel versehentlich bewegt", ["kugel-beruehrt"], 2],
   ["touched a ball with my hand", ["kugel-beruehrt"], 2, { lang: "en" }],
+  // --- Kugel im Kopffeld nach Neuaufbau
+  ["kugel im kopffeld anspielen", ["neuaufbau-weisse-behindert", "spiel-aus-dem-kopffeld"], 2],
+  ["15. kugel im kopffeld direkt spielen", ["neuaufbau-weisse-behindert", "spiel-aus-dem-kopffeld"], 3],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],
