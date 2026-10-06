@@ -28,7 +28,7 @@
                after   startet im Treffmoment der Kugel mit dieser id
                hitLeg  an welchem Wegabschnitt-Ende diese Kugel trifft (Standard 0)
              Tempo und Dauer folgen aus der Physik (FRICTION), nicht aus Zeitangaben.
-     figs    [{kind:"cue"|"hand", at:[x,y], from?:[x,y], angle?:grad, until?:"hit"|dur ms, delay?}]
+     figs    [{kind:"cue"|"hand"|"template", at:[x,y], from?:[x,y], angle?:grad, until?:"hit"|dur ms, delay?}]
                Figur (Queue: at = Spitze; Hand: at = Handmitte, Finger zeigen in Blickrichtung angle).
                Sie gleitet von `from` nach `at`; until:"hit" = bis zum Treffmoment der Weissen
                (Schieben). Gehoert nicht zur Physik und wird von den Pruefungen nicht beachtet.

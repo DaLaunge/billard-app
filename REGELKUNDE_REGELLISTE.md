@@ -336,13 +336,14 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 3.6 Kugel berührt (Hand) | ✅ `kugel-beruehrt` |
 | 3.8 Schieben | ✅ `schieben` |
 | 3.12 außerhalb der Aufnahme | ✅ `ausserhalb-aufnahme` |
-| 3.15 Aufbauhilfe, 3.16 Unsportliches | 🟨 |
+| 3.15 Aufbauhilfe-Foul | ✅ `aufbauhilfe-foul` |
+| 3.16 Unsportliches Verhalten (Ablenken) | ✅ `unsportlich` |
 | 3.5 Kugel springt vom Tisch | ✅ `kugel-vom-tisch` |
 | 3.7 Doppelstoß | ✅ `doppelstoss` |
 | 3.9 Stoß bei rollender Kugel | ✅ `bewegende-kugeln` |
 | 3.10 / 3.11 Kopflinie, Spiel aus dem Kopffeld | ✅ `kopflinie`, `spiel-aus-dem-kopffeld` |
 | 3.13 Drei Fouls in Folge | ✅ `drei-fouls` |
-| 3.14 Zeitspiel (Shot Clock) | 🟨 (Uhr ist vorhanden) |
+| 3.14 Zeitspiel (Shot Clock) | ✅ `zeitspiel` |
 | Foul zu spät erkannt | ✅ `foul-zu-spaet` |
 | 4.3 8-Ball-Anstoß (Kugel fällt, Weiße fällt, Kugel springt; die 8 fällt noch offen) | ✅ `acht-anstoss` |
 | 4.4 Offener Tisch | ✅ `offener-tisch-acht` |
