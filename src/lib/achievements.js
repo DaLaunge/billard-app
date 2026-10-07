@@ -89,6 +89,7 @@ const FAMILIES = [
   { metric: "ghostGames", test: (d) => /Spiele? gegen den Ghost$/.test(d), current: (e) => e.ghostGames, unit: () => t("Spiel(e) gegen den Ghost") },
   { metric: "tournamentWins", test: (d) => /Turniere? gewonnen$/.test(d), current: (e) => e.tournamentWins, unit: () => t("Turniersieg(e)") },
   { metric: "tournament2nd", test: (d) => /Turnier-Zweiter$/.test(d), current: (e) => e.tournament2nd, unit: () => t("zweite Plätze") },
+  { metric: "rulesViewed", test: (d) => /Regeln? angesehen$/.test(d), current: (e) => e.rulesViewed, unit: () => t("Regel(n)") },
   { metric: "tournament3rd", test: (d) => /Turnier-Dritter$/.test(d), current: (e) => e.tournament3rd, unit: () => t("dritte Plätze") },
 ];
 
@@ -125,7 +126,9 @@ function progressFor(description, extras) {
   if (!fam) return null;
   const current = fam.current(extras);
   if (current == null) return null;
-  return { current: Math.max(0, current), target: leadingNumber(description), unit: fam.unit() };
+  // "Alle Regeln angesehen": das Ziel ist die aktuelle Regelzahl (waechst mit dem Katalog), keine Zahl im Text.
+  const target = /^Alle Regeln angesehen/.test(description) ? (extras.rulesTotal || 1) : leadingNumber(description);
+  return { current: Math.max(0, current), target, unit: fam.unit() };
 }
 
 // Einfacher, deterministischer Streuwert aus einem String (kein Crypto-Anspruch,

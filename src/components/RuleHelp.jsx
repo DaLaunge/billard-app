@@ -37,9 +37,10 @@ export function DiscTags({ discs, active, onPick }) {
    disc      vorgewaehlte Disziplin (sonst alle)
    lockDisc  Disziplinfilter ausblenden (die Disziplin steht im Match fest)
    ids       nur diese Faelle
+   onView(id) wird gemeldet, wenn ein freigegebener Fall aufgeklappt wird (Erfolge "Regeln angesehen")
    onlyReleased  nur fuer alle freigegebene Faelle (Standard); die Verwaltung
              schaltet es aus. Der Katalog selbst: lib/rules/index.js. */
-export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyReleased = true }) {
+export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyReleased = true, onView }) {
   const [q, setQ] = useState("");
   const [disc, setDisc] = useState(discProp || ALL);
   const [pick, setPick] = useState({}); // Fall-id -> Disziplin, deren Satz gezeigt wird
@@ -119,12 +120,12 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
           <div className={"rs-case" + (isCaseOpen(c.id) ? " open" : "")}>
             <div className="rs-case-head">
               <h4>
-                <button type="button" className="rs-case-toggle" aria-expanded={isCaseOpen(c.id)} onClick={() => setCaseOpen((m) => ({ ...m, [c.id]: !isCaseOpen(c.id) }))}>
+                <button type="button" className="rs-case-toggle" aria-expanded={isCaseOpen(c.id)} onClick={() => { if (!isCaseOpen(c.id) && c.released) onView?.(c.id); setCaseOpen((m) => ({ ...m, [c.id]: !isCaseOpen(c.id) })); }}>
                   <ChevronRight size={15} className="rs-chev" />
                   <span>{displayTitle(c)}</span>
                 </button>
               </h4>
-              <DiscTags discs={c.discs} active={set.discs} onPick={multi ? (d) => { setPick((p) => ({ ...p, [c.id]: d })); setCaseOpen((m) => ({ ...m, [c.id]: true })); } : undefined} />
+              <DiscTags discs={c.discs} active={set.discs} onPick={multi ? (d) => { setPick((p) => ({ ...p, [c.id]: d })); setCaseOpen((m) => ({ ...m, [c.id]: true })); if (c.released) onView?.(c.id); } : undefined} />
               {!c.released && <span className="rs-badge">{t("nur Verwaltung")}</span>}
               <InfoButton title={t(c.title)}>{t(c.rule)} {t("Quelle:")} {sourceLine(c)}</InfoButton>
             </div>

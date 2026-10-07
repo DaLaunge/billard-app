@@ -31,7 +31,7 @@ const DECK_COLLAPSE_KEY = "liveDeckCollapsed";
 const readLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* Privatmodus */ } };
 
-export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
+export default function LiveScreen({ onViewRule, me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
   onCreatePlanning, onDeletePlanning, onReplyPlanning, onUnreplyPlanning,
   onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout, toast }) {
@@ -248,7 +248,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
     cardsById.regelkunde = (
       <CardDeck icon={<BookOpen size={17} />} title={t("Regelkunde")} soloTitle={false}
         tabs={[{ id: "regeln", tab: t("Regelkunde"), title: t("Regelkunde"), render: () => (
-          <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}><RuleHelp onlyReleased={me.role !== "admin"} /></Suspense>
+          <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}><RuleHelp onlyReleased={me.role !== "admin"} onView={onViewRule} /></Suspense>
         ) }]}
         activeId="regeln" onActive={() => {}}
         collapsed={!rulesOpen} onToggleCollapse={() => { writeLocal(RULES_COLLAPSE_KEY, rulesOpen ? "1" : "0"); setRulesOpen(!rulesOpen); }}
