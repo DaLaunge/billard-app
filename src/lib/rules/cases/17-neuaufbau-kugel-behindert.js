@@ -52,7 +52,7 @@ export default {
   topic: "ablauf",
   ref: "7.8c",
   keywords: ["Neuaufbau", "Rack", "15. Kugel im Dreieck", "Kopfpunkt", "Mittelpunkt", "letzte Kugel liegt im Weg", "Kugel behindert"],
-  title: "14/1: 15. Kugel behindert den Neuaufbau",
+  title: "14/1: Neuaufbau, 15. Kugel behindert",
   rule: "Liegt die 15. Kugel innerhalb der Dreiecksmarkierung oder ragt sie hinein, behindert sie den Aufbau der 14 anderen Kugeln. Behindert nur sie (nicht die Weiße), wird sie auf den Kopfpunkt gelegt, oder auf den Mittelpunkt, wenn die Weiße den Kopfpunkt blockiert. Der Schiedsrichter sagt, ob eine Kugel im Dreieck liegt. Die Weiße bleibt, wo sie liegt.",
   sets: [{ discs: D141, tag: "14/1 · Neuaufbau", variants }],
 };
@@ -61,7 +61,7 @@ export const en = {
   "jede Kugel erlaubt": "any ball allowed",
   "Danach darf der Spieler jede Kugel zuerst anspielen – auch die 15. Kugel im Kopffeld, denn die Weiße wurde nicht mit Ball in Hand aus dem Kopffeld gespielt.": "Afterwards the player may play any ball first – also the 15th ball in the kitchen, because the cue ball was not played from the kitchen with ball in hand.",
   "Danach darf der Spieler jede Kugel zuerst anspielen – hier die 15. Kugel auf dem Mittelpunkt.": "Afterwards the player may play any ball first – here the 15th ball on the center spot.",
-  "14/1: 15. Kugel behindert den Neuaufbau": "14.1: 15th ball obstructs the re-rack",
+  "14/1: Neuaufbau, 15. Kugel behindert": "14.1: re-rack, 15th ball obstructs",
   "Liegt die 15. Kugel innerhalb der Dreiecksmarkierung oder ragt sie hinein, behindert sie den Aufbau der 14 anderen Kugeln. Behindert nur sie (nicht die Weiße), wird sie auf den Kopfpunkt gelegt, oder auf den Mittelpunkt, wenn die Weiße den Kopfpunkt blockiert. Der Schiedsrichter sagt, ob eine Kugel im Dreieck liegt. Die Weiße bleibt, wo sie liegt.":
     "If the 15th ball lies inside the triangle marking or overlaps it, it obstructs the racking of the other 14 balls. If only it obstructs (not the cue ball), it is placed on the head spot, or on the center spot if the cue ball blocks the head spot. The referee tells whether a ball is in the triangle. The cue ball stays where it is.",
   "Neuaufbau": "re-rack",

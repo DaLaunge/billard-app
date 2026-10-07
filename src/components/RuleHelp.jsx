@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, X, ArrowDownAZ, ListOrdered, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
-import { RULE_CASES, ALL_DISCS, TOPICS, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS } from "../lib/rules";
+import { RULE_CASES, ALL_DISCS, TOPICS, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS, displayTitle } from "../lib/rules";
 import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
 import InfoButton from "./widgets/InfoButton";
@@ -111,10 +111,10 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
               <h4>
                 <button type="button" className="rs-case-toggle" aria-expanded={isCaseOpen(c.id)} onClick={() => setCaseOpen((m) => ({ ...m, [c.id]: !isCaseOpen(c.id) }))}>
                   <ChevronRight size={15} className="rs-chev" />
-                  <span>{t(c.title)}</span>
+                  <span>{displayTitle(c)}</span>
                 </button>
               </h4>
-              <DiscTags discs={c.discs} active={set.discs} onPick={multi ? (d) => setPick((p) => ({ ...p, [c.id]: d })) : undefined} />
+              <DiscTags discs={c.discs} active={set.discs} onPick={multi ? (d) => { setPick((p) => ({ ...p, [c.id]: d })); setCaseOpen((m) => ({ ...m, [c.id]: true })); } : undefined} />
               {!c.released && <span className="rs-badge">{t("nur Verwaltung")}</span>}
               <InfoButton title={t(c.title)}>{t(c.rule)} {t("Quelle:")} {sourceLine(c)}</InfoButton>
             </div>

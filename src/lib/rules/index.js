@@ -66,9 +66,16 @@ const numsOf = (c) => {
   return m ? [Number(m[1]), m[2] ? Number(m[2]) : 0] : [99, 0];
 };
 export const bookChapter = (c) => numsOf(c)[0];
+/* Angezeigter Titel: ohne vorangestellte Disziplin ("14/1: Eroeffnungsstoss" -> "Eroeffnungsstoss",
+   "8-Ball-Anstoss: ..." -> "Anstoss: ..."), die zeigen schon die Kugeln und der Disziplinfilter; so sortiert die
+   alphabetische Liste nach dem eigentlichen Thema (Nutzer-Feedback 2026-10-07). */
+export const displayTitle = (c) => {
+  const x = t(c.title).replace(/^14[/.]1:\s*/, "").replace(/^(?:8|9|10)-ball[- ]/i, "");
+  return x.charAt(0).toUpperCase() + x.slice(1);
+};
 export const sortCases = (list, mode) => {
   const lang = getLang();
-  const az = (a, b) => t(a.title).localeCompare(t(b.title), lang);
+  const az = (a, b) => displayTitle(a).localeCompare(displayTitle(b), lang);
   if (mode !== "book") return [...list].sort(az);
   return [...list].sort((a, b) => {
     const [ca, sa] = numsOf(a), [cb, sb] = numsOf(b);
