@@ -39,7 +39,7 @@ const variants = [
 
 export default {
   id: "kugel-gefangen",
-  released: false,
+  released: true,
   src: SOURCE_OBERSCHIRI,
   discs: D141,
   topic: "stoss",

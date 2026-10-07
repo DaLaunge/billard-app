@@ -43,7 +43,7 @@ const variants = (rows, railsA, railsB) => {
 
 export default {
   id: "anstoss-vier-kugeln",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "anstoss",
   ref: "4.3, 5.3, 6.3",

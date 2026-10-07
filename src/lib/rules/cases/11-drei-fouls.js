@@ -79,7 +79,7 @@ const straight = build("5", "8", "11", false, {
 
 export default {
   id: "drei-fouls",
-  released: false,
+  released: true,
   discs: ["9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
   ref: "3.13, 3.1, 5.8, 6.10, 7.11",

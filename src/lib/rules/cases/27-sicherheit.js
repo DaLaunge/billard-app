@@ -50,7 +50,7 @@ const straight = build(11, {
 
 export default {
   id: "sicherheit",
-  released: false,
+  released: true,
   discs: ["8 Ball", "14/1 Endlos"],
   topic: "ablauf",
   ref: "4.6, 7.5, 7.6, 1.7, 2.16",

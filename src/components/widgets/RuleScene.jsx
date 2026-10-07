@@ -44,7 +44,11 @@ function Figure({ f, tl }) {
   return (
     <g className="rs-fig" style={style} aria-hidden="true">
       <g transform={`rotate(${f.angle || 0})`}>
-        {f.kind === "cue" ? (
+        {f.kind === "dot" ? (
+          <circle className="rs-chalkdot" r="2.4" />
+        ) : f.kind === "template" ? (
+          <polygon className="rs-template" points="-17,-3 17,-3 13,3 -13,3" />
+        ) : f.kind === "cue" ? (
           <>
             <line className="rs-cue-shaft" x1="-72" y1="0" x2="-3" y2="0" />
             <line className="rs-cue-tip" x1="-3.2" y1="0" x2="0" y2="0" />

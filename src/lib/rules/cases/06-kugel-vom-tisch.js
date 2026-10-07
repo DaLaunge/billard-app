@@ -33,7 +33,7 @@ const variants = [
 
 export default {
   id: "kugel-vom-tisch",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "tisch",
   ref: "3.5, 2.6",

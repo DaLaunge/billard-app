@@ -46,7 +46,7 @@ const variants = [
 
 export default {
   id: "stoerung-von-aussen",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "ablauf",
   ref: "1.10, 1.9",

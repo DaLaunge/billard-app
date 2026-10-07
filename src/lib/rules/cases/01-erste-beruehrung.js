@@ -67,7 +67,7 @@ const eight = (() => {
 
 export default {
   id: "erste-beruehrung",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "kontakt",
   ref: "3.2, 4.9, 5.7, 6.9",

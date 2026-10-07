@@ -21,8 +21,8 @@ import { deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phone
 // Knopf; die Zaehler an den Reitern zeigen weiterhin auf einen Blick, wo
 // etwas liegt.
 // Regelkunde (animierte Regelfaelle) als eigene Live-Karte: dort schaut man nach, wenn am Tisch etwas
-// strittig ist. Eigener Chunk, geladen erst nach dem Aufklappen. Vorerst nur fuer Admins (die Faelle
-// haben `released: false`); fuer alle erst, wenn Faelle freigegeben werden.
+// strittig ist. Eigener Chunk, geladen erst nach dem Aufklappen. Seit der Freigabe (2026-10-07) fuer alle;
+// Admins sehen zusaetzlich noch nicht freigegebene Faelle (`released: false`).
 const RuleHelp = lazy(() => import("./RuleHelp"));
 const RULES_COLLAPSE_KEY = "liveRulesCollapsed";
 const LIVE_DECK_IDS = deckIds("live", "mitspieler");
@@ -244,11 +244,11 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
 
   const [rulesOpen, setRulesOpen] = useState(() => readLocal(RULES_COLLAPSE_KEY) === "0");
   const cardsById = {};
-  if (me.role === "admin") {
+  {
     cardsById.regelkunde = (
       <CardDeck icon={<BookOpen size={17} />} title={t("Regelkunde")} soloTitle={false}
         tabs={[{ id: "regeln", tab: t("Regelkunde"), title: t("Regelkunde"), render: () => (
-          <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}><RuleHelp onlyReleased={false} /></Suspense>
+          <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}><RuleHelp onlyReleased={me.role !== "admin"} /></Suspense>
         ) }]}
         activeId="regeln" onActive={() => {}}
         collapsed={!rulesOpen} onToggleCollapse={() => { writeLocal(RULES_COLLAPSE_KEY, rulesOpen ? "1" : "0"); setRulesOpen(!rulesOpen); }}

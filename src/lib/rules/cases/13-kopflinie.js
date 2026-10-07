@@ -40,7 +40,7 @@ const start = "Ausgangslage: Anstoß. Die Weiße muss im Kopffeld liegen, also h
 
 export default {
   id: "kopflinie",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "weisse",
   ref: "3.10, 1.6",

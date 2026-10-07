@@ -49,7 +49,7 @@ const variants = [
 
 export default {
   id: "ausspielen",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "anstoss",
   ref: "1.2",

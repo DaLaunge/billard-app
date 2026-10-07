@@ -31,7 +31,7 @@ const variants = [
 
 export default {
   id: "bewegende-kugeln",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "ablauf",
   ref: "3.9, 2.19",

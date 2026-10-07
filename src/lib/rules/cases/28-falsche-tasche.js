@@ -52,7 +52,7 @@ const straight = build(11, {
 
 export default {
   id: "falsche-tasche",
-  released: false,
+  released: true,
   discs: ["8 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
   ref: "1.7, 4.6, 6.5, 6.6, 7.5, 7.6",

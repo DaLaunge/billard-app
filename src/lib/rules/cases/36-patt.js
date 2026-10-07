@@ -40,7 +40,7 @@ const straight = build({ after: "Es wird neu aufgebaut, beide Spieler stoßen da
 
 export default {
   id: "patt",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "ablauf",
   ref: "1.13, 4.11, 5.9, 6.11, 7.12",
