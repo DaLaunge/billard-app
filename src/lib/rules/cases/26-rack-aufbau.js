@@ -69,7 +69,7 @@ const straight = variants(R141, R141, 8, {
 
 export default {
   id: "rack-aufbau",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "anstoss",
   ref: "4.2, 5.2, 6.2, 7.2, 1.5",

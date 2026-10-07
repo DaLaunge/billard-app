@@ -38,7 +38,7 @@ const variants = [
 
 export default {
   id: "spiel-aus-dem-kopffeld",
-  released: false,
+  released: true,
   discs: ["8 Ball", "14/1 Endlos"],
   topic: "weisse",
   ref: "3.11, 4.9, 7.9",

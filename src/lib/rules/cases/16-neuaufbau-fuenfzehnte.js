@@ -47,7 +47,7 @@ const variants = [
 
 export default {
   id: "neuaufbau-fuenfzehnte",
-  released: false,
+  released: true,
   discs: D141,
   topic: "ablauf",
   ref: "7.4, 7.6, 7.8a",

@@ -51,7 +51,7 @@ const variants = [
 
 export default {
   id: "roll-up",
-  released: false,
+  released: true,
   discs: D141,
   topic: "ablauf",
   ref: "6.7",

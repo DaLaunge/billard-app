@@ -59,7 +59,7 @@ const straight = build("5", "6", [], true, {
 
 export default {
   id: "foul-zu-spaet",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
   ref: "3 (Einleitung), 3.13, 1.11",

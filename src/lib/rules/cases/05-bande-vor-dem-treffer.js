@@ -36,7 +36,7 @@ const variants = [
 
 export default {
   id: "bande-vor-dem-treffer",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "bande",
   ref: "3.3, 2.7",

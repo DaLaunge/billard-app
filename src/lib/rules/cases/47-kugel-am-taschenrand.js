@@ -34,7 +34,7 @@ const variants = [
 
 export default {
   id: "kugel-am-taschenrand",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "tisch",
   ref: "2.2, OS19 3.32",

@@ -61,7 +61,7 @@ const variants = [
 
 export default {
   id: "kitchen-rule",
-  released: false,
+  released: true,
   discs: ["9 Ball"],
   topic: "anstoss",
   ref: "5.3 c",

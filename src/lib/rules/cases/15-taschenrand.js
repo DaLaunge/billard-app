@@ -32,7 +32,7 @@ const variants = [
 
 export default {
   id: "taschenrand",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "bande",
   ref: "2.2, 1.8",

@@ -30,7 +30,7 @@ const variants = [
 
 export default {
   id: "doppel-reihenfolge",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "ablauf",
   ref: "DP",

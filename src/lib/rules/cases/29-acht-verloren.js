@@ -35,7 +35,7 @@ const variants = [
 
 export default {
   id: "acht-verloren",
-  released: false,
+  released: true,
   discs: D8,
   topic: "ablauf",
   ref: "4.8, 4.10, 4.4",

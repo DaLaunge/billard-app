@@ -34,7 +34,7 @@ const variants = [
 
 export default {
   id: "kugel-beruehrt",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "stoss",
   ref: "3.6",

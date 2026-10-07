@@ -44,7 +44,7 @@ const variants = [
 
 export default {
   id: "push-out",
-  released: false,
+  released: true,
   discs: D89,
   topic: "ablauf",
   ref: "5.4, 6.4",

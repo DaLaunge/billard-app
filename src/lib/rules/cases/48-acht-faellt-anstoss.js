@@ -53,7 +53,7 @@ const variants = [
 
 export default {
   id: "acht-faellt-anstoss",
-  released: false,
+  released: true,
   discs: D8,
   topic: "anstoss",
   ref: "4.3 e, 4.3 f",

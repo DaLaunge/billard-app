@@ -38,7 +38,7 @@ const variants = [
 
 export default {
   id: "kugel-faellt-von-selbst",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "tisch",
   ref: "1.8, 2.2",

@@ -36,7 +36,7 @@ const variants = [
 
 export default {
   id: "weisse-versenkt",
-  released: false,
+  released: true,
   discs: ALL_DISCS,
   topic: "weisse",
   ref: "3.1, 4.9, 5.7, 6.9, 7.9",

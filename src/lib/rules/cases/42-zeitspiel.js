@@ -31,7 +31,7 @@ const variants = [
 
 export default {
   id: "zeitspiel",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
   ref: "3.14, 3.16",

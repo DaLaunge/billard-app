@@ -77,7 +77,7 @@ const eight = build("2", "11", {
 
 export default {
   id: "gleichzeitiger-treffer",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "kontakt",
   ref: "3.2",

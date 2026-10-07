@@ -29,7 +29,7 @@ const variants = [
 
 export default {
   id: "aufbauhilfe-foul",
-  released: false,
+  released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "tisch",
   ref: "3.15",

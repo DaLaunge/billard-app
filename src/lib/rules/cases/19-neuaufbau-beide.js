@@ -42,7 +42,7 @@ const variants = [
 
 export default {
   id: "neuaufbau-beide",
-  released: false,
+  released: true,
   discs: D141,
   topic: "ablauf",
   ref: "7.8a, 7.8b",

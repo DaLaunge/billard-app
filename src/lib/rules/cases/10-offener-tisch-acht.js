@@ -31,7 +31,7 @@ const variants = [
 
 export default {
   id: "offener-tisch-acht",
-  released: false,
+  released: true,
   discs: D8,
   topic: "kontakt",
   ref: "4.4, 4.9",

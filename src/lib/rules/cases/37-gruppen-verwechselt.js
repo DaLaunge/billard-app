@@ -41,7 +41,7 @@ const variants = [
 
 export default {
   id: "gruppen-verwechselt",
-  released: false,
+  released: true,
   src: SOURCE_REGULARIEN,
   discs: D8,
   topic: "ablauf",
