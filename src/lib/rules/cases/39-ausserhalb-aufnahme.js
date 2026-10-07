@@ -35,8 +35,9 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
+  tags: ["foul", "ablauf"],
   ref: "3.12, 3.16",
-  keywords: ["außerhalb der Aufnahme"],
+  keywords: ["Stoß außer der Reihe", "außerhalb der Aufnahme"],
   title: "Stoß außerhalb der Aufnahme",
   rule: "Es ist ein Standardfoul, unabsichtlich außerhalb der eigenen Aufnahme zu stoßen. Normalerweise wird dann so weitergespielt, wie die Kugeln liegen geblieben sind. Spielt der Spieler absichtlich außerhalb seiner Aufnahme, wird das als unsportliches Verhalten (3.16) gewertet. Die Strafe des Standardfouls hängt von der Disziplin ab: Ball in Hand für den Gegner beim 8-, 9- und 10-Ball, ein Punkt Abzug beim 14/1.",
   sets: [
@@ -47,6 +48,7 @@ export default {
 };
 
 export const en = {
+  "Stoß außer der Reihe": "shot out of turn",
   "Stoß außerhalb der Aufnahme": "Shot outside your own inning",
   "außerhalb der Aufnahme": "outside the inning",
   "Es ist ein Standardfoul, unabsichtlich außerhalb der eigenen Aufnahme zu stoßen. Normalerweise wird dann so weitergespielt, wie die Kugeln liegen geblieben sind. Spielt der Spieler absichtlich außerhalb seiner Aufnahme, wird das als unsportliches Verhalten (3.16) gewertet. Die Strafe des Standardfouls hängt von der Disziplin ab: Ball in Hand für den Gegner beim 8-, 9- und 10-Ball, ein Punkt Abzug beim 14/1.": "Shooting outside your own inning unintentionally is a standard foul. Normally play then continues with the balls where they came to rest. If the player shoots outside his inning intentionally this counts as unsportsmanlike conduct (3.16). The penalty of the standard foul depends on the discipline: ball in hand for the opponent in 8-, 9- and 10-ball, one point deducted in 14.1.",

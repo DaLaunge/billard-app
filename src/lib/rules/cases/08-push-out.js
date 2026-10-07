@@ -47,6 +47,7 @@ export default {
   released: true,
   discs: D89,
   topic: "ablauf",
+  tags: ["anstoss", "ablauf"],
   ref: "5.4, 6.4",
   keywords: ["Push-Out", "zweiter Stoß", "Ansage", "Pushout", "nach dem Anstoß"],
   title: "Push Out",

@@ -37,6 +37,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "tisch",
+  tags: ["tasche", "tisch"],
   ref: "2.2, OS19 3.32",
   keywords: ["Kugel an der Taschenkante", "Kugel hängt an der Tasche", "eingeklemmte Kugel", "von einer Kugel gestützt", "Kugel wackelt in der Tasche", "gilt als versenkt"],
   title: "Taschenrand: von oben prüfen",

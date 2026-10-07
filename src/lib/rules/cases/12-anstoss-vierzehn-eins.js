@@ -44,6 +44,7 @@ export default {
   released: true,
   discs: D141,
   topic: "anstoss",
+  tags: ["anstoss", "foul"],
   ref: "7.3, 7.10, 7.11",
   keywords: ["Eröffnungsstoß", "Anstoßfoul", "Break", "zwei Kugeln", "zwei Punkte Abzug", "Rack"],
   title: "14/1: Eröffnungsstoß",

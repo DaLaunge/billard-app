@@ -34,6 +34,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "ablauf",
+  tags: ["foul", "stoss"],
   ref: "3.9, 2.19",
   keywords: ["rollt noch", "Kugel bewegt sich", "zu früh gestoßen", "Stoß", "Kugel noch in Bewegung", "warten"],
   title: "Stoß bei rollender Kugel",

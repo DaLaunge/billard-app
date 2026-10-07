@@ -43,6 +43,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "weisse",
+  tags: ["foul", "kopffeld", "weisse"],
   ref: "3.10, 1.6",
   keywords: ["Kopflinie", "Kopffeld", "Weiße legen", "falsch positioniert", "Anstoß Weiße", "Ball in Hand Anstoß"],
   title: "Anstoß: Weiße auf der Kopflinie",

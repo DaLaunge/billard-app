@@ -70,6 +70,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "kontakt",
+  tags: ["foul", "erstkontakt"],
   ref: "3.2, 4.9, 5.7, 6.9",
   keywords: ["Erstkontakt", "falsche Kugel", "niedrigste Kugel", "eigene Gruppe", "falsche Gruppe", "erste Kugel berührt", "Volle Halbe", "welche Kugel zuerst"],
   title: "Erste Berührung",

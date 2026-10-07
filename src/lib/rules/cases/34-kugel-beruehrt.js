@@ -37,6 +37,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "stoss",
+  tags: ["foul", "stoss", "tisch"],
   ref: "3.6",
   keywords: ["Kugel berührt", "mit der Hand berührt", "Ärmel", "Kugel verschoben", "versehentlich berühren", "Berühren einer Kugel", "Abstützen"],
   title: "Berühren einer Kugel (Hand, Ärmel)",

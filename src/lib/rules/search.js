@@ -154,7 +154,7 @@ const tokensOf = (list) => {
 };
 
 /* Baut den Suchindex eines Falls. tr(s) liefert den Text in der Anzeigesprache. */
-export const indexCase = (c, { tr = (s) => s, topics = {}, sets = (x) => x.sets || [{ discs: x.discs, variants: x.variants }], discNames = {} } = {}) => {
+export const indexCase = (c, { tr = (s) => s, topics = {}, tagNames = {}, sets = (x) => x.sets || [{ discs: x.discs, variants: x.variants }], discNames = {} } = {}) => {
   const both = (list) => list.filter(Boolean).flatMap((s) => [s, tr(s)]);
   const setList = sets(c);
   const discs = c.discs.flatMap((d) => [d, discNames[d]]);
@@ -170,7 +170,7 @@ export const indexCase = (c, { tr = (s) => s, topics = {}, sets = (x) => x.sets 
     title: tokensOf(both([c.title])),
     keys: tokensOf(both(c.keywords || [])),
     ref: tokensOf((c.ref || "").split(/[,\s]+/).filter(Boolean).map((r) => "regel " + r)),
-    tag: tokensOf([...both([topics[c.topic]]), ...both(discs), ...both(setList.map((s) => s.tag))]),
+    tag: tokensOf([...both([topics[c.topic]]), ...both((c.tags || []).map((k) => tagNames[k])), ...both(discs), ...both(setList.map((s) => s.tag))]),
     text: tokensOf(both([c.rule, ...setList.flatMap((s) => s.variants.flatMap((v) => [v.reason, ...v.steps.map((x) => x.text)]))])),
   };
 };

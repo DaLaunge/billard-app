@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { stateAt, timeline, pathFrames, contactErrors, posAt, bubbleSpot, bubbleWidth, railAfterContact } from "../src/lib/ruleEngine.js";
-import { ALL_DISCS, TOPICS } from "../src/lib/rules/meta.js";
+import { ALL_DISCS, TOPICS, TAGS } from "../src/lib/rules/meta.js";
 
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), "../src/lib/rules/cases");
 const errors = [];
@@ -78,6 +78,7 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
   if (typeof c.released !== "boolean") err(id, "released fehlt");
   (c.discs || []).forEach((d) => { if (!ALL_DISCS.includes(d)) err(id, `unbekannte Disziplin ${d}`); });
   if (!TOPICS[c.topic]) err(id, `unbekanntes Thema ${c.topic}`);
+  if (!Array.isArray(c.tags) || !c.tags.length || c.tags.some((x) => !TAGS[x])) err(id, `tags fehlen oder unbekannt: ${JSON.stringify(c.tags)}`);
 
   const texts = new Set([c.title, c.rule, ...(c.keywords || [])]);
   const sets = c.sets || [{ discs: c.discs, variants: c.variants }];

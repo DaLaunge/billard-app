@@ -39,6 +39,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "bande",
+  tags: ["foul", "bande", "weisse"],
   ref: "3.3, 2.7",
   keywords: ["Bande", "vor dem Treffer", "Bandenkontakt", "Karambolage", "erst Bande dann Kugel"],
   title: "Bande vor dem Treffer zählt nicht",

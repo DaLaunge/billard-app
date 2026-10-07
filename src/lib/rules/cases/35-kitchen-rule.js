@@ -64,6 +64,7 @@ export default {
   released: true,
   discs: ["9 Ball"],
   topic: "anstoss",
+  tags: ["anstoss", "kopffeld"],
   ref: "5.3 c",
   keywords: ["Kitchen Rule", "Drei-Punkte-Regel", "3-Punkte-Regel", "Dry Break", "drei Kugeln im Kopffeld", "Kopflinie überschreiten", "Break ungültig"],
   title: "Kitchen Rule: drei Kugeln ins Kopffeld",

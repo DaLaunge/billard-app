@@ -1,6 +1,6 @@
 import { addTranslations, t, getLang } from "../i18n";
 import { indexCase, searchIndexed } from "./search.js";
-import { ALL_DISCS, TOPICS, TOPICS_EN, SOURCE, SOURCES_EN } from "./meta.js";
+import { ALL_DISCS, TOPICS, TOPICS_EN, TAGS, TAGS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 
 /* Regelkunde-Katalog. Ein Regelfall = EINE Datei in ./cases/ (Dateiname
    bestimmt die Reihenfolge, daher die Nummer davor), die diese Dinge exportiert:
@@ -18,11 +18,12 @@ import { ALL_DISCS, TOPICS, TOPICS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 const files = import.meta.glob("./cases/*.js", { eager: true });
 const modules = Object.keys(files).sort().map((k) => files[k]);
 addTranslations("en", TOPICS_EN);
+addTranslations("en", TAGS_EN);
 addTranslations("en", SOURCES_EN);
 modules.forEach((m) => addTranslations("en", m.en || {}));
 
 export const RULE_CASES = modules.map((m) => m.default);
-export { ALL_DISCS, TOPICS, SOURCE };
+export { ALL_DISCS, TOPICS, TAGS, SOURCE };
 
 /* Zeile fuer die Quellenangabe, z. B. "ÖPBV/WPA-Spielregeln, ... , Regel 3.2". */
 /* Ein Fall hat einen oder mehrere SAETZE (sets): je Satz die Disziplinen, fuer die
@@ -53,6 +54,37 @@ const indexFor = (c) => {
   const lang = getLang();
   let m = _ix.get(c);
   if (!m) _ix.set(c, (m = {}));
-  return m[lang] || (m[lang] = indexCase(c, { tr: t, topics: TOPICS, sets: setsOf, discNames: DISC_NAMES }));
+  return m[lang] || (m[lang] = indexCase(c, { tr: t, topics: TOPICS, tagNames: TAGS, sets: setsOf, discNames: DISC_NAMES }));
 };
 export const searchCases = (list, q) => searchIndexed(list.map(indexFor), q);
+
+/* Reihenfolge fuer die Hilfe-Seite. "book" = wie im Regelwerk (ÖPBV/WPA-Spielregeln 2026): nach Kapitel und
+   Regelnummer der ERSTEN Fundstelle (`ref`); Faelle aus anderen Unterlagen (Lehrunterlage, Regularien,
+   Doppel) tragen `bookRef`, die Stelle, an der sie im Regelwerk am besten passen. "az" = alphabetisch nach
+   Ueberschrift. Gleicher Schluessel: alphabetisch. */
+const numsOf = (c) => {
+  const m = String(c.bookRef || c.ref).match(/(\d+)(?:\.(\d+))?/);
+  return m ? [Number(m[1]), m[2] ? Number(m[2]) : 0] : [99, 0];
+};
+export const bookChapter = (c) => numsOf(c)[0];
+/* Angezeigter Titel: ohne vorangestellte Disziplin ("14/1: Eroeffnungsstoss" -> "Eroeffnungsstoss",
+   "8-Ball-Anstoss: ..." -> "Anstoss: ..."), die zeigen schon die Kugeln und der Disziplinfilter; so sortiert die
+   alphabetische Liste nach dem eigentlichen Thema (Nutzer-Feedback 2026-10-07). */
+export const displayTitle = (c) => {
+  const x = t(c.title).replace(/^14[/.]1:\s*/, "").replace(/^(?:8|9|10)-ball[- ]/i, "");
+  return x.charAt(0).toUpperCase() + x.slice(1);
+};
+export const sortCases = (list, mode) => {
+  const lang = getLang();
+  const az = (a, b) => displayTitle(a).localeCompare(displayTitle(b), lang);
+  if (mode !== "book") return [...list].sort(az);
+  return [...list].sort((a, b) => {
+    const [ca, sa] = numsOf(a), [cb, sb] = numsOf(b);
+    return ca - cb || sa - sb || az(a, b);
+  });
+};
+/* Kapitelueberschriften des Regelwerks (fuer die Gliederung in der Regelwerk-Reihenfolge). */
+export const BOOK_CHAPTERS = {
+  1: "1 · Allgemeine Regeln", 2: "2 · Begriffe", 3: "3 · Fouls", 4: "4 · 8 Ball", 5: "5 · 9 Ball",
+  6: "6 · 10 Ball", 7: "7 · 14/1 Endlos", 99: "Doppel",
+};

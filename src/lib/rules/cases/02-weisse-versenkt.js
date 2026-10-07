@@ -39,6 +39,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "weisse",
+  tags: ["foul", "weisse", "tasche"],
   ref: "3.1, 4.9, 5.7, 6.9, 7.9",
   keywords: ["Scratch", "Weiße versenkt", "Weiße in der Tasche", "Weiße gefallen", "Weiße im Loch", "Ball in Hand"],
   title: "Weiße in der Tasche (Scratch)",

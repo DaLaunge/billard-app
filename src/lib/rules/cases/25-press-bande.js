@@ -43,6 +43,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "bande",
+  tags: ["bande", "tisch"],
   ref: "2.7, 3.3, 3.7",
   keywords: ["press an der Bande", "pressliegende Kugel", "Kugel an der Bande", "anliegende Kugel", "Bandenkontakt", "andere Bande", "abprallen", "Roll-up"],
   title: "Kugel liegt press an der Bande",

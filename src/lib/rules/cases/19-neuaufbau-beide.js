@@ -45,9 +45,10 @@ export default {
   released: true,
   discs: D141,
   topic: "ablauf",
+  tags: ["aufbau", "weisse", "kopffeld"],
   ref: "7.8a, 7.8b",
   keywords: ["Neuaufbau", "Rack", "Weiße im Dreieck", "15. Kugel im Dreieck", "beide behindern", "Ball in Hand", "Fußpunkt"],
-  title: "14/1: 15. Kugel und Weiße behindern beide",
+  title: "14/1: Neuaufbau, 15. Kugel und Weiße behindern",
   rule: "Behindern die 15. Kugel und die Weiße beide den Aufbau, werden alle 15 Kugeln zu einem Dreieck aufgebaut (die 15. Kugel liegt dann an der Spitze auf dem Fußpunkt) und die Weiße wird mit Ball in Hand aus dem Kopffeld gespielt. Dasselbe gilt, wenn die 15. Kugel zusammen mit der 14. versenkt wurde und die Weiße im Dreieck liegt. Der Spieler darf danach jede Kugel zuerst anspielen.",
   sets: [{ discs: D141, tag: "14/1 · Neuaufbau", variants }],
 };
@@ -55,7 +56,7 @@ export default {
 export const en = {
   "jede Kugel erlaubt": "any ball allowed",
   "Die Weiße kommt aus dem Kopffeld, im Kopffeld liegt keine Kugel: der Spieler darf jede Kugel anspielen – hier bricht er das neue Dreieck.": "The cue ball is played from the kitchen, no ball lies in the kitchen: the player may play any ball – here he breaks the new triangle.",
-  "14/1: 15. Kugel und Weiße behindern beide": "14.1: 15th ball and cue ball both obstruct",
+  "14/1: Neuaufbau, 15. Kugel und Weiße behindern": "14.1: re-rack, 15th ball and cue ball obstruct",
   "Behindern die 15. Kugel und die Weiße beide den Aufbau, werden alle 15 Kugeln zu einem Dreieck aufgebaut (die 15. Kugel liegt dann an der Spitze auf dem Fußpunkt) und die Weiße wird mit Ball in Hand aus dem Kopffeld gespielt. Dasselbe gilt, wenn die 15. Kugel zusammen mit der 14. versenkt wurde und die Weiße im Dreieck liegt. Der Spieler darf danach jede Kugel zuerst anspielen.":
     "If the 15th ball and the cue ball both obstruct the rack, all 15 balls are racked in a triangle (the 15th ball then sits at the apex on the foot spot) and the cue ball is played from the kitchen with ball in hand. The same applies if the 15th ball was pocketed together with the 14th and the cue ball lies in the triangle. The player may then play any ball first.",
   "Neuaufbau": "re-rack",

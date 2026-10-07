@@ -46,6 +46,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "anstoss",
+  tags: ["anstoss", "bande"],
   ref: "4.3, 5.3, 6.3",
   keywords: ["Break", "Anstoß", "vier Kugeln", "Bande", "Anstoß ungültig", "Rack"],
   title: "Anstoß: vier Kugeln an die Bande",

@@ -34,6 +34,7 @@ export default {
   released: true,
   discs: D8,
   topic: "kontakt",
+  tags: ["ablauf", "erstkontakt"],
   ref: "4.4, 4.9",
   keywords: ["offener Tisch", "Gruppe", "Achtball", "Achter", "8 zu früh", "schwarze Kugel"],
   title: "Offener Tisch: die 8 zuerst",

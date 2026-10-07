@@ -1,3 +1,4 @@
+import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, BellOff, BellRing, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
 import { t } from "../lib/i18n";
@@ -314,6 +315,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     tournamentWins: achievementCounters?.tournament_wins ?? null,
     tournament2nd: achievementCounters?.tournament_2nd ?? null,
     tournament3rd: achievementCounters?.tournament_3rd ?? null,
+    rulesViewed: achievementCounters?.rules_viewed ?? null,
+    rulesTotal: RULES_TOTAL,
   }), [liveExtras, playerObj?.created_at, achievementCounters]);
 
   // Live-Stand je Erfolgs-Familie: an den (unübersetzten) Beschreibungstexten der
@@ -342,6 +345,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     if (extras.ghostGames != null && has(/Spiele? gegen den Ghost$/)) {
       parts.push(t("{n} Spiele gegen den Ghost", { n: extras.ghostGames }));
     }
+    if (extras.rulesViewed != null && has(/Regeln? angesehen$/)) parts.push(t("{n} Regeln angesehen", { n: extras.rulesViewed }));
     if (extras.tournamentWins != null && (has(/Turniere? gewonnen$/) || has(/Turnier-Zweiter$/) || has(/Turnier-Dritter$/))) {
       const bits = [];
       if (has(/Turniere? gewonnen$/)) bits.push(t("{n}× Platz 1", { n: extras.tournamentWins }));

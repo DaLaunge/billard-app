@@ -32,6 +32,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "stoss",
+  tags: ["foul", "stoss"],
   ref: "3.4",
   keywords: ["Fuß am Boden", "Füße", "Knie auf dem Tisch", "Stand beim Stoß", "kein Fuß auf dem Boden", "auf den Tisch setzen"],
   title: "Mindestens ein Fuß am Boden",

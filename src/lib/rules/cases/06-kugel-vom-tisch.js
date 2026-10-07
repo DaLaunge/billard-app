@@ -36,6 +36,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "tisch",
+  tags: ["foul", "tisch"],
   ref: "3.5, 2.6",
   keywords: ["vom Tisch gesprungen", "Kugel springt", "Kugel fliegt vom Tisch", "Sprung", "Boden", "Kugel auf dem Boden"],
   title: "Kugel springt vom Tisch",

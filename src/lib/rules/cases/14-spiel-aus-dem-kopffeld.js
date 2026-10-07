@@ -41,6 +41,7 @@ export default {
   released: true,
   discs: ["8 Ball", "14/1 Endlos"],
   topic: "weisse",
+  tags: ["foul", "kopffeld"],
   ref: "3.11, 4.9, 7.9",
   keywords: ["Kopffeld", "Kopflinie", "Ball in Hand Kopffeld", "Weiße verlässt Kopffeld", "Kugel im Kopffeld"],
   title: "Spiel aus dem Kopffeld",

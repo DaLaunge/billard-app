@@ -38,6 +38,7 @@ export default {
   released: true,
   discs: D8,
   topic: "ablauf",
+  tags: ["ablauf", "tasche"],
   ref: "4.8, 4.10, 4.4",
   keywords: ["8 versenkt", "Spielverlust", "Sieg mit der 8", "Spiel verloren gegangen", "Achter", "schwarze Kugel", "8 zu früh", "8 in falsche Tasche", "8 springt vom Tisch", "Spielende"],
   title: "Die 8: gewonnen oder verloren",

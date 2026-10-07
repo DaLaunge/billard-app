@@ -32,6 +32,7 @@ import LoginScreen from "./components/LoginScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
 import NicknameScreen from "./components/NicknameScreen";
 import LiveScreen from "./components/LiveScreen";
+import { RULES_TOTAL } from "./lib/rulesTotal";
 import MatchScreen from "./components/MatchScreen";
 import StatistikScreen from "./components/StatistikScreen";
 import ProfilScreen from "./components/ProfilScreen";
@@ -899,6 +900,23 @@ export default function App() {
 
   useEffect(() => { if (player) loadData(); }, [player, loadData]);
 
+  // Regelkunde: ein aufgeklappter Fall zaehlt fuer die Erfolge "Regeln angesehen" (record_rule_view, siehe
+  // supabase/2026-10-08_rules_achievements.sql). Jeder Fall wird je Geraet nur einmal gemeldet; fehlt die RPC
+  // (Migration nicht eingespielt) oder scheitert sie, passiert nichts weiter - die Regeln lesen geht immer.
+  const recordRuleView = useCallback(async (caseId) => {
+    if (!player || !caseId) return;
+    const key = "ruleViewsSent:" + player.id;
+    let sent;
+    try { sent = new Set(JSON.parse(localStorage.getItem(key) || "[]")); } catch { sent = new Set(); }
+    if (sent.has(caseId)) return;
+    const { data, error } = await supabase.rpc("record_rule_view", { p_case_id: caseId, p_total: RULES_TOTAL });
+    if (error) { console.warn("record_rule_view:", error.message); return; }
+    sent.add(caseId);
+    try { localStorage.setItem(key, JSON.stringify([...sent])); } catch { /* Privatmodus */ }
+    if (data?.awarded > 0) loadData(); // neuer Erfolg: Badges neu laden, das Popup kommt von selbst
+    else if (data?.count != null) setAchievementCounters((c) => (c ? { ...c, rules_viewed: data.count } : c));
+  }, [player, loadData]);
+
   // Beim Zurueckholen der App in den Vordergrund neu laden (hoechstens einmal
   // pro Minute). Vorher lud eine offene App NUR bei eigenen Aktionen neu -
   // Ergebnisse anderer Spieler tauchten erst nach einem Neustart auf. Dank der
@@ -1594,7 +1612,7 @@ export default function App() {
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {tab === "live" && (
-                <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
+                <LiveScreen onViewRule={recordRuleView} me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}

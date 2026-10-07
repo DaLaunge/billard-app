@@ -55,6 +55,7 @@ export default {
   released: true,
   discs: ["8 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
+  tags: ["ansage", "tasche"],
   ref: "1.7, 4.6, 6.5, 6.6, 7.5, 7.6",
   keywords: ["falsche Tasche", "nicht angesagte Tasche", "Ansage", "Kugel und Tasche ansagen", "andere Tasche", "unkorrekt versenkt", "Falschansage"],
   title: "Kugel fällt in die falsche Tasche",

@@ -2822,6 +2822,7 @@ button.break-slot { cursor: pointer; }
 .rs-cue-shaft { stroke: #C8A46A; stroke-width: 2.2; stroke-linecap: butt; }
 .rs-cue-tip { stroke: #9EC7E8; stroke-width: 2.2; }
 .rs-chalkdot { fill: #7FB4E6; stroke: rgba(0,0,0,.35); stroke-width: .4; }
+.rs-breakbox { fill: rgba(255,255,255,.08); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 2; }
 .rs-template { fill: rgba(235,235,235,.55); stroke: #F2EDE0; stroke-width: .8; }
 .rs-hand { fill: #E3B58F; stroke: rgba(0,0,0,.45); stroke-width: .5; }
 .rs-stancebox { display: flex; justify-content: center; min-height: 70px; margin-top: 6px; }
@@ -2838,6 +2839,25 @@ button.break-slot { cursor: pointer; }
   @keyframes rs-fig-move { from { transform: translate(var(--fx), var(--fy)); } }
   @keyframes rs-fig-fade { from { opacity: 0; } }
 }
+.rs-tagrow { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 6px 22px; }
+.rs-tagpill { font: inherit; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--accent-line);
+  background: transparent; color: var(--accent); cursor: pointer; }
+.rs-tagpill.on { background: var(--accent); color: var(--accent-ink); }
+.rs-activetag { display: flex; align-items: center; gap: 10px; }
+.rs-activetag .chip { display: inline-flex; align-items: center; gap: 6px; }
+.rs-activetag-n { font-size: 12px; opacity: .75; }
+.rs-filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rs-sort { display: inline-flex; gap: 6px; }
+.rs-chapter { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
+.rs-chapter-btn, .rs-case-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 9px 10px; border: 0; border-radius: 10px;
+  background: var(--surface-btn); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rs-chapter-btn { color: var(--accent); }
+.rs-chapter-count { margin-left: auto; font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.rs-case-toggle { padding: 4px 2px; background: none; font-weight: inherit; }
+.rs-case-toggle span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rs-chev { flex: 0 0 auto; transition: transform .2s; }
+.rs-chapter-btn.open .rs-chev, .rs-case.open .rs-chev { transform: rotate(90deg); }
+.rs-case-head h4 { margin: 0; flex: 1 1 auto; min-width: 0; }
 .rs-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rs-tagchip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft);
   border: 1px solid var(--accent-line); color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

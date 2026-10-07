@@ -131,7 +131,7 @@ function Clock({ s, limit = 5 }) {
   );
 }
 
-export default function RuleScene({ scene }) {
+export default function RuleScene({ scene, onEnd }) {
   const uid = useId().replace(/:/g, "");
   const last = scene.steps.length - 1;
   const [idx, setIdx] = useState(0);
@@ -155,6 +155,14 @@ export default function RuleScene({ scene }) {
     }, CLOCK_MS);
     return () => clearInterval(id);
   }, [clockTarget, withClock]);
+
+  // Letzter Schritt erreicht = die Animation wurde bis zum Urteil angesehen (fuer die Erfolge "Regeln angesehen").
+  // Nur wenn ALLE Schritte durchlaufen wurden (Abspielen oder Weiter) - ein Sprung auf den letzten Punkt zaehlt nicht.
+  const visited = useRef(new Set([0]));
+  useEffect(() => {
+    visited.current.add(idx);
+    if (idx === last && last > 0 && visited.current.size === scene.steps.length) onEnd?.();
+  }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { pos, out } = stateAt(scene, idx);
   const step = scene.steps[idx];
@@ -264,6 +272,7 @@ export default function RuleScene({ scene }) {
             <circle cx="60" cy="60" r="1.2" /><circle cx="110" cy="60" r="1.2" /><circle cx="160" cy="60" r="1.2" />
           </g>
         )}
+        {scene.table && scene.table.breakBox && <rect className="rs-breakbox" x="14" y="37" width="46" height="46" rx="1.5" aria-hidden="true" />}
         {scene.table && scene.table.triangle && <polygon className="rs-triangle" points="149,60 203.6,28.5 203.6,91.5" />}
         {POCKETS.map((p, i) => <circle key={i} className="rs-pocket" cx={p[0]} cy={p[1]} r="6.5" />)}
 

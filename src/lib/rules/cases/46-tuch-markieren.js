@@ -39,6 +39,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "tisch",
+  tags: ["verhalten", "tisch", "foul"],
   ref: "3.16 f",
   keywords: ["Tuch markieren", "Kreidepunkt", "Kreidestrich", "Tisch markieren", "Markierung auf dem Tuch", "Zielhilfe markieren"],
   title: "Tuch oder Bande markieren",
