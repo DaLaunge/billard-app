@@ -45,6 +45,7 @@ export default {
   src: SOURCE_REGULARIEN,
   discs: D8,
   topic: "ablauf",
+  tags: ["ablauf", "foul"],
   ref: "10",
   bookRef: "4.11",
   keywords: ["falsche Gruppe versenkt", "Volle und Halbe vertauscht", "Kugel des Gegners versenkt", "versehentlich gegnerische Kugel", "Verwechslung der Gruppen"],

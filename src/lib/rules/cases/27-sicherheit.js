@@ -53,6 +53,7 @@ export default {
   released: true,
   discs: ["8 Ball", "14/1 Endlos"],
   topic: "ablauf",
+  tags: ["ansage", "ablauf"],
   ref: "4.6, 7.5, 7.6, 1.7, 2.16",
   keywords: ["Sicherheit", "Safe", "Sicherheitsstoß", "Sicherheit ansagen", "Safety", "Kugel fällt trotz Sicherheit", "Ansagespiel"],
   title: "Sicherheit ansagen",

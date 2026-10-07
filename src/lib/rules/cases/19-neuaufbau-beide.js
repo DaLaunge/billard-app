@@ -45,6 +45,7 @@ export default {
   released: true,
   discs: D141,
   topic: "ablauf",
+  tags: ["aufbau", "weisse", "kopffeld"],
   ref: "7.8a, 7.8b",
   keywords: ["Neuaufbau", "Rack", "Weiße im Dreieck", "15. Kugel im Dreieck", "beide behindern", "Ball in Hand", "Fußpunkt"],
   title: "14/1: Neuaufbau, 15. Kugel und Weiße behindern",

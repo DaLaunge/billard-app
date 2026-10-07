@@ -50,6 +50,7 @@ export default {
   released: true,
   discs: D141,
   topic: "ablauf",
+  tags: ["aufbau"],
   ref: "7.4, 7.6, 7.8a",
   keywords: ["Neuaufbau", "Rack", "letzte Kugel", "14. Kugel", "15. Kugel", "zwei Kugeln liegen", "eine Kugel liegt", "aufbauen"],
   title: "14/1: Neuaufbau, 15. Kugel mit der 14. versenkt",

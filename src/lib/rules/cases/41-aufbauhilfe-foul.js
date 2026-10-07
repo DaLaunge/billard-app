@@ -32,6 +32,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "tisch",
+  tags: ["foul", "aufbau", "bande"],
   ref: "3.15",
   keywords: ["Aufbauhilfe auf der Bande", "Kugel berührt Aufbauhilfe", "Tappen", "Aufbauhilfe-Foul"],
   title: "Hilfsmittel auf der Bande berührt",

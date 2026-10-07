@@ -62,6 +62,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
+  tags: ["foul", "ablauf"],
   ref: "3 (Einleitung), 3.13, 1.11",
   keywords: ["Foul zu spät", "Foul nicht angesagt", "Foul angesagt", "nächster Stoß", "Protest", "Foulansage", "nachträglich", "Foul übersehen"],
   title: "Foul zu spät erkannt",

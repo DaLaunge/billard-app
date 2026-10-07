@@ -37,6 +37,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "stoss",
+  tags: ["foul", "stoss", "weisse"],
   ref: "3.8",
   keywords: ["Schieben", "Queue schiebt die Weiße", "Pomeranze bleibt an der Weißen", "Kontakt zu lang", "Schiebestoß", "mitschieben"],
   title: "Schieben der Weißen",

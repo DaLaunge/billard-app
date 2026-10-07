@@ -43,6 +43,7 @@ export default {
   src: SOURCE_OBERSCHIRI,
   discs: D141,
   topic: "stoss",
+  tags: ["foul", "verhalten", "tasche"],
   ref: "6.7",
   bookRef: "7.5",
   keywords: ["Kugel gefangen", "Kugel aufhalten", "Kugel abfangen", "Hand ins Loch", "rollende Kugel behindert", "absichtliches Foul", "16 Punkte"],

@@ -41,6 +41,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "tisch",
+  tags: ["tasche", "ablauf"],
   ref: "1.8, 2.2",
   keywords: ["fällt von selbst", "ohne Stoß gefallen", "Kugel fällt allein", "Stoß wiederholen", "Kugel fällt vor dem Treffer", "plötzlich bewegt"],
   title: "Kugel fällt von selbst",

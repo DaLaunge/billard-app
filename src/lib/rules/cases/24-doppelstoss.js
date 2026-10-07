@@ -37,6 +37,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "weisse",
+  tags: ["foul", "stoss", "weisse"],
   ref: "2.20, 3.22, 3.23",
   src: SOURCE_OBERSCHIRI,
   keywords: ["Doppelstoß", "Weiße läuft nach", "nachlaufen", "halbe Kugelbreite", "Durchstoß", "Queue berührt zweimal", "knapp vor der Kugel", "Kreidestärke"],

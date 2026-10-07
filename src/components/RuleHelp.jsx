@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Search, X, ArrowDownAZ, ListOrdered, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
-import { RULE_CASES, ALL_DISCS, TOPICS, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS, displayTitle } from "../lib/rules";
+import { Search, X, ArrowDownAZ, ListOrdered, ChevronRight, ChevronsDownUp, ChevronsUpDown, Tag } from "lucide-react";
+import { RULE_CASES, ALL_DISCS, TOPICS, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS, displayTitle, TAGS } from "../lib/rules";
 import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
 import InfoButton from "./widgets/InfoButton";
@@ -54,7 +54,9 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
   const saveCh = (set) => { setOpenCh(set); try { localStorage.setItem(CH_KEY, JSON.stringify([...set])); } catch { /* Privatmodus */ } };
   const toggleCh = (n) => { const set = new Set(openCh); if (set.has(n)) set.delete(n); else set.add(n); saveCh(set); };
 
-  const pool = casesForDisc(disc === ALL ? null : disc, { onlyReleased, ids });
+  const [tag, setTag] = useState(null); // Schlagwort-Filter: nur Faelle mit diesem Tag
+  const pool = casesForDisc(disc === ALL ? null : disc, { onlyReleased, ids }).filter((c) => !tag || (c.tags || []).includes(tag));
+  const chOpen = (n) => !!tag || openCh.has(n); // mit Tag-Filter sind alle Kapitel offen: das Ergebnis steht sofort da
   // Mit Suchbegriff gilt die Treffer-Reihenfolge (das Beste zuerst); ohne ihn die gewaehlte Sortierung.
   const shown = q.trim() ? searchCases(pool, q) : sortCases(pool, sort);
   const grouped = !q.trim() && sort === "book";
@@ -63,7 +65,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
   // Wenige Treffer (Suche) oder ein gezielt angeforderter Fall sind gleich aufgeklappt.
   const autoOpen = (q.trim() && shown.length <= 3) || (ids && ids.length <= 3);
   const isCaseOpen = (id) => (id in caseOpen ? caseOpen[id] : !!autoOpen);
-  const allOpen = grouped ? chapters.length > 0 && chapters.every((n) => openCh.has(n)) : shown.length > 0 && shown.every((c) => isCaseOpen(c.id));
+  const allOpen = grouped ? chapters.length > 0 && chapters.every((n) => chOpen(n)) : shown.length > 0 && shown.every((c) => isCaseOpen(c.id));
   const toggleAll = () => {
     if (grouped) saveCh(allOpen ? new Set() : new Set(chapters));
     else setCaseOpen(Object.fromEntries(shown.map((c) => [c.id, !allOpen])));
@@ -87,25 +89,33 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
             aria-label={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}>{allOpen ? <ChevronsDownUp size={16} /> : <ChevronsUpDown size={16} />}</button>
         </span>
       </div>
+      {tag && (
+        <div className="rs-activetag">
+          <button type="button" className="chip active" onClick={() => setTag(null)} title={t("Schlagwort-Filter aufheben")} aria-label={t("Schlagwort-Filter aufheben")}>
+            <Tag size={14} /> {t(TAGS[tag])} <X size={14} />
+          </button>
+          <span className="rs-activetag-n">{t("{n} Regeln", { n: shown.length })}</span>
+        </div>
+      )}
       {shown.length === 0 && <p className="hint">{t("Keine passende Regel gefunden.")}</p>}
       {shown.map((c, i) => {
         const chap = bookChapter(c);
         const heading = grouped && (i === 0 || bookChapter(shown[i - 1]) !== chap) ? BOOK_CHAPTERS[chap] : null;
         const set = setFor(c, pick[c.id] || (disc === ALL ? null : disc));
         const multi = setsOf(c).length > 1;
-        if (grouped && !openCh.has(chap) && !heading) return null; // Fall eines zugeklappten Kapitels: nichts, auch keinen Abstand
+        if (grouped && !chOpen(chap) && !heading) return null; // Fall eines zugeklappten Kapitels: nichts, auch keinen Abstand
         return (
           <div key={c.id} className="rs-case-wrap">
             {heading && (
               <h3 className="rs-chapter">
-                <button type="button" className={"rs-chapter-btn" + (openCh.has(chap) ? " open" : "")} aria-expanded={openCh.has(chap)} onClick={() => toggleCh(chap)}>
+                <button type="button" className={"rs-chapter-btn" + (chOpen(chap) ? " open" : "")} aria-expanded={chOpen(chap)} onClick={() => toggleCh(chap)}>
                   <ChevronRight size={16} className="rs-chev" />
                   <span>{t(heading)}</span>
                   <span className="rs-chapter-count">{countIn(chap)}</span>
                 </button>
               </h3>
             )}
-            {(!grouped || openCh.has(chap)) && (
+            {(!grouped || chOpen(chap)) && (
           <div className={"rs-case" + (isCaseOpen(c.id) ? " open" : "")}>
             <div className="rs-case-head">
               <h4>
@@ -118,9 +128,14 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
               {!c.released && <span className="rs-badge">{t("nur Verwaltung")}</span>}
               <InfoButton title={t(c.title)}>{t(c.rule)} {t("Quelle:")} {sourceLine(c)}</InfoButton>
             </div>
+            <div className="rs-tagrow">
+              {(c.tags || []).map((k) => (
+                <button key={k} type="button" className={"rs-tagpill" + (tag === k ? " on" : "")} aria-pressed={tag === k}
+                  onClick={() => setTag(tag === k ? null : k)} title={t("Nur Regeln mit diesem Schlagwort zeigen")}>{t(TAGS[k])}</button>
+              ))}
+            </div>
             {isCaseOpen(c.id) && (
               <>
-                <p className="rs-topic">{t(TOPICS[c.topic])}</p>
                 <div className="rs-pair">
                   {set.variants.map((v) => <RuleScene key={c.id + set.discs.join() + v.label} scene={{ ...v, tag: v.tag || set.tag }} />)}
                 </div>

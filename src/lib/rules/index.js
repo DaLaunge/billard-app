@@ -1,6 +1,6 @@
 import { addTranslations, t, getLang } from "../i18n";
 import { indexCase, searchIndexed } from "./search.js";
-import { ALL_DISCS, TOPICS, TOPICS_EN, SOURCE, SOURCES_EN } from "./meta.js";
+import { ALL_DISCS, TOPICS, TOPICS_EN, TAGS, TAGS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 
 /* Regelkunde-Katalog. Ein Regelfall = EINE Datei in ./cases/ (Dateiname
    bestimmt die Reihenfolge, daher die Nummer davor), die diese Dinge exportiert:
@@ -18,11 +18,12 @@ import { ALL_DISCS, TOPICS, TOPICS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 const files = import.meta.glob("./cases/*.js", { eager: true });
 const modules = Object.keys(files).sort().map((k) => files[k]);
 addTranslations("en", TOPICS_EN);
+addTranslations("en", TAGS_EN);
 addTranslations("en", SOURCES_EN);
 modules.forEach((m) => addTranslations("en", m.en || {}));
 
 export const RULE_CASES = modules.map((m) => m.default);
-export { ALL_DISCS, TOPICS, SOURCE };
+export { ALL_DISCS, TOPICS, TAGS, SOURCE };
 
 /* Zeile fuer die Quellenangabe, z. B. "ÖPBV/WPA-Spielregeln, ... , Regel 3.2". */
 /* Ein Fall hat einen oder mehrere SAETZE (sets): je Satz die Disziplinen, fuer die
@@ -53,7 +54,7 @@ const indexFor = (c) => {
   const lang = getLang();
   let m = _ix.get(c);
   if (!m) _ix.set(c, (m = {}));
-  return m[lang] || (m[lang] = indexCase(c, { tr: t, topics: TOPICS, sets: setsOf, discNames: DISC_NAMES }));
+  return m[lang] || (m[lang] = indexCase(c, { tr: t, topics: TOPICS, tagNames: TAGS, sets: setsOf, discNames: DISC_NAMES }));
 };
 export const searchCases = (list, q) => searchIndexed(list.map(indexFor), q);
 

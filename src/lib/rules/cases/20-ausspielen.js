@@ -52,6 +52,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "anstoss",
+  tags: ["anstoss", "ablauf"],
   ref: "1.2",
   keywords: ["Ausspielen", "Lag", "Anstoßrecht", "wer stößt an", "Kopfbande", "Fußbande", "Längsachse", "Ausstoßen"],
   title: "Ausspielen um den Anstoß",

@@ -38,6 +38,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "weisse",
+  tags: ["weisse", "foul", "erstkontakt"],
   ref: "3.7, 2.7",
   keywords: ["Weiße press an Kugel", "pressliegende Weiße", "Weiße liegt an der Kugel", "von der Kugel wegspielen", "Kugel gilt als getroffen", "Weiße anliegend"],
   title: "Weiße liegt press an einer Kugel",

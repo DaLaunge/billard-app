@@ -34,6 +34,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "bande",
+  tags: ["foul", "bande"],
   ref: "3.3, 2.7",
   keywords: ["Bande", "Tasche", "kein Bandenkontakt", "keine Bande", "No Rail", "Kugel bleibt liegen", "Bande nach dem Treffer"],
   title: "Nach dem Treffer: Bande oder Tasche",

@@ -35,6 +35,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "bande",
+  tags: ["tasche", "tisch"],
   ref: "2.2, 1.8",
   keywords: ["Taschenrand", "Kugel hängt", "Kugel wackelt", "fünf Sekunden", "5 Sekunden", "versenkt", "Kugel fällt später", "am Loch"],
   title: "Kugel hängt am Taschenrand",

@@ -83,6 +83,7 @@ export default {
   released: true,
   discs: ["9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
+  tags: ["foul", "ablauf"],
   ref: "3.13, 3.1, 5.8, 6.10, 7.11",
   keywords: ["drei Fouls", "3-Foul-Regel", "Foul in Folge", "dritte Foul", "Spielverlust", "Verwarnung", "Warnung", "wie oft Foul", "Fouls hintereinander", "mehrere Fouls", "15 Punkte Abzug", "minus 15 Punkte", "Strafpunkte"],
   title: "Drei Fouls in Folge",

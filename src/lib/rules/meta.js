@@ -31,6 +31,19 @@ export const TOPICS_EN = {
   "Haltung & Stoß": "Stance & stroke",
 };
 
+/* Schlagwoerter (klickbar in der Hilfe-Seite): ein Fall hat mehrere (`tags`), ein Klick zeigt nur Faelle mit demselben.
+   Die Reihenfolge hier ist die Reihenfolge der Auswahl. */
+export const TAGS = {
+  foul: "Foul", anstoss: "Anstoß", weisse: "Weiße", bande: "Bande", tasche: "Tasche", erstkontakt: "Erstkontakt",
+  kopffeld: "Kopffeld", aufbau: "Aufbau", ansage: "Ansage", stoss: "Stoß", ablauf: "Ablauf", tisch: "Tisch & Kugeln",
+  verhalten: "Verhalten", zeit: "Zeit", doppel: "Doppel",
+};
+export const TAGS_EN = {
+  "Foul": "Foul", "Anstoß": "Break", "Weiße": "Cue ball", "Bande": "Cushion", "Tasche": "Pocket", "Erstkontakt": "First contact",
+  "Kopffeld": "Kitchen", "Aufbau": "Rack", "Ansage": "Call", "Stoß": "Stroke", "Ablauf": "Procedure", "Tisch & Kugeln": "Table & balls",
+  "Verhalten": "Conduct", "Zeit": "Time", "Doppel": "Doubles",
+};
+
 /* Dieselben Varianten fuer mehrere Disziplin-Gruppen, nur mit anderem Etikett am
    Tisch: tagSets(varianten, [[["9 Ball","10 Ball"], "Niedrigste Kugel: 5"], ...]).
    Das Etikett sagt, in welcher Situation man sich befindet (z. B. welche Gruppe

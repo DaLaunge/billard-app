@@ -33,6 +33,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "ablauf",
+  tags: ["doppel", "foul", "ablauf"],
   ref: "DP",
   bookRef: "99",
   keywords: ["Doppel", "Stoßwechsel", "falscher Spieler", "Reihenfolge im Doppel", "überspielt"],

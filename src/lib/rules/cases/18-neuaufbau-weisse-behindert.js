@@ -54,6 +54,7 @@ export default {
   released: true,
   discs: D141,
   topic: "ablauf",
+  tags: ["aufbau", "weisse", "kopffeld"],
   ref: "7.8d",
   keywords: ["Neuaufbau", "Rack", "Weiße im Dreieck", "Weiße behindert", "Kopfpunkt", "Ball in Hand", "Kopffeld", "Kugel im Kopffeld anspielen", "darf ich die Kugel im Kopffeld spielen"],
   title: "14/1: Neuaufbau, Weiße behindert",

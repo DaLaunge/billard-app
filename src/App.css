@@ -2838,6 +2838,13 @@ button.break-slot { cursor: pointer; }
   @keyframes rs-fig-move { from { transform: translate(var(--fx), var(--fy)); } }
   @keyframes rs-fig-fade { from { opacity: 0; } }
 }
+.rs-tagrow { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 6px 22px; }
+.rs-tagpill { font: inherit; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--accent-line);
+  background: transparent; color: var(--accent); cursor: pointer; }
+.rs-tagpill.on { background: var(--accent); color: var(--accent-ink); }
+.rs-activetag { display: flex; align-items: center; gap: 10px; }
+.rs-activetag .chip { display: inline-flex; align-items: center; gap: 6px; }
+.rs-activetag-n { font-size: 12px; opacity: .75; }
 .rs-filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .rs-sort { display: inline-flex; gap: 6px; }
 .rs-chapter { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; }

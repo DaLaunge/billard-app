@@ -38,6 +38,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "ablauf",
+  tags: ["verhalten", "foul"],
   ref: "3.16",
   keywords: ["Unsportliches Verhalten", "Gegner ablenken", "Gegner stören", "Zurufe", "Winken", "Verwarnung", "Disqualifikation", "Spielverlust durch Verhalten"],
   title: "Unsportliches Verhalten",

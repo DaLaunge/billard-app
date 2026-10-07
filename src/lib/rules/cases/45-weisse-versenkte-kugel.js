@@ -39,6 +39,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"],
   topic: "weisse",
+  tags: ["weisse", "tasche", "foul"],
   ref: "2.2",
   keywords: ["versenkte Kugel berührt", "Weiße berührt versenkte Kugel", "Kugel in der Tasche", "Tasche voll"],
   title: "Volle Tasche: Kugel in der Tasche berührt",

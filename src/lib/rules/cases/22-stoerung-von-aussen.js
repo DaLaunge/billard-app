@@ -49,6 +49,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "ablauf",
+  tags: ["ablauf", "verhalten"],
   ref: "1.10, 1.9",
   keywords: ["Außenstörung", "Zuschauer", "Tisch angestoßen", "Kugel verschoben", "höhere Gewalt", "Kugeln zurücklegen", "Stoß wiederholen"],
   title: "Störung von außen",

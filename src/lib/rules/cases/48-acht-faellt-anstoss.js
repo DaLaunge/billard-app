@@ -56,6 +56,7 @@ export default {
   released: true,
   discs: D8,
   topic: "anstoss",
+  tags: ["anstoss", "tasche"],
   ref: "4.3 e, 4.3 f",
   keywords: ["8 fällt beim Anstoß", "Achter beim Break gefallen", "8 wieder aufbauen", "8 beim Break", "schwarze Kugel beim Anstoß"],
   title: "Die 8 fällt beim Anstoß",

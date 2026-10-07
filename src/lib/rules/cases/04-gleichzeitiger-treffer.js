@@ -80,6 +80,7 @@ export default {
   released: true,
   discs: ["8 Ball", "9 Ball", "10 Ball"],
   topic: "kontakt",
+  tags: ["foul", "erstkontakt"],
   ref: "3.2",
   keywords: ["gleichzeitig", "Doppeltreffer", "zulässige Kugel", "im Zweifel", "zwei Kugeln getroffen", "mehrere Kugeln gleichzeitig getroffen"],
   title: "Zwei Kugeln gleichzeitig getroffen",

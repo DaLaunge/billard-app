@@ -43,6 +43,7 @@ export default {
   released: true,
   discs: ALL_DISCS,
   topic: "ablauf",
+  tags: ["ablauf"],
   ref: "1.13, 4.11, 5.9, 6.11, 7.12",
   keywords: ["Patt", "Spiel festgefahren", "kein Fortschritt", "drei Aufnahmen", "Spielstand blockiert", "Remis im Spiel", "Schiedsrichter kündigt Patt an"],
   title: "Patt: kein Fortschritt im Spiel",

@@ -50,6 +50,7 @@ export default {
   released: true,
   discs: D141,
   topic: "ablauf",
+  tags: ["aufbau"],
   ref: "7.8c",
   keywords: ["Neuaufbau", "Rack", "15. Kugel im Dreieck", "Kopfpunkt", "Mittelpunkt", "letzte Kugel liegt im Weg", "Kugel behindert"],
   title: "14/1: Neuaufbau, 15. Kugel behindert",

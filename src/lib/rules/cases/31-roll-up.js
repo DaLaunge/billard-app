@@ -54,6 +54,7 @@ export default {
   released: true,
   discs: D141,
   topic: "ablauf",
+  tags: ["bande", "foul"],
   ref: "6.7",
   bookRef: "7.5",
   keywords: ["Roll-up", "Abstand zur Bande", "Kugelstärke Abstand", "zweimal Roll-up", "dritter Roll-up"],

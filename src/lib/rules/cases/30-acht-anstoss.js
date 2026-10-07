@@ -60,6 +60,7 @@ export default {
   released: true,
   discs: D8,
   topic: "anstoss",
+  tags: ["anstoss", "foul", "tasche"],
   ref: "4.3, 4.9",
   keywords: ["8 Ball Anstoß", "Kugel fällt beim Anstoß", "Weiße fällt beim Anstoß", "Kugel springt beim Anstoß", "Anstoßfoul 8 Ball", "Gruppen nach dem Anstoß", "Break Foul"],
   title: "8-Ball-Anstoß: Kugel oder Weiße fällt",
