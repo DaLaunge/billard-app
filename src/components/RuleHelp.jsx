@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, X, ArrowDownAZ, ListOrdered } from "lucide-react";
+import { Search, X, ArrowDownAZ, ListOrdered, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { RULE_CASES, ALL_DISCS, TOPICS, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS } from "../lib/rules";
 import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
@@ -8,6 +8,8 @@ import DiscBall, { DiscAll, DiscPickRow } from "./widgets/DiscBall";
 
 const ALL = "alle";
 const SORT_KEY = "ruleSort";
+const CH_KEY = "ruleChaptersOpen";
+const readChapters = () => { try { return new Set(JSON.parse(localStorage.getItem(CH_KEY) || "[]")); } catch { return new Set(); } };
 const readSort = () => { try { return localStorage.getItem(SORT_KEY) === "az" ? "az" : "book"; } catch { return "book"; } };
 
 /* Disziplinen eines Falls als Kugel-Tags: nur die Kugeln, ohne Text. Gilt der
@@ -45,10 +47,27 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
   const [sort, setSort] = useState(readSort); // "book" = wie im Regelwerk (Standard), "az" = alphabetisch
   const pickSort = (m) => { setSort(m); try { localStorage.setItem(SORT_KEY, m); } catch { /* Privatmodus */ } };
 
+  // Aufklappen: Kapitel (nur in der Regelwerk-Reihenfolge) und einzelne Faelle. Standard: alles zu - so sieht man
+  // zuerst nur die Gliederung und kommt mit zwei Klicks zum Ergebnis. Kapitel merkt das Geraet.
+  const [openCh, setOpenCh] = useState(readChapters);
+  const [caseOpen, setCaseOpen] = useState({}); // Fall-id -> true/false (ueberschreibt den Standard)
+  const saveCh = (set) => { setOpenCh(set); try { localStorage.setItem(CH_KEY, JSON.stringify([...set])); } catch { /* Privatmodus */ } };
+  const toggleCh = (n) => { const set = new Set(openCh); if (set.has(n)) set.delete(n); else set.add(n); saveCh(set); };
+
   const pool = casesForDisc(disc === ALL ? null : disc, { onlyReleased, ids });
   // Mit Suchbegriff gilt die Treffer-Reihenfolge (das Beste zuerst); ohne ihn die gewaehlte Sortierung.
   const shown = q.trim() ? searchCases(pool, q) : sortCases(pool, sort);
   const grouped = !q.trim() && sort === "book";
+  const chapters = grouped ? [...new Set(shown.map(bookChapter))] : [];
+  const countIn = (n) => shown.filter((c) => bookChapter(c) === n).length;
+  // Wenige Treffer (Suche) oder ein gezielt angeforderter Fall sind gleich aufgeklappt.
+  const autoOpen = (q.trim() && shown.length <= 3) || (ids && ids.length <= 3);
+  const isCaseOpen = (id) => (id in caseOpen ? caseOpen[id] : !!autoOpen);
+  const allOpen = grouped ? chapters.length > 0 && chapters.every((n) => openCh.has(n)) : shown.length > 0 && shown.every((c) => isCaseOpen(c.id));
+  const toggleAll = () => {
+    if (grouped) saveCh(allOpen ? new Set() : new Set(chapters));
+    else setCaseOpen(Object.fromEntries(shown.map((c) => [c.id, !allOpen])));
+  };
 
   return (
     <div className="rs-cases">
@@ -64,6 +83,8 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
             title={t("Wie im Regelwerk")} aria-label={t("Wie im Regelwerk")} aria-pressed={sort === "book"}><ListOrdered size={16} /></button>
           <button type="button" className={"chip chip-icon" + (sort === "az" ? " active" : "")} onClick={() => pickSort("az")}
             title={t("Alphabetisch")} aria-label={t("Alphabetisch")} aria-pressed={sort === "az"}><ArrowDownAZ size={16} /></button>
+          <button type="button" className="chip chip-icon" onClick={toggleAll} title={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}
+            aria-label={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}>{allOpen ? <ChevronsDownUp size={16} /> : <ChevronsUpDown size={16} />}</button>
         </span>
       </div>
       {shown.length === 0 && <p className="hint">{t("Keine passende Regel gefunden.")}</p>}
@@ -72,21 +93,41 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
         const heading = grouped && (i === 0 || bookChapter(shown[i - 1]) !== chap) ? BOOK_CHAPTERS[chap] : null;
         const set = setFor(c, pick[c.id] || (disc === ALL ? null : disc));
         const multi = setsOf(c).length > 1;
+        if (grouped && !openCh.has(chap) && !heading) return null; // Fall eines zugeklappten Kapitels: nichts, auch keinen Abstand
         return (
           <div key={c.id} className="rs-case-wrap">
-            {heading && <h3 className="rs-chapter">{t(heading)}</h3>}
-          <div className="rs-case">
+            {heading && (
+              <h3 className="rs-chapter">
+                <button type="button" className={"rs-chapter-btn" + (openCh.has(chap) ? " open" : "")} aria-expanded={openCh.has(chap)} onClick={() => toggleCh(chap)}>
+                  <ChevronRight size={16} className="rs-chev" />
+                  <span>{t(heading)}</span>
+                  <span className="rs-chapter-count">{countIn(chap)}</span>
+                </button>
+              </h3>
+            )}
+            {(!grouped || openCh.has(chap)) && (
+          <div className={"rs-case" + (isCaseOpen(c.id) ? " open" : "")}>
             <div className="rs-case-head">
-              <h4>{t(c.title)}</h4>
+              <h4>
+                <button type="button" className="rs-case-toggle" aria-expanded={isCaseOpen(c.id)} onClick={() => setCaseOpen((m) => ({ ...m, [c.id]: !isCaseOpen(c.id) }))}>
+                  <ChevronRight size={15} className="rs-chev" />
+                  <span>{t(c.title)}</span>
+                </button>
+              </h4>
               <DiscTags discs={c.discs} active={set.discs} onPick={multi ? (d) => setPick((p) => ({ ...p, [c.id]: d })) : undefined} />
               {!c.released && <span className="rs-badge">{t("nur Verwaltung")}</span>}
               <InfoButton title={t(c.title)}>{t(c.rule)} {t("Quelle:")} {sourceLine(c)}</InfoButton>
             </div>
-            <p className="rs-topic">{t(TOPICS[c.topic])}</p>
-            <div className="rs-pair">
-              {set.variants.map((v) => <RuleScene key={c.id + set.discs.join() + v.label} scene={{ ...v, tag: v.tag || set.tag }} />)}
-            </div>
+            {isCaseOpen(c.id) && (
+              <>
+                <p className="rs-topic">{t(TOPICS[c.topic])}</p>
+                <div className="rs-pair">
+                  {set.variants.map((v) => <RuleScene key={c.id + set.discs.join() + v.label} scene={{ ...v, tag: v.tag || set.tag }} />)}
+                </div>
+              </>
+            )}
           </div>
+            )}
           </div>
         );
       })}

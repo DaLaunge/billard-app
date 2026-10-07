@@ -2840,7 +2840,16 @@ button.break-slot { cursor: pointer; }
 }
 .rs-filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .rs-sort { display: inline-flex; gap: 6px; }
-.rs-chapter { margin: 14px 0 2px; font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--accent); }
+.rs-chapter { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
+.rs-chapter-btn, .rs-case-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 9px 10px; border: 0; border-radius: 10px;
+  background: var(--surface-btn); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rs-chapter-btn { color: var(--accent); }
+.rs-chapter-count { margin-left: auto; font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.rs-case-toggle { padding: 4px 2px; background: none; font-weight: inherit; }
+.rs-case-toggle span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rs-chev { flex: 0 0 auto; transition: transform .2s; }
+.rs-chapter-btn.open .rs-chev, .rs-case.open .rs-chev { transform: rotate(90deg); }
+.rs-case-head h4 { margin: 0; flex: 1 1 auto; min-width: 0; }
 .rs-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rs-tagchip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft);
   border: 1px solid var(--accent-line); color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
