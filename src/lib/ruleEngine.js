@@ -94,12 +94,54 @@ export function pathFrames(m, n = 24) {
   return [...ts].sort((a, b) => a - b).map((time) => ({ p: posAt(m, time), offset: Math.min(1, time / m.dur) }));
 }
 
+
+/* Objektkugeln, die an der Bande enden, prallen sichtbar ein Stueck zurueck (Nutzer-Feedback 2026-10-07:
+   "dann ist sofort ersichtlich, dass die Kugel die Bande beruehrt hat" - das ist KEIN Foul). Die Daten
+   behalten ihr Ziel an der Bande; `eff` haengt den Bandenpunkt als Zwischenpunkt an und laesst die Kugel
+   ~5 Einheiten reflektiert zurueckrollen. Nicht fuer: die Weisse, versenkte/hingelegte Kugeln, Kugeln
+   mit `rebound`/`stop`, Kugeln die selbst treffen, und Kugeln, die schon an derselben Bande liegen. */
+const REBOUND = 5;
+const onWallPt = (p) => ({ x: p[0] >= 204.3 ? 1 : p[0] <= 15.7 ? -1 : 0, y: p[1] >= 104.3 ? 1 : p[1] <= 15.7 ? -1 : 0 });
+export function eff(m, fromP, all = []) {
+  if (!m || m.id === "w" || m.out || m.place || m.rebound || m.stop || m.flat || m.reboundDone) return m;
+  if (all.some((o) => o.after === m.id)) return m;
+  const w = onWallPt(m.to);
+  if (!w.x && !w.y) return m;
+  const prev = (m.via && m.via.length ? m.via[m.via.length - 1] : m.from || fromP);
+  if (!prev) return m;
+  const pw = onWallPt(prev);
+  if ((w.x && pw.x === w.x) || (w.y && pw.y === w.y)) return m; // laeuft an der Bande entlang / liegt schon dort
+  // ins Tischinnere (Bandennormale) - so bleiben Kugeln, die nebeneinander an derselben Bande liegen, im Abstand
+  const d = [-w.x, -w.y];
+  const to = [Math.round((m.to[0] + d[0] * REBOUND) * 100) / 100, Math.round((m.to[1] + d[1] * REBOUND) * 100) / 100];
+  return { ...m, via: [...(m.via || []), m.to], to, reboundDone: true };
+}
+
+
+/* Alle Zuege eines Schritts mit sichtbarem Zurueckprallen (siehe eff). Greedy: eine Kugel prallt nur zurueck,
+   wenn ihre neue Endlage zu keiner anderen Kugel naeher als 11.2 liegt (Ecken, in denen mehrere Kugeln
+   an verschiedenen Banden enden, bleiben sonst ineinander). */
+export function effAll(moves, fromPos) {
+  const ends = {};
+  Object.keys(fromPos).forEach((id) => { ends[id] = fromPos[id]; });
+  moves.forEach((m) => { if (m.out) delete ends[m.id]; else ends[m.id] = m.to; });
+  return moves.map((m) => {
+    const e = eff(m, fromPos[m.id], moves);
+    if (e === m) return m;
+    const clash = Object.keys(ends).some((id) => id !== m.id && dist(ends[id], e.to) < 11.2);
+    if (clash) return m;
+    ends[m.id] = e.to;
+    return e;
+  });
+}
+
 /* Zustand nach Schritt idx: Position und "in der Tasche" je Kugel. */
 export function stateAt(scene, idx) {
   const pos = {}, out = {};
   scene.balls.forEach((b) => { pos[b.id] = [b.x, b.y]; if (b.hidden) out[b.id] = true; });
   for (let i = 1; i <= idx; i++) {
-    for (const m of scene.steps[i].moves || []) {
+    const mv = effAll(scene.steps[i].moves || [], pos); // gleiche Eingabe wie in timeline(): Zustand und Animation stimmen ueberein
+    for (const m of mv) {
       pos[m.id] = m.to;
       out[m.id] = !!m.out;
     }
@@ -112,7 +154,8 @@ export function stateAt(scene, idx) {
    Player animiert danach, die automatische Wiedergabe weiss, wie lange sie
    warten muss. */
 export function timeline(step, fromPos) {
-  const moves = step.moves || [];
+  const raw = step.moves || [];
+  const moves = effAll(raw, fromPos);
   const info = {};
   const speeds = (m) => {
     if (info[m.id]) return info[m.id];
