@@ -323,6 +323,15 @@ const T = [
   ["eingeklemmte kugel", ["kugel-am-taschenrand"]],
   ["von einer kugel gestützt", ["kugel-am-taschenrand"], 2],
   ["kugel von oben prüfen", ["kugel-am-taschenrand"], 2],
+  // --- 9/10 faellt beim Anstoss, Break-Box
+  ["9 fällt beim anstoß", ["neun-faellt-anstoss"]],
+  ["golden break", ["neun-faellt-anstoss"], 2],
+  ["was passiert wenn die 9 beim break fällt", ["neun-faellt-anstoss"], 2],
+  ["10 fällt beim anstoß", ["zehn-faellt-anstoss"]],
+  ["10 beim break versenkt", ["zehn-faellt-anstoss"], 2],
+  ["break box", ["break-box"]],
+  ["breakbox", ["break-box"], 2],
+  ["break box rules", ["break-box"], 1, { lang: "en" }],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],

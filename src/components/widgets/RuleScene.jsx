@@ -264,6 +264,7 @@ export default function RuleScene({ scene }) {
             <circle cx="60" cy="60" r="1.2" /><circle cx="110" cy="60" r="1.2" /><circle cx="160" cy="60" r="1.2" />
           </g>
         )}
+        {scene.table && scene.table.breakBox && <rect className="rs-breakbox" x="14" y="37" width="46" height="46" rx="1.5" aria-hidden="true" />}
         {scene.table && scene.table.triangle && <polygon className="rs-triangle" points="149,60 203.6,28.5 203.6,91.5" />}
         {POCKETS.map((p, i) => <circle key={i} className="rs-pocket" cx={p[0]} cy={p[1]} r="6.5" />)}
 

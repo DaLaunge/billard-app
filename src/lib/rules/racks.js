@@ -5,7 +5,7 @@ import { ball, BALL_R } from "../ruleEngine.js";
    Fusspunkt. 9 Ball (Regel 5.2, seit 2026): die 9 in der Mitte der Raute liegt auf dem
    Fusspunkt, die Spitze (1) davor - die Raute ist also nach vorn verschoben. */
 const X0 = 160, DX = 2 * BALL_R * 0.866, DY = BALL_R;
-const W = [70, 60], HIT = [149, 60];
+const W = [45, 60], HIT = [149, 60];
 const r2 = (n) => Math.round(n * 100) / 100;
 
 const R9 = [[1], [2, 3], [4, 9, 5], [6, 7], [8]];
