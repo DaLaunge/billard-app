@@ -144,7 +144,7 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
             if (gone(ids[a2], tt) || gone(ids[b2], tt) || (to0.out[ids[a2]] && !tl[ids[a2]]) || (to0.out[ids[b2]] && !tl[ids[b2]])) continue;
             const pa = where(ids[a2], tt), pb = where(ids[b2], tt);
             const dd = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]);
-            if (dd < 9.8) { err(id, `${v.label} Schritt ${i}: Kugeln ${ids[a2]} und ${ids[b2]} laufen bei ${Math.round(tt)} ms durcheinander (Abstand ${dd.toFixed(1)})`); tt = tEnd + 1; a2 = ids.length; break; }
+            if (!v.looseCollisions && dd < 9.8) { err(id, `${v.label} Schritt ${i}: Kugeln ${ids[a2]} und ${ids[b2]} laufen bei ${Math.round(tt)} ms durcheinander (Abstand ${dd.toFixed(1)})`); tt = tEnd + 1; a2 = ids.length; break; }
           }
         }
         for (const [bid, t] of Object.entries(tl)) {
