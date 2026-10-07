@@ -27,6 +27,7 @@ const build = (lowId, wrong1, wrong3, nineMode, tx) => {
   // Foul 2: Scratch nach legalem Treffer, die Kugel laeuft an die Bande
   const s2 = cut(HAND2, { id: lowId, at: T }, OBJ, { hand: true });
   s2.w.to = POCKET; s2.w.out = true;
+  s2.obj.flat = true; // die 2 bleibt an der Bande liegen: Stoss 3 B spielt sie von dort
   // Foul 3 A: 9/10 Ball: falsche Kugel mit Bandenkontakt; 14/1: weicher Treffer ohne Bande
   const a3 = nineMode
     ? cut([88, 100], { id: wrong3, at: P3 }, [140, 104.5], { hand: true })
