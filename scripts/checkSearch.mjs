@@ -315,6 +315,14 @@ const T = [
   ["volle tasche", ["weisse-versenkte-kugel"]],
   ["weiße berührt versenkte kugel", ["weisse-versenkte-kugel"]],
   ["pocket full", ["weisse-versenkte-kugel"], 2, { lang: "en" }],
+  // --- Tuch markieren, Kugel am Taschenrand (von oben pruefen)
+  ["tuch markieren", ["tuch-markieren"]],
+  ["kreidepunkt", ["tuch-markieren"]],
+  ["tisch markieren", ["tuch-markieren"], 2],
+  ["mark the cloth", ["tuch-markieren"], 1, { lang: "en" }],
+  ["eingeklemmte kugel", ["kugel-am-taschenrand"]],
+  ["von einer kugel gestützt", ["kugel-am-taschenrand"], 2],
+  ["kugel von oben prüfen", ["kugel-am-taschenrand"], 2],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],

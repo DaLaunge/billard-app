@@ -329,7 +329,7 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 2.2 Kugel am Taschenrand (5 s, mit Uhr) | ✅ `taschenrand` |
 | 2.2 Weiße berührt versenkte Kugel (volle Tasche) | ✅ `weisse-versenkte-kugel` |
 | 3.7 Weiße press an einer Kugel | ✅ `weisse-press` |
-| 3.32 eingeklemmte Kugeln | 🟨 |
+| 3.32 eingeklemmte Kugeln (Taschenrand von oben prüfen) | ✅ `kugel-am-taschenrand` |
 | 2.7 Bande anlaufen, press liegende Kugel | ✅ `press-bande`, `bande-vor-dem-treffer` |
 | 3.1 Weiße in der Tasche | ✅ `weisse-versenkt` |
 | 3.2 Falsche Kugel, gleichzeitiger Treffer | ✅ `erste-beruehrung`, `gleichzeitiger-treffer` |
@@ -338,6 +338,7 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 3.6 Kugel berührt (Hand) | ✅ `kugel-beruehrt` |
 | 3.8 Schieben | ✅ `schieben` |
 | 3.12 außerhalb der Aufnahme | ✅ `ausserhalb-aufnahme` |
+| 3.16 f Tuch/Bande markieren | ✅ `tuch-markieren` |
 | 3.15 Aufbauhilfe-Foul | ✅ `aufbauhilfe-foul` |
 | 3.16 Unsportliches Verhalten (Ablenken) | ✅ `unsportlich` |
 | 3.5 Kugel springt vom Tisch | ✅ `kugel-vom-tisch` |
