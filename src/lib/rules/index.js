@@ -56,3 +56,27 @@ const indexFor = (c) => {
   return m[lang] || (m[lang] = indexCase(c, { tr: t, topics: TOPICS, sets: setsOf, discNames: DISC_NAMES }));
 };
 export const searchCases = (list, q) => searchIndexed(list.map(indexFor), q);
+
+/* Reihenfolge fuer die Hilfe-Seite. "book" = wie im Regelwerk (ÖPBV/WPA-Spielregeln 2026): nach Kapitel und
+   Regelnummer der ERSTEN Fundstelle (`ref`); Faelle aus anderen Unterlagen (Lehrunterlage, Regularien,
+   Doppel) tragen `bookRef`, die Stelle, an der sie im Regelwerk am besten passen. "az" = alphabetisch nach
+   Ueberschrift. Gleicher Schluessel: alphabetisch. */
+const numsOf = (c) => {
+  const m = String(c.bookRef || c.ref).match(/(\d+)(?:\.(\d+))?/);
+  return m ? [Number(m[1]), m[2] ? Number(m[2]) : 0] : [99, 0];
+};
+export const bookChapter = (c) => numsOf(c)[0];
+export const sortCases = (list, mode) => {
+  const lang = getLang();
+  const az = (a, b) => t(a.title).localeCompare(t(b.title), lang);
+  if (mode !== "book") return [...list].sort(az);
+  return [...list].sort((a, b) => {
+    const [ca, sa] = numsOf(a), [cb, sb] = numsOf(b);
+    return ca - cb || sa - sb || az(a, b);
+  });
+};
+/* Kapitelueberschriften des Regelwerks (fuer die Gliederung in der Regelwerk-Reihenfolge). */
+export const BOOK_CHAPTERS = {
+  1: "1 · Allgemeine Regeln", 2: "2 · Begriffe", 3: "3 · Fouls", 4: "4 · 8 Ball", 5: "5 · 9 Ball",
+  6: "6 · 10 Ball", 7: "7 · 14/1 Endlos", 99: "Doppel",
+};

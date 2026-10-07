@@ -55,6 +55,7 @@ export default {
   discs: D141,
   topic: "ablauf",
   ref: "6.7",
+  bookRef: "7.5",
   keywords: ["Roll-up", "Abstand zur Bande", "Kugelstärke Abstand", "zweimal Roll-up", "dritter Roll-up"],
   title: "Roll-up: nur zweimal erlaubt",
   rule: "Beim 14/1 gilt nach der Lehrunterlage: Liegt die angesagte Kugel innerhalb einer Kugelstärke von der Bande (aber nicht press), darf jeder Spieler darauf nur zweimal einen Roll-up spielen. Beim dritten Mal zählt das als drittes Foul in Folge: ein Punkt Abzug und zusätzlich 15 Punkte, alle Kugeln werden neu aufgebaut und der Spieler stößt unter den Eröffnungsbedingungen neu an. Kombinationen aus Roll-ups und anderen Fouls werden entsprechend gezählt.",

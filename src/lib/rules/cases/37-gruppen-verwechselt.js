@@ -46,6 +46,7 @@ export default {
   discs: D8,
   topic: "ablauf",
   ref: "10",
+  bookRef: "4.11",
   keywords: ["falsche Gruppe versenkt", "Volle und Halbe vertauscht", "Kugel des Gegners versenkt", "versehentlich gegnerische Kugel", "Verwechslung der Gruppen"],
   title: "Gruppen verwechselt",
   rule: "Sind beim 8-Ball die Gruppen bestimmt und spielt ein Spieler aus Versehen eine Kugel der gegnerischen Gruppe an und versenkt sie, muss das Foul gegeben werden, bevor er seinen nächsten Stoß ausführt (normales Foul: Ball in Hand für den Gegner). Wird die Verwechslung erst später von einem Spieler oder dem Schiedsrichter erkannt, wird das Spiel angehalten und von dem Spieler neu angestoßen, der den ursprünglichen Anstoß in diesem Spiel hatte.",
