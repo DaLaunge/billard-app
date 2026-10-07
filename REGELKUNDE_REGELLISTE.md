@@ -327,7 +327,9 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | 1.10 Störung von außen | ✅ `stoerung-von-aussen` |
 | 1.13 Patt | ✅ `patt` |
 | 2.2 Kugel am Taschenrand (5 s, mit Uhr) | ✅ `taschenrand` |
-| 2.2 Weiße berührt versenkte Kugel; 3.32 eingeklemmte Kugeln | 🟨 |
+| 2.2 Weiße berührt versenkte Kugel (volle Tasche) | ✅ `weisse-versenkte-kugel` |
+| 3.7 Weiße press an einer Kugel | ✅ `weisse-press` |
+| 3.32 eingeklemmte Kugeln | 🟨 |
 | 2.7 Bande anlaufen, press liegende Kugel | ✅ `press-bande`, `bande-vor-dem-treffer` |
 | 3.1 Weiße in der Tasche | ✅ `weisse-versenkt` |
 | 3.2 Falsche Kugel, gleichzeitiger Treffer | ✅ `erste-beruehrung`, `gleichzeitiger-treffer` |

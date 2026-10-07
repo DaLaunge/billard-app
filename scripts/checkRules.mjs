@@ -98,7 +98,8 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
       const live = ids.filter((i) => !out[i]);
       for (let a = 0; a < live.length; a++) {
         const p = pos[live[a]];
-        if (p[0] < 15.4 || p[0] > 204.6 || p[1] < 15.4 || p[1] > 104.6) err(id, `${v.label} ${where}: Kugel ${live[a]} ausserhalb (${p})`);
+        const inPocket = (v.balls.find((x) => x.id === live[a]) || {}).pocketed; // schon versenkte Kugel in der vollen Tasche
+        if (!inPocket && (p[0] < 15.4 || p[0] > 204.6 || p[1] < 15.4 || p[1] > 104.6)) err(id, `${v.label} ${where}: Kugel ${live[a]} ausserhalb (${p})`);
         for (let b = a + 1; b < live.length; b++) {
           const q = pos[live[b]];
           if (Math.hypot(p[0] - q[0], p[1] - q[1]) < MIN_DIST) err(id, `${v.label} ${where}: Kugeln ${live[a]} und ${live[b]} ueberlappen`);

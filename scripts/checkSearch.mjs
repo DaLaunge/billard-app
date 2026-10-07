@@ -307,6 +307,14 @@ const T = [
   ["gegner ablenken", ["unsportlich"]],
   ["disqualifikation", ["unsportlich"], 2],
   ["unsportsmanlike conduct", ["unsportlich"], 1, { lang: "en" }],
+  // --- Weisse press an Kugel, versenkte Kugel beruehrt
+  ["weiße press an kugel", ["weisse-press"]],
+  ["pressliegende weiße", ["weisse-press"]],
+  ["von der kugel wegspielen", ["weisse-press"], 2],
+  ["cue ball frozen to a ball", ["weisse-press"], 1, { lang: "en" }],
+  ["volle tasche", ["weisse-versenkte-kugel"]],
+  ["weiße berührt versenkte kugel", ["weisse-versenkte-kugel"]],
+  ["pocket full", ["weisse-versenkte-kugel"], 2, { lang: "en" }],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],
