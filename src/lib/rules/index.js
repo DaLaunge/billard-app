@@ -66,7 +66,16 @@ const numsOf = (c) => {
   const m = String(c.bookRef || c.ref).match(/(\d+)(?:\.(\d+))?/);
   return m ? [Number(m[1]), m[2] ? Number(m[2]) : 0] : [99, 0];
 };
-export const bookChapter = (c) => numsOf(c)[0];
+/* Kapitel 4-7 des Regelwerks sind je EINE Disziplin (8 / 9 / 10 Ball / 14/1). Ein Fall landet nur dann dort,
+   wenn er genau diese Disziplin betrifft; gilt er fuer mehrere (z. B. "vier Kugeln an die Bande" fuer 8, 9 und
+   10 Ball, Push Out fuer 9 und 10 Ball), steht er in der Gruppe "Mehrere Disziplinen" (3.5) - sonst stuende
+   er faelschlich unter "8 Ball", nur weil die erste Fundstelle 4.3 ist (Nutzer-Feedback 2026-10-08). */
+const DISC_CHAPTER = { "8 Ball": 4, "9 Ball": 5, "10 Ball": 6, "14/1 Endlos": 7 };
+export const bookChapter = (c) => {
+  const n = numsOf(c)[0];
+  if (n < 4 || n > 7) return n;
+  return c.discs && c.discs.length === 1 && DISC_CHAPTER[c.discs[0]] ? DISC_CHAPTER[c.discs[0]] : 3.5;
+};
 /* Angezeigter Titel: ohne vorangestellte Disziplin ("14/1: Eroeffnungsstoss" -> "Eroeffnungsstoss",
    "8-Ball-Anstoss: ..." -> "Anstoss: ..."), die zeigen schon die Kugeln und der Disziplinfilter; so sortiert die
    alphabetische Liste nach dem eigentlichen Thema (Nutzer-Feedback 2026-10-07). */
@@ -79,12 +88,12 @@ export const sortCases = (list, mode) => {
   const az = (a, b) => displayTitle(a).localeCompare(displayTitle(b), lang);
   if (mode !== "book") return [...list].sort(az);
   return [...list].sort((a, b) => {
-    const [ca, sa] = numsOf(a), [cb, sb] = numsOf(b);
-    return ca - cb || sa - sb || az(a, b);
+    const ca = bookChapter(a), cb = bookChapter(b);
+    return ca - cb || numsOf(a)[1] - numsOf(b)[1] || az(a, b);
   });
 };
 /* Kapitelueberschriften des Regelwerks (fuer die Gliederung in der Regelwerk-Reihenfolge). */
 export const BOOK_CHAPTERS = {
-  1: "1 · Allgemeine Regeln", 2: "2 · Begriffe", 3: "3 · Fouls", 4: "4 · 8 Ball", 5: "5 · 9 Ball",
+  1: "1 · Allgemeine Regeln", 2: "2 · Begriffe", 3: "3 · Fouls", 3.5: "Mehrere Disziplinen", 4: "4 · 8 Ball", 5: "5 · 9 Ball",
   6: "6 · 10 Ball", 7: "7 · 14/1 Endlos", 99: "Doppel",
 };
