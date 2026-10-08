@@ -15,6 +15,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { POCKETS, stateAt, timeline, pathFrames, contactErrors, posAt, bubbleSpot, bubbleWidth, railAfterContact } from "../src/lib/ruleEngine.js";
 import { ALL_DISCS, TOPICS, TAGS } from "../src/lib/rules/meta.js";
+import { ensureEights } from "../src/lib/rules/fill.js";
 
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), "../src/lib/rules/cases");
 const errors = [];
@@ -71,7 +72,7 @@ const inGlobal = (tx) => globalI18n.includes(JSON.stringify(tx) + ":");
 
 for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
   const m = await import(pathToFileURL(resolve(dir, f)).href);
-  const c = m.default, en = m.en || {};
+  const c = ensureEights(m.default), en = m.en || {};
   const id = f;
   for (const k of ["id", "discs", "topic", "ref", "keywords", "title", "rule"]) if (c[k] == null) err(id, `Feld ${k} fehlt`);
   if (!c.sets && !c.variants) err(id, "weder sets noch variants");

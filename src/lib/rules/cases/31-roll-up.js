@@ -1,5 +1,6 @@
 import { cue, ball, cut } from "../../ruleEngine.js";
 import { D141 } from "../meta.js";
+import { rack14 } from "../racks.js";
 
 /* 14/1 (Lehrunterlage OS19 6.7 Nr. 2): Eine Kugel liegt innerhalb einer Kugelstaerke von der Bande,
    aber nicht press. Jeder Spieler darf darauf nur ZWEIMAL einen Roll-up spielen; beim dritten Mal
@@ -21,9 +22,10 @@ const r = [roll(0), roll(1), roll(2)];
 const pocket = cut([100, 88], { id: "5", at: Ts[2] }, [207, 107.5], { out: true, hand: true });
 
 const who = "Derselbe Spieler";
-const balls = () => [cue(...fromFor(T0)), ball(5, ...T0), ball(9, 170, 40), ball(12, 60, 32)];
+// 14/1: der Rest liegt noch im Dreieck (Spitze frei), nur die angesagte 5 liegt an der langen Bande
+const balls = () => [cue(...fromFor(T0)), ball(5, ...T0), ...rack14().filter((b) => b.n !== 5).map((b) => ball(b.n, ...b.p))];
 const first = [
-  { text: "Ausgangslage: Die angesagte 5 liegt nahe an der Bande, aber nicht press. Der Spieler spielt einen Roll-up.", say: "nicht press", sayIcon: "mouth", focus: ["5"] },
+  { text: "Ausgangslage 14/1: Die angesagte 5 liegt nahe an der langen Bande (weniger als eine Kugelbreite), aber nicht press. Die übrigen Kugeln liegen im Dreieck. Der Spieler spielt Sicherheit auf die 5 (Roll-up).", say: "nicht press", sayIcon: "mouth", focus: ["5"] },
   { text: "Roll-up 1: Die Weiße trifft die 5 dünn, sie rollt an der Bande entlang, die Weiße läuft an die Bande. Erlaubt.", shot: { n: 1, of: 3, who }, count: { label: "Roll-ups", n: 1, of: 2 }, aim: [fromFor(T0), r[0].contact], expectRail: true, moves: [r[0].w, r[0].obj] },
   { text: "Roll-up 2: Wieder derselbe Stoß, nachdem der Gegner gespielt hat. Das zweite und letzte erlaubte Mal.", shot: { n: 2, of: 3, who }, count: { label: "Roll-ups", n: 2, of: 2 }, aim: [fromFor(Ts[1]), r[1].contact], expectRail: true, moves: [r[1].w, r[1].obj] },
 ];
@@ -31,16 +33,16 @@ const first = [
 const variants = [
   {
     label: "Fall A", verdict: "foul", verdictLabel: "Drittes Foul in Folge",
-    reason: "Auf eine Kugel innerhalb einer Kugelstärke von der Bande darf jeder Spieler nur zweimal einen Roll-up spielen. Der dritte zählt als drittes Foul in Folge.",
+    reason: "Auf eine Kugel innerhalb einer Kugelstärke von der Bande darf jeder Spieler nur zweimal einen Roll-up (Sicherheit) spielen. Danach wird die Kugel wie eine pressliegende behandelt: der dritte Roll-up zählt als drittes Foul in Folge.",
     balls: balls(),
     steps: [
       ...first,
-      { text: "Roll-up 3: Derselbe Stoß ein drittes Mal – er zählt als drittes Foul in Folge: 1 Punkt plus 15 Punkte Abzug, neu aufbauen.", shot: { n: 3, of: 3, who }, count: { label: "Roll-ups", n: 2, of: 2 }, aim: [fromFor(Ts[2]), r[2].contact], expectRail: true, moves: [r[2].w, r[2].obj], mark: { at: Ts[2], kind: "foul", after: "w" } },
+      { text: "Roll-up 3: Derselbe Stoß ein drittes Mal – jetzt gilt die 5 als press liegend, der Roll-up zählt als drittes Foul in Folge: 1 Punkt plus 15 Punkte Abzug, neu aufbauen.", shot: { n: 3, of: 3, who }, count: { label: "Roll-ups", n: 2, of: 2 }, aim: [fromFor(Ts[2]), r[2].contact], expectRail: true, moves: [r[2].w, r[2].obj], mark: { at: Ts[2], kind: "foul", after: "w" } },
     ],
   },
   {
     label: "Fall B", verdict: "ok", verdictLabel: "Kein Foul – Kugel versenkt",
-    reason: "Statt eines dritten Roll-ups wird die Kugel gespielt und versenkt: die angesagte 5 zählt, es gibt keinen Abzug.",
+    reason: "Statt eines dritten Roll-ups wird die 5 ins Loch gespielt: sie fällt in die angesagte Tasche, es gibt keinen Abzug.",
     balls: balls(),
     steps: [
       ...first,
@@ -58,15 +60,15 @@ export default {
   ref: "6.7",
   bookRef: "7.5",
   keywords: ["Roll-up", "Abstand zur Bande", "Kugelstärke Abstand", "zweimal Roll-up", "dritter Roll-up"],
-  title: "Roll-up: nur zweimal erlaubt",
-  rule: "Beim 14/1 gilt nach der Lehrunterlage: Liegt die angesagte Kugel innerhalb einer Kugelstärke von der Bande (aber nicht press), darf jeder Spieler darauf nur zweimal einen Roll-up spielen. Beim dritten Mal zählt das als drittes Foul in Folge: ein Punkt Abzug und zusätzlich 15 Punkte, alle Kugeln werden neu aufgebaut und der Spieler stößt unter den Eröffnungsbedingungen neu an. Kombinationen aus Roll-ups und anderen Fouls werden entsprechend gezählt.",
+  title: "14/1: Roll-up an der Bande",
+  rule: "Beim 14/1 gilt nach der Lehrunterlage: Liegt eine Kugel innerhalb einer Kugelstärke von der Bande (aber nicht press), darf jeder Spieler darauf nur zweimal Sicherheit in Form eines Roll-ups spielen. Danach wird die Kugel in seiner nächsten Aufnahme wie eine pressliegende behandelt: genügt der Stoß den Regeln für pressliegende Kugeln nicht, zählt das als drittes Foul in Folge (ein Punkt Abzug und zusätzlich 15 Punkte, alle Kugeln werden neu aufgebaut, der Spieler stößt unter den Eröffnungsbedingungen neu an). Hat ein Spieler in seiner letzten Aufnahme ein Foul gespielt, darf er nur noch einmal Sicherheit auf diese Kugel spielen. Kombinationen aus Roll-ups und anderen Fouls werden entsprechend gezählt.",
   sets: [{ discs: D141, tag: "14/1 · Ansage: 5", variants }],
 };
 
 export const en = {
-  "Roll-up: nur zweimal erlaubt": "Roll-up: only twice allowed",
-  "Beim 14/1 gilt nach der Lehrunterlage: Liegt die angesagte Kugel innerhalb einer Kugelstärke von der Bande (aber nicht press), darf jeder Spieler darauf nur zweimal einen Roll-up spielen. Beim dritten Mal zählt das als drittes Foul in Folge: ein Punkt Abzug und zusätzlich 15 Punkte, alle Kugeln werden neu aufgebaut und der Spieler stößt unter den Eröffnungsbedingungen neu an. Kombinationen aus Roll-ups und anderen Fouls werden entsprechend gezählt.":
-    "In 14.1 the training material says: if the called ball lies within one ball width of the cushion (but is not frozen), each player may play only two roll-ups on it. The third counts as a third consecutive foul: one point deduction plus 15 points, all balls are re-racked and the player breaks again under the opening-break conditions. Combinations of roll-ups and other fouls are counted accordingly.",
+  "14/1: Roll-up an der Bande": "14.1: roll-up on the cushion",
+  "Beim 14/1 gilt nach der Lehrunterlage: Liegt eine Kugel innerhalb einer Kugelstärke von der Bande (aber nicht press), darf jeder Spieler darauf nur zweimal Sicherheit in Form eines Roll-ups spielen. Danach wird die Kugel in seiner nächsten Aufnahme wie eine pressliegende behandelt: genügt der Stoß den Regeln für pressliegende Kugeln nicht, zählt das als drittes Foul in Folge (ein Punkt Abzug und zusätzlich 15 Punkte, alle Kugeln werden neu aufgebaut, der Spieler stößt unter den Eröffnungsbedingungen neu an). Hat ein Spieler in seiner letzten Aufnahme ein Foul gespielt, darf er nur noch einmal Sicherheit auf diese Kugel spielen. Kombinationen aus Roll-ups und anderen Fouls werden entsprechend gezählt.":
+    "In 14.1 the training material says: if a ball lies within one ball width of the cushion (but is not frozen), each player may play only two safeties in the form of a roll-up on it. After that the ball is treated like a frozen one in his next inning: if the shot does not satisfy the rules for frozen balls it counts as a third consecutive foul (one point deducted plus 15 points, all balls are re-racked, the player breaks again under the opening-break conditions). If a player fouled in his last inning he may play only one more safety on this ball. Combinations of roll-ups and other fouls are counted accordingly.",
   "Derselbe Spieler": "Same player",
   "Roll-up": "roll-up",
   "Abstand zur Bande": "distance to the cushion",
@@ -78,11 +80,11 @@ export const en = {
   "Roll-ups": "Roll-ups",
   "Drittes Foul in Folge": "Third consecutive foul",
   "Kein Foul – Kugel versenkt": "No foul – ball pocketed",
-  "Auf eine Kugel innerhalb einer Kugelstärke von der Bande darf jeder Spieler nur zweimal einen Roll-up spielen. Der dritte zählt als drittes Foul in Folge.": "On a ball within one ball width of the cushion each player may play only two roll-ups. The third counts as a third consecutive foul.",
-  "Statt eines dritten Roll-ups wird die Kugel gespielt und versenkt: die angesagte 5 zählt, es gibt keinen Abzug.": "Instead of a third roll-up the ball is played and pocketed: the called 5 counts, there is no deduction.",
-  "Ausgangslage: Die angesagte 5 liegt nahe an der Bande, aber nicht press. Der Spieler spielt einen Roll-up.": "Starting position: the called 5 lies near the cushion, but is not frozen. The player plays a roll-up.",
+  "Auf eine Kugel innerhalb einer Kugelstärke von der Bande darf jeder Spieler nur zweimal einen Roll-up (Sicherheit) spielen. Danach wird die Kugel wie eine pressliegende behandelt: der dritte Roll-up zählt als drittes Foul in Folge.": "On a ball within one ball width of the cushion each player may play only two roll-ups (safeties). After that the ball is treated like a frozen one: the third roll-up counts as a third consecutive foul.",
+  "Statt eines dritten Roll-ups wird die 5 ins Loch gespielt: sie fällt in die angesagte Tasche, es gibt keinen Abzug.": "Instead of a third roll-up the 5 is played into the pocket: it falls into the called pocket, there is no deduction.",
+  "Ausgangslage 14/1: Die angesagte 5 liegt nahe an der langen Bande (weniger als eine Kugelbreite), aber nicht press. Die übrigen Kugeln liegen im Dreieck. Der Spieler spielt Sicherheit auf die 5 (Roll-up).": "Starting position 14.1: the called 5 lies near the long cushion (less than one ball width away), but is not frozen. The other balls are in the triangle. The player plays a safety (roll-up) on the 5.",
   "Roll-up 1: Die Weiße trifft die 5 dünn, sie rollt an der Bande entlang, die Weiße läuft an die Bande. Erlaubt.": "Roll-up 1: The cue ball hits the 5 thinly, it rolls along the cushion, the cue ball runs to the cushion. Allowed.",
   "Roll-up 2: Wieder derselbe Stoß, nachdem der Gegner gespielt hat. Das zweite und letzte erlaubte Mal.": "Roll-up 2: The same shot again after the opponent has played. The second and last time allowed.",
-  "Roll-up 3: Derselbe Stoß ein drittes Mal – er zählt als drittes Foul in Folge: 1 Punkt plus 15 Punkte Abzug, neu aufbauen.": "Roll-up 3: The same shot a third time – it counts as a third consecutive foul: 1 point plus 15 points deducted, re-rack.",
+  "Roll-up 3: Derselbe Stoß ein drittes Mal – jetzt gilt die 5 als press liegend, der Roll-up zählt als drittes Foul in Folge: 1 Punkt plus 15 Punkte Abzug, neu aufbauen.": "Roll-up 3: The same shot a third time – now the 5 counts as frozen and the roll-up counts as a third consecutive foul: 1 point plus 15 points deducted, re-rack.",
   "Stoß 3: Der Spieler spielt die 5 diesmal in die Ecktasche – kein dritter Roll-up.": "Shot 3: this time the player plays the 5 into the corner pocket – no third roll-up.",
 };
