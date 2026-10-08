@@ -1419,6 +1419,7 @@ const TRANSLATIONS = {
     "1 · Allgemeine Regeln": "1 · General rules",
     "2 · Begriffe": "2 · Definitions",
     "3 · Fouls": "3 · Fouls",
+    "Mehrere Disziplinen": "Several disciplines",
     "4 · 8 Ball": "4 · 8 Ball",
     "5 · 9 Ball": "5 · 9 Ball",
     "6 · 10 Ball": "6 · 10 Ball",
