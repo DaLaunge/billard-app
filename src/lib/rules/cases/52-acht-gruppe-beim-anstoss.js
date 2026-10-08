@@ -8,13 +8,13 @@ import { D8 } from "../meta.js";
    Tasche). Ob die Kugeln er selbst oder der Anstoss versenkt hat, ist egal (OS19 5.14).
    Fall A: er sagt die 8 in die Ecktasche an und versenkt sie - Spiel gewonnen.
    Fall B: die 8 faellt in eine andere als die angesagte Tasche - Spiel verloren (4.8 c). */
-const T = [150, 50], P = [207, 13], MID = [110, 8], W = [91.2, 88.2];
+const T = [150, 50], P = [207, 13], P2 = [207, 107], W = [91.2, 88.2], W2 = [95, 38];
 const a = cut(W, { id: "8", at: T }, P, { out: true });
-const b = cut(W, { id: "8", at: T }, [140, 14], { out: true }); // nicht die angesagte Ecktasche
+const b = cut(W2, { id: "8", at: T }, P2, { out: true }); // andere Ecktasche (rechts unten) als die angesagte
 const solids = () => [
   ball(1, 35, 30), ball(2, 60, 95), ball(3, 100, 102), ball(4, 180, 95), ball(5, 192, 68), ball(6, 140, 100), ball(7, 40, 62),
 ];
-const balls = () => [cue(...W), ball(8, ...T), ...solids()];
+const balls = (w = W) => [cue(...w), ball(8, ...T), ...solids()];
 const SAY = "Ansage: 8 → rechts oben";
 
 const variants = [
@@ -31,11 +31,11 @@ const variants = [
   {
     label: "Fall B", verdict: "foul", verdictLabel: "Spiel verloren",
     reason: "Die 8 fällt in eine andere als die angesagte Tasche: das Spiel ist verloren, auch wenn die 8 vorher spielbar war.",
-    balls: balls(),
+    balls: balls(W2),
     steps: [
       { text: "Ausgangslage: Beim Anstoß sind alle Halben gefallen, es liegen nur noch die sieben Vollen und die 8 auf dem Tisch. Die Gruppen sind nicht verteilt, der Tisch ist offen.", focus: ["8"] },
-      { text: "Der Spieler beansprucht die vollständig versenkte Gruppe vorübergehend und sagt die 8 in die Ecktasche rechts oben an.", say: SAY, sayIcon: "mouth", aim: [W, b.contact] },
-      { text: "Die 8 fällt in die obere Mitteltasche, nicht in die angesagte Ecktasche – das Spiel ist verloren.", expectRail: true, moves: [b.w, b.obj], mark: { at: [138, 20], kind: "foul", after: "w", delay: 300 } },
+      { text: "Der Spieler beansprucht die vollständig versenkte Gruppe vorübergehend und sagt die 8 in die Ecktasche rechts oben an.", say: SAY, sayIcon: "mouth", aim: [W2, b.contact] },
+      { text: "Die 8 fällt in die Ecktasche rechts unten, nicht in die angesagte Ecktasche rechts oben – das Spiel ist verloren.", expectRail: true, moves: [b.w, b.obj], mark: { at: [200, 101], kind: "foul", after: "w", delay: 300 } },
     ],
   },
 ];
@@ -70,5 +70,5 @@ export const en = {
   "Weil eine ganze Gruppe vom Tisch ist, darf der Spieler sie vorübergehend für sich beanspruchen und die 8 spielen. Er sagt die 8 in die Ecktasche rechts oben an.": "Because a whole group is off the table, the player may temporarily claim it and play the 8. He calls the 8 in the top right corner pocket.",
   "Die 8 fällt in die angesagte Tasche – der Spieler gewinnt das Spiel.": "The 8 falls into the called pocket – the player wins the game.",
   "Der Spieler beansprucht die vollständig versenkte Gruppe vorübergehend und sagt die 8 in die Ecktasche rechts oben an.": "The player temporarily claims the completely pocketed group and calls the 8 in the top right corner pocket.",
-  "Die 8 fällt in die obere Mitteltasche, nicht in die angesagte Ecktasche – das Spiel ist verloren.": "The 8 falls into the top side pocket, not the called corner pocket – the game is lost.",
+  "Die 8 fällt in die Ecktasche rechts unten, nicht in die angesagte Ecktasche rechts oben – das Spiel ist verloren.": "The 8 falls into the bottom right corner pocket, not the called top right corner pocket – the game is lost.",
 };

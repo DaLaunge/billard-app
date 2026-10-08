@@ -13,7 +13,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { stateAt, timeline, pathFrames, contactErrors, posAt, bubbleSpot, bubbleWidth, railAfterContact } from "../src/lib/ruleEngine.js";
+import { POCKETS, stateAt, timeline, pathFrames, contactErrors, posAt, bubbleSpot, bubbleWidth, railAfterContact } from "../src/lib/ruleEngine.js";
 import { ALL_DISCS, TOPICS, TAGS } from "../src/lib/rules/meta.js";
 
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), "../src/lib/rules/cases");
@@ -107,6 +107,13 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
         }
       }
     };
+    // Eine versenkte Objektkugel muss an einer TASCHE enden - sonst "faellt" sie mitten an der Bande ins Nichts und
+    // sieht aus wie gesprungen (Nutzer-Feedback 2026-10-08). Gewolltes Springen vom Tisch: move.jump = true.
+    v.steps.forEach((s, i) => (s.moves || []).forEach((m) => {
+      if (!m.out || m.id === "w" || m.jump) return;
+      const d = Math.min(...POCKETS.map((p) => Math.hypot(p[0] - m.to[0], p[1] - m.to[1])));
+      if (d > 12) err(id, `${v.label} Schritt ${i}: Kugel ${m.id} wird versenkt, endet aber ${d.toFixed(0)} Einheiten von der naechsten Tasche (jump: true, wenn sie vom Tisch springen soll)`);
+    }));
     v.steps.forEach((s, i) => {
       texts.add(s.text); if (s.say) texts.add(s.say); if (s.shot && s.shot.who) texts.add(s.shot.who); if (s.count) texts.add(s.count.label);
       // Die Sprechblase darf keine Kugel verdecken (auch nicht mit der laengeren englischen Beschriftung).
