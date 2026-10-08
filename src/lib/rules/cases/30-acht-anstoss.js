@@ -20,7 +20,7 @@ const mB = brake(R15, balls, RAILS);
 mB[0] = { id: "w", via: [HIT, [104.5, 104.5]], to: [11, 11], out: true, stop: true };
 // C: die 9 springt ueber die obere Bande vom Tisch.
 const mC = withoutBall(brake(R15, balls, RAILS), "9");
-mC.push({ id: "9", to: [138, -8], out: true, after: "w", delay: 20 });
+mC.push({ id: "9", to: [138, -8], out: true, jump: true, after: "w", delay: 20 });
 
 const variants = [
   {

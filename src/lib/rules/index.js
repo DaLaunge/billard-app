@@ -1,5 +1,6 @@
 import { addTranslations, t, getLang } from "../i18n";
 import { indexCase, searchIndexed } from "./search.js";
+import { ensureEights } from "./fill.js";
 import { ALL_DISCS, TOPICS, TOPICS_EN, TAGS, TAGS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 
 /* Regelkunde-Katalog. Ein Regelfall = EINE Datei in ./cases/ (Dateiname
@@ -22,7 +23,7 @@ addTranslations("en", TAGS_EN);
 addTranslations("en", SOURCES_EN);
 modules.forEach((m) => addTranslations("en", m.en || {}));
 
-export const RULE_CASES = modules.map((m) => m.default);
+export const RULE_CASES = modules.map((m) => ensureEights(m.default)); // jede Szene bekommt eine 8 auf den Tisch (siehe fill.js)
 export { ALL_DISCS, TOPICS, TAGS, SOURCE };
 
 /* Zeile fuer die Quellenangabe, z. B. "ÖPBV/WPA-Spielregeln, ... , Regel 3.2". */

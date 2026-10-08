@@ -1,5 +1,6 @@
 import { cue, ball, cut } from "../../ruleEngine.js";
-import { D8, D141, tagSets } from "../meta.js";
+import { D8, D141 } from "../meta.js";
+import { rack14 } from "../racks.js";
 
 /* Weisse mit Ball in Hand im Kopffeld (links der Kopflinie, x < 60).
    Fall A: die erste getroffene Kugel liegt ebenfalls im Kopffeld, die Weisse
@@ -8,10 +9,13 @@ import { D8, D141, tagSets } from "../meta.js";
 const W = [32, 62];
 const A7 = [50, 38], B7 = [118, 52];
 const a = cut(W, { id: "7", at: A7 }, [56, 15.5]);
-const b = cut(W, { id: "7", at: B7 }, [204.5, 30]);
-const others = () => [ball(12, 140, 76), ball(3, 100, 92)];
+const b = cut(W, { id: "7", at: B7 }, [150, 15.5]);
+/* Die uebrigen Kugeln muessen zum Spiel passen: beim 8 Ball liegt die 8 noch auf dem Tisch (neben eigenen und gegnerischen
+   Kugeln), beim 14/1 liegt der Rest noch im Dreieck. Beim 9/10 Ball gibt es diese Regel nicht (Ball in Hand auf dem ganzen Tisch). */
+const others8 = () => [ball(8, 172, 96), ball(3, 100, 96), ball(12, 128, 100), ball(13, 186, 62)];
+const others141 = () => rack14().filter((x) => x.n !== 7).map((x) => ball(x.n, ...x.p));
 
-const variants = [
+const build = (others) => [
   {
     label: "Fall A", verdict: "foul",
     reason: "Die erste Kugel lag im Kopffeld, die Weiße hat es vorher nicht verlassen.",
@@ -46,10 +50,10 @@ export default {
   keywords: ["Kopffeld", "Kopflinie", "Ball in Hand Kopffeld", "Weiße verlässt Kopffeld", "Kugel im Kopffeld"],
   title: "Spiel aus dem Kopffeld",
   rule: "Muss die Weiße mit Ball in Hand aus dem Kopffeld gespielt werden und liegt die erste angespielte Kugel ebenfalls im Kopffeld, ist das ein Foul – es sei denn, die Weiße hat das Kopffeld verlassen, bevor sie diese Kugel berührt. Die Weiße muss also entweder die Kopflinie überqueren oder eine Kugel außerhalb des Kopffeldes treffen. Spielt der Spieler das absichtlich, gilt es als unsportliches Verhalten. Beim 14/1 bekommt der Gegner nach dem Foul die Weiße im Kopffeld.",
-  sets: tagSets(variants, [
-    [D8, "Du spielst Volle"],
-    [D141, "14/1 · Ansage: 7"],
-  ]),
+  sets: [
+    { discs: D8, tag: "Du spielst Volle", variants: build(others8) },
+    { discs: D141, tag: "14/1 · Ansage: 7", variants: build(others141) },
+  ],
 };
 
 export const en = {

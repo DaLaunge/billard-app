@@ -4,6 +4,7 @@ import { D89, D8, D141, ALL_DISCS, tagSets } from "../meta.js";
 const W = [60, 50], T6 = [130, 56];
 const RAIL = [204.5, 62.4];
 const a = cut(W, { id: "6", at: T6 }, [226, 62.5], { out: true });
+a.obj.jump = true; // springt vom Tisch (kein Taschenziel)
 const b = cut(W, { id: "6", at: T6 }, RAIL);
 b.obj.via = [RAIL];
 b.obj.to = [168, 59.5];
