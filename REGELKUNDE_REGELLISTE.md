@@ -350,6 +350,7 @@ Legende: ✅ umgesetzt (Fall-ID in `src/lib/rules/cases/`) · 🟨 geplant, brau
 | Foul zu spät erkannt | ✅ `foul-zu-spaet` |
 | 4.3 8-Ball-Anstoß (Kugel fällt, Weiße fällt, Kugel springt, die 8 fällt) | ✅ `acht-anstoss`, `acht-faellt-anstoss` |
 | 4.4 Offener Tisch | ✅ `offener-tisch-acht` |
+| 4.3 c / 4.4 Anstoß: eine ganze Gruppe fällt (8 darf direkt gespielt werden) | ✅ `acht-gruppe-beim-anstoss` (noch nicht freigegeben) |
 | 4.8 Spielverlust beim 8-Ball | ✅ `acht-verloren` |
 | 5.3 9-Ball-Anstoß; Kitchen Rule / Dry Break | ✅ `anstoss-vier-kugeln`; Kitchen Rule ✅ `kitchen-rule` |
 | 5.4 / 6.4 Push Out | ✅ `push-out` |

@@ -332,6 +332,11 @@ const T = [
   ["break box", ["break-box"]],
   ["breakbox", ["break-box"], 2],
   ["break box rules", ["break-box"], 1, { lang: "en" }],
+  // --- 8 Ball: ganze Gruppe beim Anstoss
+  ["alle halben beim anstoß versenkt", ["acht-gruppe-beim-anstoss"]],
+  ["alle vollen beim anstoß", ["acht-gruppe-beim-anstoss"]],
+  ["gruppe komplett versenkt", ["acht-gruppe-beim-anstoss"], 2],
+  ["8 ball break all stripes pocketed", ["acht-gruppe-beim-anstoss"], 2, { lang: "en" }],
   // --- Regelnummern
   ["3.2", ["erste-beruehrung", "gleichzeitiger-treffer"], 2],
   ["regel 3.3", ["nach-treffer-bande", "bande-vor-dem-treffer"], 2],
