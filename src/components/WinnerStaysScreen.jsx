@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown, SkipForward, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
+import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, SkipForward, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
@@ -440,41 +440,42 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           <p className="hint" style={{ margin: 0 }}>{t("Noch nicht genug Teilnehmer - mindestens zwei nötig, um zu spielen.")}</p>
         </section>
       ) : (
-        <section className="stat-block">
-          <h3><Trophy size={17} /> {t("Am Tisch")}</h3>
-          <div className="ws-duel">
+        <>
+          {/* Eingabe wie in jedem anderen Modus: dieselben Karten (.score-row/
+              .score-col), dieselbe Zahl und dieselben runden -/+ Knoepfe wie bei
+              "Neues Match" (MatchScreen, Schritt 2). Nutzer-Feedback 2026-10-10:
+              die erste Fassung mit extragrossen Tippflaechen war "zu gross" -
+              die Matcheingabe soll in jedem Modus gleich aussehen. */}
+          <div className="score-row ws-score-row">
             {[[posA, sA, setSA, t("Verteidigt")], [posB, sB, setSB, t("Herausforderer")]].map(([e, val, setVal, role]) => (
-              <div key={e.id} className={"ws-side" + (e.is_paused ? " is-paused" : "")}>
+              <div key={e.id} className={"score-col" + (e.is_paused ? " is-paused" : "")}>
                 <span className="ws-role">{role}</span>
-                {renderEntryAvatars(e, 48)}
-                <span className="ws-table-name">{entryName(e)}</span>
+                <div className="sc-avatars">{renderEntryAvatars(e, 56)}</div>
+                <span className="score-name">{entryName(e)}</span>
                 {statLine(e, rankOf(e), true)}
                 {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
                 {canReport && (
-                  <div className="ws-pad">
-                    <button type="button" className="ws-pad-plus" onClick={() => setVal((v) => v + 1)}
-                      aria-label={t("Punkt für {name}", { name: entryName(e) })}>
-                      <Plus size={30} strokeWidth={3} />
-                    </button>
-                    <span className="ws-pad-val" key={val}>{val}</span>
-                    <button type="button" className="ws-pad-minus" disabled={val === 0} onClick={() => setVal((v) => Math.max(0, v - 1))}
-                      aria-label={t("Punkt abziehen")}>
-                      <Minus size={20} strokeWidth={3} />
-                    </button>
-                  </div>
+                  <>
+                    <div className="score-num" key={val}>{val}</div>
+                    <div className="score-btns">
+                      <button className="round-btn" disabled={val === 0} onClick={() => setVal((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
+                      <button className="round-btn plus" onClick={() => setVal((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
+                    </div>
+                  </>
                 )}
                 {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { compact: true })}
               </div>
             ))}
           </div>
+          {canReport && sA === sB && sA + sB > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
           {canSkip && (
-            <div className="chips small" style={{ marginTop: 10 }}>
+            <div className="chips small" style={{ marginBottom: 10 }}>
               <button className="btn ghost" disabled={busy} onClick={skipNext} title={t("Herausforderer überspringen, wenn die Person gerade nicht verfügbar ist.")}>
                 <SkipForward size={15} /> {t("Überspringen")}
               </button>
             </div>
           )}
-        </section>
+        </>
       )}
 
       {waiting.length > 0 && (
@@ -609,7 +610,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       {canReport && (
         <div className="sticky-cta ws-cta">
           <button className="btn primary" disabled={busy || sA === sB} onClick={reportGame}>
-            <Check size={18} /> {sA === sB ? t("Eintragen") : t("{a}:{b} eintragen", { a: sA, b: sB })}
+            <Check size={18} /> {t("Eintragen")}
           </button>
         </div>
       )}
