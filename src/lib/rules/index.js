@@ -2,7 +2,6 @@ import { addTranslations, t, getLang } from "../i18n";
 import { indexCase, searchIndexed } from "./search.js";
 import { ensureEights } from "./fill.js";
 import { withHeyball } from "./heyballShare.js";
-import { FEATURES } from "../constants.js";
 import { HEYBALL_RULES, HEYBALL_EN, HEYBALL_SOURCE } from "./heyball.js";
 import { ALL_DISCS, TOPICS, TOPICS_EN, TAGS, TAGS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 
@@ -44,11 +43,8 @@ export const sourceLine = (c) => `${t(c.src || SOURCE)}, ${t("Regel")} ${c.ref}`
 
 /* Faelle fuer eine Disziplin (disc leer = alle). onlyReleased: nur freigegebene
    (fuer alle Nutzer), die Verwaltung zeigt auch die anderen. */
-/* Heyball-Faelle erscheinen nur, solange der Admin-Schalter an ist; ohne Disziplinfilter (Alle) zaehlen sie nicht mit. */
-const heyballOnly = (c) => c.discs.every((d) => d === "Heyball");
 export const casesForDisc = (disc, { onlyReleased = true, ids } = {}) =>
-  RULE_CASES.filter((c) => (!onlyReleased || c.released) && (!disc || c.discs.includes(disc)) && (!ids || ids.includes(c.id))
-    && (FEATURES.heyball || !heyballOnly(c)));
+  RULE_CASES.filter((c) => (!onlyReleased || c.released) && (!disc || c.discs.includes(disc)) && (!ids || ids.includes(c.id)));
 
 /* Suche: siehe search.js (gewichtete Felder, Umlaut-/Tippfehler-Toleranz, Synonyme,
    Regelnummern). Der Index je Fall wird pro Sprache gemerkt. */

@@ -15,7 +15,7 @@ import { loadBadgeCatalog } from "./lib/catalogCache";
 import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
 import { hashColor, initials, isDoubles, mSide, fmtDate } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
-import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION, FEATURES, HEYBALL, setHeyballEnabled } from "./lib/constants";
+import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION, HEYBALL } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
@@ -863,13 +863,6 @@ export default function App() {
         .order("planned_date", { ascending: true }),
       supabase.rpc("my_achievement_counters").maybeSingle(),
     ]);
-    // Funktionsschalter (supabase/2026-10-10_heyball.sql). Fehlt die Migration oder ist man offline,
-    // bleibt der zuletzt bekannte Stand - kein Fehler-Toast.
-    const flags = await supabase.rpc("get_feature_flags");
-    if (!flags.error && flags.data && typeof flags.data === "object") {
-      setHeyballEnabled(!!flags.data.heyball);
-      setHeyballOn(!!flags.data.heyball);
-    }
     // Katalog aus dem lokalen Cache, ausser ein vergebener Erfolg fehlt darin
     // (siehe lib/catalogCache.js) - deshalb erst nach player_badges.
     const ct = await loadBadgeCatalog([...new Set((bg.data ?? []).map((r) => r.badge_key))]);
@@ -1158,15 +1151,12 @@ export default function App() {
     else toast(t("Der gescannte Spieler wurde nicht gefunden."));
   }, [player, players, toast, navPush]);
 
-  // Heyball ist per Admin-Schalter an/aus (lib/constants.js FEATURES): der State sorgt fuers Neuzeichnen,
-  // ausgeschaltet verschwindet die Disziplin auch dann, wenn schon Heyball-Ratings existieren.
-  const [heyballOn, setHeyballOn] = useState(FEATURES.heyball);
   const disciplines = useMemo(() => {
-    const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt" && (heyballOn || d !== HEYBALL)));
+    const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt"));
     DEFAULT_DISCIPLINES.forEach((d) => found.add(d));
-    if (heyballOn) found.add(HEYBALL);
+    found.add(HEYBALL);
     return [...found].sort();
-  }, [rangliste, heyballOn]);
+  }, [rangliste]);
 
   const ratingOf = useCallback((nick, disc = "Gesamt") => {
     const r = rangliste.find((x) => x.nickname === nick && x.discipline === disc);

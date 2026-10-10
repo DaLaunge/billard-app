@@ -5,7 +5,7 @@ import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
 import InfoButton from "./widgets/InfoButton";
 import DiscBall, { DiscAll, DiscPickRow } from "./widgets/DiscBall";
-import { HEYBALL, FEATURES, activeDisciplines } from "../lib/constants";
+import { HEYBALL, activeDisciplines } from "../lib/constants";
 
 const ALL = "alle";
 const SORT_KEY = "ruleSort";
@@ -18,7 +18,7 @@ const readSort = () => { try { return localStorage.getItem(SORT_KEY) === "az" ? 
    Fall mehrere Saetze (je Disziplin eine passende Situation), sind die Kugeln
    zugleich der Umschalter: die Kugeln des gezeigten Satzes sind umrandet. */
 export function DiscTags({ discs, active, onPick }) {
-  const all = ALL_DISCS.every((d) => discs.includes(d)) && (!FEATURES.heyball || discs.includes(HEYBALL));
+  const all = ALL_DISCS.every((d) => discs.includes(d)) && discs.includes(HEYBALL);
   if (all && !onPick) return <span className="rs-tags"><DiscAll size={22} /></span>;
   return (
     <span className="rs-tags">

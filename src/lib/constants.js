@@ -1,20 +1,9 @@
 export const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
-/* Heyball (WPA Rules of Heyball, 2025-08-16) ist eine Disziplin, die der Admin komplett ein-
-   und ausschalten kann (app_settings.heyball_enabled, supabase/2026-10-10_heyball.sql). Der Schalter
-   wird wie BADGE_INFO modulweit gehalten, damit auch zustandslose Stellen (Match, Turnier, Filter,
-   Regelkunde) ihn ohne Prop-Durchreichen kennen; App.jsx setzt ihn in loadData() und haelt einen
-   State daneben, damit alles neu zeichnet. Aus = Heyball ist nirgends waehlbar; bereits gespielte
-   Heyball-Matches bleiben in der Datenbank und in Listen sichtbar. Start aus dem lokalen Speicher,
-   damit der erste Bildschirmaufbau nicht flackert. */
+/* Heyball (WPA Rules of Heyball, 2025-08-16) ist seit 2026-10-10 eine feste Disziplin neben den vier anderen
+   (zuerst gab es einen Admin-Schalter, er wurde am selben Tag wieder entfernt). DEFAULT_DISCIPLINES bleibt die Liste
+   der vier aelteren; activeDisciplines() ist alles, was man bei Match, Turnier, Filtern und Regelkunde waehlen kann. */
 export const HEYBALL = "Heyball";
-const FLAG_KEY = "featureHeyball";
-export const FEATURES = { heyball: (() => { try { return localStorage.getItem(FLAG_KEY) === "1"; } catch { return false; } })() };
-export function setHeyballEnabled(on) {
-  FEATURES.heyball = !!on;
-  try { localStorage.setItem(FLAG_KEY, on ? "1" : "0"); } catch { /* Privatmodus */ }
-}
-// Disziplinen, die man jetzt NEU anlegen/auswaehlen darf (Match, Turnier, Filter, Regelkunde).
-export const activeDisciplines = () => (FEATURES.heyball ? [...DEFAULT_DISCIPLINES, HEYBALL] : DEFAULT_DISCIPLINES);
+export const activeDisciplines = () => [...DEFAULT_DISCIPLINES, HEYBALL];
 // Kurzform fuer Disziplin-Chips app-weit (Nutzer-Feedback: so wenig Platz
 // wie moeglich, vor allem am Handy) - der volle Name bleibt der eigentliche
 // Wert fuer Filterung/State, nur die ANZEIGE wird abgekuerzt. Verwendung:
@@ -42,7 +31,7 @@ export function normalizeListCount(v) {
 // Jeder Push auf test zaehlt dagegen "<letzte Prod-Nummer>.<Minor>", also 391.0,
 // 391.1, ... bis zur Freigabe; danach steht Prod auf 392 und test beginnt bei
 // 392.0. Als STRING, damit "391.10" nicht zu 391.1 wird.
-export const APP_VERSION = "404.7";
+export const APP_VERSION = "404.8";
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim

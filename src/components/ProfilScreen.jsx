@@ -2,7 +2,7 @@ import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
-import { APP_VERSION, FEATURES } from "../lib/constants";
+import { APP_VERSION } from "../lib/constants";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, badgeProgress } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
@@ -145,12 +145,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
   const catalogByCategory = useMemo(() => {
     const groups = {};
-    // Heyball-Erfolge nur zeigen, solange die Disziplin eingeschaltet ist (Admin-Schalter).
-    [...catalog].filter((b) => FEATURES.heyball || b.category !== "Heyball").sort((a, b) => a.sort - b.sort).forEach((b) => {
+    [...catalog].sort((a, b) => a.sort - b.sort).forEach((b) => {
       (groups[b.category] ||= []).push(b);
     });
     return Object.entries(groups);
-  }, [catalog, FEATURES.heyball]);
+  }, [catalog]);
   // Kategorien mit mind. 1 erreichten Erfolg sind anfangs aufgeklappt, der Rest zugeklappt.
   const [openCats, setOpenCats] = useState(() => {
     try { const s = localStorage.getItem("badgeCats"); if (s) return new Set(JSON.parse(s)); } catch { /* ignore */ }

@@ -5,13 +5,11 @@ import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
 import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
 import { fileDate } from "../lib/pdfExport";
-import { activeDisciplines, FEATURES, APP_VERSION } from "../lib/constants";
+import { activeDisciplines, APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 import FeedbackThread from "./FeedbackThread";
 import { rpcRetry } from "../lib/rpcRetry";
-import DiscBall from "./widgets/DiscBall";
-import InfoButton from "./widgets/InfoButton";
 
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
@@ -21,17 +19,6 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   const [busyUser, setBusyUser] = useState(false);
   const [am, setAm] = useState({ p1: "", p2: "", s1: "", s2: "", disc: "9 Ball", date: "" });
   const [busyAdd, setBusyAdd] = useState(false);
-  // Heyball komplett ein-/ausschalten (app_settings.heyball_enabled). Der Stand kommt aus
-  // lib/constants.js (App.jsx laedt ihn bei jedem loadData); nach dem Umschalten laedt onReload neu.
-  const [busyHeyball, setBusyHeyball] = useState(false);
-  const toggleHeyball = async (on) => {
-    setBusyHeyball(true);
-    const { error } = await supabase.rpc("admin_set_heyball", { p_enabled: on });
-    setBusyHeyball(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(on ? t("Heyball ist eingeschaltet.") : t("Heyball ist ausgeschaltet."));
-    if (onReload) await onReload();
-  };
   const [logins, setLogins] = useState(null);
   const loadLogins = async () => {
     const { data, error } = await supabase.rpc("admin_player_logins");
@@ -293,20 +280,6 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             </div>
           </div>
         ))}
-      </section>
-
-      <section className="stat-block">
-        <h3><DiscBall disc="Heyball" size={20} /> {t("Heyball")}</h3>
-        <div className="switch-row">
-          <label className="settings-switch">
-            <input type="checkbox" checked={FEATURES.heyball} disabled={busyHeyball} onChange={(e) => toggleHeyball(e.target.checked)} />
-            <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
-            <span className="settings-switch-label">{t("Heyball aktivieren")}</span>
-          </label>
-          <InfoButton title={t("Heyball")}>
-            {t("Schaltet die Disziplin Heyball für alle komplett ein oder aus: Auswahl bei Match, Turnier und Filtern sowie das Regelwerk in der Regelkunde. Bereits gespielte Heyball-Matches bleiben gespeichert und in Listen sichtbar.")}
-          </InfoButton>
-        </div>
       </section>
 
       <section className="stat-block">
