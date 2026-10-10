@@ -27,6 +27,8 @@
                delay   zusaetzliche Verzoegerung in ms
                after   startet im Treffmoment der Kugel mit dieser id
                hitLeg  an welchem Wegabschnitt-Ende diese Kugel trifft (Standard 0)
+               hop     Sprungstoss: die Kugel fliegt UEBER andere Kugeln (wird auf dem Weg groesser gezeichnet);
+                       die Variante braucht dann looseCollisions: true, weil sich die Wege kreuzen
              Tempo und Dauer folgen aus der Physik (FRICTION), nicht aus Zeitangaben.
      figs    [{kind:"cue"|"hand"|"template"|"dot", at:[x,y], from?:[x,y], angle?:grad, until?:"hit"|dur ms, delay?}]
                Figur (Queue: at = Spitze; Hand: at = Handmitte, Finger zeigen in Blickrichtung angle).
@@ -191,7 +193,7 @@ export function timeline(step, fromPos) {
     const sp = speeds(m);
     const delay = (m.delay || 0) + (m.after && tl[m.after] ? tl[m.after].firstEnd : 0);
     const toHit = sp.times.slice(0, sp.hitLeg + 1).reduce((a, b) => a + b, 0);
-    tl[m.id] = { ...sp, delay, out: !!m.out, firstEnd: delay + toHit };
+    tl[m.id] = { ...sp, delay, out: !!m.out, hop: !!m.hop, firstEnd: delay + toHit };
   }
   return tl;
 }

@@ -188,7 +188,7 @@ export default function RuleScene({ scene, onEnd }) {
         el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: m.dur, delay: m.delay, fill: "backwards", easing: "ease-out" });
       } else if (m) {
         // Bremskurve ist in die Keyframes eingerechnet (lib/ruleScenes.js), daher linear abspielen.
-        const frames = pathFrames(m).map((f) => ({ transform: tr(f.p), offset: f.offset }));
+        const frames = pathFrames(m).map((f) => ({ transform: m.hop ? `${tr(f.p)} scale(${(1 + 0.5 * Math.sin(Math.PI * f.offset)).toFixed(3)})` : tr(f.p), offset: f.offset }));
         const opts = { duration: m.dur, delay: m.delay, easing: "linear", fill: "backwards" };
         el.animate(frames, opts);
         if (m.out) el.animate([{ opacity: 1 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], opts);
