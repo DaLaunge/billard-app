@@ -97,7 +97,7 @@ const FAMILIES = [
   { metric: "heyballStreak", test: (d) => /Heyball-Siege in Folge$/.test(d), current: (e) => (e.heyballStreak > 0 ? e.heyballStreak : null), unit: () => t("Heyball-Sieg(e) in Folge") },
   { metric: "heyballShutouts", test: (d) => /Heyball-Match zu null gewonnen$/.test(d), current: (e) => e.heyballShutouts, unit: () => t("Heyball-Zu-Null-Sieg(e)") },
   { metric: "heyballWins", test: (d) => /Heyball-Siege$|erstes Heyball-Match gewonnen$/.test(d), current: (e) => e.heyballWins, unit: () => t("Heyball-Sieg(e)") },
-  { metric: "heyballMatches", test: (d) => /Heyball-Matches? gespielt$/.test(d), current: (e) => e.heyballMatches, unit: () => t("Heyball-Match(es)") },
+  { metric: "heyballMatches", test: (d) => /Heyball-Match(es)? gespielt$/.test(d), current: (e) => e.heyballMatches, unit: () => t("Heyball-Match(es)") },
   { metric: "heyballOpponents", test: (d) => /^Heyball gegen \d+ verschiedene Gegner gespielt$/.test(d), current: (e) => e.heyballOpponents, unit: () => t("verschiedene Gegner") },
   { metric: "longestStreak", test: (d) => /Siege in Folge$/.test(d), current: (e) => (e.streak > 0 ? e.streak : null), unit: () => t("Sieg(e) in Folge") },
   { metric: "siege", test: (d) => /^\d+ Siege insgesamt$/.test(d), current: (e) => e.siege, unit: () => t("Sieg(e)") },
