@@ -162,7 +162,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .role-letter.role-blocked { background: var(--loss); color: #fff; }
 .role-letter.role-user { background: transparent; border: 1px solid var(--line); color: var(--ivory-dim); }
 .mem-nick { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mem-when { margin-left: auto; font-size: 12.5px; color: var(--ivory-dim); white-space: nowrap; text-align: right; }
+.mem-when { font-size: 12.5px; color: var(--ivory-dim); white-space: nowrap; text-align: right; }
 .mem-edit { flex: 0 0 auto; border: 1px solid var(--line); background: transparent; color: var(--ivory-dim);
   border-radius: 8px; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; }
 .mem-edit.on { border-color: var(--accent); color: var(--accent); }
@@ -208,8 +208,20 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .diag-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 2px; }
 .diag-row span { color: var(--ivory-dim); font-size: 13px; }
 /* Adminbereich "App-Versionen": veraltete Version in Warnfarbe statt Akzent. */
-.version-list { margin: 8px 0 4px; }
-.version-meta { display: flex; align-items: center; gap: 10px; }
+.mem-tools { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.mem-search { width: 100%; }
+.mem-headrow { border-bottom: 1px solid var(--line); padding-top: 2px; padding-bottom: 4px; }
+.mem-hspace { flex: 0 0 66px; margin-right: -9px; }
+.mem-hspace-r { flex: 0 0 30px; }
+.mem-th { background: transparent; border: 0; padding: 4px 0; font: inherit; font-size: 12px; font-weight: 700;
+  color: var(--ivory-dim); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.mem-th.on { color: var(--accent); }
+.mem-th.mem-hname { margin-right: auto; }
+.mem-th.mem-ver, .mem-th.mem-when { margin-left: 0; justify-content: flex-end; }
+.mem-ver { font-size: 12px; color: var(--ivory-dim); min-width: 58px; text-align: right; }
+.mem-line .mem-nick { margin-right: auto; }
+.mem-when { min-width: 74px; }
+.mem-ver.outdated { color: var(--warn); }
 .diag-row code.outdated { color: var(--warn); }
 .diag-row code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 700; color: var(--accent);
   background: var(--felt); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, Smartphone } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -33,6 +33,52 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   useEffect(() => {
     supabase.rpc("admin_app_versions").then(({ data, error }) => { if (!error) setVersions(data || []); });
   }, []);
+
+  // Gemeldet wird nur die ganze Nummer (siehe App.jsx), daher auch hier die
+  // Prod-Basis eines Test-Standes ("391.25" -> 391) zum Vergleichen.
+  const currentVersion = Math.floor(Number(APP_VERSION));
+  const versionOf = {};
+  (versions || []).forEach((v) => {
+    versionOf[v.player_id] = v;
+  });
+  const minVersion = versions?.[0]?.min_app_version || 0;
+
+  // Mitgliederliste: Suche ueber alle Felder, Sortierung nach Name/Version/Login
+  // (Klick auf die Spaltenueberschrift: aufsteigend, nochmal: absteigend).
+  const [memQuery, setMemQuery] = useState("");
+  const [memSort, setMemSort] = useState(null); // { key, dir }
+  const clickSort = (key) => setMemSort((c) => c?.key === key ? { key, dir: -c.dir } : { key, dir: 1 });
+  const verKey = (v) => {
+    const [a, b] = String(v?.app_version_full || v?.app_version || "").split(".");
+    return v && v.app_version != null ? Number(a) * 1e6 + Number(b || 0) : -1;
+  };
+
+  const visibleLogins = (() => {
+    let rows = logins || [];
+    const q = memQuery.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((p) => {
+        const pr = players.find((x) => x.id === p.player_id);
+        const inviter = pr?.invited_by ? players.find((x) => x.id === pr.invited_by) : null;
+        const v = versionOf[p.player_id];
+        const hay = [p.nickname, p.email, p.role, p.blocked ? "blockiert blocked" : "", p.is_ghost ? "ghost" : "",
+          pr && !pr.auth_user_id && !p.is_ghost ? "ohne login" : "", p.must_change_password ? "passwort-reset" : "",
+          inviter?.nickname, v?.app_version_full, v?.app_version, p.last_seen && fmtDate(p.last_seen),
+          p.created_at && fmtDate(p.created_at)].filter(Boolean).join(" ").toLowerCase();
+        return q.split(/\s+/).every((w) => hay.includes(w));
+      });
+    }
+    if (memSort) {
+      const key = (p) => memSort.key === "name" ? (p.nickname || "").toLowerCase()
+        : memSort.key === "version" ? verKey(versionOf[p.player_id])
+        : p.last_seen ? new Date(p.last_seen).getTime() : -1;
+      rows = [...rows].sort((a, b) => {
+        const x = key(a), y = key(b);
+        return (x < y ? -1 : x > y ? 1 : 0) * memSort.dir;
+      });
+    }
+    return rows;
+  })();
 
   const [feedback, setFeedback] = useState(null);
   const [feedbackMsgs, setFeedbackMsgs] = useState({}); // feedback_id -> Nachrichten
@@ -413,13 +459,29 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             <button className="csv-btn" onClick={downloadCsv}><Download size={14} /> CSV</button>
           )}
         </div>
+        {logins && logins.length > 0 && (
+          <div className="mem-tools">
+            <input type="search" className="mem-search" placeholder={t("Suchen in allen Daten …")} value={memQuery}
+              onChange={(e) => setMemQuery(e.target.value)} />
+          </div>
+        )}
         {logins == null ? (
           <p className="hint">{t("Lade ...")}</p>
         ) : logins.length === 0 ? (
           <p className="hint">{t("Noch keine Daten.")}</p>
         ) : (
           <div className="mem-list">
-            {logins.map((p) => {
+            <div className="mem-line mem-headrow">
+              <span className="mem-hspace" />
+              {[["name", t("Name"), "mem-hname"], ["version", t("Version"), "mem-ver"], ["login", t("Login"), "mem-when"]].map(([k, label, cls]) => (
+                <button key={k} className={"mem-th " + cls + (memSort?.key === k ? " on" : "")} onClick={() => clickSort(k)}
+                  aria-sort={memSort?.key === k ? (memSort.dir > 0 ? "ascending" : "descending") : "none"}>
+                  {label}{memSort?.key === k && (memSort.dir > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                </button>
+              ))}
+              <span className="mem-hspace-r" />
+            </div>
+            {visibleLogins.map((p) => {
               const isGhost = p.is_ghost;
               const isSelf = p.player_id === me.id;
               const pr = players.find((x) => x.id === p.player_id);
@@ -428,6 +490,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
               const lclass = p.blocked ? "blocked" : isGhost ? "special" : p.role === "admin" ? "admin" : "user";
               const open = editId === p.player_id;
               const inviter = pr?.invited_by ? players.find((x) => x.id === pr.invited_by) : null;
+              const ver = versionOf[p.player_id];
               const joinedRecently = p.created_at && (Date.now() - new Date(p.created_at).getTime()) < 7 * 86400000;
               return (
                 <div key={p.player_id} className={"mem-row" + (p.blocked ? " is-blocked" : "")}>
@@ -436,6 +499,12 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                     <span className={"role-letter role-" + lclass}>{letter}</span>
                     <span className="mem-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
                     {inviter && joinedRecently && <span className="new-dot" title={t("Neu über Einladung von {name}", { name: inviter.nickname })} />}
+                    {versions && (isGhost ? <span className="mem-ver" /> : (
+                      <code className={"mem-ver" + ((ver?.app_version_full ? ver.app_version_full === APP_VERSION : ver?.app_version === currentVersion) ? "" : " outdated")}
+                        title={ver?.app_version_at ? fmtAgo(ver.app_version_at) : ""}>
+                        {ver?.app_version != null ? "v" + (ver.app_version_full || ver.app_version) : "–"}
+                      </code>
+                    ))}
                     <span className="mem-when">{isGhost ? "—" : fmtAgo(p.last_seen)}</span>
                     <button className={"mem-edit" + (open ? " on" : "")} aria-label={t("Bearbeiten")}
                       onClick={() => setEditId(open ? null : p.player_id)}><Pencil size={14} /></button>
@@ -533,47 +602,15 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             })}
           </div>
         )}
+        {versions && (
+          <p className="hint">
+            {t("Aktuell: v{v}.", { v: APP_VERSION })} {minVersion ? t("Mindestversion: v{v}.", { v: minVersion }) : t("Keine Mindestversion gesetzt.")}{" "}
+            {t("„–“ = App seit v377 nicht geöffnet oder noch eine ältere Version.")}
+          </p>
+        )}
+        {logins && logins.length > 0 && visibleLogins.length === 0 && <p className="hint">{t("Keine Treffer.")}</p>}
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
       </section>
-
-      {versions && (() => {
-        // Gemeldet wird nur die ganze Nummer (siehe App.jsx), daher auch hier
-        // die Prod-Basis eines Test-Standes ("391.25" -> 391) zum Vergleichen.
-        const current = Math.floor(Number(APP_VERSION));
-        const counts = {};
-        versions.forEach((v) => { const k = v.app_version ?? "?"; counts[k] = (counts[k] || 0) + 1; });
-        const minV = versions[0]?.min_app_version || 0;
-        return (
-          <section className="stat-block">
-            <h3><Smartphone size={17} /> {t("App-Versionen")}</h3>
-            <div className="chips small">
-              {Object.entries(counts).sort((a, b) => (Number(b[0]) || 0) - (Number(a[0]) || 0)).map(([k, n]) => (
-                <span key={k} className={"chip" + (Number(k) === current ? " active" : "")}>{k === "?" ? t("unbekannt") : "v" + k}: {n}</span>
-              ))}
-            </div>
-            <div className="version-list">
-              {versions.map((v) => (
-                <div key={v.player_id} className="diag-row">
-                  <span>{v.nickname}</span>
-                  <span className="version-meta">
-                    {v.app_version_at ? fmtAgo(v.app_version_at) : ""}
-                    {/* Volle Nummer (391.25), sobald die Migration
-                        2026-10-01_app_version_full.sql eingespielt ist und das
-                        Geraet damit gemeldet hat; sonst nur die ganze Zahl. */}
-                    <code className={(v.app_version_full ? v.app_version_full === APP_VERSION : v.app_version === current) ? "" : "outdated"}>
-                      {v.app_version != null ? "v" + (v.app_version_full || v.app_version) : "–"}
-                    </code>
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="hint">
-              {t("Aktuell: v{v}.", { v: APP_VERSION })} {minV ? t("Mindestversion: v{v}.", { v: minV }) : t("Keine Mindestversion gesetzt.")}{" "}
-              {t("„–“ = App seit v377 nicht geöffnet oder noch eine ältere Version.")}
-            </p>
-          </section>
-        );
-      })()}
 
       <section className="stat-block">
         <h3><Shield size={17} /> {t("Diagnose")}</h3>
