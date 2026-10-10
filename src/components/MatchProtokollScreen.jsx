@@ -52,7 +52,7 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
 
   return (
     <div className="screen protokoll-screen">
-      <header className="screen-head with-back no-print">
+      <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{t("Protokoll")}</h2>
       </header>
@@ -64,7 +64,7 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
         </div>
 
         {!hasProtocol && !!m.tournament_id && (
-          <div className="protokoll-no-log no-print">
+          <div className="protokoll-no-log">
             <p className="hint" style={{ margin: 0 }}>{t("Kein Protokoll vorhanden - wurde vermutlich nachträglich als Ergebnis eingetragen.")}</p>
             {m.manual_entry_note && <p className="protokoll-manual-note">{m.manual_entry_note}</p>}
             {(canEditNote || !m.manual_entry_note) && (
@@ -88,7 +88,7 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
 
         <MatchProtokollTable match={m} names={names} />
 
-        <button className="btn primary no-print" disabled={pdfBusy} onClick={savePdf}>
+        <button className="btn primary" disabled={pdfBusy} onClick={savePdf}>
           {pdfBusy ? <Loader2 size={16} className="spin" /> : <FileDown size={16} />} {t("Als PDF speichern")}
         </button>
       </div>

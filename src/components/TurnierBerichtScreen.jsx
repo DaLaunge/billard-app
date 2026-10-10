@@ -152,7 +152,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
 
   return (
     <div className="screen protokoll-screen">
-      <header className="screen-head with-back no-print">
+      <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{t("Turnierbericht")}</h2>
       </header>
@@ -206,11 +206,11 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
 
         <section className="tb-section">
           <h3><ScrollText size={17} /> {t("Chronologischer Match-Log")}</h3>
-          <div className="tb-log-toggle no-print">
+          <div className="tb-log-toggle">
             <button className={"chip-btn" + (logDetail === "kompakt" ? " sel" : "")} onClick={() => setLogDetail("kompakt")}>{t("Kompakt")}</button>
             <button className={"chip-btn" + (logDetail === "voll" ? " sel" : "")} onClick={() => setLogDetail("voll")}>{t("Vollständig")}</button>
           </div>
-          <p className="hint no-print" style={{ marginTop: 4 }}>
+          <p className="hint" style={{ marginTop: 4 }}>
             {logDetail === "kompakt"
               ? t("Kompakt: Endstand, Höchstserie, Schnitt und Zeit am Tisch je Match.")
               : t("Vollständig: komplettes Aufnahme-/Punkte-Protokoll je Match, wie in der einzelnen Match-Ansicht.")}
@@ -279,7 +279,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
           </section>
         )}
 
-        <button className="btn primary no-print" disabled={pdfBusy} onClick={savePdf}>
+        <button className="btn primary" disabled={pdfBusy} onClick={savePdf}>
           {pdfBusy ? <Loader2 size={16} className="spin" /> : <FileDown size={16} />} {t("Als PDF speichern")}
         </button>
       </div>
