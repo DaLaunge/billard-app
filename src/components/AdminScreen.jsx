@@ -38,10 +38,8 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   // Prod-Basis eines Test-Standes ("391.25" -> 391) zum Vergleichen.
   const currentVersion = Math.floor(Number(APP_VERSION));
   const versionOf = {};
-  const versionCounts = {};
   (versions || []).forEach((v) => {
     versionOf[v.player_id] = v;
-    const k = v.app_version ?? "?"; versionCounts[k] = (versionCounts[k] || 0) + 1;
   });
   const minVersion = versions?.[0]?.min_app_version || 0;
 
@@ -483,13 +481,6 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
               ))}
               <span className="mem-hspace-r" />
             </div>
-            {versions && versions.length > 0 && (
-              <div className="chips small" style={{ marginBottom: 8 }}>
-                {Object.entries(versionCounts).sort((a, b) => (Number(b[0]) || 0) - (Number(a[0]) || 0)).map(([k, n]) => (
-                  <span key={k} className={"chip" + (Number(k) === currentVersion ? " active" : "")}>{k === "?" ? t("unbekannt") : "v" + k}: {n}</span>
-                ))}
-              </div>
-            )}
             {visibleLogins.map((p) => {
               const isGhost = p.is_ghost;
               const isSelf = p.player_id === me.id;
