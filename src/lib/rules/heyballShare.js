@@ -23,6 +23,8 @@ export const HEYBALL_SHARED = [
   "patt",                  // 21
   "ausspielen",            // 5
   "rack-aufbau",           // 4
+  "anstoss-vier-kugeln",   // 6 c (Folgen eines ungueltigen Anstosses wie beim 8 Ball)
+  "gleichzeitiger-treffer", // 13
 ];
 
 export function withHeyball(c) {
