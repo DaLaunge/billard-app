@@ -46,11 +46,10 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   const minVersion = versions?.[0]?.min_app_version || 0;
 
   // Mitgliederliste: Suche ueber alle Felder, Sortierung nach Name/Version/Login
-  // (gleicher Knopf nochmal = Richtung drehen, dritter Klick = Reihenfolge der DB).
+  // (Klick auf die Spaltenueberschrift: aufsteigend, nochmal: absteigend).
   const [memQuery, setMemQuery] = useState("");
   const [memSort, setMemSort] = useState(null); // { key, dir }
-  const clickSort = (key) => setMemSort((c) => !c || c.key !== key ? { key, dir: key === "name" ? 1 : -1 }
-    : c.dir === (key === "name" ? 1 : -1) ? { key, dir: -c.dir } : null);
+  const clickSort = (key) => setMemSort((c) => c?.key === key ? { key, dir: -c.dir } : { key, dir: 1 });
   const verKey = (v) => {
     const [a, b] = String(v?.app_version_full || v?.app_version || "").split(".");
     return v && v.app_version != null ? Number(a) * 1e6 + Number(b || 0) : -1;
@@ -466,13 +465,6 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           <div className="mem-tools">
             <input type="search" className="mem-search" placeholder={t("Suchen in allen Daten …")} value={memQuery}
               onChange={(e) => setMemQuery(e.target.value)} />
-            <div className="chips small">
-              {[["name", t("Name")], ["version", t("Version")], ["login", t("Login")]].map(([k, label]) => (
-                <button key={k} className={"chip" + (memSort?.key === k ? " active" : "")} onClick={() => clickSort(k)}>
-                  {label}{memSort?.key === k && (memSort.dir > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
-                </button>
-              ))}
-            </div>
           </div>
         )}
         {logins == null ? (
@@ -481,6 +473,16 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           <p className="hint">{t("Noch keine Daten.")}</p>
         ) : (
           <div className="mem-list">
+            <div className="mem-line mem-headrow">
+              <span className="mem-hspace" />
+              {[["name", t("Name"), "mem-hname"], ["version", t("Version"), "mem-ver"], ["login", t("Login"), "mem-when"]].map(([k, label, cls]) => (
+                <button key={k} className={"mem-th " + cls + (memSort?.key === k ? " on" : "")} onClick={() => clickSort(k)}
+                  aria-sort={memSort?.key === k ? (memSort.dir > 0 ? "ascending" : "descending") : "none"}>
+                  {label}{memSort?.key === k && (memSort.dir > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                </button>
+              ))}
+              <span className="mem-hspace-r" />
+            </div>
             {versions && versions.length > 0 && (
               <div className="chips small" style={{ marginBottom: 8 }}>
                 {Object.entries(versionCounts).sort((a, b) => (Number(b[0]) || 0) - (Number(a[0]) || 0)).map(([k, n]) => (
@@ -506,12 +508,12 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                     <span className={"role-letter role-" + lclass}>{letter}</span>
                     <span className="mem-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
                     {inviter && joinedRecently && <span className="new-dot" title={t("Neu über Einladung von {name}", { name: inviter.nickname })} />}
-                    {versions && !isGhost && (
+                    {versions && (isGhost ? <span className="mem-ver" /> : (
                       <code className={"mem-ver" + ((ver?.app_version_full ? ver.app_version_full === APP_VERSION : ver?.app_version === currentVersion) ? "" : " outdated")}
                         title={ver?.app_version_at ? fmtAgo(ver.app_version_at) : ""}>
                         {ver?.app_version != null ? "v" + (ver.app_version_full || ver.app_version) : "–"}
                       </code>
-                    )}
+                    ))}
                     <span className="mem-when">{isGhost ? "—" : fmtAgo(p.last_seen)}</span>
                     <button className={"mem-edit" + (open ? " on" : "")} aria-label={t("Bearbeiten")}
                       onClick={() => setEditId(open ? null : p.player_id)}><Pencil size={14} /></button>
