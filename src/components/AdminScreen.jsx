@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, Smartphone } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -33,6 +33,17 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   useEffect(() => {
     supabase.rpc("admin_app_versions").then(({ data, error }) => { if (!error) setVersions(data || []); });
   }, []);
+
+  // Gemeldet wird nur die ganze Nummer (siehe App.jsx), daher auch hier die
+  // Prod-Basis eines Test-Standes ("391.25" -> 391) zum Vergleichen.
+  const currentVersion = Math.floor(Number(APP_VERSION));
+  const versionOf = {};
+  const versionCounts = {};
+  (versions || []).forEach((v) => {
+    versionOf[v.player_id] = v;
+    const k = v.app_version ?? "?"; versionCounts[k] = (versionCounts[k] || 0) + 1;
+  });
+  const minVersion = versions?.[0]?.min_app_version || 0;
 
   const [feedback, setFeedback] = useState(null);
   const [feedbackMsgs, setFeedbackMsgs] = useState({}); // feedback_id -> Nachrichten
@@ -419,6 +430,13 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           <p className="hint">{t("Noch keine Daten.")}</p>
         ) : (
           <div className="mem-list">
+            {versions && versions.length > 0 && (
+              <div className="chips small" style={{ marginBottom: 8 }}>
+                {Object.entries(versionCounts).sort((a, b) => (Number(b[0]) || 0) - (Number(a[0]) || 0)).map(([k, n]) => (
+                  <span key={k} className={"chip" + (Number(k) === currentVersion ? " active" : "")}>{k === "?" ? t("unbekannt") : "v" + k}: {n}</span>
+                ))}
+              </div>
+            )}
             {logins.map((p) => {
               const isGhost = p.is_ghost;
               const isSelf = p.player_id === me.id;
@@ -428,6 +446,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
               const lclass = p.blocked ? "blocked" : isGhost ? "special" : p.role === "admin" ? "admin" : "user";
               const open = editId === p.player_id;
               const inviter = pr?.invited_by ? players.find((x) => x.id === pr.invited_by) : null;
+              const ver = versionOf[p.player_id];
               const joinedRecently = p.created_at && (Date.now() - new Date(p.created_at).getTime()) < 7 * 86400000;
               return (
                 <div key={p.player_id} className={"mem-row" + (p.blocked ? " is-blocked" : "")}>
@@ -436,6 +455,12 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                     <span className={"role-letter role-" + lclass}>{letter}</span>
                     <span className="mem-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
                     {inviter && joinedRecently && <span className="new-dot" title={t("Neu über Einladung von {name}", { name: inviter.nickname })} />}
+                    {versions && !isGhost && (
+                      <code className={"mem-ver" + ((ver?.app_version_full ? ver.app_version_full === APP_VERSION : ver?.app_version === currentVersion) ? "" : " outdated")}
+                        title={ver?.app_version_at ? fmtAgo(ver.app_version_at) : ""}>
+                        {ver?.app_version != null ? "v" + (ver.app_version_full || ver.app_version) : "–"}
+                      </code>
+                    )}
                     <span className="mem-when">{isGhost ? "—" : fmtAgo(p.last_seen)}</span>
                     <button className={"mem-edit" + (open ? " on" : "")} aria-label={t("Bearbeiten")}
                       onClick={() => setEditId(open ? null : p.player_id)}><Pencil size={14} /></button>
@@ -533,47 +558,14 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             })}
           </div>
         )}
+        {versions && (
+          <p className="hint">
+            {t("Aktuell: v{v}.", { v: APP_VERSION })} {minVersion ? t("Mindestversion: v{v}.", { v: minVersion }) : t("Keine Mindestversion gesetzt.")}{" "}
+            {t("„–“ = App seit v377 nicht geöffnet oder noch eine ältere Version.")}
+          </p>
+        )}
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
       </section>
-
-      {versions && (() => {
-        // Gemeldet wird nur die ganze Nummer (siehe App.jsx), daher auch hier
-        // die Prod-Basis eines Test-Standes ("391.25" -> 391) zum Vergleichen.
-        const current = Math.floor(Number(APP_VERSION));
-        const counts = {};
-        versions.forEach((v) => { const k = v.app_version ?? "?"; counts[k] = (counts[k] || 0) + 1; });
-        const minV = versions[0]?.min_app_version || 0;
-        return (
-          <section className="stat-block">
-            <h3><Smartphone size={17} /> {t("App-Versionen")}</h3>
-            <div className="chips small">
-              {Object.entries(counts).sort((a, b) => (Number(b[0]) || 0) - (Number(a[0]) || 0)).map(([k, n]) => (
-                <span key={k} className={"chip" + (Number(k) === current ? " active" : "")}>{k === "?" ? t("unbekannt") : "v" + k}: {n}</span>
-              ))}
-            </div>
-            <div className="version-list">
-              {versions.map((v) => (
-                <div key={v.player_id} className="diag-row">
-                  <span>{v.nickname}</span>
-                  <span className="version-meta">
-                    {v.app_version_at ? fmtAgo(v.app_version_at) : ""}
-                    {/* Volle Nummer (391.25), sobald die Migration
-                        2026-10-01_app_version_full.sql eingespielt ist und das
-                        Geraet damit gemeldet hat; sonst nur die ganze Zahl. */}
-                    <code className={(v.app_version_full ? v.app_version_full === APP_VERSION : v.app_version === current) ? "" : "outdated"}>
-                      {v.app_version != null ? "v" + (v.app_version_full || v.app_version) : "–"}
-                    </code>
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="hint">
-              {t("Aktuell: v{v}.", { v: APP_VERSION })} {minV ? t("Mindestversion: v{v}.", { v: minV }) : t("Keine Mindestversion gesetzt.")}{" "}
-              {t("„–“ = App seit v377 nicht geöffnet oder noch eine ältere Version.")}
-            </p>
-          </section>
-        );
-      })()}
 
       <section className="stat-block">
         <h3><Shield size={17} /> {t("Diagnose")}</h3>

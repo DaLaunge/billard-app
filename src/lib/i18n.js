@@ -880,7 +880,6 @@ const TRANSLATIONS = {
     "Die App wurde während der Eingabe neu gestartet. Noch nichts davon ist gemeldet.": "The app was restarted during entry. Nothing of it has been reported yet.",
     "Fortsetzen": "Continue",
     "Verwerfen": "Discard",
-    "App-Versionen": "App versions",
     "unbekannt": "unknown",
     "Aktuell: v{v}.": "Current: v{v}.",
     "Mindestversion: v{v}.": "Minimum version: v{v}.",
