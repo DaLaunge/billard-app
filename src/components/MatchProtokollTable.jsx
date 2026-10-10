@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtTime, fmtDuration } from "../lib/format";
-import { runLogEntryParts, isSimpleScoreLog, buildProtocolRows, splitProtocolRowsByPlayer,
-  matchDurationMs, matchPlayTimeMs, matchUnitCount } from "../lib/runLog";
+import { runLogEntryParts } from "../lib/runLog";
+import { protocolData } from "../lib/protocolData";
 
 // Eine Tabellenzeile je Spieler+Seite: entweder die vier Datenzellen
 // (Ereignis/Serie/Schnitt/Punkte) oder leer, wenn dieser Spieler diese
@@ -31,24 +31,11 @@ function SideCells({ row, divider }) {
 // eigenen Tabellenbereich (links/rechts) statt abwechselnder Zeilen - eine
 // Zeile ist damit "Aufnahme n" fuer beide Spieler gleichzeitig.
 export default function MatchProtokollTable({ match: m, names }) {
-  const simple = isSimpleScoreLog(m.run_log);
-  const [rowsA, rowsB] = simple ? [[], []] : splitProtocolRowsByPlayer(buildProtocolRows(m.run_log));
-  const maxRows = Math.max(rowsA.length, rowsB.length);
-  const hasTime = simple ? m.run_log?.[0]?.[2] != null : m.run_log?.[0]?.ts != null;
-  const duration = hasTime ? matchDurationMs(m.run_log) : null;
-  // Nur bei Winner Stays bekannt: die Zeit, in der dieses Paar wirklich am
-  // Tisch stand. Steht als eigene Zeile NEBEN der Gesamtdauer, statt sie zu
-  // ersetzen - sonst widerspricht die eine Zahl den Zeitstempeln der Tabelle
-  // direkt darueber (siehe matchDurationMs() in lib/runLog.js).
-  const playTime = hasTime ? matchPlayTimeMs(m.run_log) : null;
-  const units = hasTime ? matchUnitCount(m.run_log) : null;
-  // Ø pro Spiel/Aufnahme = Gesamtdauer geteilt durch die Anzahl (Nutzer-Vorgabe).
-  // Die Plausibilitaetsfilter von avgUnitDurationMs() lassen schnell geklickte
-  // Spiele weg und ergaben so Werte, die nicht zur angezeigten Gesamtdauer
-  // passen - die bleiben der Tempo-Statistik vorbehalten. Bei Winner Stays
-  // gilt die reine Spielzeit der Paarung.
-  const avgBase = playTime ?? duration;
-  const avgUnit = hasTime && units > 0 && avgBase != null ? avgBase / units : null;
+  // Die Rechnung steckt in lib/protocolData.js (gleiche Zahlen im PDF). Erklaerung:
+  // Bei Winner Stays ist die Zeit, in der dieses Paar wirklich am Tisch stand
+  // (playTime), eine eigene Zeile NEBEN der Gesamtdauer; "Ø pro Spiel/Aufnahme" =
+  // Gesamtdauer (bei Winner Stays: reine Spielzeit) geteilt durch die Anzahl.
+  const { simple, rowsA, rowsB, maxRows, hasTime, duration, playTime, units, avgUnit } = protocolData(m);
   // Uhr-Dauer aus match_clock (siehe lib/matchClock.js): ohne und mit Pause.
   // Fehlt der Eintrag (aeltere Matches, Tabelle nicht da), bleibt es still.
   const [clock, setClock] = useState(null);

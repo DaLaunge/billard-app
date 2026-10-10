@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DiscBall from "./widgets/DiscBall";
 import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
 import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
-import { jsPDF } from "jspdf";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
@@ -12,6 +11,7 @@ import PlayerMultiPicker from "./PlayerMultiPicker";
 import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
 import TurnierBerichtScreen from "./TurnierBerichtScreen";
+import { exportTurnierProtocolPdf } from "./turnierBerichtPdf";
 import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout";
 import { rpcRetry } from "../lib/rpcRetry";
 
@@ -183,42 +183,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
       .sort((a, b) => new Date(a.match.played_at) - new Date(b.match.played_at));
   }, [tms]);
 
-  const downloadProtocolPdf = () => {
-    const doc = new jsPDF();
-    const marginX = 14;
-    const pageH = doc.internal.pageSize.getHeight();
-    const pageW = doc.internal.pageSize.getWidth();
-    let y = 20;
-    doc.setFontSize(16);
-    doc.text(tour.name, marginX, y);
-    y += 7;
-    doc.setFontSize(10);
-    doc.setTextColor(90);
-    doc.text(`${formatLabel(tour.format)} · ${t(tour.discipline)} · ${fmtDate(tour.created_at)}`, marginX, y);
-    y += 10;
-    doc.setTextColor(0);
-    doc.setFontSize(11);
-    doc.setFont(undefined, "bold");
-    doc.text(t("Zeit"), marginX, y);
-    doc.text(t("Partie"), marginX + 32, y);
-    doc.text(t("Ergebnis"), pageW - marginX - 28, y);
-    doc.setFont(undefined, "normal");
-    y += 2;
-    doc.setDrawColor(180);
-    doc.line(marginX, y, pageW - marginX, y);
-    y += 7;
-    doc.setFontSize(10);
-    timeline.forEach((tm) => {
-      if (y > pageH - 20) { doc.addPage(); y = 20; }
-      const n1 = nameOf(tm.player1_id) || "?", n2 = nameOf(tm.player2_id) || "?";
-      const sc = tmScores(tm);
-      doc.text(fmtDateTime(tm.match.played_at), marginX, y);
-      doc.text(`${n1} – ${n2}`, marginX + 32, y, { maxWidth: pageW - marginX * 2 - 32 - 32 });
-      doc.text(`${sc.s1}:${sc.s2}`, pageW - marginX - 28, y);
-      y += 7;
-    });
-    if (timeline.length === 0) doc.text(t("Noch keine Partie in diesem Turnier."), marginX, y);
-    doc.save(`${tour.name.replace(/[^\w\-]+/g, "_")}_protokoll.pdf`);
+  // Spielprotokoll als PDF (Datei "JJJJMMDD_Turnier_Name_Spielprotokoll.pdf", siehe
+  // turnierBerichtPdf.js); jsPDF wird erst hier nachgeladen.
+  const downloadProtocolPdf = async () => {
+    try {
+      await exportTurnierProtocolPdf({ tour, timeline, nameOf });
+    } catch (e) {
+      console.warn("PDF-Export fehlgeschlagen", e);
+      toast(t("PDF konnte nicht erstellt werden."));
+    }
   };
 
   // Verlauf eines Spielers: alle Rasterplaetze, an denen er beteiligt ist,
@@ -465,7 +438,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     return (
       <TurnierBerichtScreen tour={tour} tms={tms} finalStandings={finalStandings}
         nameOf={nameOf} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-        onBack={() => setShowReport(false)} />
+        onBack={() => setShowReport(false)} toast={toast} />
     );
   }
 

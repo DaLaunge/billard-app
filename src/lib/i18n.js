@@ -588,6 +588,8 @@ const TRANSLATIONS = {
     "Bildschirm darf sich sperren": "Screen may lock",
     "Bildschirm während eines Matches anlassen": "Keep the screen on during a match",
     "Menüleiste beim Scrollen ausblenden": "Hide the menu bar while scrolling",
+    "Seite {i} von {n}": "Page {i} of {n}",
+    "PDF konnte nicht erstellt werden.": "The PDF could not be created.",
     "Kugel springt in die Aufstellung": "Ball jumps into the line-up",
     "Kugel-Animation": "Ball animation",
     "Wählst du bei „Neues Match“ einen Spieler, springt seine Kugel aus der Kachel in den freien Platz oben – beim Entfernen verschwindet sie sanft. Gilt nur auf diesem Gerät und nicht, wenn dein Gerät „Bewegung reduzieren“ eingestellt hat.": "When you pick a player in “New match”, their ball jumps from the tile into the free spot at the top – and fades away when you remove them. Applies to this device only, and not if your device has “Reduce motion” turned on.",
