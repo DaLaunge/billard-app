@@ -7,13 +7,13 @@ const TRANSLATIONS = {
     "Oder gib den Code aus derselben Mail ein:": "Or enter the code from the same email:",
     "Code": "Code",
     "Code bestätigen": "Confirm code",
-    "Praktisch, wenn der Link die Mail-App in einem anderen Browser oeffnet als dem, den du sonst nutzt.": "Handy if the link opens your mail app in a different browser than the one you normally use.",
+    "Praktisch, wenn der Link die Mail-App in einem anderen Browser oeffnet als dem, den du sonst nutzt.": "Useful if the link opens your mail app in a different browser than the one you normally use.",
     "Siegchance": "Win chance",
     "Bei Race to 4": "In a race to 4",
     "Bei Distanz 50": "At a distance of 50",
     "Sieg": "Win",
     "Niederlage": "Loss",
-    "Empfehlung": "Suggestion",
+    "Empfehlung": "Recommended",
     "bis zu": "up to",
     "Neuer Erfolg!": "New achievement!",
     "Neue Erfolge!": "New achievements!",
@@ -267,8 +267,8 @@ const TRANSLATIONS = {
     "Karte ausblenden": "Hide card",
     "Diese Liste ausblenden": "Hide this list",
     "Diesen Reiter ausblenden": "Hide this tab",
-    "Meine Zahlen": "My numbers",
-    "Zahlen": "Numbers",
+    "Meine Zahlen": "My stats",
+    "Zahlen": "Stats",
     "Mitspieler finden": "Find someone to play",
     "Top {n}": "Top {n}",
     "Beides": "Both",
@@ -321,7 +321,7 @@ const TRANSLATIONS = {
     "Allgemein": "General",
     "Dieses Gerät": "This device",
     "Konto & Hilfe": "Account & help",
-    "So sehen dich die anderen. Ohne Foto zeigt die Kugel deine Initialen in der gewählten Farbe; \"Auto\" wählt die Farbe selbst und zeigt wieder deine eigene Kugel statt eines Erfolgs.": "This is how others see you. Without a photo the ball shows your initials in the chosen colour; \"Auto\" picks the colour itself and shows your own ball again instead of an achievement.",
+    "So sehen dich die anderen. Ohne Foto zeigt die Kugel deine Initialen in der gewählten Farbe; \"Auto\" wählt die Farbe selbst und zeigt wieder deine eigene Kugel statt eines Erfolgs.": "This is how others see you. Without a photo the ball shows your initials in the chosen color; \"Auto\" picks the colour itself and shows your own ball again instead of an achievement.",
     "Anteil gewonnener Matches (Siege ÷ Spiele) in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.": "Share of matches won (wins ÷ games) in the current selection of discipline and singles/doubles. To be reliable, the rate only counts from 10 games in this selection.",
     "Wie viele Matches in Folge gewonnen wurden, seit der letzten Niederlage, in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel.": "How many matches in a row were won since the last defeat, in the current selection of discipline and singles/doubles.",
     "Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen).": "There is only one overall doubles rating, not one per discipline; without a discipline selected the overall rating counts (singles and doubles together).",
@@ -447,7 +447,7 @@ const TRANSLATIONS = {
     "Komet": "Comet",
     "Hattrick": "Hat-trick",
     "Serientäter": "Serial offender",
-    "Doppelpack": "Brace",
+    "Doppelpack": "Two at once",
     "Wochenendkrieger": "Weekend warrior",
     "Erster Sieg": "First win",
     "Routinier": "Old hand",
@@ -683,7 +683,7 @@ const TRANSLATIONS = {
     "Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.": "Practice match – not saved and doesn't count toward rating.",
     "Noch {time} …": "{time} left …",
     "Ein echtes Training dauert länger – bitte warte, bis der Timer abgelaufen ist.": "A real training session takes longer – please wait until the timer runs out.",
-    "Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.": "By default you see yourself and your closest neighbours. Up to 6 players, switch the period above, drag across the graph to read values.",
+    "Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.": "By default you see yourself and your closest neighbors. Up to 6 players, switch the period above, drag across the graph to read values.",
     "Sprache": "Language",
     "Rangliste": "Ranking",
     "Erklärung": "Explanation",
@@ -971,7 +971,7 @@ const TRANSLATIONS = {
     "Live: Mitspieler finden": "Live: find players",
     "Zeig mit „Ich bin am Tisch“, dass du spielen willst, fordere jemanden heraus oder plane einen Termin. Die Zahl am Symbol sagt dir, ob etwas auf dich wartet.": "Show with “I'm at the table” that you want to play, challenge someone or plan a session. The number on the icon tells you whether something is waiting for you.",
     "Dein Profil": "Your profile",
-    "Hier siehst du Erfolge, deine Zahlen und Rekorde. Über das QR-Symbol laden andere dich zum Match ein, mit dem Zahnrad passt du alles an.": "See your achievements, numbers and records here. The QR icon lets others invite you to a match, the gear customises everything.",
+    "Hier siehst du Erfolge, deine Zahlen und Rekorde. Über das QR-Symbol laden andere dich zum Match ein, mit dem Zahnrad passt du alles an.": "See your achievements, numbers and records here. The QR icon lets others invite you to a match, the gear customizes everything.",
     "Ganz oben stehen die drei Erfolge, die dir am nächsten sind – tippe einen an, um die genaue Bedingung zu lesen. Freigeschaltete Erfolge kannst du als Avatar zeigen.": "At the top are the three achievements closest to you – tap one to read the exact condition. You can show unlocked achievements as your avatar.",
     "Passe die App an dich an": "Make the app yours",
     "Zu viel auf einmal? Jede Karte hat oben ein Drei-Punkte-Menü zum Ausblenden. Unter Zahnrad → Karten ordnest du alles neu, und unter „Dieses Gerät“ stellst du z. B. ein, dass Filter immer offen sind.": "Too much at once? Every card has a three-dot menu to hide it. Under gear → Cards you rearrange everything, and under “This device” you can e.g. keep filters always open.",
@@ -1004,7 +1004,7 @@ const TRANSLATIONS = {
     "Schnellstes Match": "Fastest match",
     "Längstes Match": "Longest match",
     "Noch keine Rekorde.": "No records yet.",
-    "Aktuelle Bestwerte der gesamten Gruppe - wer hält gerade welchen Rekord? Jede Zeile hat rechts ihr eigenes Info-Symbol mit genauerer Erklärung (und, wenn vorhanden, dem zugehörigen Match-Protokoll).": "Current bests for the whole group - who currently holds which record? Each row has its own info icon on the right with a more detailed explanation (and, where available, the underlying match log).",
+    "Aktuelle Bestwerte der gesamten Gruppe - wer hält gerade welchen Rekord? Jede Zeile hat rechts ihr eigenes Info-Symbol mit genauerer Erklärung (und, wenn vorhanden, dem zugehörigen Match-Protokoll). Zeilen mit dem Zeichen FUN stammen aus den optionalen Zusatzzählern (Fluke, Runout, Scratch, Foul) und sind reiner Spaß.": "Current bests for the whole group - who currently holds which record? Each row has its own info icon on the right with a more detailed explanation (and, where available, the underlying match log). Rows marked FUN come from the optional extra counters (fluke, runout, scratch, foul) and are just for fun.",
     "Höchste ununterbrochene Serie in einer Partie 14/1 Endlos. Bei Gleichstand zählt, wer diese Serie zuerst erreicht hat.": "Highest unbroken run in a single 14.1 continuous game. In case of a tie, whoever reached this run first holds the record.",
     "Längste ununterbrochene Siegesserie (aufeinanderfolgende gewonnene Matches, unabhängig vom Gegner).": "Longest unbroken winning streak (consecutive wins, regardless of opponent).",
     "Anzahl gewonnener Matches, bei denen der Gegner 0 Punkte bzw. Racks erzielt hat.": "Number of won matches where the opponent scored 0 points or racks.",
@@ -1090,7 +1090,7 @@ const TRANSLATIONS = {
     "Noch keine Turniere.": "No tournaments yet.",
     "läuft": "running",
     "beendet": "finished",
-    "abgebrochen": "cancelled",
+    "abgebrochen": "canceled",
     "Jeder-gegen-jeden braucht mindestens 3 Teilnehmer.": "Round robin needs at least 3 participants.",
     "Mindestens 2 Teilnehmer nötig.": "At least 2 participants needed.",
     "Bitte gültige Tischnummern angeben.": "Please enter valid table numbers.",
@@ -1141,8 +1141,10 @@ const TRANSLATIONS = {
     "Angemeldet.": "Registered.",
     "Abgemeldet.": "Unregistered.",
     "Noch niemand angemeldet.": "No one registered yet.",
-    "Anmelden": "Register",
-    "Abmelden": "Unregister",
+    "Anmelden": "Sign in",
+    "Abmelden": "Sign out",
+    "Anmelden§Turnier": "Register",
+    "Abmelden§Turnier": "Unregister",
     "Spieler hinzugefügt.": "Players added.",
     "Spieler entfernt.": "Player removed.",
     "{n} Spieler hinzufügen": "Add {n} player(s)",
@@ -1395,8 +1397,12 @@ export function setLangGlobal(l) {
 export function addTranslations(lang, dict) {
   TRANSLATIONS[lang] = Object.assign(TRANSLATIONS[lang] || {}, dict);
 }
+/* Gleicher deutscher Text, verschiedene englische Bedeutung: Schluessel mit Kontext-
+   Suffix "Text§Kontext" (z. B. "Anmelden" = Sign in beim Login, "Anmelden§Turnier" =
+   Register beim Turnier). Deutsch und fehlende Uebersetzungen zeigen den Text vor dem "§". */
+const plain = (s) => { const i = s.indexOf("§"); return i < 0 ? s : s.slice(0, i); };
 export function t(s, vars) {
-  let out = (_LANG !== "de" && TRANSLATIONS[_LANG] && TRANSLATIONS[_LANG][s] != null) ? TRANSLATIONS[_LANG][s] : s;
+  let out = (_LANG !== "de" && TRANSLATIONS[_LANG] && TRANSLATIONS[_LANG][s] != null) ? TRANSLATIONS[_LANG][s] : plain(s);
   if (vars) for (const k in vars) out = out.split("{" + k + "}").join(String(vars[k]));
   return out;
 }

@@ -505,7 +505,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           )}
           <button className="btn primary" style={{ marginTop: 14 }} disabled={busyId === "register"}
             onClick={isRegistered ? unregister : register}>
-            {isRegistered ? t("Abmelden") : t("Anmelden")}
+            {isRegistered ? t("Abmelden§Turnier") : t("Anmelden§Turnier")}
           </button>
 
           {isOrganizer && (
