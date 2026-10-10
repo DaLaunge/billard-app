@@ -3,7 +3,7 @@ import { ChevronRight, Plus, Search, Trophy, X } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
-import { DEFAULT_DISCIPLINES } from "../lib/constants";
+import { DEFAULT_DISCIPLINES, activeDisciplines } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
 import FieldLabel from "./widgets/FieldLabel";
 import { ModeTiles } from "./widgets/ModePick";
@@ -204,7 +204,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
                 und entfaellt beim 14/1, wo es kein Rack-fuer-Rack-Anstossen gibt. */}
             <FieldLabel label={t("Disziplin")} actions={breakApplies(discipline) ? <BreakSwitch value={breakRule} onChange={setBreakRule} /> : null} />
             <div className="disc-picks">
-              {DEFAULT_DISCIPLINES.map((d) => (
+              {activeDisciplines().map((d) => (
                 // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
                 // Akzentfarbe, wie bei der Kugelauswahl im 14/1-Protokoll.
                 <DiscPick key={d} disc={d} selected={discipline === d} onSelect={() => setDiscipline(d)} />

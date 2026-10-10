@@ -1,6 +1,7 @@
 import { addTranslations, t, getLang } from "../i18n";
 import { indexCase, searchIndexed } from "./search.js";
 import { ensureEights } from "./fill.js";
+import { HEYBALL_RULES, HEYBALL_EN, HEYBALL_SOURCE } from "./heyball.js";
 import { ALL_DISCS, TOPICS, TOPICS_EN, TAGS, TAGS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 
 /* Regelkunde-Katalog. Ein Regelfall = EINE Datei in ./cases/ (Dateiname
@@ -22,6 +23,8 @@ addTranslations("en", TOPICS_EN);
 addTranslations("en", TAGS_EN);
 addTranslations("en", SOURCES_EN);
 modules.forEach((m) => addTranslations("en", m.en || {}));
+addTranslations("en", HEYBALL_EN);
+export { HEYBALL_RULES, HEYBALL_SOURCE };
 
 export const RULE_CASES = modules.map((m) => ensureEights(m.default)); // jede Szene bekommt eine 8 auf den Tisch (siehe fill.js)
 export { ALL_DISCS, TOPICS, TAGS, SOURCE };

@@ -1,4 +1,4 @@
-import { poolBallStyle, DISC_BALL } from "../../lib/pool";
+import { poolBallStyle, DISC_BALL, DISC_BALL_TEXT } from "../../lib/pool";
 import { t } from "../../lib/i18n";
 
 /* Die Disziplin als Billardkugel statt als Kuerzel ("8B", "9B", ...).
@@ -25,7 +25,7 @@ export default function DiscBall({ disc, size = 18 }) {
           kleinen Kugeln in Pillen und Kopfzeilen bleiben dann reine Farbe bzw.
           Streifen (8 schwarz, 9 gelb, 10 blau, 14 gruen gestreift). */}
       {size >= 18
-        ? <span className="pb-no" style={{ fontSize: Math.max(6, Math.round(size * 0.34)) }}>{n}</span>
+        ? <span className="pb-no" style={{ fontSize: Math.max(6, Math.round(size * 0.34)) }}>{DISC_BALL_TEXT[disc] ?? n}</span>
         // Kleine Kugel: nur der weisse Kreis OHNE Zahl. Ohne ihn war vor allem die
         // schwarze 8 auf dem dunklen Grund kaum als Kugel zu erkennen
         // (Nutzer-Feedback 2026-09-30) - der Kreis macht aus dem dunklen Fleck
