@@ -1,6 +1,8 @@
 import { addTranslations, t, getLang } from "../i18n";
 import { indexCase, searchIndexed } from "./search.js";
 import { ensureEights } from "./fill.js";
+import { withHeyball } from "./heyballShare.js";
+import { FEATURES } from "../constants.js";
 import { HEYBALL_RULES, HEYBALL_EN, HEYBALL_SOURCE } from "./heyball.js";
 import { ALL_DISCS, TOPICS, TOPICS_EN, TAGS, TAGS_EN, SOURCE, SOURCES_EN } from "./meta.js";
 
@@ -26,7 +28,7 @@ modules.forEach((m) => addTranslations("en", m.en || {}));
 addTranslations("en", HEYBALL_EN);
 export { HEYBALL_RULES, HEYBALL_SOURCE };
 
-export const RULE_CASES = modules.map((m) => ensureEights(m.default)); // jede Szene bekommt eine 8 auf den Tisch (siehe fill.js)
+export const RULE_CASES = modules.map((m) => ensureEights(withHeyball(m.default))); // jede Szene bekommt eine 8 auf den Tisch (siehe fill.js)
 export { ALL_DISCS, TOPICS, TAGS, SOURCE };
 
 /* Zeile fuer die Quellenangabe, z. B. "ÖPBV/WPA-Spielregeln, ... , Regel 3.2". */
@@ -42,8 +44,11 @@ export const sourceLine = (c) => `${t(c.src || SOURCE)}, ${t("Regel")} ${c.ref}`
 
 /* Faelle fuer eine Disziplin (disc leer = alle). onlyReleased: nur freigegebene
    (fuer alle Nutzer), die Verwaltung zeigt auch die anderen. */
+/* Heyball-Faelle erscheinen nur, solange der Admin-Schalter an ist; ohne Disziplinfilter (Alle) zaehlen sie nicht mit. */
+const heyballOnly = (c) => c.discs.every((d) => d === "Heyball");
 export const casesForDisc = (disc, { onlyReleased = true, ids } = {}) =>
-  RULE_CASES.filter((c) => (!onlyReleased || c.released) && (!disc || c.discs.includes(disc)) && (!ids || ids.includes(c.id)));
+  RULE_CASES.filter((c) => (!onlyReleased || c.released) && (!disc || c.discs.includes(disc)) && (!ids || ids.includes(c.id))
+    && (FEATURES.heyball || !heyballOnly(c)));
 
 /* Suche: siehe search.js (gewichtete Felder, Umlaut-/Tippfehler-Toleranz, Synonyme,
    Regelnummern). Der Index je Fall wird pro Sprache gemerkt. */
@@ -52,6 +57,7 @@ const DISC_NAMES = {
   "9 Ball": "Neunball nine ball 9-ball",
   "10 Ball": "Zehnball ten ball 10-ball",
   "14/1 Endlos": "Straight Pool 14.1 14-1 endlos",
+  "Heyball": "Heyball chinesisches 8-ball chinese eight ball",
 };
 const _ix = new WeakMap();
 const indexFor = (c) => {
@@ -74,9 +80,10 @@ const numsOf = (c) => {
    wenn er genau diese Disziplin betrifft; gilt er fuer mehrere (z. B. "vier Kugeln an die Bande" fuer 8, 9 und
    10 Ball, Push Out fuer 9 und 10 Ball), steht er in der Gruppe "Mehrere Disziplinen" (3.5) - sonst stuende
    er faelschlich unter "8 Ball", nur weil die erste Fundstelle 4.3 ist (Nutzer-Feedback 2026-10-08). */
-const DISC_CHAPTER = { "8 Ball": 4, "9 Ball": 5, "10 Ball": 6, "14/1 Endlos": 7 };
+const DISC_CHAPTER = { "8 Ball": 4, "9 Ball": 5, "10 Ball": 6, "14/1 Endlos": 7, "Heyball": 8 };
 export const bookChapter = (c) => {
   const n = numsOf(c)[0];
+  if (n === 8) return 8; // Heyball-Faelle tragen bookRef "8.N" (Kapitel 8, Reihenfolge N)
   if (n < 4 || n > 7) return n;
   return c.discs && c.discs.length === 1 && DISC_CHAPTER[c.discs[0]] ? DISC_CHAPTER[c.discs[0]] : 3.5;
 };
@@ -99,5 +106,5 @@ export const sortCases = (list, mode) => {
 /* Kapitelueberschriften des Regelwerks (fuer die Gliederung in der Regelwerk-Reihenfolge). */
 export const BOOK_CHAPTERS = {
   1: "1 · Allgemeine Regeln", 2: "2 · Begriffe", 3: "3 · Fouls", 3.5: "Mehrere Disziplinen", 4: "4 · 8 Ball", 5: "5 · 9 Ball",
-  6: "6 · 10 Ball", 7: "7 · 14/1 Endlos", 99: "Doppel",
+  6: "6 · 10 Ball", 7: "7 · 14/1 Endlos", 8: "8 · Heyball", 99: "Doppel",
 };

@@ -5,7 +5,7 @@ import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
 import InfoButton from "./widgets/InfoButton";
 import DiscBall, { DiscAll, DiscPickRow } from "./widgets/DiscBall";
-import { HEYBALL, activeDisciplines } from "../lib/constants";
+import { HEYBALL, FEATURES, activeDisciplines } from "../lib/constants";
 
 const ALL = "alle";
 const SORT_KEY = "ruleSort";
@@ -18,7 +18,7 @@ const readSort = () => { try { return localStorage.getItem(SORT_KEY) === "az" ? 
    Fall mehrere Saetze (je Disziplin eine passende Situation), sind die Kugeln
    zugleich der Umschalter: die Kugeln des gezeigten Satzes sind umrandet. */
 export function DiscTags({ discs, active, onPick }) {
-  const all = ALL_DISCS.every((d) => discs.includes(d));
+  const all = ALL_DISCS.every((d) => discs.includes(d)) && (!FEATURES.heyball || discs.includes(HEYBALL));
   if (all && !onPick) return <span className="rs-tags"><DiscAll size={22} /></span>;
   return (
     <span className="rs-tags">
@@ -49,9 +49,10 @@ const searchText = (s) => String(s).toLowerCase().normalize("NFD").replace(/[̀-
 function HeyballRules({ rules }) {
   const [open, setOpen] = useState({});
   const few = rules.length <= 3;
-  if (rules.length === 0) return <p className="hint">{t("Keine passende Regel gefunden.")}</p>;
+  if (rules.length === 0) return null;
   return (
     <>
+      <h3 className="rs-chapter" style={{ marginTop: 14 }}><span>{t("Alle Heyball-Regeln als Text")}</span></h3>
       <p className="hint" style={{ marginTop: 0 }}>{t("Regeln aus den WPA Rules of Heyball. Heyball folgt dem 8 Ball, mit eigenem Anstoß und offenem Tisch.")}</p>
       {rules.map((r) => {
         const isOpen = r.id in open ? open[r.id] : few;
@@ -146,9 +147,8 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
           <span className="rs-activetag-n">{t("{n} Regeln", { n: shown.length })}</span>
         </div>
       )}
-      {heyball && <HeyballRules rules={heyballShown} />}
-      {!heyball && shown.length === 0 && <p className="hint">{t("Keine passende Regel gefunden.")}</p>}
-      {!heyball && shown.map((c, i) => {
+      {shown.length === 0 && !(heyball && heyballShown.length > 0) && <p className="hint">{t("Keine passende Regel gefunden.")}</p>}
+      {shown.map((c, i) => {
         const chap = bookChapter(c);
         const heading = grouped && (i === 0 || bookChapter(shown[i - 1]) !== chap) ? BOOK_CHAPTERS[chap] : null;
         const set = setFor(c, pick[c.id] || (disc === ALL ? null : disc));
@@ -196,6 +196,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
           </div>
         );
       })}
+      {heyball && heyballShown.length > 0 && <HeyballRules rules={heyballShown} />}
     </div>
   );
 }

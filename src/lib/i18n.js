@@ -1182,6 +1182,7 @@ const TRANSLATIONS = {
     "Format": "Format",
     "Disziplin": "Discipline",
     "Heyball": "Heyball",
+    "Alle Heyball-Regeln als Text": "All Heyball rules as text",
     "Heyball-Debüt": "Heyball debut",
     "Heyball-Sieg(e) in Folge": "Heyball win(s) in a row",
     "Heyball-Zu-Null-Sieg(e)": "Heyball shutout win(s)",
