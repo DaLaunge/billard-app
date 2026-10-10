@@ -8,7 +8,7 @@
 -- Vergabe in compute_heyball_badges(). Sie haengt an einem eigenen Statement-Trigger auf matches
 -- (wie matches_rebuild_ratings), statt trg_rebuild_ratings()/admin_refresh_stats() umzuschreiben -
 -- so bleiben deren aktuelle Fassungen unangetastet. Gezaehlt werden nur bestaetigte Matches ohne
--- Gast-Beteiligung (wie compute_badges); Gaeste bekommen ohnehin keine Erfolge
+-- Gast-Beteiligung und ohne Doppel (wie die Fortschrittsanzeige der App); Gaeste bekommen ohnehin keine Erfolge
 -- (trg_no_badges_for_guests). Erfolge werden nur eingefuegt, nie geloescht.
 --
 -- Ist Heyball ausgeschaltet (app_settings.heyball_enabled), zeigt die App die Kategorie nicht;
@@ -44,13 +44,13 @@ begin
     select m.player1_id as player_id, m.player2_id as opp_id, m.played_at, m.id as mid,
            (m.score1 > m.score2) as won, m.score1 as my_score, m.score2 as opp_score
       from matches m
-     where m.confirmed and m.discipline = 'Heyball'
+     where m.confirmed and m.discipline = 'Heyball' and m.player1b_id is null
        and not exists (select 1 from players p where p.id in (m.player1_id, m.player2_id) and p.is_guest)
     union all
     select m.player2_id, m.player1_id, m.played_at, m.id,
            (m.score2 > m.score1), m.score2, m.score1
       from matches m
-     where m.confirmed and m.discipline = 'Heyball'
+     where m.confirmed and m.discipline = 'Heyball' and m.player1b_id is null
        and not exists (select 1 from players p where p.id in (m.player1_id, m.player2_id) and p.is_guest);
 
   -- Matches gespielt

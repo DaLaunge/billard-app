@@ -21,6 +21,20 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
     const day = todayStr(new Date(m.played_at));
     perDay[day] = (perDay[day] || 0) + 1;
   });
+  // Heyball-Erfolge (Kategorie "Heyball"): nur Einzel, ohne Gaeste, wie die Vergabe in
+  // compute_heyball_badges(). Die Serie ist die AKTUELLE (wie bei den allgemeinen Serien).
+  const hb = { matches: 0, wins: 0, shutouts: 0, streak: 0, opps: new Set() };
+  matches
+    .filter((m) => m.discipline === "Heyball" && !m.player1b_id && !m.p1.is_guest && !m.p2.is_guest
+      && (m.p1.nickname === nickname || m.p2.nickname === nickname))
+    .sort((a, b) => new Date(a.played_at) - new Date(b.played_at))
+    .forEach((m) => {
+      const first = m.p1.nickname === nickname;
+      const my = first ? m.score1 : m.score2, opp = first ? m.score2 : m.score1;
+      hb.matches++;
+      hb.opps.add(first ? m.p2.nickname : m.p1.nickname);
+      if (my > opp) { hb.wins++; hb.streak++; if (opp === 0) hb.shutouts++; } else hb.streak = 0;
+    });
   const myId = players.find((p) => p.nickname === nickname)?.id;
   const recruitedCount = myId ? players.filter((p) => p.invited_by === myId).length : 0;
   const challengesAccepted = myId
@@ -57,6 +71,11 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
     highRun,
     recruitedCount,
     challengesAccepted,
+    heyballMatches: hb.matches,
+    heyballWins: hb.wins,
+    heyballShutouts: hb.shutouts,
+    heyballStreak: hb.streak,
+    heyballOpponents: hb.opps.size,
     maxVsOpponent: Math.max(0, ...Object.values(perOpp)),
     maxPerDay: Math.max(0, ...Object.values(perDay)),
     maxOpponentStreak: Math.max(0, ...Object.values(oppStreak)),
@@ -73,6 +92,13 @@ const leadingNumber = (desc) => {
 /* Erfolgs-Familien, die sich lokal berechnen lassen (siehe computeAchievementExtras) -
    dieselben, die auch in ProfilScreen als Live-Kennzahl je Kategorie erscheinen. */
 const FAMILIES = [
+  // Heyball ZUERST: ihre Beschreibungen ("3 Heyball-Siege in Folge", "Ein Heyball-Match zu null gewonnen")
+  // wuerden sonst von den allgemeinen Serien-/Zu-Null-Familien weiter unten gefangen und bekaemen deren Zahl.
+  { metric: "heyballStreak", test: (d) => /Heyball-Siege in Folge$/.test(d), current: (e) => (e.heyballStreak > 0 ? e.heyballStreak : null), unit: () => t("Heyball-Sieg(e) in Folge") },
+  { metric: "heyballShutouts", test: (d) => /Heyball-Match zu null gewonnen$/.test(d), current: (e) => e.heyballShutouts, unit: () => t("Heyball-Zu-Null-Sieg(e)") },
+  { metric: "heyballWins", test: (d) => /Heyball-Siege$|erstes Heyball-Match gewonnen$/.test(d), current: (e) => e.heyballWins, unit: () => t("Heyball-Sieg(e)") },
+  { metric: "heyballMatches", test: (d) => /Heyball-Matches? gespielt$/.test(d), current: (e) => e.heyballMatches, unit: () => t("Heyball-Match(es)") },
+  { metric: "heyballOpponents", test: (d) => /^Heyball gegen \d+ verschiedene Gegner gespielt$/.test(d), current: (e) => e.heyballOpponents, unit: () => t("verschiedene Gegner") },
   { metric: "longestStreak", test: (d) => /Siege in Folge$/.test(d), current: (e) => (e.streak > 0 ? e.streak : null), unit: () => t("Sieg(e) in Folge") },
   { metric: "siege", test: (d) => /^\d+ Siege insgesamt$/.test(d), current: (e) => e.siege, unit: () => t("Sieg(e)") },
   { metric: "shutoutWins", test: (d) => /zu null gewonnen/.test(d), current: (e) => e.shutoutWins, unit: () => t("Zu-Null-Sieg(e)") },
