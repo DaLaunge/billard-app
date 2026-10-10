@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown, SkipForward, ChevronUp, ChevronDown, Coffee } from "lucide-react";
+import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Trophy, Crown, SkipForward, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
@@ -7,7 +7,6 @@ import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 import PlayerMultiPicker from "./PlayerMultiPicker";
-import { ScoreStepper } from "./TurnierMatchActions";
 import ImprintFooter from "./widgets/ImprintFooter";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
@@ -31,27 +30,62 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
 
+  // Verbindungsfehler duerfen den angezeigten Stand NIE leeren (Nutzer-Feedback:
+  // "das Turnier kommt in einen nicht definierten Zustand, wenn man das Handy
+  // sperrt"). Nach dem Entsperren ist das Netz oft noch ein paar Sekunden weg;
+  // der Abruf scheitert dann, und die alte Fassung machte aus "keine Antwort"
+  // einfach "keine Daten" - die Runde wirkte leer, das Formular zum Hinzufuegen
+  // sprang auf. Jetzt bleibt der letzte gute Stand stehen, ein Hinweis zeigt
+  // den Verbindungsverlust, und beim Zurueckkommen (sichtbar/online) wird
+  // sofort neu geladen. reqRef verwirft Antworten, die von einer neueren
+  // Anfrage ueberholt wurden.
+  const [offline, setOffline] = useState(false);
+  const [gone, setGone] = useState(false);
+  const reqRef = useRef(0);
   const load = useCallback(async () => {
-    const [{ data: sess }, { data: ents }, { data: gms }] = await Promise.all([
-      supabase.from("winner_stays_sessions")
-        .select("*, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
-        .eq("id", sessionId).maybeSingle(),
-      supabase.from("winner_stays_entries")
-        .select("*, player1:players!winner_stays_entries_player1_id_fkey(nickname), player2:players!winner_stays_entries_player2_id_fkey(nickname)")
-        .eq("session_id", sessionId).order("queue_position"),
-      supabase.from("winner_stays_games")
-        .select("id, game_no, entry_a_id, entry_b_id, score_a, score_b, winner_entry_id, played_at")
-        .eq("session_id", sessionId).order("game_no", { ascending: false }).limit(20),
-    ]);
-    setSession(sess || null);
+    const my = ++reqRef.current;
+    let r;
+    try {
+      r = await Promise.all([
+        supabase.from("winner_stays_sessions")
+          .select("*, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
+          .eq("id", sessionId).maybeSingle(),
+        supabase.from("winner_stays_entries")
+          .select("*, player1:players!winner_stays_entries_player1_id_fkey(nickname), player2:players!winner_stays_entries_player2_id_fkey(nickname)")
+          .eq("session_id", sessionId).order("queue_position"),
+        supabase.from("winner_stays_games")
+          .select("id, game_no, entry_a_id, entry_b_id, score_a, score_b, winner_entry_id, played_at")
+          .eq("session_id", sessionId).order("game_no", { ascending: false }).limit(20),
+      ]);
+    } catch { r = null; }
+    if (my !== reqRef.current) return null;
+    if (!r || r.some((x) => x.error)) { setOffline(true); return null; }
+    const [{ data: sess }, { data: ents }, { data: gms }] = r;
+    setOffline(false);
+    if (!sess) { setGone(true); return null; }
+    setGone(false);
+    setSession(sess);
     setEntries(ents || []);
     setGames(gms || []);
+    return gms || [];
   }, [sessionId]);
 
   useEffect(() => {
     load();
-    const id = setInterval(load, POLL_MS);
-    return () => clearInterval(id);
+    // Im Hintergrund nicht abfragen (spart Datenvolumen, und gesperrte Handys
+    // fuehren Timer ohnehin unzuverlaessig aus); beim Zurueckkommen sofort.
+    const tick = () => { if (!document.hidden) load(); };
+    const id = setInterval(tick, POLL_MS);
+    const back = () => { if (!document.hidden) load(); };
+    document.addEventListener("visibilitychange", back);
+    window.addEventListener("online", back);
+    window.addEventListener("focus", back);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", back);
+      window.removeEventListener("online", back);
+      window.removeEventListener("focus", back);
+    };
   }, [load]);
 
   // Eingabe fuers naechste Ergebnis - zurueckgesetzt, sobald sich die
@@ -74,6 +108,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   useEffect(() => {
     if (wsRestoredRef.current) saveWsDraft(sessionId, lastGameNo, sA, sB);
   }, [sessionId, lastGameNo, sA, sB]);
+  // Wurde (z. B. von einem anderen Geraet) ein Spiel gemeldet, gehoert der
+  // angefangene Stand zur alten Paarung und darf nicht stehen bleiben.
+  const prevGameNoRef = useRef(null);
+  useEffect(() => {
+    if (!wsRestoredRef.current) return;
+    if (prevGameNoRef.current !== null && prevGameNoRef.current !== lastGameNo) { setSA(0); setSB(0); }
+    prevGameNoRef.current = lastGameNo;
+  }, [session, lastGameNo]);
   const [showAdd, setShowAdd] = useState(false);
   const [addSelected, setAddSelected] = useState([]);
   const [teamP1, setTeamP1] = useState(null);
@@ -91,14 +133,17 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     }
   }, [entries]);
 
-  if (!session || !entries) {
+  if (gone || !session || !entries) {
     return (
       <div className="screen">
         <header className="screen-head with-back">
           <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
           <h2>{t("Winner Stays")}</h2>
         </header>
-        <p className="hint">{t("Lade ...")}</p>
+        <p className="hint">{gone ? t("Diese Runde gibt es nicht mehr.") : offline ? t("Keine Verbindung – Stand wird neu geladen …") : t("Lade ...")}</p>
+        {offline && !gone && (
+          <button type="button" className="btn ghost" onClick={load}><RefreshCw size={15} /> {t("Neu laden")}</button>
+        )}
       </div>
     );
   }
@@ -139,10 +184,23 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
   const reportGame = async () => {
     if (sA === sB) { toast(t("Unentschieden gibt es beim Billard nicht.")); return; }
+    const before = lastGameNo;
     setBusy(true);
-    const { error } = await rpcRetry("winner_stays_report_game", { p_session_id: sessionId, p_score_a: sA, p_score_b: sB });
+    let error = null;
+    try {
+      ({ error } = await rpcRetry("winner_stays_report_game", { p_session_id: sessionId, p_score_a: sA, p_score_b: sB }));
+    } catch (e) { error = e; }
+    // Antwort verloren (Handy gesperrt, Netz weg) heisst nicht, dass das Spiel
+    // nicht angekommen ist: nachsehen, bevor die Person es ein zweites Mal
+    // einreicht und die naechste Paarung gleich mitzaehlt.
+    let arrived = false;
+    if (error) {
+      const gms = await load();
+      arrived = !!gms && (gms[0]?.game_no ?? 0) > before;
+    }
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error && !arrived) { toast(t("Fehler: ") + (error.message || "")); return; }
+    if (arrived) toast(t("Ergebnis ist angekommen."));
     setSA(0); setSB(0);
     await load();
     onReload && onReload();
@@ -275,6 +333,49 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     </span>
   );
 
+  const myEntry = entries.find((e) => e.player1_id === me.id || e.player2_id === me.id);
+  const rankOf = (e) => ranked.findIndex((x) => x.id === e.id) + 1;
+
+  // Siege / Niederlagen / Serie / Platz in EINER Zeile, ueberall gleich (Am
+  // Tisch, Warteschlange, "Mein Stand") - der Stand jeder Person soll ohne
+  // Blick in die Rangliste ablesbar sein.
+  const statLine = (e, place, center) => (
+    <span className={"ws-statline" + (center ? " center" : "")}>
+      <span title={t("Platz {n}", { n: place })}>#{place}</span>
+      <span className="win" title={t("Siege")}>{e.wins} {t("S")}</span>
+      <span className="loss" title={t("Niederlagen")}>{e.losses} {t("N")}</span>
+      {e.streak > 1 && <span className="streak" title={t("{n} in Folge", { n: e.streak })}>🔥{e.streak}</span>}
+    </span>
+  );
+
+  // Pause: ein beschrifteter Zwei-Zustands-Schalter statt eines Kaffeetassen-
+  // Symbols (Nutzer-Feedback 2026-10-10: nicht intuitiv, leicht zu uebersehen,
+  // schwer erreichbar). Beide Zustaende stehen als Text da, der aktive ist
+  // gefuellt: "Dabei" gruen, "Pause" gelb (--warn). compact = unter der Person
+  // am Tisch, icon = nur Symbol in der Warteschlangen-Zeile (Pause/Play, nie
+  // eine Tasse).
+  const pauseSwitch = (entry, { compact, icon } = {}) => {
+    const on = !!entry.is_paused;
+    if (icon) {
+      return (
+        <button type="button" className={"ws-act ws-act-pause" + (on ? " on" : "")} disabled={busy} onClick={() => togglePaused(entry)}
+          aria-label={on ? t("Wieder dabei") : t("Pause setzen")} title={on ? t("Wieder dabei") : t("Pause setzen")}>
+          {on ? <Play size={18} /> : <Pause size={18} />} <span>{on ? t("Wieder dabei") : t("Pause")}</span>
+        </button>
+      );
+    }
+    return (
+      <div className={"ws-pause-switch" + (compact ? " compact" : "")} role="group" aria-label={t("Pause")}>
+        <button type="button" className={"in" + (!on ? " active" : "")} aria-pressed={!on} disabled={busy} onClick={() => on && togglePaused(entry)}>
+          <Play size={16} /> {t("Dabei")}
+        </button>
+        <button type="button" className={"out" + (on ? " active" : "")} aria-pressed={on} disabled={busy} onClick={() => !on && togglePaused(entry)}>
+          <Pause size={16} /> {t("Pause")}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="screen">
       <div className="turnier-layout">
@@ -312,6 +413,28 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         </div>
       )}
 
+      {offline && (
+        <p className="ws-offline" role="status"><WifiOff size={15} /> {t("Verbindung unterbrochen – Stand wird neu geladen.")}</p>
+      )}
+
+      {myEntry && session.status === "running" && (
+        <section className="stat-block ws-me" aria-label={t("Mein Stand")}>
+          <div className="ws-me-top">
+            {renderEntryAvatars(myEntry, 40)}
+            <div className="ws-me-info">
+              <b className="ws-me-state">
+                {myEntry.is_paused ? t("Du pausierst – du wirst übersprungen.")
+                  : myEntry.queue_position <= 1 ? t("Du spielst gerade")
+                  : myEntry.queue_position === 2 ? t("Du bist als Nächste/r dran")
+                  : t("Warteschlange: Platz {n}", { n: myEntry.queue_position - 1 })}
+              </b>
+              {statLine(myEntry, rankOf(myEntry))}
+            </div>
+          </div>
+          {pauseSwitch(myEntry)}
+        </section>
+      )}
+
       {(!posA || !posB) ? (
         <section className="stat-block">
           <p className="hint" style={{ margin: 0 }}>{t("Noch nicht genug Teilnehmer - mindestens zwei nötig, um zu spielen.")}</p>
@@ -319,74 +442,72 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       ) : (
         <section className="stat-block">
           <h3><Trophy size={17} /> {t("Am Tisch")}</h3>
-          <div className="ws-table-row">
-            <div className="ws-table-side">
-              {renderEntryAvatars(posA, 34)}
-              <span className="ws-table-name">{entryName(posA)}</span>
-              <span className="hint" style={{ margin: 0 }}>{t("Verteidigt")}</span>
-              {canReport && <ScoreStepper value={sA} onChange={setSA} />}
-              {canTogglePaused(posA) && (
-                <button type="button" className={"btn small" + (posA.is_paused ? " ws-pause-btn active" : " ghost ws-pause-btn")} disabled={busy} onClick={() => togglePaused(posA)} title={posA.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
-                  <Coffee size={14} /> {posA.is_paused ? t("Wieder dabei") : t("Aussetzen")}
-                </button>
-              )}
-            </div>
-            <span className="ws-table-vs">:</span>
-            <div className="ws-table-side">
-              {renderEntryAvatars(posB, 34)}
-              <span className="ws-table-name">{entryName(posB)}</span>
-              <span className="hint" style={{ margin: 0 }}>{t("Herausforderer")}</span>
-              {canReport && <ScoreStepper value={sB} onChange={setSB} />}
-              {canTogglePaused(posB) && (
-                <button type="button" className={"btn small" + (posB.is_paused ? " ws-pause-btn active" : " ghost ws-pause-btn")} disabled={busy} onClick={() => togglePaused(posB)} title={posB.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
-                  <Coffee size={14} /> {posB.is_paused ? t("Wieder dabei") : t("Aussetzen")}
-                </button>
-              )}
-            </div>
+          <div className="ws-duel">
+            {[[posA, sA, setSA, t("Verteidigt")], [posB, sB, setSB, t("Herausforderer")]].map(([e, val, setVal, role]) => (
+              <div key={e.id} className={"ws-side" + (e.is_paused ? " is-paused" : "")}>
+                <span className="ws-role">{role}</span>
+                {renderEntryAvatars(e, 48)}
+                <span className="ws-table-name">{entryName(e)}</span>
+                {statLine(e, rankOf(e), true)}
+                {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
+                {canReport && (
+                  <div className="ws-pad">
+                    <button type="button" className="ws-pad-plus" onClick={() => setVal((v) => v + 1)}
+                      aria-label={t("Punkt für {name}", { name: entryName(e) })}>
+                      <Plus size={30} strokeWidth={3} />
+                    </button>
+                    <span className="ws-pad-val" key={val}>{val}</span>
+                    <button type="button" className="ws-pad-minus" disabled={val === 0} onClick={() => setVal((v) => Math.max(0, v - 1))}
+                      aria-label={t("Punkt abziehen")}>
+                      <Minus size={20} strokeWidth={3} />
+                    </button>
+                  </div>
+                )}
+                {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { compact: true })}
+              </div>
+            ))}
           </div>
-          <div className="chips small" style={{ marginTop: 10 }}>
-            {canReport && (
-              <button className="btn primary" disabled={busy || sA === sB} onClick={reportGame}>
-                <Check size={16} /> {t("Eintragen")}
-              </button>
-            )}
-            {canSkip && (
+          {canSkip && (
+            <div className="chips small" style={{ marginTop: 10 }}>
               <button className="btn ghost" disabled={busy} onClick={skipNext} title={t("Herausforderer überspringen, wenn die Person gerade nicht verfügbar ist.")}>
                 <SkipForward size={15} /> {t("Überspringen")}
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </section>
       )}
 
       {waiting.length > 0 && (
         <section className="stat-block">
           <h3><Repeat size={17} /> {t("Warteschlange")}</h3>
-          <div className="pmp-grid">
+          <div className="ws-queue">
             {waiting.map((e, i) => (
-              <div key={e.id} className={"pmp-chip" + (e.is_paused ? " ws-paused-chip" : "")}>
-                {renderEntryAvatars(e, 28)}
-                <span className="pmp-name">{i + 1}. {entryName(e)}{e.is_paused && <span className="ws-live-tag">☕ {t("pausiert")}</span>}</span>
-                {canManageQueue && (
-                  <span className="ws-queue-move">
-                    <button type="button" className="pmp-remove" disabled={busy || i === 0} onClick={() => moveEntry(e.id, -1)} aria-label={t("Nach vorne")} title={t("Nach vorne")}>
-                      <ChevronUp size={14} />
+              <div key={e.id} className={"ws-queue-row" + (e.is_paused ? " is-paused" : "") + (e.id === myEntry?.id ? " is-me" : "")}>
+                <span className="ws-queue-no">{i + 1}.</span>
+                {renderEntryAvatars(e, 34)}
+                <span className="ws-queue-main">
+                  <span className="ws-queue-name">{entryName(e)}</span>
+                  {statLine(e, rankOf(e))}
+                </span>
+                {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
+                <span className="ws-queue-actions">
+                  {canManageQueue && (
+                    <span className="ws-queue-move">
+                      <button type="button" className="ws-act" disabled={busy || i === 0} onClick={() => moveEntry(e.id, -1)} aria-label={t("Nach vorne")} title={t("Nach vorne")}>
+                        <ChevronUp size={20} />
+                      </button>
+                      <button type="button" className="ws-act" disabled={busy || i === waiting.length - 1} onClick={() => moveEntry(e.id, 1)} aria-label={t("Nach hinten")} title={t("Nach hinten")}>
+                        <ChevronDown size={20} />
+                      </button>
+                    </span>
+                  )}
+                  {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { icon: true })}
+                  {isOrganizer && session.status === "running" && (
+                    <button type="button" className="ws-act" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
+                      <X size={20} />
                     </button>
-                    <button type="button" className="pmp-remove" disabled={busy || i === waiting.length - 1} onClick={() => moveEntry(e.id, 1)} aria-label={t("Nach hinten")} title={t("Nach hinten")}>
-                      <ChevronDown size={14} />
-                    </button>
-                  </span>
-                )}
-                {canTogglePaused(e) && (
-                  <button type="button" className={"pmp-remove" + (e.is_paused ? " ws-pause-btn active" : "")} disabled={busy} onClick={() => togglePaused(e)} aria-label={e.is_paused ? t("Wieder dabei") : t("Aussetzen")} title={e.is_paused ? t("Wieder dabei") : t("Aussetzen")}>
-                    <Coffee size={14} />
-                  </button>
-                )}
-                {isOrganizer && session.status === "running" && (
-                  <button type="button" className="pmp-remove" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
-                    <X size={14} />
-                  </button>
-                )}
+                  )}
+                </span>
               </div>
             ))}
           </div>
@@ -452,7 +573,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                     <span className="stat-name">
                       {entryName(e)}
                       {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
-                      {e.is_paused && <span className="ws-live-tag ws-paused-tag">☕ {t("pausiert")}</span>}
+                      {e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
                     </span>
                   </span>
                   <span className={"ws-rank-num" + alt}>{e.wins}</span>
@@ -483,6 +604,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
             );
           })}
         </section>
+      )}
+
+      {canReport && (
+        <div className="sticky-cta ws-cta">
+          <button className="btn primary" disabled={busy || sA === sB} onClick={reportGame}>
+            <Check size={18} /> {sA === sB ? t("Eintragen") : t("{a}:{b} eintragen", { a: sA, b: sB })}
+          </button>
+        </div>
       )}
       </div>
       <ImprintFooter />

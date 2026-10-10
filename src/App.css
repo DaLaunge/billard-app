@@ -2157,17 +2157,7 @@ button.id-card-head { cursor: pointer; }
 .ws-entry-avatars { display: flex; gap: -6px; }
 .ws-entry-avatars .ball + .ball { margin-left: -10px; }
 .ws-live-tag { margin-left: 8px; font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
-/* Pausiert-Schalter (Nutzer-Feedback: "wie kann ich den Aussetzen Button
-   wieder ausschalten? Ich kann das kaffee-icon nur aktivieren, nicht
-   deaktivieren" + "der button soll auch gut sichtbar sein, damit man sieht
-   ob die person auf pause ist") - deutlich sichtbarer Fuellzustand im Akzent
-   statt nur eines dezenten ghost-Buttons, plus derselbe Tag-Stil wie das
-   bestehende "Am Tisch"-Badge (.ws-live-tag) an jeder Stelle, an der die
-   Person auftaucht (Warteschlange, Live-Rangliste). */
-.btn.ws-pause-btn.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.pmp-remove.ws-pause-btn.active { background: var(--accent); color: var(--accent-ink); }
-.pmp-remove.ws-pause-btn.active:hover { background: var(--accent); color: var(--accent-ink); }
-.ws-paused-chip { opacity: 0.75; }
+
 
 /* Live-Rangliste als echte Spalten-Tabelle (Nutzer-Feedback: Siege/
    Niederlagen wirkten als zusammengeschobener "10S / 4N"-String am rechten
@@ -2891,4 +2881,74 @@ button.break-slot { cursor: pointer; }
 @media (prefers-reduced-motion: no-preference) {
   .rs-clock-hand { transition: transform .4s linear; }
   .rs-clock-arc { transition: stroke-dasharray .4s linear; }
+}
+
+/* ===== Winner Stays, Eingabe (Nutzer-Feedback 2026-10-10) =====
+   Grosse Tippflaechen statt kleiner Stepper, der Stand jeder Person in EINER
+   Zeile (.ws-statline), Pause als beschrifteter Schalter (gruen "Dabei" /
+   gelb "Pause", --warn ist laut Farbsystem bewusst keine Themenfarbe) und der
+   Eintragen-Knopf als unten haftende Leiste (.sticky-cta, wie im Match). */
+.ws-offline { display: flex; align-items: center; gap: 8px; margin: 0 0 var(--card-gap); padding: 10px 12px;
+  border-radius: 12px; background: rgba(232, 185, 35, 0.14); color: var(--warn); font-size: 13px; font-weight: 600; }
+.ws-statline { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 13px; font-weight: 600; color: var(--ivory-dim); }
+.ws-statline.center { justify-content: center; }
+.ws-statline .win { color: var(--win); }
+.ws-statline .loss { color: var(--loss); }
+.ws-statline .streak { color: var(--ivory); }
+
+.ws-me { display: flex; flex-direction: column; gap: 12px; }
+.ws-me-top { display: flex; align-items: center; gap: 12px; }
+.ws-me-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ws-me-state { font-size: 16px; line-height: 1.25; }
+
+.ws-pause-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--felt-3); }
+.ws-pause-switch button { min-height: 48px; border: none; border-radius: 12px; background: transparent; color: var(--ivory-dim);
+  display: flex; align-items: center; justify-content: center; gap: 7px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.ws-pause-switch button:disabled { opacity: 0.6; cursor: default; }
+.ws-pause-switch .in.active { background: var(--win); color: #0c2415; }
+.ws-pause-switch .out.active { background: var(--warn); color: #2b2200; }
+.ws-pause-switch.compact { width: 100%; }
+.ws-pause-switch.compact button { min-height: 42px; font-size: 14px; }
+
+.ws-paused-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px;
+  background: var(--warn); color: #2b2200; font-size: 12px; font-weight: 800; white-space: nowrap; }
+
+.ws-duel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ws-side { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 12px 8px 10px;
+  border-radius: 16px; background: var(--felt-3); min-width: 0; }
+.ws-side.is-paused { box-shadow: inset 0 0 0 2px var(--warn); }
+.ws-role { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ivory-dim); }
+.ws-side .ws-table-name { font-size: 17px; line-height: 1.2; overflow-wrap: anywhere; }
+
+.ws-pad { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin-top: 2px; }
+.ws-pad-plus, .ws-pad-minus { border: none; cursor: pointer; font: inherit; display: flex; align-items: center; justify-content: center; }
+.ws-pad-plus { min-height: 72px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); }
+.ws-pad-plus:active { transform: scale(0.97); }
+.ws-pad-val { font-size: 52px; line-height: 1; font-weight: 800; text-align: center; padding: 4px 0; font-variant-numeric: tabular-nums; }
+.ws-pad-minus { min-height: 48px; border-radius: 12px; background: var(--felt); color: var(--ivory); }
+.ws-pad-minus:disabled { opacity: 0.35; cursor: default; }
+
+.ws-queue { display: flex; flex-direction: column; gap: 8px; }
+.ws-queue-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 8px 10px; min-height: 56px; border-radius: 14px; background: var(--felt-3); }
+.ws-queue-row.is-me { box-shadow: inset 0 0 0 2px var(--accent-line, var(--accent)); }
+.ws-queue-row.is-paused { box-shadow: inset 3px 0 0 var(--warn); }
+.ws-queue-no { font-weight: 800; color: var(--ivory-dim); min-width: 22px; }
+.ws-queue-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ws-queue-name { font-weight: 700; overflow-wrap: anywhere; line-height: 1.2; }
+.ws-queue-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; flex-shrink: 0; }
+.ws-queue-move { display: flex; gap: 4px; }
+.ws-act { width: 44px; height: 44px; border: none; border-radius: 12px; background: var(--surface-btn); color: var(--ivory);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.ws-act:disabled { opacity: 0.3; cursor: default; }
+.ws-act-pause { width: auto; padding: 0 14px; gap: 6px; font: inherit; font-size: 14px; font-weight: 700; }
+.ws-act-pause.on { background: var(--warn); color: #2b2200; }
+
+/* Auf dem Handy bekommen die Knoepfe eine eigene Zeile unter dem Namen: vier
+   44px-Tippflaechen neben dem Namen liessen ihm nur ~45px (er brach pro Buchstabe um). */
+@media (max-width: 560px) {
+  .ws-queue-actions { flex: 1 1 100%; justify-content: flex-end; margin-left: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ws-pad-val { animation: score-bump .22s ease-out; }
+  .ws-pad-plus { transition: transform .08s; }
 }
