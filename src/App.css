@@ -208,6 +208,10 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .diag-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 2px; }
 .diag-row span { color: var(--ivory-dim); font-size: 13px; }
 /* Adminbereich "App-Versionen": veraltete Version in Warnfarbe statt Akzent. */
+.mem-tools { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.mem-search { width: 100%; }
+.mem-tools .chips { margin-bottom: 0; }
+.mem-tools .chip { display: inline-flex; align-items: center; gap: 4px; }
 .mem-ver { font-size: 12px; color: var(--ivory-dim); margin-left: auto; }
 .mem-ver + .mem-when { margin-left: 10px; }
 .mem-ver.outdated { color: var(--warn); }
