@@ -1,5 +1,5 @@
 import { cue, ball, cut, cutAngle } from "../../ruleEngine.js";
-import { D89, D8, D141, tagSets } from "../meta.js";
+import { D89, D8 } from "../meta.js";
 
 /* Ein Foul muss angesagt werden, BEVOR der naechste Stoss ausgefuehrt wird, sonst gilt es als
    nicht begangen (Kap. 3, Einleitung; 8 Ball auch 4.8). Fall A: niemand sagt das Foul an, der

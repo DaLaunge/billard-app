@@ -43,32 +43,6 @@ export function computeStats(matches, mode = "single") {
   return s;
 }
 
-/* ISO-Wochen-String ("2026-W05") -> Date des Wochen-Montags */
-export function isoWeekToDate(wk) {
-  if (!wk || wk.length < 7) return null;
-  const y = parseInt(wk.slice(0, 4), 10);
-  const w = parseInt(wk.slice(6), 10);
-  const simple = new Date(Date.UTC(y, 0, 1 + (w - 1) * 7));
-  const dow = simple.getUTCDay();
-  const monday = new Date(simple);
-  if (dow <= 4) monday.setUTCDate(simple.getUTCDate() - dow + 1);
-  else monday.setUTCDate(simple.getUTCDate() + 8 - dow);
-  return monday;
-}
-
-// Aktuelle ISO-Woche im DB-Format 'YYYY-Wnn' (wie to_char(now(),'IYYY-"W"IW'))
-export function currentIsoWeek(dd = new Date()) {
-  const d = new Date(Date.UTC(dd.getFullYear(), dd.getMonth(), dd.getDate()));
-  const dayNum = (d.getUTCDay() + 6) % 7;
-  d.setUTCDate(d.getUTCDate() - dayNum + 3);              // Donnerstag dieser Woche
-  const isoYear = d.getUTCFullYear();
-  const firstThu = new Date(Date.UTC(isoYear, 0, 4));
-  const ftDay = (firstThu.getUTCDay() + 6) % 7;
-  firstThu.setUTCDate(firstThu.getUTCDate() - ftDay + 3); // Donnerstag der Woche 1
-  const week = 1 + Math.round((d - firstThu) / (7 * 86400000));
-  return `${isoYear}-W${String(week).padStart(2, "0")}`;
-}
-
 // Lokales Datum als 'YYYY-MM-DD'
 export function todayStr(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

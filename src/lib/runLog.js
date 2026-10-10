@@ -145,18 +145,6 @@ export function matchUnitCount(log) {
   return collapseRunLog(log).length;
 }
 
-// Wie matchDurationMs/matchUnitCount, aber gefiltert um die Plausibilitaets-
-// grenze (siehe MIN_MS_PER_BALL unten) - schliesst nachtraeglich in Sekunden
-// durchgeklickte Matches aus statt eine falsche Pro-Stueck-Dauer zu zeigen.
-export function avgUnitDurationMs(log, discipline) {
-  if (isSimpleScoreLog(log)) {
-    const { timeMs, count } = gameSpeedSums(log, discipline);
-    return count > 0 ? timeMs / count : null;
-  }
-  const { timeMs, count } = inningSpeedSums(log);
-  return count > 0 ? timeMs / count : null;
-}
-
 // Plausibilitaets-Untergrenze fuer die Geschwindigkeits-Statistik: schneller
 // als 3s/Kugel ist physikalisch praktisch unmoeglich (selbst ein 3:0-Sieg im
 // 8-Ball mit 1s/Kugel waere nur 24s - reale Bestzeiten liegen deutlich

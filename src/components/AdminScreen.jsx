@@ -4,6 +4,7 @@ import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
 import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
+import { fileDate } from "../lib/pdfExport";
 import { DEFAULT_DISCIPLINES, APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
@@ -180,7 +181,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "mitglieder.csv"; a.click();
+    a.href = url; a.download = `${fileDate()}_Mitglieder.csv`; a.click();
     URL.revokeObjectURL(url);
   };
   const addMatch = async () => {

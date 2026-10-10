@@ -9,7 +9,6 @@ import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs, clearRef } from "./lib/session";
-import { fetchAllRows } from "./lib/data";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
@@ -1721,8 +1720,7 @@ export default function App() {
               {tab === "turnier" && (
                 <TurniereScreen toast={toast}
                   onOpenTournament={(id) => navPush({ tab: "turnierdetail", tournamentId: id })}
-                  onOpenWinnerStays={(id) => navPush({ tab: "winnerstays", winnerStaysId: id })}
-                  onBack={() => window.history.back()} />
+                  onOpenWinnerStays={(id) => navPush({ tab: "winnerstays", winnerStaysId: id })} />
               )}
               {tab === "turnierdetail" && tournamentId && (
                 <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} matches={matches} toast={toast}

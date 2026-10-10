@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { ChevronLeft, Printer, HelpCircle } from "lucide-react";
+import { ChevronLeft, FileDown, Loader2, HelpCircle } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDateTime, mSide } from "../lib/format";
 import MatchProtokollTable from "./MatchProtokollTable";
 import TournamentFlag from "./TournamentFlag";
+import { exportMatchPdf } from "../lib/pdfExport";
 
 // Nachtraegliche Ansicht des gespeicherten Match-Protokolls, als echte
 // Tabelle (nicht als Fliesstext) - die eigentliche Tabellen-Logik steckt in
 // MatchProtokollTable.jsx (auch vom "Vollstaendig"-Modus des Turnierberichts
 // genutzt, siehe TurnierBerichtScreen.jsx). "Als PDF speichern" nutzt den
-// nativen Druckdialog des Browsers (auf Handy wie PC verfuegbar) statt einer
-// eigenen PDF-Bibliothek - siehe @media print in App.css.
+// PDF direkt (lib/pdfExport.js, Datei "JJJJMMDD_Name_gegen_Name_Disziplin_Stand.pdf")
+// statt des Druckdialogs des Browsers.
 export default function MatchProtokollScreen({ match: m, me, toast, onReload, onBack }) {
   const names = [mSide(m, 1), mSide(m, 2)];
   const hasProtocol = !!m.run_log?.length;
@@ -27,6 +28,18 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(m.manual_entry_note || "");
   const [busy, setBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  const savePdf = async () => {
+    setPdfBusy(true);
+    try {
+      await exportMatchPdf(m, names, m.tournament?.name);
+    } catch (e) {
+      console.warn("PDF-Export fehlgeschlagen", e);
+      toast(t("PDF konnte nicht erstellt werden."));
+    }
+    setPdfBusy(false);
+  };
 
   const saveNote = async () => {
     setBusy(true);
@@ -39,7 +52,7 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
 
   return (
     <div className="screen protokoll-screen">
-      <header className="screen-head with-back no-print">
+      <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{t("Protokoll")}</h2>
       </header>
@@ -51,7 +64,7 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
         </div>
 
         {!hasProtocol && !!m.tournament_id && (
-          <div className="protokoll-no-log no-print">
+          <div className="protokoll-no-log">
             <p className="hint" style={{ margin: 0 }}>{t("Kein Protokoll vorhanden - wurde vermutlich nachträglich als Ergebnis eingetragen.")}</p>
             {m.manual_entry_note && <p className="protokoll-manual-note">{m.manual_entry_note}</p>}
             {(canEditNote || !m.manual_entry_note) && (
@@ -75,8 +88,8 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
 
         <MatchProtokollTable match={m} names={names} />
 
-        <button className="btn primary no-print" onClick={() => window.print()}>
-          <Printer size={16} /> {t("Als PDF speichern")}
+        <button className="btn primary" disabled={pdfBusy} onClick={savePdf}>
+          {pdfBusy ? <Loader2 size={16} className="spin" /> : <FileDown size={16} />} {t("Als PDF speichern")}
         </button>
       </div>
     </div>

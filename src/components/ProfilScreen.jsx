@@ -1,12 +1,12 @@
 import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, Bell, LayoutGrid, Layers, Eye, BellOff, BellRing, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical, Target } from "lucide-react";
+import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { APP_VERSION } from "../lib/constants";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, badgeProgress } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
-import { initials, hashColor, BALL_PALETTE, fmtDate } from "../lib/format";
+import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
 import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
 import { pushAvailability } from "../lib/notifications";

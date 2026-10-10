@@ -1,30 +1,13 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, Printer, Trophy, ScrollText, GitBranch } from "lucide-react";
+import { ChevronLeft, FileDown, Loader2, Trophy, ScrollText, GitBranch } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials, fmtDate, fmtDateTime, fmtDuration } from "../lib/format";
-import { matchDurationMs } from "../lib/runLog";
-import { computeTurnierLayout, bracketLabel, formatLabel, finalRoundLabel, BOX_W, BOX_H, FINAL_BOX_W, FINAL_BOX_H } from "../lib/turnierLayout";
+import { computeTurnierLayout, bracketLabel, formatLabel, BOX_W, BOX_H, FINAL_BOX_W, FINAL_BOX_H } from "../lib/turnierLayout";
 import { tmScores } from "./TurnierMatchActions";
 import Ball from "./Ball";
 import MatchProtokollTable from "./MatchProtokollTable";
 import DiscBall from "./widgets/DiscBall";
-
-// "Zeit am Tisch" fuer EIN Turniermatch: bevorzugt aus dem Zeitprotokoll
-// (run_log traegt bei JEDER Disziplin Zeitstempel, siehe matchDurationMs()) -
-// nur bei Turnierleitungs-/Admin-Eintragung (tournament_organizer_report_
-// match) gibt es kein run_log, dort zaehlt ersatzweise die Tischblockierzeit
-// von Paarung-steht-fest bis Ergebnis-gemeldet (dieselbe Formel wie die
-// bestehende "Laengste Wartezeiten"-Sektion in TurnierRasterScreen.jsx) -
-// vom Nutzer so bestaetigt (Rueckfrage waehrend der Planung dieser Funktion).
-function tableTimeMs(tm) {
-  const fromLog = matchDurationMs(tm.match?.run_log);
-  if (fromLog != null) return fromLog;
-  if (tm.ready_at && tm.match?.played_at) {
-    const ms = new Date(tm.match.played_at) - new Date(tm.ready_at);
-    return ms >= 0 ? ms : null;
-  }
-  return null;
-}
+import { tableTimeMs, exportTurnierBerichtPdf } from "./turnierBerichtPdf";
 
 // Statischer, nicht-interaktiver Turnierbaum als EIN SVG (statt der
 // absolut-positionierten div-Bausteine der interaktiven Ansicht) - so
@@ -103,32 +86,24 @@ function StaticBracket({ matches, nameOf }) {
   );
 }
 
-// Kompletter Turnierbericht (Nutzer-Feedback) - eine druckfertige HTML-
-// Ansicht statt eines zweiten jsPDF-Renderers (die bestehende einfache
-// "Spielprotokoll als PDF"-Funktion in TurnierRasterScreen.jsx positioniert
-// Text manuell x/y, fuer ein mehrteiliges Dokument mit Tabellen + Baumgrafik
-// nicht praktikabel). "Als PDF speichern" nutzt wie MatchProtokollScreen.jsx
-// den nativen Druckdialog des Browsers (window.print(), siehe @media print
-// in App.css) - deckt "PDF" UND "Druck" mit demselben Mechanismus ab.
-export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf, colorOf, badgeOf, photoOf, onBack }) {
+// Kompletter Turnierbericht (Nutzer-Feedback). "Als PDF speichern" erzeugt das PDF
+// direkt (turnierBerichtPdf.js, Datei "JJJJMMDD_Turnier_Name_Bericht.pdf") statt den
+// Druckdialog des Browsers zu oeffnen; die Bildschirm-Ansicht ist die Vorschau dazu.
+export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf, colorOf, badgeOf, photoOf, onBack, toast }) {
   // "Vollstaendig" zeigt pro Match das komplette Rack-/Punkte-Protokoll
   // (Nutzer-Wunsch: beide Detailgrade zur Wahl stellen, mit Erklaerung).
   const [logDetail, setLogDetail] = useState("kompakt"); // "kompakt" | "voll"
 
-  // Browser schlagen im Druckdialog (Ziel "Als PDF speichern") den
-  // Dateinamen aus document.title vor - der ist sonst ueberall einfach
-  // "Break & Rank" (siehe index.html), Nutzer-Feedback wollte stattdessen
-  // Datum + Turniername. Wird NUR fuers Drucken kurz umgesetzt und danach
-  // wieder zurueckgesetzt (afterprint statt festem Timeout, damit es auch
-  // bei einem langsamen/abgebrochenen Druckdialog zuverlaessig zurueckspringt).
-  const printReport = () => {
-    const prevTitle = document.title;
-    const d = new Date(tour.finished_at || tour.created_at);
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    document.title = `${iso}_${tour.name.replace(/[^\w\-]+/g, "_")}`;
-    const restore = () => { document.title = prevTitle; window.removeEventListener("afterprint", restore); };
-    window.addEventListener("afterprint", restore);
-    window.print();
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const savePdf = async () => {
+    setPdfBusy(true);
+    try {
+      await exportTurnierBerichtPdf({ tour, standingsGrouped, aggByPlayer, timeline, logDetail, bracketMatches, hasTree, nameOf });
+    } catch (e) {
+      console.warn("PDF-Export fehlgeschlagen", e);
+      toast && toast(t("PDF konnte nicht erstellt werden."));
+    }
+    setPdfBusy(false);
   };
 
   // Pro Spieler ueber alle bestaetigten Turniermatches aggregiert - Games
@@ -177,7 +152,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
 
   return (
     <div className="screen protokoll-screen">
-      <header className="screen-head with-back no-print">
+      <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{t("Turnierbericht")}</h2>
       </header>
@@ -231,11 +206,11 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
 
         <section className="tb-section">
           <h3><ScrollText size={17} /> {t("Chronologischer Match-Log")}</h3>
-          <div className="tb-log-toggle no-print">
+          <div className="tb-log-toggle">
             <button className={"chip-btn" + (logDetail === "kompakt" ? " sel" : "")} onClick={() => setLogDetail("kompakt")}>{t("Kompakt")}</button>
             <button className={"chip-btn" + (logDetail === "voll" ? " sel" : "")} onClick={() => setLogDetail("voll")}>{t("Vollständig")}</button>
           </div>
-          <p className="hint no-print" style={{ marginTop: 4 }}>
+          <p className="hint" style={{ marginTop: 4 }}>
             {logDetail === "kompakt"
               ? t("Kompakt: Endstand, Höchstserie, Schnitt und Zeit am Tisch je Match.")
               : t("Vollständig: komplettes Aufnahme-/Punkte-Protokoll je Match, wie in der einzelnen Match-Ansicht.")}
@@ -304,8 +279,8 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
           </section>
         )}
 
-        <button className="btn primary no-print" onClick={printReport}>
-          <Printer size={16} /> {t("Als PDF speichern")}
+        <button className="btn primary" disabled={pdfBusy} onClick={savePdf}>
+          {pdfBusy ? <Loader2 size={16} className="spin" /> : <FileDown size={16} />} {t("Als PDF speichern")}
         </button>
       </div>
     </div>
