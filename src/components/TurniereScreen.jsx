@@ -38,7 +38,7 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t(
 // getoente Flaeche, beendet/abgebrochen = neutral.
 const statusTone = (s) => (s === "setup" ? "open" : s === "finished" || s === "cancelled" ? "done" : "live");
 
-export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerStays, onBack }) {
+export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerStays }) {
   const [tournaments, setTournaments] = useState(null);
   const [wsSessions, setWsSessions] = useState(null);
   // Default "running" statt "all" (Nutzer-Feedback) - beim Oeffnen der

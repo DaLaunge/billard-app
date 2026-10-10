@@ -1,4 +1,4 @@
-import { ball, BALL_R } from "../ruleEngine.js";
+import { BALL_R } from "../ruleEngine.js";
 
 /* Racks und Break-Bewegung, gemeinsam fuer die Anstoss-Faelle (cases/09, 12, 13).
    Racks stehen am Fusspunkt (160, 60). 8 Ball, 10 Ball, 14/1: die Spitze liegt AUF dem
@@ -54,9 +54,7 @@ const brake = (rows, balls, rails) => {
 export const R15 = [[1], [9, 2], [3, 8, 10], [11, 4, 5, 12], [6, 13, 7, 14, 15]];
 export const R10 = [[1], [2, 3], [4, 10, 5], [6, 7, 8, 9]];
 
-/* Kugeln eines Racks als Szenen-Kugeln. */
-export const rackBalls = (rows) => rack(rows).map((b) => ball(b.n, ...b.p));
-export { R9, rack, brake, hitOf, X0, W, HIT };
+export { R9, rack, brake, hitOf, W, HIT };
 
 /* 14/1: 14 Kugeln (1-14) im Dreieck, die Spitze am Fusspunkt bleibt fuer die 15. frei. */
 export const R14 = [[null], [9, 2], [3, 8, 10], [11, 4, 5, 12], [6, 13, 7, 14, 1]];

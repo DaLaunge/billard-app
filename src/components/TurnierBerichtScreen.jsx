@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, FileDown, Loader2, Trophy, ScrollText, GitBranch } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials, fmtDate, fmtDateTime, fmtDuration } from "../lib/format";
-import { computeTurnierLayout, bracketLabel, formatLabel, finalRoundLabel, BOX_W, BOX_H, FINAL_BOX_W, FINAL_BOX_H } from "../lib/turnierLayout";
+import { computeTurnierLayout, bracketLabel, formatLabel, BOX_W, BOX_H, FINAL_BOX_W, FINAL_BOX_H } from "../lib/turnierLayout";
 import { tmScores } from "./TurnierMatchActions";
 import Ball from "./Ball";
 import MatchProtokollTable from "./MatchProtokollTable";

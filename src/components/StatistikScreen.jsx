@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
-import { Trophy, BarChart3, Gauge, Percent, Flame, FileText, Clock, Zap, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
+import { Trophy, Gauge, Percent, Flame, FileText, Clock, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
 import ConfirmRoundButtons from "./widgets/ConfirmRoundButtons";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";

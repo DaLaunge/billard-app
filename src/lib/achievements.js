@@ -131,16 +131,6 @@ function progressFor(description, extras) {
   return { current: Math.max(0, current), target, unit: fam.unit() };
 }
 
-// Einfacher, deterministischer Streuwert aus einem String (kein Crypto-Anspruch,
-// nur um taeglich + je Spieler eine andere, aber stabile Auswahl zu treffen).
-const hashString = (s) => {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-};
-
-const CLOSE_CANDIDATES = 5; // aus den X naechstliegenden Erfolgen wird taeglich einer gewaehlt
-
 /* Sammelt ueber alle bekannten Familien hinweg die naechstliegenden, noch nicht
    erreichten Schwellenwerte (aufsteigend nach Abstand) - Rohdaten, kein Text.
    earnedBadges (Set von badge_key) schliesst bereits freigeschaltete Erfolge
@@ -177,7 +167,6 @@ export function badgeProgress(description, extras) {
 
 /* Die paar naechstliegenden, noch nicht erreichten Erfolge als Rohdaten
    (fuer eine kompakte Fortschritts-Anzeige, z.B. im Desktop-Sidebar-Panel) -
-   im Unterschied zu nextAchievementHint() nicht als fertiger Satz, sondern
    als Liste zum selbst Rendern. */
 export function upcomingAchievements(catalog, extras, earnedBadges, count = 3) {
   return closestCandidates(catalog, extras, earnedBadges).slice(0, count);
@@ -199,16 +188,4 @@ export function recordBadgeEmoji(catalog, earnedBadges, metric) {
     if (n > bestN) { bestN = n; best = b; }
   });
   return best ? best.emoji : null;
-}
-
-/* Waehlt aus den paar naechstliegenden, noch nicht erreichten Erfolgen einen
-   Hinweistext aus - nicht immer denselben (sonst nutzt sich die Motivation ab),
-   aber auch nicht bei jedem Rendern neu (das waere nur Geflacker): die Auswahl
-   ist stabil fuer einen Tag und einen Spieler, wechselt aber von Tag zu Tag. */
-export function nextAchievementHint(catalog, extras, seedKey = "", earnedBadges) {
-  const shortlist = closestCandidates(catalog, extras, earnedBadges).slice(0, CLOSE_CANDIDATES);
-  if (shortlist.length === 0) return null;
-  const seed = hashString(todayStr(new Date()) + "|" + seedKey);
-  const pick = shortlist[seed % shortlist.length];
-  return t('Noch {gap} {unit} bis "{name}"', { gap: pick.gap, unit: pick.unit, name: pick.name });
 }

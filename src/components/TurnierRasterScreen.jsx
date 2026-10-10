@@ -4,7 +4,7 @@ import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule
 import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { initials, fmtDuration, fmtDateTime, fmtDate } from "../lib/format";
+import { initials, fmtDuration, fmtDateTime } from "../lib/format";
 import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
 import PlayerMultiPicker from "./PlayerMultiPicker";

@@ -25,8 +25,8 @@ export function ScoreStepper({ value, onChange, compact }) {
 }
 
 // Zentrale Regel-Berechnung fuer EIN Turniermatch (melden/als Turnierleitung
-// eintragen/bestaetigen/erzwingen/korrigieren) - von hasTurnierAction(), der
-// Komponente selbst UND TurnierGraph.jsx (Inline-Eingabe direkt in der Box)
+// eintragen/bestaetigen/erzwingen/korrigieren) - von der Komponente selbst UND
+// TurnierGraph.jsx (Inline-Eingabe direkt in der Box)
 // genutzt, damit es nur eine einzige gepflegte Kopie dieser Bedingungen gibt.
 export function turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked, format) {
   const confirmed = tm.match?.confirmed;
@@ -73,14 +73,6 @@ export function turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked, f
   // vermeidung, gleiche Ueberlegung wie bei canOrganizerReport/canForce).
   const canMarkNoShow = openSlot && isOrganizer && !isMyMatch;
   return { confirmed, isMyMatch, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit, canMarkNoShow };
-}
-
-// Ermittelt, ob es fuer DIESEN Nutzer bei diesem Turniermatch ueberhaupt
-// etwas zu tun gibt - von der Grafikansicht genutzt, um nur tatsaechlich
-// bedienbare Boxen klickbar/hervorgehoben zu machen.
-export function hasTurnierAction(tm, me, isOrganizer, tourStatus, resultsLocked) {
-  const a = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked);
-  return a.canReport || a.canOrganizerReport || a.canConfirm || a.canForce;
 }
 
 // tm.match.score1/score2 stehen in der Reihenfolge von matches.player1_id/
