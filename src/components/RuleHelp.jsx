@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Search, X, ArrowDownAZ, ListOrdered, ChevronRight, ChevronsDownUp, ChevronsUpDown, Tag } from "lucide-react";
-import { RULE_CASES, ALL_DISCS, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS, displayTitle, TAGS } from "../lib/rules";
+import { RULE_CASES, ALL_DISCS, HEYBALL_RULES, HEYBALL_SOURCE, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS, displayTitle, TAGS } from "../lib/rules";
 import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
 import InfoButton from "./widgets/InfoButton";
 import DiscBall, { DiscAll, DiscPickRow } from "./widgets/DiscBall";
+import { HEYBALL, activeDisciplines } from "../lib/constants";
 
 const ALL = "alle";
 const SORT_KEY = "ruleSort";
@@ -17,7 +18,7 @@ const readSort = () => { try { return localStorage.getItem(SORT_KEY) === "az" ? 
    Fall mehrere Saetze (je Disziplin eine passende Situation), sind die Kugeln
    zugleich der Umschalter: die Kugeln des gezeigten Satzes sind umrandet. */
 export function DiscTags({ discs, active, onPick }) {
-  const all = ALL_DISCS.every((d) => discs.includes(d));
+  const all = ALL_DISCS.every((d) => discs.includes(d)) && discs.includes(HEYBALL);
   if (all && !onPick) return <span className="rs-tags"><DiscAll size={22} /></span>;
   return (
     <span className="rs-tags">
@@ -41,6 +42,42 @@ export function DiscTags({ discs, active, onPick }) {
              zum Urteil angesehen wurden - nur Aufklappen zaehlt nicht (Erfolge "Regeln angesehen")
    onlyReleased  nur fuer alle freigegebene Faelle (Standard); die Verwaltung
              schaltet es aus. Der Katalog selbst: lib/rules/index.js. */
+/* Kleinbuchstaben, ohne Umlaut-Akzente: reicht fuer die einfache Suche in den Heyball-Textregeln. */
+const searchText = (s) => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss");
+
+/* Heyball: Textregeln aus lib/rules/heyball.js, jede Regel eine einklappbare Zeile. */
+function HeyballRules({ rules }) {
+  const [open, setOpen] = useState({});
+  const few = rules.length <= 3;
+  if (rules.length === 0) return null;
+  return (
+    <>
+      <h3 className="rs-chapter" style={{ marginTop: 14 }}><span>{t("Alle Heyball-Regeln als Text")}</span></h3>
+      <p className="hint" style={{ marginTop: 0 }}>{t("Regeln aus den WPA Rules of Heyball. Heyball folgt dem 8 Ball, mit eigenem Anstoß und offenem Tisch.")}</p>
+      {rules.map((r) => {
+        const isOpen = r.id in open ? open[r.id] : few;
+        return (
+          <div key={r.id} className="rs-case-wrap">
+            <div className={"rs-case" + (isOpen ? " open" : "")}>
+              <div className="rs-case-head">
+                <h4>
+                  <button type="button" className="rs-case-toggle" aria-expanded={isOpen} onClick={() => setOpen((m) => ({ ...m, [r.id]: !isOpen }))}>
+                    <ChevronRight size={15} className="rs-chev" />
+                    <span>{t(r.title)}</span>
+                  </button>
+                </h4>
+                <span className="rs-tags"><DiscBall disc={HEYBALL} size={16} /></span>
+                <InfoButton title={t(r.title)}>{t(HEYBALL_SOURCE)}, {t("Regel")} {r.ref}</InfoButton>
+              </div>
+              {isOpen && <p className="hint" style={{ margin: "4px 0 6px" }}>{t(r.text)}</p>}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyReleased = true, onView }) {
   const [q, setQ] = useState("");
   const [disc, setDisc] = useState(discProp || ALL);
@@ -82,6 +119,8 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
     else setCaseOpen(Object.fromEntries(shown.map((c) => [c.id, !allOpen])));
   };
 
+  const heyball = disc === HEYBALL;
+  const heyballShown = !heyball ? [] : HEYBALL_RULES.filter((r) => !q.trim() || searchText(`${t(r.title)} ${t(r.text)} ${r.ref}`).includes(searchText(q.trim())));
   return (
     <div className="rs-cases">
       <div className="search-row">
@@ -90,7 +129,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
         {q && <button className="clear-btn" onClick={() => setQ("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
       </div>
       <div className="rs-filters">
-        {!lockDisc && <DiscPickRow discs={ALL_DISCS} value={disc} onChange={setDisc} all={ALL} />}
+        {!lockDisc && <DiscPickRow discs={activeDisciplines()} value={disc} onChange={setDisc} all={ALL} />}
         <span className="rs-sort" role="group" aria-label={t("Sortierung")}>
           <button type="button" className={"chip chip-icon" + (sort === "book" ? " active" : "")} onClick={() => pickSort("book")}
             title={t("Wie im Regelwerk")} aria-label={t("Wie im Regelwerk")} aria-pressed={sort === "book"}><ListOrdered size={16} /></button>
@@ -108,7 +147,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
           <span className="rs-activetag-n">{t("{n} Regeln", { n: shown.length })}</span>
         </div>
       )}
-      {shown.length === 0 && <p className="hint">{t("Keine passende Regel gefunden.")}</p>}
+      {shown.length === 0 && !(heyball && heyballShown.length > 0) && <p className="hint">{t("Keine passende Regel gefunden.")}</p>}
       {shown.map((c, i) => {
         const chap = bookChapter(c);
         const heading = grouped && (i === 0 || bookChapter(shown[i - 1]) !== chap) ? BOOK_CHAPTERS[chap] : null;
@@ -157,6 +196,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
           </div>
         );
       })}
+      {heyball && heyballShown.length > 0 && <HeyballRules rules={heyballShown} />}
     </div>
   );
 }

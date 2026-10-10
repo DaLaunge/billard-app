@@ -14,7 +14,8 @@ import { pathToFileURL } from "node:url";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { POCKETS, stateAt, timeline, pathFrames, contactErrors, posAt, bubbleSpot, bubbleWidth, railAfterContact } from "../src/lib/ruleEngine.js";
-import { ALL_DISCS, TOPICS, TAGS } from "../src/lib/rules/meta.js";
+import { ALL_DISCS, RULE_DISCS, TOPICS, TAGS } from "../src/lib/rules/meta.js";
+import { withHeyball } from "../src/lib/rules/heyballShare.js";
 import { ensureEights } from "../src/lib/rules/fill.js";
 
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), "../src/lib/rules/cases");
@@ -52,7 +53,7 @@ function shotRules(v, st0, s, i, id) {
   if ((st.discs || []).length && st.discs.every((d) => D89.includes(d))) {
     const low = Math.min(...visible);
     legal = num === low; why = `bei 9/10 Ball muss die niedrigste Kugel (${low}) zuerst getroffen werden`;
-  } else if ((st.discs || []).length === 1 && st.discs[0] === "8 Ball") {
+  } else if ((st.discs || []).length >= 1 && st.discs.every((d) => d === "8 Ball" || d === "Heyball")) {
     if (/nur noch die 8/.test(st.tag || "")) { legal = num === 8; why = "wenn nur noch die 8 uebrig ist, muss sie getroffen werden"; }
     else if (/Volle/.test(st.tag || "")) {
       // step.opponent: der Gegner (Halbe 9-15) ist am Tisch
@@ -72,12 +73,12 @@ const inGlobal = (tx) => globalI18n.includes(JSON.stringify(tx) + ":");
 
 for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
   const m = await import(pathToFileURL(resolve(dir, f)).href);
-  const c = ensureEights(m.default), en = m.en || {};
+  const c = ensureEights(withHeyball(m.default)), en = m.en || {};
   const id = f;
   for (const k of ["id", "discs", "topic", "ref", "keywords", "title", "rule"]) if (c[k] == null) err(id, `Feld ${k} fehlt`);
   if (!c.sets && !c.variants) err(id, "weder sets noch variants");
   if (typeof c.released !== "boolean") err(id, "released fehlt");
-  (c.discs || []).forEach((d) => { if (!ALL_DISCS.includes(d)) err(id, `unbekannte Disziplin ${d}`); });
+  (c.discs || []).forEach((d) => { if (!RULE_DISCS.includes(d)) err(id, `unbekannte Disziplin ${d}`); });
   if (!TOPICS[c.topic]) err(id, `unbekanntes Thema ${c.topic}`);
   if (!Array.isArray(c.tags) || !c.tags.length || c.tags.some((x) => !TAGS[x])) err(id, `tags fehlen oder unbekannt: ${JSON.stringify(c.tags)}`);
 
@@ -87,7 +88,7 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
   if (!(c.discs || []).every((d) => covered.has(d)) || ![...covered].every((d) => (c.discs || []).includes(d))) err(id, "discs des Falls und der Saetze passen nicht zusammen");
   for (const st of sets) {
     if (!st.discs || !st.discs.length || !st.variants) err(id, "Satz ohne discs/variants");
-    (st.discs || []).forEach((d) => { if (!ALL_DISCS.includes(d)) err(id, `Satz: unbekannte Disziplin ${d}`); });
+    (st.discs || []).forEach((d) => { if (!RULE_DISCS.includes(d)) err(id, `Satz: unbekannte Disziplin ${d}`); });
     if (st.tag) texts.add(st.tag);
     for (const vv of st.variants || []) if (vv.tag) texts.add(vv.tag);
   }

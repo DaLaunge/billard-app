@@ -10,7 +10,7 @@ import { loadMatchCounters } from "../lib/counterCache";
 import { computeFunRecords } from "../lib/funStats";
 import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
-import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount } from "../lib/constants";
+import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount, activeDisciplines } from "../lib/constants";
 import { STAT_CARD_SCREEN, deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 import { useWideScreen } from "../lib/useWideScreen";
@@ -35,7 +35,6 @@ import CardDeck from "./widgets/CardDeck";
 import EmptyColumnDropZone from "./widgets/EmptyColumnDropZone";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
-const MATCH_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
 // Feste ids der beiden EmptyColumnDropZone-Ablageflaechen (siehe dort) -
 // koennen keine echte Karten-id ueberschneiden, da Karten-ids aus
 // cardLayout.js kommen.
@@ -394,7 +393,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
               ))}
             </div>
           )}
-          <DiscPickRow all="all" discs={MATCH_DISCIPLINES} value={filterDisc} onChange={setFilterDisc} />
+          <DiscPickRow all="all" discs={activeDisciplines()} value={filterDisc} onChange={setFilterDisc} />
           <ModePick value={filterMode} onChange={setFilterMode} />
           <div className="chips small" style={{ marginBottom: 0 }}>
             <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>

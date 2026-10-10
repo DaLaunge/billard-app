@@ -12,4 +12,7 @@ export function poolBallStyle(n) {
 // Welche Kugel eine Disziplin im Bild vertritt (siehe widgets/DiscBall.jsx):
 // die, nach der sie heisst. 14/1 endlos hat keine eigene Kugel, es wird mit
 // allen 15 gespielt - die 14 steht dafuer, wie im Namen.
-export const DISC_BALL = { "8 Ball": 8, "9 Ball": 9, "10 Ball": 10, "14/1 Endlos": 14 };
+export const DISC_BALL = { "8 Ball": 8, "9 Ball": 9, "10 Ball": 10, "14/1 Endlos": 14, "Heyball": 3 };
+// Heyball (chinesisches 8-Ball mit dem Unity-Satz) hat keine eigene Kugelnummer: die rote Vollkugel
+// (3, die Farbe des Heyball-Logos) mit einem "H" statt der Zahl steht dafuer.
+export const DISC_BALL_TEXT = { "Heyball": "H" };

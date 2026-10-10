@@ -5,7 +5,7 @@ import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
 import { fmtDate, fmtDateTime, fmtAgo, mSide, initials } from "../lib/format";
 import { fileDate } from "../lib/pdfExport";
-import { DEFAULT_DISCIPLINES, APP_VERSION } from "../lib/constants";
+import { activeDisciplines, APP_VERSION } from "../lib/constants";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 import FeedbackThread from "./FeedbackThread";
@@ -343,7 +343,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             onSelect={(id) => setAm({ ...am, p2: id })} />
           <div className="am-row">
             <select value={am.disc} onChange={(e) => setAm({ ...am, disc: e.target.value })}>
-              {DEFAULT_DISCIPLINES.map((d) => <option key={d} value={d}>{t(d)}</option>)}
+              {activeDisciplines().map((d) => <option key={d} value={d}>{t(d)}</option>)}
             </select>
             <input type="date" value={am.date} onChange={(e) => setAm({ ...am, date: e.target.value })} />
           </div>

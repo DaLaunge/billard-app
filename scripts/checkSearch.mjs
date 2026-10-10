@@ -17,6 +17,8 @@ const dir = resolve(dirname(fileURLToPath(import.meta.url)), "../src/lib/rules/c
 const cases = [], en = { ...TOPICS_EN };
 for (const f of readdirSync(dir).filter((n) => n.endsWith(".js")).sort()) {
   const m = await import(pathToFileURL(resolve(dir, f)).href);
+  // Heyball-NUR-Faelle erscheinen in der App nur bei gewaehltem Heyball-Filter und konkurrieren nicht mit den anderen
+  if (m.default.discs.every((d) => d === "Heyball")) continue;
   cases.push(m.default);
   Object.assign(en, m.en || {});
 }

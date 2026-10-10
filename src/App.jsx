@@ -15,7 +15,7 @@ import { loadBadgeCatalog } from "./lib/catalogCache";
 import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
 import { hashColor, initials, isDoubles, mSide, fmtDate } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
-import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION } from "./lib/constants";
+import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION, HEYBALL } from "./lib/constants";
 import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
@@ -1154,6 +1154,7 @@ export default function App() {
   const disciplines = useMemo(() => {
     const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt"));
     DEFAULT_DISCIPLINES.forEach((d) => found.add(d));
+    found.add(HEYBALL);
     return [...found].sort();
   }, [rangliste]);
 

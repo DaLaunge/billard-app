@@ -8,6 +8,13 @@ export const SOURCE_OBERSCHIRI = "ÖPBV Oberschiedsrichter-Lehrunterlagen (Okt. 
 export const SOURCE_REGULARIEN = "WPA-Regularien (Version 29.07.2016)";
 
 export const ALL_DISCS = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
+/* Heyball ist per Admin-Schalter an/aus (lib/constants.js) und steht deshalb NICHT in ALL_DISCS ("alle vier"):
+   ein Fall, der fuer ALL_DISCS gilt, gilt damit noch nicht fuer Heyball. Heyball-Faelle tragen discs: DHB,
+   gemeinsame Faelle bekommen Heyball ueber heyballShare.js dazu. RULE_DISCS = alles, was ein Fall nennen darf. */
+export const HEYBALL = "Heyball";
+export const DHB = ["Heyball"];
+export const RULE_DISCS = [...ALL_DISCS, HEYBALL];
+export const SOURCE_HEYBALL = "WPA Rules of Heyball, gültig ab 16.08.2025";
 
 /* Thema = Gruppe fuer die Hilfe-Seite (spaeter Filter/Ueberschrift). Schluessel
    sind stabil, die Beschriftung wird per t() uebersetzt. */
@@ -58,4 +65,5 @@ export const SOURCES_EN = {
   "ÖPBV/WPA-Spielregeln, gültig ab 12.02.2026": "ÖPBV/WPA rules of play, effective 12 Feb 2026",
   "ÖPBV Oberschiedsrichter-Lehrunterlagen (Okt. 2019)": "ÖPBV head referee training material (Oct 2019)",
   "WPA-Regularien (Version 29.07.2016)": "WPA regulations (version 29 Jul 2016)",
+  "WPA Rules of Heyball, gültig ab 16.08.2025": "WPA Rules of Heyball, effective 16 Aug 2025",
 };

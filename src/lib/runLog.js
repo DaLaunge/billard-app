@@ -155,7 +155,7 @@ export function matchUnitCount(log) {
 const MIN_MS_PER_BALL = 3000;
 // Objektkugeln pro Spiel/Rack je Disziplin, fuer dieselbe Plausibilitaets-
 // pruefung bei den einfachen Punktestand-Protokollen (8/9/10 Ball).
-const BALLS_PER_GAME = { "8 Ball": 8, "9 Ball": 9, "10 Ball": 10 };
+const BALLS_PER_GAME = { "8 Ball": 8, "9 Ball": 9, "10 Ball": 10, "Heyball": 8 };
 
 // Zeit- und Kugel-Summen je Spieler aus dem chronologischen 14/1-Rohprotokoll
 // (auch einzelne Racks innerhalb derselben Aufnahme zaehlen separat) - fuer

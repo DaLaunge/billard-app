@@ -15,6 +15,7 @@ const variants = [
     label: "Fall A", verdict: "ok", verdictLabel: "Weiß gewinnt das Ausspielen",
     reason: "Beide Kugeln sind gültig, die weiße liegt näher an der Kopfbande.",
     table,
+    noEight: true, // beim Ausspielen liegen nur die beiden Ausspielkugeln auf dem Tisch
     balls: [cue(...wStart), yellow(...gStart)],
     steps: [
       { text: "Ausgangslage: Beide Spieler legen ihre Kugel im Kopffeld an und stoßen ungefähr gleichzeitig.", focus: ["w", "g"] },
@@ -32,6 +33,7 @@ const variants = [
     label: "Fall B", verdict: "foul", verdictLabel: "Gelb: Ausspielen verloren",
     reason: "Die gelbe Kugel hat die Längsachse überquert – sie ist verloren, auch wenn sie näher liegt.",
     table,
+    noEight: true, // beim Ausspielen liegen nur die beiden Ausspielkugeln auf dem Tisch
     balls: [cue(...wStart), yellow(...gStart)],
     steps: [
       { text: "Ausgangslage: Beide Spieler legen ihre Kugel im Kopffeld an und stoßen ungefähr gleichzeitig.", focus: ["w", "g"] },
