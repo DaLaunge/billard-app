@@ -1471,7 +1471,7 @@ export default function App() {
             <ConfirmHost />
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
-                <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
+                <div className="celebrate-card scrolls" onClick={(e) => e.stopPropagation()}>
                   <div className="celebrate-head"><Emoji e="🎉" /> {t(celebrate.length > 1 ? "Neue Erfolge!" : "Neuer Erfolg!")}</div>
                   <div className="celebrate-list">
                     {celebrate.map((k) => {

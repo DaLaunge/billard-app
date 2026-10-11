@@ -694,6 +694,11 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 @keyframes ptr-spin { to { transform: rotate(360deg); } }
 .celebrate-overlay.force-update .btn { margin-top: 8px; }
 .celebrate-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+/* Erfolge-Popup mit sehr vielen neuen Erfolgen (z. B. nach einer Migration): Kopf und Knopf bleiben stehen, nur die Liste scrollt */
+.celebrate-card.scrolls { display: flex; flex-direction: column; max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); }
+.celebrate-card.scrolls .celebrate-head, .celebrate-card.scrolls .btn { flex: 0 0 auto; }
+.celebrate-card.scrolls .celebrate-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch; padding-right: 2px; }
 .celebrate-item { display: flex; align-items: center; gap: 12px; text-align: left;
   background: var(--felt); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
 .celebrate-emoji { font-size: 30px; line-height: 1; }
