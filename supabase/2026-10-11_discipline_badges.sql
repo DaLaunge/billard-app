@@ -147,17 +147,21 @@ on conflict (badge_key) do update set
   tier = excluded.tier, sort = excluded.sort, secret = excluded.secret;
 
 -- 3) Alte Heyball-Erfolge auf die neuen Schluessel umhaengen (vergebene Erfolge und gewaehlter Avatar bleiben erhalten)
-drop table if exists _hb_map;
-create temp table _hb_map (old_key text, new_key text);
-insert into _hb_map values ('heyball_1', 'd_heyball_m1'), ('heyball_10', 'd_heyball_m10'), ('heyball_50', 'd_heyball_m50'), ('heyball_win1', 'd_heyball_w1'), ('heyball_win10', 'd_heyball_w10'), ('heyball_win25', 'd_heyball_w25'), ('heyball_win50', 'd_heyball_w50'), ('heyball_win100', 'd_heyball_w100'), ('heyball_shutout', 'd_heyball_n1'), ('heyball_streak3', 'd_heyball_s3'), ('heyball_streak5', 'd_heyball_s5'), ('heyball_opp5', 'd_heyball_g5');
-update public.player_badges pb set badge_key = m.new_key
-  from _hb_map m
- where pb.badge_key = m.old_key
-   and not exists (select 1 from public.player_badges x where x.player_id = pb.player_id and x.badge_key = m.new_key);
-delete from public.player_badges where badge_key in (select old_key from _hb_map);
-update public.players p set selected_badge = m.new_key from _hb_map m where p.selected_badge = m.old_key;
-delete from public.badge_catalog where badge_key in (select old_key from _hb_map);
-drop table _hb_map;
+-- (ein einziger Block ohne temporaere Tabelle: die SQL-Oberflaeche fuehrt Statements nicht zwingend in derselben Sitzung aus)
+do $migrate$
+declare
+  r record;
+begin
+  for r in select * from (values ('heyball_1', 'd_heyball_m1'), ('heyball_10', 'd_heyball_m10'), ('heyball_50', 'd_heyball_m50'), ('heyball_win1', 'd_heyball_w1'), ('heyball_win10', 'd_heyball_w10'), ('heyball_win25', 'd_heyball_w25'), ('heyball_win50', 'd_heyball_w50'), ('heyball_win100', 'd_heyball_w100'), ('heyball_shutout', 'd_heyball_n1'), ('heyball_streak3', 'd_heyball_s3'), ('heyball_streak5', 'd_heyball_s5'), ('heyball_opp5', 'd_heyball_g5')) as m(old_key, new_key) loop
+    update public.player_badges pb set badge_key = r.new_key
+     where pb.badge_key = r.old_key
+       and not exists (select 1 from public.player_badges x where x.player_id = pb.player_id and x.badge_key = r.new_key);
+    delete from public.player_badges where badge_key = r.old_key;
+    update public.players set selected_badge = r.new_key where selected_badge = r.old_key;
+    delete from public.badge_catalog where badge_key = r.old_key;
+  end loop;
+end
+$migrate$;
 
 -- 4) Alte Gesamt-Erfolge: Beschreibung nennt jetzt, dass sie ueber alle Disziplinen zaehlen
 update public.badge_catalog

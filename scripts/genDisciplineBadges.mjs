@@ -51,17 +51,21 @@ on conflict (badge_key) do update set
   tier = excluded.tier, sort = excluded.sort, secret = excluded.secret;
 
 -- 3) Alte Heyball-Erfolge auf die neuen Schluessel umhaengen (vergebene Erfolge und gewaehlter Avatar bleiben erhalten)
-drop table if exists _hb_map;
-create temp table _hb_map (old_key text, new_key text);
-insert into _hb_map values ${oldMap};
-update public.player_badges pb set badge_key = m.new_key
-  from _hb_map m
- where pb.badge_key = m.old_key
-   and not exists (select 1 from public.player_badges x where x.player_id = pb.player_id and x.badge_key = m.new_key);
-delete from public.player_badges where badge_key in (select old_key from _hb_map);
-update public.players p set selected_badge = m.new_key from _hb_map m where p.selected_badge = m.old_key;
-delete from public.badge_catalog where badge_key in (select old_key from _hb_map);
-drop table _hb_map;
+-- (ein einziger Block ohne temporaere Tabelle: die SQL-Oberflaeche fuehrt Statements nicht zwingend in derselben Sitzung aus)
+do $migrate$
+declare
+  r record;
+begin
+  for r in select * from (values ${oldMap}) as m(old_key, new_key) loop
+    update public.player_badges pb set badge_key = r.new_key
+     where pb.badge_key = r.old_key
+       and not exists (select 1 from public.player_badges x where x.player_id = pb.player_id and x.badge_key = r.new_key);
+    delete from public.player_badges where badge_key = r.old_key;
+    update public.players set selected_badge = r.new_key where selected_badge = r.old_key;
+    delete from public.badge_catalog where badge_key = r.old_key;
+  end loop;
+end
+$migrate$;
 
 -- 4) Alte Gesamt-Erfolge: Beschreibung nennt jetzt, dass sie ueber alle Disziplinen zaehlen
 update public.badge_catalog
