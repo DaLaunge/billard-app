@@ -3,6 +3,8 @@ import { MapPin, Swords, Check, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials, timeAgo, timeLeft } from "../lib/format";
 import Ball from "./Ball";
+import Emoji from "./Emoji";
+import { EmojiText } from "./Emoji";
 
 export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply, onUnreply, onOpenProfile }) {
   const myReply = ping.replies?.find((r) => r.player_id === me.id);
@@ -21,10 +23,10 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
         <span className="live-pill"><span className="live-dot" /> LIVE</span>
       </button>
       <div className="ping-loc"><MapPin size={16} /> {ping.location}</div>
-      {ping.message && <p className="ping-msg">"{ping.message}"</p>}
+      {ping.message && <p className="ping-msg">"<EmojiText>{ping.message}</EmojiText>"</p>}
 
       {ping.replies?.length > 0 && (
-        <div className="otw-count">🚗 {ping.replies.length} {ping.replies.length === 1 ? t("Person ist") : t("Leute sind")} {t("unterwegs")}</div>
+        <div className="otw-count"><Emoji e="🚗" /> {ping.replies.length} {ping.replies.length === 1 ? t("Person ist") : t("Leute sind")} {t("unterwegs")}</div>
       )}
 
       {ping.replies?.length > 0 && (
@@ -32,7 +34,7 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
           {ping.replies.map((r) => (
             <button key={r.id} className="ping-reply as-btn" onClick={() => onOpenProfile(r.player.nickname)}>
               <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={26} />
-              <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : t(" ist unterwegs!")}</span>
+              <span><b>{r.player.nickname}</b>{r.message ? <>: <EmojiText>{r.message}</EmojiText></> : t(" ist unterwegs!")}</span>
             </button>
           ))}
         </div>

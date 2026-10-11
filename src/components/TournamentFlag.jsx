@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { t } from "../lib/i18n";
+import Emoji from "./Emoji";
 
 const formatLabel = (f) => (f === "ko" ? t("K.O.") : f === "double_ko" ? t("Doppel-K.O.") : t("Jeder gegen jeden"));
 
@@ -20,7 +21,7 @@ export default function TournamentFlag({ match }) {
   return (
     <>
       <button type="button" className="tournament-flag" onClick={() => setOpen(true)}
-        aria-label={t("Turnierinfo")} title={t("Turnierinfo")}>🏆</button>
+        aria-label={t("Turnierinfo")} title={t("Turnierinfo")}><Emoji e="🏆" /></button>
       {open && (
         <div className="modal-overlay" onClick={() => setOpen(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>

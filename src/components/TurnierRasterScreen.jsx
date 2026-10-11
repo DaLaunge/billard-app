@@ -14,6 +14,7 @@ import TurnierBerichtScreen from "./TurnierBerichtScreen";
 import { exportTurnierProtocolPdf } from "./turnierBerichtPdf";
 import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout";
 import { rpcRetry } from "../lib/rpcRetry";
+import Emoji from "./Emoji";
 
 const POLL_MS = 8000;
 
@@ -526,7 +527,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                   {addQuery.trim() && !addQueryHasRealMatch && (
                     <div className="guest-empty-card" style={{ marginTop: 10, marginBottom: 0 }}>
                       <div className="ghost-info">
-                        <span className="ghost-name">🤔 {t('Niemand namens "{q}" gefunden', { q: addQuery.trim() })}</span>
+                        <span className="ghost-name"><Emoji e="🤔" /> {t('Niemand namens "{q}" gefunden', { q: addQuery.trim() })}</span>
                         <span className="ghost-sub">{t("Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.")}</span>
                       </div>
                       <button className="btn primary" disabled={busyId === "addGuest"} onClick={addGuest}>

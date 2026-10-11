@@ -3,6 +3,7 @@ import { X, Pencil, Swords } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials, timeLeft } from "../lib/format";
 import Ball from "./Ball";
+import { EmojiText } from "./Emoji";
 
 export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, photoOf, isNewMsg, isNewReply, onDecline, onCancel, onEditMessage, onReply, onOpenProfile }) {
   const other = role === "to" ? c.challenger : c.challenged;
@@ -39,14 +40,14 @@ export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, ph
             </div>
           </div>
         ) : c.message ? (
-          <p className="challenge-msg">"{c.message}" <button className="msg-edit-btn" onClick={() => setEditingMsg(true)} aria-label={t("Nachricht bearbeiten")}><Pencil size={12} /></button></p>
+          <p className="challenge-msg">"<EmojiText>{c.message}</EmojiText>" <button className="msg-edit-btn" onClick={() => setEditingMsg(true)} aria-label={t("Nachricht bearbeiten")}><Pencil size={12} /></button></p>
         ) : (
           <button className="btn ghost small" onClick={() => setEditingMsg(true)}>{t("Nachricht senden")}</button>
         )
       ) : (
         c.message && (
           <p className={"challenge-msg" + (isNewMsg ? " new" : "")}>
-            {isNewMsg && <span className="new-dot" title={t("Neu")} />}"{c.message}"
+            {isNewMsg && <span className="new-dot" title={t("Neu")} />}"<EmojiText>{c.message}</EmojiText>"
           </p>
         )
       )}

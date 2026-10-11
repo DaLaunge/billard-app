@@ -10,6 +10,7 @@ import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 import FeedbackThread from "./FeedbackThread";
 import { rpcRetry } from "../lib/rpcRetry";
+import { EmojiText } from "./Emoji";
 
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
@@ -343,7 +344,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                     <b>{f.category === "bug" ? t("Bug") : f.category === "idea" ? t("Idee") : t("Sonstiges")}</b>
                     {" · "}{f.player?.nickname || t("Unbekannt")}{" · "}{fmtDateTime(f.created_at)}
                   </span>
-                  <p className="hint" style={{ marginTop: 2, marginBottom: 0 }}>{f.message}</p>
+                  <p className="hint" style={{ marginTop: 2, marginBottom: 0 }}><EmojiText>{f.message}</EmojiText></p>
                 </div>
                 {f.status === "open" ? (
                   <button className="chip-btn ok" onClick={() => setFeedbackStatus(f.id, "done")} aria-label={t("erledigt")}>

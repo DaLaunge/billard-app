@@ -1,6 +1,7 @@
 import { t } from "../lib/i18n";
 import { luminance } from "../lib/format";
 import { BADGE_INFO } from "../lib/constants";
+import Emoji from "./Emoji";
 
 export default function Ball({ color, label, size = 44, badge = null, photo = null }) {
   const b = badge && BADGE_INFO[badge] ? BADGE_INFO[badge] : null;
@@ -16,7 +17,7 @@ export default function Ball({ color, label, size = 44, badge = null, photo = nu
       {!photo && <div className="ball-shine" />}
       {!photo && b && (
         <div className={"ball-badge" + (light ? " on-light" : "")}
-          style={{ fontSize: size * 0.5 }} title={t(b.name)}>{b.emoji}</div>
+          style={{ fontSize: size * 0.5 }} title={t(b.name)}><Emoji e={b.emoji} /></div>
       )}
       {!photo && !b && (
         <div className="ball-num"
@@ -26,7 +27,7 @@ export default function Ball({ color, label, size = 44, badge = null, photo = nu
       )}
       {photo && b && (
         <div className="ball-badge-chip" style={{ width: size * 0.46, height: size * 0.46, fontSize: size * 0.26 }} title={t(b.name)}>
-          {b.emoji}
+          <Emoji e={b.emoji} />
         </div>
       )}
     </div>

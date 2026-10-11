@@ -2,6 +2,7 @@ import { Award } from "lucide-react";
 import { t } from "../../lib/i18n";
 import CardMenuButton from "./CardMenuButton";
 import ProgressBar from "./ProgressBar";
+import Emoji from "../Emoji";
 import { upcomingAchievements } from "../../lib/achievements";
 
 /* Eigenstaendiges Modul: die naechsten N noch nicht erreichten Erfolge
@@ -16,7 +17,7 @@ export default function AchievementsProgressCard({ catalog, extras, earnedBadges
         const inner = (
           <>
             <div className="side-row">
-              <span className="side-row-emoji">{c.emoji}</span>
+              <span className="side-row-emoji"><Emoji e={c.emoji} /></span>
               <span className="side-row-name">{c.name}</span>
               <span className="side-row-gap">{t("noch {n} {unit}", { n: c.gap, unit: c.unit })}</span>
             </div>

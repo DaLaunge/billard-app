@@ -18,7 +18,8 @@ export default function ImprintFooter() {
           Break &amp; Rank · {t("Version")} {APP_VERSION}<br />
           © {new Date().getFullYear()} Break &amp; Rank<br />
           {t("Kontakt")}: <a href="mailto:dalaunge@gmx.at">dalaunge@gmx.at</a><br />
-          {t("Diskussion im")} <a href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">Telegram-Kanal</a>
+          {t("Diskussion im")} <a href="https://t.me/+3MKzIVnJBblmZWVk" target="_blank" rel="noopener noreferrer">Telegram-Kanal</a><br />
+          {t("Emoji-Grafiken")}: <a href="https://github.com/jdecked/twemoji" target="_blank" rel="noopener noreferrer">Twemoji</a> (CC-BY 4.0)
         </p>
         <button className="legal-link" onClick={() => setLegalOpen(true)}>{t("Nutzungsbedingungen & Datenschutzerklärung")}</button>
       </footer>

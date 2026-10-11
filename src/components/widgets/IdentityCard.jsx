@@ -3,6 +3,7 @@ import { t } from "../../lib/i18n";
 import { initials, fmtDate } from "../../lib/format";
 import Ball from "../Ball";
 import DecayBadge from "./DecayBadge";
+import { EmojiText } from "../Emoji";
 
 /* Vereinheitlichte Identitaets-Karte: grosses, zentriertes Foto im Fokus,
    dann Name, Rating, Motto, "Dabei seit", die 4 Kernzahlen - exakt dieselbe
@@ -40,7 +41,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
         {gesamt ? gesamt.rating : "-"}
         {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
       </div>
-      {motto && <p className="id-card-motto">"{motto}"</p>}
+      {motto && <p className="id-card-motto">"<EmojiText>{motto}</EmojiText>"</p>}
       {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
     </>
   );

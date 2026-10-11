@@ -3,6 +3,8 @@ import { Calendar, Check, X } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials, fmtDate } from "../lib/format";
 import Ball from "./Ball";
+import Emoji from "./Emoji";
+import { EmojiText } from "./Emoji";
 
 export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, onReply, onUnreply, onDelete, onOpenProfile }) {
   const myReply = planning.replies?.find((r) => r.player_id === me.id);
@@ -19,10 +21,10 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
         </div>
         <span className="plan-pill"><Calendar size={12} /> {fmtDate(planning.planned_date)}</span>
       </button>
-      {planning.message && <p className="ping-msg">"{planning.message}"</p>}
+      {planning.message && <p className="ping-msg">"<EmojiText>{planning.message}</EmojiText>"</p>}
 
       {planning.replies?.length > 0 && (
-        <div className="otw-count">🗓️ {planning.replies.length} {planning.replies.length === 1 ? t("Person ist") : t("Leute sind")} {t("interessiert")}</div>
+        <div className="otw-count"><Emoji e="🗓️" /> {planning.replies.length} {planning.replies.length === 1 ? t("Person ist") : t("Leute sind")} {t("interessiert")}</div>
       )}
 
       {planning.replies?.length > 0 && (
@@ -30,7 +32,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
           {planning.replies.map((r) => (
             <button key={r.id} className="ping-reply as-btn" onClick={() => onOpenProfile(r.player.nickname)}>
               <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={26} />
-              <span><b>{r.player.nickname}</b>{r.message ? `: ${r.message}` : t(" ist interessiert!")}</span>
+              <span><b>{r.player.nickname}</b>{r.message ? <>: <EmojiText>{r.message}</EmojiText></> : t(" ist interessiert!")}</span>
             </button>
           ))}
         </div>

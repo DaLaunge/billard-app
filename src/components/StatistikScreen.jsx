@@ -33,6 +33,7 @@ import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardColumnButton from "./widgets/CardColumnButton";
 import CardDeck from "./widgets/CardDeck";
 import EmptyColumnDropZone from "./widgets/EmptyColumnDropZone";
+import Emoji from "./Emoji";
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 // Feste ids der beiden EmptyColumnDropZone-Ablageflaechen (siehe dort) -
@@ -122,7 +123,7 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
     const name = nameOf(r);
     return (
       <button key={name} className={"stat-row as-btn" + (name === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(name)}>
-        <span className="medal">{medals && rank < 3 ? MEDAL_EMOJI[rank] : `${rank + 1}.`}</span>
+        <span className="medal">{medals && rank < 3 ? <Emoji e={MEDAL_EMOJI[rank]} /> : `${rank + 1}.`}</span>
         <Ball color={colorOf(name)} label={initials(name)} badge={badgeOf(name)} photo={photoOf(name)} size={34} />
         <span className="stat-name">{name}</span>
         <span className="stat-val">{valOf(r)}</span>

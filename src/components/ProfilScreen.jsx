@@ -2,9 +2,12 @@ import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
-import { APP_VERSION } from "../lib/constants";
+import { APP_VERSION, DISC_LABEL } from "../lib/constants";
+import Emoji from "./Emoji";
 import { computeStats } from "../lib/stats";
-import { computeAchievementExtras, badgeProgress } from "../lib/achievements";
+import { computeAchievementExtras, badgeProgress, stripScope } from "../lib/achievements";
+import { DISCIPLINES } from "../lib/disciplineBadges";
+import DiscBall from "./widgets/DiscBall";
 import { useInstallPrompt } from "../lib/installPrompt";
 import { initials, hashColor, BALL_PALETTE } from "../lib/format";
 import { computeSpeedStats } from "../lib/runLog";
@@ -101,6 +104,14 @@ function CardVisRow({ shown, label, icon, meta, className = "", canUp, canDown, 
     </div>
   );
 }
+
+/* Erfolge einer Kategorie nach Unterblock gruppieren (badge_catalog.subcategory, z. B. "8 Ball", "Alle Disziplinen",
+   "Doppel"); Kategorien ohne Unterblock liefern genau eine Gruppe ohne Namen. Reihenfolge = Reihenfolge der Liste. */
+const groupSubs = (list) => {
+  const m = new Map();
+  list.forEach((b) => { const k = b.subcategory || ""; if (!m.has(k)) m.set(k, []); m.get(k).push(b); });
+  return [...m];
+};
 
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
@@ -323,8 +334,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // Katalog-Einträge erkannt, nicht an der Kategorie - Kategorien kommen aus der DB
   // und ihre Zuordnung ist der App nicht fix bekannt.
   const catLiveStat = (items, extras) => {
-    const has = (re) => items.some((b) => re.test(b.description));
+    // Disziplin-Erfolge (family) haben eigene Zaehler (siehe unten) und duerfen die Texterkennung der Gesamt-Familien nicht ausloesen
+    const has = (re) => items.some((b) => !b.family && re.test(stripScope(b.description)));
     const parts = [];
+    if (items.some((b) => b.family) && extras.dsc) {
+      parts.push(DISCIPLINES.map((d) => `${t(DISC_LABEL[d] || d)} ${extras.dsc[d].w}`).join(" · ") + " " + t("Siege"));
+    }
     if (has(/Siege in Folge$/)) {
       const curTxt = extras.streak > 0 ? `+${extras.streak}` : `${extras.streak}`;
       parts.push(`${t("Serie aktuell: {n}", { n: curTxt })} · ${t("Beste Serie: {n}", { n: extras.longestStreak })}`);
@@ -602,10 +617,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <h3><SlidersHorizontal size={17} /> {t("Allgemein")}</h3>
             <div className="lang-row compact">
               <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch" title="Deutsch">
-                <span className="flag">🇩🇪</span>
+                <span className="flag"><Emoji e="🇩🇪" /></span>
               </button>
               <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English" title="English">
-                <span className="flag">🇬🇧</span>
+                <span className="flag"><Emoji e="🇬🇧" /></span>
               </button>
             </div>
             <div className="field-label">
@@ -718,7 +733,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                     <InfoButton title={t("Push")}>
                       {t("Push-Nachrichten kommen auch, wenn die App geschlossen ist. Ist sie offen, erscheint stattdessen ein Hinweis in der App.")}
                       {notifyMode !== "push" && pushAvailability() === "ios-install"
-                        ? " 📲 " + t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")
+                        ? <> <Emoji e="📲" /> {t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")}</>
                         : ""}
                     </InfoButton>
                   </div>
@@ -1058,15 +1073,25 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                     {liveStat && <span className="badge-cat-live">{liveStat}</span>}
                   </button>
                   {open && (
+                    <>
+                    {groupSubs(visible).map(([sub, list]) => (
+                    <div key={sub || "_"} className={sub ? "badge-sub" : undefined}>
+                    {sub && (
+                      <div className="badge-sub-head">
+                        {DISCIPLINES.includes(sub) && <DiscBall disc={sub} size={18} />}
+                        <span>{t(sub)}</span>
+                        <span className="badge-sub-count">{items.filter((x) => x.subcategory === sub && earnedBadges.has(x.badge_key)).length} / {items.filter((x) => x.subcategory === sub).length}</span>
+                      </div>
+                    )}
                     <div className="badge-grid">
-                      {visible.map((b) => {
+                      {list.map((b) => {
                         const key = b.badge_key;
                         const earned = earnedBadges.has(key);
                         const selected = meRow?.selected_badge === key && isMe;
-                        const progress = isMe && !earned ? badgeProgress(b.description, extendedExtras) : null;
+                        const progress = isMe && !earned ? badgeProgress(b, extendedExtras) : null;
                         // "Derselbe Gegner": der Gegner, bei dem der Stand gerade am hoechsten ist.
                         const oppNick = progress
-                          ? (/Siege in Folge gegen denselben Gegner$/.test(b.description) ? extendedExtras.maxOpponentStreakNick
+                          ? (b.family ? null : /Siege in Folge gegen denselben Gegner$/.test(b.description) ? extendedExtras.maxOpponentStreakNick
                             : /Matches gegen denselben Gegner/.test(b.description) ? extendedExtras.maxVsOpponentNick : null)
                           : null;
                         return (
@@ -1075,7 +1100,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                             disabled={!isMe || !earned}
                             onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
                             title={t(b.description)}>
-                            <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
+                            <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}><Emoji e={b.emoji} /></span>
                             <span className="badge-name">{t(b.name)}</span>
                             <span className="badge-desc">{t(b.description)}</span>
                             {progress && (
@@ -1092,6 +1117,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                         );
                       })}
                     </div>
+                    </div>
+                    ))}
+                    </>
                   )}
                 </div>
               );
@@ -1258,7 +1286,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <section className="stat-block install-block">
           {installPrompt.isIos ? (
             <p className="hint center">
-              📲 {t("Installiere Break & Rank auf deinem Home-Bildschirm")} — <Share size={13} style={{ verticalAlign: "-2px" }} /> {t("Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"")}
+              <Emoji e="📲" /> {t("Installiere Break & Rank auf deinem Home-Bildschirm")} — <Share size={13} style={{ verticalAlign: "-2px" }} /> {t("Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"")}
             </p>
           ) : installPrompt.hasPrompt ? (
             <button className="btn ghost" onClick={installPrompt.install}>
@@ -1266,7 +1294,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </button>
           ) : (
             <p className="hint center">
-              💻 {t("Kein Installations-Dialog verfuegbar. Schon installiert, aber kein Symbol mehr sichtbar? Oeffne chrome://apps oder suche im Startmenue nach \"Break & Rank\". Noch nicht installiert? Browser-Menue (⋮) -> \"App installieren\".")}
+              <Emoji e="💻" /> {t("Kein Installations-Dialog verfuegbar. Schon installiert, aber kein Symbol mehr sichtbar? Oeffne chrome://apps oder suche im Startmenue nach \"Break & Rank\". Noch nicht installiert? Browser-Menue (⋮) -> \"App installieren\".")}
             </p>
           )}
         </section>

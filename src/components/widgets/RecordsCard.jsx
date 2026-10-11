@@ -2,6 +2,7 @@ import { Star } from "lucide-react";
 import { t } from "../../lib/i18n";
 import CardMenuButton from "./CardMenuButton";
 import { recordBadgeEmoji } from "../../lib/achievements";
+import Emoji from "../Emoji";
 
 const METRICS = [
   ["highRun", "Höchstserie 14/1"],
@@ -25,7 +26,7 @@ export default function RecordsCard({ extras, catalog, earnedBadges, onHide, emb
         const emoji = recordBadgeEmoji(catalog, earnedBadges, metric);
         return (
           <div key={metric}>
-            <b>{emoji && <span className="record-emoji">{emoji}</span>}{extras[metric]}</b>
+            <b>{emoji && <span className="record-emoji"><Emoji e={emoji} /></span>}{extras[metric]}</b>
             <span>{t(label)}</span>
           </div>
         );
