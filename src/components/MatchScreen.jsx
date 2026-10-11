@@ -971,13 +971,16 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           )}
           <PointPreview dsc={disc} />
           {pendingDisc && (
-            <div className="confirm-box">
-              {is141
-                ? <p>{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
-                : <p>{t("Wechsel zu bzw. von")} <b>{t("14/1 Endlos")}</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>}
-              <div className="sp-controls">
-                <button className="btn ghost" onClick={() => setPendingDisc(null)}>{is141 ? t("Weiterspielen") : t("Abbrechen")}</button>
+            // Als Popup, nicht als Kasten unter dem Beenden-Knopf: dort lag die Frage ausserhalb des sichtbaren Bereichs, der
+            // Wechsel wirkte wie "geht nicht" (Nutzer-Feedback 2026-10-12).
+            <div className="celebrate-overlay" onClick={() => setPendingDisc(null)}>
+              <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
+                <div className="celebrate-head">{t("Disziplin wechseln?")}</div>
+                {is141
+                  ? <p className="hint">{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
+                  : <p className="hint">{t("Wechsel zu bzw. von")} <b>{t("14/1 Endlos")}</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>}
                 <button className="btn primary" onClick={confirmDiscChange}>{is141 ? t("Disziplin wechseln") : t("Wechseln & zurücksetzen")}</button>
+                <button className="btn ghost" onClick={() => setPendingDisc(null)}>{is141 ? t("Weiterspielen") : t("Abbrechen")}</button>
               </div>
             </div>
           )}

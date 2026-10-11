@@ -1183,6 +1183,7 @@ const TRANSLATIONS = {
     "Grafik": "Graph",
     "Format": "Format",
     "Disziplin": "Discipline",
+    "Disziplin wechseln?": "Switch discipline?",
     "Heyball": "Heyball",
     "Emoji-Grafiken": "Emoji graphics",
     "Alle Heyball-Regeln als Text": "All Heyball rules as text",
