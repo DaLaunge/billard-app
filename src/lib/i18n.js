@@ -1436,8 +1436,11 @@ export function addTranslations(lang, dict) {
    Suffix "Text§Kontext" (z. B. "Anmelden" = Sign in beim Login, "Anmelden§Turnier" =
    Register beim Turnier). Deutsch und fehlende Uebersetzungen zeigen den Text vor dem "§". */
 const plain = (s) => { const i = s.indexOf("§"); return i < 0 ? s : s.slice(0, i); };
+const ALL_SUFFIX = " (alle Disziplinen)"; // Zusatz an den Beschreibungen der alten Gesamt-Erfolge
 export function t(s, vars) {
   let out = (_LANG !== "de" && TRANSLATIONS[_LANG] && TRANSLATIONS[_LANG][s] != null) ? TRANSLATIONS[_LANG][s] : plain(s);
+  // "7 Siege in Folge (alle Disziplinen)": Grundtext uebersetzen und den Zusatz anhaengen, statt jeden Text doppelt zu fuehren
+  if (_LANG !== "de" && out === s && s.endsWith(ALL_SUFFIX)) out = t(s.slice(0, -ALL_SUFFIX.length)) + " (all disciplines)";
   if (vars) for (const k in vars) out = out.split("{" + k + "}").join(String(vars[k]));
   return out;
 }

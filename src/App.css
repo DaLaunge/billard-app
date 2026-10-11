@@ -137,6 +137,12 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
 .cat-chev { color: var(--ivory-dim); transition: transform 0.18s ease; }
 .cat-chev.open { transform: rotate(180deg); }
 .badge-cat .badge-grid { padding-top: 10px; }
+/* Unterbloecke einer Kategorie (Disziplinen: je Disziplin, "Alle Disziplinen", "Doppel") */
+.badge-sub { margin-top: 12px; }
+.badge-sub:first-child { margin-top: 4px; }
+.badge-sub-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ivory); padding: 4px 2px 0; }
+.badge-sub-count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--ivory-dim); }
+.badge-sub .badge-grid { padding-top: 8px; }
 .role-chip { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
   padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .role-admin { background: var(--accent); color: var(--accent-ink); }

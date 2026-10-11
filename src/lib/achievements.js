@@ -1,5 +1,6 @@
 import { computeStats, todayStr } from "./stats";
 import { t } from "./i18n";
+import { DISCIPLINES, ALL_SUFFIX } from "./disciplineBadges";
 
 /* Zusatz-Kennzahlen fuer einen Spieler, die sich aus den geladenen
    matches/players/challenges berechnen lassen (siehe auch ProfilScreen).
@@ -35,6 +36,7 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
       hb.opps.add(first ? m.p2.nickname : m.p1.nickname);
       if (my > opp) { hb.wins++; hb.streak++; if (opp === 0) hb.shutouts++; } else hb.streak = 0;
     });
+  const { dsc, cross, dbl } = disciplineExtras(nickname, matches);
   const myId = players.find((p) => p.nickname === nickname)?.id;
   const recruitedCount = myId ? players.filter((p) => p.invited_by === myId).length : 0;
   const challengesAccepted = myId
@@ -71,6 +73,7 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
     highRun,
     recruitedCount,
     challengesAccepted,
+    dsc, cross, dbl,
     heyballMatches: hb.matches,
     heyballWins: hb.wins,
     heyballShutouts: hb.shutouts,
@@ -81,6 +84,67 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
     maxOpponentStreak: Math.max(0, ...Object.values(oppStreak)),
   };
 }
+
+/* Kennzahlen fuer die Disziplin-Erfolge (Kategorie "Disziplinen", Familien m w n s g xw xm xn dm dw ds dp - siehe
+   disciplineBadges.js): je Disziplin Matches, Siege, zu null, verschiedene Gegner und die AKTUELLE Siegesserie (wie bei
+   den allgemeinen Serien), dazu der kleinste Wert ueber alle Disziplinen und die Doppel-Zahlen. Gezaehlt wie in
+   compute_discipline_badges(): nur bestaetigte Matches ohne Gaeste; Einzel je Disziplin, Doppel getrennt. */
+function disciplineExtras(nickname, matches) {
+  const dsc = {};
+  DISCIPLINES.forEach((d) => { dsc[d] = { m: 0, w: 0, n: 0, opps: new Set(), s: 0 }; });
+  const dbl = { m: 0, w: 0, partners: new Set(), s: 0 };
+  const asc = [...matches].sort((a, b) => new Date(a.played_at) - new Date(b.played_at));
+  asc.forEach((m) => {
+    if (!m.p1 || !m.p2) return;
+    if (m.player1b_id || m.player2b_id) {
+      // Doppel: vier Spieler, ein Gast macht das Match ungueltig fuer Erfolge
+      const four = [m.p1, m.p1b, m.p2, m.p2b];
+      if (four.some((p) => !p || p.is_guest)) return;
+      const side = m.p1.nickname === nickname || m.p1b.nickname === nickname ? 1 : m.p2.nickname === nickname || m.p2b.nickname === nickname ? 2 : 0;
+      if (!side) return;
+      const partner = side === 1 ? (m.p1.nickname === nickname ? m.p1b : m.p1) : (m.p2.nickname === nickname ? m.p2b : m.p2);
+      const won = side === 1 ? m.score1 > m.score2 : m.score2 > m.score1;
+      dbl.m++; dbl.partners.add(partner.nickname);
+      if (won) { dbl.w++; dbl.s++; } else dbl.s = 0;
+      return;
+    }
+    if (m.p1.is_guest || m.p2.is_guest) return;
+    const d = dsc[m.discipline];
+    if (!d) return;
+    let my, opp, oppNick;
+    if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; }
+    else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; }
+    else return;
+    d.m++; d.opps.add(oppNick);
+    if (my > opp) { d.w++; d.s++; if (opp === 0) d.n++; } else d.s = 0;
+  });
+  const out = {};
+  DISCIPLINES.forEach((k) => { out[k] = { m: dsc[k].m, w: dsc[k].w, n: dsc[k].n, g: dsc[k].opps.size, s: dsc[k].s }; });
+  const min = (key) => Math.min(...DISCIPLINES.map((k) => out[k][key]));
+  return {
+    dsc: out,
+    cross: { w: min("w"), m: min("m"), n: min("n") },
+    dbl: { m: dbl.m, w: dbl.w, p: dbl.partners.size, s: dbl.s },
+  };
+}
+
+/* Fortschritt zu einem Disziplin-Erfolg (Katalogzeile mit `family`): Stand aus disciplineExtras(). */
+function familyProgress(b, e) {
+  const d = b.discipline && e.dsc ? e.dsc[b.discipline] : null;
+  const x = e.cross, g = e.dbl;
+  const map = {
+    m: [d?.m, t("Match(es)")], w: [d?.w, t("Sieg(e)")], n: [d?.n, t("Zu-Null-Sieg(e)")], s: [d?.s, t("Sieg(e) in Folge")], g: [d?.g, t("verschiedene Gegner")],
+    xw: [x?.w, t("Sieg(e) in der schwächsten Disziplin")], xm: [x?.m, t("Match(es) in der schwächsten Disziplin")], xn: [x?.n, t("Zu-Null-Sieg(e) in der schwächsten Disziplin")],
+    dm: [g?.m, t("Doppel")], dw: [g?.w, t("Doppel-Sieg(e)")], ds: [g?.s, t("Doppel-Sieg(e) in Folge")], dp: [g?.p, t("verschiedene Partner")],
+  };
+  const hit = map[b.family];
+  if (!hit || hit[0] == null) return null;
+  return { current: Math.max(0, hit[0]), target: b.threshold, unit: hit[1] };
+}
+
+/* Beschreibung ohne den Zusatz " (alle Disziplinen)" der alten Gesamt-Erfolge - die Erkennung der Familien unten
+   arbeitet am reinen Text (die Zaehler gelten weiter ueber alle Disziplinen). */
+export const stripScope = (desc) => (desc.endsWith(ALL_SUFFIX) ? desc.slice(0, -ALL_SUFFIX.length) : desc);
 
 const leadingNumber = (desc) => {
   // Letzte Zahl im Text nehmen, nicht die erste: "14/1: Höchstserie von 25" enthaelt
@@ -142,7 +206,13 @@ function membershipTargetDays(description, joinedAt) {
    (Naechste-Erfolge-Vorschlaege) - Mitgliedschaft zuerst (eigene Tage-Umrechnung),
    sonst FAMILIES. null, wenn der Beschreibungstext zu keiner bekannten Familie
    passt oder die dafuer noetigen Rohdaten (noch) fehlen. */
-function progressFor(description, extras) {
+function progressFor(badgeOrDesc, extras) {
+  // Katalogzeile mit Familie (Disziplin-Erfolge): Stand direkt aus den Disziplin-Zahlen, ohne Texterkennung
+  if (typeof badgeOrDesc === "object") {
+    if (badgeOrDesc.family) return familyProgress(badgeOrDesc, extras);
+    badgeOrDesc = badgeOrDesc.description;
+  }
+  const description = stripScope(badgeOrDesc);
   const days = membershipTargetDays(description, extras?.joinedAt);
   if (days != null) {
     const current = Math.floor((Date.now() - new Date(extras.joinedAt)) / 86400000);
@@ -169,7 +239,7 @@ function closestCandidates(catalog, extras, earnedBadges) {
   const candidates = [];
   (catalog || []).forEach((b) => {
     if (earnedBadges && earnedBadges.has(b.badge_key)) return;
-    const p = progressFor(b.description, extras);
+    const p = progressFor(b, extras);
     if (!p) return;
     const gap = p.target - p.current;
     if (gap <= 0) return;
@@ -187,8 +257,8 @@ function closestCandidates(catalog, extras, earnedBadges) {
    null, wenn die Familie nicht lokal aus matches/players/challenges berechenbar
    ist (z.B. Rangliste/Ghost/Turnier-Erfolge, die serverseitige Historie
    brauchen) - dafuer zeigt die Erfolge-Kachel dann einfach keinen Fortschritt. */
-export function badgeProgress(description, extras) {
-  return progressFor(description, extras);
+export function badgeProgress(badgeOrDesc, extras) {
+  return progressFor(badgeOrDesc, extras);
 }
 
 /* Die paar naechstliegenden, noch nicht erreichten Erfolge als Rohdaten
@@ -208,7 +278,8 @@ export function recordBadgeEmoji(catalog, earnedBadges, metric) {
   if (!fam || !catalog || !earnedBadges) return null;
   let best = null, bestN = -1;
   catalog.forEach((b) => {
-    if (!fam.test(b.description)) return;
+    if (b.family) return; // Disziplin-Erfolge haben eigene Zaehler und gehoeren nie zu einer Rekord-Kennzahl
+    if (!fam.test(stripScope(b.description))) return;
     if (!earnedBadges.has(b.badge_key)) return;
     const n = leadingNumber(b.description);
     if (n > bestN) { bestN = n; best = b; }

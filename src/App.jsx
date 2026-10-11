@@ -17,6 +17,7 @@ import { hashColor, initials, isDoubles, mSide, fmtDate } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION, HEYBALL } from "./lib/constants";
 import Emoji from "./components/Emoji";
+import "./lib/disciplineBadgesI18n";
 import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
