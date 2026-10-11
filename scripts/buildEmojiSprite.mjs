@@ -42,9 +42,50 @@ for (const line of readFileSync(join(root, "scripts", "emojiExtra.txt"), "utf8")
 }
 for (const k of core.keys()) common.delete(k); // was im Kern steckt, steht nicht noch einmal in HAEUFIG
 
-/* Zahlen in Pfaden auf 2 Nachkommastellen: reicht bei Symbolen bis ~64 px locker (Raster 36x36) und spart gut ein Viertel. */
+/* Zahlen in Pfaden auf 2 Nachkommastellen: reicht bei Symbolen bis ~64 px locker (Raster 36x36) und spart gut ein Fuenftel.
+   WICHTIG: richtig nach der SVG-Pfad-Grammatik lesen, nicht per Muster auf der Zeichenkette - bei Kreisboegen (a/A) stehen die
+   zwei Flaggen (0/1) ohne Trennzeichen vor der naechsten Zahl ("a1 1 0 011.5"), ein Zahlenmuster frisst sie (so entstanden
+   zerstoerte Symbole wie 🙌 🐪 🕸️ in Version 406.1-408). Flaggen werden unveraendert uebernommen. */
+const NUM = /[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/y;
 const shorten = (n) => String(+(+n).toFixed(2)).replace(/^(-?)0\./, "$1.");
-const round = (inner) => inner.replace(/\b(d|points)="([^"]*)"/g, (_, a, v) => `${a}="${v.replace(/-?\d*\.\d{3,}/g, shorten)}"`);
+const ARGS = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
+/* Zerlegt einen Pfad in Befehle, Trennzeichen und Zahlen; fn(zahl) liefert die Ersatzzeichenkette. Gibt den neuen Pfad zurueck. */
+function mapPath(d, fn) {
+  let out = "", i = 0, cmd = "", arg = 0;
+  while (i < d.length) {
+    const ch = d[i];
+    if (/[a-zA-Z]/.test(ch)) { cmd = ch.toLowerCase(); arg = 0; out += ch; i++; continue; }
+    if (/[\s,]/.test(ch)) { out += ch; i++; continue; }
+    if (cmd === "a" && (arg % 7 === 3 || arg % 7 === 4)) { out += ch; i++; arg++; continue; } // Bogen-Flagge: ein Zeichen
+    NUM.lastIndex = i;
+    const m = NUM.exec(d);
+    if (!m) throw new Error("Pfad nicht lesbar bei: " + d.slice(i, i + 20));
+    const r = fn(m[0]);
+    // Kleben zwei Zahlen/Flaggen zusammen (".5" hinter "5"), braucht es ein Leerzeichen; vor "-" nicht
+    out += (/[0-9.]$/.test(out) && r[0] !== "-" ? " " : "") + r;
+    i += m[0].length; arg++;
+    if (ARGS[cmd] && arg >= ARGS[cmd] && ARGS[cmd] > 0) arg = 0; // naechste Wiederholung desselben Befehls
+  }
+  return out;
+}
+const round = (inner) => inner.replace(/\bd="([^"]*)"/g, (_, v) => `d="${mapPath(v, shorten)}"`)
+  .replace(/\bpoints="([^"]*)"/g, (_, v) => `points="${v.replace(/-?\d*\.\d{3,}/g, shorten)}"`);
+
+/* Selbstpruefung: derselbe Pfad vor und nach dem Runden muss gleich viele Zahlen haben und jede darf hoechstens 0,006 abweichen
+   (und nur dort, wo gerundet wurde). Bricht den Bau ab, statt kaputte Symbole auszuliefern. */
+function verify(key, before, after) {
+  const grab = (svg) => [...svg.matchAll(/\bd="([^"]*)"/g)].map((m) => { const n = []; mapPath(m[1], (x) => { n.push(+x); return x; }); return n; });
+  const A = grab(before), B = grab(after);
+  if (A.length !== B.length) throw new Error(`${key}: Pfadzahl ${A.length} -> ${B.length}`);
+  A.forEach((a, i) => {
+    if (a.length !== B[i].length) throw new Error(`${key}: Pfad ${i}: ${a.length} Zahlen -> ${B[i].length}`);
+    a.forEach((x, j) => { if (Math.abs(x - B[i][j]) > 0.006) throw new Error(`${key}: Pfad ${i} Zahl ${j}: ${x} -> ${B[i][j]}`); });
+  });
+}
+
+/* Beim Pixelvergleich mit den Originalen (alle 380 Symbole, 72 px) wichen diese vier um 1-2 % der Flaeche ab (duenne Linien,
+   viele relative Befehle - die Rundungsfehler summieren sich): sie bleiben ungerundet. Neu pruefen, wenn der Satz wechselt. */
+const NO_ROUND = new Set(["2728", "1f578", "1f981", "1f99e"]);
 
 const missing = [];
 const build = (map, out, label) => {
@@ -52,7 +93,9 @@ const build = (map, out, label) => {
   for (const [k, e] of [...map].sort()) {
     const p = join(svgDir, k + ".svg");
     if (!existsSync(p)) { missing.push(`${e} (${k})`); continue; }
-    sprite[k] = round(readFileSync(p, "utf8").trim().replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, ""));
+    const before = readFileSync(p, "utf8").trim().replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "");
+    sprite[k] = NO_ROUND.has(k) ? before : round(before);
+    verify(k, before, sprite[k]);
   }
   mkdirSync(dirname(out), { recursive: true });
   const body = Object.entries(sprite).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)},`).join("\n");
