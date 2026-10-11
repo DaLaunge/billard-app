@@ -11,8 +11,7 @@
 -- Gast-Beteiligung und ohne Doppel (wie die Fortschrittsanzeige der App); Gaeste bekommen ohnehin keine Erfolge
 -- (trg_no_badges_for_guests). Erfolge werden nur eingefuegt, nie geloescht.
 --
--- Ist Heyball ausgeschaltet (app_settings.heyball_enabled), zeigt die App die Kategorie nicht;
--- bereits erreichte Erfolge bleiben gespeichert.
+-- (Ueberholt: durch 2026-10-11_discipline_badges.sql ersetzt, das diese Funktion und den Trigger wieder entfernt.)
 --
 -- Emoji-Eindeutigkeit: alle zwoelf wurden gegen den vollstaendigen Katalog geprueft (keines kommt
 -- vor), die Kontrollabfrage am Ende muss leer sein. In Test UND Produktion ausfuehren. Idempotent.
