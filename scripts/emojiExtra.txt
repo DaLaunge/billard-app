@@ -1,5 +1,8 @@
 # Zusaetzliche Emoji fuer die Vektor-Sammlung (scripts/buildEmojiSprite.mjs), ein Eintrag pro Zeile oder durch Leerzeichen getrennt.
 # 1) Neue Disziplin-Erfolge (Etappe 2, abgestimmt, katalogweit auf Eindeutigkeit geprueft)
 🤠 🥾 🪕 🌄 🚂 🛤️ 🌵 🐎 🦬 🏜️ 🐂 🐍 🕷️ 🐺 🐪 🦂 🍺 🐚 ⚓ 🦑 🚢 ⛵ 🏝️ 🦀 🐠 🐬 🐳 🌊 🦈 🐡 🦭 🐟 🐙 🦞 🌴 🍌 🥥 🌺 🍃 🪵 🦜 🐒 🦥 🐆 🦍 🐊 🐸 🦟 🦧 🦎 🦩 🎵 🎶 🎼 🎧 📻 🎙️ 🎸 🎷 🎺 🎻 🎹 🪗 🪘 🎚️ 🔔 🎤 📯 🀄 🏮 🐼 🎎 🎑 🎍 🧧 🥢 🐘 🏯 🍵 🥋 🍜 🥟 🐅 🦚 🎏 🎪 🎠 🗺️ 🧳 🛕 🌐 🎡 🎢 🎀 🤹 🤡 👯 👫 👭 👬 🤼 🙌 👏 💪 🛶 🚲 🤾 🏓 💃
+# 1b) Erfolgs-Katalog der Datenbank (Stand Test 2026-10-11): die aelteren Erfolge stehen nicht in den Migrationen im Projekt, ihre Symbole muessen
+# hier stehen, sonst zeigt die App sie nicht als Vektorgrafik. Bei jeder Katalog-Aenderung ausserhalb von disciplineBadges.js ergaenzen.
+☃️ ☄️ 🤴 ⚓ ⚔️ ⚖️ ⚜️ ⚡ ⛰️ ⛵ ✨ ❄️ ⭐ 🀄 🌄 🌅 🌈 🌊 🌋 🌌 🌍 🌐 🌙 🌞 🌟 🌠 🌤️ 🌨️ 🌱 🌳 🌴 🌵 🌺 🌿 🍀 🍃 🍌 🍜 🍵 🍺 🍻 🎀 🎂 🎆 🎇 🎈 🎉 🎊 🎋 🎌 🎍 🎎 🎏 🎐 🎑 🎓 🎖️ 🎗️ 🎙️ 🎚️ 🎟️ 🎡 🎢 🎣 🎤 🎧 🎨 🎩 🎪 🎫 🎬 🎭 🎯 🎱 🎲 🎳 🎵 🎶 🎷 🎸 🎹 🎺 🎻 🎼 🏃 🏅 🏆 🏇 🏋️ 🏓 🏔️ 🏚️ 🏛️ 🏜️ 🏝️ 🏮 🏯 🏰 🏴 🏴‍☠️ 🏵️ 🏹 🐂 🐅 🐆 🐉 🐊 🐍 🐎 🐐 🐒 🐓 🐘 🐙 🐚 🐟 🐠 🐡 🐣 🐪 🐬 🐲 🐳 🐸 🐺 🐼 👊 👏 👑 👥 👫 👬 👭 👯 👻 💀 💃 💎 💑 💔 💠 💥 💪 💫 💿 📅 📈 📊 📍 📐 📖 📘 📚 📜 📣 📯 📻 🔁 🔄 🔆 🔍 🔒 🔔 🔗 🔥 🔨 🔬 🔮 🔱 🔶 🔷 🕊️ 🕷️ 🕸️ 🕹️ 🗝️ 🗡️ 🗺️ 🗻 🗿 🤝 🤠 🤡 🤹 🤺 🤼 🤾 🥁 🥂 🥇 🥈 🥉 🥊 🥋 🥟 🥢 🥥 🥮 🥵 🥶 🥷 🥾 🦀 🦁 🦂 🦄 🦅 🦈 🦍 🦎 🦑 🦒 🦚 🦜 🦞 🦟 🦥 🦧 🦩 🦬 🦭 🦸 🧊 🧗 🧙 🧟 🧠 🧧 🧨 🧩 🧭 🧮 🧱 🧳 🧵 🧿 🪁 🪄 🪐 🪓 🪕 🪗 🪘 🪙 🪞 🪢 🪩 🪪 🪵 😈 🙌 🚀 🚂 🚢 🚩 🚲 🚴 🛕 🛡️ 🛤️ 🛥️ 🛰️ 🛶 🛸 3️⃣ 4️⃣ 5️⃣ 6️⃣ 7️⃣ 8️⃣ 9️⃣
 # 2) Haeufige Emoji fuer Nutzertexte (Motto, Ping, Planung, Herausforderung, Feedback)
 😀 😃 😄 😁 😆 😅 😂 🤣 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😋 😛 😜 🤪 😎 🤓 🤔 🤨 😐 😑 😶 🙄 😏 😬 😴 😪 😮 😲 😳 🥺 😢 😭 😤 😠 😡 🤬 🤯 😱 😨 😰 😓 🤗 🤭 🤫 🥳 😈 👿 💀 ☠️ 👻 👽 🤖 💩 🙌 👏 🤝 👍 👎 👌 ✌️ 🤞 🤟 🤘 👊 ✊ 💪 🙏 👋 👀 🧠 ❤️ 🧡 💛 💚 💙 💜 🖤 🤍 💔 💯 💥 💫 ✨ 🔥 ⭐ 🌟 ⚡ 🎉 🎊 🎁 🏆 🥇 🥈 🥉 🏅 🎯 🎱 🏓 🎳 🍻 🍺 🍷 ☕ 🍕 🍔 🍟 🍿 🎂 🚗 🏠 📅 🗓️ 📲 💻 ✅ ❌ ⚠️ ❓ ❗ ➡️ ⬆️ ⬇️ 🟢 🟡 🔴 🔵 🇩🇪 🇬🇧 🇦🇹 🇨🇭 🇺🇸
