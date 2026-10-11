@@ -16,6 +16,7 @@ import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft
 import { hashColor, initials, isDoubles, mSide, fmtDate } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION, HEYBALL } from "./lib/constants";
+import Emoji from "./components/Emoji";
 import { applyTheme } from "./lib/themes";
 import { useWakeLock, getKeepAwake, storeKeepAwake } from "./lib/wakeLock";
 import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
@@ -44,6 +45,7 @@ import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import ConfirmHost from "./components/ConfirmHost";
 import { rpcRetry } from "./lib/rpcRetry";
+import { EmojiText } from "./components/Emoji";
 
 // Tabs mit unbestaetigter Live-Eingabe (Punktestand, Ballprotokoll), die nur
 // im Speicher liegt und bei einem Reload verloren waere. Wird ein Update
@@ -1469,13 +1471,13 @@ export default function App() {
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
                 <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
-                  <div className="celebrate-head">🎉 {t(celebrate.length > 1 ? "Neue Erfolge!" : "Neuer Erfolg!")}</div>
+                  <div className="celebrate-head"><Emoji e="🎉" /> {t(celebrate.length > 1 ? "Neue Erfolge!" : "Neuer Erfolg!")}</div>
                   <div className="celebrate-list">
                     {celebrate.map((k) => {
                       const info = badgeInfo(k);
                       return (
                         <div key={k} className="celebrate-item">
-                          <div className="celebrate-emoji">{info.emoji}</div>
+                          <div className="celebrate-emoji"><Emoji e={info.emoji} /></div>
                           <div className="celebrate-txt">
                             <span className="celebrate-name">{t(info.name)}</span>
                             <span className="celebrate-desc">{t(info.description)}</span>
@@ -1513,7 +1515,7 @@ export default function App() {
             {showPendingPopup && (
               <div className="celebrate-overlay" onClick={dismissPending}>
                 <div className="celebrate-card pending-card" onClick={(e) => e.stopPropagation()}>
-                  <div className="pending-burst" aria-hidden="true">🎱</div>
+                  <div className="pending-burst" aria-hidden="true"><Emoji e="🎱" /></div>
                   <div className="celebrate-head">
                     {pendingForMe.length === 1 ? t("Ein Match wartet auf deine Bestätigung") : t("{n} Matches warten auf deine Bestätigung", { n: pendingForMe.length })}
                   </div>
@@ -1559,7 +1561,7 @@ export default function App() {
               return (
                 <div className="celebrate-overlay" onClick={dismissTourneyReady}>
                   <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
-                    <div className="celebrate-head">🎱 {t("Du bist dran!")}</div>
+                    <div className="celebrate-head"><Emoji e="🎱" /> {t("Du bist dran!")}</div>
                     <p className="hint" style={{ marginTop: -6, marginBottom: 14 }}>{tourneyReady.tournament?.name}</p>
                     <div className="celebrate-item">
                       <Ball color={colorOf(oppName)} label={initials(oppName)} badge={badgeOf(oppName)} photo={photoOf(oppName)} size={40} />
@@ -1584,7 +1586,7 @@ export default function App() {
               return (
                 <div className="celebrate-overlay" onClick={dismissWsReady}>
                   <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
-                    <div className="celebrate-head">🎱 {t("Du bist dran!")}</div>
+                    <div className="celebrate-head"><Emoji e="🎱" /> {t("Du bist dran!")}</div>
                     <p className="hint" style={{ marginTop: -6, marginBottom: 14 }}>{wsReady.session.name}</p>
                     <div className="celebrate-item">
                       <Ball color={colorOf(oppName)} label={initials(oppName)} badge={badgeOf(oppName)} photo={photoOf(oppName)} size={40} />
@@ -1755,7 +1757,7 @@ export default function App() {
                       player1Id: next.player1_id, player2Id: next.player2_id,
                     },
                   })}>
-                  🎱 {t("Tisch")} {next.table_number} · {t("gegen {name}", { name: oppName || "?" })}
+                  <Emoji e="🎱" /> {t("Tisch")} {next.table_number} · {t("gegen {name}", { name: oppName || "?" })}
                   {tourneyReadyList.length > 1 && ` · ${t("+{n} weitere", { n: tourneyReadyList.length - 1 })}`}
                 </button>
               );
@@ -1771,7 +1773,7 @@ export default function App() {
               return (
                 <button className={"tourney-table-banner" + (tabbarHidden ? " tabbar-off" : "")}
                   onClick={() => navPush({ tab: "winnerstays", winnerStaysId: next.session_id })}>
-                  🎱 {next.session.table_number != null ? `${t("Tisch")} ${next.session.table_number} · ` : ""}{t("gegen {name}", { name: oppName || "?" })}
+                  <Emoji e="🎱" /> {next.session.table_number != null ? `${t("Tisch")} ${next.session.table_number} · ` : ""}{t("gegen {name}", { name: oppName || "?" })}
                   {wsReadyList.length > 1 && ` · ${t("+{n} weitere", { n: wsReadyList.length - 1 })}`}
                 </button>
               );
@@ -1813,7 +1815,7 @@ export default function App() {
         )}
         {toastMsg && (
           <div className={"toast" + (toastMsg.action ? " with-action" : "")}>
-            <span className="toast-text">{toastMsg.msg}</span>
+            <span className="toast-text"><EmojiText>{toastMsg.msg}</EmojiText></span>
             {toastMsg.action && (
               <button className="toast-action" onClick={() => { setToastMsg(null); toastMsg.action.onAction(); }}>
                 {toastMsg.action.label}

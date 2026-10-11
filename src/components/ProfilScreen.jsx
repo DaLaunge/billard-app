@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { APP_VERSION } from "../lib/constants";
+import Emoji from "./Emoji";
 import { computeStats } from "../lib/stats";
 import { computeAchievementExtras, badgeProgress } from "../lib/achievements";
 import { useInstallPrompt } from "../lib/installPrompt";
@@ -602,10 +603,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             <h3><SlidersHorizontal size={17} /> {t("Allgemein")}</h3>
             <div className="lang-row compact">
               <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch" title="Deutsch">
-                <span className="flag">🇩🇪</span>
+                <span className="flag"><Emoji e="🇩🇪" /></span>
               </button>
               <button className={"lang-btn" + (lang === "en" ? " active" : "")} onClick={() => onLang("en")} aria-label="English" title="English">
-                <span className="flag">🇬🇧</span>
+                <span className="flag"><Emoji e="🇬🇧" /></span>
               </button>
             </div>
             <div className="field-label">
@@ -718,7 +719,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                     <InfoButton title={t("Push")}>
                       {t("Push-Nachrichten kommen auch, wenn die App geschlossen ist. Ist sie offen, erscheint stattdessen ein Hinweis in der App.")}
                       {notifyMode !== "push" && pushAvailability() === "ios-install"
-                        ? " 📲 " + t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")
+                        ? <> <Emoji e="📲" /> {t("Auf dem iPhone gehen Push-Nachrichten nur, wenn die App auf dem Home-Bildschirm installiert ist.")}</>
                         : ""}
                     </InfoButton>
                   </div>
@@ -1075,7 +1076,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                             disabled={!isMe || !earned}
                             onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
                             title={t(b.description)}>
-                            <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}>{b.emoji}</span>
+                            <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}><Emoji e={b.emoji} /></span>
                             <span className="badge-name">{t(b.name)}</span>
                             <span className="badge-desc">{t(b.description)}</span>
                             {progress && (
@@ -1258,7 +1259,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         <section className="stat-block install-block">
           {installPrompt.isIos ? (
             <p className="hint center">
-              📲 {t("Installiere Break & Rank auf deinem Home-Bildschirm")} — <Share size={13} style={{ verticalAlign: "-2px" }} /> {t("Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"")}
+              <Emoji e="📲" /> {t("Installiere Break & Rank auf deinem Home-Bildschirm")} — <Share size={13} style={{ verticalAlign: "-2px" }} /> {t("Tippe unten auf Teilen, dann \"Zum Home-Bildschirm\"")}
             </p>
           ) : installPrompt.hasPrompt ? (
             <button className="btn ghost" onClick={installPrompt.install}>
@@ -1266,7 +1267,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </button>
           ) : (
             <p className="hint center">
-              💻 {t("Kein Installations-Dialog verfuegbar. Schon installiert, aber kein Symbol mehr sichtbar? Oeffne chrome://apps oder suche im Startmenue nach \"Break & Rank\". Noch nicht installiert? Browser-Menue (⋮) -> \"App installieren\".")}
+              <Emoji e="💻" /> {t("Kein Installations-Dialog verfuegbar. Schon installiert, aber kein Symbol mehr sichtbar? Oeffne chrome://apps oder suche im Startmenue nach \"Break & Rank\". Noch nicht installiert? Browser-Menue (⋮) -> \"App installieren\".")}
             </p>
           )}
         </section>

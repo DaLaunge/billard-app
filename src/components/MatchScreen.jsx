@@ -27,6 +27,7 @@ import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCo
 import { rpcRetry } from "../lib/rpcRetry";
 import { flyIn, vanishBall, flyEnabled } from "../lib/flyBall";
 import { getMatchFly, storeMatchFly } from "../lib/uiPrefs";
+import Emoji from "./Emoji";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
@@ -819,7 +820,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 {oppQuery.trim() && opponents.length === 0 && (
                   <div className="guest-empty-card">
                     <div className="ghost-info">
-                      <span className="ghost-name">🤔 {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</span>
+                      <span className="ghost-name"><Emoji e="🤔" /> {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</span>
                       <span className="ghost-sub">{t("Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.")}</span>
                     </div>
                     <button className="btn primary" disabled={guestBusy} onClick={addGuest}>
@@ -876,7 +877,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                       <button className={"opp-card ghost-tile" + (opp?.id === ghost.id ? " sel" : "")}
                         title={`${t("Training gegen Ghost")} – ${t("Übungsmatch – zählt nicht fürs Rating")}`}
                         onClick={() => setOpp(opp?.id === ghost.id ? null : ghost)}>
-                        <span className="ghost-ball">👻</span>
+                        <span className="ghost-ball"><Emoji e="👻" /></span>
                         <span>{t("Ghost")}</span>
                       </button>
                     </div>

@@ -1,0 +1,5 @@
+# Zusaetzliche Emoji fuer die Vektor-Sammlung (scripts/buildEmojiSprite.mjs), ein Eintrag pro Zeile oder durch Leerzeichen getrennt.
+# 1) Neue Disziplin-Erfolge (Etappe 2, abgestimmt, katalogweit auf Eindeutigkeit geprueft)
+🤠 🥾 🪕 🌄 🚂 🛤️ 🌵 🐎 🦬 🏜️ 🐂 🐍 🕷️ 🐺 🐪 🦂 🍺 🐚 ⚓ 🦑 🚢 ⛵ 🏝️ 🦀 🐠 🐬 🐳 🌊 🦈 🐡 🦭 🐟 🐙 🦞 🌴 🍌 🥥 🌺 🍃 🪵 🦜 🐒 🦥 🐆 🦍 🐊 🐸 🦟 🦧 🦎 🦩 🎵 🎶 🎼 🎧 📻 🎙️ 🎸 🎷 🎺 🎻 🎹 🪗 🪘 🎚️ 🔔 🎤 📯 🀄 🏮 🐼 🎎 🎑 🎍 🧧 🥢 🐘 🏯 🍵 🥋 🍜 🥟 🐅 🦚 🎏 🎪 🎠 🗺️ 🧳 🛕 🌐 🎡 🎢 🎀 🤹 🤡 👯 👫 👭 👬 🤼 🙌 👏 💪 🛶 🚲 🤾 🏓 💃
+# 2) Haeufige Emoji fuer Nutzertexte (Motto, Ping, Planung, Herausforderung, Feedback)
+😀 😃 😄 😁 😆 😅 😂 🤣 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😋 😛 😜 🤪 😎 🤓 🤔 🤨 😐 😑 😶 🙄 😏 😬 😴 😪 😮 😲 😳 🥺 😢 😭 😤 😠 😡 🤬 🤯 😱 😨 😰 😓 🤗 🤭 🤫 🥳 😈 👿 💀 ☠️ 👻 👽 🤖 💩 🙌 👏 🤝 👍 👎 👌 ✌️ 🤞 🤟 🤘 👊 ✊ 💪 🙏 👋 👀 🧠 ❤️ 🧡 💛 💚 💙 💜 🖤 🤍 💔 💯 💥 💫 ✨ 🔥 ⭐ 🌟 ⚡ 🎉 🎊 🎁 🏆 🥇 🥈 🥉 🏅 🎯 🎱 🏓 🎳 🍻 🍺 🍷 ☕ 🍕 🍔 🍟 🍿 🎂 🚗 🏠 📅 🗓️ 📲 💻 ✅ ❌ ⚠️ ❓ ❗ ➡️ ⬆️ ⬇️ 🟢 🟡 🔴 🔵 🇩🇪 🇬🇧 🇦🇹 🇨🇭 🇺🇸

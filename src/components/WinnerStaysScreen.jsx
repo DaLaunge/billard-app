@@ -13,6 +13,7 @@ import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
+import Emoji from "./Emoji";
 
 const POLL_MS = 8000;
 
@@ -344,7 +345,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       <span title={t("Platz {n}", { n: place })}>#{place}</span>
       <span className="win" title={t("Siege")}>{e.wins} {t("S")}</span>
       <span className="loss" title={t("Niederlagen")}>{e.losses} {t("N")}</span>
-      {e.streak > 1 && <span className="streak" title={t("{n} in Folge", { n: e.streak })}>🔥{e.streak}</span>}
+      {e.streak > 1 && <span className="streak" title={t("{n} in Folge", { n: e.streak })}><Emoji e="🔥" />{e.streak}</span>}
     </span>
   );
 
@@ -573,13 +574,13 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                     {renderEntryAvatars(e, 28)}
                     <span className="stat-name">
                       {entryName(e)}
-                      {e.queue_position <= 1 && <span className="ws-live-tag">🎱 {t("Am Tisch")}</span>}
+                      {e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
                       {e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
                     </span>
                   </span>
                   <span className={"ws-rank-num" + alt}>{e.wins}</span>
                   <span className={"ws-rank-num" + alt}>{e.losses}</span>
-                  <span className={"ws-rank-streak" + alt} title={e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : undefined}>{e.streak > 1 ? `🔥${e.streak}` : ""}</span>
+                  <span className={"ws-rank-streak" + alt} title={e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : undefined}>{e.streak > 1 ? <><Emoji e="🔥" />{e.streak}</> : ""}</span>
                 </div>
               );
             })}

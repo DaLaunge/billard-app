@@ -3,6 +3,7 @@ import { ChevronDown, MessageSquare } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import FeedbackThread from "./FeedbackThread";
+import { EmojiText } from "./Emoji";
 
 // Zeile in der Karte "Konto & Hilfe" (Profil bearbeiten), keine eigene Karte.
 export default function MyFeedbackTickets({ playerId, toast, refreshKey }) {
@@ -61,7 +62,7 @@ export default function MyFeedbackTickets({ playerId, toast, refreshKey }) {
         <div key={tk.id} className="ticket-item">
           <button className="ticket-head" onClick={() => toggle(tk.id)}>
             <span className="ticket-cat">{tk.category === "bug" ? t("Bug") : tk.category === "idea" ? t("Idee") : t("Sonstiges")}</span>
-            <span className="ticket-msg">{tk.message}</span>
+            <span className="ticket-msg"><EmojiText>{tk.message}</EmojiText></span>
             {hasNew(tk) && <span className="new-dot" />}
             <ChevronDown size={15} className={"cat-chev" + (openId === tk.id ? " open" : "")} />
           </button>
