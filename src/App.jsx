@@ -1645,7 +1645,7 @@ export default function App() {
             {tab !== "match" && (
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} player={player}
                 onGo={(target) => navPush({ tab: target })} onTurniere={openTurniereMenu}
-                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onRules={() => setRulesOpen(true)} onSettings={() => { setOpenSettings(true); navPush({ tab: "profil" }); }} onSetTheme={setTheme}
+                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onRules={() => setRulesOpen(true)} onSettings={() => { setOpenSettings(true); navPush({ tab: "profil" }); }} onCheckUpdate={requestUpdateNow} onSetTheme={setTheme}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} isAdmin={player?.role === "admin"}
                 badges={{
                   stats: pendingForMe.length,

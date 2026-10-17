@@ -1,20 +1,33 @@
-import { useState } from "react";
-import { BarChart3, Trophy, Radio, User, Plus, Shield, GraduationCap, BookOpen, Settings, X, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { BarChart3, Trophy, Radio, User, Plus, Shield, GraduationCap, BookOpen, Settings, X, ChevronDown, RefreshCw, Check } from "lucide-react";
 import { TUTORIAL_STEPS } from "../lib/tutorial/steps";
 import Ball from "./Ball";
 import { initials } from "../lib/format";
 import { THEME_CATALOG, THEME_KEYS } from "../lib/themes";
 import { t } from "../lib/i18n";
+import { APP_VERSION } from "../lib/constants";
 
 /* Menue-Drawer am Handy, feste Seitenleiste am PC (ab 900px, siehe .app-drawer
    in App.css). Alle Farben nur ueber die Theme-Variablen, damit Farbdesigns
    und eigener Akzent unveraendert greifen. Die vier Hauptpunkte stehen hier
    noch einmal, damit Seitenleiste und Leiste unten dieselben Ziele haben. */
 export default function AppDrawer({
-  open, onClose, tab, player, onGo, onTurniere, onNewMatch, onTutorial, onRules, onSettings, onSetTheme,
+  open, onClose, tab, player, onGo, onTurniere, onNewMatch, onTutorial, onRules, onSettings, onCheckUpdate, onSetTheme,
   colorOf, badgeOf, photoOf, badges = {}, isAdmin,
 }) {
   const [tourOpen, setTourOpen] = useState(false);
+  // Update-Zeile: idle | checking | found | current | error | unavailable (vorher im Profil)
+  const [updState, setUpdState] = useState("idle");
+  const updTimer = useRef(null);
+  useEffect(() => () => clearTimeout(updTimer.current), []);
+  const runUpdateCheck = async () => {
+    clearTimeout(updTimer.current);
+    setUpdState("checking");
+    // Mindestens 1,2 s, sonst blitzt der Laufbalken nur kurz auf und man weiss nicht, ob geprueft wurde.
+    const [res] = await Promise.all([onCheckUpdate(), new Promise((r) => setTimeout(r, 1200))]);
+    setUpdState(res || "error");
+    if (res !== "found") updTimer.current = setTimeout(() => setUpdState("idle"), 7000);
+  };
   const themeKey = player?.theme_key || "green";
   const custom = player?.theme_custom;
   const go = (fn) => () => { onClose(); fn(); };
@@ -85,6 +98,21 @@ export default function AppDrawer({
               title={t("Eigene")} aria-label={t("Eigene")} aria-pressed="true" />
           )}
         </div>
+        <button type="button" className={"app-drawer-update " + updState} data-tour="update-btn"
+          disabled={updState === "checking" || updState === "found"} onClick={runUpdateCheck}>
+          {updState === "found" || updState === "current" ? <Check size={18} /> : <RefreshCw size={17} className={updState === "checking" ? "spin" : ""} />}
+          <span className="app-drawer-update-text" aria-live="polite">
+            <strong>
+              {updState === "checking" ? t("Suche nach Updates …")
+                : updState === "found" ? t("Update gefunden – wird installiert …")
+                : updState === "current" ? t("Du hast die neueste Version.")
+                : updState === "error" ? t("Prüfung fehlgeschlagen – bist du online?")
+                : updState === "unavailable" ? t("Updates können hier nicht geprüft werden.")
+                : t("Nach Updates suchen")}
+            </strong>
+            <small>{t("Version")} {APP_VERSION}</small>
+          </span>
+        </button>
       </aside>
     </>
   );
