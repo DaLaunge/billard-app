@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Search, X, ArrowDownAZ, ListOrdered, ChevronRight, ChevronsDownUp, ChevronsUpDown, Tag } from "lucide-react";
 import { RULE_CASES, ALL_DISCS, HEYBALL_RULES, HEYBALL_SOURCE, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS, displayTitle, TAGS } from "../lib/rules";
 import { t } from "../lib/i18n";
@@ -155,9 +155,9 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
         const multi = setsOf(c).length > 1;
         if (grouped && !chOpen(chap) && !heading) return null; // Fall eines zugeklappten Kapitels: nichts, auch keinen Abstand
         return (
-          <div key={c.id} className="rs-case-wrap">
+          <Fragment key={c.id}>
             {heading && (
-              <h3 className="rs-chapter">
+              <h3 className="rs-chapter rs-chapter-sticky">
                 <button type="button" className={"rs-chapter-btn" + (chOpen(chap) ? " open" : "")} aria-expanded={chOpen(chap)} onClick={() => toggleCh(chap)}>
                   <ChevronRight size={16} className="rs-chev" />
                   <span>{t(heading)}</span>
@@ -165,6 +165,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
                 </button>
               </h3>
             )}
+            <div className="rs-case-wrap">
             {(!grouped || chOpen(chap)) && (
           <div className={"rs-case" + (isCaseOpen(c.id) ? " open" : "")}>
             <div className="rs-case-head">
@@ -193,7 +194,8 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
             )}
           </div>
             )}
-          </div>
+            </div>
+          </Fragment>
         );
       })}
       {heyball && heyballShown.length > 0 && <HeyballRules rules={heyballShown} />}

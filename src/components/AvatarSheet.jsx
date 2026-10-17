@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { X, Search, LayoutGrid, List, ChevronRight } from "lucide-react";
 import Ball from "./Ball";
 import Emoji from "./Emoji";
 import AvatarPhotoField from "./AvatarPhotoField";
+import ProgressBar from "./widgets/ProgressBar";
 import { initials } from "../lib/format";
 import { flyIn } from "../lib/flyBall";
 import { t } from "../lib/i18n";
@@ -48,6 +49,17 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     [unlocked, q],
   );
 
+  // Gruppen je Kategorie in Katalog-Reihenfolge; die Kopfzeile (Name, x / y, Balken) bleibt beim Scrollen oben, bis die naechste Kategorie kommt.
+  const groups = useMemo(() => {
+    const total = {};
+    (catalog || []).forEach((b) => { total[b.category] = (total[b.category] || 0) + 1; });
+    const earnedIn = {};
+    unlocked.forEach((b) => { earnedIn[b.category] = (earnedIn[b.category] || 0) + 1; });
+    const m = new Map();
+    shown.forEach((b) => { if (!m.has(b.category)) m.set(b.category, []); m.get(b.category).push(b); });
+    return [...m].map(([cat, items]) => ({ cat, items, earned: earnedIn[cat] || 0, total: total[cat] || items.length }));
+  }, [catalog, unlocked, shown]);
+
   const pick = (e, b) => {
     const isSel = selected === b.badge_key;
     if (!isSel) flyRef.current = { key: b.badge_key, rect: e.currentTarget.querySelector(".avatar-sheet-emoji")?.getBoundingClientRect() };
@@ -91,14 +103,22 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
         <div className={"avatar-sheet-list " + view}>
           {unlocked.length === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
           {unlocked.length > 0 && shown.length === 0 && <p className="hint">{t("Kein Erfolg gefunden.")}</p>}
-          {shown.map((b) => (
-            <button key={b.badge_key} type="button" className={"avatar-sheet-item" + (selected === b.badge_key ? " selected" : "")}
-              onClick={(e) => pick(e, b)} title={t(b.description)}>
-              <span className="avatar-sheet-emoji"><Emoji e={b.emoji} /></span>
-              <span className="avatar-sheet-name">{t(b.name)}</span>
-              {view === "detail" && <span className="avatar-sheet-desc">{t(b.description)}</span>}
-              {selected === b.badge_key && <span className="avatar-sheet-on">{view === "detail" ? t("Als Avatar aktiv") : "✓"}</span>}
-            </button>
+          {groups.map((g) => (
+            <Fragment key={g.cat}>
+              <div className="avatar-sheet-cat-head">
+                <div className="avatar-sheet-cat-row"><span className="avatar-sheet-cat-title">{t(g.cat)}</span><span className="avatar-sheet-cat-count">{g.earned} / {g.total}</span></div>
+                <ProgressBar current={g.earned} target={g.total} />
+              </div>
+              {g.items.map((b) => (
+                <button key={b.badge_key} type="button" className={"avatar-sheet-item" + (selected === b.badge_key ? " selected" : "")}
+                  onClick={(e) => pick(e, b)} title={t(b.description)}>
+                  <span className="avatar-sheet-emoji"><Emoji e={b.emoji} /></span>
+                  <span className="avatar-sheet-name">{t(b.name)}</span>
+                  {view === "detail" && <span className="avatar-sheet-desc">{t(b.description)}</span>}
+                  {selected === b.badge_key && <span className="avatar-sheet-on">{view === "detail" ? t("Als Avatar aktiv") : "✓"}</span>}
+                </button>
+              ))}
+            </Fragment>
           ))}
         </div>
       </div>

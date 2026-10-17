@@ -3062,3 +3062,13 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 @media (max-width: 899px) {
   .badge-cat-head { position: sticky; top: 40px; z-index: 3; background: var(--felt-2); padding-top: 6px; padding-bottom: 6px; box-shadow: 0 1px 0 var(--line); }
 }
+
+/* Profilbild-Fenster: Kategorie-Kopf (Name, x / y, Fortschrittsbalken) bleibt oben, bis die naechste Kategorie kommt.
+   Die Koepfe sind Geschwister der Eintraege im selben Behaelter; der spaetere deckt den frueheren mit seinem Hintergrund ab. */
+.avatar-sheet-cat-head { grid-column: 1 / -1; position: sticky; top: 0; z-index: 2; background: var(--felt); padding: 8px 2px 6px; box-shadow: 0 1px 0 var(--line); }
+.avatar-sheet-cat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.avatar-sheet-cat-title { font-size: 12px; font-weight: 700; color: var(--ivory); text-transform: uppercase; letter-spacing: .04em; }
+.avatar-sheet-cat-count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--ivory-dim); }
+.avatar-sheet-list { padding-top: 0; }
+/* Regelkunde: Kapitelkopf bleibt beim Scrollen oben (gleiches Prinzip; Kapitel und Faelle sind Geschwister im Behaelter) */
+.rs-chapter-sticky { position: sticky; top: 0; z-index: 3; background: var(--felt); margin: 0; padding: 6px 0; box-shadow: 0 1px 0 var(--line); }
