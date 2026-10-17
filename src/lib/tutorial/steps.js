@@ -53,18 +53,18 @@ export const TUTORIAL_STEPS = [
   },
   {
     id: "profil", icon: "profil", tab: "profil", target: '[data-tour="tab-profil"]',
-    title: "Dein Profil",
-    body: "Hier siehst du Erfolge, deine Zahlen und Rekorde. Über das QR-Symbol laden andere dich zum Match ein, mit dem Zahnrad passt du alles an.",
+    title: "Deine Identität",
+    body: "Deine Visitenkarte: Kugel, Name, Motto und Rating. Mit „So sehen dich andere“ prüfst du dein Profil aus Sicht der anderen, über „Einladen“ holst du Freunde ins Spiel. Zahlen und Erfolge haben eigene Seiten im Menü.",
   },
   {
-    id: "achievements", icon: "achievements", tab: "profil", target: "#pf-achievements-full",
+    id: "achievements", icon: "achievements", tab: "erfolge", target: "#pf-achievements-full",
     title: "Erfolge",
     body: "Ganz oben stehen die drei Erfolge, die dir am nächsten sind – tippe einen an, um die genaue Bedingung zu lesen. Freigeschaltete Erfolge kannst du als Avatar zeigen.",
   },
   {
     id: "customize", icon: "customize", tab: "profil",
     title: "Passe die App an dich an",
-    body: "Zu viel auf einmal? Jede Karte hat oben ein Drei-Punkte-Menü zum Ausblenden. Unter Zahnrad → Karten ordnest du alles neu, und unter „Dieses Gerät“ stellst du z. B. ein, dass Filter immer offen sind.",
+    body: "Im Menü ziehst du Punkte in die gewünschte Reihenfolge und heftest sie mit der Nadel an die Leiste unten. Unter „Einstellungen“ wählst du Farben und Design und stellst z. B. ein, dass Filter immer offen sind.",
   },
   {
     id: "match-extras", icon: "extras", tab: "stats",

@@ -1,7 +1,7 @@
 import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
 import ChangelogRow from "./widgets/ChangelogRow";
-import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, UserPlus, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { APP_VERSION, DISC_LABEL } from "../lib/constants";
 import Emoji from "./Emoji";
@@ -54,7 +54,7 @@ const groupSubs = (list) => {
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
@@ -1033,12 +1033,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       <header className="screen-head with-back">
         {onBack && <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>}
         <div>
-          <h2>{isMe ? t("Mein Profil") : t("Spielerprofil")}</h2>
-          <span className="head-note">{isMe ? t("Deine Erfolge und Statistiken") : t("Erfolge und Statistiken dieses Spielers")}</span>
+          <h2>{asOthers ? t("So sehen dich andere") : mode === "zahlen" ? t("Meine Zahlen") : mode === "erfolge" ? t("Meine Erfolge") : isMe ? t("Meine Identität") : t("Spielerprofil")}</h2>
+          <span className="head-note">{asOthers ? t("Vorschau deines Profils für andere Spieler")
+            : mode === "zahlen" ? t("Ratings, Rekorde und Tempo")
+            : mode === "erfolge" ? t("Fortschritt und Sammlung")
+            : isMe ? t("So kennen dich die anderen") : t("Erfolge und Statistiken dieses Spielers")}</span>
         </div>
       </header>
 
-      <div className="pf-layout" data-seg={segments.length > 1 ? activeSeg : undefined}>
+      <div className="pf-layout" data-mode={mode} data-seg={mode === "zahlen" ? "zahlen" : mode === "erfolge" ? "erfolge" : mode === "identity" ? "none" : segments.length > 1 ? activeSeg : undefined}>
       {/* Drei frei befuellbare Spalten (am Handy per display:contents EINE
           durchgehende Liste, siehe App.css): duenn - breit - duenn, wie auf
           Statistik und Live. Fest sind nur die Identitaetskarte ganz oben
@@ -1055,7 +1058,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         onInvite={isMe ? onInvite : undefined}
         onSettings={isMe ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : undefined}
         actions={<>
-          {!isMe && playerObj && !challengeForm && (
+          {!isMe && !asOthers && playerObj && !challengeForm && (
             <div className="sp-controls" style={{ marginBottom: 14 }}>
               <button className="btn primary" onClick={() => onStartMatch(playerObj)}>
                 <Play size={15} /> {t("Match starten")}
@@ -1065,7 +1068,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               </button>
             </div>
           )}
-          {!isMe && playerObj && challengeForm && (
+          {!isMe && !asOthers && playerObj && challengeForm && (
             <div className="challenge-form">
               <div className="search-row" style={{ marginBottom: 8 }}>
                 <input placeholder={t("z. B. 'Hast du heute Abend Zeit?'")} value={challengeMsg}
@@ -1085,7 +1088,22 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           )}
         </>} />
       </div>
+      {mode === "identity" && isMe && (
+        <div className="pf-identity-extra" style={{ order: 5 }}>
+          <button type="button" className="pf-id-card" onClick={onPreview}>
+            <Eye size={20} /><span className="pf-id-card-text"><strong>{t("So sehen dich andere")}</strong><small>{t("Kugel, Name, Motto, Rating und Erfolge")}</small></span><ChevronRight size={18} />
+          </button>
+          <button type="button" className="pf-id-card" onClick={onInvite}>
+            <UserPlus size={20} /><span className="pf-id-card-text"><strong>{t("Einladen")}</strong><small>{t("Freunde per Code ins Spiel holen")}</small></span><ChevronRight size={18} />
+          </button>
+          <button type="button" className="pf-id-card" onClick={() => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); }}>
+            <Palette size={20} /><span className="pf-id-card-text"><strong>{t("Aussehen")}</strong><small>{t("Kugelfarbe, Foto und Design")}</small></span><ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+      {mode === "full" && (
       <div className="seg-slot" style={{ order: 5 }}><SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} storageKey="profil" /></div>
+      )}
       {renderColumn("left")}
       </div>
 

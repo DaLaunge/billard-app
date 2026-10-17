@@ -2952,3 +2952,19 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .pf-reset-all-text { display: flex; flex-direction: column; gap: 2px; }
 .pf-reset-all strong { font-size: 15px; font-weight: 700; }
 .pf-reset-all small { font-size: 12px; color: var(--ivory-dim); }
+
+/* Profil in drei Seiten (Identitaet / Zahlen / Erfolge): am Handy zeigt jede nur ihren Teil, am PC bleibt alles auf einer Seite. */
+.pf-identity-extra { display: flex; flex-direction: column; gap: 8px; }
+.pf-id-card { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1px solid var(--accent-line);
+  border-radius: 18px; background: var(--felt-2); color: var(--ivory); font: inherit; text-align: left; cursor: pointer; }
+.pf-id-card:hover { border-color: var(--accent); }
+.pf-id-card > svg:first-child { color: var(--accent); flex: none; }
+.pf-id-card > svg:last-child { margin-left: auto; color: var(--ivory-dim); flex: none; }
+.pf-id-card-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pf-id-card strong { font-size: 15px; font-weight: 700; }
+.pf-id-card small { font-size: 12px; color: var(--ivory-dim); }
+@media (max-width: 899px) {
+  .pf-layout[data-mode="zahlen"] .pf-identity, .pf-layout[data-mode="erfolge"] .pf-identity { display: none; }
+  .pf-layout[data-seg="none"] .card-slot { display: none; }
+}
+@media (min-width: 900px) { .pf-identity-extra { display: none; } }

@@ -1478,10 +1478,10 @@ export default function App() {
     stats: { icon: BarChart3, label: "Statistik", tour: "tab-stats", on: tab === "stats" || tab === "fremdprofil", run: () => navPush({ tab: "stats" }), badge: pendingForMe.length },
     turnier: { icon: Trophy, label: "Turniere", tour: "tab-turnier", on: tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays", run: openTurniereMenu, badge: tourneyReadyList.length + wsReadyList.length },
     live: { icon: Radio, label: "Live", tour: "tab-live", on: tab === "live", run: () => navPush({ tab: "live" }), badge: pings.length + openChallengesAll.length + plannings.length },
-    profil: { icon: User, label: "Profil", tour: "tab-profil", on: tab === "profil" || tab === "admin", run: () => navPush({ tab: "profil" }),
+    profil: { icon: User, label: "Identität", tour: "tab-profil", on: tab === "profil" || tab === "admin" || tab === "profilvorschau", run: () => navPush({ tab: "profil" }),
       badge: openChallengesToMe.length > 0 ? "!" : (player?.role === "admin" ? unconfirmed.length : 0) },
-    achievements: { icon: Award, label: "Erfolge", on: false, run: () => { setOpenSeg("achievements"); navPush({ tab: "profil" }); } },
-    mystats: { icon: Activity, label: "Meine Zahlen", on: false, run: () => { setOpenSeg("zahlen"); navPush({ tab: "profil" }); } },
+    achievements: { icon: Award, label: "Meine Erfolge", tour: "tab-erfolge", on: tab === "erfolge", run: () => navPush({ tab: "erfolge" }) },
+    mystats: { icon: Activity, label: "Meine Zahlen", tour: "tab-zahlen", on: tab === "zahlen", run: () => navPush({ tab: "zahlen" }) },
     invite: { icon: UserPlus, label: "Spieler einladen", on: tab === "invite", run: () => navPush({ tab: "invite" }) },
     regeln: { icon: BookOpen, label: "Regelkunde", on: tab === "regeln", run: () => navPush({ tab: "regeln" }) },
     tutorial: { icon: GraduationCap, label: "Tutorial", on: false, run: () => startTutorial(null) },
@@ -1689,7 +1689,7 @@ export default function App() {
                 onTogglePin={togglePin} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
-              {(MAIN_TABS.includes(tab) || tab === "regeln") && (
+              {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge"].includes(tab)) && (
                 <button data-tour="burger" className="burger-btn" onClick={() => setDrawerOpen(true)} aria-label={t("Menü")} aria-expanded={drawerOpen}>
                   <Menu size={20} />
                 </button>
@@ -1759,8 +1759,8 @@ export default function App() {
                 // zurueck (z.B. noch unbestaetigtes eigenes Match).
                 <MatchProtokollScreen match={matches.find((mm) => mm.id === protokollMatch.id) || protokollMatch} me={player} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
               )}
-              {tab === "profil" && (
-                <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
+              {(tab === "profil" || tab === "zahlen" || tab === "erfolge") && (
+                <ProfilScreen mode={tab === "profil" ? "identity" : tab} onPreview={() => navPush({ tab: "profilvorschau" })} nickname={player.nickname} matches={matches} rangliste={rangliste}
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
@@ -1780,6 +1780,16 @@ export default function App() {
                   onResetCardLayout={resetCardLayout}
                   onSetCardLayout={setCardLayout}
                   onOpenProfile={openProfile} />
+              )}
+              {tab === "profilvorschau" && (
+                <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
+                  onBack={() => window.history.back()} isMe={false} asOthers
+                  onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                  players={players} meRow={player} onSaveProfile={saveProfile}
+                  earnedBadges={badgesOfId(player.id)}
+                  onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} onStartMatch={startMatchVs} challenges={challenges}
+                  achievementCounters={achievementCounters} toast={toast} lang={lang} onLang={changeLang} onSetTheme={setTheme}
+                  onReload={loadData} onSetCardLayout={setCardLayout} onOpenProfile={openProfile} />
               )}
               {tab === "fremdprofil" && profileName && (
                 <ProfilScreen nickname={profileName} matches={matches} rangliste={rangliste}
