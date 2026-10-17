@@ -48,6 +48,7 @@ import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
 import RulesScreen from "./components/RulesScreen";
 import AvatarSheet from "./components/AvatarSheet";
+import { applyListPrefs } from "./lib/uiPrefs";
 import BottomBar from "./components/BottomBar";
 import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED } from "./lib/menuPrefs";
 import ConfirmHost from "./components/ConfirmHost";
@@ -999,6 +1000,7 @@ export default function App() {
   const [openSettings, setOpenSettings] = useState(false);
   const [openSeg, setOpenSeg] = useState(null);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  useEffect(() => { applyListPrefs(); }, []);
   // Ein Tipp auf die EIGENE Kugel (egal wo) oeffnet das Profilbild-Fenster. Ausgenommen: die Match-Eingabe (dort waehlt man
   // sich selbst als Spieler aus), das Fenster selbst und Textfelder.
   useEffect(() => {

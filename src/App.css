@@ -3080,3 +3080,14 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
   font-size: 12px; font-weight: 700; color: var(--ivory); text-transform: uppercase; letter-spacing: .04em; box-shadow: 0 1px 0 var(--line); }
 .num-section-head svg { color: var(--accent); flex: none; }
 .num-section-body { padding: 4px 0 14px; }
+
+/* Einstellung "Kapitelkoepfe beim Scrollen anzeigen" aus: alle angepinnten Koepfe wieder normal im Fluss */
+html[data-sticky-heads="off"] .screen .stat-block > .stat-block-head,
+html[data-sticky-heads="off"] .badge-cat-head, html[data-sticky-heads="off"] .num-section-head,
+html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="off"] .rs-chapter-sticky { position: static; }
+.list-prefs-mode { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 4px; }
+.list-prefs-label { font-size: 13px; color: var(--ivory-dim); }
+.list-prefs-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.list-prefs-chips .chip { display: inline-flex; align-items: center; gap: 6px; }
+.num-jump { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 8px; }
+.num-jump .chip { display: inline-flex; align-items: center; gap: 5px; }

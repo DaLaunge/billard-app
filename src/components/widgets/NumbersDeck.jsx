@@ -40,7 +40,7 @@ const readTab = () => { try { return localStorage.getItem(TAB_KEY); } catch { re
 const writeTab = (v) => { try { localStorage.setItem(TAB_KEY, v); } catch { /* Privatmodus */ } };
 
 export default function NumbersDeck({ nickname, isMe = true, parts, matches, rangliste, players, challenges,
-  catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, column, onToggleColumn, stacked = false }) {
+  catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, column, onToggleColumn, stacked = false, jump = false }) {
   const playerObj = players.find((p) => p.nickname === nickname);
   const myRows = rangliste.filter((r) => r.nickname === nickname);
   const extras = useMemo(
@@ -129,9 +129,19 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
   if (stacked) {
     return (
       <section className="stat-block numbers-stacked">
+        {jump && (
+          <div className="num-jump" role="group" aria-label={t("Kapitel")}>
+            {shown.map((id) => (
+              <button key={id} type="button" className="chip" title={meta[id].title}
+                onClick={() => document.querySelector(`.numbers-stacked [data-num="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                {meta[id].icon} {meta[id].tab}
+              </button>
+            ))}
+          </div>
+        )}
         {shown.map((id) => (
           <Fragment key={id}>
-            <div className="num-section-head">{meta[id].icon}<span>{meta[id].title}</span></div>
+            <div className="num-section-head" data-num={id}>{meta[id].icon}<span>{meta[id].title}</span></div>
             <div className="num-section-body">{bodies[id]}</div>
           </Fragment>
         ))}
