@@ -1706,7 +1706,7 @@ export default function App() {
             {avatarOpen && (
               <AvatarSheet player={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} catalog={catalog}
                 earned={badgesOfId(player.id)} onSelectBadge={selectBadge} onReload={loadData} toast={toast}
-                onClose={() => setAvatarOpen(false)} />
+                onClose={() => setAvatarOpen(false)} onOpenAchievements={() => { setAvatarOpen(false); navPush({ tab: "erfolge" }); }} />
             )}
             {tab !== "match" && (
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} player={player}

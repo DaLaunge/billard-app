@@ -3013,8 +3013,9 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .avatar-sheet-views { flex: none; display: flex; background: var(--felt-2); border: 1px solid var(--line); border-radius: 12px; padding: 2px; }
 .avatar-sheet-views button { border: 0; background: none; color: var(--ivory-dim); width: 36px; height: 34px; border-radius: 10px; display: grid; place-items: center; cursor: pointer; }
 .avatar-sheet-views button.on { background: var(--accent); color: var(--accent-ink); }
-.avatar-sheet-label { flex: none; font-size: 13px; font-weight: 700; color: var(--accent); padding: 4px 18px 6px; }
-.avatar-sheet-label span { color: var(--ivory-dim); font-weight: 500; margin-left: 4px; }
+.avatar-sheet-label { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700; color: var(--accent); padding: 4px 18px 6px; }
+.avatar-sheet-label-text span { color: var(--ivory-dim); font-weight: 500; margin-left: 4px; }
+.avatar-sheet-all { display: inline-flex; align-items: center; gap: 2px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; padding: 4px 0 4px 8px; }
 .avatar-sheet-list { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0 14px calc(14px + env(safe-area-inset-bottom)); overscroll-behavior: contain; }
 .avatar-sheet-list.normal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-content: start; }
 .avatar-sheet-list.detail { display: flex; flex-direction: column; gap: 6px; }

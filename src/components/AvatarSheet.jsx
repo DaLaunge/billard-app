@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, Search, LayoutGrid, List } from "lucide-react";
+import { X, Search, LayoutGrid, List, ChevronRight } from "lucide-react";
 import Ball from "./Ball";
 import Emoji from "./Emoji";
 import AvatarPhotoField from "./AvatarPhotoField";
@@ -12,7 +12,7 @@ import { t } from "../lib/i18n";
    Normal/Detail-Umschaltung - nur die Liste der freigeschalteten Erfolge scrollt.
    Ein Tipp auf einen Erfolg setzt ihn als Avatar (die Kugel fliegt wie bei der Gegnerwahl hinein), ein Tipp auf
    den aktiven nimmt ihn wieder weg. Ersetzt die frueheren Einzelmenues fuer Foto und Avatar-Erfolg. */
-export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog, earned, onSelectBadge, onReload, toast, onClose }) {
+export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog, earned, onSelectBadge, onReload, toast, onClose, onOpenAchievements }) {
   const nick = player.nickname;
   const selected = player.selected_badge || null;
   const flyRef = useRef(null);
@@ -81,7 +81,12 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
           </div>
         </div>
         <div className="avatar-sheet-label">
-          {t("Freigeschaltete Erfolge")} <span>{shown.length}{q ? ` / ${unlocked.length}` : ""}</span>
+          <span className="avatar-sheet-label-text">{t("Freigeschaltete Erfolge")} <span>{shown.length}{q ? ` / ${unlocked.length}` : ""}</span></span>
+          {onOpenAchievements && (
+            <button type="button" className="avatar-sheet-all" onClick={onOpenAchievements}>
+              {t("Alle Erfolge")} <ChevronRight size={14} />
+            </button>
+          )}
         </div>
         <div className={"avatar-sheet-list " + view}>
           {unlocked.length === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
