@@ -48,7 +48,8 @@ import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
 import RulesScreen from "./components/RulesScreen";
 import AvatarSheet from "./components/AvatarSheet";
-import { applyListPrefs } from "./lib/uiPrefs";
+import { applyListPrefs, hasListModeChoice, clearListPrefs, storeListMode } from "./lib/uiPrefs";
+import ListChoiceDialog from "./components/ListChoiceDialog";
 import BottomBar from "./components/BottomBar";
 import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED } from "./lib/menuPrefs";
 import ConfirmHost from "./components/ConfirmHost";
@@ -1000,6 +1001,7 @@ export default function App() {
   const [openSettings, setOpenSettings] = useState(false);
   const [openSeg, setOpenSeg] = useState(null);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [listChoiceOpen, setListChoiceOpen] = useState(false);
   useEffect(() => { applyListPrefs(); }, []);
   // Ein Tipp auf die EIGENE Kugel (egal wo) oeffnet das Profilbild-Fenster. Ausgenommen: die Match-Eingabe (dort waehlt man
   // sich selbst als Spieler aus), das Fenster selbst und Textfelder.
@@ -1024,6 +1026,8 @@ export default function App() {
   const updateMenuPrefs = (p) => { setMenuPrefs(p); storeMenuPrefs(p); };
   // "Alle Einstellungen zuruecksetzen" (Profil -> Einstellungen): Menue-Reihenfolge, angeheftete Punkte, Segment-Reihenfolgen.
   const resetMenuLocal = () => {
+    clearListPrefs();
+    setListChoiceOpen(true);
     updateMenuPrefs(sanitizeMenuPrefs(null));
     try { Object.keys(localStorage).filter((k) => k.startsWith("segOrder:") || k === "statSeg" || k === "profilSeg").forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
   };
@@ -1340,6 +1344,13 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [tutorialBlocked, tutorialRun, draftOffer]);
   const closeNews = () => { markReleaseSeen(); setNewsItems(null); };
+  // Einmalige Wahl Tab-Freak / Doomscroller: erst wenn kein anderes Popup und kein Tutorial offen ist, nur wenn auf diesem Geraet
+  // noch nie gewaehlt wurde (neues Geraet; nach "Alle Einstellungen zuruecksetzen" oeffnet es direkt, siehe resetMenuLocal).
+  useEffect(() => {
+    if (listChoiceOpen || tutorialBlocked || tutorialRun || newsItems || hasListModeChoice()) return undefined;
+    const id = setTimeout(() => setListChoiceOpen(true), 1500);
+    return () => clearTimeout(id);
+  }, [listChoiceOpen, tutorialBlocked, tutorialRun, newsItems]);
   const showPendingPopup = !!player && pendingPopupOn && !newsItems && MAIN_TABS.includes(tab) && !mustUpdate && !tutorialRun
     && !celebrate && !tourneyReady && !wsReady && !draftOffer
     && pendingForMe.some((m) => !pendingSeen.includes(m.id));
@@ -1711,6 +1722,7 @@ export default function App() {
                   style={ptr.refreshing ? undefined : { transform: `rotate(${(ptr.pull / ptr.threshold) * 270}deg)` }} />
               </div>
             )}
+            {listChoiceOpen && <ListChoiceDialog onChoose={(m) => { storeListMode(m); setListChoiceOpen(false); }} />}
             {avatarOpen && (
               <AvatarSheet player={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} catalog={catalog}
                 earned={badgesOfId(player.id)} onSelectBadge={selectBadge} onReload={loadData} toast={toast}

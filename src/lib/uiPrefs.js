@@ -81,6 +81,14 @@ const STICKY_HEADS_KEY = "stickyHeads";
 export function getListMode() {
   try { return localStorage.getItem(LIST_MODE_KEY) === "stacked" ? "stacked" : "chapters"; } catch { return "chapters"; }
 }
+// true, solange auf diesem Geraet noch nie gewaehlt wurde (neues Geraet oder nach dem Zuruecksetzen) - dann fragt die App einmal.
+export function hasListModeChoice() {
+  try { return localStorage.getItem(LIST_MODE_KEY) !== null; } catch { return true; }
+}
+export function clearListPrefs() {
+  try { localStorage.removeItem(LIST_MODE_KEY); localStorage.removeItem(STICKY_HEADS_KEY); } catch { /* ignore */ }
+  applyListPrefs();
+}
 export function storeListMode(mode) {
   try { localStorage.setItem(LIST_MODE_KEY, mode === "stacked" ? "stacked" : "chapters"); } catch { /* ignore */ }
 }
