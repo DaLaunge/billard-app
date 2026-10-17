@@ -56,7 +56,7 @@ const groupSubs = (list) => {
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onEditChange, closeEditTick }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
@@ -171,6 +171,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [edit, setEdit] = useState(false);
   // Erfolg als Avatar: beim Antippen merkt sich der Klick den Rahmen des Erfolgs-Symbols, sobald der Avatar den Erfolg
   // zeigt (meRow.selected_badge), fliegt die Kugel von dort in den Avatar oben rechts (lib/flyBall.js wie bei der Gegnerwahl).
+  // Dem App-Rahmen melden, ob die Einstellungen offen sind (Wischgeste), und von dort wieder schliessen lassen.
+  useEffect(() => { onEditChange?.(edit); }, [edit]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => onEditChange?.(false), []);     // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (closeEditTick) setEdit(false); }, [closeEditTick]);
   const avatarFlyRef = useRef(null);
   const avatarBadge = badgeOf(nickname);
   useEffect(() => {

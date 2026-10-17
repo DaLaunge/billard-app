@@ -1034,11 +1034,17 @@ export default function App() {
     if (!target || target === tab) return;
     if (target === "turnier") openTurniereMenu(); else navPush({ tab: target });
   };
+  // Die Einstellungen (Profil -> Aussehen) sind ein Zustand INNERHALB des Profils, kein eigener Tab: solange sie offen
+  // sind, schliesst jede Wischgeste sie wieder, statt zum Nachbar-Tab zu springen.
+  const [profilEdit, setProfilEdit] = useState(false);
+  const [closeEditTick, setCloseEditTick] = useState(0);
+  const closeProfilEdit = () => setCloseEditTick((n) => n + 1);
+  const inSettings = tab === "profil" && profilEdit;
   useSwipeNav(contentEl, {
     enabled: !!player && !mustUpdate && !LIVE_ENTRY_TABS.includes(tab),
-    onBack: mainIdx === -1 ? () => window.history.back() : undefined,
-    onPrev: mainIdx > 0 ? () => goMain(mainIdx - 1) : undefined,
-    onNext: mainIdx !== -1 && mainIdx < MAIN_TABS.length - 1 ? () => goMain(mainIdx + 1) : undefined,
+    onBack: inSettings ? closeProfilEdit : mainIdx === -1 ? () => window.history.back() : undefined,
+    onPrev: inSettings ? closeProfilEdit : mainIdx > 0 ? () => goMain(mainIdx - 1) : undefined,
+    onNext: inSettings ? closeProfilEdit : mainIdx !== -1 && mainIdx < MAIN_TABS.length - 1 ? () => goMain(mainIdx + 1) : undefined,
   });
 
   // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
@@ -1760,7 +1766,7 @@ export default function App() {
                 <MatchProtokollScreen match={matches.find((mm) => mm.id === protokollMatch.id) || protokollMatch} me={player} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
               )}
               {(tab === "profil" || tab === "zahlen" || tab === "erfolge") && (
-                <ProfilScreen key={tab} mode={tab === "profil" ? "identity" : tab} onPreview={() => navPush({ tab: "profilvorschau" })} onOpenAchievements={() => navPush({ tab: "erfolge" })} nickname={player.nickname} matches={matches} rangliste={rangliste}
+                <ProfilScreen key={tab} mode={tab === "profil" ? "identity" : tab} onPreview={() => navPush({ tab: "profilvorschau" })} onOpenAchievements={() => navPush({ tab: "erfolge" })} onEditChange={setProfilEdit} closeEditTick={closeEditTick} nickname={player.nickname} matches={matches} rangliste={rangliste}
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
