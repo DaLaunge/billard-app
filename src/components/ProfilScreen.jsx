@@ -1015,7 +1015,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     const { parts, anchor } = foldedDeck(deckOrder, ids);
     if (anchor && deck.numbers) {
       cardsById[anchor] = (
-        <NumbersDeck nickname={nickname} isMe={isMe} parts={parts} matches={matches} rangliste={rangliste}
+        <NumbersDeck stacked={mode === "zahlen"} nickname={nickname} isMe={isMe} parts={parts} matches={matches} rangliste={rangliste}
           players={players} challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
           onOpenProfile={onOpenProfile} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
           onHidePart={isMe && onSetCardLayout ? (id) => cards.hideCard(id) : undefined} />

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { BarChart3, Trophy, Star, Swords, Clock, PartyPopper } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { fmtDuration } from "../../lib/format";
@@ -40,7 +40,7 @@ const readTab = () => { try { return localStorage.getItem(TAB_KEY); } catch { re
 const writeTab = (v) => { try { localStorage.setItem(TAB_KEY, v); } catch { /* Privatmodus */ } };
 
 export default function NumbersDeck({ nickname, isMe = true, parts, matches, rangliste, players, challenges,
-  catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, column, onToggleColumn }) {
+  catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, column, onToggleColumn, stacked = false }) {
   const playerObj = players.find((p) => p.nickname === nickname);
   const myRows = rangliste.filter((r) => r.nickname === nickname);
   const extras = useMemo(
@@ -123,6 +123,22 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
     fun: { tab: t("Fun"), title: t("Fun-Zahlen"), icon: <PartyPopper size={15} />,
       info: t("Aus den optionalen Zusatzzählern (Fluke, Runout, Scratch, Foul): Summe, Schnitt pro Match, Bestwert in einem Match und dein Platz unter allen, die den Zähler benutzt haben. Zählt nur Einzel-Matches, in denen die Zähler benutzt wurden – reiner Spaß, ohne Einfluss auf Rating und Erfolge.") },
   };
+
+  // Gestapelte Ansicht (Seite "Meine Zahlen"): alle Abschnitte untereinander statt als Reiter. Die Abschnittskoepfe sind
+  // Geschwister der Inhalte im selben Behaelter und bleiben beim Scrollen oben, bis der naechste kommt (wie bei den Erfolgen).
+  if (stacked) {
+    return (
+      <section className="stat-block numbers-stacked">
+        <div className="stat-block-head"><h3><BarChart3 size={17} /> <span className="stat-block-title-text">{isMe ? t("Meine Zahlen") : t("Zahlen")}</span></h3></div>
+        {shown.map((id) => (
+          <Fragment key={id}>
+            <div className="num-section-head">{meta[id].icon}<span>{meta[id].title}</span></div>
+            <div className="num-section-body">{bodies[id]}</div>
+          </Fragment>
+        ))}
+      </section>
+    );
+  }
 
   return (
     <CardDeck inlineTabs roomy={roomy} icon={<BarChart3 size={17} />} title={isMe ? t("Meine Zahlen") : t("Zahlen")}
