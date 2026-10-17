@@ -1154,6 +1154,8 @@ const TRANSLATIONS = {
     "Spieler entfernt.": "Player removed.",
     "{n} Spieler hinzufügen": "Add {n} player(s)",
     "Turnier starten": "Start tournament",
+    "Es fehlen noch {n} Spieler zum Start.": "{n} more players needed to start.",
+    "Für dieses Format braucht es mindestens {n} Spieler - es fehlen noch {m}. Spieler hinzufügen oder das Turnier löschen.": "This format needs at least {n} players - {m} still missing. Add players or delete the tournament.",
     "Turnier jetzt starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost.": "Start the tournament now? The bracket will be drawn from the currently registered players.",
     "Turnier gestartet.": "Tournament started.",
     "Start rückgängig machen": "Undo start",

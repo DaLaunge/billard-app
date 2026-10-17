@@ -398,7 +398,16 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     await load();
   };
 
+  // Spiegelt die Pruefungen in tournament_start, damit die Turnierleitung vorab
+  // sieht, wie viele Spieler noch fehlen, statt erst nach dem Klick in einen
+  // Fehler zu laufen.
+  const minStartPlayers = !tour ? 2
+    : tour.format === "round_robin" ? Math.max(3, tour.playoff_size || 0)
+    : Math.max(2, tour.playoff_size || 0, tour.format === "double_ko" && tour.playoff_size > 2 ? tour.playoff_size * 2 : 0);
+  const missingPlayers = Math.max(0, minStartPlayers - (roster || []).length);
+
   const startTournament = async () => {
+    if (missingPlayers > 0) { toast(t("Es fehlen noch {n} Spieler zum Start.", { n: missingPlayers })); return; }
     if (!(await appConfirm(t("Turnier jetzt starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost.")))) return;
     setBusyId("start");
     const { error } = await supabase.rpc("tournament_start", { p_tournament_id: tournamentId });
@@ -543,7 +552,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
         {isOrganizer && (
           <div className="chips small" style={{ marginBottom: 10 }}>
-            <button className="btn primary" disabled={busyId === "start"} onClick={startTournament}>
+            {missingPlayers > 0 && (
+              <div className="ghost-sub" style={{ width: "100%", marginBottom: 6 }}>
+                {t("Für dieses Format braucht es mindestens {n} Spieler - es fehlen noch {m}. Spieler hinzufügen oder das Turnier löschen.", { n: minStartPlayers, m: missingPlayers })}
+              </div>
+            )}
+            <button className="btn primary" disabled={busyId === "start" || missingPlayers > 0} onClick={startTournament}>
               <Flag size={15} /> {t("Turnier starten")}
             </button>
             <button className="btn ghost" disabled={busyId === "delete"} onClick={deleteTournament}>
