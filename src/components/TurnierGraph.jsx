@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { X, ZoomIn, ZoomOut, RotateCcw, Trophy, Minimize2, UserX, Check } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, Trophy, Minimize2, UserX, Check, Route } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
@@ -26,6 +26,9 @@ const ZOOM_STEP = 0.2;
 export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourStatus, resultsLocked, busyId, onOpenMatchScreen, onOrganizerReport, onConfirm, onForceConfirm, onEditMatch, onMarkNoShow, colorOf, badgeOf, photoOf, isMaximized, onToggleMaximize }) {
   const [selectedId, setSelectedId] = useState(null);
   const [zoom, setZoom] = useState(1);
+  // "Dein Turnierweg": nur die eigenen Partien + die Linien dazwischen leuchten, alles andere
+  // tritt zurueck. Reine Ansicht, nichts wird gespeichert.
+  const [showPath, setShowPath] = useState(false);
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
   const wrapRef = useRef(null);
@@ -226,6 +229,24 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
     return ids;
   }, [selectedId, layout.edges]);
 
+  const myPath = useMemo(() => {
+    const mine = matches.filter((m) => me?.id && (m.player1_id === me.id || m.player2_id === me.id));
+    const ids = new Set(mine.map((m) => m.id));
+    return { mine, ids, any: mine.length > 0 };
+  }, [matches, me?.id]);
+  const pathMode = showPath && myPath.any && !selectedId;
+  const togglePath = () => {
+    const on = !showPath;
+    setShowPath(on);
+    if (!on) return;
+    setSelectedId(null);
+    // Zur aktuellen (sonst letzten) eigenen Partie scrollen.
+    const target = myPath.mine.find((m) => !m.winner_id && !m.void) || myPath.mine[myPath.mine.length - 1];
+    const p = target && layout.pos[target.id];
+    const el = wrapRef.current;
+    if (p && el) el.scrollTo({ left: Math.max(0, (p.x - 40) * zoom), top: Math.max(0, (p.y - 60) * zoom), behavior: "smooth" });
+  };
+
   const zoomBy = (delta) => setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(z + delta).toFixed(2))));
 
   const closeNoShow = () => { setNoShowOpen(false); setAbsent1(false); setAbsent2(false); };
@@ -318,6 +339,13 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               (Paarung+Tisch stehen, noch kein Ergebnis, Turnierleitung, kein
               eigenes Match) - ohne Auswahl also gar nicht sichtbar, das ist
               bereits die erste Huerde gegen einen versehentlichen Klick. */}
+          {myPath.any && (
+            <button type="button" className={"turnier-graph-minimize-btn turnier-graph-path-btn" + (showPath ? " on" : "")}
+              onClick={(e) => { e.stopPropagation(); togglePath(); }} aria-pressed={showPath}
+              aria-label={t("Dein Turnierweg")} title={t("Dein Turnierweg")}>
+              <Route size={18} />
+            </button>
+          )}
           {selectedActions?.canMarkNoShow && (
             <button type="button" className="turnier-graph-minimize-btn"
               onClick={(e) => { e.stopPropagation(); setNoShowOpen(true); }}
@@ -380,11 +408,12 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                 const x2 = e.to.x, y2 = e.to.y + e.toH / 2;
                 const midX = (x1 + x2) / 2;
                 const isHighlighted = selectedId && (e.fromId === selectedId || e.toId === selectedId);
-                const isDim = selectedId && !isHighlighted;
+                const onPath = pathMode && myPath.ids.has(e.fromId) && myPath.ids.has(e.toId);
+                const isDim = (selectedId && !isHighlighted) || (pathMode && !onPath);
                 return (
                   <path key={i}
                     className={"turnier-graph-edge" + (e.decided ? " decided" : "") + (e.kind === "drop" ? " drop" : "")
-                      + (isHighlighted ? " highlighted" : "") + (isDim ? " dim" : "")}
+                      + (isHighlighted ? " highlighted" : "") + (onPath ? " mypath" : "") + (isDim ? " dim" : "")}
                     d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`} />
                 );
               })}
@@ -414,7 +443,8 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               // Button noetig.
               const inlineEdit = isSelected && (actions.canOrganizerReport || actions.canEdit);
               const isConnected = highlightIds && highlightIds.has(m.id) && !isSelected;
-              const isDim = highlightIds && !highlightIds.has(m.id);
+              const isMine = pathMode && myPath.ids.has(m.id);
+              const isDim = (highlightIds && !highlightIds.has(m.id)) || (pathMode && !isMine);
               const toggleSelect = () => setSelectedId(m.id === selectedId ? null : m.id);
               return (
                 <div key={m.id}>
@@ -433,7 +463,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                   <div role="button" tabIndex={0}
                     className={"turnier-graph-box turnier-graph-box--" + m.bracket
                       + (actionable ? " actionable" : "") + (isSelected ? " selected" : "")
-                      + (isConnected ? " connected" : "") + (isDim ? " dim" : "")}
+                      + (isConnected ? " connected" : "") + (isMine ? " mine" : "") + (isDim ? " dim" : "")}
                     style={{ left: p.x, top: p.y, width: boxW, height: baseBoxH, zIndex: isSelected ? 4 : undefined }}
                     onClick={toggleSelect}
                     onKeyDown={(e) => {

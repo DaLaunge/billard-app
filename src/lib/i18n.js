@@ -1364,6 +1364,7 @@ const TRANSLATIONS = {
     "Winner": "Winner",
     "Anstoß": "Break",
     "{name} stößt an": "{name} breaks",
+    "Dein Turnierweg": "Your tournament path",
     "Volle oder Halbe": "Solids or stripes",
     "Volle": "Solids",
     "Halbe": "Stripes",
