@@ -3,7 +3,7 @@ import TutorialOverlay from "./components/TutorialOverlay";
 import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
 import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
 import { pendingReleaseItems, markReleaseSeen } from "./lib/releaseNotes";
-import { Trophy, Radio, BarChart3, User, RefreshCw, FileText, Menu, BookOpen, GraduationCap, Settings, Shield } from "lucide-react";
+import { Trophy, Radio, BarChart3, User, RefreshCw, FileText, Menu, BookOpen, GraduationCap, Settings, Shield, Award, UserPlus, Activity } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -48,7 +48,7 @@ import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
 import RulesScreen from "./components/RulesScreen";
 import BottomBar from "./components/BottomBar";
-import { loadMenuPrefs, storeMenuPrefs, MAX_PINNED } from "./lib/menuPrefs";
+import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED } from "./lib/menuPrefs";
 import ConfirmHost from "./components/ConfirmHost";
 import { rpcRetry } from "./lib/rpcRetry";
 import { EmojiText } from "./components/Emoji";
@@ -996,17 +996,28 @@ export default function App() {
   const [contentEl, setContentEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
+  const [openSeg, setOpenSeg] = useState(null);
   useEffect(() => { setDrawerOpen(false); }, [tab]);
   const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
   // Menuepunkte: EINE Liste fuer Hamburger-Menue und Leiste unten. Reihenfolge und Anheften (lib/menuPrefs.js)
   // bestimmen, was wo steht; die Leiste zeigt die angehefteten in derselben Reihenfolge wie das Menue.
   const [menuPrefs, setMenuPrefs] = useState(loadMenuPrefs);
   const updateMenuPrefs = (p) => { setMenuPrefs(p); storeMenuPrefs(p); };
+  // "Alle Einstellungen zuruecksetzen" (Profil -> Einstellungen): Menue-Reihenfolge, angeheftete Punkte, Segment-Reihenfolgen.
+  const resetMenuLocal = () => {
+    updateMenuPrefs(sanitizeMenuPrefs(null));
+    try { Object.keys(localStorage).filter((k) => k.startsWith("segOrder:") || k === "statSeg" || k === "profilSeg").forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
+  };
   const togglePin = (id) => {
     const on = menuPrefs.pinned.includes(id);
     if (on && menuPrefs.pinned.length <= 1) return;
-    if (!on && menuPrefs.pinned.length >= MAX_PINNED) return;
-    updateMenuPrefs({ ...menuPrefs, pinned: on ? menuPrefs.pinned.filter((x) => x !== id) : [...menuPrefs.pinned, id] });
+    // Ist die Leiste voll, faellt der unterste angeheftete Eintrag (letzter der Gruppe "Menueleiste") heraus.
+    let base = menuPrefs.pinned;
+    if (!on && base.length >= MAX_PINNED) {
+      const lowest = menuPrefs.order.filter((x) => base.includes(x)).pop();
+      base = base.filter((x) => x !== lowest);
+    }
+    updateMenuPrefs({ ...menuPrefs, pinned: on ? base.filter((x) => x !== id) : [...base, id] });
   };
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
   // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
@@ -1469,6 +1480,9 @@ export default function App() {
     live: { icon: Radio, label: "Live", tour: "tab-live", on: tab === "live", run: () => navPush({ tab: "live" }), badge: pings.length + openChallengesAll.length + plannings.length },
     profil: { icon: User, label: "Profil", tour: "tab-profil", on: tab === "profil" || tab === "admin", run: () => navPush({ tab: "profil" }),
       badge: openChallengesToMe.length > 0 ? "!" : (player?.role === "admin" ? unconfirmed.length : 0) },
+    achievements: { icon: Award, label: "Erfolge", on: false, run: () => { setOpenSeg("achievements"); navPush({ tab: "profil" }); } },
+    mystats: { icon: Activity, label: "Meine Zahlen", on: false, run: () => { setOpenSeg("zahlen"); navPush({ tab: "profil" }); } },
+    invite: { icon: UserPlus, label: "Spieler einladen", on: tab === "invite", run: () => navPush({ tab: "invite" }) },
     regeln: { icon: BookOpen, label: "Regelkunde", on: tab === "regeln", run: () => navPush({ tab: "regeln" }) },
     tutorial: { icon: GraduationCap, label: "Tutorial", on: false, run: () => startTutorial(null) },
     settings: { icon: Settings, label: "Einstellungen", on: false, run: () => { setOpenSettings(true); navPush({ tab: "profil" }); } },
@@ -1752,6 +1766,7 @@ export default function App() {
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   achievementCounters={achievementCounters} onStartTutorial={startTutorial}
                   openSettings={openSettings} onSettingsOpened={() => setOpenSettings(false)}
+                  openSeg={openSeg} onSegOpened={() => setOpenSeg(null)} onResetMenu={resetMenuLocal}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}

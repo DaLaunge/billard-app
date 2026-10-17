@@ -1,7 +1,7 @@
 /* Menue-Einstellungen dieses Geraets: Reihenfolge der Menuepunkte im Hamburger-Menue und welche davon
    in der Leiste unten angeheftet sind (max. MAX_PINNED, links und rechts vom runden "+").
    Wie die uebrigen Geraete-Einstellungen (lib/uiPrefs.js) nur lokal gespeichert. */
-export const MENU_IDS = ["stats", "turnier", "live", "profil", "regeln", "tutorial", "settings", "admin"];
+export const MENU_IDS = ["stats", "turnier", "live", "profil", "achievements", "mystats", "invite", "regeln", "tutorial", "settings", "admin"];
 export const DEFAULT_PINNED = ["stats", "turnier", "live", "profil"];
 export const MAX_PINNED = 4;
 const KEY = "menuPrefs";

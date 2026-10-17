@@ -30,6 +30,7 @@ import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import SegmentBar from "./widgets/SegmentBar";
+import { appConfirm } from "../lib/confirmDialog";
 import CardDeck from "./widgets/CardDeck";
 import NumbersDeck from "./widgets/NumbersDeck";
 import { CARD_SCREENS, screenUnits, deckIds, splitCardColumns, foldedDeck, withoutFolded, deckColumn, phoneSlotOrder } from "../lib/cardLayout";
@@ -53,7 +54,7 @@ const groupSubs = (list) => {
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
@@ -178,6 +179,19 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     onSettingsOpened?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openSettings]);
+  // Vom Menue ("Erfolge" / "Meine Zahlen"): das passende Segment oeffnen, bei Erfolgen zusaetzlich hinscrollen.
+  useEffect(() => {
+    if (!openSeg || !isMe) return undefined;
+    const sid = openSeg === "achievements" ? "erfolge" : "zahlen";
+    setEdit(false);
+    setSegPick(sid);
+    try { localStorage.setItem("profilSeg", sid); } catch { /* ignore */ }
+    onSegOpened?.();
+    if (openSeg !== "achievements") return undefined;
+    const timer = setTimeout(() => document.getElementById("pf-achievements-full")?.scrollIntoView({ block: "start", behavior: "smooth" }), 450);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSeg]);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackCat, setFeedbackCat] = useState("bug");
   const [feedbackMsg, setFeedbackMsg] = useState("");
@@ -362,7 +376,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const pickAuto = () => { pickColor(null); if (meRow?.selected_badge) onSelectBadge(null); };
 
   const resetDefaults = async () => {
+    if (!(await appConfirm(t("Alle Einstellungen zurücksetzen? Kugelfarbe, Design, Startseite, Karten, Menü und Leiste gehen auf den Standard zurück.")))) return;
     setBusy(true);
+    onResetMenu?.();
+    setSegPick("");
     await Promise.all([
       onSaveProfile(nickValid ? cleanNick : nickname, null, motto),
       onSetTheme("green", null),
@@ -389,6 +406,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button className="back-btn" onClick={() => setEdit(false)} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
           <h2>{t("Einstellungen")}</h2>
         </header>
+
+        <button type="button" className="pf-reset-all" disabled={busy} onClick={resetDefaults}>
+          <RotateCcw size={18} />
+          <span className="pf-reset-all-text">
+            <strong>{t("Alle Einstellungen zurücksetzen")}</strong>
+            <small>{t("Kugelfarbe, Design, Startseite, Karten, Menü und Leiste")}</small>
+          </span>
+        </button>
 
         {/* Der Update-Knopf (mit Versionsanzeige) wohnt seit 411.10 im Menue (AppDrawer). */}
 
@@ -742,15 +767,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             dieser Text auch in der Datenschutzerklaerung (LegalModal.jsx) als
             Fundstelle genannt wird. */}
         <div className="pf-edit-foot">
-          <span className="pf-edit-reset">
-            <button type="button" className="icon-btn" disabled={busy} onClick={resetDefaults}
-              aria-label={t("Zurücksetzen")} title={t("Zurücksetzen")}>
-              <RotateCcw size={18} />
-            </button>
-            <InfoButton title={t("Zurücksetzen")}>
-              {t("Setzt Kugelfarbe, Design, Startseite sowie verschobene und ausgeblendete Karten auf die Standardeinstellungen zurück.")}
-            </InfoButton>
-          </span>
           <button className="pf-edit-danger-link" onClick={() => setDeleteStep(1)}>
             {t("Meine Daten löschen")}
           </button>

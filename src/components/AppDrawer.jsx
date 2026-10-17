@@ -27,9 +27,9 @@ function Row({ e, pinned, canPin, onTogglePin, go, tourOpen, onToggleTour, onTut
         {e.badge ? <em className="app-drawer-badge">{e.badge}</em> : null}
         {isTour && <ChevronDown size={16} className={"app-drawer-chev" + (tourOpen ? " up" : "")} />}
       </button>
-      <button type="button" className={"app-drawer-pin" + (pinned ? " on" : "")} onClick={onTogglePin} disabled={!pinned && !canPin}
+      <button type="button" className={"app-drawer-pin" + (pinned ? " on" : "")} onClick={onTogglePin} 
         aria-pressed={pinned} aria-label={pinned ? t("Von der Leiste lösen") : t("An die Leiste anheften")}
-        title={pinned ? t("Von der Leiste lösen") : canPin ? t("An die Leiste anheften") : t("Die Leiste ist voll ({n} Plätze)", { n: MAX_PINNED })}>
+        title={pinned ? t("Von der Leiste lösen") : canPin ? t("An die Leiste anheften") : t("Leiste voll: der unterste Eintrag wird gelöst")}>
         {pinned ? <Pin size={15} /> : <PinOff size={15} />}
       </button>
       {isTour && tourOpen && (
@@ -80,7 +80,11 @@ export default function AppDrawer({
     let nextPinned = pinnedIds;
     if (aPinned !== oPinned) {
       if (aPinned) { if (pinnedIds.length <= 1) return; nextPinned = pinnedIds.filter((x) => x !== active.id); }
-      else { if (pinnedIds.length >= MAX_PINNED) return; nextPinned = [...pinnedIds, active.id]; }
+      else {
+        // Leiste voll: der unterste angeheftete Eintrag macht Platz.
+        const base = pinnedIds.length >= MAX_PINNED ? pinnedIds.filter((x) => x !== pinnedList[pinnedList.length - 1].id) : pinnedIds;
+        nextPinned = [...base, active.id];
+      }
     }
     onChange(moved, nextPinned);
   };
