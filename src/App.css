@@ -1791,8 +1791,8 @@ button.id-card-head { cursor: pointer; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
-  .phone.app .screen:has(.pf-edit-layout) { max-width: 900px; }
-  .pf-edit-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+  .phone.app .screen:has(.pf-edit-layout) { max-width: 1280px; }
+  .pf-edit-layout { display: grid; grid-template-columns: 1fr 400px; gap: 24px; align-items: start; }
   /* Zweispaltig, aber SPALTENWEISE gefuellt (erst die linke Spalte von
      oben nach unten, dann die rechte): die Liste zeigt die tatsaechliche
      Kartenreihenfolge, und ein Klick auf "nach oben" soll die Zeile auch
@@ -2872,3 +2872,25 @@ button.break-slot { cursor: pointer; }
 /* Weicher Auslauf unter der schwebenden Leiste: Inhalt blitzt an den Seiten und darunter nicht durch. */
 .tabbar::before { content: ""; position: absolute; left: -14px; right: -14px; bottom: calc(-10px - env(safe-area-inset-bottom));
   height: calc(100% + 44px); background: linear-gradient(transparent, var(--felt) 65%); z-index: -1; pointer-events: none; }
+
+/* Kartenanordnung per Pfeile/Spaltenwahl entfaellt: die Segment-Leiste und die breiteren Karten sparen genug Platz.
+   Sichtbarkeit (Schalter) bleibt. Die Knoepfe sind nur versteckt, nicht entfernt. */
+.card-vis-move, .card-vis-col { display: none !important; }
+
+/* Akzentrahmen: Leiste und gewaehlte Karte gehoeren sichtbar zusammen (nur am Handy, wo die Leiste existiert). */
+@media (max-width: 899px) {
+  .seg-bar { border-color: var(--accent); }
+  .stat-split[data-seg] .sortable-card[data-seg] > .stat-block,
+  .pf-layout[data-seg] .card-slot[data-seg] > .stat-block,
+  .pf-layout[data-seg] .card-slot[data-seg] .stat-block { border-color: var(--accent); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .screen:has(.pf-edit-layout) { animation: viewIn .3s ease-out; }
+  @media (max-width: 899px) {
+    .stat-split[data-seg] .sortable-card[data-seg], .pf-layout[data-seg] .card-slot[data-seg] { animation: segIn .26s ease-out; }
+  }
+  .seg-bar-item { transition: background-color .2s ease, color .2s ease, transform .12s ease; }
+  .seg-bar-item:active { transform: scale(.94); }
+}
+@keyframes viewIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes segIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
