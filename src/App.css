@@ -2862,3 +2862,10 @@ button.break-slot { cursor: pointer; }
   .stat-split[data-seg="listen"] .sortable-card:not([data-seg="listen"]),
   .stat-split[data-seg="rekorde"] .sortable-card:not([data-seg="rekorde"]) { display: none; }
 }
+.seg-slot:empty { display: none; }
+.seg-slot .seg-bar { margin-bottom: 0; }
+@media (min-width: 900px) { .seg-slot { display: none; } }
+@media (max-width: 899px) {
+  .pf-layout[data-seg="erfolge"] .card-slot:not([data-seg="erfolge"]),
+  .pf-layout[data-seg="zahlen"] .card-slot:not([data-seg="zahlen"]) { display: none; }
+}

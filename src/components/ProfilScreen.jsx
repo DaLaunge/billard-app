@@ -29,6 +29,7 @@ import CardMenuButton from "./widgets/CardMenuButton";
 import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
+import SegmentBar from "./widgets/SegmentBar";
 import CardDeck from "./widgets/CardDeck";
 import NumbersDeck from "./widgets/NumbersDeck";
 import { CARD_SCREENS, screenUnits, deckIds, splitCardColumns, foldedDeck, withoutFolded, deckColumn, phoneSlotOrder } from "../lib/cardLayout";
@@ -230,6 +231,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [challengeMsg, setChallengeMsg] = useState("");
   const installPrompt = useInstallPrompt();
   const [edit, setEdit] = useState(false);
+  const [segPick, setSegPick] = useState(() => { try { return localStorage.getItem("profilSeg") || ""; } catch { return ""; } });
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
   const [motto, setMotto] = useState(meRow?.motto || "");
@@ -1209,8 +1211,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   });
   // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
   // durchgehende Liste ueber alle drei Spalten hinweg (siehe CardSlot.jsx).
+  // Handy: Erfolge und "Meine Zahlen" nacheinander statt untereinander (Segment-Leiste); die Kopfkarte bleibt immer da.
+  const segOf = (id) => (id === "erfolge" ? "erfolge" : "zahlen");
+  const visibleIds = Object.values(deckColumns).flat().filter((id) => cardsById[id]);
+  const segments = [["erfolge", "Erfolge"], ["zahlen", "Zahlen"]]
+    .filter(([sid]) => visibleIds.some((id) => segOf(id) === sid)).map(([sid, label]) => ({ id: sid, label: t(label) }));
+  const activeSeg = segments.some((x) => x.id === segPick) ? segPick : segments[0]?.id;
+  const pickSeg = (sid) => { setSegPick(sid); try { localStorage.setItem("profilSeg", sid); } catch { /* ignore */ } };
   const renderColumn = (col) => deckColumns[col].filter((id) => cardsById[id]).map((id) => (
-    <CardSlot key={id} order={phoneSlotOrder(col, deckOrder.indexOf(id))}>{cardsById[id]}</CardSlot>
+    <CardSlot key={id} seg={segOf(id)} order={phoneSlotOrder(col, deckOrder.indexOf(id))}>{cardsById[id]}</CardSlot>
   ));
 
 
@@ -1224,7 +1233,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </div>
       </header>
 
-      <div className="pf-layout">
+      <div className="pf-layout" data-seg={segments.length > 1 ? activeSeg : undefined}>
       {/* Drei frei befuellbare Spalten (am Handy per display:contents EINE
           durchgehende Liste, siehe App.css): duenn - breit - duenn, wie auf
           Statistik und Live. Fest sind nur die Identitaetskarte ganz oben
@@ -1271,6 +1280,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           )}
         </>} />
       </div>
+      <div className="seg-slot" style={{ order: 5 }}><SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} /></div>
       {renderColumn("left")}
       </div>
 

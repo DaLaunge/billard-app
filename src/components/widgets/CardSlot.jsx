@@ -9,6 +9,6 @@
    hinweg, genau in der Reihenfolge aus den Einstellungen. Am Desktop wirkt
    derselbe Wert nur innerhalb der eigenen Spalte, die ohnehin schon so
    sortiert ist, und aendert dort nichts. */
-export default function CardSlot({ order, children }) {
-  return <div className="card-slot" style={{ order }}>{children}</div>;
+export default function CardSlot({ order, seg, children }) {
+  return <div className="card-slot" data-seg={seg} style={{ order }}>{children}</div>;
 }
