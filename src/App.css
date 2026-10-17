@@ -2920,3 +2920,13 @@ button.break-slot { cursor: pointer; }
   .app-drawer-scrim { animation: scrimIn .34s ease-out; }
 }
 @keyframes scrimIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Scrollbalken im Skin-Design (Akzent statt Browser-Weiss): Firefox ueber scrollbar-color, WebKit/Chromium per Pseudo-Elementen. */
+html, body, .content, .app-drawer, .deck-tabs, .rules-sheet-body {
+  scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent) transparent; }
+html::-webkit-scrollbar, body::-webkit-scrollbar, .content::-webkit-scrollbar, .app-drawer::-webkit-scrollbar { width: 8px; height: 8px; }
+html::-webkit-scrollbar-track, body::-webkit-scrollbar-track, .content::-webkit-scrollbar-track, .app-drawer::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb, .app-drawer::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+.content::-webkit-scrollbar-thumb:hover { background: var(--accent); background-clip: padding-box; }
+.seg-bar-item.dragging { box-shadow: 0 4px 14px #00000066; cursor: grabbing; }

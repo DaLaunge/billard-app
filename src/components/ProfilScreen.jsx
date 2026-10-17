@@ -1069,7 +1069,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           )}
         </>} />
       </div>
-      <div className="seg-slot" style={{ order: 5 }}><SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} /></div>
+      <div className="seg-slot" style={{ order: 5 }}><SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} storageKey="profil" /></div>
       {renderColumn("left")}
       </div>
 

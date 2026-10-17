@@ -1062,7 +1062,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         </div>
       )}
 
-      <SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} />
+      <SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} storageKey="stat" />
       <div className="stat-split" data-seg={segments.length > 1 ? activeSeg : undefined}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       {/* items MUSS die tatsaechliche Render-Reihenfolge sein (erst
