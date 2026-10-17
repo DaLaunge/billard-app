@@ -32,7 +32,7 @@ import { EmojiText } from "../Emoji";
    gehoert. Beide sitzen in EINEM absolut positionierten Container, damit
    das jeweils vorhandene Symbol immer buendig rechts steht. */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
-  onHeadClick, onInvite, onSettings, actions, photoSize = 88 }) {
+  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88 }) {
   const head = (
     <>
       <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
@@ -47,11 +47,15 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
   );
   return (
     <section className="stat-block id-card">
-      {onHeadClick ? (
-        <button className="id-card-head" onClick={onHeadClick}>{head}</button>
-      ) : (
-        <div className="id-card-head">{head}</div>
-      )}
+      {(() => {
+        const headEl = onHeadClick
+          ? <button className="id-card-head" onClick={onHeadClick}>{head}</button>
+          : <div className="id-card-head">{head}</div>;
+        // Runde Aktionsknoepfe links und rechts unter dem Avatar (fremde Profile: Match starten / Herausfordern)
+        return sideActions
+          ? <div className="id-card-hero">{sideActions.left}{headEl}{sideActions.right}</div>
+          : headEl;
+      })()}
       <DecayBadge player={gesamt} className="id-card-decay-warn" iconSize={20} pulse />
       {(onSettings || onInvite) && (
         <div className="id-card-corner">

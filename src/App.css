@@ -3035,3 +3035,16 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 @media (min-width: 900px) { .avatar-sheet-overlay { align-items: center; } .avatar-sheet { height: min(86dvh, 720px); border-bottom: 1px solid var(--accent-line); border-radius: 26px; } }
 @media (prefers-reduced-motion: no-preference) { .avatar-sheet { animation: sheetUp .36s cubic-bezier(.22, .61, .36, 1); } }
 @keyframes sheetUp { from { transform: translateY(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Runde Aktionsknoepfe links/rechts unter dem Avatar eines fremden Profils: "Match starten" wie der weisse "+"-Knopf der
+   Leiste, "Herausfordern" mit gekreuzten Klingen im Akzent. Sie sitzen auf Hoehe von Name/Rating. */
+.id-card-hero { display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; align-items: end; column-gap: 6px; }
+.id-card-hero > .id-card-head { grid-column: 2; grid-row: 1; }
+.id-card-hero > .id-round-match { grid-column: 1; grid-row: 1; justify-self: start; margin-bottom: 4px; }
+.id-card-hero > .id-round-challenge { grid-column: 3; grid-row: 1; justify-self: end; margin-bottom: 4px; }
+.id-round-btn { position: relative; width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.id-round-match { background: var(--ivory); color: #262220; box-shadow: 0 6px 16px #00000060, inset -4px -6px 10px #00000055; }
+.id-round-challenge { background: var(--felt-3); color: var(--accent); border: 2px solid var(--accent); box-shadow: 0 6px 16px #00000050; }
+.id-round-challenge.on { background: var(--accent); color: var(--accent-ink); }
+.id-round-btn:active { transform: scale(.94); }
+@media (prefers-reduced-motion: no-preference) { .id-round-btn { transition: transform .12s ease, background-color .2s ease; } }

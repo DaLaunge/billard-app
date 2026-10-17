@@ -1,7 +1,7 @@
 import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
 import ChangelogRow from "./widgets/ChangelogRow";
-import { ChevronLeft, ChevronRight, UserPlus, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, UserPlus, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { APP_VERSION, DISC_LABEL } from "../lib/constants";
 import Emoji from "./Emoji";
@@ -1085,17 +1085,22 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         onHeadClick={isMe && !asOthers ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
         onInvite={isMe ? onInvite : undefined}
         onSettings={isMe ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : undefined}
+        sideActions={!isMe && !asOthers && playerObj ? {
+          left: (
+            <button type="button" className="id-round-btn id-round-match" onClick={() => onStartMatch(playerObj)}
+              aria-label={t("Match starten")} title={t("Match starten")}>
+              <span className="fab-shine" /><Plus size={24} className="fab-plus" />
+            </button>
+          ),
+          right: (
+            <button type="button" className={"id-round-btn id-round-challenge" + (challengeForm ? " on" : "")}
+              onClick={() => setChallengeForm((v) => !v)} aria-pressed={challengeForm}
+              aria-label={t("Herausfordern")} title={t("Herausfordern")}>
+              <Swords size={22} />
+            </button>
+          ),
+        } : undefined}
         actions={<>
-          {!isMe && !asOthers && playerObj && !challengeForm && (
-            <div className="sp-controls" style={{ marginBottom: 14 }}>
-              <button className="btn primary" onClick={() => onStartMatch(playerObj)}>
-                <Play size={15} /> {t("Match starten")}
-              </button>
-              <button className="btn primary" onClick={() => setChallengeForm(true)}>
-                <Swords size={15} /> {t("Herausfordern")}
-              </button>
-            </div>
-          )}
           {!isMe && !asOthers && playerObj && challengeForm && (
             <div className="challenge-form">
               <div className="search-row" style={{ marginBottom: 8 }}>
