@@ -87,7 +87,7 @@ export default function AppDrawer({
       {open && <div className="app-drawer-scrim" onClick={onClose} aria-hidden="true" />}
       <aside data-tour="burger" className={"app-drawer" + (open ? " open" : "")} aria-label={t("Menü")} aria-hidden={!open ? undefined : false}>
         <div className="app-drawer-top">
-          <Ball color={colorOf(player?.nickname)} label={initials(player?.nickname)} badge={badgeOf(player?.nickname)}
+          <Ball nick={player?.nickname} color={colorOf(player?.nickname)} label={initials(player?.nickname)} badge={badgeOf(player?.nickname)}
             photo={photoOf(player?.nickname)} size={40} />
           <div className="app-drawer-who">
             <strong>{player?.nickname}</strong>

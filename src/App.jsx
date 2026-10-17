@@ -47,6 +47,7 @@ import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
 import RulesScreen from "./components/RulesScreen";
+import AvatarSheet from "./components/AvatarSheet";
 import BottomBar from "./components/BottomBar";
 import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED } from "./lib/menuPrefs";
 import ConfirmHost from "./components/ConfirmHost";
@@ -997,6 +998,22 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
   const [openSeg, setOpenSeg] = useState(null);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  // Ein Tipp auf die EIGENE Kugel (egal wo) oeffnet das Profilbild-Fenster. Ausgenommen: die Match-Eingabe (dort waehlt man
+  // sich selbst als Spieler aus), das Fenster selbst und Textfelder.
+  useEffect(() => {
+    if (!player) return undefined;
+    const onClick = (e) => {
+      const el = e.target instanceof Element ? e.target.closest(".ball[data-nick]") : null;
+      if (!el || el.dataset.nick !== player.nickname) return;
+      if (["match", "winnerstays"].includes(tab) || el.closest(".avatar-sheet, .tour-root, .login-balls")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setAvatarOpen(true);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [player, tab]);
   useEffect(() => { setDrawerOpen(false); }, [tab]);
   const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
   // Menuepunkte: EINE Liste fuer Hamburger-Menue und Leiste unten. Reihenfolge und Anheften (lib/menuPrefs.js)
@@ -1604,7 +1621,7 @@ export default function App() {
                       return (
                         <div key={m.id} className="pending-item">
                           <div className="pending-main">
-                            {!dbl && <Ball color={colorOf(other)} label={initials(other)} badge={badgeOf(other)} photo={photoOf(other)} size={40} />}
+                            {!dbl && <Ball nick={other} color={colorOf(other)} label={initials(other)} badge={badgeOf(other)} photo={photoOf(other)} size={40} />}
                             <div className="celebrate-txt">
                               <span className="celebrate-name">
                                 {dbl
@@ -1638,7 +1655,7 @@ export default function App() {
                     <div className="celebrate-head"><Emoji e="🎱" /> {t("Du bist dran!")}</div>
                     <p className="hint" style={{ marginTop: -6, marginBottom: 14 }}>{tourneyReady.tournament?.name}</p>
                     <div className="celebrate-item">
-                      <Ball color={colorOf(oppName)} label={initials(oppName)} badge={badgeOf(oppName)} photo={photoOf(oppName)} size={40} />
+                      <Ball nick={oppName} color={colorOf(oppName)} label={initials(oppName)} badge={badgeOf(oppName)} photo={photoOf(oppName)} size={40} />
                       <div className="celebrate-txt">
                         <span className="celebrate-name">{t("gegen {name}", { name: oppName || "?" })}</span>
                         <span className="celebrate-desc">
@@ -1663,7 +1680,7 @@ export default function App() {
                     <div className="celebrate-head"><Emoji e="🎱" /> {t("Du bist dran!")}</div>
                     <p className="hint" style={{ marginTop: -6, marginBottom: 14 }}>{wsReady.session.name}</p>
                     <div className="celebrate-item">
-                      <Ball color={colorOf(oppName)} label={initials(oppName)} badge={badgeOf(oppName)} photo={photoOf(oppName)} size={40} />
+                      <Ball nick={oppName} color={colorOf(oppName)} label={initials(oppName)} badge={badgeOf(oppName)} photo={photoOf(oppName)} size={40} />
                       <div className="celebrate-txt">
                         <span className="celebrate-name">{t("gegen {name}", { name: oppName || "?" })}</span>
                         <span className="celebrate-desc">
@@ -1685,6 +1702,11 @@ export default function App() {
                 <RefreshCw size={18} className={ptr.refreshing ? "ptr-spin" : ""}
                   style={ptr.refreshing ? undefined : { transform: `rotate(${(ptr.pull / ptr.threshold) * 270}deg)` }} />
               </div>
+            )}
+            {avatarOpen && (
+              <AvatarSheet player={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} catalog={catalog}
+                earned={badgesOfId(player.id)} onSelectBadge={selectBadge} onReload={loadData} toast={toast}
+                onClose={() => setAvatarOpen(false)} />
             )}
             {tab !== "match" && (
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} player={player}

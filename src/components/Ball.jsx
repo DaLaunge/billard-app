@@ -3,7 +3,7 @@ import { luminance } from "../lib/format";
 import { BADGE_INFO } from "../lib/constants";
 import Emoji from "./Emoji";
 
-export default function Ball({ color, label, size = 44, badge = null, photo = null }) {
+export default function Ball({ color, label, size = 44, badge = null, photo = null, nick = null }) {
   const b = badge && BADGE_INFO[badge] ? BADGE_INFO[badge] : null;
   const light = luminance(color) > 0.6; // helle Kugel -> dunkle Beschriftung
   const numStyle = light
@@ -13,7 +13,7 @@ export default function Ball({ color, label, size = 44, badge = null, photo = nu
     ? { width: size, height: size, backgroundImage: `url(${photo})`, backgroundSize: "cover", backgroundPosition: "center" }
     : { width: size, height: size, background: color };
   return (
-    <div className="ball" style={ballStyle}>
+    <div className="ball" style={ballStyle} data-nick={nick || undefined}>
       {!photo && <div className="ball-shine" />}
       {!photo && b && (
         <div className={"ball-badge" + (light ? " on-light" : "")}

@@ -2997,3 +2997,24 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 /* Avatar oben rechts auf der Erfolge-Seite: Ziel der Flug-Animation, bleibt beim Scrollen stehen */
 .pf-head-avatar-sticky { position: sticky; top: 8px; height: 0; z-index: 6; display: flex; justify-content: flex-end; pointer-events: none; }
 .pf-head-avatar { pointer-events: auto; display: block; border-radius: 50%; box-shadow: 0 0 0 3px var(--felt); }
+
+/* Profilbild-Fenster (AvatarSheet) */
+.avatar-sheet-overlay { align-items: flex-start; padding-top: max(24px, env(safe-area-inset-top)); overflow-y: auto; }
+.avatar-sheet { position: relative; width: min(94vw, 460px); max-height: calc(100dvh - 48px); overflow-y: auto; background: var(--felt);
+  border: 1px solid var(--accent-line); border-radius: 26px; padding: 0 14px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.avatar-sheet-close { position: absolute; top: 10px; right: 10px; }
+.avatar-sheet-big { margin-top: 4px; }
+.avatar-sheet-label { align-self: stretch; font-size: 13px; font-weight: 700; color: var(--accent); padding: 2px 6px 0; }
+.avatar-sheet-label span { color: var(--ivory-dim); font-weight: 500; margin-left: 4px; }
+.avatar-sheet-list { align-self: stretch; display: flex; flex-direction: column; gap: 6px; }
+.avatar-sheet-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; border: 1px solid transparent; border-radius: 14px;
+  background: var(--felt-2); color: var(--ivory); font: inherit; text-align: left; cursor: pointer; }
+.avatar-sheet-item:hover { border-color: var(--accent-line); }
+.avatar-sheet-item.selected { border-color: var(--accent); background: var(--felt-3); }
+.avatar-sheet-emoji { font-size: 24px; width: 32px; text-align: center; flex: none; }
+.avatar-sheet-name { flex: 1; min-width: 0; font-weight: 600; }
+.avatar-sheet-on { font-size: 11.5px; color: var(--accent); flex: none; }
+@media (prefers-reduced-motion: no-preference) { .avatar-sheet { animation: viewIn .34s cubic-bezier(.22, .61, .36, 1); } }
+.avatar-sheet-head { position: sticky; top: 0; z-index: 2; align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 22px 0 10px; background: var(--felt); }
+.avatar-sheet-close { z-index: 3; }

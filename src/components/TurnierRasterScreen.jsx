@@ -484,7 +484,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         </p>
         <div className="turnier-organizer-line">
           <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
-          <Ball color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
+          <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
           <b>{organizerName || "?"}</b>
         </div>
 
@@ -500,7 +500,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                 const isGuest = players.find((p) => p.id === r.player_id)?.is_guest;
                 return (
                   <div key={r.player_id} className="pmp-chip">
-                    <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={32} />
+                    <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={32} />
                     <span className="pmp-name">{nick}{isGuest && <span className="guest-tag">{t("Gast")}</span>}</span>
                     {isOrganizer && (
                       <button type="button" className="pmp-remove" disabled={busyId === "removePlayer"}
@@ -597,16 +597,16 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <span className="turnier-match-players">
             {tm.is_bye ? (
               <>
-                {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={22} />}
+                {n1 && <Ball nick={n1} color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={22} />}
                 <b>{n1 || "?"}</b>&nbsp;{t("(Freilos)")}
               </>
             ) : (
               <>
-                {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={22} />}
+                {n1 && <Ball nick={n1} color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={22} />}
                 <b>{n1 || t("TBD")}</b>
                 <span className="turnier-match-score">{sc ? `${sc.s1}:${sc.s2}` : "–"}</span>
                 <b>{n2 || t("TBD")}</b>
-                {n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={22} />}
+                {n2 && <Ball nick={n2} color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={22} />}
               </>
             )}
           </span>
@@ -637,7 +637,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
       </p>
       <div className="turnier-organizer-line">
         <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
-        <Ball color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
+        <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
         <b>{organizerName || "?"}</b>
       </div>
 
@@ -685,7 +685,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                   const n = nameOf(pid);
                   return n ? (
                     <span key={pid} className="turnier-tied-player">
-                      <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={24} />
+                      <Ball nick={n} color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={24} />
                       {n}
                     </span>
                   ) : null;
@@ -703,7 +703,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           {standings.map((s, i) => (
             <div key={s.id} className="stat-row turnier-standings-row">
               <span className="medal">{i + 1}.</span>
-              <Ball color={colorOf(s.name)} label={initials(s.name)} size={28} />
+              <Ball nick={s.name} color={colorOf(s.name)} label={initials(s.name)} size={28} />
               <span className="stat-name">{s.name}</span>
               <span className="stat-val">{s.wins}S / {s.losses}N</span>
             </div>
@@ -719,8 +719,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
             const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
             return (
               <div key={tm.id} className="stat-row turnier-standings-row">
-                <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={26} />
-                <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={26} />
+                <Ball nick={n1} color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={26} />
+                <Ball nick={n2} color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={26} />
                 <span className="stat-name">{n1} – {n2}</span>
                 <span className="stat-val">{fmtDuration(waitMs)}</span>
               </div>
@@ -747,13 +747,13 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
             return (
               <div key={tm.id} className="stat-row turnier-standings-row">
                 <span className="m-date m-datetime">{fmtDateTime(tm.match.played_at)}</span>
-                <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={24} />
+                <Ball nick={n1} color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={24} />
                 <span className="stat-name">
                   {n1} <b style={won1 ? { color: "var(--win)" } : undefined}>{sc.s1}</b>
                   {" : "}
                   <b style={!won1 ? { color: "var(--win)" } : undefined}>{sc.s2}</b> {n2}
                 </span>
-                <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={24} />
+                <Ball nick={n2} color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={24} />
               </div>
             );
           })}
@@ -805,7 +805,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
               <div className="turnier-graph-detail">
                 <div className="turnier-match-meta">
                   <span className="turnier-match-players">
-                    <Ball color={colorOf(jName)} label={initials(jName)} badge={badgeOf(jName)} photo={photoOf(jName)} size={28} />
+                    <Ball nick={jName} color={colorOf(jName)} label={initials(jName)} badge={badgeOf(jName)} photo={photoOf(jName)} size={28} />
                     <b>{jName}</b>
                   </span>
                   <button className="turnier-graph-detail-close" onClick={() => setJourneyPlayerId(null)} aria-label={t("Schliessen")}>
@@ -849,7 +849,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
                 <button key={r.player_id} type="button"
                   className={"pmp-chip" + (journeyPlayerId === r.player_id ? " sel" : "")}
                   onClick={() => setJourneyPlayerId(r.player_id === journeyPlayerId ? null : r.player_id)}>
-                  <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={32} />
+                  <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={32} />
                   <span className="pmp-name">{nick}</span>
                 </button>
               );

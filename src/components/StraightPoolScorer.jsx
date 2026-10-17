@@ -211,7 +211,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
             <button key={i} className="opp-card" onClick={() => chooseBreaker(i)}>
               <div className="sc-avatars">
                 {membersOf(i).map((mm) => (
-                  <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={44} />
+                  <Ball key={mm.id} nick={mm.nickname} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={44} />
                 ))}
               </div>
               <span>{names[i]}</span>
@@ -253,7 +253,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
     <div className={"sp-rail" + (active === i ? " active" : "")}>
       <div className="sp-rail-avatar">
         {membersOf(i).map((mm) => (
-          <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={88} />
+          <Ball key={mm.id} nick={mm.nickname} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={88} />
         ))}
       </div>
       <div className="sp-mini-log">
@@ -279,7 +279,7 @@ export default function StraightPoolScorer({ me, opp, colorOf, badgeOf, photoOf,
           <div key={i} className={"sp-side" + (active === i ? " active" : "")}>
             <div className="sc-avatars">
               {membersOf(i).map((mm) => (
-                <Ball key={mm.id} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={52} />
+                <Ball key={mm.id} nick={mm.nickname} color={colorOf(mm.nickname)} label={initials(mm.nickname)} badge={badgeOf(mm.nickname)} photo={photoOf(mm.nickname)} size={52} />
               ))}
             </div>
             <span className="sp-name">{names[i]}</span>

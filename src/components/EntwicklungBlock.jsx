@@ -182,7 +182,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               const val = displayVal(nick);
               return (
                 <div key={nick} className="stat-row">
-                  <Ball color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={30} />
+                  <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={30} />
                   <span className="stat-name">{nick}</span>
                   <span className="stat-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? val : "–"}</span>
                   <button type="button" className="pmp-remove" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>

@@ -329,8 +329,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
   const renderEntryAvatars = (e, size) => (
     <span className="ws-entry-avatars">
-      <Ball color={colorOf(e.player1?.nickname)} label={initials(e.player1?.nickname)} badge={badgeOf(e.player1?.nickname)} photo={photoOf(e.player1?.nickname)} size={size} />
-      {e.player2_id && <Ball color={colorOf(e.player2?.nickname)} label={initials(e.player2?.nickname)} badge={badgeOf(e.player2?.nickname)} photo={photoOf(e.player2?.nickname)} size={size} />}
+      <Ball nick={e.player1?.nickname} color={colorOf(e.player1?.nickname)} label={initials(e.player1?.nickname)} badge={badgeOf(e.player1?.nickname)} photo={photoOf(e.player1?.nickname)} size={size} />
+      {e.player2_id && <Ball nick={e.player2?.nickname} color={colorOf(e.player2?.nickname)} label={initials(e.player2?.nickname)} badge={badgeOf(e.player2?.nickname)} photo={photoOf(e.player2?.nickname)} size={size} />}
     </span>
   );
 
@@ -395,7 +395,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       </p>
       <div className="turnier-organizer-line">
         <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
-        <Ball color={colorOf(session.organizer?.nickname)} label={initials(session.organizer?.nickname)} badge={badgeOf(session.organizer?.nickname)} photo={photoOf(session.organizer?.nickname)} size={22} />
+        <Ball nick={session.organizer?.nickname} color={colorOf(session.organizer?.nickname)} label={initials(session.organizer?.nickname)} badge={badgeOf(session.organizer?.nickname)} photo={photoOf(session.organizer?.nickname)} size={22} />
         <b>{session.organizer?.nickname || "?"}</b>
       </div>
 

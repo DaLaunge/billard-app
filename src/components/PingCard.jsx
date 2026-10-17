@@ -15,7 +15,7 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
   return (
     <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
       <button className="ping-head as-btn" onClick={() => onOpenProfile(ping.player.nickname)}>
-        <Ball color={colorOf(ping.player.nickname)} label={initials(ping.player.nickname)} badge={badgeOf(ping.player.nickname)} photo={photoOf(ping.player.nickname)} size={40} />
+        <Ball nick={ping.player.nickname} color={colorOf(ping.player.nickname)} label={initials(ping.player.nickname)} badge={badgeOf(ping.player.nickname)} photo={photoOf(ping.player.nickname)} size={40} />
         <div className="ping-who">
           <b>{ping.player.nickname}</b>
           <span className="rank-meta">{timeAgo(ping.created_at)} - {timeLeft(ping.expires_at)}</span>
@@ -33,7 +33,7 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
         <div className="ping-replies">
           {ping.replies.map((r) => (
             <button key={r.id} className="ping-reply as-btn" onClick={() => onOpenProfile(r.player.nickname)}>
-              <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={26} />
+              <Ball nick={r.player.nickname} color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={26} />
               <span><b>{r.player.nickname}</b>{r.message ? <>: <EmojiText>{r.message}</EmojiText></> : t(" ist unterwegs!")}</span>
             </button>
           ))}

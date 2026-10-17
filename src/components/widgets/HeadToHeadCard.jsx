@@ -57,7 +57,7 @@ export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenPro
     <>
       {visible.map(({ opp, w, l }) => (
         <button key={opp} className="h2h-row as-btn" onClick={() => onOpenProfile(opp)}>
-          <Ball color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} photo={photoOf(opp)} size={34} />
+          <Ball nick={opp} color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} photo={photoOf(opp)} size={34} />
           <span className="stat-name">{opp}</span>
           <div className="h2h-bar"><div className="h2h-w" style={{ width: `${(100 * w) / Math.max(1, w + l)}%` }} /></div>
           <span className="h2h-score">{w}:{l}</span>

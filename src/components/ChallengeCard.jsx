@@ -15,7 +15,7 @@ export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, ph
   return (
     <section className={"stat-block challenge-card" + (role === "to" ? " to-me" : "")}>
       <button className="ping-head as-btn" onClick={() => onOpenProfile(other.nickname)}>
-        <Ball color={colorOf(other.nickname)} label={initials(other.nickname)} badge={badgeOf(other.nickname)} photo={photoOf(other.nickname)} size={40} />
+        <Ball nick={other.nickname} color={colorOf(other.nickname)} label={initials(other.nickname)} badge={badgeOf(other.nickname)} photo={photoOf(other.nickname)} size={40} />
         <div className="ping-who">
           <b>{other.nickname}</b>
           <span className="rank-meta">

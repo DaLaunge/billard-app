@@ -1154,6 +1154,8 @@ const TRANSLATIONS = {
     "Spieler entfernt.": "Player removed.",
     "{n} Spieler hinzufügen": "Add {n} player(s)",
     "Turnier starten": "Start tournament",
+    "Dein Profilbild": "Your profile picture",
+    "Freigeschaltete Erfolge": "Unlocked achievements",
     "In der Leiste": "In the bar",
     "Die Leiste ist immer voll: heft einen anderen Punkt an, um diesen zu ersetzen": "The bar is always full: pin another item to replace this one",
     "Anheften: ersetzt den untersten Eintrag der Leiste": "Pin: replaces the lowest item in the bar",

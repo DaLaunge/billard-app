@@ -35,7 +35,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
   onHeadClick, onInvite, onSettings, actions, photoSize = 88 }) {
   const head = (
     <>
-      <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
+      <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
       <h3 className="id-card-name">{nickname}</h3>
       <div className="id-card-rating">
         {gesamt ? gesamt.rating : "-"}

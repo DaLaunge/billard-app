@@ -41,7 +41,7 @@ export default function PlayerMultiPicker({ players, matches, me, selected, onTo
           const isSel = selected.includes(p.id);
           return (
             <button key={p.id} type="button" className={"pmp-chip" + (isSel ? " sel" : "")} onClick={() => onToggle(p.id)}>
-              <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={32} />
+              <Ball nick={p.nickname} color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={32} />
               <span className="pmp-name">{p.nickname}</span>
               {isSel && <Check size={15} className="pmp-check" />}
             </button>

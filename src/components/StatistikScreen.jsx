@@ -125,7 +125,7 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
     return (
       <button key={name} className={"stat-row as-btn" + (name === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(name)}>
         <span className="medal">{medals && rank < 3 ? <Emoji e={MEDAL_EMOJI[rank]} /> : `${rank + 1}.`}</span>
-        <Ball color={colorOf(name)} label={initials(name)} badge={badgeOf(name)} photo={photoOf(name)} size={34} />
+        <Ball nick={name} color={colorOf(name)} label={initials(name)} badge={badgeOf(name)} photo={photoOf(name)} size={34} />
         <span className="stat-name">{name}</span>
         <span className="stat-val">{valOf(r)}</span>
         {extra && <span className="stat-decay-slot">{extra(r)}</span>}
@@ -184,7 +184,7 @@ function StatFilterContent({ disc, disciplines, onDisc, mode, onMode, count, nea
         ))}
         <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => onNearby((n) => !n)}
           aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
-          <Ball color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
+          <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
         </button>
       </div>
     </>
@@ -253,7 +253,7 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
                       </span>
                     ) : (
                       <button className="rt-holder-btn" onClick={() => onOpenProfile(holder.name)}>
-                        <Ball color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={26} />
+                        <Ball nick={holder.name} color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={26} />
                         <span className="rt-name">{holder.name}</span>
                       </button>
                     )}

@@ -496,7 +496,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
               return (
                 <div key={p.player_id} className={"mem-row" + (p.blocked ? " is-blocked" : "")}>
                   <div className="mem-line">
-                    <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={28} />
+                    <Ball nick={p.nickname} color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={28} />
                     <span className={"role-letter role-" + lclass}>{letter}</span>
                     <span className="mem-nick">{p.nickname}{isSelf ? " " + t("(du)") : ""}</span>
                     {inviter && joinedRecently && <span className="new-dot" title={t("Neu über Einladung von {name}", { name: inviter.nickname })} />}

@@ -16,7 +16,6 @@ import { THEME_CATALOG, THEME_KEYS, applyTheme } from "../lib/themes";
 import { pushAvailability } from "../lib/notifications";
 import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
-import AvatarPhotoField from "./AvatarPhotoField";
 import MyFeedbackTickets from "./MyFeedbackTickets";
 import IdentityCard from "./widgets/IdentityCard";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
@@ -478,14 +477,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               {t("So sehen dich die anderen. Ohne Foto zeigt die Kugel deine Initialen in der gewählten Farbe; \"Auto\" wählt die Farbe selbst und zeigt wieder deine eigene Kugel statt eines Erfolgs.")}
             </InfoButton>
           </div>
-          {/* EINE Kugel, gross und mittig, mit den Foto-Werkzeugen darunter -
+          {/* Foto und Avatar-Erfolg stecken seit 411.22 im Profilbild-Fenster (Tipp auf die Kugel, AvatarSheet.jsx) -
+              hier bleiben Kugelfarbe und Design. Frueher: EINE Kugel, gross und mittig, mit den Foto-Werkzeugen darunter -
               vorher gab es zwei kleine (eine beim Foto, eine bei der Farbe),
               die dasselbe zeigten (Nutzer-Feedback 2026-09-30). Die Kugel
               zeigt das fertige Ergebnis inklusive gewaehltem Erfolg-Avatar. */}
           <div className="avatar-stage">
-            <Ball color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)}
+            <Ball nick={nickname} color={color || hashColor(cleanNick || nickname)} label={initials(cleanNick || nickname)}
               photo={photoOf(nickname)} badge={meRow?.selected_badge || null} size={112} />
-            <AvatarPhotoField hasPhoto={!!photoOf(nickname)} onReload={onReload} toast={toast} />
           </div>
           <div className="swatch-row">
             <button className={"swatch auto" + (color === null && !meRow?.selected_badge ? " sel" : "")}
@@ -509,9 +508,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 aria-label={t("Eigene Kugelfarbe wählen")} />
             </label>
           </div>
-          <button type="button" className="btn ghost pf-avatar-badge-btn" onClick={onOpenAchievements}>
-            <Award size={16} /> {t("Erfolg als Avatar wählen")}
-          </button>
           <label className="field-label">{t("Design")}</label>
           <div className="theme-grid">
             {THEME_KEYS.map((key) => {
@@ -1058,7 +1054,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       {mode === "erfolge" && isMe && (
         <div className="pf-head-avatar-sticky">
           <span className="pf-head-avatar">
-            <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={44} />
+            <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={44} />
           </span>
         </div>
       )}

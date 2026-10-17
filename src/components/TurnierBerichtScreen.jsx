@@ -188,7 +188,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
                           )}
                         </td>
                         <td className="tb-player-cell">
-                          {n && <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={22} />}
+                          {n && <Ball nick={n} color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={22} />}
                           {n || "?"}
                         </td>
                         <td>{a.wins}</td>

@@ -15,7 +15,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
   return (
     <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
       <button className="ping-head as-btn" onClick={() => onOpenProfile(planning.player.nickname)}>
-        <Ball color={colorOf(planning.player.nickname)} label={initials(planning.player.nickname)} badge={badgeOf(planning.player.nickname)} photo={photoOf(planning.player.nickname)} size={40} />
+        <Ball nick={planning.player.nickname} color={colorOf(planning.player.nickname)} label={initials(planning.player.nickname)} badge={badgeOf(planning.player.nickname)} photo={photoOf(planning.player.nickname)} size={40} />
         <div className="ping-who">
           <b>{planning.player.nickname}</b>
         </div>
@@ -31,7 +31,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
         <div className="ping-replies">
           {planning.replies.map((r) => (
             <button key={r.id} className="ping-reply as-btn" onClick={() => onOpenProfile(r.player.nickname)}>
-              <Ball color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={26} />
+              <Ball nick={r.player.nickname} color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={26} />
               <span><b>{r.player.nickname}</b>{r.message ? <>: <EmojiText>{r.message}</EmojiText></> : t(" ist interessiert!")}</span>
             </button>
           ))}

@@ -281,7 +281,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         {m.void && <UserX className="turnier-graph-void" size={13} title={t("Nicht gewertet - beide nicht erschienen")} />}
         <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player1_id ? " won" : "")}>
           <span className="turnier-graph-name">
-            {n1 && <Ball color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={isFinal ? 26 : 20} />}
+            {n1 && <Ball nick={n1} color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={isFinal ? 26 : 20} />}
             <span>{n1 || t("TBD")}</span>
           </span>
           {editable ? (
@@ -292,7 +292,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         </div>
         <div className={"turnier-graph-row" + (m.winner_id && m.winner_id === m.player2_id ? " won" : "")}>
           <span className="turnier-graph-name">
-            {!m.is_bye && n2 && <Ball color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={isFinal ? 26 : 20} />}
+            {!m.is_bye && n2 && <Ball nick={n2} color={colorOf(n2)} label={initials(n2)} badge={badgeOf(n2)} photo={photoOf(n2)} size={isFinal ? 26 : 20} />}
             <span>{m.is_bye ? t("(Freilos)") : (n2 || t("TBD"))}</span>
           </span>
           {editable ? (
@@ -514,7 +514,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
                 const n = nameOf(pid) || t("TBD");
                 return (
                   <button key={pid || n} type="button" className={"pmp-chip" + (isAbsent ? " sel" : "")} onClick={() => setAbsent((a) => !a)}>
-                    <Ball color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={32} />
+                    <Ball nick={n} color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={32} />
                     <span className="pmp-name">{n}</span>
                     {isAbsent && <Check size={15} className="pmp-check" />}
                   </button>

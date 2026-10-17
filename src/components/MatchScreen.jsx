@@ -311,7 +311,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       return (
         <button type="button" className={"vs-slot filled" + (clear ? "" : " me")} data-slot={key || "me"} onClick={clear || undefined}
           disabled={!clear} title={clear ? `${role} – ${t("Entfernen")}` : role}>
-          <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={44} />
+          <Ball nick={p.nickname} color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={44} />
           <span>{p.nickname}</span>
         </button>
       );
@@ -850,7 +850,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                     return (
                       <div key={p.id} data-pid={p.id} className="opp-cell reveal" style={{ "--i": i % 4 }}>
                         <button className={"opp-card" + (role ? " sel" : "") + (isRec ? " rec" : "")} onClick={(e) => pickPlayer(p, e.currentTarget)}>
-                          <Ball color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
+                          <Ball nick={p.nickname} color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
                           <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
                           {/* Schon gewaehlt: bleibt in der Liste, Kugel abgedunkelt, die
                               Rolle steht dabei - antippen nimmt den Spieler wieder heraus.
@@ -952,7 +952,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                       ))}
                     <div className="sc-avatars">
                       {members.map((pl) => (
-                        <Ball key={pl.id} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={56} />
+                        <Ball key={pl.id} nick={pl.nickname} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={56} />
                       ))}
                     </div>
                     <span className="score-name">{name}</span>
@@ -1010,11 +1010,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <div className="sum-side">
                 {mode === "double" ? (
                   <div className="sum-avatars">
-                    <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} photo={photoOf(me.nickname)} size={40} />
-                    <Ball color={colorOf(partner.nickname)} label={initials(partner.nickname)} badge={badgeOf(partner.nickname)} photo={photoOf(partner.nickname)} size={40} />
+                    <Ball nick={me.nickname} color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} photo={photoOf(me.nickname)} size={40} />
+                    <Ball nick={partner.nickname} color={colorOf(partner.nickname)} label={initials(partner.nickname)} badge={badgeOf(partner.nickname)} photo={photoOf(partner.nickname)} size={40} />
                   </div>
                 ) : (
-                  <Ball color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} photo={photoOf(me.nickname)} size={52} />
+                  <Ball nick={me.nickname} color={colorOf(me.nickname)} label={initials(me.nickname)} badge={badgeOf(me.nickname)} photo={photoOf(me.nickname)} size={52} />
                 )}
                 <span>{teamA}</span>
               </div>
@@ -1022,11 +1022,11 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               <div className="sum-side">
                 {mode === "double" ? (
                   <div className="sum-avatars">
-                    <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} photo={photoOf(opp.nickname)} size={40} />
-                    <Ball color={colorOf(opp2.nickname)} label={initials(opp2.nickname)} badge={badgeOf(opp2.nickname)} photo={photoOf(opp2.nickname)} size={40} />
+                    <Ball nick={opp.nickname} color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} photo={photoOf(opp.nickname)} size={40} />
+                    <Ball nick={opp2.nickname} color={colorOf(opp2.nickname)} label={initials(opp2.nickname)} badge={badgeOf(opp2.nickname)} photo={photoOf(opp2.nickname)} size={40} />
                   </div>
                 ) : (
-                  <Ball color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} photo={photoOf(opp.nickname)} size={52} />
+                  <Ball nick={opp.nickname} color={colorOf(opp.nickname)} label={initials(opp.nickname)} badge={badgeOf(opp.nickname)} photo={photoOf(opp.nickname)} size={52} />
                 )}
                 <span>{teamB}</span>
               </div>

@@ -39,7 +39,7 @@ export default function ProfileHighlights({ nickname, matches, rows, onOpenProfi
         <button type="button" className="pf-hl-row pf-hl-btn" onClick={() => onOpenProfile?.(nemesis.opp)}>
           <span className="pf-hl-label"><Swords size={14} /> {t("Angstgegner")}</span>
           <span className="pf-hl-val">
-            <Ball color={colorOf(nemesis.opp)} label={initials(nemesis.opp)} badge={badgeOf(nemesis.opp)} photo={photoOf(nemesis.opp)} size={22} />
+            <Ball nick={nemesis.opp} color={colorOf(nemesis.opp)} label={initials(nemesis.opp)} badge={badgeOf(nemesis.opp)} photo={photoOf(nemesis.opp)} size={22} />
             <strong>{nemesis.opp}</strong> <small>{t("{n} Niederlagen", { n: nemesis.n })}</small>
           </span>
         </button>
