@@ -31,6 +31,7 @@ import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import SegmentBar from "./widgets/SegmentBar";
 import ProfileHighlights from "./widgets/ProfileHighlights";
+import { flyIn } from "../lib/flyBall";
 import { appConfirm } from "../lib/confirmDialog";
 import CardDeck from "./widgets/CardDeck";
 import NumbersDeck from "./widgets/NumbersDeck";
@@ -168,6 +169,18 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [challengeMsg, setChallengeMsg] = useState("");
   const installPrompt = useInstallPrompt();
   const [edit, setEdit] = useState(false);
+  // Erfolg als Avatar: beim Antippen merkt sich der Klick den Rahmen des Erfolgs-Symbols, sobald der Avatar den Erfolg
+  // zeigt (meRow.selected_badge), fliegt die Kugel von dort in den Avatar oben rechts (lib/flyBall.js wie bei der Gegnerwahl).
+  const avatarFlyRef = useRef(null);
+  const avatarBadge = badgeOf(nickname);
+  useEffect(() => {
+    const f = avatarFlyRef.current;
+    if (!f || avatarBadge !== f.key) return undefined;
+    avatarFlyRef.current = null;
+    // Erst fliegen, wenn der Avatar den Erfolg wirklich zeigt (die Spielerliste laedt nach dem Speichern kurz nach).
+    const id = setTimeout(() => flyIn(document.querySelector(".pf-head-avatar .ball"), f.rect), 30);
+    return () => clearTimeout(id);
+  }, [avatarBadge]);
   const [segPick, setSegPick] = useState(() => { try { return localStorage.getItem("profilSeg") || ""; } catch { return ""; } });
   const [nick, setNick] = useState(nickname);
   const [color, setColor] = useState(meRow?.avatar_color || null);
@@ -918,7 +931,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                           <button key={key} data-badge-key={key}
                             className={"badge-chip" + (earned ? " earned" : " locked") + (selected ? " selected" : "")}
                             disabled={!isMe || !earned}
-                            onClick={() => isMe && earned && onSelectBadge(selected ? null : key)}
+                            onClick={(e) => {
+                              if (!isMe || !earned) return;
+                              if (!selected) avatarFlyRef.current = { key, rect: e.currentTarget.querySelector(".badge-emoji")?.getBoundingClientRect() };
+                              onSelectBadge(selected ? null : key);
+                            }}
                             title={t(b.description)}>
                             <span className={"badge-emoji" + (earned ? "" : " locked-emoji")}><Emoji e={b.emoji} /></span>
                             <span className="badge-name">{t(b.name)}</span>
@@ -1034,6 +1051,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
   return (
     <div className="screen">
+      {mode === "erfolge" && isMe && (
+        <div className="pf-head-avatar-sticky">
+          <span className="pf-head-avatar">
+            <Ball color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={44} />
+          </span>
+        </div>
+      )}
       <header className="screen-head with-back">
         {onBack && <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>}
         <div>

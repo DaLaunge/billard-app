@@ -2992,3 +2992,7 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .pf-hl-val small { color: var(--ivory-dim); font-size: 12px; }
 .pf-layout[data-mode="zahlen"] .pf-highlights-slot, .pf-layout[data-mode="erfolge"] .pf-highlights-slot { display: none; }
 .pf-avatar-badge-btn { width: 100%; margin: 8px 0 4px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* Avatar oben rechts auf der Erfolge-Seite: Ziel der Flug-Animation, bleibt beim Scrollen stehen */
+.pf-head-avatar-sticky { position: sticky; top: 8px; height: 0; z-index: 6; display: flex; justify-content: flex-end; pointer-events: none; }
+.pf-head-avatar { pointer-events: auto; display: block; border-radius: 50%; box-shadow: 0 0 0 3px var(--felt); }
