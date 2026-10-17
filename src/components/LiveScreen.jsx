@@ -4,7 +4,6 @@ import { t } from "../lib/i18n";
 import PingCard from "./PingCard";
 import PlanungCard from "./PlanungCard";
 import ChallengeCard from "./ChallengeCard";
-import UserPanel from "./widgets/UserPanel";
 import ImprintFooter from "./widgets/ImprintFooter";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
@@ -288,13 +287,7 @@ export default function LiveScreen({ onViewRule, me, pings, plannings, challenge
       </header>
 
       <div className="live-split">
-      <aside className="ov-side">
-        <div className="ov-side-extra">
-          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
-            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} cardLayout={me.card_layout}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
-        </div>
-      </aside>
+      {/* Keine linke Profil-Spalte mehr: am PC steht die Kugel ohnehin dauerhaft oben links in der Seitenleiste (AppDrawer). */}
       {/* Zwei frei befuellbare Spalten (am Handy per display:contents EINE
           durchgehende Liste, siehe App.css): breit in der Mitte, schmal
           rechts. Eine leere Spalte verschwindet per CSS ganz, statt eine
