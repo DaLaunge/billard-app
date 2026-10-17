@@ -25,7 +25,7 @@ import MatchFlySwitch from "./widgets/MatchFlySwitch";
 import PendingPopupSwitch from "./widgets/PendingPopupSwitch";
 import FiltersOpenSwitch from "./widgets/FiltersOpenSwitch";
 import ListPrefs from "./widgets/ListPrefs";
-import { getListMode, getChapterButtons } from "../lib/uiPrefs";
+import { getListMode } from "../lib/uiPrefs";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
@@ -1018,7 +1018,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     const { parts, anchor } = foldedDeck(deckOrder, ids);
     if (anchor && deck.numbers) {
       cardsById[anchor] = (
-        <NumbersDeck stacked={mode === "zahlen" && getListMode() === "stacked"} jump={getChapterButtons()} nickname={nickname} isMe={isMe} parts={parts} matches={matches} rangliste={rangliste}
+        <NumbersDeck stacked={mode === "zahlen" && getListMode() === "stacked"} nickname={nickname} isMe={isMe} parts={parts} matches={matches} rangliste={rangliste}
           players={players} challenges={challenges} catalog={catalog} earnedBadges={earnedBadges}
           onOpenProfile={onOpenProfile} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
           onHidePart={isMe && onSetCardLayout ? (id) => cards.hideCard(id) : undefined} />

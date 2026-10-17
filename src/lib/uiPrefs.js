@@ -70,21 +70,19 @@ export function storePendingPopup(on) {
 }
 
 /* Listen und Kapitel (Nutzer-Wunsch 2026-10-18), pro Geraet unter Profil -> Einstellungen -> Dieses Geraet:
-   - listMode: "stacked" (Standard) = alle Kapitel als EINE lange Liste untereinander, "chapters" = wie frueher, die Kapitel-
-     Buttons oben schalten je ein Kapitel um.
+   - listMode: "chapters" (Standard, "Tab-Freak") = wie frueher, die Kapitel-Buttons oben schalten je ein Kapitel um;
+     "stacked" ("Doomscroller") = alle Kapitel als EINE lange Liste untereinander.
    - stickyHeads (Standard an): Kapitelkoepfe bleiben beim Scrollen oben stehen. Nur ein ausdrueckliches "aus" wird gespeichert;
      applyListPrefs() setzt dafuer html[data-sticky-heads] (CSS in App.css schaltet position: sticky ab).
-   - chapterButtons (Standard aus): in der langen Liste zusaetzlich Kapitel-Buttons oben, die zum Kapitel springen (im Kapitel-
-     Modus sind die Buttons ohnehin immer da). */
+   Die Kapitel-Buttons oben gibt es nur im Modus "chapters" (Tab-Freak): ein Klick zeigt das Kapitel wie ein Tab. */
 const LIST_MODE_KEY = "listMode";
 const STICKY_HEADS_KEY = "stickyHeads";
-const CHAPTER_BUTTONS_KEY = "chapterButtons";
 
 export function getListMode() {
-  try { return localStorage.getItem(LIST_MODE_KEY) === "chapters" ? "chapters" : "stacked"; } catch { return "stacked"; }
+  try { return localStorage.getItem(LIST_MODE_KEY) === "stacked" ? "stacked" : "chapters"; } catch { return "chapters"; }
 }
 export function storeListMode(mode) {
-  try { localStorage.setItem(LIST_MODE_KEY, mode === "chapters" ? "chapters" : "stacked"); } catch { /* ignore */ }
+  try { localStorage.setItem(LIST_MODE_KEY, mode === "stacked" ? "stacked" : "chapters"); } catch { /* ignore */ }
 }
 export function getStickyHeads() {
   try { return localStorage.getItem(STICKY_HEADS_KEY) !== "0"; } catch { return true; }
@@ -92,12 +90,6 @@ export function getStickyHeads() {
 export function storeStickyHeads(on) {
   try { localStorage.setItem(STICKY_HEADS_KEY, on ? "1" : "0"); } catch { /* ignore */ }
   applyListPrefs();
-}
-export function getChapterButtons() {
-  try { return localStorage.getItem(CHAPTER_BUTTONS_KEY) === "1"; } catch { return false; }
-}
-export function storeChapterButtons(on) {
-  try { localStorage.setItem(CHAPTER_BUTTONS_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
 export function applyListPrefs() {
   try { document.documentElement.dataset.stickyHeads = getStickyHeads() ? "on" : "off"; } catch { /* ignore */ }

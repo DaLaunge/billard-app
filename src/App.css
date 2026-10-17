@@ -3089,5 +3089,3 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 .list-prefs-label { font-size: 13px; color: var(--ivory-dim); }
 .list-prefs-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .list-prefs-chips .chip { display: inline-flex; align-items: center; gap: 6px; }
-.num-jump { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 8px; }
-.num-jump .chip { display: inline-flex; align-items: center; gap: 5px; }
