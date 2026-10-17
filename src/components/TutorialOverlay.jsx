@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Hand, Plus, BarChart3, Trophy, Radio, User, Award, SlidersHorizontal, Timer, X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Hand, Plus, BarChart3, Trophy, Radio, User, Award, SlidersHorizontal, Timer, Menu, X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { t } from "../lib/i18n";
 
 /* Tutorial-Overlay: zeigt Schritte aus lib/tutorial/steps.js einen nach dem
@@ -15,7 +15,7 @@ import { t } from "../lib/i18n";
      halbgesehenes Tutorial soll nicht bei jedem Start wiederkommen). */
 const ICONS = {
   welcome: Hand, match: Plus, stats: BarChart3, turnier: Trophy, live: Radio,
-  profil: User, achievements: Award, customize: SlidersHorizontal, extras: Timer,
+  profil: User, achievements: Award, customize: SlidersHorizontal, extras: Timer, menu: Menu,
 };
 const PAD = 8;
 
@@ -38,11 +38,18 @@ export default function TutorialOverlay({ steps, news, tab, onGoTab, onFinish })
     if (!step?.target) return undefined;
     let alive = true, tries = 0, timer = null;
     const measure = () => {
-      const el = document.querySelector(step.target);
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) return null;
-      return { top: r.top, left: r.left, width: r.width, height: r.height, el };
+      // Dasselbe data-tour kann zweimal vorkommen (Leiste unten UND Menue/Seitenleiste):
+      // nimm das erste SICHTBARE - am Handy ist das Menue zu (visibility:hidden), am PC die Leiste weg.
+      for (const el of document.querySelectorAll(step.target)) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (getComputedStyle(el).visibility === "hidden" || r.right <= 0) continue;
+        // Menue am Handy: nur zaehlen, solange es offen ist (beim Zuschieben gleitet es noch ~0,2 s durchs Bild).
+        const drawer = el.closest(".app-drawer");
+        if (drawer && !drawer.classList.contains("open") && !window.matchMedia("(min-width: 900px)").matches) continue;
+        return { top: r.top, left: r.left, width: r.width, height: r.height, el };
+      }
+      return null;
     };
     const find = () => {
       if (!alive) return;

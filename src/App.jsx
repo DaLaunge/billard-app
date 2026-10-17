@@ -3,7 +3,7 @@ import TutorialOverlay from "./components/TutorialOverlay";
 import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
 import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
 import { pendingReleaseItems, markReleaseSeen } from "./lib/releaseNotes";
-import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, FileText } from "lucide-react";
+import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, FileText, Menu } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -45,6 +45,7 @@ import TurniereScreen from "./components/TurniereScreen";
 import TurnierRasterScreen from "./components/TurnierRasterScreen";
 import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
+import AppDrawer from "./components/AppDrawer";
 import ConfirmHost from "./components/ConfirmHost";
 import { rpcRetry } from "./lib/rpcRetry";
 import { EmojiText } from "./components/Emoji";
@@ -990,6 +991,8 @@ export default function App() {
   const [hideTabbarPref, setHideTabbarPrefState] = useState(getHideTabbar);
   const setHideTabbarPref = useCallback((on) => { setHideTabbarPrefState(on); storeHideTabbar(on); }, []);
   const [contentEl, setContentEl] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => { setDrawerOpen(false); }, [tab]);
   const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
   // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
@@ -1255,7 +1258,10 @@ export default function App() {
     }, 1200);   // kurz warten, damit die Startseite zuerst zu sehen ist
     return () => clearTimeout(timer);
   }, [tutorialBlocked, tutorialRun, player, matches]);
-  const startTutorial = useCallback(() => setTutorialRun({ steps: TUTORIAL_STEPS, news: false }), []);
+  const startTutorial = useCallback((onlyId) => {
+    const only = typeof onlyId === "string" ? TUTORIAL_STEPS.filter((st) => st.id === onlyId) : null;
+    setTutorialRun({ steps: only && only.length ? only : TUTORIAL_STEPS, news: false });
+  }, []);
   const finishTutorial = useCallback(() => {
     if (tutorialRun && player) markSeen(player.id, tutorialRun.steps.map((s) => s.id));
     setTutorialRun(null);
@@ -1631,6 +1637,23 @@ export default function App() {
                 <RefreshCw size={18} className={ptr.refreshing ? "ptr-spin" : ""}
                   style={ptr.refreshing ? undefined : { transform: `rotate(${(ptr.pull / ptr.threshold) * 270}deg)` }} />
               </div>
+            )}
+            {MAIN_TABS.includes(tab) && (
+              <button data-tour="burger" className="burger-btn" onClick={() => setDrawerOpen(true)} aria-label={t("Menü")} aria-expanded={drawerOpen}>
+                <Menu size={20} />
+              </button>
+            )}
+            {tab !== "match" && (
+              <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} player={player}
+                onGo={(target) => navPush({ tab: target })} onTurniere={openTurniereMenu}
+                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onSetTheme={setTheme}
+                colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} isAdmin={player?.role === "admin"}
+                badges={{
+                  stats: pendingForMe.length,
+                  turnier: tourneyReadyList.length + wsReadyList.length,
+                  live: pings.length + openChallengesAll.length + plannings.length,
+                  profil: openChallengesToMe.length > 0 ? openChallengesToMe.length : (player?.role === "admin" ? unconfirmed.length : 0),
+                }} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {tab === "live" && (

@@ -29,7 +29,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "welcome", icon: "welcome",
     title: "Willkommen bei Break & Rank",
-    body: "Hier hältst du eure Billard-Matches fest, siehst dein Rating und misst dich mit dem Club. Die kurze Tour zeigt dir das Wichtigste. Du findest sie jederzeit wieder unter Profil → Zahnrad → Konto & Hilfe.",
+    body: "Hier hältst du eure Billard-Matches fest, siehst dein Rating und misst dich mit dem Club. Die kurze Tour zeigt dir das Wichtigste. Du findest sie jederzeit wieder im Menü unter „Tutorial“ – dort kannst du auch einzelne Schritte gezielt ansehen.",
   },
   {
     id: "match", icon: "match", tab: "stats", target: '[data-tour="tab-fab"]',
@@ -70,5 +70,10 @@ export const TUTORIAL_STEPS = [
     id: "match-extras", icon: "extras", tab: "stats",
     title: "Zusatzzähler und Spieluhr",
     body: "Beim Zählen im Match läuft eine Uhr mit Pause-Knopf, und optional zählst du Fluke, Runout, Scratch und Foul mit. Die App weist dich darauf hin, wenn eine Eingabe nicht stimmen kann.",
+  },
+  {
+    id: "menu", icon: "menu", target: '[data-tour="burger"]',
+    title: "Das Menü",
+    body: "Hier wechselst du den Bereich, wählst dein Farbdesign und startest dieses Tutorial – ganz oder nur einzelne Schritte. Am PC steht das Menü dauerhaft links.",
   },
 ];

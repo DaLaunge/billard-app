@@ -77,7 +77,7 @@ html, body { background: var(--felt); }
 .phone { width: 100%; max-width: 430px; height: 100vh; position: relative;
   background: radial-gradient(140% 100% at 50% -10%, var(--felt-2) 0%, var(--felt) 60%);
   display: flex; flex-direction: column; box-shadow: 0 0 60px #00000070; }
-.content { flex: 1; overflow-y: auto; padding-bottom: 92px; }
+.content { flex: 1; overflow-y: auto; padding-bottom: 104px; }
 .content.no-tabbar { padding-bottom: 24px; }
 .content.has-table-banner { padding-bottom: 148px; }
 /* Handy-Werte. Am PC ueberschreibt ".phone.app .screen" weiter unten mit
@@ -1329,10 +1329,11 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
   background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 13px;
   font-family: inherit; text-align: center; box-shadow: 0 4px 14px #00000045; }
 
-.tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 430px; display: flex; align-items: center;
-  background: color-mix(in srgb, var(--felt) 92%, transparent); border-top: 1px solid var(--line);
-  padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(8px); z-index: 30; }
+.tabbar { position: fixed; bottom: calc(10px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+  width: calc(100% - 20px); max-width: 410px; display: flex; align-items: center;
+  background: color-mix(in srgb, var(--felt-3) 94%, transparent); border: 1px solid var(--line);
+  border-radius: 30px; box-shadow: 0 8px 24px #00000055;
+  padding: 6px 6px; backdrop-filter: blur(8px); z-index: 30; }
 /* Beim Runterscrollen weggeschoben (Geraete-Einstellung, Standard aus - siehe
    lib/useHideTabbar.js). Bewusst translate statt display:none oder einer
    Hoehenaenderung: der Inhalt darunter darf sich nicht bewegen, sonst
@@ -2790,3 +2791,54 @@ button.break-slot { cursor: pointer; }
 .clock-pause-btn.on { background: var(--warn); color: #1a1a1a; }
 .score-body { transition: opacity .2s, filter .2s; }
 .score-body.is-paused { opacity: 0.35; filter: grayscale(0.6); pointer-events: none; }
+
+
+/* ===== Layout-Redesign: Menue, schwebende Leiste, Karten fast randlos ===== */
+.burger-btn { position: absolute; top: 14px; left: 8px; z-index: 25; width: 38px; height: 38px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--felt-3); color: var(--ivory);
+  display: grid; place-items: center; cursor: pointer; }
+.burger-btn ~ .content .screen-head:not(:has(> .back-btn)) { padding-left: 46px; min-height: 38px; }
+.phone:has(.screen-head > .back-btn) .burger-btn { display: none; }
+.app-drawer-scrim { position: fixed; inset: 0; background: #000000a0; z-index: 60; }
+.app-drawer { position: fixed; top: 0; bottom: 0; left: 0; width: min(290px, 82vw); z-index: 61;
+  background: var(--felt); border-right: 1px solid var(--line); padding: 16px 10px calc(16px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 2px; overflow-y: auto;
+  transform: translateX(-102%); visibility: hidden; box-shadow: 0 0 40px #00000080; }
+.app-drawer.open { transform: none; visibility: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  .app-drawer { transition: transform .22s ease, visibility 0s linear .22s; }
+  .app-drawer.open { transition: transform .22s ease; }
+}
+.app-drawer-top { display: flex; align-items: center; gap: 10px; padding: 4px 6px 12px; }
+.app-drawer-who { flex: 1; min-width: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-drawer-close { background: none; border: none; color: var(--ivory-dim); cursor: pointer; padding: 6px; }
+.app-drawer-nav { display: flex; flex-direction: column; gap: 2px; }
+.app-drawer-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border: none;
+  border-radius: 14px; background: none; color: var(--ivory-dim); font: inherit; font-size: 15px; cursor: pointer; text-align: left; position: relative; }
+.app-drawer-item.on { background: var(--felt-3); color: var(--accent); font-weight: 700; }
+.app-drawer-new { color: var(--ivory); }
+.app-drawer-badge { margin-left: auto; font-style: normal; background: var(--loss); color: #fff; font-size: 11px;
+  font-weight: 700; border-radius: 999px; min-width: 18px; height: 18px; display: grid; place-items: center; padding: 0 5px; }
+.app-drawer-sep { border-top: 1px solid var(--line); margin: 8px 4px; }
+.app-drawer-label { font-size: 12px; color: var(--ivory-dim); padding: 2px 12px 6px; }
+.app-drawer-dots { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 12px; }
+.app-drawer-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.app-drawer-dot.sel { border-color: var(--ivory); }
+@media (max-width: 899px) {
+  .screen > .stat-block, .screen .sortable-card > .stat-block, .screen [class*="-layout"] > .stat-block,
+  .screen [class*="-split"] > .stat-block, .screen [class*="-col"] > .stat-block {
+    margin-inline: -8px; padding: 13px 10px; border-radius: 20px; }
+  .stat-block .stat-block { margin-inline: 0; }
+  .stat-block.is-maximized { margin-inline: 0; border-radius: 0; }
+}
+@media (min-width: 900px) {
+  .burger-btn, .app-drawer-close, .app-drawer-scrim { display: none; }
+  .burger-btn ~ .content .screen-head:not(:has(> .back-btn)) { padding-left: 0; }
+  .tabbar { display: none; }
+  .stage:has(.app-drawer) { padding-left: 250px; }
+  .app-drawer { width: 250px; transform: none; visibility: visible; box-shadow: none; z-index: 20; }
+}
+.app-drawer-chev { margin-left: auto; transition: transform .2s ease; }
+.app-drawer-chev.up { transform: rotate(180deg); }
+.app-drawer-sub { display: flex; flex-direction: column; margin: 0 0 4px 22px; border-left: 1px solid var(--line); }
+.app-drawer-sub .app-drawer-item { padding: 8px 12px; font-size: 14px; }
