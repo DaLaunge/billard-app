@@ -30,6 +30,7 @@ import ProgressBar from "./widgets/ProgressBar";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import SegmentBar from "./widgets/SegmentBar";
+import ProfileHighlights from "./widgets/ProfileHighlights";
 import { appConfirm } from "../lib/confirmDialog";
 import CardDeck from "./widgets/CardDeck";
 import NumbersDeck from "./widgets/NumbersDeck";
@@ -1088,6 +1089,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           )}
         </>} />
       </div>
+      {(mode === "identity" || mode === "full") && (
+        <div className="pf-highlights-slot" style={{ order: 1 }}>
+          <ProfileHighlights nickname={nickname} matches={matches} rows={myRows} onOpenProfile={onOpenProfile}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+        </div>
+      )}
       {mode === "identity" && isMe && (
         <div className="pf-identity-extra" style={{ order: 5 }}>
           <button type="button" className="pf-id-card" onClick={onPreview}>
