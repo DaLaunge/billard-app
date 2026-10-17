@@ -56,7 +56,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       {(onSettings || onInvite) && (
         <div className="id-card-corner">
           {onSettings && (
-            <button className="id-card-icon-btn" onClick={onSettings} aria-label={t("Profil bearbeiten")} title={t("Profil bearbeiten")}>
+            <button className="id-card-icon-btn" onClick={onSettings} aria-label={t("Einstellungen")} title={t("Einstellungen")}>
               <Settings size={18} />
             </button>
           )}

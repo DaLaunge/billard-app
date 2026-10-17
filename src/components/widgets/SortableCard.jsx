@@ -23,7 +23,7 @@ import { CSS } from "@dnd-kit/utilities";
    aussieht. CSS.Translate.toString uebernimmt nur die Verschiebung
    (translateX/Y), keine Skalierung - die Karte bewegt sich beim Ziehen,
    verzerrt sich aber nicht mehr. */
-export default function SortableCard({ id, order, children }) {
+export default function SortableCard({ id, order, seg, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -39,7 +39,7 @@ export default function SortableCard({ id, order, children }) {
     order,
   };
   return (
-    <div ref={setNodeRef} style={style} className="sortable-card" {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} className="sortable-card" data-seg={seg} {...attributes} {...listeners}>
       {children}
     </div>
   );

@@ -2848,3 +2848,17 @@ button.break-slot { cursor: pointer; }
 .rules-sheet-head h2 { font-size: 20px; display: flex; align-items: center; gap: 8px; color: var(--accent); }
 .rules-sheet-body { flex: 1; overflow-y: auto; padding: 12px 10px calc(24px + env(safe-area-inset-bottom)); }
 @media (min-width: 900px) { .rules-sheet { inset: 24px 0 24px 250px; width: min(900px, calc(100vw - 300px)); margin-inline: auto; border: 1px solid var(--line); border-radius: 20px; } }
+
+/* ===== Segment-Leiste (Handy) ===== */
+.seg-bar { display: flex; gap: 2px; padding: 3px; margin: 0 0 var(--card-gap); background: var(--felt-2);
+  border: 1px solid var(--line); border-radius: 999px; }
+.seg-bar-item { flex: 1; border: none; background: none; color: var(--ivory-dim); font: inherit; font-size: 13px;
+  padding: 7px 4px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.seg-bar-item.on { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+@media (min-width: 900px) { .seg-bar { display: none; } }
+@media (max-width: 899px) {
+  .stat-split[data-seg="verlauf"] .sortable-card:not([data-seg="verlauf"]),
+  .stat-split[data-seg="matches"] .sortable-card:not([data-seg="matches"]),
+  .stat-split[data-seg="listen"] .sortable-card:not([data-seg="listen"]),
+  .stat-split[data-seg="rekorde"] .sortable-card:not([data-seg="rekorde"]) { display: none; }
+}
