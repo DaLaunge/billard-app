@@ -3,7 +3,6 @@ import { BarChart3, Trophy, Radio, User, Plus, Shield, GraduationCap, BookOpen, 
 import { TUTORIAL_STEPS } from "../lib/tutorial/steps";
 import Ball from "./Ball";
 import { initials } from "../lib/format";
-import { THEME_CATALOG, THEME_KEYS } from "../lib/themes";
 import { t } from "../lib/i18n";
 import { APP_VERSION } from "../lib/constants";
 
@@ -12,7 +11,7 @@ import { APP_VERSION } from "../lib/constants";
    und eigener Akzent unveraendert greifen. Die vier Hauptpunkte stehen hier
    noch einmal, damit Seitenleiste und Leiste unten dieselben Ziele haben. */
 export default function AppDrawer({
-  open, onClose, tab, player, onGo, onTurniere, onNewMatch, onTutorial, onRules, onSettings, onCheckUpdate, onSetTheme,
+  open, onClose, tab, player, onGo, onTurniere, onNewMatch, onTutorial, onRules, onSettings, onCheckUpdate,
   colorOf, badgeOf, photoOf, badges = {}, isAdmin,
 }) {
   const [tourOpen, setTourOpen] = useState(false);
@@ -28,8 +27,6 @@ export default function AppDrawer({
     setUpdState(res || "error");
     if (res !== "found") updTimer.current = setTimeout(() => setUpdState("idle"), 7000);
   };
-  const themeKey = player?.theme_key || "green";
-  const custom = player?.theme_custom;
   const go = (fn) => () => { onClose(); fn(); };
   const items = [
     { key: "stats", icon: BarChart3, label: "Statistik", on: tab === "stats" || tab === "fremdprofil", run: () => onGo("stats"), badge: badges.stats },
@@ -84,20 +81,6 @@ export default function AppDrawer({
         <button className="app-drawer-item" onClick={go(onSettings)}>
           <Settings size={19} /><span>{t("Einstellungen")}</span>
         </button>
-        <div className="app-drawer-sep" />
-        <div className="app-drawer-label">{t("Farbdesign")}</div>
-        <div className="app-drawer-dots" role="group" aria-label={t("Farbdesign")}>
-          {THEME_KEYS.map((key) => (
-            <button key={key} className={"app-drawer-dot" + (themeKey === key ? " sel" : "")}
-              style={{ background: THEME_CATALOG[key].accent }} title={THEME_CATALOG[key].name}
-              aria-label={THEME_CATALOG[key].name} aria-pressed={themeKey === key}
-              onClick={() => { if (themeKey !== key) onSetTheme(key, null); }} />
-          ))}
-          {themeKey === "custom" && custom?.accent && (
-            <button className="app-drawer-dot sel" style={{ background: custom.accent }}
-              title={t("Eigene")} aria-label={t("Eigene")} aria-pressed="true" />
-          )}
-        </div>
         <button type="button" className={"app-drawer-update " + updState} data-tour="update-btn"
           disabled={updState === "checking" || updState === "found"} onClick={runUpdateCheck}>
           {updState === "found" || updState === "current" ? <Check size={18} /> : <RefreshCw size={17} className={updState === "checking" ? "spin" : ""} />}

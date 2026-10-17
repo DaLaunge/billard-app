@@ -1159,7 +1159,7 @@ const TRANSLATIONS = {
     "Bereich": "Section",
     "Ganze Tour": "Full tour",
     "Das Menü": "The menu",
-    "Hier wechselst du den Bereich, wählst dein Farbdesign und startest dieses Tutorial – ganz oder nur einzelne Schritte. Am PC steht das Menü dauerhaft links.": "Switch sections, pick your colour theme and start this tutorial here - the full tour or single steps. On a computer the menu stays on the left.",
+    "Hier wechselst du den Bereich, schlägst Regeln nach und startest dieses Tutorial – ganz oder nur einzelne Schritte. Am PC steht das Menü dauerhaft links.": "Switch sections, look up rules and start this tutorial here - the full tour or single steps. On a computer the menu stays on the left.",
     "Hier hältst du eure Billard-Matches fest, siehst dein Rating und misst dich mit dem Club. Die kurze Tour zeigt dir das Wichtigste. Du findest sie jederzeit wieder im Menü unter „Tutorial“ – dort kannst du auch einzelne Schritte gezielt ansehen.": "Record your billiards matches here, see your rating and measure yourself against the club. This short tour shows the essentials. You can find it again any time in the menu under \"Tutorial\" - where you can also watch single steps.",
     "Menü": "Menu",
     "Farbdesign": "Colour theme",

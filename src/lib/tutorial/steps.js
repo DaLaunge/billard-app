@@ -74,6 +74,6 @@ export const TUTORIAL_STEPS = [
   {
     id: "menu", icon: "menu", target: '[data-tour="burger"]',
     title: "Das Menü",
-    body: "Hier wechselst du den Bereich, wählst dein Farbdesign und startest dieses Tutorial – ganz oder nur einzelne Schritte. Am PC steht das Menü dauerhaft links.",
+    body: "Hier wechselst du den Bereich, schlägst Regeln nach und startest dieses Tutorial – ganz oder nur einzelne Schritte. Am PC steht das Menü dauerhaft links.",
   },
 ];
