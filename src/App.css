@@ -2998,23 +2998,40 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .pf-head-avatar-sticky { position: sticky; top: 8px; height: 0; z-index: 6; display: flex; justify-content: flex-end; pointer-events: none; }
 .pf-head-avatar { pointer-events: auto; display: block; border-radius: 50%; box-shadow: 0 0 0 3px var(--felt); }
 
-/* Profilbild-Fenster (AvatarSheet) */
-.avatar-sheet-overlay { align-items: flex-start; padding-top: max(24px, env(safe-area-inset-top)); overflow-y: auto; }
-.avatar-sheet { position: relative; width: min(94vw, 460px); max-height: calc(100dvh - 48px); overflow-y: auto; background: var(--felt);
-  border: 1px solid var(--accent-line); border-radius: 26px; padding: 0 14px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.avatar-sheet-close { position: absolute; top: 10px; right: 10px; }
-.avatar-sheet-big { margin-top: 4px; }
-.avatar-sheet-label { align-self: stretch; font-size: 13px; font-weight: 700; color: var(--accent); padding: 2px 6px 0; }
+/* Profilbild-Fenster (AvatarSheet): wie ein normales Menue - Kopfzeile mit X steht fest, nur die Liste scrollt,
+   kein seitliches Verschieben. Am Handy ein Blatt von unten, am PC mittig. */
+.avatar-sheet-overlay { align-items: end; padding: 0; overflow: hidden; touch-action: pan-y; overscroll-behavior: contain; }
+.avatar-sheet { width: 100%; max-width: 520px; margin: 0 auto; height: min(92dvh, 780px); display: flex; flex-direction: column; overflow: hidden;
+  background: var(--felt); border: 1px solid var(--accent-line); border-bottom: 0; border-radius: 26px 26px 0 0; touch-action: pan-y; overscroll-behavior: contain; }
+.avatar-sheet-bar { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 4px 18px; }
+.avatar-sheet-bar strong { font-size: 16px; }
+.avatar-sheet-head { flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 14px 8px; }
+.avatar-sheet-tools { flex: none; display: flex; gap: 8px; align-items: center; padding: 0 14px 6px; }
+.avatar-sheet-search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 40px; border-radius: 12px;
+  background: var(--felt-2); border: 1px solid var(--line); color: var(--ivory-dim); }
+.avatar-sheet-search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; color: var(--ivory); font: inherit; padding: 0; }
+.avatar-sheet-views { flex: none; display: flex; background: var(--felt-2); border: 1px solid var(--line); border-radius: 12px; padding: 2px; }
+.avatar-sheet-views button { border: 0; background: none; color: var(--ivory-dim); width: 36px; height: 34px; border-radius: 10px; display: grid; place-items: center; cursor: pointer; }
+.avatar-sheet-views button.on { background: var(--accent); color: var(--accent-ink); }
+.avatar-sheet-label { flex: none; font-size: 13px; font-weight: 700; color: var(--accent); padding: 4px 18px 6px; }
 .avatar-sheet-label span { color: var(--ivory-dim); font-weight: 500; margin-left: 4px; }
-.avatar-sheet-list { align-self: stretch; display: flex; flex-direction: column; gap: 6px; }
-.avatar-sheet-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; border: 1px solid transparent; border-radius: 14px;
-  background: var(--felt-2); color: var(--ivory); font: inherit; text-align: left; cursor: pointer; }
+.avatar-sheet-list { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0 14px calc(14px + env(safe-area-inset-bottom)); overscroll-behavior: contain; }
+.avatar-sheet-list.normal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-content: start; }
+.avatar-sheet-list.detail { display: flex; flex-direction: column; gap: 6px; }
+.avatar-sheet-list .hint { grid-column: 1 / -1; padding: 6px 4px; }
+.avatar-sheet-item { position: relative; border: 1px solid transparent; border-radius: 14px; background: var(--felt-2); color: var(--ivory); font: inherit; cursor: pointer; text-align: left; min-width: 0; }
 .avatar-sheet-item:hover { border-color: var(--accent-line); }
 .avatar-sheet-item.selected { border-color: var(--accent); background: var(--felt-3); }
+.avatar-sheet-list.normal .avatar-sheet-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 8px; text-align: center; }
+.avatar-sheet-list.normal .avatar-sheet-name { font-size: 12px; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.avatar-sheet-list.normal .avatar-sheet-on { position: absolute; top: 4px; right: 6px; }
+.avatar-sheet-list.detail .avatar-sheet-item { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; column-gap: 12px; row-gap: 1px; align-items: center; padding: 9px 12px; }
+.avatar-sheet-list.detail .avatar-sheet-emoji { grid-row: 1 / span 2; }
+.avatar-sheet-list.detail .avatar-sheet-desc { grid-column: 2; font-size: 12px; color: var(--ivory-dim); }
+.avatar-sheet-list.detail .avatar-sheet-on { grid-column: 3; grid-row: 1 / span 2; }
 .avatar-sheet-emoji { font-size: 24px; width: 32px; text-align: center; flex: none; }
-.avatar-sheet-name { flex: 1; min-width: 0; font-weight: 600; }
-.avatar-sheet-on { font-size: 11.5px; color: var(--accent); flex: none; }
-@media (prefers-reduced-motion: no-preference) { .avatar-sheet { animation: viewIn .34s cubic-bezier(.22, .61, .36, 1); } }
-.avatar-sheet-head { position: sticky; top: 0; z-index: 2; align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 22px 0 10px; background: var(--felt); }
-.avatar-sheet-close { z-index: 3; }
+.avatar-sheet-name { font-weight: 600; min-width: 0; }
+.avatar-sheet-on { font-size: 11.5px; color: var(--accent); font-weight: 700; flex: none; }
+@media (min-width: 900px) { .avatar-sheet-overlay { align-items: center; } .avatar-sheet { height: min(86dvh, 720px); border-bottom: 1px solid var(--accent-line); border-radius: 26px; } }
+@media (prefers-reduced-motion: no-preference) { .avatar-sheet { animation: sheetUp .36s cubic-bezier(.22, .61, .36, 1); } }
+@keyframes sheetUp { from { transform: translateY(60px); opacity: 0; } to { transform: none; opacity: 1; } }
