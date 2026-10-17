@@ -2770,3 +2770,7 @@ button.break-slot { cursor: pointer; }
   border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); font: inherit; font-size: 13px; cursor: pointer; }
 .group-pick.unset { color: var(--ivory-dim); border-style: dashed; border-color: var(--btn-border); }
 .group-pick .pool-ball { flex: none; margin: 0; }
+
+/* Popup "Neu in dieser Version" */
+.news-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.news-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.35; }
