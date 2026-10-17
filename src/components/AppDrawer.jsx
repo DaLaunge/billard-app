@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { BarChart3, Trophy, Radio, User, Plus, Shield, GraduationCap, BookOpen, Settings, X, ChevronDown, RefreshCw, Check } from "lucide-react";
+import { Plus, X, ChevronDown, RefreshCw, Check, Pin, PinOff } from "lucide-react";
+import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { MAX_PINNED } from "../lib/menuPrefs";
 import { TUTORIAL_STEPS } from "../lib/tutorial/steps";
 import Ball from "./Ball";
 import { initials } from "../lib/format";
@@ -10,9 +14,39 @@ import { APP_VERSION } from "../lib/constants";
    in App.css). Alle Farben nur ueber die Theme-Variablen, damit Farbdesigns
    und eigener Akzent unveraendert greifen. Die vier Hauptpunkte stehen hier
    noch einmal, damit Seitenleiste und Leiste unten dieselben Ziele haben. */
+function Row({ e, pinned, canPin, onTogglePin, go, tourOpen, onToggleTour, onTutorial }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: e.id });
+  const style = { transform: CSS.Translate.toString(transform), transition, opacity: isDragging ? 0.7 : 1, touchAction: "manipulation", zIndex: isDragging ? 3 : undefined };
+  const Icon = e.icon;
+  const isTour = e.id === "tutorial";
+  return (
+    <div ref={setNodeRef} style={style} className={"app-drawer-row" + (isDragging ? " dragging" : "")} {...attributes} {...listeners}>
+      <button data-tour={e.tour} className={"app-drawer-item" + (e.on || (isTour && tourOpen) ? " on" : "")}
+        onClick={isTour ? onToggleTour : go(e.run)} aria-expanded={isTour ? tourOpen : undefined}>
+        <Icon size={19} /><span>{t(e.label)}</span>
+        {e.badge ? <em className="app-drawer-badge">{e.badge}</em> : null}
+        {isTour && <ChevronDown size={16} className={"app-drawer-chev" + (tourOpen ? " up" : "")} />}
+      </button>
+      <button type="button" className={"app-drawer-pin" + (pinned ? " on" : "")} onClick={onTogglePin} disabled={!pinned && !canPin}
+        aria-pressed={pinned} aria-label={pinned ? t("Von der Leiste lösen") : t("An die Leiste anheften")}
+        title={pinned ? t("Von der Leiste lösen") : canPin ? t("An die Leiste anheften") : t("Die Leiste ist voll ({n} Plätze)", { n: MAX_PINNED })}>
+        {pinned ? <Pin size={15} /> : <PinOff size={15} />}
+      </button>
+      {isTour && tourOpen && (
+        <div className="app-drawer-sub">
+          <button className="app-drawer-item" onClick={go(() => onTutorial(null))}><span>{t("Ganze Tour")}</span></button>
+          {TUTORIAL_STEPS.filter((st) => st.id !== "welcome").map((st) => (
+            <button key={st.id} className="app-drawer-item" onClick={go(() => onTutorial(st.id))}><span>{t(st.title)}</span></button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AppDrawer({
-  open, onClose, tab, player, onGo, onTurniere, onNewMatch, onTutorial, onRules, onSettings, onCheckUpdate,
-  colorOf, badgeOf, photoOf, badges = {}, isAdmin,
+  open, onClose, player, onNewMatch, onTutorial, onCheckUpdate, colorOf, badgeOf, photoOf,
+  entries, pinnedIds, onChange, onTogglePin,
 }) {
   const [tourOpen, setTourOpen] = useState(false);
   // Update-Zeile: idle | checking | found | current | error | unavailable (vorher im Profil)
@@ -28,12 +62,29 @@ export default function AppDrawer({
     if (res !== "found") updTimer.current = setTimeout(() => setUpdState("idle"), 7000);
   };
   const go = (fn) => () => { onClose(); fn(); };
-  const items = [
-    { key: "stats", icon: BarChart3, label: "Statistik", on: tab === "stats" || tab === "fremdprofil", run: () => onGo("stats"), badge: badges.stats },
-    { key: "turnier", icon: Trophy, label: "Turniere", on: tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays", run: onTurniere, badge: badges.turnier },
-    { key: "live", icon: Radio, label: "Live", on: tab === "live", run: () => onGo("live"), badge: badges.live },
-    { key: "profil", icon: User, label: "Profil", on: tab === "profil", run: () => onGo("profil"), badge: badges.profil },
-  ];
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+  );
+  // Zwei Gruppen: oben die in der Leiste angehefteten, darunter die uebrigen. Zwischen den Gruppen ziehen
+  // heftet an bzw. loest. Gespeichert wird die Reihenfolge der angezeigten Liste.
+  const pinnedList = entries.filter((x) => pinnedIds.includes(x.id));
+  const otherList = entries.filter((x) => !pinnedIds.includes(x.id));
+  const display = [...pinnedList, ...otherList];
+  const onDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    const ids = display.map((x) => x.id);
+    const moved = arrayMove(ids, ids.indexOf(active.id), ids.indexOf(over.id));
+    const aPinned = pinnedIds.includes(active.id);
+    const oPinned = pinnedIds.includes(over.id);
+    let nextPinned = pinnedIds;
+    if (aPinned !== oPinned) {
+      if (aPinned) { if (pinnedIds.length <= 1) return; nextPinned = pinnedIds.filter((x) => x !== active.id); }
+      else { if (pinnedIds.length >= MAX_PINNED) return; nextPinned = [...pinnedIds, active.id]; }
+    }
+    onChange(moved, nextPinned);
+  };
+  const canPin = pinnedIds.length < MAX_PINNED;
   return (
     <>
       {open && <div className="app-drawer-scrim" onClick={onClose} aria-hidden="true" />}
@@ -46,41 +97,30 @@ export default function AppDrawer({
           </div>
           <button className="app-drawer-close" onClick={onClose} aria-label={t("Schließen")}><X size={18} /></button>
         </div>
-        <nav className="app-drawer-nav">
-          {items.map(({ key, icon: Icon, label, on, run, badge }) => (
-            <button key={key} data-tour={"tab-" + key} className={"app-drawer-item" + (on ? " on" : "")} onClick={go(run)}>
-              <Icon size={19} /><span>{t(label)}</span>
-              {badge > 0 && <em className="app-drawer-badge">{badge}</em>}
-            </button>
-          ))}
-          <button data-tour="tab-fab" className="app-drawer-item app-drawer-new" onClick={go(onNewMatch)}>
-            <Plus size={19} /><span>{t("Neues Match")}</span>
-          </button>
-        </nav>
-        <div className="app-drawer-sep" />
-        <button className={"app-drawer-item" + (tab === "regeln" ? " on" : "")} onClick={go(onRules)}>
-          <BookOpen size={19} /><span>{t("Regelkunde")}</span>
-        </button>
-        <button className={"app-drawer-item" + (tourOpen ? " on" : "")} onClick={() => setTourOpen((v) => !v)} aria-expanded={tourOpen}>
-          <GraduationCap size={19} /><span>{t("Tutorial")}</span>
-          <ChevronDown size={16} className={"app-drawer-chev" + (tourOpen ? " up" : "")} />
-        </button>
-        {tourOpen && (
-          <div className="app-drawer-sub">
-            <button className="app-drawer-item" onClick={go(() => onTutorial(null))}><span>{t("Ganze Tour")}</span></button>
-            {TUTORIAL_STEPS.filter((st) => st.id !== "welcome").map((st) => (
-              <button key={st.id} className="app-drawer-item" onClick={go(() => onTutorial(st.id))}><span>{t(st.title)}</span></button>
-            ))}
-          </div>
-        )}
-        {isAdmin && (
-          <button className="app-drawer-item" onClick={go(() => onGo("admin"))}>
-            <Shield size={19} /><span>{t("Verwaltung")}</span>
-          </button>
-        )}
-        <button className="app-drawer-item" onClick={go(onSettings)}>
-          <Settings size={19} /><span>{t("Einstellungen")}</span>
-        </button>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={display.map((x) => x.id)} strategy={verticalListSortingStrategy}>
+            <div className="app-drawer-label">{t("Menüleiste")}</div>
+            <nav className="app-drawer-nav">
+              {pinnedList.map((e) => (
+                <Row key={e.id} e={e} pinned canPin={canPin} onTogglePin={() => onTogglePin(e.id)}
+                  go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
+              ))}
+              <button data-tour="tab-fab" className="app-drawer-item app-drawer-new" onClick={go(onNewMatch)}>
+                <Plus size={19} /><span>{t("Neues Match")}</span>
+              </button>
+            </nav>
+            <div className="app-drawer-sep" />
+            <div className="app-drawer-label">{t("Weitere Menüs")}</div>
+            <nav className="app-drawer-nav">
+              {otherList.map((e) => (
+                <Row key={e.id} e={e} pinned={false} canPin={canPin} onTogglePin={() => onTogglePin(e.id)}
+                  go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
+              ))}
+              {otherList.length === 0 && <p className="app-drawer-hint">{t("Alles ist an der Leiste angeheftet.")}</p>}
+            </nav>
+          </SortableContext>
+        </DndContext>
+        <p className="app-drawer-hint">{t("Gedrückt halten zum Verschieben, Nadel zum Anheften")}</p>
         <button type="button" className={"app-drawer-update " + updState} data-tour="update-btn"
           disabled={updState === "checking" || updState === "found"} onClick={runUpdateCheck}>
           {updState === "found" || updState === "current" ? <Check size={18} /> : <RefreshCw size={17} className={updState === "checking" ? "spin" : ""} />}

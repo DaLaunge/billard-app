@@ -3,7 +3,7 @@ import TutorialOverlay from "./components/TutorialOverlay";
 import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
 import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
 import { pendingReleaseItems, markReleaseSeen } from "./lib/releaseNotes";
-import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, FileText, Menu } from "lucide-react";
+import { Trophy, Radio, BarChart3, User, RefreshCw, FileText, Menu, BookOpen, GraduationCap, Settings, Shield } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
@@ -47,6 +47,8 @@ import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
 import RulesScreen from "./components/RulesScreen";
+import BottomBar from "./components/BottomBar";
+import { loadMenuPrefs, storeMenuPrefs, MAX_PINNED } from "./lib/menuPrefs";
 import ConfirmHost from "./components/ConfirmHost";
 import { rpcRetry } from "./lib/rpcRetry";
 import { EmojiText } from "./components/Emoji";
@@ -996,6 +998,16 @@ export default function App() {
   const [openSettings, setOpenSettings] = useState(false);
   useEffect(() => { setDrawerOpen(false); }, [tab]);
   const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
+  // Menuepunkte: EINE Liste fuer Hamburger-Menue und Leiste unten. Reihenfolge und Anheften (lib/menuPrefs.js)
+  // bestimmen, was wo steht; die Leiste zeigt die angehefteten in derselben Reihenfolge wie das Menue.
+  const [menuPrefs, setMenuPrefs] = useState(loadMenuPrefs);
+  const updateMenuPrefs = (p) => { setMenuPrefs(p); storeMenuPrefs(p); };
+  const togglePin = (id) => {
+    const on = menuPrefs.pinned.includes(id);
+    if (on && menuPrefs.pinned.length <= 1) return;
+    if (!on && menuPrefs.pinned.length >= MAX_PINNED) return;
+    updateMenuPrefs({ ...menuPrefs, pinned: on ? menuPrefs.pinned.filter((x) => x !== id) : [...menuPrefs.pinned, id] });
+  };
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
   // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
   const ptr = usePullToRefresh(contentEl);
@@ -1451,6 +1463,20 @@ export default function App() {
     return (<div className="stage"><div className="phone"><div className="center-load">{t("Lade ...")}</div></div></div>);
   }
 
+  const menuMeta = {
+    stats: { icon: BarChart3, label: "Statistik", tour: "tab-stats", on: tab === "stats" || tab === "fremdprofil", run: () => navPush({ tab: "stats" }), badge: pendingForMe.length },
+    turnier: { icon: Trophy, label: "Turniere", tour: "tab-turnier", on: tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays", run: openTurniereMenu, badge: tourneyReadyList.length + wsReadyList.length },
+    live: { icon: Radio, label: "Live", tour: "tab-live", on: tab === "live", run: () => navPush({ tab: "live" }), badge: pings.length + openChallengesAll.length + plannings.length },
+    profil: { icon: User, label: "Profil", tour: "tab-profil", on: tab === "profil" || tab === "admin", run: () => navPush({ tab: "profil" }),
+      badge: openChallengesToMe.length > 0 ? "!" : (player?.role === "admin" ? unconfirmed.length : 0) },
+    regeln: { icon: BookOpen, label: "Regelkunde", on: tab === "regeln", run: () => navPush({ tab: "regeln" }) },
+    tutorial: { icon: GraduationCap, label: "Tutorial", on: false, run: () => startTutorial(null) },
+    settings: { icon: Settings, label: "Einstellungen", on: false, run: () => { setOpenSettings(true); navPush({ tab: "profil" }); } },
+    admin: { icon: Shield, label: "Verwaltung", on: tab === "admin", run: () => navPush({ tab: "admin" }) },
+  };
+  const orderedEntries = menuPrefs.order.filter((id) => id !== "admin" || player?.role === "admin").map((id) => ({ id, ...menuMeta[id] }));
+  const pinnedEntries = orderedEntries.filter((e) => menuPrefs.pinned.includes(e.id));
+
   return (
     <div className="stage">
       <div className={"phone" + (session && player && !player.must_change_password ? " app" : "")}>
@@ -1641,16 +1667,12 @@ export default function App() {
               </div>
             )}
             {tab !== "match" && (
-              <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} player={player}
-                onGo={(target) => navPush({ tab: target })} onTurniere={openTurniereMenu}
-                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onRules={() => navPush({ tab: "regeln" })} onSettings={() => { setOpenSettings(true); navPush({ tab: "profil" }); }} onCheckUpdate={requestUpdateNow} 
-                colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} isAdmin={player?.role === "admin"}
-                badges={{
-                  stats: pendingForMe.length,
-                  turnier: tourneyReadyList.length + wsReadyList.length,
-                  live: pings.length + openChallengesAll.length + plannings.length,
-                  profil: openChallengesToMe.length > 0 ? openChallengesToMe.length : (player?.role === "admin" ? unconfirmed.length : 0),
-                }} />
+              <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} player={player}
+                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onCheckUpdate={requestUpdateNow}
+                colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                entries={orderedEntries} pinnedIds={menuPrefs.pinned}
+                onChange={(order, pinned) => updateMenuPrefs({ order, pinned })}
+                onTogglePin={togglePin} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {(MAIN_TABS.includes(tab) || tab === "regeln") && (
@@ -1827,32 +1849,7 @@ export default function App() {
             })()}
 
             {tab !== "match" && (
-            <nav className={"tabbar" + (tabbarHidden ? " tabbar-off" : "")}>
-              <button data-tour="tab-stats" className={"tab" + (tab === "stats" || tab === "fremdprofil" ? " on" : "")} onClick={() => navPush({ tab: "stats" })}>
-                <BarChart3 size={21} /><span>{t("Statistik")}</span>
-                {pendingForMe.length > 0 && <span className="badge">{pendingForMe.length}</span>}
-              </button>
-              <button data-tour="tab-turnier" className={"tab" + (tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays" ? " on" : "")} onClick={openTurniereMenu}>
-                <Trophy size={21} /><span>{t("Turniere")}</span>
-                {(tourneyReadyList.length + wsReadyList.length) > 0 && <span className="badge">{tourneyReadyList.length + wsReadyList.length}</span>}
-              </button>
-              <button data-tour="tab-fab" className="tab fab" onClick={() => navPush({ tab: "match" })} aria-label={t("Neues Match")}>
-                <span className="fab-shine" />
-                <Plus size={26} className="fab-plus" />
-              </button>
-              <button data-tour="tab-live" className={"tab" + (tab === "live" ? " on" : "")} onClick={() => navPush({ tab: "live" })}>
-                <Radio size={21} /><span>{t("Live")}</span>
-                {pings.length + openChallengesAll.length + plannings.length > 0 && (
-                  <span className="badge live">{pings.length + openChallengesAll.length + plannings.length}</span>
-                )}
-              </button>
-              <button data-tour="tab-profil" className={"tab" + (tab === "profil" || tab === "admin" ? " on" : "")} onClick={() => navPush({ tab: "profil" })}>
-                <User size={21} /><span>{t("Profil")}</span>
-                {openChallengesToMe.length > 0
-                  ? <span className="badge" aria-label={t("Offene Herausforderung")} title={t("Offene Herausforderung")}>!</span>
-                  : player?.role === "admin" && unconfirmed.length > 0 && <span className="badge">{unconfirmed.length}</span>}
-              </button>
-            </nav>
+              <BottomBar entries={pinnedEntries} onNewMatch={() => navPush({ tab: "match" })} hidden={tabbarHidden} />
             )}
           </>
         )}
