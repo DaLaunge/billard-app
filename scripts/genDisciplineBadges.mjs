@@ -22,6 +22,8 @@ const sql = `-- Erfolge je Disziplin (Kategorie "Disziplinen"), "Alle Diszipline
 --   m Matches gespielt (1/10/50/100/200/500) | w Siege (1/10/25/50/100) | n zu null gewonnen (1/5/10)
 --   s Siege in Folge in dieser Disziplin (3/5)  | g verschiedene Gegner (5/10)
 -- "Alle Disziplinen": xw Siege in JEDER Disziplin (1/5/10/25/50), xm Matches in jeder (10/50/100), xn zu null in jeder (1/5)
+-- "Hill-Hill" (Einzel, ohne 14/1, Endstand W:W-1 ab W=3): hm gespielt (1/5/10/25), hw gewonnen (1/5/10/25),
+--   hc gewonnen nach 2 Punkten Rueckstand (1/3; braucht das Punkte-Protokoll run_log)
 -- "Doppel": dm Doppel gespielt, dw Doppel-Siege, ds Doppel-Siege in Folge, dp verschiedene Partner
 -- Gezaehlt wird wie bei allen Erfolgen: bestaetigte Matches ohne Gast-Beteiligung; je Disziplin und "Alle" nur Einzel,
 -- "Doppel" nur Doppel (ein Doppel zaehlt fuer alle vier Spieler mit dem Ergebnis der eigenen Seite).
@@ -183,7 +185,30 @@ begin
    where s.s >= c.threshold
   on conflict do nothing;
 
-  drop table if exists dsc_singles, dsc_stats, dsc_streaks, dsc_doubles;
+  -- Hill-Hill: Einzel (ohne 14/1, Gaeste ausgeschlossen), Endstand W:W-1 mit W >= 3, d.h. beide standen einen Punkt vor dem Ziel.
+  -- hc: der Sieger lag laut Punkte-Protokoll (run_log = [[s1, s2, ts], ...]) zeitweise mit 2 oder mehr Punkten hinten.
+  drop table if exists dsc_hill;
+  create temp table dsc_hill as
+    select v.player_id, v.won,
+           v.won and jsonb_typeof(m.run_log) = 'array' and jsonb_typeof(m.run_log -> 0) = 'array'
+             and exists (select 1 from jsonb_array_elements(m.run_log) e
+                          where case when m.score1 > m.score2 then (e ->> 1)::int - (e ->> 0)::int
+                                     else (e ->> 0)::int - (e ->> 1)::int end >= 2) as came_back
+      from matches m
+     cross join lateral (values (m.player1_id, m.score1 > m.score2), (m.player2_id, m.score2 > m.score1)) as v(player_id, won)
+     where m.confirmed and m.player1b_id is null and m.discipline <> '14/1 Endlos'
+       and abs(m.score1 - m.score2) = 1 and greatest(m.score1, m.score2) >= 3
+       and not exists (select 1 from players p where p.id in (m.player1_id, m.player2_id) and p.is_guest);
+
+  insert into player_badges (player_id, badge_key)
+  select h.player_id, c.badge_key
+    from (select player_id, count(*) as m, count(*) filter (where won) as w, count(*) filter (where came_back) as c
+            from dsc_hill group by player_id) h
+    join badge_catalog c on c.category = '${CATEGORY}' and c.family in ('hm', 'hw', 'hc')
+   where case c.family when 'hm' then h.m when 'hw' then h.w else h.c end >= c.threshold
+  on conflict do nothing;
+
+  drop table if exists dsc_singles, dsc_stats, dsc_streaks, dsc_doubles, dsc_hill;
 end;
 $function$;
 

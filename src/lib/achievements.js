@@ -36,7 +36,7 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
       hb.opps.add(first ? m.p2.nickname : m.p1.nickname);
       if (my > opp) { hb.wins++; hb.streak++; if (opp === 0) hb.shutouts++; } else hb.streak = 0;
     });
-  const { dsc, cross, dbl } = disciplineExtras(nickname, matches);
+  const { dsc, cross, dbl, hill } = disciplineExtras(nickname, matches);
   const myId = players.find((p) => p.nickname === nickname)?.id;
   const recruitedCount = myId ? players.filter((p) => p.invited_by === myId).length : 0;
   const challengesAccepted = myId
@@ -73,7 +73,7 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
     highRun,
     recruitedCount,
     challengesAccepted,
-    dsc, cross, dbl,
+    dsc, cross, dbl, hill,
     heyballMatches: hb.matches,
     heyballWins: hb.wins,
     heyballShutouts: hb.shutouts,
@@ -93,6 +93,7 @@ function disciplineExtras(nickname, matches) {
   const dsc = {};
   DISCIPLINES.forEach((d) => { dsc[d] = { m: 0, w: 0, n: 0, opps: new Set(), s: 0 }; });
   const dbl = { m: 0, w: 0, partners: new Set(), s: 0 };
+  const hill = { m: 0, w: 0, c: 0 }; // Hill-Hill: Endstand W:W-1 ab W=3, Einzel, nicht 14/1 (wie compute_discipline_badges)
   const asc = [...matches].sort((a, b) => new Date(a.played_at) - new Date(b.played_at));
   asc.forEach((m) => {
     if (!m.p1 || !m.p2) return;
@@ -116,6 +117,15 @@ function disciplineExtras(nickname, matches) {
     else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; }
     else return;
     d.m++; d.opps.add(oppNick);
+    if (m.discipline !== "14/1 Endlos" && Math.abs(my - opp) === 1 && Math.max(my, opp) >= 3) {
+      hill.m++;
+      if (my > opp) {
+        hill.w++;
+        // Rueckstand von 2+ Punkten laut Punkte-Protokoll [[s1, s2, ts], ...]
+        const log = m.run_log, first = m.p1.nickname === nickname;
+        if (Array.isArray(log) && Array.isArray(log[0]) && log.some((e) => (first ? e[1] - e[0] : e[0] - e[1]) >= 2)) hill.c++;
+      }
+    }
     if (my > opp) { d.w++; d.s++; if (opp === 0) d.n++; } else d.s = 0;
   });
   const out = {};
@@ -125,17 +135,19 @@ function disciplineExtras(nickname, matches) {
     dsc: out,
     cross: { w: min("w"), m: min("m"), n: min("n") },
     dbl: { m: dbl.m, w: dbl.w, p: dbl.partners.size, s: dbl.s },
+    hill,
   };
 }
 
 /* Fortschritt zu einem Disziplin-Erfolg (Katalogzeile mit `family`): Stand aus disciplineExtras(). */
 function familyProgress(b, e) {
   const d = b.discipline && e.dsc ? e.dsc[b.discipline] : null;
-  const x = e.cross, g = e.dbl;
+  const x = e.cross, g = e.dbl, h = e.hill;
   const map = {
     m: [d?.m, t("Match(es)")], w: [d?.w, t("Sieg(e)")], n: [d?.n, t("Zu-Null-Sieg(e)")], s: [d?.s, t("Sieg(e) in Folge")], g: [d?.g, t("verschiedene Gegner")],
     xw: [x?.w, t("Sieg(e) in der schwächsten Disziplin")], xm: [x?.m, t("Match(es) in der schwächsten Disziplin")], xn: [x?.n, t("Zu-Null-Sieg(e) in der schwächsten Disziplin")],
     dm: [g?.m, t("Doppel")], dw: [g?.w, t("Doppel-Sieg(e)")], ds: [g?.s, t("Doppel-Sieg(e) in Folge")], dp: [g?.p, t("verschiedene Partner")],
+    hm: [h?.m, t("Hill-Hill-Match(es)")], hw: [h?.w, t("Hill-Hill-Sieg(e)")], hc: [h?.c, t("Hill-Hill-Sieg(e) nach Rückstand")],
   };
   const hit = map[b.family];
   if (!hit || hit[0] == null) return null;

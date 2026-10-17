@@ -2764,3 +2764,29 @@ button.break-slot { cursor: pointer; }
 @media (max-width: 560px) {
   .ws-queue-actions { flex: 1 1 100%; justify-content: flex-end; margin-left: 0; }
 }
+
+/* 8 Ball: Merkhilfe, wer Volle und wer Halbe spielt (MatchScreen, unter den Punkte-Tasten). */
+.group-pick { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 4px 10px; border-radius: 999px;
+  border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); font: inherit; font-size: 13px; cursor: pointer; }
+.group-pick.unset { color: var(--ivory-dim); border-style: dashed; border-color: var(--btn-border); }
+.group-pick .pool-ball { flex: none; margin: 0; }
+
+/* Popup "Neu in dieser Version" */
+.news-list { list-style: none; margin: 0 0 14px; padding: 0 4px 0 0; max-height: min(52vh, 380px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.news-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.35; }
+
+/* "Dein Turnierweg": eigene Partien und die Linien dazwischen im Akzent, der Rest gedaempft. */
+.turnier-graph-path-btn.on { background: var(--accent); color: var(--accent-ink); }
+.turnier-graph-box.mine { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.turnier-graph-edge.mypath, .turnier-graph-edge.drop.decided.mypath { stroke: var(--accent); stroke-width: 5; opacity: 1; stroke-dasharray: none; }
+
+/* Changelog unter Profil bearbeiten */
+.changelog-list { display: flex; flex-direction: column; gap: 14px; padding: 10px 2px 2px; max-height: min(60vh, 420px); overflow-y: auto; overscroll-behavior: contain; }
+.changelog-v { font-size: 12px; font-weight: 700; letter-spacing: 0.03em; color: var(--accent); margin-bottom: 6px; }
+
+/* Pause (Timeout) im Match: beschrifteter Knopf, waehrend der Pause ist die Eingabe gesperrt. */
+.clock-pause-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; font: inherit; font-size: 14px; font-weight: 600;
+  border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); cursor: pointer; }
+.clock-pause-btn.on { background: var(--warn); color: #1a1a1a; }
+.score-body { transition: opacity .2s, filter .2s; }
+.score-body.is-paused { opacity: 0.35; filter: grayscale(0.6); pointer-events: none; }

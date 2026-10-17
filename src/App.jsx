@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import TutorialOverlay from "./components/TutorialOverlay";
 import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
 import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
+import { pendingReleaseItems, markReleaseSeen } from "./lib/releaseNotes";
 import { Trophy, Radio, Plus, BarChart3, User, RefreshCw, FileText } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
@@ -1259,7 +1260,25 @@ export default function App() {
     if (tutorialRun && player) markSeen(player.id, tutorialRun.steps.map((s) => s.id));
     setTutorialRun(null);
   }, [tutorialRun, player]);
-  const showPendingPopup = !!player && pendingPopupOn && MAIN_TABS.includes(tab) && !mustUpdate && !tutorialRun
+  // "Neu in dieser Version" (lib/releaseNotes.js): einmal pro Seitenaufruf nach einem Update, wartet
+  // auf Tutorial und andere Popups. Wer gerade die volle Tour bekommt, sieht es nicht.
+  const [newsItems, setNewsItems] = useState(null);
+  const newsCheckedRef = useRef(false);
+  useEffect(() => {
+    if (tutorialRun && !tutorialRun.news && !newsCheckedRef.current) { newsCheckedRef.current = true; markReleaseSeen(); }
+  }, [tutorialRun]);
+  useEffect(() => {
+    if (newsCheckedRef.current || tutorialBlocked || tutorialRun || !!draftOffer) return undefined;
+    const timer = setTimeout(() => {
+      newsCheckedRef.current = true;
+      const items = pendingReleaseItems();
+      if (items.length === 0) return;
+      setNewsItems(items);
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, [tutorialBlocked, tutorialRun, draftOffer]);
+  const closeNews = () => { markReleaseSeen(); setNewsItems(null); };
+  const showPendingPopup = !!player && pendingPopupOn && !newsItems && MAIN_TABS.includes(tab) && !mustUpdate && !tutorialRun
     && !celebrate && !tourneyReady && !wsReady && !draftOffer
     && pendingForMe.some((m) => !pendingSeen.includes(m.id));
 
@@ -1809,6 +1828,19 @@ export default function App() {
             </nav>
             )}
           </>
+        )}
+        {newsItems && !tutorialRun && (
+          <div className="celebrate-overlay" onClick={closeNews}>
+            <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
+              <div className="celebrate-head">{t("Neu in dieser Version")}</div>
+              <ul className="news-list">
+                {newsItems.map((n, i) => (
+                  <li key={i}><Emoji e={n.icon || "✨"} /> <span>{t(n.text)}</span></li>
+                ))}
+              </ul>
+              <button className="btn primary" onClick={closeNews}>{t("Verstanden")}</button>
+            </div>
+          </div>
         )}
         {tutorialRun && (
           <TutorialOverlay steps={tutorialRun.steps} news={tutorialRun.news} tab={tab}

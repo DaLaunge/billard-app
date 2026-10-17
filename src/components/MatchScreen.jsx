@@ -22,6 +22,7 @@ import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPick, sortDisciplines } from "./widgets/DiscBall";
 import { ModeTiles } from "./widgets/ModePick";
 import ExtraCounters, { CountersSummary } from "./widgets/ExtraCounters";
+import { poolBallStyle } from "../lib/pool";
 import { BreakGlyph, BreakPill, BreakSwitch, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
 import { rpcRetry } from "../lib/rpcRetry";
@@ -84,6 +85,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     try { return normalizeBreakRule(localStorage.getItem("matchBreakRule")); } catch { return normalizeBreakRule(null); }
   });
   const [breakFirst, setBreakFirst] = useState(dv("breakFirst", 0));
+  // 8 Ball: welche Seite die Vollen spielt (0 = links, 1 = rechts, null = noch offen). Nur
+  // Gedaechtnisstuetze fuer die Spieler, wird nicht gespeichert und zaehlt in keiner Statistik.
+  const [solidSide, setSolidSide] = useState(dv("solidSide", null));
+  const pickGroup = (idx) => setSolidSide((c) => (c == null ? idx : 1 - c));
   const chooseBreakRule = (r) => { setBreakRule(r); try { localStorage.setItem("matchBreakRule", r); } catch { /* Privatmodus */ } };
   useEffect(() => {
     if (!tournamentCtx) return;
@@ -211,10 +216,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     if (step < 2 || !opp) return;
     saveMatchDraft(me.id, {
       step, mode, opp: slim(opp), partner: slim(partner), opp2: slim(opp2), s1, s2, disc,
-      hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk, breakRule, breakFirst, tournamentCtx: tournamentCtx || null,
+      hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk, breakRule, breakFirst, solidSide, tournamentCtx: tournamentCtx || null,
     }, is141 ? scorerStateRef.current : null);
   };
-  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk, breakRule, breakFirst]);
+  useEffect(persistDraft, [step, mode, opp, partner, opp2, s1, s2, disc, hr, def, avg, tb, runLog, scoreLog, counters, foulLog, ghostStartedAt, clk, breakRule, breakFirst, solidSide]);
   const teamA = mode === "double" && partner ? `${me.nickname} & ${partner.nickname}` : me.nickname;
   const warnings = () => counterWarnings({ counters, foulLog, scores: [s1, s2], disc, names: [teamA, teamB], t });
   const teamB = mode === "double" && opp2 ? `${opp?.nickname} & ${opp2.nickname}` : (opp?.nickname || "");
@@ -453,7 +458,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const prob = winProb(myRating, oppRating);
   const total = s1 + s2;
 
-  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); setFoulLog([]); setClk({ acc: 0, since: null, paused: false, pausedAt: null, pauseMs: 0 }); };
+  const resetScores = () => { scorerStateRef.current = null; setResumeScorer(null); setS1(0); setS2(0); setHr([null, null]); setDef([null, null]); setAvg([null, null]); setTb([null, null]); setScoreLog([[0, 0, Date.now()]]); setCounters(emptyCounters()); setFoulLog([]); setSolidSide(null); setClk({ acc: 0, since: null, paused: false, pausedAt: null, pauseMs: 0 }); };
 
   // Disziplin wechseln (im Ergebnis-Schritt): zwischen 8/9/10 bleibt das
   // Ergebnis erhalten; ein Wechsel zu oder von 14/1 aendert das Punkteschema
@@ -906,6 +911,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       {step === 2 && opp && disc && (
         <div className="match-score-step step-enter">
           <MatchClock elapsedMs={clockMs} paused={clk.paused} onToggle={toggleClock} />
+          {/* Waehrend der Pause (Timeout) ist die Eingabe gesperrt: kein versehentlicher Punkt,
+              kein "Beenden". Die Uhr bleibt bedienbar, der Zustand steht im Entwurf. */}
+          <div className={"score-body" + (clk.paused ? " is-paused" : "")} inert={clk.paused ? "" : undefined}>
           {/* Anstoss-Regel: eine schmale Zeile direkt unter der Uhr. Bei Turnierpartien
               nur zur Anzeige (die Regel gehoert dem Turnier), sonst umschaltbar. */}
           {showBreak && (
@@ -953,6 +961,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                       <button className="round-btn" onClick={() => set(Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
                       <button className="round-btn plus" onClick={() => set(v + 1)} aria-label="plus"><Plus size={20} /></button>
                     </div>
+                    {disc === "8 Ball" && !isGhost && (
+                      <button type="button" className={"group-pick" + (solidSide == null ? " unset" : "")} onClick={() => pickGroup(idx)}
+                        title={t("Volle oder Halbe")} aria-label={`${name}: ${solidSide == null ? t("Volle oder Halbe") : solidSide === idx ? t("Volle") : t("Halbe")}`}>
+                        <span className="pool-ball" style={{ ...poolBallStyle(solidSide === 1 - idx ? 11 : 3), width: 20, height: 20, opacity: solidSide == null ? 0.35 : 1 }} />
+                        {solidSide == null ? "?" : solidSide === idx ? t("Volle") : t("Halbe")}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -970,14 +985,18 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </>
           )}
           <PointPreview dsc={disc} />
+          </div>
           {pendingDisc && (
-            <div className="confirm-box">
-              {is141
-                ? <p>{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
-                : <p>{t("Wechsel zu bzw. von")} <b>{t("14/1 Endlos")}</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>}
-              <div className="sp-controls">
-                <button className="btn ghost" onClick={() => setPendingDisc(null)}>{is141 ? t("Weiterspielen") : t("Abbrechen")}</button>
+            // Als Popup, nicht als Kasten unter dem Beenden-Knopf: dort lag die Frage ausserhalb des sichtbaren Bereichs, der
+            // Wechsel wirkte wie "geht nicht" (Nutzer-Feedback 2026-10-12).
+            <div className="celebrate-overlay" onClick={() => setPendingDisc(null)}>
+              <div className="celebrate-card" onClick={(e) => e.stopPropagation()}>
+                <div className="celebrate-head">{t("Disziplin wechseln?")}</div>
+                {is141
+                  ? <p className="hint">{t("Ein 14/1-Spiel läuft. Beim Disziplinwechsel geht der aktuelle Spielstand verloren. Fortfahren?")}</p>
+                  : <p className="hint">{t("Wechsel zu bzw. von")} <b>{t("14/1 Endlos")}</b> {t("ändert das Punkteschema – das bisherige Ergebnis ({s1} : {s2}) geht dabei verloren. Fortfahren?", { s1, s2 })}</p>}
                 <button className="btn primary" onClick={confirmDiscChange}>{is141 ? t("Disziplin wechseln") : t("Wechseln & zurücksetzen")}</button>
+                <button className="btn ghost" onClick={() => setPendingDisc(null)}>{is141 ? t("Weiterspielen") : t("Abbrechen")}</button>
               </div>
             </div>
           )}

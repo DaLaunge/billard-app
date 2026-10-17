@@ -5,6 +5,7 @@
    Familien (Kuerzel = Spalte badge_catalog.family):
      je Disziplin: m Matches gespielt | w Siege | n zu null gewonnen | s Siege in Folge (in dieser Disziplin) | g verschiedene Gegner
      in JEDER Disziplin (kleinster Wert ueber alle fuenf): xw Siege | xm Matches | xn zu null
+     Hill-Hill (Einzel, ohne 14/1, Endstand W:W-1 ab W=3): hm gespielt | hw gewonnen | hc gewonnen nach 2 Punkten Rueckstand (braucht das Punkte-Protokoll)
      Doppel: dm Doppel gespielt | dw Doppel-Siege | ds Doppel-Siege in Folge | dp verschiedene Partner
    Gezaehlt wird wie bei allen Erfolgen: nur bestaetigte Matches ohne Gast-Beteiligung; je Disziplin und "Alle" nur Einzel,
    "Doppel" nur Doppel (ein Doppelmatch zaehlt fuer alle vier mit dem Ergebnis der eigenen Seite).
@@ -89,6 +90,13 @@ const DOUBLES = [
   ["dp", 5, "💃", "Tanzpartner", "Dance Partner"], ["dp", 10, "💑", "Die ganze Tanzschule", "The Whole Dance School"],
 ];
 
+// Hill-Hill: beide Seiten stehen einen Punkt vor dem Ziel (Endstand W:W-1, ab W = 3, nicht 14/1)
+const HILL = [
+  ["hm", 1, "🏕️", "Basislager", "Base Camp"], ["hm", 5, "🪜", "Aufstieg", "Ascent"], ["hm", 10, "🪨", "Nervenfels", "Rock of Nerves"], ["hm", 25, "⛑️", "Bergführer", "Mountain Guide"],
+  ["hw", 1, "⛳", "Letzter Punkt", "Last Point"], ["hw", 5, "🏁", "Zielfoto", "Photo Finish"], ["hw", 10, "🪂", "Absprung gewagt", "Leap of Faith"], ["hw", 25, "🏂", "Gipfelstürmer", "Summit Rusher"],
+  ["hc", 1, "🫀", "Puls auf 180", "Pulse at 180"], ["hc", 3, "🛟", "Rettungsring", "Lifebuoy"],
+];
+
 /* Beschreibungen (deutsch/englisch) je Familie und Stufe; {D} = Disziplin (Eigenname, bleibt in beiden Sprachen). */
 const DESC = {
   m: (n, D) => [n === 1 ? `1 Match in ${D} gespielt` : `${n} Matches in ${D} gespielt`, n === 1 ? `Played 1 match in ${D}` : `Played ${n} matches in ${D}`],
@@ -104,10 +112,15 @@ const DESC = {
   dm: (n) => [n === 1 ? "1 Doppel gespielt" : `${n} Doppel gespielt`, n === 1 ? "Played 1 doubles match" : `Played ${n} doubles matches`],
   dw: (n) => [n === 1 ? "Erstes Doppel gewonnen" : `${n} Doppel-Siege`, n === 1 ? "Won your first doubles match" : `${n} doubles wins`],
   ds: (n) => [`${n} Doppel-Siege in Folge`, `${n} doubles wins in a row`],
+  hm: (n) => [n === 1 ? "1 Hill-Hill-Match gespielt (beide einen Punkt vor dem Ziel)" : `${n} Hill-Hill-Matches gespielt`,
+    n === 1 ? "Played 1 hill-hill match (both one point from the win)" : `Played ${n} hill-hill matches`],
+  hw: (n) => [n === 1 ? "Ein Hill-Hill-Match gewonnen" : `${n} Hill-Hill-Matches gewonnen`, n === 1 ? "Won a hill-hill match" : `Won ${n} hill-hill matches`],
+  hc: (n) => [n === 1 ? "Ein Hill-Hill-Match nach Rückstand von 2 Punkten gewonnen" : `${n} Hill-Hill-Matches nach Rückstand von 2 Punkten gewonnen`,
+    n === 1 ? "Won a hill-hill match after trailing by 2 points" : `Won ${n} hill-hill matches after trailing by 2 points`],
   dp: (n) => [`Doppel mit ${n} verschiedenen Partnern gespielt`, `Played doubles with ${n} different partners`],
 };
 
-const SUBS = { cross: "Alle Disziplinen", doubles: "Doppel" };
+const SUBS = { cross: "Alle Disziplinen", doubles: "Doppel", hill: "Hill-Hill" };
 
 /* Alle neuen Erfolge als flache Liste. sort: ab 1000 (hinter dem bisherigen Katalog), Reihenfolge = Block, Familie, Stufe. */
 export const BADGES = (() => {
@@ -133,6 +146,7 @@ export const BADGES = (() => {
   };
   extra(CROSS, SUBS.cross, "dx");
   extra(DOUBLES, SUBS.doubles, "dd");
+  extra(HILL, SUBS.hill, "dh");
   return out;
 })();
 

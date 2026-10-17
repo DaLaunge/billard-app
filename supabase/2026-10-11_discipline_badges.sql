@@ -1,10 +1,12 @@
--- Erfolge je Disziplin (Kategorie "Disziplinen"), "Alle Disziplinen" und "Doppel": 114 neue Erfolge.
+-- Erfolge je Disziplin (Kategorie "Disziplinen"), "Alle Disziplinen" und "Doppel": 124 neue Erfolge.
 -- GENERIERT von scripts/genDisciplineBadges.mjs aus src/lib/disciplineBadges.js - nicht von Hand aendern.
 --
 -- Je Disziplin (8 Ball, 9 Ball, 10 Ball, 14/1 Endlos, Heyball) dieselbe Familie:
 --   m Matches gespielt (1/10/50/100/200/500) | w Siege (1/10/25/50/100) | n zu null gewonnen (1/5/10)
 --   s Siege in Folge in dieser Disziplin (3/5)  | g verschiedene Gegner (5/10)
 -- "Alle Disziplinen": xw Siege in JEDER Disziplin (1/5/10/25/50), xm Matches in jeder (10/50/100), xn zu null in jeder (1/5)
+-- "Hill-Hill" (Einzel, ohne 14/1, Endstand W:W-1 ab W=3): hm gespielt (1/5/10/25), hw gewonnen (1/5/10/25),
+--   hc gewonnen nach 2 Punkten Rueckstand (1/3; braucht das Punkte-Protokoll run_log)
 -- "Doppel": dm Doppel gespielt, dw Doppel-Siege, ds Doppel-Siege in Folge, dp verschiedene Partner
 -- Gezaehlt wird wie bei allen Erfolgen: bestaetigte Matches ohne Gast-Beteiligung; je Disziplin und "Alle" nur Einzel,
 -- "Doppel" nur Doppel (ein Doppel zaehlt fuer alle vier Spieler mit dem Ergebnis der eigenen Seite).
@@ -15,7 +17,7 @@
 -- Vergabe: compute_discipline_badges(), haengt an einem eigenen Statement-Trigger auf matches (wie zuvor bei Heyball),
 -- nicht an trg_rebuild_ratings(). Erfolge werden nur eingefuegt, nie geloescht.
 --
--- Emoji-Eindeutigkeit: alle 114 Symbole und Namen wurden vorab gegen den vollstaendigen Katalog geprueft; die
+-- Emoji-Eindeutigkeit: alle 124 Symbole und Namen wurden vorab gegen den vollstaendigen Katalog geprueft; die
 -- Kontrollabfrage am Ende muss leer sein. In Test UND Produktion ausfuehren, zuerst Test. Idempotent.
 
 -- 1) Neue Katalog-Spalten: Unterblock, Familie, Schwelle, Disziplin (fuer Profil-Liste und Fortschrittsanzeige)
@@ -140,7 +142,17 @@ insert into public.badge_catalog (badge_key, emoji, name, description, category,
   ('dd_ds3', '🤾', 'Pass-Spiel', '3 Doppel-Siege in Folge', 'Disziplinen', 'Doppel', 'ds', 3, null, 1, 1110, false),
   ('dd_ds5', '🏓', 'Ballwechsel', '5 Doppel-Siege in Folge', 'Disziplinen', 'Doppel', 'ds', 5, null, 2, 1111, false),
   ('dd_dp5', '💃', 'Tanzpartner', 'Doppel mit 5 verschiedenen Partnern gespielt', 'Disziplinen', 'Doppel', 'dp', 5, null, 1, 1112, false),
-  ('dd_dp10', '💑', 'Die ganze Tanzschule', 'Doppel mit 10 verschiedenen Partnern gespielt', 'Disziplinen', 'Doppel', 'dp', 10, null, 2, 1113, false)
+  ('dd_dp10', '💑', 'Die ganze Tanzschule', 'Doppel mit 10 verschiedenen Partnern gespielt', 'Disziplinen', 'Doppel', 'dp', 10, null, 2, 1113, false),
+  ('dh_hm1', '🏕️', 'Basislager', '1 Hill-Hill-Match gespielt (beide einen Punkt vor dem Ziel)', 'Disziplinen', 'Hill-Hill', 'hm', 1, null, 1, 1114, false),
+  ('dh_hm5', '🪜', 'Aufstieg', '5 Hill-Hill-Matches gespielt', 'Disziplinen', 'Hill-Hill', 'hm', 5, null, 2, 1115, false),
+  ('dh_hm10', '🪨', 'Nervenfels', '10 Hill-Hill-Matches gespielt', 'Disziplinen', 'Hill-Hill', 'hm', 10, null, 3, 1116, false),
+  ('dh_hm25', '⛑️', 'Bergführer', '25 Hill-Hill-Matches gespielt', 'Disziplinen', 'Hill-Hill', 'hm', 25, null, 4, 1117, false),
+  ('dh_hw1', '⛳', 'Letzter Punkt', 'Ein Hill-Hill-Match gewonnen', 'Disziplinen', 'Hill-Hill', 'hw', 1, null, 1, 1118, false),
+  ('dh_hw5', '🏁', 'Zielfoto', '5 Hill-Hill-Matches gewonnen', 'Disziplinen', 'Hill-Hill', 'hw', 5, null, 2, 1119, false),
+  ('dh_hw10', '🪂', 'Absprung gewagt', '10 Hill-Hill-Matches gewonnen', 'Disziplinen', 'Hill-Hill', 'hw', 10, null, 3, 1120, false),
+  ('dh_hw25', '🏂', 'Gipfelstürmer', '25 Hill-Hill-Matches gewonnen', 'Disziplinen', 'Hill-Hill', 'hw', 25, null, 4, 1121, false),
+  ('dh_hc1', '🫀', 'Puls auf 180', 'Ein Hill-Hill-Match nach Rückstand von 2 Punkten gewonnen', 'Disziplinen', 'Hill-Hill', 'hc', 1, null, 1, 1122, false),
+  ('dh_hc3', '🛟', 'Rettungsring', '3 Hill-Hill-Matches nach Rückstand von 2 Punkten gewonnen', 'Disziplinen', 'Hill-Hill', 'hc', 3, null, 2, 1123, false)
 on conflict (badge_key) do update set
   emoji = excluded.emoji, name = excluded.name, description = excluded.description, category = excluded.category,
   subcategory = excluded.subcategory, family = excluded.family, threshold = excluded.threshold, discipline = excluded.discipline,
@@ -279,7 +291,30 @@ begin
    where s.s >= c.threshold
   on conflict do nothing;
 
-  drop table if exists dsc_singles, dsc_stats, dsc_streaks, dsc_doubles;
+  -- Hill-Hill: Einzel (ohne 14/1, Gaeste ausgeschlossen), Endstand W:W-1 mit W >= 3, d.h. beide standen einen Punkt vor dem Ziel.
+  -- hc: der Sieger lag laut Punkte-Protokoll (run_log = [[s1, s2, ts], ...]) zeitweise mit 2 oder mehr Punkten hinten.
+  drop table if exists dsc_hill;
+  create temp table dsc_hill as
+    select v.player_id, v.won,
+           v.won and jsonb_typeof(m.run_log) = 'array' and jsonb_typeof(m.run_log -> 0) = 'array'
+             and exists (select 1 from jsonb_array_elements(m.run_log) e
+                          where case when m.score1 > m.score2 then (e ->> 1)::int - (e ->> 0)::int
+                                     else (e ->> 0)::int - (e ->> 1)::int end >= 2) as came_back
+      from matches m
+     cross join lateral (values (m.player1_id, m.score1 > m.score2), (m.player2_id, m.score2 > m.score1)) as v(player_id, won)
+     where m.confirmed and m.player1b_id is null and m.discipline <> '14/1 Endlos'
+       and abs(m.score1 - m.score2) = 1 and greatest(m.score1, m.score2) >= 3
+       and not exists (select 1 from players p where p.id in (m.player1_id, m.player2_id) and p.is_guest);
+
+  insert into player_badges (player_id, badge_key)
+  select h.player_id, c.badge_key
+    from (select player_id, count(*) as m, count(*) filter (where won) as w, count(*) filter (where came_back) as c
+            from dsc_hill group by player_id) h
+    join badge_catalog c on c.category = 'Disziplinen' and c.family in ('hm', 'hw', 'hc')
+   where case c.family when 'hm' then h.m when 'hw' then h.w else h.c end >= c.threshold
+  on conflict do nothing;
+
+  drop table if exists dsc_singles, dsc_stats, dsc_streaks, dsc_doubles, dsc_hill;
 end;
 $function$;
 
@@ -311,5 +346,5 @@ select public.compute_discipline_badges();
 select emoji, array_agg(badge_key order by badge_key) as badge_keys, count(*)
 from badge_catalog group by emoji having count(*) > 1;
 
--- Kontrolle 2: Zahl der neuen Erfolge (muss 114 sein)
+-- Kontrolle 2: Zahl der neuen Erfolge (muss 124 sein)
 select count(*) as neue_erfolge from badge_catalog where category = 'Disziplinen';
