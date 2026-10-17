@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
-import { Trophy, Gauge, Percent, Flame, FileText, Clock, Timer, Star, History, ChevronsDown, ChevronsUp, Undo2 } from "lucide-react";
+import { Trophy, Gauge, Percent, Flame, FileText, Clock, Timer, Star, History } from "lucide-react";
 import ConfirmRoundButtons from "./widgets/ConfirmRoundButtons";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -574,8 +574,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Nutzer-Feedback: "es fehlt der Button für 'alles ausklappen' und 'alles
   // zuklappen'" - aus columns statt einer festen Liste, damit auch neue,
   // per normalizeCardColumns() angehaengte Karten mit erfasst werden.
-  const expandAllCards = () => setCollapsedCards(new Set());
-  const collapseAllCards = () => setCollapsedCards(new Set(cardOrder));
 
   // Globale Auswahl (Disziplin + Top-N/Meine Umgebung): letzte Wahl wird
   // geraeteweise gemerkt, wie bei den Live-Bereichen (siehe LiveScreen).
@@ -979,32 +977,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
   return (
     <div className="screen">
-      {/* Die drei Werkzeuge der frueheren Filter-Karte (Alle auf-/zuklappen,
-          Rueckgaengig) wirken auf ALLE Karten dieses Bildschirms und gehoeren
-          daher in den Bildschirmkopf, nicht in eine einzelne Karte - sonst
-          waeren sie weg, sobald die Bestenlisten ausgeblendet sind. Als
-          Symbole statt Textchips (Nutzer-Vorgabe: visuell statt textuell);
-          der Text steckt in title/aria-label. */}
-      <header className="screen-head with-tools">
+      {/* Die Kopf-Werkzeuge (Alle auf-/zuklappen, Rueckgaengig) sind seit 411.25 entfallen: mit Segment-Leiste und
+          ohne Ausblenden braucht es sie nicht mehr. */}
+      <header className="screen-head">
         <div>
           <h2>{t("Statistik")}</h2>
           <span className="head-note">{t("Bestenlisten (bestaetigte Matches)")}</span>
-        </div>
-        <div className="head-tools">
-          <button className="chip chip-icon" onClick={expandAllCards} aria-label={t("Alle aufklappen")} title={t("Alle aufklappen")}>
-            <ChevronsDown size={16} />
-          </button>
-          <button className="chip chip-icon" onClick={collapseAllCards} aria-label={t("Alle zuklappen")} title={t("Alle zuklappen")}>
-            <ChevronsUp size={16} />
-          </button>
-          {/* Ein Schritt Rueckgaengig (kein ganzer Verlauf), deaktiviert
-              solange es nichts rueckgaengig zu machen gibt - seit die
-              Spaltenwahl nicht mehr automatisch passiert, ist ein
-              Fehlklick leichter moeglich (Nutzer-Feedback, siehe
-              cardLayout.js). */}
-          <button className="chip chip-icon" onClick={cards.undo} disabled={!cards.canUndo} aria-label={t("Rückgängig")} title={t("Rückgängig")}>
-            <Undo2 size={16} />
-          </button>
         </div>
       </header>
 
