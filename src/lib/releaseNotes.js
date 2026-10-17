@@ -18,6 +18,21 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412", icon: "✨",
+    items: [
+      "Neues Menü: Über den Hamburger-Knopf erreichst du alle Bereiche (am PC steht es links). Die Punkte in der Leiste unten wählst du selbst – ziehen zum Ordnen, mit der Nadel anheften.",
+      "Das Profil ist jetzt in drei Seiten geteilt: Meine Identität, Meine Zahlen und Meine Erfolge – mit „So sehen dich andere“ und „Auf einen Blick“ (beste Disziplin, Angstgegner).",
+      "Tippe auf deine Kugel: Foto aufnehmen oder wählen und einen freigeschalteten Erfolg als Avatar nehmen – mit Suche und fliegender Kugel.",
+      "Listen nach Geschmack (Einstellungen): „Tab-Freak“ zeigt Kapitel als Tabs, „Doomscroller“ eine lange Liste mit angepinnten Überschriften.",
+      "Schmalere Ränder, rundere Karten und Wischen von Menüpunkt zu Menüpunkt in der Reihenfolge deiner Leiste.",
+    ],
+    en: [
+      "New menu: the hamburger button reaches every section (on a computer it stays on the left). You choose the items in the bar at the bottom – drag to reorder, pin to add.",
+      "Your profile is now split into three pages: My identity, My numbers and My achievements – with \"How others see you\" and \"At a glance\" (best discipline, nemesis).",
+      "Tap your ball: take or pick a photo and use an unlocked achievement as your avatar – with search and a flying ball.",
+      "Lists your way (Settings): \"Tab freak\" shows chapters as tabs, \"Doomscroller\" one long list with pinned headings.",
+      "Slimmer margins, rounder cards and swiping from item to item in the order of your bar.",
+    ] },
   { version: "410.9", icon: "🪃",
     items: ["Zwei neue Turnier-Erfolge: „Bumerang“ (Verliererbaum gewonnen) und „Comeback-Sieger“ (Turnier gewonnen, obwohl du im Gewinnerbaum verloren hast)."],
     en: ["Two new tournament achievements: \"Boomerang\" (won the losers bracket) and \"Comeback winner\" (won the tournament despite losing in the winners bracket)."] },
