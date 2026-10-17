@@ -3144,3 +3144,9 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 @keyframes lmSlide { 0%, 26% { transform: translateX(0); } 33.3%, 59% { transform: translateX(-33.3334%); } 66.6%, 92% { transform: translateX(-66.6667%); } 100% { transform: translateX(0); } }
 @keyframes lmScroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
 @keyframes lmHead { 0% { width: 45%; } 33.3% { width: 60%; } 66.6% { width: 35%; } }
+
+/* Match-Eingabe: die Disziplin-Auswahl im Kopf verhaelt sich wie ein Kapitelkopf und bleibt beim Scrollen IMMER sichtbar; das
+   "Du VS Gegner"-Band (.vs-dock) haengt direkt darunter. --mh = Hoehe des angepinnten Kopfes (am PC ohne Dock-Versatz). */
+.screen-head.match-head { --mh: 65px; position: sticky; top: 0; z-index: 7; background: var(--felt); margin: -14px -12px 10px; padding: 14px 12px 8px; box-shadow: 0 1px 0 var(--line); }
+.screen:has(.match-head) .vs-dock { top: calc(var(--mh, 65px) - 1px); }
+@media (min-width: 900px) { .phone.app .screen-head.match-head { margin: -28px -32px 16px; padding: 28px 32px 8px; } }
