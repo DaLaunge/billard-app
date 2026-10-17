@@ -1,5 +1,5 @@
 /* Menue-Einstellungen dieses Geraets: Reihenfolge der Menuepunkte im Hamburger-Menue und welche davon
-   in der Leiste unten angeheftet sind (max. MAX_PINNED, links und rechts vom runden "+").
+   in der Leiste unten angeheftet sind (immer genau MAX_PINNED, links und rechts vom runden "+").
    Wie die uebrigen Geraete-Einstellungen (lib/uiPrefs.js) nur lokal gespeichert. */
 export const MENU_IDS = ["stats", "turnier", "live", "profil", "achievements", "mystats", "invite", "regeln", "tutorial", "settings", "admin"];
 export const DEFAULT_PINNED = ["stats", "turnier", "live", "profil"];
@@ -11,7 +11,8 @@ export function sanitizeMenuPrefs(raw) {
   MENU_IDS.forEach((id) => { if (!order.includes(id)) order.push(id); });
   let pinned = Array.isArray(raw?.pinned) ? raw.pinned.filter((id, i, a) => MENU_IDS.includes(id) && a.indexOf(id) === i) : DEFAULT_PINNED;
   pinned = pinned.slice(0, MAX_PINNED);
-  if (pinned.length === 0) pinned = DEFAULT_PINNED;
+  // Die Leiste hat immer genau MAX_PINNED Plaetze: fehlende werden mit den Standard-Punkten, dann der Reihe nach aufgefuellt.
+  [...DEFAULT_PINNED, ...order].forEach((id) => { if (pinned.length < MAX_PINNED && !pinned.includes(id) && id !== "admin") pinned.push(id); });
   return { order: [...new Set(order)], pinned };
 }
 

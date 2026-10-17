@@ -1010,7 +1010,7 @@ export default function App() {
   };
   const togglePin = (id) => {
     const on = menuPrefs.pinned.includes(id);
-    if (on && menuPrefs.pinned.length <= 1) return;
+    if (on) return;   // Die Leiste ist immer voll: ein Punkt wird nur ersetzt, indem man einen anderen anheftet.
     // Ist die Leiste voll, faellt der unterste angeheftete Eintrag (letzter der Gruppe "Menueleiste") heraus.
     let base = menuPrefs.pinned;
     if (!on && base.length >= MAX_PINNED) {

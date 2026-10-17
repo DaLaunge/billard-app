@@ -3,7 +3,6 @@ import { Plus, X, ChevronDown, RefreshCw, Check, Pin, PinOff } from "lucide-reac
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MAX_PINNED } from "../lib/menuPrefs";
 import { TUTORIAL_STEPS } from "../lib/tutorial/steps";
 import Ball from "./Ball";
 import { initials } from "../lib/format";
@@ -14,7 +13,7 @@ import { APP_VERSION } from "../lib/constants";
    in App.css). Alle Farben nur ueber die Theme-Variablen, damit Farbdesigns
    und eigener Akzent unveraendert greifen. Die vier Hauptpunkte stehen hier
    noch einmal, damit Seitenleiste und Leiste unten dieselben Ziele haben. */
-function Row({ e, pinned, canPin, onTogglePin, go, tourOpen, onToggleTour, onTutorial }) {
+function Row({ e, pinned, onTogglePin, go, tourOpen, onToggleTour, onTutorial }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: e.id });
   const style = { transform: CSS.Translate.toString(transform), transition, opacity: isDragging ? 0.7 : 1, touchAction: "manipulation", zIndex: isDragging ? 3 : undefined };
   const Icon = e.icon;
@@ -27,9 +26,9 @@ function Row({ e, pinned, canPin, onTogglePin, go, tourOpen, onToggleTour, onTut
         {e.badge ? <em className="app-drawer-badge">{e.badge}</em> : null}
         {isTour && <ChevronDown size={16} className={"app-drawer-chev" + (tourOpen ? " up" : "")} />}
       </button>
-      <button type="button" className={"app-drawer-pin" + (pinned ? " on" : "")} onClick={onTogglePin} 
-        aria-pressed={pinned} aria-label={pinned ? t("Von der Leiste lösen") : t("An die Leiste anheften")}
-        title={pinned ? t("Von der Leiste lösen") : canPin ? t("An die Leiste anheften") : t("Leiste voll: der unterste Eintrag wird gelöst")}>
+      <button type="button" className={"app-drawer-pin" + (pinned ? " on" : "")} onClick={onTogglePin} disabled={pinned}
+        aria-pressed={pinned} aria-label={pinned ? t("In der Leiste") : t("An die Leiste anheften")}
+        title={pinned ? t("Die Leiste ist immer voll: heft einen anderen Punkt an, um diesen zu ersetzen") : t("Anheften: ersetzt den untersten Eintrag der Leiste")}>
         {pinned ? <Pin size={15} /> : <PinOff size={15} />}
       </button>
       {isTour && tourOpen && (
@@ -74,21 +73,15 @@ export default function AppDrawer({
   const onDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) return;
     const ids = display.map((x) => x.id);
-    const moved = arrayMove(ids, ids.indexOf(active.id), ids.indexOf(over.id));
     const aPinned = pinnedIds.includes(active.id);
     const oPinned = pinnedIds.includes(over.id);
-    let nextPinned = pinnedIds;
-    if (aPinned !== oPinned) {
-      if (aPinned) { if (pinnedIds.length <= 1) return; nextPinned = pinnedIds.filter((x) => x !== active.id); }
-      else {
-        // Leiste voll: der unterste angeheftete Eintrag macht Platz.
-        const base = pinnedIds.length >= MAX_PINNED ? pinnedIds.filter((x) => x !== pinnedList[pinnedList.length - 1].id) : pinnedIds;
-        nextPinned = [...base, active.id];
-      }
-    }
-    onChange(moved, nextPinned);
+    if (aPinned === oPinned) { onChange(arrayMove(ids, ids.indexOf(active.id), ids.indexOf(over.id)), pinnedIds); return; }
+    // Ueber die Gruppen hinweg TAUSCHEN die beiden ihre Plaetze: die Leiste bleibt dadurch immer voll.
+    const swapped = [...ids];
+    const ai = ids.indexOf(active.id), oi = ids.indexOf(over.id);
+    swapped[ai] = over.id; swapped[oi] = active.id;
+    onChange(swapped, pinnedIds.map((x) => (x === active.id ? over.id : x === over.id ? active.id : x)));
   };
-  const canPin = pinnedIds.length < MAX_PINNED;
   return (
     <>
       {open && <div className="app-drawer-scrim" onClick={onClose} aria-hidden="true" />}
@@ -106,7 +99,7 @@ export default function AppDrawer({
             <div className="app-drawer-label">{t("Menüleiste")}</div>
             <nav className="app-drawer-nav">
               {pinnedList.map((e) => (
-                <Row key={e.id} e={e} pinned canPin={canPin} onTogglePin={() => onTogglePin(e.id)}
+                <Row key={e.id} e={e} pinned onTogglePin={() => onTogglePin(e.id)}
                   go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
               ))}
               <button data-tour="tab-fab" className="app-drawer-item app-drawer-new" onClick={go(onNewMatch)}>
@@ -117,7 +110,7 @@ export default function AppDrawer({
             <div className="app-drawer-label">{t("Weitere Menüs")}</div>
             <nav className="app-drawer-nav">
               {otherList.map((e) => (
-                <Row key={e.id} e={e} pinned={false} canPin={canPin} onTogglePin={() => onTogglePin(e.id)}
+                <Row key={e.id} e={e} pinned={false} onTogglePin={() => onTogglePin(e.id)}
                   go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
               ))}
               {otherList.length === 0 && <p className="app-drawer-hint">{t("Alles ist an der Leiste angeheftet.")}</p>}

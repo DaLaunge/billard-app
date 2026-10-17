@@ -2939,7 +2939,8 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .app-drawer-pin { flex: none; width: 34px; height: 34px; margin-right: 2px; border: none; background: none; border-radius: 10px;
   color: var(--ivory-dim); display: grid; place-items: center; cursor: pointer; opacity: .55; }
 .app-drawer-pin.on { color: var(--accent); opacity: 1; }
-.app-drawer-pin:disabled { opacity: .2; cursor: default; }
+.app-drawer-pin:disabled { cursor: default; }
+.app-drawer-pin.on:disabled { opacity: .85; }
 .app-drawer-hint { font-size: 11.5px; color: var(--ivory-dim); padding: 6px 12px 0; }
 .app-drawer-label { font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--accent); padding: 4px 12px 6px; }
 
