@@ -2772,7 +2772,7 @@ button.break-slot { cursor: pointer; }
 .group-pick .pool-ball { flex: none; margin: 0; }
 
 /* Popup "Neu in dieser Version" */
-.news-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.news-list { list-style: none; margin: 0 0 14px; padding: 0 4px 0 0; max-height: min(52vh, 380px); overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; text-align: left; }
 .news-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.35; }
 
 /* "Dein Turnierweg": eigene Partien und die Linien dazwischen im Akzent, der Rest gedaempft. */
