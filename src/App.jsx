@@ -1004,13 +1004,14 @@ export default function App() {
   const [listChoiceOpen, setListChoiceOpen] = useState(false);
   useEffect(() => { applyListPrefs(); }, []);
   // Ein Tipp auf die EIGENE Kugel (egal wo) oeffnet das Profilbild-Fenster. Ausgenommen: die Match-Eingabe (dort waehlt man
-  // sich selbst als Spieler aus), das Fenster selbst und Textfelder.
+  // sich selbst als Spieler aus), das Fenster selbst und Filter-Chips (".chip", z. B. "Meine Umgebung" in der Statistik: dort ist die
+  // Kugel ein Filter-Knopf, kein Profilbild).
   useEffect(() => {
     if (!player) return undefined;
     const onClick = (e) => {
       const el = e.target instanceof Element ? e.target.closest(".ball[data-nick]") : null;
       if (!el || el.dataset.nick !== player.nickname) return;
-      if (["match", "winnerstays"].includes(tab) || el.closest(".avatar-sheet, .tour-root, .login-balls")) return;
+      if (["match", "winnerstays"].includes(tab) || el.closest(".avatar-sheet, .tour-root, .login-balls, .chip, [data-no-avatar]")) return;
       e.preventDefault();
       e.stopPropagation();
       setAvatarOpen(true);
