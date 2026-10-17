@@ -1083,8 +1083,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
         onHeadClick={isMe && !asOthers ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
-        onInvite={isMe ? onInvite : undefined}
-        onSettings={isMe ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : undefined}
+        /* Zahnrad und QR-Symbol der Kopfkarte entfallen: Einstellungen und Einladen stehen im Menue und als Karten darunter. */
         sideActions={!isMe && !asOthers && playerObj ? {
           left: (
             <button type="button" className="id-round-btn id-round-match" onClick={() => onStartMatch(playerObj)}
