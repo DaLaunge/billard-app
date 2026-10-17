@@ -3150,3 +3150,15 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 .screen-head.match-head { --mh: 65px; position: sticky; top: 0; z-index: 7; background: var(--felt); margin: -14px -12px 10px; padding: 14px 12px 8px; box-shadow: 0 1px 0 var(--line); }
 .screen:has(.match-head) .vs-dock { top: calc(var(--mh, 65px) - 1px); }
 @media (min-width: 900px) { .phone.app .screen-head.match-head { margin: -28px -32px 16px; padding: 28px 32px 8px; } }
+
+/* Menue: Plaetze der Leiste nummeriert, "+" dazwischen, Anheften per Auswahl des zu ersetzenden Punktes */
+.app-drawer-slot { flex: none; width: 22px; height: 22px; margin-right: 8px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 800; }
+.app-drawer-fab { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ivory); color: #262220; flex: none; }
+.app-drawer-new { gap: 12px; }
+.app-drawer-pick { flex: 1 0 100%; margin: 2px 4px 8px; padding: 8px; border: 1px solid var(--accent-line); border-radius: 12px; background: var(--felt-2); }
+.app-drawer-pick-title { display: block; font-size: 12px; color: var(--ivory-dim); margin-bottom: 6px; }
+.app-drawer-pick-chips { display: flex; flex-direction: column; gap: 4px; }
+.app-drawer-pick-chip { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: 0; border-radius: 9px; background: var(--felt-3); color: var(--ivory); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.app-drawer-pick-chip b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 11px; }
+.app-drawer-pick-chip svg { color: var(--accent); }

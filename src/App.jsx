@@ -1032,16 +1032,13 @@ export default function App() {
     updateMenuPrefs(sanitizeMenuPrefs(null));
     try { Object.keys(localStorage).filter((k) => k.startsWith("segOrder:") || k === "statSeg" || k === "profilSeg").forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
   };
-  const togglePin = (id) => {
-    const on = menuPrefs.pinned.includes(id);
-    if (on) return;   // Die Leiste ist immer voll: ein Punkt wird nur ersetzt, indem man einen anderen anheftet.
-    // Ist die Leiste voll, faellt der unterste angeheftete Eintrag (letzter der Gruppe "Menueleiste") heraus.
-    let base = menuPrefs.pinned;
-    if (!on && base.length >= MAX_PINNED) {
-      const lowest = menuPrefs.order.filter((x) => base.includes(x)).pop();
-      base = base.filter((x) => x !== lowest);
-    }
-    updateMenuPrefs({ ...menuPrefs, pinned: on ? base.filter((x) => x !== id) : [...base, id] });
+  // Anheften per Auswahl: der neue Punkt nimmt den Platz des gewaehlten ein, der ersetzte tauscht in die Gruppe "Weitere Menues".
+  const swapPin = (newId, oldId) => {
+    const order = [...menuPrefs.order];
+    const ai = order.indexOf(newId), oi = order.indexOf(oldId);
+    if (ai === -1 || oi === -1) return;
+    order[ai] = oldId; order[oi] = newId;
+    updateMenuPrefs({ order, pinned: menuPrefs.pinned.map((x) => (x === oldId ? newId : x)) });
   };
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
   // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
@@ -1735,7 +1732,7 @@ export default function App() {
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                 entries={orderedEntries} pinnedIds={menuPrefs.pinned}
                 onChange={(order, pinned) => updateMenuPrefs({ order, pinned })}
-                onTogglePin={togglePin} />
+                onSwap={swapPin} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge"].includes(tab)) && (

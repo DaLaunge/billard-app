@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Plus, X, ChevronDown, RefreshCw, Check, Pin, PinOff } from "lucide-react";
+import { Fragment, useState, useRef, useEffect } from "react";
+import { Plus, X, ChevronDown, RefreshCw, Check, Pin } from "lucide-react";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -13,24 +13,42 @@ import { APP_VERSION } from "../lib/constants";
    in App.css). Alle Farben nur ueber die Theme-Variablen, damit Farbdesigns
    und eigener Akzent unveraendert greifen. Die vier Hauptpunkte stehen hier
    noch einmal, damit Seitenleiste und Leiste unten dieselben Ziele haben. */
-function Row({ e, pinned, onTogglePin, go, tourOpen, onToggleTour, onTutorial }) {
+function Row({ e, pinned, slot, pickOpen, pinnedEntries, onPick, onSwap, go, tourOpen, onToggleTour, onTutorial }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: e.id });
   const style = { transform: CSS.Translate.toString(transform), transition, opacity: isDragging ? 0.7 : 1, touchAction: "manipulation", zIndex: isDragging ? 3 : undefined };
   const Icon = e.icon;
   const isTour = e.id === "tutorial";
   return (
-    <div ref={setNodeRef} style={style} className={"app-drawer-row" + (isDragging ? " dragging" : "")} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} className={"app-drawer-row" + (isDragging ? " dragging" : "") + (pinned ? " pinned" : "")} {...attributes} {...listeners}>
       <button data-tour={e.tour} className={"app-drawer-item" + (e.on || (isTour && tourOpen) ? " on" : "")}
         onClick={isTour ? onToggleTour : go(e.run)} aria-expanded={isTour ? tourOpen : undefined}>
         <Icon size={19} /><span>{t(e.label)}</span>
         {e.badge ? <em className="app-drawer-badge">{e.badge}</em> : null}
         {isTour && <ChevronDown size={16} className={"app-drawer-chev" + (tourOpen ? " up" : "")} />}
       </button>
-      <button type="button" className={"app-drawer-pin" + (pinned ? " on" : "")} onClick={onTogglePin} disabled={pinned}
-        aria-pressed={pinned} aria-label={pinned ? t("In der Leiste") : t("An die Leiste anheften")}
-        title={pinned ? t("Die Leiste ist immer voll: heft einen anderen Punkt an, um diesen zu ersetzen") : t("Anheften: ersetzt den untersten Eintrag der Leiste")}>
-        {pinned ? <Pin size={15} /> : <PinOff size={15} />}
-      </button>
+      {pinned ? (
+        <span className="app-drawer-slot" title={t("Platz {n} in der Leiste", { n: slot })} aria-label={t("Platz {n} in der Leiste", { n: slot })}>{slot}</span>
+      ) : (
+        <button type="button" className={"app-drawer-pin" + (pickOpen ? " on" : "")} onClick={onPick} aria-expanded={pickOpen}
+          aria-label={t("An die Leiste anheften")} title={t("An die Leiste anheften")}>
+          <Pin size={15} />
+        </button>
+      )}
+      {!pinned && pickOpen && (
+        <div className="app-drawer-pick" role="group" aria-label={t("Welchen Punkt ersetzen?")}>
+          <span className="app-drawer-pick-title">{t("Statt welchem Punkt anheften?")}</span>
+          <div className="app-drawer-pick-chips">
+            {pinnedEntries.map((pe, i) => {
+              const PIcon = pe.icon;
+              return (
+                <button key={pe.id} type="button" className="app-drawer-pick-chip" onClick={() => onSwap(e.id, pe.id)}>
+                  <b>{i + 1}</b><PIcon size={15} /><span>{t(pe.label)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {isTour && tourOpen && (
         <div className="app-drawer-sub">
           <button className="app-drawer-item" onClick={go(() => onTutorial(null))}><span>{t("Ganze Tour")}</span></button>
@@ -45,9 +63,10 @@ function Row({ e, pinned, onTogglePin, go, tourOpen, onToggleTour, onTutorial })
 
 export default function AppDrawer({
   open, onClose, player, onNewMatch, onTutorial, onCheckUpdate, colorOf, badgeOf, photoOf,
-  entries, pinnedIds, onChange, onTogglePin,
+  entries, pinnedIds, onChange, onSwap,
 }) {
   const [tourOpen, setTourOpen] = useState(false);
+  const [pickFor, setPickFor] = useState(null);
   // Update-Zeile: idle | checking | found | current | error | unavailable (vorher im Profil)
   const [updState, setUpdState] = useState("idle");
   const updTimer = useRef(null);
@@ -98,26 +117,32 @@ export default function AppDrawer({
           <SortableContext items={display.map((x) => x.id)} strategy={verticalListSortingStrategy}>
             <div className="app-drawer-label">{t("Menüleiste")}</div>
             <nav className="app-drawer-nav">
-              {pinnedList.map((e) => (
-                <Row key={e.id} e={e} pinned onTogglePin={() => onTogglePin(e.id)}
-                  go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
+              {/* Genau wie unten in der Leiste: Plaetze 1 bis n von links nach rechts, das runde "+" steht dazwischen. */}
+              {pinnedList.map((e, i) => (
+                <Fragment key={e.id}>
+                  {i === Math.ceil(pinnedList.length / 2) && (
+                    <button data-tour="tab-fab" className="app-drawer-item app-drawer-new" onClick={go(onNewMatch)}>
+                      <span className="app-drawer-fab"><Plus size={16} /></span><span>{t("Neues Match")}</span>
+                    </button>
+                  )}
+                  <Row e={e} pinned slot={i + 1} go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
+                </Fragment>
               ))}
-              <button data-tour="tab-fab" className="app-drawer-item app-drawer-new" onClick={go(onNewMatch)}>
-                <Plus size={19} /><span>{t("Neues Match")}</span>
-              </button>
             </nav>
             <div className="app-drawer-sep" />
             <div className="app-drawer-label">{t("Weitere Menüs")}</div>
             <nav className="app-drawer-nav">
               {otherList.map((e) => (
-                <Row key={e.id} e={e} pinned={false} onTogglePin={() => onTogglePin(e.id)}
+                <Row key={e.id} e={e} pinned={false} pickOpen={pickFor === e.id} pinnedEntries={pinnedList}
+                  onPick={() => setPickFor((cur) => (cur === e.id ? null : e.id))}
+                  onSwap={(newId, oldId) => { setPickFor(null); onSwap(newId, oldId); }}
                   go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
               ))}
               {otherList.length === 0 && <p className="app-drawer-hint">{t("Alles ist an der Leiste angeheftet.")}</p>}
             </nav>
           </SortableContext>
         </DndContext>
-        <p className="app-drawer-hint">{t("Gedrückt halten zum Verschieben, Nadel zum Anheften")}</p>
+        <p className="app-drawer-hint">{t("Gedrückt halten zum Verschieben. Nadel: einen Punkt in die Leiste holen und dafür einen anderen ersetzen.")}</p>
         <button type="button" className={"app-drawer-update " + updState} data-tour="update-btn"
           disabled={updState === "checking" || updState === "found"} onClick={runUpdateCheck}>
           {updState === "found" || updState === "current" ? <Check size={18} /> : <RefreshCw size={17} className={updState === "checking" ? "spin" : ""} />}
