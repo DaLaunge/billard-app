@@ -45,7 +45,8 @@ export function useCardLayout(screen, cardLayout, onSetCardLayout, toast) {
   const saved = cardLayout?.[screen];
   const [order, setOrder] = useState(() => normalizeCardOrder(saved, screen));
   const [columns, setColumns] = useState(() => normalizeCardColumns(saved, normalizeCardOrder(saved, screen), screen));
-  const [hidden, setHidden] = useState(() => new Set(normalizeHiddenCards(saved, screen)));
+  // Ausblenden entfaellt seit 411.9: gespeicherte Ausblendungen werden ignoriert, alle Karten sind sichtbar.
+  const [hidden, setHidden] = useState(() => new Set());
   // Ein Schritt Rueckgaengig fuer Anordnungs-Aenderungen (Nutzer-Feedback:
   // "vergiss nicht, einen Rückgängig Button zu implementieren") - haelt den
   // Stand VOR der letzten Aenderung, nicht einen ganzen Verlauf. Wird beim

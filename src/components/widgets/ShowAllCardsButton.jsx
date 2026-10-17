@@ -8,6 +8,10 @@ import { t } from "../../lib/i18n";
    Weg zurueck immer an derselben, vorhersehbaren Stelle - sonst muesste man
    sich merken, wo der Knopf war, als noch etwas ausgeblendet war. */
 export default function ShowAllCardsButton({ hiddenCount, onShowAll }) {
+  // Seit dem Layout-Redesign (411.9) gibt es kein Ausblenden mehr: Segment-Leiste und breite Karten
+  // sparen genug Platz. Die Komponente bleibt als Huelle bestehen, zeigt aber nichts.
+  return null;
+  // eslint-disable-next-line no-unreachable
   return (
     <div className="cards-restore-row">
       <button className="btn ghost" disabled={!hiddenCount} onClick={onShowAll}>

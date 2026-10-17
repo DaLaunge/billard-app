@@ -39,7 +39,8 @@ export default function CardMenuButton({ onHide, label }) {
     };
   }, [open]);
 
-  if (!onHide) return null;
+  // Kein Ausblenden mehr seit dem Layout-Redesign (411.9): das Menue haette keinen Eintrag.
+  if (!onHide || true) return null;
 
   return (
     <div className="card-menu-wrap" ref={wrapRef}>

@@ -2894,3 +2894,21 @@ button.break-slot { cursor: pointer; }
 }
 @keyframes viewIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes segIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+
+/* Reiter in der Kopfzeile (CardDeck inlineTabs): am PC eigene Zeile wie bisher, am Handy neben den Knoepfen -
+   die Segment-Leiste daruber nennt schon den Bereich, ein Kartentitel waere doppelt. */
+.deck-inline .stat-block-head > .deck-tabs { order: 3; flex: 1 0 100%; margin: 6px 0 4px; }
+@media (max-width: 899px) {
+  .stat-split[data-seg] .deck-inline .stat-block-head > h3,
+  .pf-layout[data-seg] .deck-inline .stat-block-head > h3 { display: none; }
+  .stat-split[data-seg] .deck-inline .stat-block-head > .deck-tabs,
+  .pf-layout[data-seg] .deck-inline .stat-block-head > .deck-tabs { order: 0; flex: 1 1 0; min-width: 0; margin: 0; }
+  .stat-split[data-seg] .deck-inline .stat-block-head,
+  .pf-layout[data-seg] .deck-inline .stat-block-head { flex-wrap: nowrap; margin-bottom: 10px; }
+  .stat-split[data-seg] .deck-inline .deck-tabs.compact .chip.active,
+  .pf-layout[data-seg] .deck-inline .deck-tabs.compact .chip.active { flex: 0 0 auto; min-width: 74px; padding-inline: 10px; }
+  .stat-split[data-seg] .deck-inline .deck-tabs,
+  .pf-layout[data-seg] .deck-inline .deck-tabs { overflow-x: auto; gap: 4px; }
+  .stat-split[data-seg] .deck-inline .card-collapse-btn,
+  .pf-layout[data-seg] .deck-inline .card-collapse-btn { display: none; }
+}

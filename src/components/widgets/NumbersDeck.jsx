@@ -125,7 +125,7 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
   };
 
   return (
-    <CardDeck roomy={roomy} icon={<BarChart3 size={17} />} title={isMe ? t("Meine Zahlen") : t("Zahlen")}
+    <CardDeck inlineTabs roomy={roomy} icon={<BarChart3 size={17} />} title={isMe ? t("Meine Zahlen") : t("Zahlen")}
       tabs={shown.map((id) => ({ id, ...meta[id], render: () => bodies[id] }))}
       activeId={activeId} onActive={(id) => { setTab(id); writeTab(id); }}
       column={column} onToggleColumn={onToggleColumn}

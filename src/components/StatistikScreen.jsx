@@ -934,7 +934,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   if (deckAnchor) {
     const rowProps = { me, count: globalCount, nearby: globalNearby, colorOf, badgeOf, photoOf, onOpenProfile };
     cardsById[deckAnchor] = (
-      <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")}
+      <CardDeck inlineTabs icon={<Trophy size={17} />} title={t("Bestenlisten")}
         tabs={deckParts.map((id) => {
           const b = leaderboardById[id];
           return { ...b, render: () => <LeaderboardRows {...rowProps} {...b} /> };

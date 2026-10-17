@@ -46,7 +46,7 @@ import { t } from "../../lib/i18n";
 export default function CardDeck({
   icon, title, tabs, activeId, onActive,
   collapsed, onToggleCollapse, column, onToggleColumn, onHide, hideLabel,
-  roomy, id, soloTitle = true, filter,
+  roomy, id, soloTitle = true, filter, inlineTabs = false,
 }) {
   const funnel = useFunnel();
   const active = tabs.find((x) => x.id === activeId) || tabs[0];
@@ -64,12 +64,28 @@ export default function CardDeck({
   // zur Haelfte aus dem Bild (Nutzer-Feedback 2026-10-01).
   const compact = tabs.length >= 4 && tabs.every((x) => x.icon);
   const useSolo = solo && soloTitle;
+  const tabsBar = tabs.length > 1 && (
+    <div className={"deck-tabs" + (compact ? " compact" : "")} role="tablist">
+      {tabs.map((x) => (
+        <button key={x.id} type="button" role="tab" aria-selected={x.id === active.id}
+          className={"chip" + (x.id === active.id ? " active" : "")}
+          onClick={() => onActive(x.id)} title={x.title || x.tab} aria-label={x.title || x.tab}>
+          {x.icon} <span className="deck-tab-label">{x.tab}</span>
+          {/* Zaehler direkt am Reiter: nur so sieht man ohne
+              Umschalten, ob hinter einem zugeklappten Teil etwas
+              liegt (Live: "wartet eine Herausforderung auf mich?"). */}
+          {x.count != null && <span className="deck-tab-count">{x.count}</span>}
+        </button>
+      ))}
+    </div>
+  );
   return (
-    <section className="stat-block" id={id}>
+    <section className={"stat-block" + (inlineTabs && tabs.length > 1 ? " deck-inline" : "")} id={id}>
       <div className={"stat-block-head" + (roomy ? " roomy" : "")}>
         <h3>{useSolo ? (active.icon || icon) : icon} <span className="stat-block-title-text">{useSolo ? (active.title || title) : title}</span>
           {filter?.pill && <span className="deck-filter-pill">{filter.pill}</span>}
         </h3>
+        {inlineTabs && !collapsed && tabsBar}
         <div className="stat-block-head-actions">
           {onHide && <CardMenuButton onHide={onHide} label={solo ? undefined : (hideLabel || t("Diesen Reiter ausblenden"))} />}
           {filter && !collapsed && <FunnelButton funnel={funnel} label={filter.label} />}
@@ -81,21 +97,7 @@ export default function CardDeck({
       {!collapsed && (
         <>
           {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
-          {tabs.length > 1 && (
-            <div className={"deck-tabs" + (compact ? " compact" : "")} role="tablist">
-              {tabs.map((x) => (
-                <button key={x.id} type="button" role="tab" aria-selected={x.id === active.id}
-                  className={"chip" + (x.id === active.id ? " active" : "")}
-                  onClick={() => onActive(x.id)} title={x.title || x.tab} aria-label={x.title || x.tab}>
-                  {x.icon} <span className="deck-tab-label">{x.tab}</span>
-                  {/* Zaehler direkt am Reiter: nur so sieht man ohne
-                      Umschalten, ob hinter einem zugeklappten Teil etwas
-                      liegt (Live: "wartet eine Herausforderung auf mich?"). */}
-                  {x.count != null && <span className="deck-tab-count">{x.count}</span>}
-                </button>
-              ))}
-            </div>
-          )}
+          {!inlineTabs && tabsBar}
           {active.render()}
         </>
       )}
