@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "410.9", icon: "🪃",
+    items: ["Zwei neue Turnier-Erfolge: „Bumerang“ (Verliererbaum gewonnen) und „Comeback-Sieger“ (Turnier gewonnen, obwohl du im Gewinnerbaum verloren hast)."],
+    en: ["Two new tournament achievements: \"Boomerang\" (won the losers bracket) and \"Comeback winner\" (won the tournament despite losing in the winners bracket)."] },
   { version: "410.8", icon: "⏸️",
     items: ["Match: Der Pause-Knopf (Timeout) ist jetzt gut sichtbar. Während der Pause ist die Eingabe gesperrt, die Zeit läuft nicht weiter."],
     en: ["Match: the pause button (timeout) is now easy to see. While paused, input is locked and the clock stops."] },
