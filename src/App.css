@@ -77,7 +77,7 @@ html, body { background: var(--felt); }
 .phone { width: 100%; max-width: 430px; height: 100vh; position: relative;
   background: radial-gradient(140% 100% at 50% -10%, var(--felt-2) 0%, var(--felt) 60%);
   display: flex; flex-direction: column; box-shadow: 0 0 60px #00000070; }
-.content { flex: 1; overflow-y: auto; padding-bottom: 104px; }
+.content { flex: 1; overflow-y: auto; padding-bottom: 104px; position: relative; }
 .content.no-tabbar { padding-bottom: 24px; }
 .content.has-table-banner { padding-bottom: 148px; }
 /* Handy-Werte. Am PC ueberschreibt ".phone.app .screen" weiter unten mit
@@ -2794,10 +2794,10 @@ button.break-slot { cursor: pointer; }
 
 
 /* ===== Layout-Redesign: Menue, schwebende Leiste, Karten fast randlos ===== */
-.burger-btn { position: absolute; top: 14px; left: 8px; z-index: 25; width: 38px; height: 38px;
+.burger-btn { position: absolute; top: 14px; left: 8px; z-index: 5; width: 38px; height: 38px;
   border-radius: 12px; border: 1px solid var(--line); background: var(--felt-3); color: var(--ivory);
   display: grid; place-items: center; cursor: pointer; }
-.burger-btn ~ .content .screen-head:not(:has(> .back-btn)) { padding-left: 46px; min-height: 38px; }
+.content:has(> .burger-btn) .screen-head:not(:has(> .back-btn)) { padding-left: 46px; min-height: 38px; }
 .phone:has(.screen-head > .back-btn) .burger-btn { display: none; }
 .app-drawer-scrim { position: fixed; inset: 0; background: #000000a0; z-index: 60; }
 .app-drawer { position: fixed; top: 0; bottom: 0; left: 0; width: min(290px, 82vw); z-index: 61;
@@ -2833,7 +2833,7 @@ button.break-slot { cursor: pointer; }
 }
 @media (min-width: 900px) {
   .burger-btn, .app-drawer-close, .app-drawer-scrim { display: none; }
-  .burger-btn ~ .content .screen-head:not(:has(> .back-btn)) { padding-left: 0; }
+  .content:has(> .burger-btn) .screen-head:not(:has(> .back-btn)) { padding-left: 0; }
   .tabbar { display: none; }
   .stage:has(.app-drawer) { padding-left: 250px; }
   .app-drawer { width: 250px; transform: none; visibility: visible; box-shadow: none; z-index: 20; }
@@ -2869,3 +2869,6 @@ button.break-slot { cursor: pointer; }
   .pf-layout[data-seg="erfolge"] .card-slot:not([data-seg="erfolge"]),
   .pf-layout[data-seg="zahlen"] .card-slot:not([data-seg="zahlen"]) { display: none; }
 }
+/* Weicher Auslauf unter der schwebenden Leiste: Inhalt blitzt an den Seiten und darunter nicht durch. */
+.tabbar::before { content: ""; position: absolute; left: -14px; right: -14px; bottom: calc(-10px - env(safe-area-inset-bottom));
+  height: calc(100% + 44px); background: linear-gradient(transparent, var(--felt) 65%); z-index: -1; pointer-events: none; }

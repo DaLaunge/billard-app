@@ -1641,11 +1641,6 @@ export default function App() {
                   style={ptr.refreshing ? undefined : { transform: `rotate(${(ptr.pull / ptr.threshold) * 270}deg)` }} />
               </div>
             )}
-            {MAIN_TABS.includes(tab) && (
-              <button data-tour="burger" className="burger-btn" onClick={() => setDrawerOpen(true)} aria-label={t("Menü")} aria-expanded={drawerOpen}>
-                <Menu size={20} />
-              </button>
-            )}
             {rulesOpen && <RulesSheet onClose={() => setRulesOpen(false)} onViewRule={recordRuleView} isAdmin={player?.role === "admin"} />}
             {tab !== "match" && (
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} player={player}
@@ -1660,6 +1655,11 @@ export default function App() {
                 }} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
+              {MAIN_TABS.includes(tab) && (
+                <button data-tour="burger" className="burger-btn" onClick={() => setDrawerOpen(true)} aria-label={t("Menü")} aria-expanded={drawerOpen}>
+                  <Menu size={20} />
+                </button>
+              )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
