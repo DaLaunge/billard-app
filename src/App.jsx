@@ -46,7 +46,7 @@ import TurnierRasterScreen from "./components/TurnierRasterScreen";
 import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
-import RulesSheet from "./components/RulesSheet";
+import RulesScreen from "./components/RulesScreen";
 import ConfirmHost from "./components/ConfirmHost";
 import { rpcRetry } from "./lib/rpcRetry";
 import { EmojiText } from "./components/Emoji";
@@ -993,7 +993,6 @@ export default function App() {
   const setHideTabbarPref = useCallback((on) => { setHideTabbarPrefState(on); storeHideTabbar(on); }, []);
   const [contentEl, setContentEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [rulesOpen, setRulesOpen] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
   useEffect(() => { setDrawerOpen(false); }, [tab]);
   const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
@@ -1641,11 +1640,10 @@ export default function App() {
                   style={ptr.refreshing ? undefined : { transform: `rotate(${(ptr.pull / ptr.threshold) * 270}deg)` }} />
               </div>
             )}
-            {rulesOpen && <RulesSheet onClose={() => setRulesOpen(false)} onViewRule={recordRuleView} isAdmin={player?.role === "admin"} />}
             {tab !== "match" && (
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} player={player}
                 onGo={(target) => navPush({ tab: target })} onTurniere={openTurniereMenu}
-                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onRules={() => setRulesOpen(true)} onSettings={() => { setOpenSettings(true); navPush({ tab: "profil" }); }} onCheckUpdate={requestUpdateNow} 
+                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onRules={() => navPush({ tab: "regeln" })} onSettings={() => { setOpenSettings(true); navPush({ tab: "profil" }); }} onCheckUpdate={requestUpdateNow} 
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} isAdmin={player?.role === "admin"}
                 badges={{
                   stats: pendingForMe.length,
@@ -1655,7 +1653,7 @@ export default function App() {
                 }} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
-              {MAIN_TABS.includes(tab) && (
+              {(MAIN_TABS.includes(tab) || tab === "regeln") && (
                 <button data-tour="burger" className="burger-btn" onClick={() => setDrawerOpen(true)} aria-label={t("Menü")} aria-expanded={drawerOpen}>
                   <Menu size={20} />
                 </button>
@@ -1765,6 +1763,7 @@ export default function App() {
                   me={player} onBack={() => window.history.back()} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   toast={toast} onReload={loadData} matches={matches} />
               )}
+              {tab === "regeln" && <RulesScreen onViewRule={recordRuleView} isAdmin={player?.role === "admin"} />}
               {tab === "invite" && (
                 <InviteScreen me={player} onBack={() => window.history.back()} toast={toast} />
               )}

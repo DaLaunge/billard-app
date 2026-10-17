@@ -58,7 +58,7 @@ export default function AppDrawer({
           </button>
         </nav>
         <div className="app-drawer-sep" />
-        <button className="app-drawer-item" onClick={go(onRules)}>
+        <button className={"app-drawer-item" + (tab === "regeln" ? " on" : "")} onClick={go(onRules)}>
           <BookOpen size={19} /><span>{t("Regelkunde")}</span>
         </button>
         <button className={"app-drawer-item" + (tourOpen ? " on" : "")} onClick={() => setTourOpen((v) => !v)} aria-expanded={tourOpen}>

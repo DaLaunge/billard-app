@@ -1450,10 +1450,10 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .vs-slot.empty.active .vs-empty-ball { animation: go-pulse 1.4s ease-in-out infinite; }
   /* Seitenwechsel wie beim iPhone: die neue Seite gleitet kurz herein (siehe
      lib/usePageTransition.js - die Klasse sitzt nur waehrend der Animation). */
-  @keyframes page-in-right { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
-  @keyframes page-in-left { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
-  .page-in-right { animation: page-in-right .28s cubic-bezier(.22, .61, .36, 1); }
-  .page-in-left { animation: page-in-left .28s cubic-bezier(.22, .61, .36, 1); }
+  @keyframes page-in-right { from { opacity: 0; transform: translateX(56px); } to { opacity: 1; transform: none; } }
+  @keyframes page-in-left { from { opacity: 0; transform: translateX(-56px); } to { opacity: 1; transform: none; } }
+  .page-in-right { animation: page-in-right .4s cubic-bezier(.22, .61, .36, 1); }
+  .page-in-left { animation: page-in-left .4s cubic-bezier(.22, .61, .36, 1); }
   .stat-block.nudge { animation: go-pulse .9s ease-out; }
   .opp-card, .disc-card, .btn, .tab, .chip-btn, .chip, .round-btn, .turnier-stepper-btn,
   .back-btn, .csv-btn, .mem-edit, .lang-btn, .auth-tab, .cand-chip, .pp-trigger,
@@ -2806,8 +2806,8 @@ button.break-slot { cursor: pointer; }
   transform: translateX(-102%); visibility: hidden; box-shadow: 0 0 40px #00000080; }
 .app-drawer.open { transform: none; visibility: visible; }
 @media (prefers-reduced-motion: no-preference) {
-  .app-drawer { transition: transform .22s ease, visibility 0s linear .22s; }
-  .app-drawer.open { transition: transform .22s ease; }
+  .app-drawer { transition: transform .34s cubic-bezier(.22, .61, .36, 1), visibility 0s linear .34s; }
+  .app-drawer.open { transition: transform .34s cubic-bezier(.22, .61, .36, 1); }
 }
 .app-drawer-top { display: flex; align-items: center; gap: 10px; padding: 4px 6px 12px; }
 .app-drawer-who { flex: 1; min-width: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2842,12 +2842,6 @@ button.break-slot { cursor: pointer; }
 .app-drawer-chev.up { transform: rotate(180deg); }
 .app-drawer-sub { display: flex; flex-direction: column; margin: 0 0 4px 22px; border-left: 1px solid var(--line); }
 .app-drawer-sub .app-drawer-item { padding: 8px 12px; font-size: 14px; }
-.rules-sheet { position: fixed; inset: 0; z-index: 70; background: var(--felt); display: flex; flex-direction: column;
-  max-width: 900px; margin: 0 auto; }
-.rules-sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
-.rules-sheet-head h2 { font-size: 20px; display: flex; align-items: center; gap: 8px; color: var(--accent); }
-.rules-sheet-body { flex: 1; overflow-y: auto; padding: 12px 10px calc(24px + env(safe-area-inset-bottom)); }
-@media (min-width: 900px) { .rules-sheet { inset: 24px 0 24px 250px; width: min(900px, calc(100vw - 300px)); margin-inline: auto; border: 1px solid var(--line); border-radius: 20px; } }
 
 /* ===== Segment-Leiste (Handy) ===== */
 .seg-bar { display: flex; gap: 2px; padding: 3px; margin: 0 0 var(--card-gap); background: var(--felt-2);
@@ -2885,15 +2879,15 @@ button.break-slot { cursor: pointer; }
   .pf-layout[data-seg] .card-slot[data-seg] .stat-block { border-color: var(--accent); }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .screen:has(.pf-edit-layout) { animation: viewIn .3s ease-out; }
+  .screen:has(.pf-edit-layout) { animation: viewIn .4s cubic-bezier(.22, .61, .36, 1); }
   @media (max-width: 899px) {
-    .stat-split[data-seg] .sortable-card[data-seg], .pf-layout[data-seg] .card-slot[data-seg] { animation: segIn .26s ease-out; }
+    .stat-split[data-seg] .sortable-card[data-seg], .pf-layout[data-seg] .card-slot[data-seg] { animation: segIn .36s cubic-bezier(.22, .61, .36, 1); }
   }
   .seg-bar-item { transition: background-color .2s ease, color .2s ease, transform .12s ease; }
   .seg-bar-item:active { transform: scale(.94); }
 }
-@keyframes viewIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes segIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@keyframes viewIn { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
+@keyframes segIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
 
 /* Reiter in der Kopfzeile (CardDeck inlineTabs): am PC eigene Zeile wie bisher, am Handy neben den Knoepfen -
    die Segment-Leiste daruber nennt schon den Bereich, ein Kartentitel waere doppelt. */
@@ -2922,3 +2916,7 @@ button.break-slot { cursor: pointer; }
 .app-drawer-update.found, .app-drawer-update.current { border-color: var(--accent); color: var(--accent); }
 .app-drawer-update.error, .app-drawer-update.unavailable { border-color: var(--loss); }
 .app-drawer-update .spin { animation: update-spin 1s linear infinite; }
+@media (prefers-reduced-motion: no-preference) {
+  .app-drawer-scrim { animation: scrimIn .34s ease-out; }
+}
+@keyframes scrimIn { from { opacity: 0; } to { opacity: 1; } }

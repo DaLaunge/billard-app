@@ -1154,6 +1154,7 @@ const TRANSLATIONS = {
     "Spieler entfernt.": "Player removed.",
     "{n} Spieler hinzufügen": "Add {n} player(s)",
     "Turnier starten": "Start tournament",
+    "Regelfälle zum Nachschlagen": "Rule cases to look up",
     "Matches": "Matches",
     "Listen": "Rankings",
     "Bereich": "Section",
