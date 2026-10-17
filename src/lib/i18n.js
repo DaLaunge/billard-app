@@ -1154,6 +1154,8 @@ const TRANSLATIONS = {
     "Spieler entfernt.": "Player removed.",
     "{n} Spieler hinzufügen": "Add {n} player(s)",
     "Turnier starten": "Start tournament",
+    "{n} von {m} freigeschaltet": "{n} of {m} unlocked",
+    "Erfolg als Avatar wählen": "Use an achievement as avatar",
     "Auf einen Blick": "At a glance",
     "Beste Disziplin": "Best discipline",
     "{n} Niederlagen": "{n} losses",

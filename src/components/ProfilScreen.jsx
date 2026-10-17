@@ -55,7 +55,7 @@ const groupSubs = (list) => {
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
@@ -492,6 +492,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 aria-label={t("Eigene Kugelfarbe wählen")} />
             </label>
           </div>
+          <button type="button" className="btn ghost pf-avatar-badge-btn" onClick={onOpenAchievements}>
+            <Award size={16} /> {t("Erfolg als Avatar wählen")}
+          </button>
           <label className="field-label">{t("Design")}</label>
           <div className="theme-grid">
             {THEME_KEYS.map((key) => {
@@ -1055,7 +1058,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       <div className="pf-identity" style={{ order: 0 }}>
       <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-        onHeadClick={heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
+        onHeadClick={isMe && !asOthers ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
         onInvite={isMe ? onInvite : undefined}
         onSettings={isMe ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : undefined}
         actions={<>
@@ -1097,6 +1100,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       )}
       {mode === "identity" && isMe && (
         <div className="pf-identity-extra" style={{ order: 5 }}>
+          <button type="button" className="pf-id-card" onClick={onOpenAchievements}>
+            <Award size={20} /><span className="pf-id-card-text"><strong>{t("Meine Erfolge")}</strong><small>{t("{n} von {m} freigeschaltet", { n: earnedBadges.size, m: catalog.length })}</small></span><ChevronRight size={18} />
+          </button>
           <button type="button" className="pf-id-card" onClick={onPreview}>
             <Eye size={20} /><span className="pf-id-card-text"><strong>{t("So sehen dich andere")}</strong><small>{t("Kugel, Name, Motto, Rating und Erfolge")}</small></span><ChevronRight size={18} />
           </button>
