@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "410.7", icon: "📜",
+    items: ["Unter Profil bearbeiten → Konto & Hilfe findest du jetzt alle Neuerungen im Überblick („Was ist neu?“)."],
+    en: ["Under Edit profile → Account & help you now find all new features at a glance (\"What's new?\")."] },
   { version: "410.5", icon: "🧭",
     items: ["Turnierbaum: Mit dem Weg-Symbol siehst du deinen eigenen Turnierweg – deine Partien und die Linien dazwischen leuchten."],
     en: ["Tournament bracket: the route icon shows your own path – your matches and the lines between them light up."] },

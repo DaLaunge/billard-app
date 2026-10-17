@@ -1,5 +1,6 @@
 import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
+import ChangelogRow from "./widgets/ChangelogRow";
 import { ChevronLeft, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { APP_VERSION, DISC_LABEL } from "../lib/constants";
@@ -751,6 +752,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <section className="stat-block">
             <h3><UserCog size={17} /> {t("Konto & Hilfe")}</h3>
             <PasswordSection toast={toast} />
+            <ChangelogRow />
             {onStartTutorial && (
               <div className="acct-sub">
                 <div className="acct-row">

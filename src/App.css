@@ -2779,3 +2779,7 @@ button.break-slot { cursor: pointer; }
 .turnier-graph-path-btn.on { background: var(--accent); color: var(--accent-ink); }
 .turnier-graph-box.mine { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .turnier-graph-edge.mypath, .turnier-graph-edge.drop.decided.mypath { stroke: var(--accent); stroke-width: 5; opacity: 1; stroke-dasharray: none; }
+
+/* Changelog unter Profil bearbeiten */
+.changelog-list { display: flex; flex-direction: column; gap: 14px; padding: 10px 2px 2px; max-height: min(60vh, 420px); overflow-y: auto; overscroll-behavior: contain; }
+.changelog-v { font-size: 12px; font-weight: 700; letter-spacing: 0.03em; color: var(--accent); margin-bottom: 6px; }
