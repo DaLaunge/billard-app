@@ -19,9 +19,10 @@ import { useLayoutEffect, useRef } from "react";
    useLayoutEffect, damit die Klasse VOR dem ersten Zeichnen sitzt; mit
    useEffect blitzte die neue Seite erst fertig auf und startete dann. */
 const MAIN = ["stats", "turnier", "live", "profil"];
-const rank = (tab) => { const i = MAIN.indexOf(tab); return i === -1 ? 10 : i; };
+// order = die Reihenfolge der in der Leiste angehefteten Bildschirme (Standard: die vier Hauptpunkte); alles andere liegt "tiefer".
+const rankIn = (order, tab) => { const i = order.indexOf(tab); return i === -1 ? 10 : i; };
 
-export function usePageTransition(scrollEl, tab) {
+export function usePageTransition(scrollEl, tab, order = MAIN) {
   const prev = useRef(tab);
   useLayoutEffect(() => {
     const from = prev.current;
@@ -30,7 +31,7 @@ export function usePageTransition(scrollEl, tab) {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const page = scrollEl.querySelector(":scope > .screen");
     if (!page) return;
-    const cls = rank(tab) < rank(from) ? "page-in-left" : "page-in-right";
+    const cls = rankIn(order, tab) < rankIn(order, from) ? "page-in-left" : "page-in-right";
     page.classList.remove("page-in-left", "page-in-right");
     void page.offsetWidth; // Animation neu starten, falls dieselbe Klasse schon dran war
     page.classList.add(cls);

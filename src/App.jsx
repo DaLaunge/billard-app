@@ -1044,10 +1044,16 @@ export default function App() {
   // den Nachbarn der Leiste und auf Unterseiten zurueck - NIE waehrend einer
   // Matcheingabe (dort kostet eine versehentliche Geste das Ergebnis) und nicht
   // hinter dem Zwangs-Update-Overlay.
-  usePageTransition(contentEl, tab);
-  const mainIdx = MAIN_TABS.indexOf(tab);
-  const goMain = (i) => {
-    const target = MAIN_TABS[i];
+  // Wischreihenfolge = die in der Leiste unten angehefteten Menuepunkte in ihrer Reihenfolge (nicht mehr fest Statistik <
+  // Turniere < Live < Profil): wer die Leiste umbaut, wischt auch in dieser Reihenfolge. Nur Punkte, die ein eigener
+  // Bildschirm sind, zaehlen (Einstellungen/Tutorial sind Aktionen); Unterseiten (Fremdprofil, Turnierdetail, ...) gehen per Wisch zurueck.
+  const SWIPE_TAB_OF = { stats: "stats", turnier: "turnier", live: "live", profil: "profil", achievements: "erfolge", mystats: "zahlen", regeln: "regeln", invite: "invite", admin: "admin" };
+  const swipeIds = menuPrefs.order.filter((id) => menuPrefs.pinned.includes(id) && SWIPE_TAB_OF[id] && (id !== "admin" || player?.role === "admin"));
+  const swipeTabs = swipeIds.map((id) => SWIPE_TAB_OF[id]);
+  usePageTransition(contentEl, tab, swipeTabs);
+  const swipeIdx = swipeTabs.indexOf(tab);
+  const goSwipe = (i) => {
+    const target = swipeTabs[i];
     if (!target || target === tab) return;
     if (target === "turnier") openTurniereMenu(); else navPush({ tab: target });
   };
@@ -1059,9 +1065,9 @@ export default function App() {
   const inSettings = tab === "profil" && profilEdit;
   useSwipeNav(contentEl, {
     enabled: !!player && !mustUpdate && !LIVE_ENTRY_TABS.includes(tab),
-    onBack: inSettings ? closeProfilEdit : mainIdx === -1 ? () => window.history.back() : undefined,
-    onPrev: inSettings ? closeProfilEdit : mainIdx > 0 ? () => goMain(mainIdx - 1) : undefined,
-    onNext: inSettings ? closeProfilEdit : mainIdx !== -1 && mainIdx < MAIN_TABS.length - 1 ? () => goMain(mainIdx + 1) : undefined,
+    onBack: inSettings ? closeProfilEdit : swipeIdx === -1 ? () => window.history.back() : undefined,
+    onPrev: inSettings ? closeProfilEdit : swipeIdx > 0 ? () => goSwipe(swipeIdx - 1) : undefined,
+    onNext: inSettings ? closeProfilEdit : swipeIdx !== -1 && swipeIdx < swipeTabs.length - 1 ? () => goSwipe(swipeIdx + 1) : undefined,
   });
 
   // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
