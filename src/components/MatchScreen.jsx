@@ -911,6 +911,9 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
       {step === 2 && opp && disc && (
         <div className="match-score-step step-enter">
           <MatchClock elapsedMs={clockMs} paused={clk.paused} onToggle={toggleClock} />
+          {/* Waehrend der Pause (Timeout) ist die Eingabe gesperrt: kein versehentlicher Punkt,
+              kein "Beenden". Die Uhr bleibt bedienbar, der Zustand steht im Entwurf. */}
+          <div className={"score-body" + (clk.paused ? " is-paused" : "")} inert={clk.paused ? "" : undefined}>
           {/* Anstoss-Regel: eine schmale Zeile direkt unter der Uhr. Bei Turnierpartien
               nur zur Anzeige (die Regel gehoert dem Turnier), sonst umschaltbar. */}
           {showBreak && (
@@ -982,6 +985,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             </>
           )}
           <PointPreview dsc={disc} />
+          </div>
           {pendingDisc && (
             // Als Popup, nicht als Kasten unter dem Beenden-Knopf: dort lag die Frage ausserhalb des sichtbaren Bereichs, der
             // Wechsel wirkte wie "geht nicht" (Nutzer-Feedback 2026-10-12).

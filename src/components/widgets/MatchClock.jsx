@@ -2,7 +2,7 @@ import { Timer, Pause, Play } from "lucide-react";
 import { t } from "../../lib/i18n";
 
 /* Spieldauer-Uhr im Ergebnis-Schritt: laeuft ab Beginn der Eingabe, mit
-   Pause/Weiter. Reine Anzeige - der Zustand ({acc, since, paused}) gehoert
+   Pause/Weiter (beschrifteter Knopf; waehrend der Pause sperrt MatchScreen die Eingabe). Reine Anzeige - der Zustand ({acc, since, paused}) gehoert
    MatchScreen und steht im Match-Entwurf, damit ein Neuladen die Zeit nicht
    verliert. */
 export function formatClock(ms) {
@@ -17,9 +17,9 @@ export default function MatchClock({ elapsedMs, paused, onToggle }) {
     <div className={"match-clock" + (paused ? " paused" : "")}>
       <Timer size={16} />
       <span className="match-clock-time" aria-live="off">{formatClock(elapsedMs)}</span>
-      <button type="button" className="icon-btn small" onClick={onToggle}
+      <button type="button" className={"clock-pause-btn" + (paused ? " on" : "")} onClick={onToggle}
         title={paused ? t("Fortsetzen") : t("Pause")} aria-label={paused ? t("Fortsetzen") : t("Pause")}>
-        {paused ? <Play size={15} /> : <Pause size={15} />}
+        {paused ? <Play size={16} /> : <Pause size={16} />} {paused ? t("Fortsetzen") : t("Pause")}
       </button>
     </div>
   );

@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "410.8", icon: "⏸️",
+    items: ["Match: Der Pause-Knopf (Timeout) ist jetzt gut sichtbar. Während der Pause ist die Eingabe gesperrt, die Zeit läuft nicht weiter."],
+    en: ["Match: the pause button (timeout) is now easy to see. While paused, input is locked and the clock stops."] },
   { version: "410.7", icon: "📜",
     items: ["Unter Profil bearbeiten → Konto & Hilfe findest du jetzt alle Neuerungen im Überblick („Was ist neu?“)."],
     en: ["Under Edit profile → Account & help you now find all new features at a glance (\"What's new?\")."] },
