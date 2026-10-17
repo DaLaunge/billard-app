@@ -2826,8 +2826,8 @@ button.break-slot { cursor: pointer; }
 .app-drawer-dot.sel { border-color: var(--ivory); }
 @media (max-width: 899px) {
   .screen > .stat-block, .screen .sortable-card > .stat-block, .screen [class*="-layout"] > .stat-block,
-  .screen [class*="-split"] > .stat-block, .screen [class*="-col"] > .stat-block {
-    margin-inline: -8px; padding: 13px 10px; border-radius: 20px; }
+  .screen [class*="-split"] > .stat-block, .screen [class*="-col"] > .stat-block, .screen .card-slot > .stat-block:not(.numbers-stacked) {
+    margin-inline: -8px; padding: 13px 10px; border-radius: 20px; --cp-x: 10px; }
   .stat-block .stat-block { margin-inline: 0; }
   .stat-block.is-maximized { margin-inline: 0; border-radius: 0; }
 }
@@ -3055,7 +3055,11 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
    Scrollbereichs und deckt dabei den Kartenrand mit ab (negative Raender = Polster der Karte). */
 @media (max-width: 899px) {
   .screen .stat-block:not(.is-maximized) > .stat-block-head { position: sticky; top: 0; z-index: 4; background: var(--felt-2);
-    margin: -14px -11px 6px; padding: 13px 10px 8px; border: 1px solid; border-color: inherit; border-bottom: 0; border-radius: 20px 20px 0 0; box-shadow: 0 1px 0 var(--line); }
+    /* Genau auf dem Kartenrand (Polster + 1px Rand) und mit dessen Radius/Farbe, damit Rand und Ecken beim Ruhen exakt deckungsgleich
+       sind (sonst wird die Rundung doppelt gezeichnet) und beim Anpinnen der obere Rand erhalten bleibt. */
+    margin: calc(-1 * (var(--cp-y, 13px) + 1px)) calc(-1 * (var(--cp-x, 12px) + 1px)) 6px; padding: var(--cp-y, 13px) var(--cp-x, 12px) 8px;
+    border: 1px solid; border-color: inherit; border-bottom: 0; border-top-left-radius: inherit; border-top-right-radius: inherit;
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 1px 0 var(--line); }
 }
 
 /* Erfolge-Seite: auch die Kategorie-Ueberschrift (Skill, Regelkunde, ...) bleibt beim Scrollen unter dem Kartenkopf stehen. */

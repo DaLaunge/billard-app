@@ -1,4 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
+import SegmentBar from "./SegmentBar";
+import InfoButton from "./InfoButton";
 import { BarChart3, Trophy, Star, Swords, Clock, PartyPopper } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { fmtDuration } from "../../lib/format";
@@ -40,7 +42,7 @@ const readTab = () => { try { return localStorage.getItem(TAB_KEY); } catch { re
 const writeTab = (v) => { try { localStorage.setItem(TAB_KEY, v); } catch { /* Privatmodus */ } };
 
 export default function NumbersDeck({ nickname, isMe = true, parts, matches, rangliste, players, challenges,
-  catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, column, onToggleColumn, stacked = false }) {
+  catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, column, onToggleColumn, stacked = false, barMode = false }) {
   const playerObj = players.find((p) => p.nickname === nickname);
   const myRows = rangliste.filter((r) => r.nickname === nickname);
   const extras = useMemo(
@@ -123,6 +125,24 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
     fun: { tab: t("Fun"), title: t("Fun-Zahlen"), icon: <PartyPopper size={15} />,
       info: t("Aus den optionalen Zusatzzählern (Fluke, Runout, Scratch, Foul): Summe, Schnitt pro Match, Bestwert in einem Match und dein Platz unter allen, die den Zähler benutzt haben. Zählt nur Einzel-Matches, in denen die Zähler benutzt wurden – reiner Spaß, ohne Einfluss auf Rating und Erfolge.") },
   };
+
+  // Tab-Freak auf der Seite "Meine Zahlen": dieselbe Gestalt wie die Statistik - Kapitel-Leiste (Pillen) und darunter EINE Karte mit
+  // Kopf (Symbol + Titel) und dem Inhalt des gewaehlten Kapitels.
+  if (barMode) {
+    return (
+      <>
+        <SegmentBar segments={shown.map((id) => ({ id, label: meta[id].tab }))} active={activeId}
+          onChange={(id) => { setTab(id); writeTab(id); }} label={t("Kapitel")} storageKey="zahlen" />
+        <section className="stat-block">
+          <div className="stat-block-head">
+            <h3>{meta[activeId].icon} <span className="stat-block-title-text">{meta[activeId].title}</span></h3>
+            {meta[activeId].info && <div className="stat-block-head-actions"><InfoButton title={meta[activeId].title}>{meta[activeId].info}</InfoButton></div>}
+          </div>
+          {bodies[activeId]}
+        </section>
+      </>
+    );
+  }
 
   // Gestapelte Ansicht (Seite "Meine Zahlen"): alle Abschnitte untereinander statt als Reiter. Die Abschnittskoepfe sind
   // Geschwister der Inhalte im selben Behaelter und bleiben beim Scrollen oben, bis der naechste kommt (wie bei den Erfolgen).
