@@ -3049,3 +3049,16 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .id-round-challenge.on { background: var(--accent); color: var(--accent-ink); }
 .id-round-btn:active { transform: scale(.94); }
 @media (prefers-reduced-motion: no-preference) { .id-round-btn { transition: transform .12s ease, background-color .2s ease; } }
+
+/* Statistik am Handy: alle Karten untereinander, die Ueberschrift der Karte bleibt beim Scrollen oben stehen, damit man
+   immer weiss, in welcher Liste man gerade ist (Nutzer-Wunsch 411.28, gilt fuer alle Seiten mit Karten). Der Kartenkopf haengt sich an den oberen Rand des
+   Scrollbereichs und deckt dabei den Kartenrand mit ab (negative Raender = Polster der Karte). */
+@media (max-width: 899px) {
+  .screen .stat-block:not(.is-maximized) > .stat-block-head { position: sticky; top: 0; z-index: 4; background: var(--felt-2);
+    margin: -13px -10px 6px; padding: 13px 10px 8px; border-radius: 20px 20px 0 0; box-shadow: 0 1px 0 var(--line); }
+}
+
+/* Erfolge-Seite: auch die Kategorie-Ueberschrift (Skill, Regelkunde, ...) bleibt beim Scrollen unter dem Kartenkopf stehen. */
+@media (max-width: 899px) {
+  .badge-cat-head { position: sticky; top: 40px; z-index: 3; background: var(--felt-2); padding-top: 6px; padding-bottom: 6px; box-shadow: 0 1px 0 var(--line); }
+}

@@ -27,7 +27,6 @@ import InfoButton from "./widgets/InfoButton";
 import ImprintFooter from "./widgets/ImprintFooter";
 import TournamentFlag from "./TournamentFlag";
 import SortableCard from "./widgets/SortableCard";
-import SegmentBar from "./widgets/SegmentBar";
 import CardCollapseButton from "./widgets/CardCollapseButton";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
@@ -932,7 +931,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   if (deckAnchor) {
     const rowProps = { me, count: globalCount, nearby: globalNearby, colorOf, badgeOf, photoOf, onOpenProfile };
     cardsById[deckAnchor] = (
-      <CardDeck inlineTabs icon={<Trophy size={17} />} title={t("Bestenlisten")}
+      <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")}
         tabs={deckParts.map((id) => {
           const b = leaderboardById[id];
           return { ...b, render: () => <LeaderboardRows {...rowProps} {...b} /> };
@@ -963,16 +962,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Karte am PC WIRKLICH steht (middleCardIds/rightCardIds, also mit der
   // gemeinsamen Spalte der Bestenlisten-Karte), nicht ihr rohes columns-Feld.
   const rightSet = new Set(rightCardIds);
-  // Handy: eine Kartengruppe nach der anderen (Segment-Leiste), am PC alles nebeneinander.
-  // Jede Gruppe ist genau die Karte (bzw. das Bestenlisten-Deck), die vorher untereinander stand.
-  const segOf = (id) => (id === "entwicklung" ? "verlauf" : id === "letzteMatches" ? "matches" : id === "rekordeClub" ? "rekorde" : "listen");
-  const SEG_LABELS = { verlauf: "Verlauf", matches: "Matches", listen: "Listen", rekorde: "Rekorde" };
-  const segments = ["verlauf", "matches", "listen", "rekorde"]
-    .filter((sid) => visibleOrder.some((id) => segOf(id) === sid))
-    .map((sid) => ({ id: sid, label: t(SEG_LABELS[sid]) }));
-  const [segPick, setSegPick] = useState(() => { try { return localStorage.getItem("statSeg") || ""; } catch { return ""; } });
-  const activeSeg = segments.some((x) => x.id === segPick) ? segPick : segments[0]?.id;
-  const pickSeg = (sid) => { setSegPick(sid); try { localStorage.setItem("statSeg", sid); } catch { /* ignore */ } };
   const slotOrder = (id) => phoneSlotOrder(rightSet.has(id) ? "right" : "middle", visibleOrder.indexOf(id));
 
   return (
@@ -1040,8 +1029,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
         </div>
       )}
 
-      <SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} storageKey="stat" />
-      <div className="stat-split" data-seg={segments.length > 1 ? activeSeg : undefined}>
+      <div className="stat-split">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       {/* items MUSS die tatsaechliche Render-Reihenfolge sein (erst
           middleCardIds, dann rightCardIds - genau wie weiter unten
@@ -1081,7 +1069,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           dort stehen beide Gruppen nur hintereinander. */}
       <div className="stat-right-col">
       <div className="stat-grid">
-        {rightCardIds.map((id) => <SortableCard key={id} id={id} seg={segOf(id)} order={slotOrder(id)}>{cardsById[id]}</SortableCard>)}
+        {rightCardIds.map((id) => <SortableCard key={id} id={id} order={slotOrder(id)}>{cardsById[id]}</SortableCard>)}
         {rightCardIds.length === 0 && (
           <EmptyColumnDropZone id={EMPTY_RIGHT_DROP_ID} label="Karte hierher ziehen, um sie in diese Spalte zu verschieben" />
         )}
@@ -1108,7 +1096,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
           (cardColumns) - die Reihenfolge INNERHALB dieser Spalte kommt
           weiterhin aus cardOrder (Drag & Drop). */}
       <div className="stat-chart-col">
-        {middleCardIds.map((id) => <SortableCard key={id} id={id} seg={segOf(id)} order={slotOrder(id)}>{cardsById[id]}</SortableCard>)}
+        {middleCardIds.map((id) => <SortableCard key={id} id={id} order={slotOrder(id)}>{cardsById[id]}</SortableCard>)}
         {middleCardIds.length === 0 && (
           <EmptyColumnDropZone id={EMPTY_MIDDLE_DROP_ID} label="Karte hierher ziehen, um sie in diese Spalte zu verschieben" />
         )}
