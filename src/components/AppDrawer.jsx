@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BarChart3, Trophy, Radio, User, Plus, Shield, GraduationCap, Settings, X, ChevronDown } from "lucide-react";
+import { BarChart3, Trophy, Radio, User, Plus, Shield, GraduationCap, BookOpen, Settings, X, ChevronDown } from "lucide-react";
 import { TUTORIAL_STEPS } from "../lib/tutorial/steps";
 import Ball from "./Ball";
 import { initials } from "../lib/format";
@@ -11,7 +11,7 @@ import { t } from "../lib/i18n";
    und eigener Akzent unveraendert greifen. Die vier Hauptpunkte stehen hier
    noch einmal, damit Seitenleiste und Leiste unten dieselben Ziele haben. */
 export default function AppDrawer({
-  open, onClose, tab, player, onGo, onTurniere, onNewMatch, onTutorial, onSetTheme,
+  open, onClose, tab, player, onGo, onTurniere, onNewMatch, onTutorial, onRules, onSettings, onSetTheme,
   colorOf, badgeOf, photoOf, badges = {}, isAdmin,
 }) {
   const [tourOpen, setTourOpen] = useState(false);
@@ -48,6 +48,9 @@ export default function AppDrawer({
           </button>
         </nav>
         <div className="app-drawer-sep" />
+        <button className="app-drawer-item" onClick={go(onRules)}>
+          <BookOpen size={19} /><span>{t("Regelkunde")}</span>
+        </button>
         <button className={"app-drawer-item" + (tourOpen ? " on" : "")} onClick={() => setTourOpen((v) => !v)} aria-expanded={tourOpen}>
           <GraduationCap size={19} /><span>{t("Tutorial")}</span>
           <ChevronDown size={16} className={"app-drawer-chev" + (tourOpen ? " up" : "")} />
@@ -65,7 +68,7 @@ export default function AppDrawer({
             <Shield size={19} /><span>{t("Verwaltung")}</span>
           </button>
         )}
-        <button className="app-drawer-item" onClick={go(() => onGo("profil"))}>
+        <button className="app-drawer-item" onClick={go(onSettings)}>
           <Settings size={19} /><span>{t("Einstellungen")}</span>
         </button>
         <div className="app-drawer-sep" />

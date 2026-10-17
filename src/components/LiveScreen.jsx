@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { Radio, MapPin, Pencil, X, Swords, Calendar, Users, Plus, BookOpen } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Radio, MapPin, Pencil, X, Swords, Calendar, Users, Plus } from "lucide-react";
 import { t } from "../lib/i18n";
 import PingCard from "./PingCard";
 import PlanungCard from "./PlanungCard";
@@ -22,15 +22,13 @@ import { deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phone
 // Regelkunde (animierte Regelfaelle) als eigene Live-Karte: dort schaut man nach, wenn am Tisch etwas
 // strittig ist. Eigener Chunk, geladen erst nach dem Aufklappen. Seit der Freigabe (2026-10-07) fuer alle;
 // Admins sehen zusaetzlich noch nicht freigegebene Faelle (`released: false`).
-const RuleHelp = lazy(() => import("./RuleHelp"));
-const RULES_COLLAPSE_KEY = "liveRulesCollapsed";
 const LIVE_DECK_IDS = deckIds("live", "mitspieler");
 const DECK_TAB_KEY = "liveDeckTab";
 const DECK_COLLAPSE_KEY = "liveDeckCollapsed";
 const readLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* Privatmodus */ } };
 
-export default function LiveScreen({ onViewRule, me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
+export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
   onCreatePlanning, onDeletePlanning, onReplyPlanning, onUnreplyPlanning,
   onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout, toast }) {
@@ -241,19 +239,7 @@ export default function LiveScreen({ onViewRule, me, pings, plannings, challenge
   // nur einmal statt dreimal, und wie dort nur auf diesem Geraet gemerkt.
   const [collapsed, setCollapsed] = useState(() => readLocal(DECK_COLLAPSE_KEY) === "1");
 
-  const [rulesOpen, setRulesOpen] = useState(() => readLocal(RULES_COLLAPSE_KEY) === "0");
   const cardsById = {};
-  {
-    cardsById.regelkunde = (
-      <CardDeck icon={<BookOpen size={17} />} title={t("Regelkunde")} soloTitle={false}
-        tabs={[{ id: "regeln", tab: t("Regelkunde"), title: t("Regelkunde"), render: () => (
-          <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}><RuleHelp onlyReleased={me.role !== "admin"} onView={onViewRule} /></Suspense>
-        ) }]}
-        activeId="regeln" onActive={() => {}}
-        collapsed={!rulesOpen} onToggleCollapse={() => { writeLocal(RULES_COLLAPSE_KEY, rulesOpen ? "1" : "0"); setRulesOpen(!rulesOpen); }}
-        onHide={() => cards.hideCard("regelkunde")} />
-    );
-  }
   if (anchor) {
     cardsById[anchor] = (
       <CardDeck icon={<Users size={17} />} title={t("Mitspieler finden")}

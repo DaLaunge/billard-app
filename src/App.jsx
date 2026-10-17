@@ -46,6 +46,7 @@ import TurnierRasterScreen from "./components/TurnierRasterScreen";
 import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
+import RulesSheet from "./components/RulesSheet";
 import ConfirmHost from "./components/ConfirmHost";
 import { rpcRetry } from "./lib/rpcRetry";
 import { EmojiText } from "./components/Emoji";
@@ -992,6 +993,8 @@ export default function App() {
   const setHideTabbarPref = useCallback((on) => { setHideTabbarPrefState(on); storeHideTabbar(on); }, []);
   const [contentEl, setContentEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [openSettings, setOpenSettings] = useState(false);
   useEffect(() => { setDrawerOpen(false); }, [tab]);
   const tabbarHidden = useHideTabbar(hideTabbarPref, contentEl, tab);
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
@@ -1643,10 +1646,11 @@ export default function App() {
                 <Menu size={20} />
               </button>
             )}
+            {rulesOpen && <RulesSheet onClose={() => setRulesOpen(false)} onViewRule={recordRuleView} isAdmin={player?.role === "admin"} />}
             {tab !== "match" && (
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} player={player}
                 onGo={(target) => navPush({ tab: target })} onTurniere={openTurniereMenu}
-                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onSetTheme={setTheme}
+                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onRules={() => setRulesOpen(true)} onSettings={() => { setOpenSettings(true); navPush({ tab: "profil" }); }} onSetTheme={setTheme}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} isAdmin={player?.role === "admin"}
                 badges={{
                   stats: pendingForMe.length,
@@ -1657,7 +1661,7 @@ export default function App() {
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {tab === "live" && (
-                <LiveScreen onViewRule={recordRuleView} me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
+                <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
                   players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
@@ -1727,6 +1731,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   achievementCounters={achievementCounters} onStartTutorial={startTutorial}
+                  openSettings={openSettings} onSettingsOpened={() => setOpenSettings(false)}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   lang={lang} onLang={changeLang}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
