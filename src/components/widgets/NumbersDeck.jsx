@@ -129,7 +129,6 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
   if (stacked) {
     return (
       <section className="stat-block numbers-stacked">
-        <div className="stat-block-head"><h3><BarChart3 size={17} /> <span className="stat-block-title-text">{isMe ? t("Meine Zahlen") : t("Zahlen")}</span></h3></div>
         {shown.map((id) => (
           <Fragment key={id}>
             <div className="num-section-head">{meta[id].icon}<span>{meta[id].title}</span></div>

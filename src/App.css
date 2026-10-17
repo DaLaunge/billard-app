@@ -3055,7 +3055,7 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
    Scrollbereichs und deckt dabei den Kartenrand mit ab (negative Raender = Polster der Karte). */
 @media (max-width: 899px) {
   .screen .stat-block:not(.is-maximized) > .stat-block-head { position: sticky; top: 0; z-index: 4; background: var(--felt-2);
-    margin: -13px -10px 6px; padding: 13px 10px 8px; border-radius: 20px 20px 0 0; box-shadow: 0 1px 0 var(--line); }
+    margin: -14px -11px 6px; padding: 13px 10px 8px; border: 1px solid var(--line); border-bottom: 0; border-radius: 20px 20px 0 0; box-shadow: 0 1px 0 var(--line); }
 }
 
 /* Erfolge-Seite: auch die Kategorie-Ueberschrift (Skill, Regelkunde, ...) bleibt beim Scrollen unter dem Kartenkopf stehen. */
@@ -3075,9 +3075,8 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 
 /* Seite "Meine Zahlen": alle Abschnitte untereinander, Abschnittskopf bleibt oben bis der naechste kommt. Der Kartenkopf bleibt
    auch am PC stehen (am Handy gilt das ohnehin fuer alle Karten), die Abschnittskoepfe haengen direkt darunter. */
-.numbers-stacked > .stat-block-head { position: sticky; top: 0; z-index: 4; background: var(--felt-2); margin: -13px -10px 4px; padding: 13px 10px 8px; border-radius: 20px 20px 0 0; }
-.num-section-head { position: sticky; top: 40px; z-index: 3; display: flex; align-items: center; gap: 8px; background: var(--felt-2); padding: 8px 2px 6px;
+.numbers-stacked { background: none; border: 0; padding: 0; border-radius: 0; }
+.num-section-head { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; background: var(--felt); padding: 10px 2px 6px;
   font-size: 12px; font-weight: 700; color: var(--ivory); text-transform: uppercase; letter-spacing: .04em; box-shadow: 0 1px 0 var(--line); }
 .num-section-head svg { color: var(--accent); flex: none; }
 .num-section-body { padding: 4px 0 14px; }
-@media (min-width: 900px) { .numbers-stacked > .stat-block-head { margin: -16px -14px 4px; padding: 16px 14px 8px; } }
