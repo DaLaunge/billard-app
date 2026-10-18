@@ -27,6 +27,7 @@ import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
 import { useHideTabbar } from "./lib/useHideTabbar";
 import { usePullToRefresh } from "./lib/usePullToRefresh";
 import { usePageTransition } from "./lib/usePageTransition";
+import { useStuckHeads } from "./lib/useStuckHeads";
 import { useSwipeNav } from "./lib/useSwipeNav";
 import ConfirmRoundButtons from "./components/widgets/ConfirmRoundButtons";
 import { getPendingPopup, storePendingPopup } from "./lib/uiPrefs";
@@ -1061,6 +1062,7 @@ export default function App() {
   const swipeIds = menuPrefs.order.filter((id) => menuPrefs.pinned.includes(id) && SWIPE_TAB_OF[id] && (id !== "admin" || player?.role === "admin"));
   const swipeTabs = swipeIds.map((id) => SWIPE_TAB_OF[id]);
   usePageTransition(contentEl, tab, swipeTabs);
+  useStuckHeads(contentEl, tab);
   const swipeIdx = swipeTabs.indexOf(tab);
   const goSwipe = (i) => {
     const target = swipeTabs[i];
