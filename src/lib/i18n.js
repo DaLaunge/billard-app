@@ -1117,6 +1117,7 @@ const TRANSLATIONS = {
     "Ø Rating": "Avg. rating",
     "gegründet": "founded",
     "Antippen macht einen Club zum Hauptclub.": "Tapping makes a club your main club.",
+    "Gegner, gegen den du die schlechteste Siegquote hast (mindestens 5 Matches)": "Opponent against whom you have your worst win rate (at least 5 matches)",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":
