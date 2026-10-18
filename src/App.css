@@ -3184,8 +3184,9 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 .club-member-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .club-member-actions { display: inline-flex; gap: 2px; flex: 0 0 auto; }
 .club-form { display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; }
-.club-form input:not([type="color"]) { flex: 1 1 140px; min-width: 0; }
-.club-form .club-tag-input, .club-form .club-code-input { flex: 0 1 110px; text-transform: uppercase; letter-spacing: .08em; }
+.club-form input:not([type="color"]) { flex: 1 1 90px; min-width: 0; }
+.club-form .club-tag-input { flex: 0 1 84px; text-transform: uppercase; letter-spacing: .08em; }
+.club-form .club-code-input { flex: 1 1 140px; text-transform: uppercase; letter-spacing: .08em; }
 .club-code { display: flex; align-items: center; gap: 6px; }
 .club-code code { font-size: 17px; letter-spacing: .12em; padding: 4px 10px; border-radius: 8px; background: var(--felt); }
 .club-danger { margin-top: 10px; display: flex; gap: 8px; }
@@ -3195,3 +3196,15 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 .club-search { width: 100%; }
 .club-cand { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 2px 4px; }
 .club-inbox-row { cursor: default; margin-top: 8px; }
+
+/* Eingabefelder der Club-Karte im App-Look (wie .mail-row: dunkle Flaeche, feine Linie, rund) */
+.club-form input:not([type="color"]) { background: var(--felt); border: 1px solid var(--line); border-radius: 14px; padding: 11px 14px;
+  color: var(--ivory); font: inherit; font-size: 15px; outline: none; min-width: 0; transition: border-color .15s ease; }
+.club-form input:not([type="color"])::placeholder { color: var(--ivory-dim); letter-spacing: 0; text-transform: none; }
+.club-form input:not([type="color"]):focus { border-color: var(--accent); }
+.club-form input[type="color"] { -webkit-appearance: none; appearance: none; width: 38px; height: 38px; padding: 0; border: 1.5px solid var(--line);
+  border-radius: 50%; background: transparent; cursor: pointer; overflow: hidden; flex: 0 0 auto; }
+.club-form input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.club-form input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+.club-form input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
+.club-form input[type="color"]:focus-visible { border-color: var(--accent); }
