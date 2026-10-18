@@ -42,18 +42,24 @@ export default function ClubsCard({ meRow, players, toast }) {
   const nickOf = (pid) => players.find((p) => p.id === pid)?.nickname || "?";
   const pendingOf = (cid) => (data.requests || []).filter((r) => r.club_id === cid && r.status === "pending");
   const myReq = (cid) => (data.requests || []).find((r) => r.club_id === cid && r.player_id === me);
-  // Einladen: echte Spieler mit Login, die weder Mitglied sind noch schon eine offene/abgelehnte Zeile haben
+  // Einladen: echte Spieler (auch ohne Login - die Einladung wartet dann bis zur Registrierung), die weder Mitglied sind noch schon
+  // eine offene/abgelehnte Zeile haben
   const candidates = (cid) => {
     const q = invQ.trim().toLowerCase();
     if (!q) return [];
     const taken = new Set([...data.members.filter((m) => m.club_id === cid).map((m) => m.player_id),
       ...(data.requests || []).filter((r) => r.club_id === cid).map((r) => r.player_id)]);
-    return players.filter((p) => p.auth_user_id && !p.is_guest && !p.is_ghost && !p.blocked && p.id !== me && !taken.has(p.id)
+    return players.filter((p) => !p.is_guest && !p.is_ghost && !p.blocked && p.id !== me && !taken.has(p.id)
       && p.nickname.toLowerCase().includes(q)).slice(0, 5);
   };
   const doInvite = async (c, p) => {
     const r = await run("club_invite_player", { p_club: c.id, p_player: p.id });
-    if (r) { toast(r === "joined" ? t("{name} ist jetzt Mitglied.", { name: p.nickname }) : t("Einladung an {name} gesendet.", { name: p.nickname })); setInvQ(""); }
+    if (r) {
+      toast(r === "joined" ? t("{name} ist jetzt Mitglied.", { name: p.nickname })
+        : p.auth_user_id ? t("Einladung an {name} gesendet.", { name: p.nickname })
+        : t("Einladung für {name} vorgemerkt – sie wartet, bis {name} sich anmeldet.", { name: p.nickname }));
+      setInvQ("");
+    }
   };
   const discoverList = () => {
     const q = discQ.trim().toLowerCase();
@@ -193,7 +199,7 @@ export default function ClubsCard({ meRow, players, toast }) {
                   </div>
                   {candidates(c.id).map((p) => (
                     <div key={p.id} className="club-cand">
-                      <span>{p.nickname}</span>
+                      <span>{p.nickname}{!p.auth_user_id && <small className="club-row-meta"> · {t("noch ohne Login")}</small>}</span>
                       <button className="icon-btn small primary" disabled={busy} title={t("Einladen")} aria-label={t("Einladen")} onClick={() => doInvite(c, p)}><UserPlus size={15} /></button>
                     </div>
                   ))}

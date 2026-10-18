@@ -57,7 +57,10 @@ declare
   v_me_name text;
 begin
   if not club_can_manage(p_club) then raise exception 'Nur die Club-Leitung darf einladen.'; end if;
-  if not exists (select 1 from players where id = p_player and auth_user_id is not null
+  -- Auch Spieler OHNE Login (vom Club angelegt, noch nicht registriert) lassen sich einladen: die Einladung wartet, bis sie sich
+  -- registrieren (register_player() uebernimmt die Spielerzeile ueber den Namen) und sehen sie dann in "Club-Post". Es gibt bis
+  -- dahin keine Benachrichtigung (notify_players() ueberspringt Spieler ohne Login).
+  if not exists (select 1 from players where id = p_player
                     and not coalesce(is_guest, false) and not coalesce(is_ghost, false) and not coalesce(blocked, false)) then
     raise exception 'Dieser Spieler kann nicht eingeladen werden.';
   end if;
