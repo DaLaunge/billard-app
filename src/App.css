@@ -1143,6 +1143,9 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
    lesbar bleiben. */
 .stat-row.mine { background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 10px;
   padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
+/* Die Zeile ist ein Knopf mit width: 100% - dann machen die negativen Raender sie NICHT breiter, sondern schieben sie nur nach links,
+   und alle Werte der eigenen Zeile sassen 16 px weiter links als in den anderen Zeilen (Nutzer-Feedback 2026-10-19). Breite = 100% + 2 x 8 px. */
+.stat-row.as-btn.mine { width: calc(100% + 16px); box-sizing: border-box; }
 .stat-my-rank { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
 .stat-my-rank b { color: var(--accent); }
 /* Trenner vor der angehefteten eigenen Zeile, wenn der eigene Platz
