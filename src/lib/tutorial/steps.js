@@ -76,4 +76,9 @@ export const TUTORIAL_STEPS = [
     title: "Das Menü",
     body: "Hier wechselst du den Bereich, schlägst Regeln nach und startest dieses Tutorial – ganz oder nur einzelne Schritte. Am PC steht das Menü dauerhaft links.",
   },
+  {
+    id: "clubs", icon: "profil", tab: "profil", target: '[data-tour="clubs-entry"]',
+    title: "Clubs",
+    body: "Gründe deinen eigenen Club mit Kürzel und Farbe – er erscheint als Tag in deinem Profil. Als Leiter lädst du Spieler ein, nimmst Anfragen an und kannst die Leitung weitergeben. Du kannst auch einem Club beitreten oder anfragen. Spieler ohne Club sind ganz normal.",
+  },
 ];

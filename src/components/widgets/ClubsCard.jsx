@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Users, Plus, Star, Copy, RefreshCw, Trash2, LogOut, Crown, ShieldCheck, UserMinus, ChevronDown, KeyRound, Check } from "lucide-react";
+import { Users, Plus, Star, Copy, RefreshCw, Trash2, LogOut, Crown, ShieldCheck, UserMinus, ChevronDown, KeyRound, Check, X, UserPlus, Search } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { appConfirm } from "../../lib/confirmDialog";
@@ -22,6 +23,9 @@ export default function ClubsCard({ meRow, players, toast }) {
   const [joinCode, setJoinCode] = useState("");
   const [codes, setCodes] = useState({});           // club id -> Code (nur Leitung)
   const [edit, setEdit] = useState({});             // club id -> { name, tag, color }
+  const [invQ, setInvQ] = useState("");             // Suche: Spieler einladen
+  const [disc, setDisc] = useState(false);          // "Clubs entdecken" offen?
+  const [discQ, setDiscQ] = useState("");
 
   if (!data.loaded) return null;   // Migration fehlt: Karte erscheint gar nicht
 
@@ -35,6 +39,26 @@ export default function ClubsCard({ meRow, players, toast }) {
     return res ?? true;
   };
   const nickOf = (pid) => players.find((p) => p.id === pid)?.nickname || "?";
+  const pendingOf = (cid) => (data.requests || []).filter((r) => r.club_id === cid && r.status === "pending");
+  const myReq = (cid) => (data.requests || []).find((r) => r.club_id === cid && r.player_id === me);
+  // Einladen: echte Spieler mit Login, die weder Mitglied sind noch schon eine offene/abgelehnte Zeile haben
+  const candidates = (cid) => {
+    const q = invQ.trim().toLowerCase();
+    if (!q) return [];
+    const taken = new Set([...data.members.filter((m) => m.club_id === cid).map((m) => m.player_id),
+      ...(data.requests || []).filter((r) => r.club_id === cid).map((r) => r.player_id)]);
+    return players.filter((p) => p.auth_user_id && !p.is_guest && !p.is_ghost && !p.blocked && p.id !== me && !taken.has(p.id)
+      && p.nickname.toLowerCase().includes(q)).slice(0, 5);
+  };
+  const doInvite = async (c, p) => {
+    const r = await run("club_invite_player", { p_club: c.id, p_player: p.id });
+    if (r) { toast(r === "joined" ? t("{name} ist jetzt Mitglied.", { name: p.nickname }) : t("Einladung an {name} gesendet.", { name: p.nickname })); setInvQ(""); }
+  };
+  const discoverList = () => {
+    const q = discQ.trim().toLowerCase();
+    return data.clubs.filter((c) => !roleIn(data, c.id, me) && (!q || c.name.toLowerCase().includes(q) || c.tag.toLowerCase().includes(q))).slice(0, 12);
+  };
+  const recent = (r) => r?.status === "declined" && r.decided_at && Date.now() - new Date(r.decided_at) < 30 * 86400000;
 
   const doCreate = async () => {
     const r = await run("create_club", { p_name: create.name, p_tag: create.tag, p_color: create.color || null }, t("Club gegründet."));
@@ -123,6 +147,43 @@ export default function ClubsCard({ meRow, players, toast }) {
                   ) : (
                     <button className="btn ghost small" onClick={() => showCode(c)}><KeyRound size={14} /> {t("Einladungs-Code zeigen")}</button>
                   )}
+                  {codes[c.id] && (
+                    <div className="club-qr" title={t("QR-Code zum Beitreten")}>
+                      <QRCodeSVG value={linkOf(codes[c.id])} size={132} marginSize={2} />
+                    </div>
+                  )}
+
+                  <p className="club-sub">{t("Spieler einladen")}</p>
+                  <div className="mail-row club-search">
+                    <Search size={16} className="mail-ico" />
+                    <input value={invQ} placeholder={t("Name suchen")} onChange={(e) => setInvQ(e.target.value)} />
+                  </div>
+                  {candidates(c.id).map((p) => (
+                    <div key={p.id} className="club-cand">
+                      <span>{p.nickname}</span>
+                      <button className="icon-btn small primary" disabled={busy} title={t("Einladen")} aria-label={t("Einladen")} onClick={() => doInvite(c, p)}><UserPlus size={15} /></button>
+                    </div>
+                  ))}
+                  {pendingOf(c.id).length > 0 && (
+                    <>
+                      <p className="club-sub">{t("Offen")}</p>
+                      <ul className="club-members">
+                        {pendingOf(c.id).map((r) => (
+                          <li key={r.id}>
+                            <span className="club-member-name">{nickOf(r.player_id)} <small className="club-row-meta">{r.kind === "request" ? t("fragt an") : t("eingeladen")}</small></span>
+                            <span className="club-member-actions">
+                              {r.kind === "request" && (
+                                <button className="icon-btn small primary" disabled={busy} title={t("Aufnehmen")} aria-label={t("Aufnehmen")}
+                                  onClick={() => run("club_respond", { p_request: r.id, p_accept: true }, t("Aufgenommen."))}><Check size={15} /></button>
+                              )}
+                              <button className="icon-btn small" disabled={busy} title={r.kind === "request" ? t("Ablehnen") : t("Zurückziehen")} aria-label={r.kind === "request" ? t("Ablehnen") : t("Zurückziehen")}
+                                onClick={() => (r.kind === "request" ? run("club_respond", { p_request: r.id, p_accept: false }) : run("club_cancel_request", { p_request: r.id }))}><X size={15} /></button>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
 
                   <p className="club-sub">{t("Name, Kürzel und Farbe")}</p>
                   <div className="club-form">
@@ -159,7 +220,7 @@ export default function ClubsCard({ meRow, players, toast }) {
   };
 
   return (
-    <section className="stat-block clubs-card">
+    <section className="stat-block clubs-card" id="pf-clubs">
       <h3><Users size={17} /> {t("Clubs")}</h3>
       {mine.length === 0 && <p className="hint">{t("Du bist noch in keinem Club. Gründe einen oder tritt mit einem Code bei.")}</p>}
       {mine.map(clubBlock)}
@@ -169,6 +230,39 @@ export default function ClubsCard({ meRow, players, toast }) {
         <input value={joinCode} maxLength={12} placeholder={t("Einladungs-Code")} className="club-code-input"
           onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} />
         <button className="icon-btn small primary" disabled={busy || joinCode.length < 4} title={t("Beitreten")} aria-label={t("Beitreten")} onClick={doJoin}><Check size={15} /></button>
+      </div>
+
+      <button className="btn ghost small club-create-btn" onClick={() => setDisc((v) => !v)} aria-expanded={disc}><Search size={14} /> {t("Clubs entdecken")}</button>
+      <div className={"collapsible" + (disc ? " open" : "")} inert={disc ? undefined : ""}>
+        <div className="collapsible-inner">
+          <div className="club-detail">
+            <div className="mail-row club-search">
+              <Search size={16} className="mail-ico" />
+              <input value={discQ} placeholder={t("Club oder Kürzel suchen")} onChange={(e) => setDiscQ(e.target.value)} />
+            </div>
+            {discoverList().length === 0 && <p className="hint">{t("Keine Clubs gefunden.")}</p>}
+            {discoverList().map((c) => {
+              const r = myReq(c.id);
+              return (
+                <div key={c.id} className="club-row club-inbox-row">
+                  <ClubTag club={c} />
+                  <span className="club-row-name">{c.name}</span>
+                  {r?.status === "pending" && r.kind === "invite" ? (
+                    <button className="btn small" disabled={busy} onClick={() => run("club_respond", { p_request: r.id, p_accept: true }, t("Du bist dem Club beigetreten."))}>{t("Einladung annehmen")}</button>
+                  ) : r?.status === "pending" ? (
+                    <>
+                      <span className="club-row-meta">{t("Angefragt")}</span>
+                      <button className="icon-btn small" disabled={busy} title={t("Zurückziehen")} aria-label={t("Zurückziehen")} onClick={() => run("club_cancel_request", { p_request: r.id })}><X size={15} /></button>
+                    </>
+                  ) : (
+                    <button className="btn ghost small" disabled={busy || recent(r)} title={recent(r) ? t("Abgelehnt – erneut möglich nach 30 Tagen") : undefined}
+                      onClick={async () => { const res = await run("club_request_join", { p_club: c.id }); if (res) toast(res === "joined" ? t("Du bist dem Club beigetreten.") : t("Anfrage gesendet.")); }}>{t("Anfragen")}</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {create ? (

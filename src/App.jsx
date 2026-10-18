@@ -1213,15 +1213,16 @@ export default function App() {
   // Speicher leer und alle Club-Stellen der App erscheinen gar nicht. Spieler OHNE Club sind der Normalfall.
   const loadClubs = useCallback(async () => {
     try {
-      const [c, m, h] = await Promise.all([
+      const [c, m, h, rq] = await Promise.all([
         supabase.from("clubs").select("id, name, tag, color, created_by, created_at"),
         supabase.from("club_members").select("club_id, player_id, role, joined_at"),
         supabase.from("players").select("id, home_club_id"),
+        supabase.from("club_requests").select("id, club_id, player_id, kind, status, created_by, created_at, decided_at"),   // fehlt die Tabelle (Migration 19c): leer
       ]);
       if (c.error || m.error) return;
       const home = {};
       (h.data ?? []).forEach((r) => { if (r.home_club_id) home[r.id] = r.home_club_id; });
-      setClubData(c.data ?? [], m.data ?? [], home);
+      setClubData(c.data ?? [], m.data ?? [], home, rq.error ? [] : (rq.data ?? []));
     } catch { /* offline: alter Stand bleibt */ }
   }, []);
   useEffect(() => { setClubLoader(loadClubs); }, [loadClubs]);

@@ -1,7 +1,7 @@
 import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
 import ChangelogRow from "./widgets/ChangelogRow";
-import { Plus, ChevronLeft, ChevronRight, UserPlus, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { Users, Plus, ChevronLeft, ChevronRight, UserPlus, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { APP_VERSION, DISC_LABEL } from "../lib/constants";
 import Emoji from "./Emoji";
@@ -19,6 +19,8 @@ import PasswordSection from "./PasswordSection";
 import MyFeedbackTickets from "./MyFeedbackTickets";
 import IdentityCard from "./widgets/IdentityCard";
 import ClubsCard from "./widgets/ClubsCard";
+import ClubInbox from "./widgets/ClubInbox";
+import { useClubData } from "../lib/clubStore";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import InfoButton from "./widgets/InfoButton";
@@ -64,6 +66,13 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
   // Stelle, an der man ohne Bildschirmwechsel sieht und aendert, was
   // ueberall in welcher Reihenfolge steht und was ausgeblendet ist.
+  // Einstieg "Clubs" auf der Profilseite: oeffnet Profil bearbeiten und springt zur Karte
+  const clubData = useClubData();
+  const myClubCount = clubData.members.filter((m) => m.player_id === meRow?.id).length;
+  const openClubs = () => {
+    setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
+    setTimeout(() => document.getElementById("pf-clubs")?.scrollIntoView({ behavior: "smooth", block: "start" }), 380);
+  };
   const layoutByScreen = {
     stats: useCardLayout("stats", meRow?.card_layout, onSetCardLayout, toast),
     live: useCardLayout("live", meRow?.card_layout, onSetCardLayout, toast),
@@ -1134,6 +1143,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </div>
       )}
       {mode === "identity" && isMe && (
+        <div className="pf-highlights-slot" style={{ order: 2 }}>
+          <ClubInbox meRow={meRow} players={players} toast={toast} />
+        </div>
+      )}
+      {mode === "identity" && isMe && (
         <div className="pf-identity-extra" style={{ order: 5 }}>
           <button type="button" className="pf-id-card" onClick={onOpenAchievements}>
             <Award size={20} /><span className="pf-id-card-text"><strong>{t("Meine Erfolge")}</strong><small>{t("{n} von {m} freigeschaltet", { n: earnedBadges.size, m: catalog.length })}</small></span><ChevronRight size={18} />
@@ -1141,6 +1155,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button type="button" className="pf-id-card" onClick={onPreview}>
             <Eye size={20} /><span className="pf-id-card-text"><strong>{t("So sehen dich andere")}</strong><small>{t("Kugel, Name, Motto, Rating und Erfolge")}</small></span><ChevronRight size={18} />
           </button>
+          {clubData.loaded && (
+            <button type="button" className="pf-id-card" data-tour="clubs-entry" onClick={openClubs}>
+              <Users size={20} /><span className="pf-id-card-text"><strong>{t("Clubs")}</strong><small>{myClubCount > 0 ? t("{n} Club(s) – verwalten, einladen, beitreten", { n: myClubCount }) : t("Gründen, beitreten oder anfragen")}</small></span><ChevronRight size={18} />
+            </button>
+          )}
           <button type="button" className="pf-id-card" onClick={onInvite}>
             <UserPlus size={20} /><span className="pf-id-card-text"><strong>{t("Einladen")}</strong><small>{t("Freunde per Code ins Spiel holen")}</small></span><ChevronRight size={18} />
           </button>

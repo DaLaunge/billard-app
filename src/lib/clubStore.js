@@ -5,12 +5,12 @@ import { useSyncExternalStore } from "react";
    App.jsx laedt sie in loadClubs() und meldet sie mit setClubData(); wer etwas aendert (gruenden, beitreten, ...) ruft
    reloadClubs(). Fehlt die Tabelle (Migration 2026-10-19b noch nicht eingespielt), bleibt alles leer - die App laeuft normal. */
 
-let data = { clubs: [], members: [], home: {}, loaded: false };
+let data = { clubs: [], members: [], home: {}, requests: [], loaded: false };
 const subs = new Set();
 let loader = null;
 
-export const setClubData = (clubs, members, home) => {
-  data = { clubs, members, home: home || {}, loaded: true };
+export const setClubData = (clubs, members, home, requests) => {
+  data = { clubs, members, home: home || {}, requests: requests || [], loaded: true };
   subs.forEach((f) => f());
 };
 export const setClubLoader = (fn) => { loader = fn; };

@@ -18,6 +18,15 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.6", icon: "💌",
+    items: [
+      "Club-Einladungen: Die Club-Leitung kann Spieler einladen – du entscheidest per Zusage. Oder du fragst selbst bei einem Club an, dann bestätigt ihn die Leitung.",
+      "Neu auf deiner Profilseite: „Clubs“ führt dich zu allen Club-Einstellungen, und „Club-Post“ zeigt offene Einladungen und Anfragen. QR-Codes zum Beitreten gibt es weiterhin.",
+    ],
+    en: [
+      "Club invitations: club leaders can invite players – you decide with a yes. Or request to join a club yourself and the leader confirms.",
+      "New on your profile page: \"Clubs\" takes you to all club settings, and \"Club mail\" shows open invitations and requests. QR codes to join are still there.",
+    ] },
   { version: "412.5", icon: "🏷️",
     items: [
       "Clubs: Gründe deinen eigenen Club mit Kürzel und Farbe – er erscheint als Tag in deinem Profil. Du wirst Club-Leiter, kannst weitere Admins ernennen und die Leitung übergeben.",

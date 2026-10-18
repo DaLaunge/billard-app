@@ -3191,3 +3191,7 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 .club-danger { margin-top: 10px; display: flex; gap: 8px; }
 .club-create-btn { margin-top: 12px; }
 .admin-club-row { margin-top: 8px; cursor: default; }
+.club-qr { background: #fff; padding: 6px; border-radius: 10px; line-height: 0; align-self: flex-start; }
+.club-search { width: 100%; }
+.club-cand { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 2px 4px; }
+.club-inbox-row { cursor: default; margin-top: 8px; }
