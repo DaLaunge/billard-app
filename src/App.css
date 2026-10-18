@@ -1554,12 +1554,6 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .chip-btn.no:hover { background: var(--loss); color: #fff; }
 }
 
-/* ===== Statistik: linke UserPanel-Spalte (siehe src/components/widgets) =====
-   Am Handy ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px als
-   duenn-breit-duenn-Seitenspalte sichtbar (siehe .stat-split unten). */
-.ov-side { display: none; flex-direction: column; gap: var(--card-gap); }
-.ov-side-extra { display: none; }
-.ov-side .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .side-row:last-of-type { border-bottom: none; }
 .side-row-emoji { font-size: 16px; line-height: 1; }
@@ -1751,14 +1745,6 @@ button.id-card-head { cursor: pointer; }
      erben sie von hier. */
   .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; margin: 0 auto; }
 
-  /* .ov-side ist bewusst NICHT sticky (anders als frueher) - UserPanel ist
-     hier oft hoeher als der Viewport, ein sticky-Block der nie vollstaendig
-     ins Bild passt wirkt beim Scrollen wie haengengeblieben statt wie
-     "bleibt sichtbar". Scrollt normal mit wie jede andere Spalte
-     (siehe .stat-split weiter unten fuer die Spaltenaufteilung). */
-  .ov-side { display: flex; grid-column: 1; grid-row: 1 / span 2; order: 0; }
-  .ov-side-extra { display: flex; flex-direction: column; gap: var(--card-gap); }
-
   /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Statistik und
      Live). Welche Karte in welcher der drei Spalten steht, entscheidet
      der Nutzer (cardLayout.js) - fest ist nur die Identitaetskarte oben
@@ -1817,9 +1803,8 @@ button.id-card-head { cursor: pointer; }
      gerade eingeklappt und daher kurz waren (Nutzer-Feedback: "sehr viel
      Zwischenraum, wenn zugeklappt"), und eine leer gewordene Spalte liess
      ihre Spur als breite Luecke stehen. */
-  .phone.app .screen:has(.live-split) { max-width: 1440px; }
+  .phone.app .screen:has(.live-split) { max-width: 820px; }
   .live-split { display: flex; flex-direction: row; gap: 24px; align-items: flex-start; }
-  .live-split .ov-side { flex: 0 0 300px; }
   .live-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
   .live-col.middle { flex: 1; }
   .live-col.right { flex: 0 0 300px; }
@@ -3309,3 +3294,12 @@ button.club-tag-btn:disabled { opacity: .6; cursor: default; }
 /* Statistik seit 412.24: zwei gleichwertige Spalten (links Verlauf und Matches, rechts Listen und Rekorde). Die frueher linke Identitaets-
    und "Meine Zahlen"-Spalte ist weg - beides hat eigene Seiten (Identitaet, Meine Zahlen). Auf breiten Bildschirmen halten die Karten
    ihre Hoehe nicht mehr mit Gewalt gleich, jede Spalte stapelt fuer sich. */
+
+/* Club-Statistik im Club-Profil: sechs Werte in zwei Reihen, Mitglieder als Club-Rangliste mit Rating */
+.cm-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; text-align: center; }
+.cm-kpis > div { display: flex; flex-direction: column; min-width: 0; }
+.cm-kpis b { display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 16px; }
+.cm-kpis span { font-size: 10.5px; color: var(--ivory-dim); line-height: 1.25; }
+.cm-ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-rank { width: 22px; flex: 0 0 auto; font-weight: 700; color: var(--accent); font-size: 12.5px; }
+.cm-rating { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }

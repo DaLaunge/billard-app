@@ -91,7 +91,7 @@ export const STAT_CARD_SCREEN = "stats";
 //
 // "columns" listet die auf diesem Bildschirm waehlbaren Spalten in der
 // Reihenfolge, in der sie am Desktop nebeneinander stehen. Statistik und
-// Live haben links eine feste Spalte (UserPanel), deshalb nur Mitte/Rechts.
+// Live haben keine feste linke Spalte mehr (sie entfiel 2026-10-19), deshalb nur Mitte/Rechts.
 export const CARD_SCREENS = [
   {
     screen: "stats",

@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.26", icon: "📈",
+    items: ["Das Club-Profil zeigt jetzt gleich die Statistik des Clubs: Mitglieder, Durchschnitts-Rating, Matches, Siegquote gegen andere und das stärkste Mitglied – die Mitglieder stehen als Club-Rangliste mit Rating."],
+    en: ["The club profile now shows the club's stats right away: members, average rating, matches, win rate against others and the strongest member – members are listed as a club ranking with their rating."] },
   { version: "412.19", icon: "📊",
     items: ["„Auf einen Blick“ in deiner Identität zeigt jetzt deine wichtigsten Rekorde (beste Serie, Zu-Null-Siege, Höchstserie …) und den Angstgegner. Ein Tipp darauf öffnet „Meine Zahlen“."],
     en: ["\"At a glance\" in your identity now shows your key records (best streak, shutout wins, high run …) and your nemesis. Tap it to open \"My stats\"."] },

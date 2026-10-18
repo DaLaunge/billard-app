@@ -1608,7 +1608,7 @@ export default function App() {
         {session && player && !player.must_change_password && initialLoadDone && (
           <>
             <ConfirmHost />
-            <ClubMembersHost me={player} rangliste={rangliste} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={openProfile} toast={toast} />
+            <ClubMembersHost me={player} rangliste={rangliste} matches={matches} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={openProfile} toast={toast} />
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
                 <div className="celebrate-card scrolls" onClick={(e) => e.stopPropagation()}>

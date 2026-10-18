@@ -1118,6 +1118,9 @@ const TRANSLATIONS = {
     "gegründet": "founded",
     "Antippen macht einen Club zum Hauptclub.": "Tapping makes a club your main club.",
     "Gegner, gegen den du die schlechteste Siegquote hast (mindestens 5 Matches)": "Opponent against whom you have your worst win rate (at least 5 matches)",
+    "Quote vs. andere": "Win rate vs. others",
+    "{n} Matches gegen Nicht-Mitglieder": "{n} matches against non-members",
+    "Stärkstes Mitglied": "Strongest member",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":
