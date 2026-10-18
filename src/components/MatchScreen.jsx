@@ -393,10 +393,10 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   const matching = players
     .filter((p) => p.id !== me.id && !p.is_ghost && !p.blocked)
     .filter((p) => p.nickname.toLowerCase().includes(query))
-    // Gaeste stehen NICHT in der Standardliste (Nutzer-Wunsch 2026-10-01: sie sollen
-    // sich lieber selbst anmelden). Per Suche sind sie weiter zu finden, und ein neuer
-    // Gast wird ueber die Suche angelegt.
-    .filter((p) => query || !p.is_guest);
+    // Gaeste stehen NIE in der Liste, auch nicht per Suche (Nutzer-Wunsch 2026-10-19, vorher 2026-10-01 nur nicht in der Standardliste):
+    // ein Gast muss jedes Mal per Hand eingetippt werden - das erhoeht die Motivation, sich gleich anzumelden. Ein Gast mit diesem Namen
+    // wird dabei wiederverwendet (add_guest_player), nicht doppelt angelegt.
+    .filter((p) => !p.is_guest);
   // Empfehlung: die zwei Gegner mit dem hoechsten moeglichen Gewinn. Sie sind
   // KEINE eigene Karte mehr, sondern stehen als normale, nur hervorgehobene
   // Kacheln in der Liste.
@@ -823,15 +823,24 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                 </div>
 
 
-                {oppQuery.trim() && opponents.length === 0 && (
+                {/* Gast-Karte: immer, sobald etwas getippt ist und es nicht genau der Name eines Mitglieds ist (sonst waere "Ti" nie als Gast
+                    moeglich, weil "Tim" passt). Gaeste gibt es NUR ueber diese Eingabe. Daneben der QR-Code: lieber gleich anmelden. */}
+                {oppQuery.trim() && !players.some((p) => !p.is_guest && p.nickname.toLowerCase() === oppQuery.trim().toLowerCase()) && (
                   <div className="guest-empty-card">
                     <div className="ghost-info">
-                      <span className="ghost-name"><Emoji e="🤔" /> {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</span>
+                      <span className="ghost-name">{opponents.length === 0
+                        ? <><Emoji e="🤔" /> {t('Niemand namens "{q}" gefunden', { q: oppQuery.trim() })}</>
+                        : t("Keinen Account? Als Gast eintragen")}</span>
                       <span className="ghost-sub">{t("Für Personen ohne App - zählt nicht fürs Rating, braucht keine Bestätigung.")}</span>
                     </div>
                     <button className="btn primary" disabled={guestBusy} onClick={addGuest}>
                       <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: oppQuery.trim() })}
                     </button>
+                    {!showMyQr && (
+                      <button type="button" className="btn ghost" onClick={() => setShowMyQr(true)}>
+                        <QrCode size={16} /> {t("Lieber gleich registrieren? QR-Code zeigen")}
+                      </button>
+                    )}
                   </div>
                 )}
                 {!oppQuery.trim() && opponents.length === 0 && <p className="hint">{t("Kein Spieler gefunden.")}</p>}
