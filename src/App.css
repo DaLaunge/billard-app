@@ -3239,9 +3239,9 @@ button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointe
 .club-logo-none { display: grid; place-items: center; font-size: 56px; font-weight: 800; letter-spacing: .04em; }
 
 /* Zwei gleich gebaute Info-Kacheln unter dem Namen: Club und staerkste Disziplin (Identitaetskarte) */
-.id-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 220px)); justify-content: center; gap: 8px; width: 100%; margin: 12px auto 0; }
+.id-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; margin: 12px auto 0; }
 .id-tile { display: inline-flex; align-items: center; gap: 9px; padding: 6px 14px 6px 6px; border-radius: 16px; background: var(--surface-btn);
-  min-width: 0; text-align: left; }
+  min-width: 0; max-width: 100%; text-align: left; }
 .id-tile-club { cursor: pointer; border: 1.5px solid transparent; }
 .id-tile-club:hover { border-color: var(--btn-border); }
 .id-tile-disc { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; flex: 0 0 auto; font-weight: 800; font-size: 12px; letter-spacing: .02em; }
