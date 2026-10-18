@@ -67,7 +67,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
   // Stelle, an der man ohne Bildschirmwechsel sieht und aendert, was
   // ueberall in welcher Reihenfolge steht und was ausgeblendet ist.
-  // Einstieg "Clubs" kommt aus dem Hamburger-Menue (openClubsReq): oeffnet Profil bearbeiten und springt zur Karte
+  // Einstieg "Clubs": Karte auf der Profilseite UND Punkt im Hamburger-Menue (openClubsReq, zweiter Weg zum selben Ziel):
+  // oeffnet Profil bearbeiten und springt zur Karte
+  const clubData = useClubData();
+  const myClubCount = clubData.members.filter((m) => m.player_id === meRow?.id).length;
   const openClubs = () => {
     setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
     setTimeout(() => document.getElementById("pf-clubs")?.scrollIntoView({ behavior: "smooth", block: "start" }), 380);
@@ -1161,6 +1164,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button type="button" className="pf-id-card" onClick={onPreview}>
             <Eye size={20} /><span className="pf-id-card-text"><strong>{t("So sehen dich andere")}</strong><small>{t("Kugel, Name, Motto, Rating und Erfolge")}</small></span><ChevronRight size={18} />
           </button>
+          {clubData.loaded && (
+            <button type="button" className="pf-id-card" data-tour="clubs-entry" onClick={openClubs}>
+              <Users size={20} /><span className="pf-id-card-text"><strong>{t("Clubs")}</strong><small>{myClubCount > 0 ? t("{n} Club(s) – verwalten, einladen, beitreten", { n: myClubCount }) : t("Gründen, beitreten oder anfragen")}</small></span><ChevronRight size={18} />
+            </button>
+          )}
           <button type="button" className="pf-id-card" onClick={onInvite}>
             <UserPlus size={20} /><span className="pf-id-card-text"><strong>{t("Einladen")}</strong><small>{t("Freunde per Code ins Spiel holen")}</small></span><ChevronRight size={18} />
           </button>

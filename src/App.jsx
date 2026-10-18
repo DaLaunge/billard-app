@@ -1558,7 +1558,7 @@ export default function App() {
     achievements: { icon: Award, label: "Meine Erfolge", tour: "tab-erfolge", on: tab === "erfolge", run: () => navPush({ tab: "erfolge" }) },
     mystats: { icon: Activity, label: "Meine Zahlen", tour: "tab-zahlen", on: tab === "zahlen", run: () => navPush({ tab: "zahlen" }) },
     invite: { icon: UserPlus, label: "Spieler einladen", on: tab === "invite", run: () => navPush({ tab: "invite" }) },
-    clubs: { icon: Users, label: "Clubs", tour: "clubs-entry", on: false, run: () => { setOpenClubsReq(true); navPush({ tab: "profil" }); } },
+    clubs: { icon: Users, label: "Clubs", on: false, run: () => { setOpenClubsReq(true); navPush({ tab: "profil" }); } },
     regeln: { icon: BookOpen, label: "Regelkunde", on: tab === "regeln", run: () => navPush({ tab: "regeln" }) },
     tutorial: { icon: GraduationCap, label: "Tutorial", on: false, run: () => startTutorial(null) },
     settings: { icon: Settings, label: "Einstellungen", on: false, run: () => { setOpenSettings(true); navPush({ tab: "profil" }); } },
