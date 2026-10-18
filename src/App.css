@@ -3221,3 +3221,19 @@ label.icon-btn.disabled { opacity: .5; cursor: default; }
 /* Suchfeld in der Club-Karte: kein eckiger Browser-Fokusring im runden Feld, stattdessen Akzent-Rand um das ganze Feld */
 .club-search input:focus-visible { outline: none; }
 .mail-row.club-search:focus-within { border-color: var(--accent); }
+
+/* Club-Wappen: Logo als runder Anstecker an der unteren LINKEN Ecke der Kugel (rechts sitzt der Avatar-Badge-Chip) (Identitaetskarte), mit Ring in der Kartenfarbe */
+.id-avatar-wrap { position: relative; display: inline-block; line-height: 0; }
+.id-crest { position: absolute; left: -8px; bottom: -4px; border-radius: 50%; object-fit: cover; background: #fff;
+  box-shadow: 0 0 0 3px var(--felt-2), 0 2px 8px #0006; pointer-events: none; }
+.club-tag-logo { width: 18px; height: 18px; margin: -2px 6px -2px -6px; box-shadow: 0 0 0 1.5px #ffffffb0; }
+
+/* Wappen ist antippbar; Logo-Vorschau in der Club-Karte ebenso; grosses Logo im Fenster */
+.id-crest { cursor: pointer; pointer-events: auto; display: inline-block; overflow: hidden; line-height: 0; }
+.id-crest img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+button.club-logo-prev { padding: 0; cursor: pointer; font: inherit; }
+button.club-logo-prev:hover { border-color: var(--btn-border); }
+.club-logo-modal { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.club-logo-modal h3 { margin: 0; }
+.club-logo-big { width: min(70vw, 280px); height: min(70vw, 280px); border-radius: 50%; object-fit: cover; background: #fff; }
+button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointer; line-height: 0; }

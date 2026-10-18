@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.12", icon: "🛡️",
+    items: ["Das Club-Logo sitzt jetzt als Wappen an der Kugel im Profil und ist deutlich größer im Club-Tag. Tipp auf das Wappen zeigt das Logo in voller Größe – bei mehreren Clubs kannst du zwischen den Logos wechseln."],
+    en: ["The club logo now sits as a crest on the ball in the profile and is much bigger in the club tag. Tap the crest to see the logo full size – with several clubs you can switch between the logos."] },
   { version: "412.9", icon: "🖼️",
     items: ["Clubs können ein Logo bekommen: Die Club-Leitung wählt ein Bild, und es erscheint im Club-Tag."],
     en: ["Clubs can have a logo: the club leader picks an image and it shows in the club tag."] },

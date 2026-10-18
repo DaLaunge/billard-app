@@ -21,7 +21,7 @@ export default function ClubTag({ club, withName = false, title }) {
   const logo = clubLogoUrl(club);
   return (
     <span className="club-tag" style={{ background: bg, color: inkFor(bg) }} title={title || club.name} aria-label={club.name}>
-      {logo && <img className="club-tag-logo" src={logo} alt="" width="14" height="14" loading="lazy" />}
+      {logo && <img className="club-tag-logo" src={logo} alt="" width="18" height="18" loading="lazy" />}
       {club.tag}{withName && <span className="club-tag-name"> · {club.name}</span>}
     </span>
   );

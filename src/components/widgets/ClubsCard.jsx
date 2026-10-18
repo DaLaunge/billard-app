@@ -6,6 +6,7 @@ import { t } from "../../lib/i18n";
 import { appConfirm } from "../../lib/confirmDialog";
 import { useClubData, reloadClubs, roleIn } from "../../lib/clubStore";
 import ClubTag from "./ClubTag";
+import ClubLogoModal from "./ClubLogoModal";
 import { compressClubLogo, clubLogoPath, clubLogoUrl } from "../../lib/clubLogo";
 
 /* "Clubs" unter Profil bearbeiten: eigene Clubs (Tag im Profil), Club gruenden, per Code beitreten und - fuer die Leitung -
@@ -25,6 +26,7 @@ export default function ClubsCard({ meRow, players, toast }) {
   const [codes, setCodes] = useState({});           // club id -> Code (nur Leitung)
   const [edit, setEdit] = useState({});             // club id -> { name, tag, color }
   const [invQ, setInvQ] = useState("");             // Suche: Spieler einladen
+  const [viewLogo, setViewLogo] = useState(null);   // Club, dessen Logo gross gezeigt wird
   const [disc, setDisc] = useState(false);          // "Clubs entdecken" offen?
   const [discQ, setDiscQ] = useState("");
 
@@ -226,7 +228,9 @@ export default function ClubsCard({ meRow, players, toast }) {
 
                   <p className="club-sub">{t("Logo")}</p>
                   <div className="club-logo-row">
-                    <span className="club-logo-prev">{clubLogoUrl(c) ? <img src={clubLogoUrl(c)} alt="" width="44" height="44" /> : <ImageIcon size={20} />}</span>
+                    {clubLogoUrl(c)
+                      ? <button type="button" className="club-logo-prev" title={t("Club-Logo ansehen")} aria-label={t("Club-Logo ansehen")} onClick={() => setViewLogo(c)}><img src={clubLogoUrl(c)} alt="" width="44" height="44" /></button>
+                      : <span className="club-logo-prev"><ImageIcon size={20} /></span>}
                     <label className={"icon-btn small" + (busy ? " disabled" : "")} title={t("Logo wählen")} aria-label={t("Logo wählen")}>
                       <ImageIcon size={15} />
                       <input type="file" accept="image/*" style={{ display: "none" }} disabled={busy}
@@ -273,6 +277,7 @@ export default function ClubsCard({ meRow, players, toast }) {
 
   return (
     <section className="stat-block clubs-card" id="pf-clubs">
+      {viewLogo && <ClubLogoModal club={viewLogo} onClose={() => setViewLogo(null)} />}
       <h3><Users size={17} /> {t("Clubs")}</h3>
       {mine.length === 0 && <p className="hint">{t("Du bist noch in keinem Club. Gründe einen oder tritt mit einem Code bei.")}</p>}
       {mine.map(clubBlock)}

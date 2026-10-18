@@ -1106,6 +1106,7 @@ const TRANSLATIONS = {
     "noch ohne Login": "no login yet",
     "Indigo": "Indigo",
     "Pink": "Pink",
+    "Club-Logo ansehen": "View club logo",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

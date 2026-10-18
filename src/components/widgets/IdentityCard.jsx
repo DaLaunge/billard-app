@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { QrCode, Settings } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { initials, fmtDate } from "../../lib/format";
 import Ball from "../Ball";
 import DecayBadge from "./DecayBadge";
 import ClubTag from "./ClubTag";
+import ClubLogoModal from "./ClubLogoModal";
+import { clubLogoUrl } from "../../lib/clubLogo";
 import { useClubData, clubsOfPlayer } from "../../lib/clubStore";
 import { EmojiText } from "../Emoji";
 
@@ -37,9 +40,24 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
   onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88, playerId }) {
   // Club-Tags (Hauptclub zuerst); wer in keinem Club ist, bekommt einfach keine Zeile
   const clubs = clubsOfPlayer(useClubData(), playerId);
+  // Wappen: das Logo des ersten Clubs (Hauptclub zuerst), der eines hat, als runder Anstecker an der Kugel
+  const crestClub = clubs.find((c) => c.logo_at);
+  const crest = crestClub ? clubLogoUrl(crestClub) : null;
+  const crestSize = Math.round(photoSize * 0.46);
+  const [viewLogo, setViewLogo] = useState(false);
   const head = (
     <>
-      <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
+      <span className="id-avatar-wrap">
+        <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
+        {crest && (
+          <span className="id-crest" role="button" tabIndex={0} title={crestClub.name} aria-label={t("Club-Logo ansehen")}
+            style={{ width: crestSize, height: crestSize }}
+            onClick={(e) => { e.stopPropagation(); setViewLogo(true); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setViewLogo(true); } }}>
+            <img src={crest} alt="" width={crestSize} height={crestSize} />
+          </span>
+        )}
+      </span>
       <h3 className="id-card-name">{nickname}</h3>
       <div className="id-card-rating">
         {gesamt ? gesamt.rating : "-"}
@@ -61,6 +79,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
           ? <div className="id-card-hero">{sideActions.left}{headEl}{sideActions.right}</div>
           : headEl;
       })()}
+      {viewLogo && <ClubLogoModal club={crestClub} clubs={clubs} onClose={() => setViewLogo(false)} />}
       <DecayBadge player={gesamt} className="id-card-decay-warn" iconSize={20} pulse />
       {(onSettings || onInvite) && (
         <div className="id-card-corner">
