@@ -3,14 +3,14 @@ import TutorialOverlay from "./components/TutorialOverlay";
 import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
 import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
 import { pendingReleaseItems, markReleaseSeen } from "./lib/releaseNotes";
-import { Trophy, Radio, BarChart3, User, RefreshCw, FileText, Menu, BookOpen, GraduationCap, Settings, Shield, Award, UserPlus, Activity } from "lucide-react";
+import { Trophy, Radio, BarChart3, User, RefreshCw, FileText, Menu, BookOpen, GraduationCap, Settings, Shield, Award, UserPlus, Activity, Users } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs, clearRef, getClubCode, clearClubCode } from "./lib/session";
-import { setClubData, setClubLoader, reloadClubs } from "./lib/clubStore";
+import { setClubData, setClubLoader, reloadClubs, useClubData } from "./lib/clubStore";
 import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
@@ -1002,6 +1002,9 @@ export default function App() {
   const [contentEl, setContentEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
+  // Menuepunkt "Clubs": Profil bearbeiten oeffnen und zur Clubs-Karte springen (ProfilScreen `openClubsReq`)
+  const [openClubsReq, setOpenClubsReq] = useState(false);
+  const clubsMenu = useClubData();
   const [openSeg, setOpenSeg] = useState(null);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [listChoiceOpen, setListChoiceOpen] = useState(false);
@@ -1555,12 +1558,13 @@ export default function App() {
     achievements: { icon: Award, label: "Meine Erfolge", tour: "tab-erfolge", on: tab === "erfolge", run: () => navPush({ tab: "erfolge" }) },
     mystats: { icon: Activity, label: "Meine Zahlen", tour: "tab-zahlen", on: tab === "zahlen", run: () => navPush({ tab: "zahlen" }) },
     invite: { icon: UserPlus, label: "Spieler einladen", on: tab === "invite", run: () => navPush({ tab: "invite" }) },
+    clubs: { icon: Users, label: "Clubs", tour: "clubs-entry", on: false, run: () => { setOpenClubsReq(true); navPush({ tab: "profil" }); } },
     regeln: { icon: BookOpen, label: "Regelkunde", on: tab === "regeln", run: () => navPush({ tab: "regeln" }) },
     tutorial: { icon: GraduationCap, label: "Tutorial", on: false, run: () => startTutorial(null) },
     settings: { icon: Settings, label: "Einstellungen", on: false, run: () => { setOpenSettings(true); navPush({ tab: "profil" }); } },
     admin: { icon: Shield, label: "Verwaltung", on: tab === "admin", run: () => navPush({ tab: "admin" }) },
   };
-  const orderedEntries = menuPrefs.order.filter((id) => id !== "admin" || player?.role === "admin").map((id) => ({ id, ...menuMeta[id] }));
+  const orderedEntries = menuPrefs.order.filter((id) => (id !== "admin" || player?.role === "admin") && (id !== "clubs" || clubsMenu.loaded)).map((id) => ({ id, ...menuMeta[id] }));
   const pinnedEntries = orderedEntries.filter((e) => menuPrefs.pinned.includes(e.id));
 
   return (
@@ -1844,7 +1848,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   achievementCounters={achievementCounters} onStartTutorial={startTutorial}
-                  openSettings={openSettings} onSettingsOpened={() => setOpenSettings(false)}
+                  openSettings={openSettings} onSettingsOpened={() => setOpenSettings(false)} openClubsReq={openClubsReq} onClubsOpened={() => setOpenClubsReq(false)}
                   openSeg={openSeg} onSegOpened={() => setOpenSeg(null)} onResetMenu={resetMenuLocal}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   lang={lang} onLang={changeLang}

@@ -61,15 +61,13 @@ const groupSubs = (list) => {
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onOpenNumbers, onEditChange, closeEditTick }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openClubsReq, onClubsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onOpenNumbers, onEditChange, closeEditTick }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
   // Stelle, an der man ohne Bildschirmwechsel sieht und aendert, was
   // ueberall in welcher Reihenfolge steht und was ausgeblendet ist.
-  // Einstieg "Clubs" auf der Profilseite: oeffnet Profil bearbeiten und springt zur Karte
-  const clubData = useClubData();
-  const myClubCount = clubData.members.filter((m) => m.player_id === meRow?.id).length;
+  // Einstieg "Clubs" kommt aus dem Hamburger-Menue (openClubsReq): oeffnet Profil bearbeiten und springt zur Karte
   const openClubs = () => {
     setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
     setTimeout(() => document.getElementById("pf-clubs")?.scrollIntoView({ behavior: "smooth", block: "start" }), 380);
@@ -202,6 +200,12 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [color, setColor] = useState(meRow?.avatar_color || null);
   const [motto, setMotto] = useState(meRow?.motto || "");
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!openClubsReq || !isMe) return;
+    openClubs();
+    onClubsOpened?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openClubsReq]);
   // Vom Menue ("Einstellungen"): direkt die Einstellungen oeffnen, wie das Zahnrad der Kopfkarte.
   useEffect(() => {
     if (!openSettings || !isMe) return;
@@ -1157,11 +1161,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button type="button" className="pf-id-card" onClick={onPreview}>
             <Eye size={20} /><span className="pf-id-card-text"><strong>{t("So sehen dich andere")}</strong><small>{t("Kugel, Name, Motto, Rating und Erfolge")}</small></span><ChevronRight size={18} />
           </button>
-          {clubData.loaded && (
-            <button type="button" className="pf-id-card" data-tour="clubs-entry" onClick={openClubs}>
-              <Users size={20} /><span className="pf-id-card-text"><strong>{t("Clubs")}</strong><small>{myClubCount > 0 ? t("{n} Club(s) – verwalten, einladen, beitreten", { n: myClubCount }) : t("Gründen, beitreten oder anfragen")}</small></span><ChevronRight size={18} />
-            </button>
-          )}
           <button type="button" className="pf-id-card" onClick={onInvite}>
             <UserPlus size={20} /><span className="pf-id-card-text"><strong>{t("Einladen")}</strong><small>{t("Freunde per Code ins Spiel holen")}</small></span><ChevronRight size={18} />
           </button>
