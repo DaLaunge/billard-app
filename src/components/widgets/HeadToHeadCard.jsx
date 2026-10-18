@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import NickClubTag from "./NickClubTag";
 import { Swords } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { initials } from "../../lib/format";
@@ -59,6 +60,7 @@ export default function HeadToHeadCard({ nickname, matches, rangliste, onOpenPro
         <button key={opp} className="h2h-row as-btn" onClick={() => onOpenProfile(opp)}>
           <Ball nick={opp} color={colorOf(opp)} label={initials(opp)} badge={badgeOf(opp)} photo={photoOf(opp)} size={34} />
           <span className="stat-name">{opp}</span>
+          <NickClubTag nickname={opp} />
           <div className="h2h-bar"><div className="h2h-w" style={{ width: `${(100 * w) / Math.max(1, w + l)}%` }} /></div>
           <span className="h2h-score">{w}:{l}</span>
         </button>

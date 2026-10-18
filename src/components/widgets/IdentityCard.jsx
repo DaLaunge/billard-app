@@ -1,8 +1,11 @@
 import { QrCode, Settings } from "lucide-react";
 import { t } from "../../lib/i18n";
-import { initials, fmtDate } from "../../lib/format";
+import { initials, fmtDate, fmtRating } from "../../lib/format";
 import Ball from "../Ball";
 import DecayBadge from "./DecayBadge";
+import ClubEmblem from "./ClubEmblem";
+import DiscBall from "./DiscBall";
+import { useClubData, clubsOfPlayer, openClub } from "../../lib/clubStore";
 import { EmojiText } from "../Emoji";
 
 /* Vereinheitlichte Identitaets-Karte: grosses, zentriertes Foto im Fokus,
@@ -32,17 +35,27 @@ import { EmojiText } from "../Emoji";
    gehoert. Beide sitzen in EINEM absolut positionierten Container, damit
    das jeweils vorhandene Symbol immer buendig rechts steht. */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
-  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88 }) {
+  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88, playerId, best, ownProfile = false }) {
+  // Unter dem Namen zwei gleich gebaute Kacheln nebeneinander: Hauptclub (Logo, Name, Kuerzel, "+n" bei mehreren - die Vollansicht kennt
+  // alle) und staerkste Disziplin mit Punkten. Die Kugel bleibt frei. Wer in keinem Club ist bzw. noch kein Rating hat, bekommt die
+  // jeweilige Kachel einfach nicht.
+  const clubData = useClubData();
+  const clubs = clubsOfPlayer(clubData, playerId);
   const head = (
     <>
       <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
       <h3 className="id-card-name">{nickname}</h3>
       <div className="id-card-rating">
-        {gesamt ? gesamt.rating : "-"}
+        {gesamt ? fmtRating(gesamt.rating) : "-"}
         {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
       </div>
       {motto && <p className="id-card-motto">"<EmojiText>{motto}</EmojiText>"</p>}
       {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
+      {clubs[0] && (
+        <div className="id-tiles">
+          <ClubEmblem club={clubs[0]} more={clubs.length - 1} onOpen={(c) => openClub(c.id, { playerId, own: ownProfile })} />
+        </div>
+      )}
     </>
   );
   return (
@@ -76,6 +89,12 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
         <div><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
         <div><b>{stats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
         <div><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>{t("Serie")}</span></div>
+        {best && (
+          <div title={t("Stärkste Disziplin")}>
+            <b>{fmtRating(best.rating)}</b>
+            <span className="id-kpi-disc"><DiscBall disc={best.discipline} size={13} /> {t(best.discipline)}</span>
+          </div>
+        )}
       </div>
       {actions}
     </section>

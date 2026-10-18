@@ -91,7 +91,7 @@ export const STAT_CARD_SCREEN = "stats";
 //
 // "columns" listet die auf diesem Bildschirm waehlbaren Spalten in der
 // Reihenfolge, in der sie am Desktop nebeneinander stehen. Statistik und
-// Live haben links eine feste Spalte (UserPanel), deshalb nur Mitte/Rechts.
+// Live haben keine feste linke Spalte mehr (sie entfiel 2026-10-19), deshalb nur Mitte/Rechts.
 export const CARD_SCREENS = [
   {
     screen: "stats",
@@ -106,7 +106,7 @@ export const CARD_SCREENS = [
     // (siehe "decks" unten): jede laesst sich weiter fuer sich ein-/
     // ausblenden und sortieren, nur zeigt sich das als Reiter.
     decks: [
-      { id: "bestenlisten", label: "Bestenlisten", ids: ["rangliste", "meisteSiege", "besteSiegquote", "aktuelleSerien", "schnellstesTempo", "schnellste141"] },
+      { id: "bestenlisten", label: "Bestenlisten", ids: ["rangliste", "meisteSiege", "besteSiegquote", "aktuelleSerien", "schnellstesTempo", "schnellste141", "aufsteiger"] },
     ],
     cards: [
       { id: "entwicklung", label: "Entwicklung über die Zeit", col: "middle" },
@@ -117,6 +117,7 @@ export const CARD_SCREENS = [
       { id: "aktuelleSerien", label: "Aktuelle Serien", col: "right" },
       { id: "schnellstesTempo", label: "Schnellstes Tempo", col: "right" },
       { id: "schnellste141", label: "Schnellstes 14/1-Tempo", col: "right" },
+      { id: "aufsteiger", label: "Aufsteiger", col: "right" },
       { id: "rekordeClub", label: "Rekorde", col: "right" },
     ],
   },

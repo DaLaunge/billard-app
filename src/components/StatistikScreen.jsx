@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
-import { Trophy, Gauge, Percent, Flame, FileText, Clock, Timer, Star, History } from "lucide-react";
+import { Trophy, Gauge, Percent, Flame, FileText, Clock, Timer, Star, History, TrendingUp } from "lucide-react";
 import ConfirmRoundButtons from "./widgets/ConfirmRoundButtons";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -8,7 +8,7 @@ import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import { loadMatchCounters } from "../lib/counterCache";
 import { computeFunRecords } from "../lib/funStats";
-import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
+import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames, fmtRating } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount, activeDisciplines } from "../lib/constants";
 import { STAT_CARD_SCREEN, deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
@@ -21,8 +21,8 @@ import ModePick from "./widgets/ModePick";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
-import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
+import NickClubTag from "./widgets/NickClubTag";
 import InfoButton from "./widgets/InfoButton";
 import ImprintFooter from "./widgets/ImprintFooter";
 import TournamentFlag from "./TournamentFlag";
@@ -125,9 +125,10 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
     const name = nameOf(r);
     return (
       <button key={name} className={"stat-row as-btn" + (name === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(name)}>
-        <span className="medal">{medals && rank < 3 ? <Emoji e={MEDAL_EMOJI[rank]} /> : `${rank + 1}.`}</span>
+        <span className="medal">{medals && rank < 3 && !r.vorlaeufig ? <Emoji e={MEDAL_EMOJI[rank]} /> : `${rank + 1}.`}</span>
         <Ball nick={name} color={colorOf(name)} label={initials(name)} badge={badgeOf(name)} photo={photoOf(name)} size={34} />
         <span className="stat-name">{name}</span>
+        <NickClubTag nickname={name} />
         <span className="stat-val">{valOf(r)}</span>
         {extra && <span className="stat-decay-slot">{extra(r)}</span>}
       </button>
@@ -246,16 +247,16 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
                     {type === "match" ? (
                       <span className="rt-match">
                         <span className="rt-match-names">
-                          <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button>
+                          <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button><NickClubTag nickname={holder.p1Name} />
                           {" vs. "}
-                          <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button>
+                          <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button><NickClubTag nickname={holder.p2Name} />
                         </span>
                         <span className="rt-match-disc">{t(holder.discipline)}</span>
                       </span>
                     ) : (
                       <button className="rt-holder-btn" onClick={() => onOpenProfile(holder.name)}>
                         <Ball nick={holder.name} color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={26} />
-                        <span className="rt-name">{holder.name}</span>
+                        <span className="rt-namebox"><span className="rt-name">{holder.name}</span><NickClubTag nickname={holder.name} /></span>
                       </button>
                     )}
                   </td>
@@ -426,7 +427,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
           <span className="m-date m-datetime">{fmtDateTime(m.played_at)}</span>
           <span className="m-txt">
             {sideNames(m, 1).map((n, i) => (
-              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
+              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button><NickClubTag nickname={n} /></span>
             ))}
             {/* Der Sieger ist eingefaerbt, statt dass man zwei Zahlen
                 vergleichen muss (Nutzer-Vorgabe: lieber visuell). --win ist
@@ -439,7 +440,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
               <span className={m.score2 > m.score1 ? "m-win" : undefined}>{m.score2}</span>
             </b>{" "}
             {sideNames(m, 2).map((n, i) => (
-              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
+              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button><NickClubTag nickname={n} /></span>
             ))}
           </span>
           <span className="m-disc">{t(m.discipline)}</span>
@@ -744,8 +745,32 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       if (r.discipline !== "Gesamt") return;
       if (!best || r.rating > best.rating) best = { name: r.nickname, rating: r.rating };
     });
-    return best ? { name: best.name, rating: Math.round(best.rating) } : null;
+    return best ? { name: best.name, rating: Number(best.rating) } : null;
   }, [snapshots, players, rangliste]);
+
+  // Aufsteiger: groesster Rating-Zuwachs der letzten 30 Tage in der gewaehlten
+  // Disziplin (ratingDisc, wie die Rangliste). Gedacht als Anreiz fuer die
+  // Schwaecheren - wer von unten aufholt, steht hier oben, auch ohne Platz 1.
+  // Vergleich: aktuelles Rating gegen den juengsten Snapshot am oder vor dem
+  // Stichtag; wer damals noch keinen hatte, wird nicht gelistet. Nur aktive,
+  // gefestigte Ratings (gleiche Auswahl wie die Rangliste), nur Zuwachs > 0.
+  const risers = useMemo(() => {
+    const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const idToNick = new Map(players.map((pl) => [pl.id, pl.nickname]));
+    const base = new Map();
+    snapshots.forEach((sn) => {
+      if (sn.discipline !== ratingDisc || sn.snap_date > cutoff) return;
+      const cur = base.get(sn.player_id);
+      if (!cur || sn.snap_date >= cur.day) base.set(sn.player_id, { day: sn.snap_date, rating: Number(sn.rating) });
+    });
+    const baseByNick = new Map();
+    base.forEach((v, pid) => { const n = idToNick.get(pid); if (n) baseByNick.set(n, v.rating); });
+    return rangliste
+      .filter((r) => r.discipline === ratingDisc && r.aktiv && !r.ruhend && !r.vorlaeufig && baseByNick.has(r.nickname))
+      .map((r) => ({ nickname: r.nickname, gain: Math.round((r.rating - baseByNick.get(r.nickname)) * 10) / 10 }))
+      .filter((r) => r.gain > 0)
+      .sort((x, y) => y.gain - x.gain || x.nickname.localeCompare(y.nickname));
+  }, [snapshots, players, rangliste, ratingDisc]);
 
   const mostGames = useMemo(() => {
     const arr = Object.values(computeStats(matches)).filter((p) => p.spiele > 0).sort((a, b) => b.spiele - a.spiele);
@@ -812,7 +837,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       info: t("Größter Punkte- bzw. Rack-Abstand in einem Einzel-Match (alle Disziplinen außer 14/1 Endlos). Bei Gleichstand zählt, wer dieses Ergebnis zuerst erreicht hat.") },
     { key: "biggestWin141", label: t("Höchster Sieg (14/1)"), holder: biggestWin141, fmt: (h) => h.score, matchRef: biggestWin141?.match,
       info: t("Größter Punkteabstand in einem Einzel-Match der Disziplin 14/1 Endlos (zählt in Punkten, daher meist deutlich höhere Werte als in anderen Disziplinen). Bei Gleichstand zählt, wer dieses Ergebnis zuerst erreicht hat.") },
-    { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => h.rating,
+    { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => fmtRating(h.rating),
       info: t("Höchstes je erreichtes Gesamt-Rating, aus dem täglichen Verlauf oder dem aktuellen Stand.") },
     { key: "mostGames", label: t("Meiste Matches gesamt"), holder: mostGames, fmt: (h) => h.spiele,
       info: t("Meiste bestätigte Matches insgesamt, über alle Disziplinen.") },
@@ -843,11 +868,21 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const leaderboardById = {
     rangliste: {
       id: "rangliste", tab: t("Rating"), title: t("Rangliste"), icon: <Gauge size={15} />, medals: true,
-      rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.vorlaeufig),
-      nameOf: (r) => r.nickname, valOf: (r) => r.rating,
+      // Anfaenger (unter 10 Spielen, "vorlaeufig") stehen seit 412.4 schon ab dem ersten Spiel in der Liste - nach den
+      // gefestigten Ratings, mit Kennzeichen (DecayBadge) und ohne Medaille. Eigene Sortierung, weil die Reihenfolge
+      // der View-Zeilen kein Vertrag ist.
+      rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.ruhend)
+        .sort((x, y) => (x.vorlaeufig - y.vorlaeufig) || (y.rating - x.rating)),
+      nameOf: (r) => r.nickname, valOf: (r) => fmtRating(r.rating),
       extra: (r) => <DecayBadge player={r} iconSize={15} />,
       emptyText: t("Noch keine Ratings in dieser Disziplin."),
-      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
+      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. In den ersten 10 Spielen gilt ein Rating als vorläufig (Anfänger-Bonus: jedes Match zählt doppelt so stark) und steht unter den gefestigten Ratings; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
+    },
+    aufsteiger: {
+      id: "aufsteiger", tab: t("Aufsteiger§Liste"), title: t("Aufsteiger (30 Tage)"), icon: <TrendingUp size={15} />,
+      rows: risers, nameOf: (r) => r.nickname, valOf: (r) => `+${fmtRating(r.gain)}`,
+      emptyText: t("Noch niemand mit Rating-Zuwachs in den letzten 30 Tagen."),
+      info: t("Wer in den letzten 30 Tagen die meisten Rating-Punkte gewonnen hat (in der gewählten Disziplin, wie die Rangliste). So können auch Spieler weiter unten ganz oben stehen, wenn sie aufholen. Nur aktive Spieler mit gefestigtem Rating."),
     },
     meisteSiege: {
       id: "meisteSiege", tab: t("Siege"), title: t("Meiste Siege"), icon: <Trophy size={15} />,
@@ -1091,20 +1126,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </div>
       </div>
 
-      <aside className="ov-side">
-        {/* Dieselbe linke Spalte wie auf Live und im Profil (UserPanel:
-            Identitaet + "Meine Zahlen" mit Reitern) - am Handy
-            ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px sichtbar.
-            Bis 2026-09-30 liess Statistik hier die Ratings weg (die
-            Bestenlisten-Karte zeigt sie ja auch) - Nutzer-Feedback: die
-            Spalte soll ueberall gleich sein. Bewusst NICHT Teil der
-            sortierbaren Karten: hier bleibt die Identitaets-Spalte fix. */}
-        <div className="ov-side-extra">
-          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
-            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} cardLayout={me.card_layout}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
-        </div>
-      </aside>
 
       {/* Mittlere Spalte: welche Karten hier statt in .stat-right-col
           landen, entscheidet einzig der Nutzer per CardColumnButton

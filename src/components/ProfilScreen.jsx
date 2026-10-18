@@ -1,7 +1,7 @@
 import { RULES_TOTAL } from "../lib/rulesTotal";
 import { useState, useEffect, useMemo, useRef } from "react";
 import ChangelogRow from "./widgets/ChangelogRow";
-import { Plus, ChevronLeft, ChevronRight, UserPlus, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
+import { Users, Plus, ChevronLeft, ChevronRight, UserPlus, ChevronUp, User, X, Check, Pencil, Trophy, Award, ChevronDown, ChevronsDown, ChevronsUp, Lock, LockOpen, Swords, Shield, LogOut, RefreshCw, Share, Download, MessageCircle, Palette, Play, Search, Smartphone, LayoutGrid, Layers, Eye, SlidersHorizontal, UserCog, MessageSquarePlus, RotateCcw, GraduationCap, Mail, Send, History, BarChart3, Radio, AlignStartVertical, AlignCenterVertical, AlignEndVertical } from "lucide-react";
 import { t } from "../lib/i18n";
 import { APP_VERSION, DISC_LABEL } from "../lib/constants";
 import Emoji from "./Emoji";
@@ -18,6 +18,10 @@ import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import MyFeedbackTickets from "./MyFeedbackTickets";
 import IdentityCard from "./widgets/IdentityCard";
+import ClubsCard from "./widgets/ClubsCard";
+import ClubInbox from "./widgets/ClubInbox";
+import { bestDiscipline } from "../lib/bestDiscipline";
+import { useClubData } from "../lib/clubStore";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import InfoButton from "./widgets/InfoButton";
@@ -57,12 +61,19 @@ const groupSubs = (list) => {
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onEditChange, closeEditTick }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onOpenNumbers, onEditChange, closeEditTick }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
   // Stelle, an der man ohne Bildschirmwechsel sieht und aendert, was
   // ueberall in welcher Reihenfolge steht und was ausgeblendet ist.
+  // Einstieg "Clubs" auf der Profilseite: oeffnet Profil bearbeiten und springt zur Karte
+  const clubData = useClubData();
+  const myClubCount = clubData.members.filter((m) => m.player_id === meRow?.id).length;
+  const openClubs = () => {
+    setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
+    setTimeout(() => document.getElementById("pf-clubs")?.scrollIntoView({ behavior: "smooth", block: "start" }), 380);
+  };
   const layoutByScreen = {
     stats: useCardLayout("stats", meRow?.card_layout, onSetCardLayout, toast),
     live: useCardLayout("live", meRow?.card_layout, onSetCardLayout, toast),
@@ -466,6 +477,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               onBlur={() => { if (motto !== (meRow?.motto || "")) persist(); }} />
           </div>
         </section>
+
+        {/* Clubs (Tag im Profil): erscheint nur, wenn die Club-Tabellen existieren; ohne Club ist der Normalfall */}
+        <ClubsCard meRow={meRow} players={players} toast={toast} />
 
         {/* Beide Farbwahlen in EINER Karte, direkt untereinander (Nutzer-Feedback
             2026-09-30: "sorge dafuer, dass die Farben nahe beisammen sind - die
@@ -1083,7 +1097,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           sind unnoetig gross, wenn manche dazwischen ausgeblendet sind"). */}
       <div className="pf-col left">
       <div className="pf-identity" style={{ order: 0 }}>
-      <IdentityCard nickname={nickname} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
+      <IdentityCard nickname={nickname} playerId={playerObj?.id} ownProfile={isMe && !asOthers} best={bestDiscipline(myRows)} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
         onHeadClick={isMe && !asOthers ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
         /* Zahnrad und QR-Symbol der Kopfkarte entfallen: Einstellungen und Einladen stehen im Menue und als Karten darunter. */
@@ -1125,8 +1139,14 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
       {(mode === "identity" || mode === "full") && (
         <div className="pf-highlights-slot" style={{ order: 1 }}>
-          <ProfileHighlights nickname={nickname} matches={matches} rows={myRows} onOpenProfile={onOpenProfile}
+          <ProfileHighlights nickname={nickname} matches={matches} extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges}
+            onOpenNumbers={isMe && !asOthers ? onOpenNumbers : undefined} onOpenProfile={onOpenProfile}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+        </div>
+      )}
+      {mode === "identity" && isMe && (
+        <div className="pf-highlights-slot" style={{ order: 2 }}>
+          <ClubInbox meRow={meRow} players={players} toast={toast} />
         </div>
       )}
       {mode === "identity" && isMe && (
@@ -1137,6 +1157,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button type="button" className="pf-id-card" onClick={onPreview}>
             <Eye size={20} /><span className="pf-id-card-text"><strong>{t("So sehen dich andere")}</strong><small>{t("Kugel, Name, Motto, Rating und Erfolge")}</small></span><ChevronRight size={18} />
           </button>
+          {clubData.loaded && (
+            <button type="button" className="pf-id-card" data-tour="clubs-entry" onClick={openClubs}>
+              <Users size={20} /><span className="pf-id-card-text"><strong>{t("Clubs")}</strong><small>{myClubCount > 0 ? t("{n} Club(s) – verwalten, einladen, beitreten", { n: myClubCount }) : t("Gründen, beitreten oder anfragen")}</small></span><ChevronRight size={18} />
+            </button>
+          )}
           <button type="button" className="pf-id-card" onClick={onInvite}>
             <UserPlus size={20} /><span className="pf-id-card-text"><strong>{t("Einladen")}</strong><small>{t("Freunde per Code ins Spiel holen")}</small></span><ChevronRight size={18} />
           </button>

@@ -1,7 +1,7 @@
 /* ============================================================
    HELFER
    ============================================================ */
-import { t } from "./i18n";
+import { t, getLang } from "./i18n";
 
 export const BALL_PALETTE = ["#E8B321", "#2B5DA8", "#C0392B", "#6C4AB0", "#E07B2F", "#2E7D4F", "#8B3A2E", "#B0578D"];
 export const hashColor = (name = "") => {
@@ -13,6 +13,17 @@ export const initials = (name = "?") => {
   const parts = String(name).trim().split(/\s+/);
   return (parts.length > 1 ? parts[0][0] + parts[1][0] : String(name).slice(0, 2)).toUpperCase();
 };
+/* Rating mit EINER Nachkommastelle ("503,4" auf Deutsch, "503.4" auf Englisch) - damit auch kleine Bewegungen sichtbar sind. null/undefined -> "–".
+   Gerundet wird hier nicht fuer die Rechnung (die laeuft mit dem vollen Wert), nur fuer die Anzeige. */
+const RATING_FMT = {};
+export const fmtRating = (n) => {
+  if (n == null || n === "" || Number.isNaN(Number(n))) return "–";
+  const loc = getLang() === "en" ? "en-US" : "de-AT";
+  const f = (RATING_FMT[loc] ||= new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }));
+  return f.format(Number(n));
+};
+/* Zeilen der View rangliste: rating_dec (eine Nachkommastelle) ersetzt rating (ganze Zahl), sobald die Migration 2026-10-19g da ist. */
+export const withRatingDecimals = (rows) => (rows || []).map((r) => (r.rating_dec != null ? { ...r, rating: Number(r.rating_dec) } : r));
 export const winProb = (ra, rb) => 1 / (1 + Math.pow(2, (rb - ra) / 100));
 export const fmtDate = (d) => {
   if (!d) return "-";
@@ -67,10 +78,13 @@ export const DECAY_WARN_DAYS = 5;
 export const PROVISIONAL_GAMES = 10;
 // null = kein Hinweis noetig, "soon" = Frist laeuft bald ab (noch kein
 // Verfall), "decaying" = Rating bewegt sich bereits aktiv Richtung 500.
-// Wichtig: das ist KEIN reines Sinken - ein Rating UNTER 500 steigt beim
-// Verfall (siehe playerBadgeStatus()/DecayBadge.jsx fuer die Richtung).
-export const decayStatus = (letztePartie) => {
+// Seit 2026-10-18 verfaellt nur noch ein Rating UEBER 500 (sinkt Richtung
+// 500); ein Rating <= 500 bleibt in der Pause unveraendert, sonst waere Warten
+// eine Taktik schwaecherer Spieler (supabase/2026-10-18_decay_only_above_500.sql).
+// Ohne rating (alte Aufrufer) gilt die Frist wie bisher.
+export const decayStatus = (letztePartie, rating) => {
   if (!letztePartie) return null;
+  if (rating != null && rating <= 500) return null;
   const days = Math.floor((Date.now() - new Date(letztePartie)) / 86400000);
   if (days > DECAY_GRACE_DAYS) return "decaying";
   if (days > DECAY_GRACE_DAYS - DECAY_WARN_DAYS) return "soon";
@@ -89,9 +103,12 @@ export const decayDaysLeft = (letztePartie) => {
 // Standard-Rangliste ausgeblendet) ist die relevantere Info. "provisional"
 // ist am wenigsten dringend (reine Kalibrierungs-Info) und kommt nur zum
 // Zug, wenn sonst nichts zutrifft.
-export const playerBadgeStatus = ({ aktiv, letzte_partie, vorlaeufig } = {}) => {
+// "dormant" = seit 60 Tagen kein Match (Spalte "ruhend" der Rangliste): steht
+// nicht in der Rating-Rangliste, das Rating selbst aendert sich dadurch nicht.
+export const playerBadgeStatus = ({ aktiv, ruhend, letzte_partie, vorlaeufig, rating } = {}) => {
   if (aktiv === false) return "inactive";
-  const decay = decayStatus(letzte_partie);
+  if (ruhend === true) return "dormant";
+  const decay = decayStatus(letzte_partie, rating);
   if (decay) return decay;
   if (vorlaeufig) return "provisional";
   return null;

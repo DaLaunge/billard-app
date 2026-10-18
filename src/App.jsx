@@ -9,12 +9,14 @@ import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs, clearRef } from "./lib/session";
+import { getVs, clearVs, clearRef, getClubCode, clearClubCode } from "./lib/session";
+import { setClubData, setClubLoader, reloadClubs } from "./lib/clubStore";
+import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
 import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
-import { hashColor, initials, isDoubles, mSide, fmtDate } from "./lib/format";
+import { hashColor, initials, isDoubles, mSide, fmtDate, withRatingDecimals } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION, HEYBALL } from "./lib/constants";
 import Emoji from "./components/Emoji";
@@ -879,7 +881,7 @@ export default function App() {
     const ct = await loadBadgeCatalog([...new Set((bg.data ?? []).map((r) => r.badge_key))]);
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || pn.error;
     if (err) toast(isNetworkError(err) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + err.message);
-    setRangliste(rang.data ?? []);
+    setRangliste(withRatingDecimals(rang.data ?? []));
     const allMatches = attachMatchPlayers(m.data ?? [], pl.data ?? []);
     setMatches(allMatches.filter((x) => x.confirmed));
     setUnconfirmed(allMatches.filter((x) => !x.confirmed));
@@ -901,6 +903,7 @@ export default function App() {
     // Kein harter Fehler, falls die RPC (noch) nicht existiert (Migration nicht
     // eingespielt) oder scheitert - Fortschrittsanzeige faellt dann einfach weg.
     setAchievementCounters(ac?.data ?? null);
+    loadClubs();   // eigenstaendig: fehlende Tabelle (Migration) darf das Laden nie stoeren
     setInitialLoadDone(true);
     const snap = await snapPromise;
     if (snap.error && !err) toast(isNetworkError(snap.error) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + snap.error.message);
@@ -1207,6 +1210,35 @@ export default function App() {
   // spaeter irgendwo gutgeschrieben werden. Ein Neuer hat noch keinen
   // "player", dessen Code bleibt also bis zur Registrierung erhalten.
   useEffect(() => { if (player) clearRef(); }, [player]);
+  // Clubs (supabase/2026-10-19b_clubs.sql): Clubs, Mitglieder und Hauptclub je Spieler. Fehlt die Tabelle noch, bleibt der
+  // Speicher leer und alle Club-Stellen der App erscheinen gar nicht. Spieler OHNE Club sind der Normalfall.
+  const loadClubs = useCallback(async () => {
+    try {
+      const [c, m, h, rq] = await Promise.all([
+        supabase.from("clubs").select("id, name, tag, color, logo_at, motto, created_by, created_at")
+          .then((r) => (r.error ? supabase.from("clubs").select("id, name, tag, color, logo_at, created_by, created_at") : r))   // motto fehlt vor Migration 19f
+          .then((r) => (r.error ? supabase.from("clubs").select("id, name, tag, color, created_by, created_at") : r)),   // logo_at fehlt vor Migration 19e
+        supabase.from("club_members").select("club_id, player_id, role, joined_at"),
+        supabase.from("players").select("id, nickname, home_club_id"),
+        supabase.from("club_requests").select("id, club_id, player_id, kind, status, created_by, created_at, decided_at"),   // fehlt die Tabelle (Migration 19c): leer
+      ]);
+      if (c.error || m.error) return;
+      const home = {};
+      (h.data ?? []).forEach((r) => { if (r.home_club_id) home[r.id] = r.home_club_id; });
+      setClubData(c.data ?? [], m.data ?? [], home, rq.error ? [] : (rq.data ?? []), h.data ?? []);
+    } catch { /* offline: alter Stand bleibt */ }
+  }, []);
+  useEffect(() => { setClubLoader(loadClubs); }, [loadClubs]);
+  // Einladungs-Link /?club=CODE: sobald ein Spieler da ist, beitreten (einmalig), dann Code verwerfen
+  useEffect(() => {
+    const code = getClubCode();
+    if (!code || !player) return;
+    clearClubCode();
+    supabase.rpc("join_club", { p_code: code }).then(({ data, error }) => {
+      if (error) toast(error.message);
+      else { toast(t("Du bist dem Club „{name}“ beigetreten.", { name: data?.name || "" })); reloadClubs(); }
+    });
+  }, [player]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1576,6 +1608,7 @@ export default function App() {
         {session && player && !player.must_change_password && initialLoadDone && (
           <>
             <ConfirmHost />
+            <ClubMembersHost me={player} rangliste={rangliste} matches={matches} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={openProfile} toast={toast} />
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
                 <div className="celebrate-card scrolls" onClick={(e) => e.stopPropagation()}>
@@ -1806,7 +1839,7 @@ export default function App() {
                 <MatchProtokollScreen match={matches.find((mm) => mm.id === protokollMatch.id) || protokollMatch} me={player} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
               )}
               {(tab === "profil" || tab === "zahlen" || tab === "erfolge") && (
-                <ProfilScreen key={tab} mode={tab === "profil" ? "identity" : tab} onPreview={() => navPush({ tab: "profilvorschau" })} onOpenAchievements={() => navPush({ tab: "erfolge" })} onEditChange={setProfilEdit} closeEditTick={closeEditTick} nickname={player.nickname} matches={matches} rangliste={rangliste}
+                <ProfilScreen key={tab} mode={tab === "profil" ? "identity" : tab} onPreview={() => navPush({ tab: "profilvorschau" })} onOpenAchievements={() => navPush({ tab: "erfolge" })} onOpenNumbers={() => navPush({ tab: "zahlen" })} onEditChange={setProfilEdit} closeEditTick={closeEditTick} nickname={player.nickname} matches={matches} rangliste={rangliste}
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}

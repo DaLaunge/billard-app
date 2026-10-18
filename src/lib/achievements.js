@@ -36,7 +36,7 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
       hb.opps.add(first ? m.p2.nickname : m.p1.nickname);
       if (my > opp) { hb.wins++; hb.streak++; if (opp === 0) hb.shutouts++; } else hb.streak = 0;
     });
-  const { dsc, cross, dbl, hill } = disciplineExtras(nickname, matches);
+  const { dsc, cross, dbl, hill, act } = disciplineExtras(nickname, matches);
   const myId = players.find((p) => p.nickname === nickname)?.id;
   const recruitedCount = myId ? players.filter((p) => p.invited_by === myId).length : 0;
   const challengesAccepted = myId
@@ -73,7 +73,7 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
     highRun,
     recruitedCount,
     challengesAccepted,
-    dsc, cross, dbl, hill,
+    dsc, cross, dbl, hill, act,
     heyballMatches: hb.matches,
     heyballWins: hb.wins,
     heyballShutouts: hb.shutouts,
@@ -89,7 +89,15 @@ export function computeAchievementExtras(nickname, matches, players, challenges)
    disciplineBadges.js): je Disziplin Matches, Siege, zu null, verschiedene Gegner und die AKTUELLE Siegesserie (wie bei
    den allgemeinen Serien), dazu der kleinste Wert ueber alle Disziplinen und die Doppel-Zahlen. Gezaehlt wie in
    compute_discipline_badges(): nur bestaetigte Matches ohne Gaeste; Einzel je Disziplin, Doppel getrennt. */
+// Wiener Kalendertag als Tagesnummer (1.1.1970 = 0) - gleiche Rechnung wie compute_discipline_badges() in der Datenbank.
+const viennaFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Vienna", year: "numeric", month: "2-digit", day: "2-digit" });
+const viennaDay = (iso) => {
+  const [y, mo, d] = viennaFmt.format(new Date(iso)).split("-").map(Number);
+  return Math.floor(Date.UTC(y, mo - 1, d) / 86400000);
+};
+
 function disciplineExtras(nickname, matches) {
+  const days = new Set(); // Aktivitaet: Tage, an denen gespielt wurde (alle bestaetigten Matches ohne Gaeste/Walkover)
   const dsc = {};
   DISCIPLINES.forEach((d) => { dsc[d] = { m: 0, w: 0, n: 0, opps: new Set(), s: 0 }; });
   const dbl = { m: 0, w: 0, partners: new Set(), s: 0 };
@@ -105,17 +113,19 @@ function disciplineExtras(nickname, matches) {
       if (!side) return;
       const partner = side === 1 ? (m.p1.nickname === nickname ? m.p1b : m.p1) : (m.p2.nickname === nickname ? m.p2b : m.p2);
       const won = side === 1 ? m.score1 > m.score2 : m.score2 > m.score1;
+      if (!m.walkover) days.add(viennaDay(m.played_at));
       dbl.m++; dbl.partners.add(partner.nickname);
       if (won) { dbl.w++; dbl.s++; } else dbl.s = 0;
       return;
     }
     if (m.p1.is_guest || m.p2.is_guest) return;
     const d = dsc[m.discipline];
-    if (!d) return;
     let my, opp, oppNick;
     if (m.p1.nickname === nickname) { my = m.score1; opp = m.score2; oppNick = m.p2.nickname; }
     else if (m.p2.nickname === nickname) { my = m.score2; opp = m.score1; oppNick = m.p1.nickname; }
     else return;
+    if (!m.walkover) days.add(viennaDay(m.played_at));
+    if (!d) return;
     d.m++; d.opps.add(oppNick);
     if (m.discipline !== "14/1 Endlos" && Math.abs(my - opp) === 1 && Math.max(my, opp) >= 3) {
       hill.m++;
@@ -128,6 +138,15 @@ function disciplineExtras(nickname, matches) {
     }
     if (my > opp) { d.w++; d.s++; if (opp === 0) d.n++; } else d.s = 0;
   });
+  // Wochen in Folge (Montag-Wochen: floor((Tag + 3) / 7)) und Rueckkehr nach 30+ Tagen Pause
+  const sortedDays = [...days].sort((a, b) => a - b);
+  let aw = 0, run = 0, prevWeek = null, ac = 0;
+  sortedDays.forEach((dn, i) => {
+    const wk = Math.floor((dn + 3) / 7);
+    if (wk !== prevWeek) { run = prevWeek !== null && wk === prevWeek + 1 ? run + 1 : 1; prevWeek = wk; }
+    aw = Math.max(aw, run);
+    if (i > 0 && dn - sortedDays[i - 1] >= 30) ac++;
+  });
   const out = {};
   DISCIPLINES.forEach((k) => { out[k] = { m: dsc[k].m, w: dsc[k].w, n: dsc[k].n, g: dsc[k].opps.size, s: dsc[k].s }; });
   const min = (key) => Math.min(...DISCIPLINES.map((k) => out[k][key]));
@@ -136,17 +155,19 @@ function disciplineExtras(nickname, matches) {
     cross: { w: min("w"), m: min("m"), n: min("n") },
     dbl: { m: dbl.m, w: dbl.w, p: dbl.partners.size, s: dbl.s },
     hill,
+    act: { aw, ad: sortedDays.length, ac },
   };
 }
 
 /* Fortschritt zu einem Disziplin-Erfolg (Katalogzeile mit `family`): Stand aus disciplineExtras(). */
 function familyProgress(b, e) {
   const d = b.discipline && e.dsc ? e.dsc[b.discipline] : null;
-  const x = e.cross, g = e.dbl, h = e.hill;
+  const x = e.cross, g = e.dbl, h = e.hill, a = e.act;
   const map = {
     m: [d?.m, t("Match(es)")], w: [d?.w, t("Sieg(e)")], n: [d?.n, t("Zu-Null-Sieg(e)")], s: [d?.s, t("Sieg(e) in Folge")], g: [d?.g, t("verschiedene Gegner")],
     xw: [x?.w, t("Sieg(e) in der schwächsten Disziplin")], xm: [x?.m, t("Match(es) in der schwächsten Disziplin")], xn: [x?.n, t("Zu-Null-Sieg(e) in der schwächsten Disziplin")],
     dm: [g?.m, t("Doppel")], dw: [g?.w, t("Doppel-Sieg(e)")], ds: [g?.s, t("Doppel-Sieg(e) in Folge")], dp: [g?.p, t("verschiedene Partner")],
+    aw: [a?.aw, t("Woche(n) in Folge")], ad: [a?.ad, t("Spieltag(e)")], ac: [a?.ac, t("Rückkehr(en) nach Pause")],
     hm: [h?.m, t("Hill-Hill-Match(es)")], hw: [h?.w, t("Hill-Hill-Sieg(e)")], hc: [h?.c, t("Hill-Hill-Sieg(e) nach Rückstand")],
   };
   const hit = map[b.family];

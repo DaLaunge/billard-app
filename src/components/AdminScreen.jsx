@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown, Users, Trash2 } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -11,9 +11,43 @@ import PlayerPicker from "./PlayerPicker";
 import FeedbackThread from "./FeedbackThread";
 import { rpcRetry } from "../lib/rpcRetry";
 import { EmojiText } from "./Emoji";
+import ClubTag from "./widgets/ClubTag";
+import { useClubData, reloadClubs } from "../lib/clubStore";
 
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
+  const clubData = useClubData();
+  // Gaeste: Name, Matches, zuletzt gespielt, angelegt - plus Loeschen. Nur Anzeige und Aufraeumen; Gaeste zaehlen nicht fuers Rating.
+  const [showAllGuests, setShowAllGuests] = useState(false);
+  const guestRows = (() => {
+    const stat = {};
+    (matches || []).forEach((m) => {
+      [m.p1, m.p1b, m.p2, m.p2b].forEach((p) => {
+        if (!p?.is_guest) return;
+        const e = (stat[p.nickname] ||= { n: 0, last: null });
+        e.n++;
+        if (!e.last || new Date(m.played_at) > new Date(e.last)) e.last = m.played_at;
+      });
+    });
+    return players.filter((p) => p.is_guest)
+      .map((p) => ({ p, n: stat[p.nickname]?.n || 0, last: stat[p.nickname]?.last || null }))
+      .sort((a, b) => (new Date(b.last || b.p.created_at)) - (new Date(a.last || a.p.created_at)));
+  })();
+  const deleteGuest = async ({ p, n }) => {
+    if (!(await appConfirm(t("Gast „{name}“ mit {n} Matches löschen? Die Matches des Gastes werden mit gelöscht.", { name: p.nickname, n })))) return;
+    const { error } = await supabase.rpc("admin_delete_player", { p_player: p.id, p_confirm_nickname: p.nickname });
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await onReload();
+    toast(t("Gast gelöscht."));
+  };
+  const deleteClub = async (c) => {
+    if (!(await appConfirm(t("Den Club „{name}“ endgültig löschen? Alle Mitglieder verlieren den Tag.", { name: c.name })))) return;
+    if (c.logo_at) { try { await supabase.storage.from("club-logos").remove([`${c.id}/logo`]); } catch { /* egal */ } }
+    const { error } = await supabase.rpc("delete_club", { p_club: c.id });
+    if (error) { toast(error.message); return; }
+    await reloadClubs();
+    toast(t("Club gelöscht."));
+  };
   const [busy, setBusy] = useState(false);
   const [busyBadges, setBusyBadges] = useState(false);
   const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
@@ -54,8 +88,11 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     return v && v.app_version != null ? Number(a) * 1e6 + Number(b || 0) : -1;
   };
 
+  // Gaeste (Platzhalter ohne Login) haben einen eigenen Abschnitt und stehen nicht in der Mitgliederliste
+  const guestIds = new Set(players.filter((p) => p.is_guest).map((p) => p.id));
+  const memberLogins = (logins || []).filter((l) => !guestIds.has(l.player_id));
   const visibleLogins = (() => {
-    let rows = logins || [];
+    let rows = memberLogins;
     const q = memQuery.trim().toLowerCase();
     if (q) {
       rows = rows.filter((p) => {
@@ -455,12 +492,12 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
 
       <section className="stat-block">
         <div className="mem-head-row">
-          <h3><User size={17} /> {t("Mitglieder")} ({logins ? logins.length : players.length})</h3>
-          {logins && logins.length > 0 && (
+          <h3><User size={17} /> {t("Mitglieder")} ({logins ? memberLogins.length : players.length - guestIds.size})</h3>
+          {logins && memberLogins.length > 0 && (
             <button className="csv-btn" onClick={downloadCsv}><Download size={14} /> CSV</button>
           )}
         </div>
-        {logins && logins.length > 0 && (
+        {logins && memberLogins.length > 0 && (
           <div className="mem-tools">
             <input type="search" className="mem-search" placeholder={t("Suchen in allen Daten …")} value={memQuery}
               onChange={(e) => setMemQuery(e.target.value)} />
@@ -468,7 +505,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         )}
         {logins == null ? (
           <p className="hint">{t("Lade ...")}</p>
-        ) : logins.length === 0 ? (
+        ) : memberLogins.length === 0 ? (
           <p className="hint">{t("Noch keine Daten.")}</p>
         ) : (
           <div className="mem-list">
@@ -609,8 +646,46 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             {t("„–“ = App seit v377 nicht geöffnet oder noch eine ältere Version.")}
           </p>
         )}
-        {logins && logins.length > 0 && visibleLogins.length === 0 && <p className="hint">{t("Keine Treffer.")}</p>}
+        {logins && memberLogins.length > 0 && visibleLogins.length === 0 && <p className="hint">{t("Keine Treffer.")}</p>}
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
+      </section>
+
+      {clubData.loaded && (
+        <section className="stat-block">
+          <h3><Users size={17} /> {t("Clubs")} ({clubData.clubs.length})</h3>
+          {clubData.clubs.length === 0 && <p className="hint">{t("Noch keine Clubs.")}</p>}
+          {clubData.clubs.map((c) => {
+            const members = clubData.members.filter((m) => m.club_id === c.id);
+            const owner = players.find((p) => p.id === members.find((m) => m.role === "owner")?.player_id);
+            return (
+              <div key={c.id} className="club-row admin-club-row">
+                <ClubTag club={c} />
+                <span className="club-row-name">{c.name}</span>
+                <span className="club-row-meta">{owner?.nickname || "?"} · {members.length}</span>
+                <button className="icon-btn small warn" title={t("Club löschen")} aria-label={t("Club löschen")} onClick={() => deleteClub(c)}><Trash2 size={15} /></button>
+              </div>
+            );
+          })}
+          <p className="hint">{t("Moderation: Clubs gründet jeder selbst (Profil bearbeiten → Clubs). Hier lassen sich Clubs bei Missbrauch löschen.")}</p>
+        </section>
+      )}
+
+      <section className="stat-block">
+        <h3><User size={17} /> {t("Gäste")} ({guestRows.length})</h3>
+        {guestRows.length === 0 && <p className="hint">{t("Noch keine Gäste.")}</p>}
+        <div className="admin-guests">
+          {(showAllGuests ? guestRows : guestRows.slice(0, 12)).map((g) => (
+            <div key={g.p.id} className="admin-guest-row">
+              <span className="admin-guest-name">{g.p.nickname}</span>
+              <span className="admin-guest-meta">{g.n} {t("Matches")}{g.last ? ` · ${fmtDate(g.last)}` : ` · ${t("angelegt")} ${fmtDate(g.p.created_at)}`}</span>
+              <button className="icon-btn small warn" title={t("Gast löschen")} aria-label={t("Gast löschen")} onClick={() => deleteGuest(g)}><Trash2 size={15} /></button>
+            </div>
+          ))}
+        </div>
+        {guestRows.length > 12 && (
+          <button className="btn ghost small" onClick={() => setShowAllGuests((v) => !v)}>{showAllGuests ? t("Weniger anzeigen") : t("Alle {n} anzeigen", { n: guestRows.length })}</button>
+        )}
+        <p className="hint">{t("Gäste sind Platzhalter ohne Login, werden im Match immer von Hand eingetippt und zählen nicht fürs Rating.")}</p>
       </section>
 
       <section className="stat-block">

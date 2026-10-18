@@ -1143,6 +1143,9 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
    lesbar bleiben. */
 .stat-row.mine { background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 10px;
   padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
+/* Die Zeile ist ein Knopf mit width: 100% - dann machen die negativen Raender sie NICHT breiter, sondern schieben sie nur nach links,
+   und alle Werte der eigenen Zeile sassen 16 px weiter links als in den anderen Zeilen (Nutzer-Feedback 2026-10-19). Breite = 100% + 2 x 8 px. */
+.stat-row.as-btn.mine { width: calc(100% + 16px); box-sizing: border-box; }
 .stat-my-rank { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
 .stat-my-rank b { color: var(--accent); }
 /* Trenner vor der angehefteten eigenen Zeile, wenn der eigene Platz
@@ -1551,12 +1554,6 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
   .chip-btn.no:hover { background: var(--loss); color: #fff; }
 }
 
-/* ===== Statistik: linke UserPanel-Spalte (siehe src/components/widgets) =====
-   Am Handy ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px als
-   duenn-breit-duenn-Seitenspalte sichtbar (siehe .stat-split unten). */
-.ov-side { display: none; flex-direction: column; gap: var(--card-gap); }
-.ov-side-extra { display: none; }
-.ov-side .stat-block { margin-bottom: 0; }
 .side-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .side-row:last-of-type { border-bottom: none; }
 .side-row-emoji { font-size: 16px; line-height: 1; }
@@ -1748,14 +1745,6 @@ button.id-card-head { cursor: pointer; }
      erben sie von hier. */
   .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; margin: 0 auto; }
 
-  /* .ov-side ist bewusst NICHT sticky (anders als frueher) - UserPanel ist
-     hier oft hoeher als der Viewport, ein sticky-Block der nie vollstaendig
-     ins Bild passt wirkt beim Scrollen wie haengengeblieben statt wie
-     "bleibt sichtbar". Scrollt normal mit wie jede andere Spalte
-     (siehe .stat-split weiter unten fuer die Spaltenaufteilung). */
-  .ov-side { display: flex; grid-column: 1; grid-row: 1 / span 2; order: 0; }
-  .ov-side-extra { display: flex; flex-direction: column; gap: var(--card-gap); }
-
   /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Statistik und
      Live). Welche Karte in welcher der drei Spalten steht, entscheidet
      der Nutzer (cardLayout.js) - fest ist nur die Identitaetskarte oben
@@ -1814,9 +1803,8 @@ button.id-card-head { cursor: pointer; }
      gerade eingeklappt und daher kurz waren (Nutzer-Feedback: "sehr viel
      Zwischenraum, wenn zugeklappt"), und eine leer gewordene Spalte liess
      ihre Spur als breite Luecke stehen. */
-  .phone.app .screen:has(.live-split) { max-width: 1440px; }
+  .phone.app .screen:has(.live-split) { max-width: 820px; }
   .live-split { display: flex; flex-direction: row; gap: 24px; align-items: flex-start; }
-  .live-split .ov-side { flex: 0 0 300px; }
   .live-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
   .live-col.middle { flex: 1; }
   .live-col.right { flex: 0 0 300px; }
@@ -1831,8 +1819,8 @@ button.id-card-head { cursor: pointer; }
      (siehe StatistikScreen.jsx/cardLayout.js), ganz oben rechts fix die
      globale Disziplin-/Top-N-Auswahl (Nutzer-Feedback: dort statt als
      eigene volle Zeile ueber allen drei Spalten). */
-  .phone.app .screen:has(.stat-split) { max-width: 1440px; }
-  .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  .phone.app .screen:has(.stat-split) { max-width: 1240px; }
+  .stat-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
   /* .stat-grid (alle rechten Karten, inkl. der globalen Auswahl - eine
      einzelne Huelle, siehe .stat-right-col{display:contents} weiter oben)
      bekommt hier ein eigenes Grid-Feld statt als eigenes mehrzeiliges
@@ -1840,10 +1828,10 @@ button.id-card-head { cursor: pointer; }
      auto-Zeile sonst anhand des hoechsten Elements, das sie beruehrt, was
      frueher (Nutzer-Feedback: "nach einem Push zu viel Platz zwischen den
      Karten") eine grosse leere Luecke erzeugte. */
-  .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; }
+  .stat-right-col { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; }
   .stat-chart-col, .stat-grid { order: 0; }
   .stat-chart-col, .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
-  .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
+  .stat-chart-col { grid-column: 1; grid-row: 1; }
   .card-column-btn { display: inline-flex; }
   .card-maximize-btn { display: inline-flex; }
   .stat-empty-dropzone { display: flex; }
@@ -3162,3 +3150,179 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 .app-drawer-pick-chip { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: 0; border-radius: 9px; background: var(--felt-3); color: var(--ivory); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
 .app-drawer-pick-chip b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 11px; }
 .app-drawer-pick-chip svg { color: var(--accent); }
+
+/* Clubs / Club-Tags (supabase/2026-10-19b_clubs.sql). Farben kommen vom Club (inline), alles Uebrige aus den Theme-Tokens. */
+.club-tag { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  letter-spacing: .05em; line-height: 1.6; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.club-tag-name { font-weight: 500; letter-spacing: 0; }
+.club-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
+.clubs-card .club-block { margin-top: 8px; }
+.club-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 12px; border: 1.5px solid transparent;
+  background: var(--surface-btn); color: var(--ivory); text-align: left; cursor: pointer; font: inherit; }
+.club-row:hover { border-color: var(--btn-border); }
+.club-row-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.club-row-meta { font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
+.club-home { color: var(--accent); flex: 0 0 auto; }
+.club-chev { flex: 0 0 auto; color: var(--ivory-dim); }
+.club-chev.open { transform: rotate(180deg); }
+.club-detail { padding: 8px 4px 4px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.club-sub { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ivory-dim); margin: 10px 0 2px; }
+.club-members { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 4px; }
+.club-members li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.club-member-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.club-member-actions { display: inline-flex; gap: 2px; flex: 0 0 auto; }
+.club-form { display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; }
+.club-form input:not([type="color"]) { flex: 1 1 90px; min-width: 0; }
+.club-form .club-tag-input { flex: 0 1 84px; text-transform: uppercase; letter-spacing: .08em; }
+.club-form .club-code-input { flex: 1 1 140px; text-transform: uppercase; letter-spacing: .08em; }
+.club-code { display: flex; align-items: center; gap: 6px; }
+.club-code code { font-size: 17px; letter-spacing: .12em; padding: 4px 10px; border-radius: 8px; background: var(--felt); }
+.club-danger { margin-top: 10px; display: flex; gap: 8px; }
+.club-create-btn { margin-top: 12px; }
+.admin-club-row { margin-top: 8px; cursor: default; }
+.club-qr { background: #fff; padding: 6px; border-radius: 10px; line-height: 0; align-self: flex-start; }
+.club-search { width: 100%; }
+.club-cand { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 2px 4px; }
+.club-inbox-row { cursor: default; margin-top: 8px; }
+
+/* Eingabefelder der Club-Karte im App-Look (wie .mail-row: dunkle Flaeche, feine Linie, rund) */
+.club-form input:not([type="color"]) { background: var(--felt); border: 1px solid var(--line); border-radius: 14px; padding: 11px 14px;
+  color: var(--ivory); font: inherit; font-size: 15px; outline: none; min-width: 0; transition: border-color .15s ease; }
+.club-form input:not([type="color"])::placeholder { color: var(--ivory-dim); letter-spacing: 0; text-transform: none; }
+.club-form input:not([type="color"]):focus { border-color: var(--accent); }
+.club-form input[type="color"] { -webkit-appearance: none; appearance: none; width: 38px; height: 38px; padding: 0; border: 1.5px solid var(--line);
+  border-radius: 50%; background: transparent; cursor: pointer; overflow: hidden; flex: 0 0 auto; }
+.club-form input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.club-form input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+.club-form input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
+.club-form input[type="color"]:focus-visible { border-color: var(--accent); }
+
+/* Club-Logo: winziges Rundbild im Tag und eine Vorschau in der Verwaltung (supabase/2026-10-19e_club_logo.sql) */
+.club-tag-logo { width: 14px; height: 14px; border-radius: 50%; object-fit: cover; margin: 0 5px 0 -4px; background: #ffffff40; flex: 0 0 auto; }
+.club-tag { gap: 0; }
+.club-logo-row { display: flex; align-items: center; gap: 8px; }
+.club-logo-prev { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--felt); border: 1px solid var(--line); color: var(--ivory-dim); }
+.club-logo-prev img { width: 100%; height: 100%; object-fit: cover; display: block; }
+label.icon-btn { display: inline-grid; place-items: center; cursor: pointer; }
+label.icon-btn.disabled { opacity: .5; cursor: default; }
+
+/* Suchfeld in der Club-Karte: kein eckiger Browser-Fokusring im runden Feld, stattdessen Akzent-Rand um das ganze Feld */
+.club-search input:focus-visible { outline: none; }
+.mail-row.club-search:focus-within { border-color: var(--accent); }
+
+/* Club-Wappen: Logo als runder Anstecker an der unteren LINKEN Ecke der Kugel (rechts sitzt der Avatar-Badge-Chip) (Identitaetskarte), mit Ring in der Kartenfarbe */
+.club-tag-logo { width: 18px; height: 18px; margin: -2px 6px -2px -6px; box-shadow: 0 0 0 1.5px #ffffffb0; }
+
+/* Wappen ist antippbar; Logo-Vorschau in der Club-Karte ebenso; grosses Logo im Fenster */
+button.club-logo-prev { padding: 0; cursor: pointer; font: inherit; }
+button.club-logo-prev:hover { border-color: var(--btn-border); }
+.club-logo-modal { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.club-logo-modal h3 { margin: 0; }
+.club-logo-big { width: min(70vw, 256px); height: min(70vw, 256px); border-radius: 50%; object-fit: cover; background: #fff; }
+button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointer; line-height: 0; }
+
+.club-logo-none { display: grid; place-items: center; font-size: 56px; font-weight: 800; letter-spacing: .04em; }
+
+/* Zwei gleich gebaute Info-Kacheln unter dem Namen: Club und staerkste Disziplin (Identitaetskarte) */
+.id-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; margin: 12px auto 0; }
+.id-tile { display: inline-flex; align-items: center; gap: 9px; padding: 6px 14px 6px 6px; border-radius: 16px; background: var(--surface-btn);
+  min-width: 0; max-width: 100%; text-align: left; }
+.id-tile-club { cursor: pointer; border: 1.5px solid transparent; }
+.id-tile-club:hover { border-color: var(--btn-border); }
+.id-tile-disc { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; flex: 0 0 auto; font-weight: 800; font-size: 12px; letter-spacing: .02em; }
+.id-tile-disc.ball { overflow: visible; background: none; }
+.id-tile-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.id-tile-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.id-tile-text strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.id-tile-text small { font-size: 11.5px; color: var(--ivory-dim); letter-spacing: .03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Club-Tag neben Spielernamen in Listen (Klick: Mitgliederliste) und das Mitglieder-Fenster */
+.club-tag-link { display: inline-flex; flex: 0 0 auto; margin-left: 6px; vertical-align: middle; cursor: pointer; line-height: 1; }
+.club-tag-link .club-tag { font-size: 10px; padding: 0 6px; line-height: 1.6; }
+.club-tag-link:hover .club-tag, .club-tag-link:focus-visible .club-tag { filter: brightness(1.12); }
+.opp-card .club-tag-link { margin: 2px 0 0; }
+.club-members-modal { display: flex; flex-direction: column; gap: 12px; max-height: min(80dvh, 640px); }
+.cm-head { display: flex; align-items: center; gap: 12px; }
+.cm-logo { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; border: none; padding: 0; display: grid; place-items: center; flex: 0 0 auto; font-size: 15px; cursor: pointer; }
+.cm-logo:disabled { cursor: default; }
+.cm-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cm-title { min-width: 0; }
+.cm-title h3 { margin: 0; overflow-wrap: anywhere; }
+.cm-sub { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12.5px; color: var(--ivory-dim); }
+.cm-list { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.cm-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border-radius: 12px; border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); font: inherit; text-align: left; cursor: pointer; }
+.cm-row:hover { border-color: var(--btn-border); }
+.cm-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
+/* Rekorde-Tabelle ist schmal: der Club-Tag steht UNTER dem Namen, damit dieser nicht buchstabenweise umbricht */
+.rt-namebox { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.rt-namebox .club-tag-link { margin: 2px 0 0; }
+
+/* Stärkste Disziplin als fünfter Wert der Zahlenreihe: Punkte gross, darunter Kugel und Name */
+.id-kpi-disc { display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; }
+
+/* Club-Profil: groesseres Logo, Motto, Kennzahlen; Entdecken-Zeilen sind klickbar */
+.cm-logo { width: 76px; height: 76px; }
+.cm-motto { margin: 6px 0 0; font-style: italic; color: var(--ivory-dim); font-size: 13px; overflow-wrap: anywhere; }
+.cm-kpis { gap: 8px; }
+.cm-kpis b { font-size: 17px; }
+.cm-owner { margin: 0; font-size: 12.5px; color: var(--ivory-dim); }
+.club-form-col { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.club-row-main { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; padding: 0; background: none; border: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.club-row-textcol { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.club-row-motto { font-size: 11.5px; font-style: italic; color: var(--ivory-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.club-row-main:hover .club-row-name { text-decoration: underline dotted; text-underline-offset: 3px; }
+
+/* "Clubs entdecken": Tag, Name und Motto bekommen die volle Breite, der Knopf rutscht in eine eigene Zeile darunter (sonst wird alles abgeschnitten) */
+.club-discover-row { flex-wrap: wrap; row-gap: 8px; align-items: center; }
+.club-discover-row .club-row-main { flex: 1 1 100%; }
+.club-discover-row .club-row-main + * { margin-left: auto; }
+.club-discover-row .club-tag { flex: 0 0 auto; max-width: none; }
+.club-discover-row .club-row-name { white-space: normal; overflow: visible; }
+
+/* "Auf einen Blick": Rekorde als kleines Raster, Titel und Raster oeffnen "Meine Zahlen" (am eigenen Profil) */
+.pf-hl-records { margin: 4px 0 10px; }
+.pf-hl-go { cursor: pointer; }
+.pf-hl-go:hover h3, .pf-hl-go:focus-visible h3 { color: var(--accent); }
+.stat-block-head.pf-hl-go { display: flex; align-items: center; justify-content: space-between; }
+.pf-hl-chev { color: var(--ivory-dim); flex: 0 0 auto; }
+
+.club-home-label { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--accent); }
+.club-pick-hint { margin: 0; text-align: center; }
+button.club-tag-btn:disabled { opacity: .6; cursor: default; }
+
+/* Statistik seit 412.24: zwei gleichwertige Spalten (links Verlauf und Matches, rechts Listen und Rekorde). Die frueher linke Identitaets-
+   und "Meine Zahlen"-Spalte ist weg - beides hat eigene Seiten (Identitaet, Meine Zahlen). Auf breiten Bildschirmen halten die Karten
+   ihre Hoehe nicht mehr mit Gewalt gleich, jede Spalte stapelt fuer sich. */
+
+/* Club-Statistik im Club-Profil: sechs Werte in zwei Reihen, Mitglieder als Club-Rangliste mit Rating */
+.cm-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; text-align: center; }
+.cm-kpis > div { display: flex; flex-direction: column; min-width: 0; }
+.cm-kpis b { display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 16px; }
+.cm-kpis span { font-size: 10.5px; color: var(--ivory-dim); line-height: 1.25; }
+.cm-ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-rank { width: 22px; flex: 0 0 auto; font-weight: 700; color: var(--accent); font-size: 12.5px; }
+.cm-rating { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+
+/* Profilbild-Fenster kompakt (412.28): Kopfzeile = kleine Vorschau-Kugel + Titel + X, darunter EINE Werkzeugzeile (Foto-Knoepfe, Suche, Ansicht),
+   die bei grosser Schrift umbricht; die Zeile "Freigeschaltete Erfolge" gehoert jetzt zur scrollenden Liste. So bekommt die Liste fast die ganze Hoehe. */
+.avatar-sheet-bar { justify-content: flex-start; gap: 12px; padding: 10px 12px 6px 14px; }
+.avatar-sheet-bar strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar-sheet-big { flex: none; line-height: 0; }
+.avatar-sheet-tools { flex-wrap: wrap; row-gap: 8px; padding: 0 14px 8px; }
+.avatar-sheet-tools .avatar-photo-actions { flex: none; flex-wrap: nowrap; gap: 6px; }
+.avatar-sheet-tools .avatar-photo-actions .icon-btn { width: 36px; height: 36px; }
+.avatar-sheet-tools .avatar-busy { font-size: 11.5px; white-space: nowrap; }
+.avatar-sheet-search { flex: 1 1 130px; }
+.avatar-sheet-list > .avatar-sheet-label { grid-column: 1 / -1; padding: 2px 4px 6px; }
+
+/* Club-Profil: weitere Clubs der Person als Wechsel-Tags unter dem Kopf */
+.cm-others { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.cm-others-label { font-size: 12px; color: var(--ivory-dim); text-align: center; }
+
+/* Verwaltung: Gaeste-Liste; Match: Gast-Karte mit zwei Knoepfen (Gast eintragen / lieber registrieren) */
+.admin-guests { display: flex; flex-direction: column; gap: 2px; margin: 6px 0 10px; }
+.admin-guest-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.admin-guest-name { font-weight: 600; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-guest-meta { color: var(--ivory-dim); font-size: 12px; white-space: nowrap; }
+.guest-empty-card .btn.ghost { margin-top: 6px; }

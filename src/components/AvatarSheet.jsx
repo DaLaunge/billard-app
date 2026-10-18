@@ -70,16 +70,16 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     <div className="modal-overlay avatar-sheet-overlay" onClick={onClose}>
       <div className="avatar-sheet" role="dialog" aria-modal="true" aria-label={t("Dein Profilbild")} onClick={(e) => e.stopPropagation()}>
         <div className="avatar-sheet-bar">
+          <div className="avatar-sheet-big">
+            <Ball color={colorOf(nick)} label={initials(nick)} badge={badge} photo={photoOf(nick)} size={48} />
+          </div>
           <strong>{t("Dein Profilbild")}</strong>
           <button type="button" className="avatar-sheet-close icon-btn" onClick={onClose} aria-label={t("Schließen")}><X size={20} /></button>
         </div>
-        <div className="avatar-sheet-head">
-          <div className="avatar-sheet-big">
-            <Ball color={colorOf(nick)} label={initials(nick)} badge={badge} photo={photoOf(nick)} size={128} />
-          </div>
-          <AvatarPhotoField hasPhoto={!!photoOf(nick)} onReload={onReload} toast={toast} />
-        </div>
+        {/* Alles Feste ist bewusst NUR diese beiden Zeilen (kleine Vorschau-Kugel, Foto-Knoepfe, Suche, Ansicht): die frueher 128 px grosse Kugel
+            samt Kopfzone fraß am Handy - vor allem bei Schriftzoom - fast den ganzen Platz, die Erfolge waren kaum zu sehen (Nutzer-Feedback 412.28). */}
         <div className="avatar-sheet-tools">
+          <AvatarPhotoField hasPhoto={!!photoOf(nick)} onReload={onReload} toast={toast} />
           <label className="avatar-sheet-search">
             <Search size={16} />
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
@@ -92,15 +92,15 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
               aria-pressed={view === "detail"} title={t("Detail")}><List size={16} /></button>
           </div>
         </div>
-        <div className="avatar-sheet-label">
-          <span className="avatar-sheet-label-text">{t("Freigeschaltete Erfolge")} <span>{shown.length}{q ? ` / ${unlocked.length}` : ""}</span></span>
-          {onOpenAchievements && (
-            <button type="button" className="avatar-sheet-all" onClick={onOpenAchievements}>
-              {t("Alle Erfolge")} <ChevronRight size={14} />
-            </button>
-          )}
-        </div>
         <div className={"avatar-sheet-list " + view}>
+          <div className="avatar-sheet-label">
+            <span className="avatar-sheet-label-text">{t("Freigeschaltete Erfolge")} <span>{shown.length}{q ? ` / ${unlocked.length}` : ""}</span></span>
+            {onOpenAchievements && (
+              <button type="button" className="avatar-sheet-all" onClick={onOpenAchievements}>
+                {t("Alle Erfolge")} <ChevronRight size={14} />
+              </button>
+            )}
+          </div>
           {unlocked.length === 0 && <p className="hint">{t("Noch keine Erfolge freigeschaltet.")}</p>}
           {unlocked.length > 0 && shown.length === 0 && <p className="hint">{t("Kein Erfolg gefunden.")}</p>}
           {groups.map((g) => (

@@ -18,6 +18,75 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.27", icon: "🔬",
+    items: ["Ratings werden jetzt mit einer Nachkommastelle angezeigt (z. B. 503,4 statt 503) – so siehst du auch kleine Bewegungen."],
+    en: ["Ratings now show one decimal place (e.g. 503.4 instead of 503) – so you can see even small movements."] },
+  { version: "412.26", icon: "📈",
+    items: ["Das Club-Profil zeigt jetzt gleich die Statistik des Clubs: Mitglieder, Durchschnitts-Rating, Matches, Siegquote gegen andere und das stärkste Mitglied – die Mitglieder stehen als Club-Rangliste mit Rating."],
+    en: ["The club profile now shows the club's stats right away: members, average rating, matches, win rate against others and the strongest member – members are listed as a club ranking with their rating."] },
+  { version: "412.19", icon: "📊",
+    items: ["„Auf einen Blick“ in deiner Identität zeigt jetzt deine wichtigsten Rekorde (beste Serie, Zu-Null-Siege, Höchstserie …) und den Angstgegner. Ein Tipp darauf öffnet „Meine Zahlen“."],
+    en: ["\"At a glance\" in your identity now shows your key records (best streak, shutout wins, high run …) and your nemesis. Tap it to open \"My stats\"."] },
+  { version: "412.18", icon: "🏛️",
+    items: ["Club-Profile: Unter „Clubs entdecken“ (und per Klick auf einen Club-Tag) siehst du zu jedem Club Logo, Motto, Gründer, Mitglieder und das Durchschnitts-Rating. Die Club-Leitung kann ein Motto setzen."],
+    en: ["Club profiles: under \"Discover clubs\" (and by tapping a club tag) you see each club's logo, motto, founder, members and average rating. Club leaders can set a motto."] },
+  { version: "412.15", icon: "👥",
+    items: ["In Listen steht neben Spielern jetzt das Tag ihres Clubs. Ein Tipp darauf zeigt alle Mitglieder des Clubs – und wenn du noch nicht dabei bist, kannst du gleich Beitritt anfragen."],
+    en: ["Lists now show the tag of a player's club next to their name. Tap it to see all members of the club – and if you are not in yet, you can request to join right away."] },
+  { version: "412.14", icon: "🛡️",
+    items: ["Neu auf deiner Identitätskarte: eine Kachel mit deinem Club (Tipp = Logo groß, bei mehreren Clubs mit Wechsel) und deine stärkste Disziplin samt Punkten in der Zahlenreihe. Club-Logos sind jetzt schärfer."],
+    en: ["New on your identity card: a tile with your club (tap = big logo, with a switch if you have several clubs) and your strongest discipline with its points in the numbers row. Club logos are now sharper."] },
+  { version: "412.9", icon: "🖼️",
+    items: ["Clubs können ein Logo bekommen: Die Club-Leitung wählt ein Bild, und es erscheint im Club-Tag."],
+    en: ["Clubs can have a logo: the club leader picks an image and it shows in the club tag."] },
+  { version: "412.8", icon: "🍇",
+    items: ["Neue Farbdesigns: „Pink“ mit knalligem Rosa und „Indigo“ (blauviolett, vorher „Lila“). „Petrol“ ist weggefallen, weil es Grün zu ähnlich sah – wer Petrol hatte, bekommt Grün."],
+    en: ["New color themes: \"Pink\" with a vivid pink accent and \"Indigo\" (blue-violet, formerly \"Purple\"). \"Teal\" is gone because it looked too much like Green – if you had Teal you now get Green."] },
+  { version: "412.6", icon: "💌",
+    items: [
+      "Club-Einladungen: Die Club-Leitung kann Spieler einladen – du entscheidest per Zusage. Oder du fragst selbst bei einem Club an, dann bestätigt ihn die Leitung.",
+      "Neu auf deiner Profilseite: „Clubs“ führt dich zu allen Club-Einstellungen, und „Club-Post“ zeigt offene Einladungen und Anfragen. QR-Codes zum Beitreten gibt es weiterhin.",
+    ],
+    en: [
+      "Club invitations: club leaders can invite players – you decide with a yes. Or request to join a club yourself and the leader confirms.",
+      "New on your profile page: \"Clubs\" takes you to all club settings, and \"Club mail\" shows open invitations and requests. QR codes to join are still there.",
+    ] },
+  { version: "412.5", icon: "🏷️",
+    items: [
+      "Clubs: Gründe deinen eigenen Club mit Kürzel und Farbe – er erscheint als Tag in deinem Profil. Du wirst Club-Leiter, kannst weitere Admins ernennen und die Leitung übergeben.",
+      "Mitglieder treten per Einladungs-Code oder Link bei. Spieler ohne Club sind ganz normal – nichts ändert sich für dich, wenn du keinem Club angehörst.",
+    ],
+    en: [
+      "Clubs: found your own club with a tag and color – it shows as a tag in your profile. You become club leader, can appoint more admins and hand over the leadership.",
+      "Members join with an invite code or link. Players without a club are perfectly normal – nothing changes for you if you are not in a club.",
+    ] },
+  { version: "412.4", icon: "🌱",
+    items: [
+      "Anfänger-Bonus: In den ersten 10 Spielen zählt jedes Match doppelt so stark – dein Rating findet schneller seinen Platz.",
+      "Du erscheinst schon nach deinem ersten Spiel in der Rangliste (unter den gefestigten Ratings, mit „vorläufig“-Zeichen). Nach dem 10. Spiel verschwindet das Zeichen.",
+    ],
+    en: [
+      "Beginner bonus: in your first 10 games every match counts twice as much – your rating finds its place faster.",
+      "You show up in the ranking after your very first game (below the settled ratings, with a \"provisional\" mark). The mark disappears after your 10th game.",
+    ] },
+  { version: "412.3", icon: "📈",
+    items: [
+      "Neue Liste „Aufsteiger“ bei den Bestenlisten: wer in den letzten 30 Tagen die meisten Rating-Punkte gewonnen hat – so kann auch ganz oben stehen, wer von unten aufholt.",
+      "12 neue Aktivitäts-Erfolge: Wochen in Folge gespielt, Spieltage insgesamt und Rückkehr nach einer Pause.",
+    ],
+    en: [
+      "New \"Climbers\" list in the leaderboards: who gained the most rating points in the last 30 days – so players catching up from below can top the list.",
+      "12 new activity achievements: weeks played in a row, days played in total and coming back after a break.",
+    ] },
+  { version: "412.1", icon: "⚖️",
+    items: [
+      "Fairere Rangliste: Pausieren bringt keine Punkte mehr – ein Rating unter 500 bleibt in der Pause unverändert, nur Ratings über 500 sinken Richtung 500.",
+      "Wer 60 Tage nicht gespielt hat, gilt als „ruhend“ und steht nicht mehr in der Rating-Rangliste, bis er wieder ein Match spielt.",
+    ],
+    en: [
+      "Fairer ranking: pausing no longer earns points – a rating below 500 stays unchanged during a break, only ratings above 500 drop toward 500.",
+      "After 60 days without a match a player counts as \"dormant\" and is left out of the rating ranking until they play again.",
+    ] },
   { version: "412", icon: "✨",
     items: [
       "Neues Menü: Über den Hamburger-Knopf erreichst du alle Bereiche (am PC steht es links). Die Punkte in der Leiste unten wählst du selbst – ziehen zum Ordnen, mit der Nadel anheften.",
