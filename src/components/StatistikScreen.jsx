@@ -843,11 +843,11 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const leaderboardById = {
     rangliste: {
       id: "rangliste", tab: t("Rating"), title: t("Rangliste"), icon: <Gauge size={15} />, medals: true,
-      rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.vorlaeufig),
+      rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.ruhend && !r.vorlaeufig),
       nameOf: (r) => r.nickname, valOf: (r) => r.rating,
       extra: (r) => <DecayBadge player={r} iconSize={15} />,
       emptyText: t("Noch keine Ratings in dieser Disziplin."),
-      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
+      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. Unter 10 Spielen gilt ein Rating als vorläufig; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
     },
     meisteSiege: {
       id: "meisteSiege", tab: t("Siege"), title: t("Meiste Siege"), icon: <Trophy size={15} />,

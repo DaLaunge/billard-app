@@ -67,10 +67,13 @@ export const DECAY_WARN_DAYS = 5;
 export const PROVISIONAL_GAMES = 10;
 // null = kein Hinweis noetig, "soon" = Frist laeuft bald ab (noch kein
 // Verfall), "decaying" = Rating bewegt sich bereits aktiv Richtung 500.
-// Wichtig: das ist KEIN reines Sinken - ein Rating UNTER 500 steigt beim
-// Verfall (siehe playerBadgeStatus()/DecayBadge.jsx fuer die Richtung).
-export const decayStatus = (letztePartie) => {
+// Seit 2026-10-18 verfaellt nur noch ein Rating UEBER 500 (sinkt Richtung
+// 500); ein Rating <= 500 bleibt in der Pause unveraendert, sonst waere Warten
+// eine Taktik schwaecherer Spieler (supabase/2026-10-18_decay_only_above_500.sql).
+// Ohne rating (alte Aufrufer) gilt die Frist wie bisher.
+export const decayStatus = (letztePartie, rating) => {
   if (!letztePartie) return null;
+  if (rating != null && rating <= 500) return null;
   const days = Math.floor((Date.now() - new Date(letztePartie)) / 86400000);
   if (days > DECAY_GRACE_DAYS) return "decaying";
   if (days > DECAY_GRACE_DAYS - DECAY_WARN_DAYS) return "soon";
@@ -89,9 +92,12 @@ export const decayDaysLeft = (letztePartie) => {
 // Standard-Rangliste ausgeblendet) ist die relevantere Info. "provisional"
 // ist am wenigsten dringend (reine Kalibrierungs-Info) und kommt nur zum
 // Zug, wenn sonst nichts zutrifft.
-export const playerBadgeStatus = ({ aktiv, letzte_partie, vorlaeufig } = {}) => {
+// "dormant" = seit 60 Tagen kein Match (Spalte "ruhend" der Rangliste): steht
+// nicht in der Rating-Rangliste, das Rating selbst aendert sich dadurch nicht.
+export const playerBadgeStatus = ({ aktiv, ruhend, letzte_partie, vorlaeufig, rating } = {}) => {
   if (aktiv === false) return "inactive";
-  const decay = decayStatus(letzte_partie);
+  if (ruhend === true) return "dormant";
+  const decay = decayStatus(letzte_partie, rating);
   if (decay) return decay;
   if (vorlaeufig) return "provisional";
   return null;

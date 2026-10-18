@@ -693,7 +693,7 @@ const TRANSLATIONS = {
     "Sprache": "Language",
     "Rangliste": "Ranking",
     "Erklärung": "Explanation",
-    "Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match bewegt sich das Rating mit der Zeit wieder Richtung 500 (Startwert). Unter 10 Spielen gilt ein Rating als vorläufig, ohne Match seit 180 Tagen als inaktiv.": "Rating on a Fargo-like Elo system: more points = better, a 100-point difference is roughly a 2:1 win chance. Without a confirmed match, a rating drifts back toward 500 (the starting value) over time. Under 10 games a rating counts as provisional, and as inactive after 180 days without a match.",
+    "Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. Unter 10 Spielen gilt ein Rating als vorläufig; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).": "Rating on a Fargo-like Elo system: more points = better, a 100-point difference is roughly a 2:1 win chance. Without a confirmed match, a rating above 500 drops back toward 500 (the starting value) over time; a rating below stays unchanged. Under 10 games a rating counts as provisional; after 60 days without a match a player is left out of this ranking (dormant).",
     "Schnellstes Tempo (Ø pro Spiel)": "Fastest pace (avg. per game)",
     "Schnellstes 14/1-Tempo (Ø pro Kugel)": "Fastest 14.1 pace (avg. per ball)",
     "Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.": "Average time per individual game in 8-, 9- and 10-ball matches with a saved protocol (only matches reported via the digital counter). Lowest value first. Only players with at least one usable match are listed.",
@@ -1026,18 +1026,23 @@ const TRANSLATIONS = {
     "Punkteverfall - mehr erfahren": "Rating decay - learn more",
     "Punkteverfall bald - mehr erfahren": "Rating decay coming up - learn more",
     "Laenger inaktiv - mehr erfahren": "Inactive for a while - learn more",
+    "Ruhend - mehr erfahren": "Dormant - learn more",
+    "Ruhend": "Dormant",
+    "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":
+      "No confirmed match for over 60 days - this player is not in the rating ranking, but the rating itself is kept.",
+    "Ein neues Match holt den Spieler zurueck in die Rangliste.": "A new match brings the player back into the ranking.",
     "Vorlaeufiges Rating - mehr erfahren": "Provisional rating - learn more",
     "Punkteverfall": "Rating decay",
     "Punkteverfall bald": "Rating decay coming up",
     "Laenger inaktiv": "Inactive for a while",
     "Vorlaeufiges Rating": "Provisional rating",
-    "Ohne bestaetigte Matches bewegt sich ein Rating mit der Zeit wieder Richtung 500 (Startwert) - so bleibt die Rangliste auch bei laengeren Pausen aussagekraeftig.":
-      "Without confirmed matches, a rating gradually drifts back toward 500 (the starting value) over time - this keeps the ranking meaningful even after longer breaks.",
+    "Ohne bestaetigte Matches sinkt ein Rating ueber 500 mit der Zeit wieder Richtung 500 (Startwert) - so bleibt die Rangliste auch bei laengeren Pausen aussagekraeftig.":
+      "Without confirmed matches, a rating above 500 gradually drops back toward 500 (the starting value) over time - this keeps the ranking meaningful even after longer breaks.",
     "Aktuell {richtung} das Rating dadurch.": "Right now that means the rating {richtung}.",
     "Einfach ein Match spielen und bestaetigen lassen, um den Verfall zu stoppen.":
       "Just play a match and get it confirmed to stop the decay.",
-    "Noch {n} Tage, dann bewegt sich das Rating ohne ein neues Match wieder Richtung 500 (Startwert).":
-      "{n} days left before the rating starts drifting back toward 500 (the starting value) without a new match.",
+    "Noch {n} Tage, dann sinkt das Rating ohne ein neues Match wieder Richtung 500 (Startwert).":
+      "{n} days left before the rating starts dropping back toward 500 (the starting value) without a new match.",
     "Spiel rechtzeitig ein Match, um das zu verhindern.": "Play a match in time to prevent that.",
     "Seit ueber 180 Tagen kein bestaetigtes Match - dieser Spieler wird in der Rangliste standardmaessig ausgeblendet.":
       "No confirmed match for over 180 days - this player is hidden from the ranking by default.",

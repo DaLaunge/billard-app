@@ -18,6 +18,15 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.1", icon: "⚖️",
+    items: [
+      "Fairere Rangliste: Pausieren bringt keine Punkte mehr – ein Rating unter 500 bleibt in der Pause unverändert, nur Ratings über 500 sinken Richtung 500.",
+      "Wer 60 Tage nicht gespielt hat, gilt als „ruhend“ und steht nicht mehr in der Rating-Rangliste, bis er wieder ein Match spielt.",
+    ],
+    en: [
+      "Fairer ranking: pausing no longer earns points – a rating below 500 stays unchanged during a break, only ratings above 500 drop toward 500.",
+      "After 60 days without a match a player counts as \"dormant\" and is left out of the rating ranking until they play again.",
+    ] },
   { version: "412", icon: "✨",
     items: [
       "Neues Menü: Über den Hamburger-Knopf erreichst du alle Bereiche (am PC steht es links). Die Punkte in der Leiste unten wählst du selbst – ziehen zum Ordnen, mit der Nadel anheften.",

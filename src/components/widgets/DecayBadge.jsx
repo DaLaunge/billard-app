@@ -7,6 +7,7 @@ const LABEL = {
   decaying: () => t("Punkteverfall - mehr erfahren"),
   soon: () => t("Punkteverfall bald - mehr erfahren"),
   inactive: () => t("Laenger inaktiv - mehr erfahren"),
+  dormant: () => t("Ruhend - mehr erfahren"),
   provisional: () => t("Vorlaeufiges Rating - mehr erfahren"),
 };
 
@@ -32,10 +33,8 @@ export default function DecayBadge({ player, className, iconSize = 20, pulse = f
   const { rating, spiele, letzte_partie } = player;
   const daysLeft = status === "soon" ? decayDaysLeft(letzte_partie) : null;
   const gamesLeft = status === "provisional" ? Math.max(0, PROVISIONAL_GAMES - (spiele ?? 0)) : null;
-  // Verfall bewegt IMMER Richtung 500 - ein Rating darunter STEIGT dabei,
-  // eins darueber sinkt. Nie pauschal "sinkt" behaupten (siehe Kommentar
-  // bei decayStatus() in format.js).
-  const richtung = rating > 500 ? t("sinkt") : rating < 500 ? t("steigt") : null;
+  // Verfall wirkt nur ueber 500 (sinkt), darunter bleibt das Rating stehen.
+  const richtung = rating > 500 ? t("sinkt") : null;
   const Icon = status === "provisional" ? Info : AlertTriangle;
   const cls = [className, status !== "decaying" ? "warn-info" : "", pulse && status === "decaying" ? "warn-pulse" : ""]
     .filter(Boolean).join(" ");
@@ -54,7 +53,7 @@ export default function DecayBadge({ player, className, iconSize = 20, pulse = f
             {status === "decaying" && (
               <>
                 <h3><AlertTriangle size={18} /> {t("Punkteverfall")}</h3>
-                <p>{t("Ohne bestaetigte Matches bewegt sich ein Rating mit der Zeit wieder Richtung 500 (Startwert) - so bleibt die Rangliste auch bei laengeren Pausen aussagekraeftig.")}</p>
+                <p>{t("Ohne bestaetigte Matches sinkt ein Rating ueber 500 mit der Zeit wieder Richtung 500 (Startwert) - so bleibt die Rangliste auch bei laengeren Pausen aussagekraeftig.")}</p>
                 {richtung && <p>{t("Aktuell {richtung} das Rating dadurch.", { richtung })}</p>}
                 <p>{t("Einfach ein Match spielen und bestaetigen lassen, um den Verfall zu stoppen.")}</p>
               </>
@@ -62,7 +61,7 @@ export default function DecayBadge({ player, className, iconSize = 20, pulse = f
             {status === "soon" && (
               <>
                 <h3><AlertTriangle size={18} /> {t("Punkteverfall bald")}</h3>
-                <p>{t("Noch {n} Tage, dann bewegt sich das Rating ohne ein neues Match wieder Richtung 500 (Startwert).", { n: daysLeft })}</p>
+                <p>{t("Noch {n} Tage, dann sinkt das Rating ohne ein neues Match wieder Richtung 500 (Startwert).", { n: daysLeft })}</p>
                 <p>{t("Spiel rechtzeitig ein Match, um das zu verhindern.")}</p>
               </>
             )}
@@ -72,6 +71,13 @@ export default function DecayBadge({ player, className, iconSize = 20, pulse = f
                 <p>{t("Seit ueber 180 Tagen kein bestaetigtes Match - dieser Spieler wird in der Rangliste standardmaessig ausgeblendet.")}</p>
                 {richtung && <p>{t("Aktuell {richtung} das Rating dadurch.", { richtung })}</p>}
                 <p>{t("Ein neues Match holt den Spieler zurueck in die aktive Rangliste.")}</p>
+              </>
+            )}
+            {status === "dormant" && (
+              <>
+                <h3><AlertTriangle size={18} /> {t("Ruhend")}</h3>
+                <p>{t("Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.")}</p>
+                <p>{t("Ein neues Match holt den Spieler zurueck in die Rangliste.")}</p>
               </>
             )}
             {status === "provisional" && (
