@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { clubLogoUrl } from "../../lib/clubLogo";
-import ClubTag from "./ClubTag";
+import ClubTag, { clubColor, inkFor } from "./ClubTag";
 
 /* Club-Logo gross ansehen: Fenster mit dem Logo (so gross wie der Bildschirm es zulaesst, hoechstens 280 px), Clubname und Tag.
    Geoeffnet wird es per Tipp auf das Wappen an der Kugel (IdentityCard) bzw. auf die Logo-Vorschau in der Club-Karte. Die Datei
@@ -11,13 +11,15 @@ export default function ClubLogoModal({ club, clubs = [], onClose }) {
   // Mehrere Clubs mit Logo (Person ist in mehreren Clubs): die uebrigen stehen als antippbare Tags darunter
   const [cur, setCur] = useState(club);
   if (!cur) return null;
-  const others = clubs.filter((c) => c.id !== cur.id && c.logo_at);
+  const others = clubs.filter((c) => c.id !== cur.id);
   const src = clubLogoUrl(cur);
   const close = (e) => { e?.stopPropagation(); onClose(); };
   return (
     <div className="modal-overlay" onClick={close}>
       <div className="modal-box club-logo-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={cur.name}>
-        {src && <img className="club-logo-big" src={src} alt={cur.name} />}
+        {src
+          ? <img className="club-logo-big" src={src} alt={cur.name} />
+          : <span className="club-logo-big club-logo-none" style={{ background: clubColor(cur), color: inkFor(clubColor(cur)) }}>{cur.tag}</span>}
         <h3>{cur.name}</h3>
         <ClubTag club={cur} />
         {others.length > 0 && (

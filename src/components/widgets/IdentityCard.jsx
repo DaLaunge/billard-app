@@ -4,9 +4,8 @@ import { t } from "../../lib/i18n";
 import { initials, fmtDate } from "../../lib/format";
 import Ball from "../Ball";
 import DecayBadge from "./DecayBadge";
-import ClubTag from "./ClubTag";
+import ClubEmblem from "./ClubEmblem";
 import ClubLogoModal from "./ClubLogoModal";
-import { clubLogoUrl } from "../../lib/clubLogo";
 import { useClubData, clubsOfPlayer } from "../../lib/clubStore";
 import { EmojiText } from "../Emoji";
 
@@ -38,26 +37,26 @@ import { EmojiText } from "../Emoji";
    das jeweils vorhandene Symbol immer buendig rechts steht. */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
   onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88, playerId }) {
-  // Club-Tags (Hauptclub zuerst); wer in keinem Club ist, bekommt einfach keine Zeile
+  // Clubs (Hauptclub zuerst) als Emblem links und rechts NEBEN der Kugel - dort ist Platz, und die Kugel bleibt frei (kein Wappen
+  // darauf, kein Tag-Streifen darunter). Mehr als zwei Clubs: "+n" unter dem zweiten, die Vollansicht kennt alle.
+  // Wer in keinem Club ist, bekommt einfach nichts.
   const clubs = clubsOfPlayer(useClubData(), playerId);
-  // Wappen: das Logo des ersten Clubs (Hauptclub zuerst), der eines hat, als runder Anstecker an der Kugel
-  const crestClub = clubs.find((c) => c.logo_at);
-  const crest = crestClub ? clubLogoUrl(crestClub) : null;
-  const crestSize = Math.round(photoSize * 0.46);
-  const [viewLogo, setViewLogo] = useState(false);
+  const [viewClub, setViewClub] = useState(null);
+  const extra = Math.max(0, clubs.length - 2);
   const head = (
     <>
-      <span className="id-avatar-wrap">
+      <div className="id-avatar-row">
+        <div className="id-avatar-side left">{clubs[0] && <ClubEmblem club={clubs[0]} onOpen={setViewClub} />}</div>
         <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
-        {crest && (
-          <span className="id-crest" role="button" tabIndex={0} title={crestClub.name} aria-label={t("Club-Logo ansehen")}
-            style={{ width: crestSize, height: crestSize }}
-            onClick={(e) => { e.stopPropagation(); setViewLogo(true); }}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setViewLogo(true); } }}>
-            <img src={crest} alt="" width={crestSize} height={crestSize} />
-          </span>
-        )}
-      </span>
+        <div className="id-avatar-side right">
+          {clubs[1] && <ClubEmblem club={clubs[1]} onOpen={setViewClub} />}
+          {extra > 0 && (
+            <span className="club-more" role="button" tabIndex={0} title={t("Alle Clubs ansehen")} aria-label={t("Alle Clubs ansehen")}
+              onClick={(e) => { e.stopPropagation(); setViewClub(clubs[0]); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setViewClub(clubs[0]); } }}>+{extra}</span>
+          )}
+        </div>
+      </div>
       <h3 className="id-card-name">{nickname}</h3>
       <div className="id-card-rating">
         {gesamt ? gesamt.rating : "-"}
@@ -65,7 +64,6 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       </div>
       {motto && <p className="id-card-motto">"<EmojiText>{motto}</EmojiText>"</p>}
       {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
-      {clubs.length > 0 && <div className="club-tags">{clubs.map((c) => <ClubTag key={c.id} club={c} withName={clubs.length === 1} />)}</div>}
     </>
   );
   return (
@@ -79,7 +77,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
           ? <div className="id-card-hero">{sideActions.left}{headEl}{sideActions.right}</div>
           : headEl;
       })()}
-      {viewLogo && <ClubLogoModal club={crestClub} clubs={clubs} onClose={() => setViewLogo(false)} />}
+      {viewClub && <ClubLogoModal club={viewClub} clubs={clubs} onClose={() => setViewClub(null)} />}
       <DecayBadge player={gesamt} className="id-card-decay-warn" iconSize={20} pulse />
       {(onSettings || onInvite) && (
         <div className="id-card-corner">

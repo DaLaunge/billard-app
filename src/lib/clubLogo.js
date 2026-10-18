@@ -1,10 +1,10 @@
 import { supabase } from "../supabase";
 
 /* Club-Logos sind absichtlich winzig (supabase/2026-10-19e_club_logo.sql: Bucket "club-logos", serverseitig max. 20 KB).
-   compressClubLogo(): mittiger quadratischer Ausschnitt, 128 px, WebP (JPEG-Ersatz auf Geraeten ohne WebP-Export), danach
+   compressClubLogo(): mittiger quadratischer Ausschnitt, 256 px, WebP (JPEG-Ersatz auf Geraeten ohne WebP-Export), danach
    schrittweise kleiner/schwaecher, bis die Datei unter MAX_BYTES liegt. */
-export const LOGO_MAX_BYTES = 12 * 1024;
-const STEPS = [[128, 0.8], [128, 0.65], [112, 0.6], [96, 0.55], [80, 0.5], [64, 0.45]];
+export const LOGO_MAX_BYTES = 18 * 1024;
+const STEPS = [[256, 0.8], [256, 0.62], [224, 0.6], [192, 0.55], [160, 0.5], [128, 0.5], [96, 0.45], [64, 0.4]];
 
 const toBlob = (canvas, type, q) => new Promise((res) => canvas.toBlob(res, type, q));
 

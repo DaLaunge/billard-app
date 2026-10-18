@@ -7,7 +7,7 @@ const hashHue = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 
 
 export const clubColor = (c) => c?.color || `hsl(${hashHue(c?.tag || "")} 55% 38%)`;
 
-const inkFor = (color) => {
+export const inkFor = (color) => {
   const m = /^#([0-9a-f]{6})$/i.exec(color || "");
   if (!m) return "#fff";
   const n = parseInt(m[1], 16);
