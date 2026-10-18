@@ -61,7 +61,7 @@ const groupSubs = (list) => {
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onEditChange, closeEditTick }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onOpenNumbers, onEditChange, closeEditTick }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
@@ -1139,7 +1139,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
       </div>
       {(mode === "identity" || mode === "full") && (
         <div className="pf-highlights-slot" style={{ order: 1 }}>
-          <ProfileHighlights nickname={nickname} matches={matches} rows={myRows} onOpenProfile={onOpenProfile}
+          <ProfileHighlights nickname={nickname} matches={matches} extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges}
+            onOpenNumbers={isMe && !asOthers ? onOpenNumbers : undefined} onOpenProfile={onOpenProfile}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
         </div>
       )}

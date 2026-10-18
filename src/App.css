@@ -3294,3 +3294,10 @@ button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointe
 .club-discover-row .club-row-main + * { margin-left: auto; }
 .club-discover-row .club-tag { flex: 0 0 auto; max-width: none; }
 .club-discover-row .club-row-name { white-space: normal; overflow: visible; }
+
+/* "Auf einen Blick": Rekorde als kleines Raster, Titel und Raster oeffnen "Meine Zahlen" (am eigenen Profil) */
+.pf-hl-records { margin: 4px 0 10px; }
+.pf-hl-go { cursor: pointer; }
+.pf-hl-go:hover h3, .pf-hl-go:focus-visible h3 { color: var(--accent); }
+.stat-block-head.pf-hl-go { display: flex; align-items: center; justify-content: space-between; }
+.pf-hl-chev { color: var(--ivory-dim); flex: 0 0 auto; }

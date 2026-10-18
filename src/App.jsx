@@ -1839,7 +1839,7 @@ export default function App() {
                 <MatchProtokollScreen match={matches.find((mm) => mm.id === protokollMatch.id) || protokollMatch} me={player} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
               )}
               {(tab === "profil" || tab === "zahlen" || tab === "erfolge") && (
-                <ProfilScreen key={tab} mode={tab === "profil" ? "identity" : tab} onPreview={() => navPush({ tab: "profilvorschau" })} onOpenAchievements={() => navPush({ tab: "erfolge" })} onEditChange={setProfilEdit} closeEditTick={closeEditTick} nickname={player.nickname} matches={matches} rangliste={rangliste}
+                <ProfilScreen key={tab} mode={tab === "profil" ? "identity" : tab} onPreview={() => navPush({ tab: "profilvorschau" })} onOpenAchievements={() => navPush({ tab: "erfolge" })} onOpenNumbers={() => navPush({ tab: "zahlen" })} onEditChange={setProfilEdit} closeEditTick={closeEditTick} nickname={player.nickname} matches={matches} rangliste={rangliste}
                   onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}

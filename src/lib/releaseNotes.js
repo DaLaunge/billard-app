@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.19", icon: "📊",
+    items: ["„Auf einen Blick“ in deiner Identität zeigt jetzt deine wichtigsten Rekorde (beste Serie, Zu-Null-Siege, Höchstserie …) und den Angstgegner. Ein Tipp darauf öffnet „Meine Zahlen“."],
+    en: ["\"At a glance\" in your identity now shows your key records (best streak, shutout wins, high run …) and your nemesis. Tap it to open \"My stats\"."] },
   { version: "412.18", icon: "🏛️",
     items: ["Club-Profile: Unter „Clubs entdecken“ (und per Klick auf einen Club-Tag) siehst du zu jedem Club Logo, Motto, Gründer, Mitglieder und das Durchschnitts-Rating. Die Club-Leitung kann ein Motto setzen."],
     en: ["Club profiles: under \"Discover clubs\" (and by tapping a club tag) you see each club's logo, motto, founder, members and average rating. Club leaders can set a motto."] },

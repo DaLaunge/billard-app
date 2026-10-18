@@ -1,13 +1,26 @@
 import { useMemo } from "react";
-import { Trophy, Swords } from "lucide-react";
+import { Trophy, Swords, ChevronRight } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { initials } from "../../lib/format";
+import { recordBadgeEmoji } from "../../lib/achievements";
 import Ball from "../Ball";
+import Emoji from "../Emoji";
 
-/* "Auf einen Blick": oeffentliche Profil-Kennzahlen, die auch andere Spieler sehen - der Angstgegner (die staerkste Disziplin steht seit
-   412.14 als Kachel auf der Identitaetskarte). Angstgegner (der Gegner, gegen den man am oefter verloren hat, mindestens 2 Niederlagen).
-   Gaeste und Doppel zaehlen nicht, wie beim Head-to-Head. Eine Club-/Clan-Zeile kommt mit dem Club-Feature. */
-export default function ProfileHighlights({ nickname, matches, rows, onOpenProfile, colorOf, badgeOf, photoOf }) {
+/* "Auf einen Blick": kleine, oeffentliche Uebersicht eines Profils - die persoenlichen Rekorde (bis zu vier, nur Werte > 0, in dieser
+   Rangfolge) und der Angstgegner (der Gegner, gegen den man am oefter verloren hat, mindestens 2 Niederlagen). Es ersetzt "Meine Zahlen"
+   nicht, sondern ist deren Vorschau: ein Tipp auf Titel oder Rekorde oeffnet "Meine Zahlen" (onOpenNumbers, nur am eigenen Profil). Der
+   Angstgegner bleibt ein eigener Knopf (oeffnet dessen Profil). Die staerkste Disziplin steht als Wert in der Zahlenreihe der Karte.
+   Gaeste und Doppel zaehlen nicht, wie beim Head-to-Head. */
+const RECORDS = [
+  ["longestStreak", "Beste Serie"],
+  ["shutoutWins", "Zu-Null-Siege"],
+  ["highRun", "Höchstserie 14/1"],
+  ["maxVsOpponent", "Rekord geg. 1 Gegner"],
+  ["maxPerDay", "Meiste an 1 Tag"],
+];
+
+export default function ProfileHighlights({ nickname, matches, extras, catalog, earnedBadges, onOpenNumbers, onOpenProfile, colorOf, badgeOf, photoOf }) {
+  const records = useMemo(() => (extras ? RECORDS.filter(([k]) => extras[k] > 0).slice(0, 4) : []), [extras]);
   const nemesis = useMemo(() => {
     const map = {};
     (matches || []).forEach((m) => {
@@ -21,10 +34,28 @@ export default function ProfileHighlights({ nickname, matches, rows, onOpenProfi
     const top = Object.entries(map).sort((a, b) => b[1] - a[1])[0];
     return top && top[1] >= 2 ? { opp: top[0], n: top[1] } : null;
   }, [matches, nickname]);
-  if (!nemesis) return null;
+  if (records.length === 0 && !nemesis) return null;
+  const go = onOpenNumbers ? { role: "button", tabIndex: 0, onClick: onOpenNumbers,
+    onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenNumbers(); } } } : {};
   return (
     <section className="stat-block pf-highlights">
-      <div className="stat-block-head"><h3><Trophy size={17} /> {t("Auf einen Blick")}</h3></div>
+      <div className={"stat-block-head" + (onOpenNumbers ? " pf-hl-go" : "")} {...go}>
+        <h3><Trophy size={17} /> {t("Auf einen Blick")}</h3>
+        {onOpenNumbers && <ChevronRight size={18} className="pf-hl-chev" aria-hidden="true" />}
+      </div>
+      {records.length > 0 && (
+        <div className={"records-grid pf-hl-records" + (onOpenNumbers ? " pf-hl-go" : "")} {...go}>
+          {records.map(([metric, label]) => {
+            const emoji = recordBadgeEmoji(catalog, earnedBadges, metric);
+            return (
+              <div key={metric}>
+                <b>{emoji && <span className="record-emoji"><Emoji e={emoji} /></span>}{extras[metric]}</b>
+                <span>{t(label)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {nemesis && (
         <button type="button" className="pf-hl-row pf-hl-btn" onClick={() => onOpenProfile?.(nemesis.opp)}>
           <span className="pf-hl-label"><Swords size={14} /> {t("Angstgegner")}</span>
