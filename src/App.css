@@ -1834,8 +1834,8 @@ button.id-card-head { cursor: pointer; }
      (siehe StatistikScreen.jsx/cardLayout.js), ganz oben rechts fix die
      globale Disziplin-/Top-N-Auswahl (Nutzer-Feedback: dort statt als
      eigene volle Zeile ueber allen drei Spalten). */
-  .phone.app .screen:has(.stat-split) { max-width: 1440px; }
-  .stat-split { display: grid; grid-template-columns: 300px 1fr 300px; gap: 24px; align-items: start; }
+  .phone.app .screen:has(.stat-split) { max-width: 1240px; }
+  .stat-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
   /* .stat-grid (alle rechten Karten, inkl. der globalen Auswahl - eine
      einzelne Huelle, siehe .stat-right-col{display:contents} weiter oben)
      bekommt hier ein eigenes Grid-Feld statt als eigenes mehrzeiliges
@@ -1843,10 +1843,10 @@ button.id-card-head { cursor: pointer; }
      auto-Zeile sonst anhand des hoechsten Elements, das sie beruehrt, was
      frueher (Nutzer-Feedback: "nach einem Push zu viel Platz zwischen den
      Karten") eine grosse leere Luecke erzeugte. */
-  .stat-right-col { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; }
+  .stat-right-col { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; }
   .stat-chart-col, .stat-grid { order: 0; }
   .stat-chart-col, .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
-  .stat-chart-col { grid-column: 2; grid-row: 1 / span 2; }
+  .stat-chart-col { grid-column: 1; grid-row: 1; }
   .card-column-btn { display: inline-flex; }
   .card-maximize-btn { display: inline-flex; }
   .stat-empty-dropzone { display: flex; }
@@ -3305,3 +3305,7 @@ button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointe
 .club-home-label { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--accent); }
 .club-pick-hint { margin: 0; text-align: center; }
 button.club-tag-btn:disabled { opacity: .6; cursor: default; }
+
+/* Statistik seit 412.24: zwei gleichwertige Spalten (links Verlauf und Matches, rechts Listen und Rekorde). Die frueher linke Identitaets-
+   und "Meine Zahlen"-Spalte ist weg - beides hat eigene Seiten (Identitaet, Meine Zahlen). Auf breiten Bildschirmen halten die Karten
+   ihre Hoehe nicht mehr mit Gewalt gleich, jede Spalte stapelt fuer sich. */

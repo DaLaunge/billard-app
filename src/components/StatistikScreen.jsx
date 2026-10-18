@@ -21,7 +21,6 @@ import ModePick from "./widgets/ModePick";
 import Ball from "./Ball";
 import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
-import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
 import NickClubTag from "./widgets/NickClubTag";
 import InfoButton from "./widgets/InfoButton";
@@ -1127,20 +1126,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       </div>
       </div>
 
-      <aside className="ov-side">
-        {/* Dieselbe linke Spalte wie auf Live und im Profil (UserPanel:
-            Identitaet + "Meine Zahlen" mit Reitern) - am Handy
-            ausgeblendet (Redundanz mit dem Profil-Tab), ab 900px sichtbar.
-            Bis 2026-09-30 liess Statistik hier die Ratings weg (die
-            Bestenlisten-Karte zeigt sie ja auch) - Nutzer-Feedback: die
-            Spalte soll ueberall gleich sein. Bewusst NICHT Teil der
-            sortierbaren Karten: hier bleibt die Identitaets-Spalte fix. */}
-        <div className="ov-side-extra">
-          <UserPanel nickname={me.nickname} matches={matches} rangliste={rangliste} players={players}
-            challenges={challenges} catalog={catalog} earnedBadges={earnedBadges} cardLayout={me.card_layout}
-            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onInvite={onInvite} />
-        </div>
-      </aside>
 
       {/* Mittlere Spalte: welche Karten hier statt in .stat-right-col
           landen, entscheidet einzig der Nutzer per CardColumnButton
