@@ -7,7 +7,8 @@ import DecayBadge from "./DecayBadge";
 import ClubEmblem from "./ClubEmblem";
 import DiscBall from "./DiscBall";
 import ClubLogoModal from "./ClubLogoModal";
-import { useClubData, clubsOfPlayer } from "../../lib/clubStore";
+import { supabase } from "../../supabase";
+import { useClubData, clubsOfPlayer, reloadClubs } from "../../lib/clubStore";
 import { EmojiText } from "../Emoji";
 
 /* Vereinheitlichte Identitaets-Karte: grosses, zentriertes Foto im Fokus,
@@ -37,12 +38,20 @@ import { EmojiText } from "../Emoji";
    gehoert. Beide sitzen in EINEM absolut positionierten Container, damit
    das jeweils vorhandene Symbol immer buendig rechts steht. */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
-  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88, playerId, best }) {
+  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88, playerId, best, ownProfile = false }) {
   // Unter dem Namen zwei gleich gebaute Kacheln nebeneinander: Hauptclub (Logo, Name, Kuerzel, "+n" bei mehreren - die Vollansicht kennt
   // alle) und staerkste Disziplin mit Punkten. Die Kugel bleibt frei. Wer in keinem Club ist bzw. noch kein Rating hat, bekommt die
   // jeweilige Kachel einfach nicht.
-  const clubs = clubsOfPlayer(useClubData(), playerId);
+  const clubData = useClubData();
+  const clubs = clubsOfPlayer(clubData, playerId);
   const [viewClub, setViewClub] = useState(null);
+  // Nur auf dem EIGENEN Profil: einen anderen Club in der Vollansicht antippen = ihn zum Hauptclub machen
+  const pickHome = ownProfile ? async (c) => {
+    const { error } = await supabase.rpc("set_home_club", { p_club: c.id });
+    if (error) return false;
+    await reloadClubs();
+    return true;
+  } : undefined;
   const head = (
     <>
       <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
@@ -71,7 +80,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
           ? <div className="id-card-hero">{sideActions.left}{headEl}{sideActions.right}</div>
           : headEl;
       })()}
-      {viewClub && <ClubLogoModal club={viewClub} clubs={clubs} onClose={() => setViewClub(null)} />}
+      {viewClub && <ClubLogoModal club={viewClub} clubs={clubs} homeId={clubData.home[playerId]} onPick={pickHome} onClose={() => setViewClub(null)} />}
       <DecayBadge player={gesamt} className="id-card-decay-warn" iconSize={20} pulse />
       {(onSettings || onInvite) && (
         <div className="id-card-corner">

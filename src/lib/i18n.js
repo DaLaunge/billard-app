@@ -1116,6 +1116,7 @@ const TRANSLATIONS = {
     "Club ansehen": "View club",
     "Ø Rating": "Avg. rating",
     "gegründet": "founded",
+    "Antippen macht einen Club zum Hauptclub.": "Tapping makes a club your main club.",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

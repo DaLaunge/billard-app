@@ -34,7 +34,7 @@ export default function UserPanel({ nickname, matches, rangliste, players, chall
 
   return (
     <>
-      <IdentityCard nickname={nickname} playerId={playerObj?.id} best={bestDiscipline(myRows)} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
+      <IdentityCard nickname={nickname} playerId={playerObj?.id} ownProfile={isMe} best={bestDiscipline(myRows)} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHeadClick={() => onOpenProfile(nickname)}
         />
 

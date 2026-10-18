@@ -3301,3 +3301,7 @@ button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointe
 .pf-hl-go:hover h3, .pf-hl-go:focus-visible h3 { color: var(--accent); }
 .stat-block-head.pf-hl-go { display: flex; align-items: center; justify-content: space-between; }
 .pf-hl-chev { color: var(--ivory-dim); flex: 0 0 auto; }
+
+.club-home-label { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--accent); }
+.club-pick-hint { margin: 0; text-align: center; }
+button.club-tag-btn:disabled { opacity: .6; cursor: default; }

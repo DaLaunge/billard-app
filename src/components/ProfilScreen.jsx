@@ -1097,7 +1097,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           sind unnoetig gross, wenn manche dazwischen ausgeblendet sind"). */}
       <div className="pf-col left">
       <div className="pf-identity" style={{ order: 0 }}>
-      <IdentityCard nickname={nickname} playerId={playerObj?.id} best={bestDiscipline(myRows)} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
+      <IdentityCard nickname={nickname} playerId={playerObj?.id} ownProfile={isMe && !asOthers} best={bestDiscipline(myRows)} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
         onHeadClick={isMe && !asOthers ? () => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); } : heroPhoto ? () => setPhotoViewerOpen(true) : undefined}
         /* Zahnrad und QR-Symbol der Kopfkarte entfallen: Einstellungen und Einladen stehen im Menue und als Karten darunter. */
