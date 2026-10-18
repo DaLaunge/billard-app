@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Star } from "lucide-react";
+import { X } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { clubLogoUrl } from "../../lib/clubLogo";
 import ClubTag, { clubColor, inkFor } from "./ClubTag";
@@ -7,7 +7,7 @@ import ClubTag, { clubColor, inkFor } from "./ClubTag";
 /* Club-Logo gross ansehen: Fenster mit dem Logo (so gross wie der Bildschirm es zulaesst, hoechstens 280 px), Clubname und Tag.
    Geoeffnet wird es per Tipp auf das Wappen an der Kugel (IdentityCard) bzw. auf die Logo-Vorschau in der Club-Karte. Die Datei
    selbst ist klein gehalten (siehe clubLogo.js), vergroessert wirkt sie entsprechend weich - fuer ein Logo reicht das. */
-export default function ClubLogoModal({ club, clubs = [], homeId = null, onPick, onClose }) {
+export default function ClubLogoModal({ club, clubs = [], onPick, onClose }) {
   // Mehrere Clubs mit Logo (Person ist in mehreren Clubs): die uebrigen stehen als antippbare Tags darunter
   const [cur, setCur] = useState(club);
   const [busy, setBusy] = useState(false);
@@ -23,7 +23,6 @@ export default function ClubLogoModal({ club, clubs = [], homeId = null, onPick,
           : <span className="club-logo-big club-logo-none" style={{ background: clubColor(cur), color: inkFor(clubColor(cur)) }}>{cur.tag}</span>}
         <h3>{cur.name}</h3>
         <ClubTag club={cur} />
-        {onPick && homeId === cur.id && clubs.length > 1 && <span className="club-home-label"><Star size={12} /> {t("Hauptclub")}</span>}
         {others.length > 0 && onPick && <p className="hint club-pick-hint">{t("Antippen macht einen Club zum Hauptclub.")}</p>}
         {others.length > 0 && (
           <div className="club-tags">

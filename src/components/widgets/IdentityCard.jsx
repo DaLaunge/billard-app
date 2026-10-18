@@ -80,7 +80,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
           ? <div className="id-card-hero">{sideActions.left}{headEl}{sideActions.right}</div>
           : headEl;
       })()}
-      {viewClub && <ClubLogoModal club={viewClub} clubs={clubs} homeId={clubData.home[playerId]} onPick={pickHome} onClose={() => setViewClub(null)} />}
+      {viewClub && <ClubLogoModal club={viewClub} clubs={clubs} onPick={pickHome} onClose={() => setViewClub(null)} />}
       <DecayBadge player={gesamt} className="id-card-decay-warn" iconSize={20} pulse />
       {(onSettings || onInvite) && (
         <div className="id-card-corner">
