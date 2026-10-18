@@ -83,7 +83,7 @@ export default function ClubsCard({ meRow, players, toast }) {
       const { error: e2 } = await supabase.rpc("set_club_logo", { p_club: c.id, p_has_logo: true });
       if (e2) throw e2;
       await reloadClubs();
-      toast(t("Logo gespeichert ({kb} KB).", { kb: Math.max(1, Math.round(blob.size / 1024)) }));
+      toast(t("Logo gespeichert."));
     } catch (e) { toast(t("Fehler: ") + e.message); }
     setBusy(false);
   };
@@ -236,7 +236,6 @@ export default function ClubsCard({ meRow, players, toast }) {
                       <button className="icon-btn small warn" disabled={busy} title={t("Logo entfernen")} aria-label={t("Logo entfernen")} onClick={() => removeLogo(c)}><Trash2 size={15} /></button>
                     )}
                   </div>
-                  <p className="hint">{t("Wird auf 128 Pixel verkleinert (meist unter 8 KB) – so bleibt der Speicher klein.")}</p>
 
                   <p className="club-sub">{t("Name, Kürzel und Farbe")}</p>
                   <div className="club-form">

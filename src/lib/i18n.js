@@ -1101,10 +1101,11 @@ const TRANSLATIONS = {
     "Logo wählen": "Choose logo",
     "Logo entfernen": "Remove logo",
     "Logo entfernt.": "Logo removed.",
-    "Logo gespeichert ({kb} KB).": "Logo saved ({kb} KB).",
-    "Wird auf 128 Pixel verkleinert (meist unter 8 KB) – so bleibt der Speicher klein.": "Shrunk to 128 pixels (usually under 8 KB) – this keeps storage small.",
+    "Logo gespeichert.": "Logo saved.",
     "Einladung für {name} vorgemerkt – sie wartet, bis {name} sich anmeldet.": "Invitation for {name} saved – it waits until {name} signs up.",
     "noch ohne Login": "no login yet",
+    "Indigo": "Indigo",
+    "Pink": "Pink",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

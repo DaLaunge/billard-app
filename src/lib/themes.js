@@ -25,18 +25,20 @@ export const THEME_CATALOG = {
     accent: "#E8B87C", accentDeep: "#B48446", ivory: "#F2EDE0", ivoryDim: "#C4A0A6" },
   blue: { name: "Blau", felt: "#0A1A2B", felt2: "#102538", felt3: "#173049", line: "#24405660",
     accent: "#6FDCE0", accentDeep: "#3E9CB4", ivory: "#F2EDE0", ivoryDim: "#9DAFBA" },
-  purple: { name: "Lila", felt: "#1E0A2B", felt2: "#291038", felt3: "#361749", line: "#3F245660",
-    accent: "#C87CE8", accentDeep: "#8E46B4", ivory: "#F2EDE0", ivoryDim: "#B7A0C4" },
+  // "Indigo" (Schluessel weiter purple) war "Lila" (Farbwinkel ~276) und sah neben Rot und Pink fast gleich aus; jetzt blauviolett (~248).
+  purple: { name: "Indigo", felt: "#120D33", felt2: "#1B1445", felt3: "#291F5E", line: "#35297A60",
+    accent: "#B7A6FF", accentDeep: "#7E6BDB", ivory: "#F2EDE0", ivoryDim: "#AEA8D6" },
   brown: { name: "Braun", felt: "#2B1D0A", felt2: "#382610", felt3: "#493117", line: "#56412460",
     accent: "#E8C17C", accentDeep: "#B4923E", ivory: "#F2EDE0", ivoryDim: "#C4B49D" },
-  // "Beere" (seit 412.8) ersetzt "Petrol": Gruen (#0A2B21) und Petrol (#0A2B28) waren kaum zu unterscheiden. Die Toene liegen
-  // zwischen Rot (Farbwinkel ~345) und Lila (~280), also in einer Luecke des Sortiments; Akzent ein helles Rosa.
-  berry: { name: "Beere", felt: "#2B0A22", felt2: "#38102D", felt3: "#491739", line: "#5C2A4B60",
-    accent: "#F2A0D0", accentDeep: "#C0689F", ivory: "#F2EDE0", ivoryDim: "#C4A0B8" },
+  // "Pink" (seit 412.11, ersetzt Petrol und den kurzlebigen Entwurf "Beere"): knalliges Rosa als AKZENT auf gedaempftem Rosé-
+  // Anthrazit. Bewusst nicht noch ein dunkles Weinrot-Violett - das waere neben Rot und Indigo wieder dasselbe gewesen. Nach den
+  // Material-Dark-Theme-Hinweisen: Flaechen eher gedaempft/grau, die kraeftige Farbe sparsam als Akzent. Kontraste >= 4,5:1.
+  pink: { name: "Pink", felt: "#1F1118", felt2: "#2D1A24", felt3: "#412535", line: "#5E3A4F60",
+    accent: "#FF5CAA", accentDeep: "#D6317F", ivory: "#F2EDE0", ivoryDim: "#D2B2C4" },
 };
 
 // Frueher gespeicherte Schluessel, die es nicht mehr gibt -> naechstes aehnliches Thema (Petrol sah fast wie Gruen aus)
-const LEGACY_THEME = { teal: "green" };
+const LEGACY_THEME = { teal: "green", berry: "pink" };
 
 export const THEME_KEYS = Object.keys(THEME_CATALOG);
 

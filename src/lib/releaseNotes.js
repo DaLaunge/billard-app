@@ -19,11 +19,11 @@ const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
   { version: "412.9", icon: "🖼️",
-    items: ["Clubs können ein Logo bekommen: Die Club-Leitung wählt ein Bild, es wird auf winzige 128 Pixel verkleinert und erscheint im Club-Tag."],
-    en: ["Clubs can have a logo: the club leader picks an image, it is shrunk to a tiny 128 pixels and shows in the club tag."] },
+    items: ["Clubs können ein Logo bekommen: Die Club-Leitung wählt ein Bild, und es erscheint im Club-Tag."],
+    en: ["Clubs can have a logo: the club leader picks an image and it shows in the club tag."] },
   { version: "412.8", icon: "🍇",
-    items: ["Neues Farbdesign „Beere“ (Pflaume mit rosa Akzent). Es ersetzt „Petrol“, das Grün zu ähnlich sah – wer Petrol hatte, bekommt Grün."],
-    en: ["New color theme \"Berry\" (plum with a pink accent). It replaces \"Teal\", which looked too much like Green – if you had Teal you now get Green."] },
+    items: ["Neue Farbdesigns: „Pink“ mit knalligem Rosa und „Indigo“ (blauviolett, vorher „Lila“). „Petrol“ ist weggefallen, weil es Grün zu ähnlich sah – wer Petrol hatte, bekommt Grün."],
+    en: ["New color themes: \"Pink\" with a vivid pink accent and \"Indigo\" (blue-violet, formerly \"Purple\"). \"Teal\" is gone because it looked too much like Green – if you had Teal you now get Green."] },
   { version: "412.6", icon: "💌",
     items: [
       "Club-Einladungen: Die Club-Leitung kann Spieler einladen – du entscheidest per Zusage. Oder du fragst selbst bei einem Club an, dann bestätigt ihn die Leitung.",
