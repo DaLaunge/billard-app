@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
-import { Trophy, Gauge, Percent, Flame, FileText, Clock, Timer, Star, History } from "lucide-react";
+import { Trophy, Gauge, Percent, Flame, FileText, Clock, Timer, Star, History, TrendingUp } from "lucide-react";
 import ConfirmRoundButtons from "./widgets/ConfirmRoundButtons";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -747,6 +747,30 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     return best ? { name: best.name, rating: Math.round(best.rating) } : null;
   }, [snapshots, players, rangliste]);
 
+  // Aufsteiger: groesster Rating-Zuwachs der letzten 30 Tage in der gewaehlten
+  // Disziplin (ratingDisc, wie die Rangliste). Gedacht als Anreiz fuer die
+  // Schwaecheren - wer von unten aufholt, steht hier oben, auch ohne Platz 1.
+  // Vergleich: aktuelles Rating gegen den juengsten Snapshot am oder vor dem
+  // Stichtag; wer damals noch keinen hatte, wird nicht gelistet. Nur aktive,
+  // gefestigte Ratings (gleiche Auswahl wie die Rangliste), nur Zuwachs > 0.
+  const risers = useMemo(() => {
+    const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const idToNick = new Map(players.map((pl) => [pl.id, pl.nickname]));
+    const base = new Map();
+    snapshots.forEach((sn) => {
+      if (sn.discipline !== ratingDisc || sn.snap_date > cutoff) return;
+      const cur = base.get(sn.player_id);
+      if (!cur || sn.snap_date >= cur.day) base.set(sn.player_id, { day: sn.snap_date, rating: Number(sn.rating) });
+    });
+    const baseByNick = new Map();
+    base.forEach((v, pid) => { const n = idToNick.get(pid); if (n) baseByNick.set(n, v.rating); });
+    return rangliste
+      .filter((r) => r.discipline === ratingDisc && r.aktiv && !r.ruhend && !r.vorlaeufig && baseByNick.has(r.nickname))
+      .map((r) => ({ nickname: r.nickname, gain: Math.round(r.rating - baseByNick.get(r.nickname)) }))
+      .filter((r) => r.gain > 0)
+      .sort((x, y) => y.gain - x.gain || x.nickname.localeCompare(y.nickname));
+  }, [snapshots, players, rangliste, ratingDisc]);
+
   const mostGames = useMemo(() => {
     const arr = Object.values(computeStats(matches)).filter((p) => p.spiele > 0).sort((a, b) => b.spiele - a.spiele);
     return arr[0] || null;
@@ -848,6 +872,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       extra: (r) => <DecayBadge player={r} iconSize={15} />,
       emptyText: t("Noch keine Ratings in dieser Disziplin."),
       info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. Unter 10 Spielen gilt ein Rating als vorläufig; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
+    },
+    aufsteiger: {
+      id: "aufsteiger", tab: t("Aufsteiger§Liste"), title: t("Aufsteiger (30 Tage)"), icon: <TrendingUp size={15} />,
+      rows: risers, nameOf: (r) => r.nickname, valOf: (r) => `+${r.gain}`,
+      emptyText: t("Noch niemand mit Rating-Zuwachs in den letzten 30 Tagen."),
+      info: t("Wer in den letzten 30 Tagen die meisten Rating-Punkte gewonnen hat (in der gewählten Disziplin, wie die Rangliste). So können auch Spieler weiter unten ganz oben stehen, wenn sie aufholen. Nur aktive Spieler mit gefestigtem Rating."),
     },
     meisteSiege: {
       id: "meisteSiege", tab: t("Siege"), title: t("Meiste Siege"), icon: <Trophy size={15} />,

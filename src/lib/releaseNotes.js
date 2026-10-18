@@ -18,6 +18,15 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.3", icon: "📈",
+    items: [
+      "Neue Liste „Aufsteiger“ bei den Bestenlisten: wer in den letzten 30 Tagen die meisten Rating-Punkte gewonnen hat – so kann auch ganz oben stehen, wer von unten aufholt.",
+      "12 neue Aktivitäts-Erfolge: Wochen in Folge gespielt, Spieltage insgesamt und Rückkehr nach einer Pause.",
+    ],
+    en: [
+      "New \"Climbers\" list in the leaderboards: who gained the most rating points in the last 30 days – so players catching up from below can top the list.",
+      "12 new activity achievements: weeks played in a row, days played in total and coming back after a break.",
+    ] },
   { version: "412.1", icon: "⚖️",
     items: [
       "Fairere Rangliste: Pausieren bringt keine Punkte mehr – ein Rating unter 500 bleibt in der Pause unverändert, nur Ratings über 500 sinken Richtung 500.",

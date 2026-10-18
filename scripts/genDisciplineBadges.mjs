@@ -1,4 +1,4 @@
-/* Erzeugt supabase/2026-10-11_discipline_badges.sql aus src/lib/disciplineBadges.js:  node scripts/genDisciplineBadges.mjs
+/* Erzeugt supabase/2026-10-18c_activity_badges.sql (idempotent; die frueheren Stufen stammen aus 2026-10-11_discipline_badges.sql) aus src/lib/disciplineBadges.js:  node scripts/genDisciplineBadges.mjs
    Die Datei NICHT von Hand aendern - Katalogtexte, Stufen und Emoji stehen nur in disciplineBadges.js. */
 import { writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -208,7 +208,46 @@ begin
    where case c.family when 'hm' then h.m when 'hw' then h.w else h.c end >= c.threshold
   on conflict do nothing;
 
-  drop table if exists dsc_singles, dsc_stats, dsc_streaks, dsc_doubles, dsc_hill;
+  -- Aktivitaet: eine Zeile je Spieler und Match (Einzel und Doppel), ohne Gaeste und Walkover; Tag = Wiener Kalendertag,
+  -- Woche = floor((Tag + 3) / 7) (Montag-Wochen; Tag 0 = 1.1.1970, ein Donnerstag). Gleiche Formel in achievements.js.
+  drop table if exists dsc_act;
+  create temp table dsc_act as
+    select distinct v.player_id, ((m.played_at at time zone 'Europe/Vienna')::date - date '1970-01-01') as day
+      from matches m
+     cross join lateral (values (m.player1_id), (m.player2_id), (m.player1b_id), (m.player2b_id)) as v(player_id)
+     where m.confirmed and not m.walkover and v.player_id is not null
+       and not exists (select 1 from players p
+                        where p.id in (m.player1_id, m.player2_id, m.player1b_id, m.player2b_id) and p.is_guest);
+
+  insert into player_badges (player_id, badge_key)
+  select a.player_id, c.badge_key
+    from (select player_id, count(*) as d from dsc_act group by player_id) a
+    join badge_catalog c on c.category = '${CATEGORY}' and c.family = 'ad'
+   where a.d >= c.threshold
+  on conflict do nothing;
+
+  insert into player_badges (player_id, badge_key)
+  select s.player_id, c.badge_key
+    from (select player_id, max(n) as w from (
+            select player_id, count(*) as n from (
+              select player_id, wk - row_number() over (partition by player_id order by wk) as grp
+                from (select distinct player_id, (day + 3) / 7 as wk from dsc_act) x
+            ) y group by player_id, grp
+          ) z group by player_id) s
+    join badge_catalog c on c.category = '${CATEGORY}' and c.family = 'aw'
+   where s.w >= c.threshold
+  on conflict do nothing;
+
+  insert into player_badges (player_id, badge_key)
+  select r.player_id, c.badge_key
+    from (select player_id, count(*) filter (where day - prev >= 30) as back
+            from (select player_id, day, lag(day) over (partition by player_id order by day) as prev from dsc_act) x
+           group by player_id) r
+    join badge_catalog c on c.category = '${CATEGORY}' and c.family = 'ac'
+   where r.back >= c.threshold
+  on conflict do nothing;
+
+  drop table if exists dsc_singles, dsc_stats, dsc_streaks, dsc_doubles, dsc_hill, dsc_act;
 end;
 $function$;
 
@@ -243,5 +282,5 @@ from badge_catalog group by emoji having count(*) > 1;
 -- Kontrolle 2: Zahl der neuen Erfolge (muss ${BADGES.length} sein)
 select count(*) as neue_erfolge from badge_catalog where category = '${CATEGORY}';
 `;
-writeFileSync(resolve(root, "supabase", "2026-10-11_discipline_badges.sql"), sql);
+writeFileSync(resolve(root, "supabase", "2026-10-18c_activity_badges.sql"), sql);
 console.log(`geschrieben: ${BADGES.length} Erfolge, ${(sql.length / 1024).toFixed(1)} KB`);

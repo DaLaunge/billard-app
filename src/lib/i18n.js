@@ -273,6 +273,10 @@ const TRANSLATIONS = {
     "Top {n}": "Top {n}",
     "Beides": "Both",
     "Alle Disziplinen": "All disciplines",
+    "Aktivität": "Activity",
+    "Woche(n) in Folge": "week(s) in a row",
+    "Spieltag(e)": "day(s) played",
+    "Rückkehr(en) nach Pause": "return(s) after a break",
     "Hill-Hill-Match(es)": "hill-hill match(es)",
     "Hill-Hill-Sieg(e)": "hill-hill win(s)",
     "Hill-Hill-Sieg(e) nach Rückstand": "hill-hill win(s) after trailing",
@@ -1025,7 +1029,12 @@ const TRANSLATIONS = {
     "Dabei seit {date}": "Member since {date}",
     "Punkteverfall - mehr erfahren": "Rating decay - learn more",
     "Punkteverfall bald - mehr erfahren": "Rating decay coming up - learn more",
+    "Aufsteiger§Liste": "Climbers",
     "Laenger inaktiv - mehr erfahren": "Inactive for a while - learn more",
+    "Aufsteiger (30 Tage)": "Climbers (30 days)",
+    "Noch niemand mit Rating-Zuwachs in den letzten 30 Tagen.": "Nobody has gained rating in the last 30 days yet.",
+    "Wer in den letzten 30 Tagen die meisten Rating-Punkte gewonnen hat (in der gewählten Disziplin, wie die Rangliste). So können auch Spieler weiter unten ganz oben stehen, wenn sie aufholen. Nur aktive Spieler mit gefestigtem Rating.":
+      "Who gained the most rating points in the last 30 days (in the chosen discipline, like the ranking). This way players further down can top the list when they catch up. Active players with a settled rating only.",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

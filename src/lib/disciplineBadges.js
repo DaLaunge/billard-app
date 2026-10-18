@@ -6,6 +6,7 @@
      je Disziplin: m Matches gespielt | w Siege | n zu null gewonnen | s Siege in Folge (in dieser Disziplin) | g verschiedene Gegner
      in JEDER Disziplin (kleinster Wert ueber alle fuenf): xw Siege | xm Matches | xn zu null
      Hill-Hill (Einzel, ohne 14/1, Endstand W:W-1 ab W=3): hm gespielt | hw gewonnen | hc gewonnen nach 2 Punkten Rueckstand (braucht das Punkte-Protokoll)
+     Aktivitaet (alle bestaetigten Matches, Einzel und Doppel, Tage nach Wiener Zeit): aw Wochen in Folge gespielt | ad verschiedene Spieltage | ac Rueckkehr nach 30+ Tagen Pause
      Doppel: dm Doppel gespielt | dw Doppel-Siege | ds Doppel-Siege in Folge | dp verschiedene Partner
    Gezaehlt wird wie bei allen Erfolgen: nur bestaetigte Matches ohne Gast-Beteiligung; je Disziplin und "Alle" nur Einzel,
    "Doppel" nur Doppel (ein Doppelmatch zaehlt fuer alle vier mit dem Ergebnis der eigenen Seite).
@@ -97,6 +98,15 @@ const HILL = [
   ["hc", 1, "🫀", "Puls auf 180", "Pulse at 180"], ["hc", 3, "🛟", "Rettungsring", "Lifebuoy"],
 ];
 
+// Aktivitaet: Anreiz, regelmaessig zu spielen (Wochen in Folge, Spieltage, Rueckkehr nach einer Pause)
+const ACTIVITY = [
+  ["aw", 2, "⏳", "Dranbleiber", "Sticking With It"], ["aw", 4, "⏰", "Wochenwecker", "Weekly Alarm"], ["aw", 8, "🕰️", "Uhrwerk", "Clockwork"],
+  ["aw", 12, "🧘", "Fester Rhythmus", "Steady Rhythm"], ["aw", 26, "🐢", "Schildkröten-Ausdauer", "Tortoise Endurance"],
+  ["ad", 10, "🪑", "Stammplatz", "Regular Seat"], ["ad", 25, "🧣", "Vereinsschal", "Club Scarf"], ["ad", 50, "🎽", "Vereinstrikot", "Club Jersey"],
+  ["ad", 100, "🏟️", "Heimspiel-Dauerkarte", "Season Ticket"], ["ad", 200, "🏺", "Vereinsinventar", "Club Fixture"],
+  ["ac", 1, "🔙", "Willkommen zurück", "Welcome Back"], ["ac", 3, "🔂", "Immer wieder da", "Always Back"],
+];
+
 /* Beschreibungen (deutsch/englisch) je Familie und Stufe; {D} = Disziplin (Eigenname, bleibt in beiden Sprachen). */
 const DESC = {
   m: (n, D) => [n === 1 ? `1 Match in ${D} gespielt` : `${n} Matches in ${D} gespielt`, n === 1 ? `Played 1 match in ${D}` : `Played ${n} matches in ${D}`],
@@ -112,6 +122,10 @@ const DESC = {
   dm: (n) => [n === 1 ? "1 Doppel gespielt" : `${n} Doppel gespielt`, n === 1 ? "Played 1 doubles match" : `Played ${n} doubles matches`],
   dw: (n) => [n === 1 ? "Erstes Doppel gewonnen" : `${n} Doppel-Siege`, n === 1 ? "Won your first doubles match" : `${n} doubles wins`],
   ds: (n) => [`${n} Doppel-Siege in Folge`, `${n} doubles wins in a row`],
+  aw: (n) => [`${n} Wochen in Folge gespielt`, `Played ${n} weeks in a row`],
+  ad: (n) => [`An ${n} verschiedenen Tagen gespielt`, `Played on ${n} different days`],
+  ac: (n) => [n === 1 ? "Nach mindestens 30 Tagen Pause wieder gespielt" : `${n}-mal nach mindestens 30 Tagen Pause wieder gespielt`,
+    n === 1 ? "Came back to play after a break of 30+ days" : `Came back ${n} times after a break of 30+ days`],
   hm: (n) => [n === 1 ? "1 Hill-Hill-Match gespielt (beide einen Punkt vor dem Ziel)" : `${n} Hill-Hill-Matches gespielt`,
     n === 1 ? "Played 1 hill-hill match (both one point from the win)" : `Played ${n} hill-hill matches`],
   hw: (n) => [n === 1 ? "Ein Hill-Hill-Match gewonnen" : `${n} Hill-Hill-Matches gewonnen`, n === 1 ? "Won a hill-hill match" : `Won ${n} hill-hill matches`],
@@ -120,7 +134,7 @@ const DESC = {
   dp: (n) => [`Doppel mit ${n} verschiedenen Partnern gespielt`, `Played doubles with ${n} different partners`],
 };
 
-const SUBS = { cross: "Alle Disziplinen", doubles: "Doppel", hill: "Hill-Hill" };
+const SUBS = { cross: "Alle Disziplinen", doubles: "Doppel", hill: "Hill-Hill", activity: "Aktivität" };
 
 /* Alle neuen Erfolge als flache Liste. sort: ab 1000 (hinter dem bisherigen Katalog), Reihenfolge = Block, Familie, Stufe. */
 export const BADGES = (() => {
@@ -147,6 +161,7 @@ export const BADGES = (() => {
   extra(CROSS, SUBS.cross, "dx");
   extra(DOUBLES, SUBS.doubles, "dd");
   extra(HILL, SUBS.hill, "dh");
+  extra(ACTIVITY, SUBS.activity, "da");
   return out;
 })();
 

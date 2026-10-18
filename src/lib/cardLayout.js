@@ -106,7 +106,7 @@ export const CARD_SCREENS = [
     // (siehe "decks" unten): jede laesst sich weiter fuer sich ein-/
     // ausblenden und sortieren, nur zeigt sich das als Reiter.
     decks: [
-      { id: "bestenlisten", label: "Bestenlisten", ids: ["rangliste", "meisteSiege", "besteSiegquote", "aktuelleSerien", "schnellstesTempo", "schnellste141"] },
+      { id: "bestenlisten", label: "Bestenlisten", ids: ["rangliste", "meisteSiege", "besteSiegquote", "aktuelleSerien", "schnellstesTempo", "schnellste141", "aufsteiger"] },
     ],
     cards: [
       { id: "entwicklung", label: "Entwicklung über die Zeit", col: "middle" },
@@ -117,6 +117,7 @@ export const CARD_SCREENS = [
       { id: "aktuelleSerien", label: "Aktuelle Serien", col: "right" },
       { id: "schnellstesTempo", label: "Schnellstes Tempo", col: "right" },
       { id: "schnellste141", label: "Schnellstes 14/1-Tempo", col: "right" },
+      { id: "aufsteiger", label: "Aufsteiger", col: "right" },
       { id: "rekordeClub", label: "Rekorde", col: "right" },
     ],
   },
