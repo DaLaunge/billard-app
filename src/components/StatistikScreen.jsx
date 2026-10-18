@@ -125,7 +125,7 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
     const name = nameOf(r);
     return (
       <button key={name} className={"stat-row as-btn" + (name === me?.nickname ? " mine" : "")} onClick={() => onOpenProfile(name)}>
-        <span className="medal">{medals && rank < 3 ? <Emoji e={MEDAL_EMOJI[rank]} /> : `${rank + 1}.`}</span>
+        <span className="medal">{medals && rank < 3 && !r.vorlaeufig ? <Emoji e={MEDAL_EMOJI[rank]} /> : `${rank + 1}.`}</span>
         <Ball nick={name} color={colorOf(name)} label={initials(name)} badge={badgeOf(name)} photo={photoOf(name)} size={34} />
         <span className="stat-name">{name}</span>
         <span className="stat-val">{valOf(r)}</span>
@@ -867,11 +867,15 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const leaderboardById = {
     rangliste: {
       id: "rangliste", tab: t("Rating"), title: t("Rangliste"), icon: <Gauge size={15} />, medals: true,
-      rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.ruhend && !r.vorlaeufig),
+      // Anfaenger (unter 10 Spielen, "vorlaeufig") stehen seit 412.4 schon ab dem ersten Spiel in der Liste - nach den
+      // gefestigten Ratings, mit Kennzeichen (DecayBadge) und ohne Medaille. Eigene Sortierung, weil die Reihenfolge
+      // der View-Zeilen kein Vertrag ist.
+      rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.ruhend)
+        .sort((x, y) => (x.vorlaeufig - y.vorlaeufig) || (y.rating - x.rating)),
       nameOf: (r) => r.nickname, valOf: (r) => r.rating,
       extra: (r) => <DecayBadge player={r} iconSize={15} />,
       emptyText: t("Noch keine Ratings in dieser Disziplin."),
-      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. Unter 10 Spielen gilt ein Rating als vorläufig; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
+      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. In den ersten 10 Spielen gilt ein Rating als vorläufig (Anfänger-Bonus: jedes Match zählt doppelt so stark) und steht unter den gefestigten Ratings; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
     },
     aufsteiger: {
       id: "aufsteiger", tab: t("Aufsteiger§Liste"), title: t("Aufsteiger (30 Tage)"), icon: <TrendingUp size={15} />,

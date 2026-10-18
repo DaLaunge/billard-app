@@ -83,7 +83,7 @@ export default function DecayBadge({ player, className, iconSize = 20, pulse = f
             {status === "provisional" && (
               <>
                 <h3><Info size={18} /> {t("Vorlaeufiges Rating")}</h3>
-                <p>{t("Mit weniger als 10 gewerteten Spielen gilt ein Rating noch als vorlaeufig - es kann sich pro Match noch deutlich staerker veraendern.")}</p>
+                <p>{t("Mit weniger als 10 gewerteten Spielen gilt ein Rating noch als vorlaeufig - jedes Match zaehlt doppelt so stark (Anfaenger-Bonus), danach verschwindet das Kennzeichen.")}</p>
                 <p>{t("Noch {n} Spiele bis das Rating als gefestigt gilt.", { n: gamesLeft })}</p>
               </>
             )}

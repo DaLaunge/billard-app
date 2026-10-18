@@ -18,6 +18,15 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.4", icon: "🌱",
+    items: [
+      "Anfänger-Bonus: In den ersten 10 Spielen zählt jedes Match doppelt so stark – dein Rating findet schneller seinen Platz.",
+      "Du erscheinst schon nach deinem ersten Spiel in der Rangliste (unter den gefestigten Ratings, mit „vorläufig“-Zeichen). Nach dem 10. Spiel verschwindet das Zeichen.",
+    ],
+    en: [
+      "Beginner bonus: in your first 10 games every match counts twice as much – your rating finds its place faster.",
+      "You show up in the ranking after your very first game (below the settled ratings, with a \"provisional\" mark). The mark disappears after your 10th game.",
+    ] },
   { version: "412.3", icon: "📈",
     items: [
       "Neue Liste „Aufsteiger“ bei den Bestenlisten: wer in den letzten 30 Tagen die meisten Rating-Punkte gewonnen hat – so kann auch ganz oben stehen, wer von unten aufholt.",

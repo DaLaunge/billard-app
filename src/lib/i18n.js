@@ -697,7 +697,7 @@ const TRANSLATIONS = {
     "Sprache": "Language",
     "Rangliste": "Ranking",
     "Erklärung": "Explanation",
-    "Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. Unter 10 Spielen gilt ein Rating als vorläufig; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).": "Rating on a Fargo-like Elo system: more points = better, a 100-point difference is roughly a 2:1 win chance. Without a confirmed match, a rating above 500 drops back toward 500 (the starting value) over time; a rating below stays unchanged. Under 10 games a rating counts as provisional; after 60 days without a match a player is left out of this ranking (dormant).",
+    "Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. In den ersten 10 Spielen gilt ein Rating als vorläufig (Anfänger-Bonus: jedes Match zählt doppelt so stark) und steht unter den gefestigten Ratings; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).": "Rating on a Fargo-like Elo system: more points = better, a 100-point difference is roughly a 2:1 win chance. Without a confirmed match, a rating above 500 drops back toward 500 (the starting value) over time; a rating below stays unchanged. In the first 10 games a rating counts as provisional (beginner bonus: every match counts twice as much) and is listed below the settled ratings; after 60 days without a match a player is left out of this ranking (dormant).",
     "Schnellstes Tempo (Ø pro Spiel)": "Fastest pace (avg. per game)",
     "Schnellstes 14/1-Tempo (Ø pro Kugel)": "Fastest 14.1 pace (avg. per ball)",
     "Durchschnittliche Zeit pro Einzelspiel bei 8-, 9- und 10-Ball-Matches mit gespeichertem Protokoll (nur Matches, die über den digitalen Zähler gemeldet wurden). Niedrigster Wert zuerst. Nur Spieler mit mindestens einem auswertbaren Match werden gelistet.": "Average time per individual game in 8-, 9- and 10-ball matches with a saved protocol (only matches reported via the digital counter). Lowest value first. Only players with at least one usable match are listed.",
@@ -1057,8 +1057,8 @@ const TRANSLATIONS = {
       "No confirmed match for over 180 days - this player is hidden from the ranking by default.",
     "Ein neues Match holt den Spieler zurueck in die aktive Rangliste.":
       "A new match brings the player back into the active ranking.",
-    "Mit weniger als 10 gewerteten Spielen gilt ein Rating noch als vorlaeufig - es kann sich pro Match noch deutlich staerker veraendern.":
-      "With fewer than 10 rated games, a rating still counts as provisional - it can still change much more per match.",
+    "Mit weniger als 10 gewerteten Spielen gilt ein Rating noch als vorlaeufig - jedes Match zaehlt doppelt so stark (Anfaenger-Bonus), danach verschwindet das Kennzeichen.":
+      "With fewer than 10 rated games, a rating still counts as provisional - every match counts twice as much (beginner bonus), and the tag disappears afterwards.",
     "Noch {n} Spiele bis das Rating als gefestigt gilt.": "{n} more games until the rating counts as settled.",
     "sinkt": "drops",
     "steigt": "rises",

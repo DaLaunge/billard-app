@@ -25,7 +25,7 @@ import { fetchAllRows } from "./data";
    Tagesnummer), weil localStorage nur ~5 MB fasst: ~20 Byte statt ~150 pro
    Zeile. Nur die vier Spalten, die die App wirklich liest. */
 
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const FULL_REFRESH_DAYS = 14;
 const KEY = `snapCache:${DB_REF}`;
 const DAY_MS = 86400000;
