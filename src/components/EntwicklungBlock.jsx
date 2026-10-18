@@ -3,7 +3,7 @@ import { TrendingUp, Plus, Search, X, Check } from "lucide-react";
 import { t } from "../lib/i18n";
 import DiscBall from "./widgets/DiscBall";
 import { dateMinusDays, todayStr } from "../lib/stats";
-import { initials, readableColor } from "../lib/format";
+import { initials, readableColor, fmtRating } from "../lib/format";
 import DevChart from "./DevChart";
 import Ball from "./Ball";
 import InfoButton from "./widgets/InfoButton";
@@ -118,7 +118,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     const pts = seriesByNick[nick];
     if (!pts) return null;
     const dt = allDates.filter((w) => pts[w] != null).at(-1);
-    return dt ? Math.round(pts[dt]) : null;
+    return dt ? pts[dt] : null;
   };
 
   // Beim Ziehen ueber den Graphen den Wert des aktiven Tages anzeigen, sonst
@@ -127,7 +127,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   const displayVal = (nick) => {
     if (active != null) {
       const v = seriesByNick[nick]?.[visibleDates[active]];
-      return v != null ? Math.round(v) : null;
+      return v != null ? v : null;
     }
     return latest(nick);
   };
@@ -184,7 +184,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
                 <div key={nick} className="stat-row">
                   <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={30} />
                   <span className="stat-name">{nick}</span>
-                  <span className="stat-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? val : "–"}</span>
+                  <span className="stat-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? fmtRating(val) : "–"}</span>
                   <button type="button" className="pmp-remove" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>
                     <X size={14} />
                   </button>

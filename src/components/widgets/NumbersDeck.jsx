@@ -3,7 +3,7 @@ import SegmentBar from "./SegmentBar";
 import InfoButton from "./InfoButton";
 import { BarChart3, Trophy, Star, Swords, Clock, PartyPopper } from "lucide-react";
 import { t } from "../../lib/i18n";
-import { fmtDuration } from "../../lib/format";
+import { fmtDuration, fmtRating } from "../../lib/format";
 import { computeAchievementExtras } from "../../lib/achievements";
 import { computeSpeedStats } from "../../lib/runLog";
 import { computeFunForPlayer } from "../../lib/funStats";
@@ -70,7 +70,7 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
           <div key={r.discipline} className="stat-row">
             <span className="stat-name">{t(r.discipline)}</span>
             <span className="rank-meta" style={{ marginRight: 10 }}>{r.spiele} {t("Spiele")}</span>
-            <span className="stat-val">{r.rating}</span>
+            <span className="stat-val">{fmtRating(r.rating)}</span>
           </div>
         ))}
         {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}

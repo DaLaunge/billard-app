@@ -8,7 +8,7 @@ import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import { loadMatchCounters } from "../lib/counterCache";
 import { computeFunRecords } from "../lib/funStats";
-import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames } from "../lib/format";
+import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames, fmtRating } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount, activeDisciplines } from "../lib/constants";
 import { STAT_CARD_SCREEN, deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
@@ -745,7 +745,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       if (r.discipline !== "Gesamt") return;
       if (!best || r.rating > best.rating) best = { name: r.nickname, rating: r.rating };
     });
-    return best ? { name: best.name, rating: Math.round(best.rating) } : null;
+    return best ? { name: best.name, rating: Number(best.rating) } : null;
   }, [snapshots, players, rangliste]);
 
   // Aufsteiger: groesster Rating-Zuwachs der letzten 30 Tage in der gewaehlten
@@ -767,7 +767,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     base.forEach((v, pid) => { const n = idToNick.get(pid); if (n) baseByNick.set(n, v.rating); });
     return rangliste
       .filter((r) => r.discipline === ratingDisc && r.aktiv && !r.ruhend && !r.vorlaeufig && baseByNick.has(r.nickname))
-      .map((r) => ({ nickname: r.nickname, gain: Math.round(r.rating - baseByNick.get(r.nickname)) }))
+      .map((r) => ({ nickname: r.nickname, gain: Math.round((r.rating - baseByNick.get(r.nickname)) * 10) / 10 }))
       .filter((r) => r.gain > 0)
       .sort((x, y) => y.gain - x.gain || x.nickname.localeCompare(y.nickname));
   }, [snapshots, players, rangliste, ratingDisc]);
@@ -837,7 +837,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       info: t("Größter Punkte- bzw. Rack-Abstand in einem Einzel-Match (alle Disziplinen außer 14/1 Endlos). Bei Gleichstand zählt, wer dieses Ergebnis zuerst erreicht hat.") },
     { key: "biggestWin141", label: t("Höchster Sieg (14/1)"), holder: biggestWin141, fmt: (h) => h.score, matchRef: biggestWin141?.match,
       info: t("Größter Punkteabstand in einem Einzel-Match der Disziplin 14/1 Endlos (zählt in Punkten, daher meist deutlich höhere Werte als in anderen Disziplinen). Bei Gleichstand zählt, wer dieses Ergebnis zuerst erreicht hat.") },
-    { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => h.rating,
+    { key: "peakRating", label: t("Höchstes Rating erreicht"), holder: peakRating, fmt: (h) => fmtRating(h.rating),
       info: t("Höchstes je erreichtes Gesamt-Rating, aus dem täglichen Verlauf oder dem aktuellen Stand.") },
     { key: "mostGames", label: t("Meiste Matches gesamt"), holder: mostGames, fmt: (h) => h.spiele,
       info: t("Meiste bestätigte Matches insgesamt, über alle Disziplinen.") },
@@ -873,14 +873,14 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       // der View-Zeilen kein Vertrag ist.
       rows: rangliste.filter((r) => r.discipline === ratingDisc && r.aktiv && !r.ruhend)
         .sort((x, y) => (x.vorlaeufig - y.vorlaeufig) || (y.rating - x.rating)),
-      nameOf: (r) => r.nickname, valOf: (r) => r.rating,
+      nameOf: (r) => r.nickname, valOf: (r) => fmtRating(r.rating),
       extra: (r) => <DecayBadge player={r} iconSize={15} />,
       emptyText: t("Noch keine Ratings in dieser Disziplin."),
       info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. In den ersten 10 Spielen gilt ein Rating als vorläufig (Anfänger-Bonus: jedes Match zählt doppelt so stark) und steht unter den gefestigten Ratings; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
     },
     aufsteiger: {
       id: "aufsteiger", tab: t("Aufsteiger§Liste"), title: t("Aufsteiger (30 Tage)"), icon: <TrendingUp size={15} />,
-      rows: risers, nameOf: (r) => r.nickname, valOf: (r) => `+${r.gain}`,
+      rows: risers, nameOf: (r) => r.nickname, valOf: (r) => `+${fmtRating(r.gain)}`,
       emptyText: t("Noch niemand mit Rating-Zuwachs in den letzten 30 Tagen."),
       info: t("Wer in den letzten 30 Tagen die meisten Rating-Punkte gewonnen hat (in der gewählten Disziplin, wie die Rangliste). So können auch Spieler weiter unten ganz oben stehen, wenn sie aufholen. Nur aktive Spieler mit gefestigtem Rating."),
     },

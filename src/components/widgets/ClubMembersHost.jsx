@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Crown, ShieldCheck, UserPlus, X, Trophy } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
-import { initials, fmtDate } from "../../lib/format";
+import { initials, fmtDate, fmtRating } from "../../lib/format";
 import { useClubData, useViewingClub, closeClub, reloadClubs, roleIn } from "../../lib/clubStore";
 import Ball from "../Ball";
 import ClubTag, { clubColor, inkFor } from "./ClubTag";
@@ -33,7 +33,7 @@ export default function ClubMembersHost({ me, rangliste, matches, colorOf, badge
     const rows = Object.values(ratingOf);
     const settled = rows.filter((r) => !r.vorlaeufig);
     const pool = settled.length ? settled : rows;
-    const avg = pool.length ? Math.round(pool.reduce((a, r) => a + r.rating, 0) / pool.length) : null;
+    const avg = pool.length ? pool.reduce((a, r) => a + r.rating, 0) / pool.length : null;
     const best = rows.length ? rows.reduce((a, r) => (r.rating > a.rating ? r : a)) : null;
     // Matches mit mindestens einem Mitglied (Einzel, ohne Gaeste); gegen Nicht-Mitglieder zaehlt die Siegquote
     let n = 0, outW = 0, outL = 0;
@@ -84,10 +84,10 @@ export default function ClubMembersHost({ me, rangliste, matches, colorOf, badge
         </div>
         <div className="cm-kpis">
           <div><b>{members.length}</b><span>{t("Mitglieder")}</span></div>
-          <div><b>{stats.avg ?? "–"}</b><span>{t("Ø Rating")}</span></div>
+          <div><b>{stats.avg != null ? fmtRating(stats.avg) : "–"}</b><span>{t("Ø Rating")}</span></div>
           <div><b>{stats.n}</b><span>{t("Matches")}</span></div>
           <div title={stats.outN ? t("{n} Matches gegen Nicht-Mitglieder", { n: stats.outN }) : undefined}><b>{stats.rate != null ? `${stats.rate} %` : "–"}</b><span>{t("Quote vs. andere")}</span></div>
-          <div title={t("Stärkstes Mitglied")}><b>{stats.best ? <><Trophy size={12} /> {stats.best.rating}</> : "–"}</b><span className="cm-ellip">{stats.best?.nickname || t("Stärkstes Mitglied")}</span></div>
+          <div title={t("Stärkstes Mitglied")}><b>{stats.best ? <><Trophy size={12} /> {fmtRating(stats.best.rating)}</> : "–"}</b><span className="cm-ellip">{stats.best?.nickname || t("Stärkstes Mitglied")}</span></div>
           <div><b>{fmtDate(club.created_at)}</b><span>{t("gegründet")}</span></div>
         </div>
         {owner && <p className="cm-owner">{t("Gründer")}: <button type="button" className="name-link" onClick={() => openMember(owner.nick)}>{owner.nick}</button></p>}
@@ -99,7 +99,7 @@ export default function ClubMembersHost({ me, rangliste, matches, colorOf, badge
               <span className="cm-name">{m.nick}</span>
               {m.role === "owner" && <Crown size={14} aria-label={t("Gründer")} />}
               {m.role === "admin" && <ShieldCheck size={14} aria-label={t("Admin")} />}
-              <span className="cm-rating">{ratingOf[m.nick]?.rating ?? "–"}</span>
+              <span className="cm-rating">{fmtRating(ratingOf[m.nick]?.rating)}</span>
             </button>
           ))}
         </div>

@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.27", icon: "🔬",
+    items: ["Ratings werden jetzt mit einer Nachkommastelle angezeigt (z. B. 503,4 statt 503) – so siehst du auch kleine Bewegungen."],
+    en: ["Ratings now show one decimal place (e.g. 503.4 instead of 503) – so you can see even small movements."] },
   { version: "412.26", icon: "📈",
     items: ["Das Club-Profil zeigt jetzt gleich die Statistik des Clubs: Mitglieder, Durchschnitts-Rating, Matches, Siegquote gegen andere und das stärkste Mitglied – die Mitglieder stehen als Club-Rangliste mit Rating."],
     en: ["The club profile now shows the club's stats right away: members, average rating, matches, win rate against others and the strongest member – members are listed as a club ranking with their rating."] },

@@ -4,7 +4,7 @@ import { ChevronLeft, Check, X, Minus, Plus, Search, QrCode, ArrowRight, Swords,
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { winProb, initials } from "../lib/format";
+import { winProb, initials, fmtRating } from "../lib/format";
 import { LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, DEFAULT_DISCIPLINES, activeDisciplines } from "../lib/constants";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 import { recentOpponentFreq } from "../lib/frequency";
@@ -1050,7 +1050,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
             ) : (
               <div className="prob-wrap">
                 <div className="prob-label">
-                  <span>{t("Erwartung laut Rating ({a} : {b})", { a: myRating, b: oppRating })}</span>
+                  <span>{t("Erwartung laut Rating ({a} : {b})", { a: fmtRating(myRating), b: fmtRating(oppRating) })}</span>
                   <span>{Math.round(prob * 100)} % : {Math.round((1 - prob) * 100)} %</span>
                 </div>
                 <div className="prob-bar"><div style={{ width: `${prob * 100}%` }} /></div>

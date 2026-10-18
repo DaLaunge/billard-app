@@ -16,7 +16,7 @@ import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
 import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
-import { hashColor, initials, isDoubles, mSide, fmtDate } from "./lib/format";
+import { hashColor, initials, isDoubles, mSide, fmtDate, withRatingDecimals } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
 import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION, HEYBALL } from "./lib/constants";
 import Emoji from "./components/Emoji";
@@ -881,7 +881,7 @@ export default function App() {
     const ct = await loadBadgeCatalog([...new Set((bg.data ?? []).map((r) => r.badge_key))]);
     const err = rang.error || m.error || pl.error || pi.error || bg.error || ct.error || pn.error;
     if (err) toast(isNetworkError(err) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + err.message);
-    setRangliste(rang.data ?? []);
+    setRangliste(withRatingDecimals(rang.data ?? []));
     const allMatches = attachMatchPlayers(m.data ?? [], pl.data ?? []);
     setMatches(allMatches.filter((x) => x.confirmed));
     setUnconfirmed(allMatches.filter((x) => !x.confirmed));

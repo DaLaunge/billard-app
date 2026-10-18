@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { QrCode, Settings } from "lucide-react";
 import { t } from "../../lib/i18n";
-import { initials, fmtDate } from "../../lib/format";
+import { initials, fmtDate, fmtRating } from "../../lib/format";
 import Ball from "../Ball";
 import DecayBadge from "./DecayBadge";
 import ClubEmblem from "./ClubEmblem";
@@ -57,7 +57,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
       <h3 className="id-card-name">{nickname}</h3>
       <div className="id-card-rating">
-        {gesamt ? gesamt.rating : "-"}
+        {gesamt ? fmtRating(gesamt.rating) : "-"}
         {gesamt?.vorlaeufig && <span className="prov-badge">{t("vorlaeufig")}</span>}
       </div>
       {motto && <p className="id-card-motto">"<EmojiText>{motto}</EmojiText>"</p>}
@@ -103,7 +103,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
         <div><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>{t("Serie")}</span></div>
         {best && (
           <div title={t("Stärkste Disziplin")}>
-            <b>{best.rating}</b>
+            <b>{fmtRating(best.rating)}</b>
             <span className="id-kpi-disc"><DiscBall disc={best.discipline} size={13} /> {t(best.discipline)}</span>
           </div>
         )}

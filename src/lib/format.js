@@ -1,7 +1,7 @@
 /* ============================================================
    HELFER
    ============================================================ */
-import { t } from "./i18n";
+import { t, getLang } from "./i18n";
 
 export const BALL_PALETTE = ["#E8B321", "#2B5DA8", "#C0392B", "#6C4AB0", "#E07B2F", "#2E7D4F", "#8B3A2E", "#B0578D"];
 export const hashColor = (name = "") => {
@@ -13,6 +13,17 @@ export const initials = (name = "?") => {
   const parts = String(name).trim().split(/\s+/);
   return (parts.length > 1 ? parts[0][0] + parts[1][0] : String(name).slice(0, 2)).toUpperCase();
 };
+/* Rating mit EINER Nachkommastelle ("503,4" auf Deutsch, "503.4" auf Englisch) - damit auch kleine Bewegungen sichtbar sind. null/undefined -> "–".
+   Gerundet wird hier nicht fuer die Rechnung (die laeuft mit dem vollen Wert), nur fuer die Anzeige. */
+const RATING_FMT = {};
+export const fmtRating = (n) => {
+  if (n == null || n === "" || Number.isNaN(Number(n))) return "–";
+  const loc = getLang() === "en" ? "en-US" : "de-AT";
+  const f = (RATING_FMT[loc] ||= new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }));
+  return f.format(Number(n));
+};
+/* Zeilen der View rangliste: rating_dec (eine Nachkommastelle) ersetzt rating (ganze Zahl), sobald die Migration 2026-10-19g da ist. */
+export const withRatingDecimals = (rows) => (rows || []).map((r) => (r.rating_dec != null ? { ...r, rating: Number(r.rating_dec) } : r));
 export const winProb = (ra, rb) => 1 / (1 + Math.pow(2, (rb - ra) / 100));
 export const fmtDate = (d) => {
   if (!d) return "-";
