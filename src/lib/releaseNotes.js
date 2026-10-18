@@ -18,9 +18,12 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.15", icon: "👥",
+    items: ["In Listen steht neben Spielern jetzt das Tag ihres Clubs. Ein Tipp darauf zeigt alle Mitglieder des Clubs – und wenn du noch nicht dabei bist, kannst du gleich Beitritt anfragen."],
+    en: ["Lists now show the tag of a player's club next to their name. Tap it to see all members of the club – and if you are not in yet, you can request to join right away."] },
   { version: "412.14", icon: "🛡️",
-    items: ["Neu auf deiner Identitätskarte: zwei Kacheln mit deinem Club (Tipp = Logo groß, bei mehreren Clubs mit Wechsel) und deiner stärksten Disziplin samt Punkten. Club-Logos sind jetzt schärfer."],
-    en: ["New on your identity card: two tiles with your club (tap = big logo, with a switch if you have several clubs) and your strongest discipline with its points. Club logos are now sharper."] },
+    items: ["Neu auf deiner Identitätskarte: eine Kachel mit deinem Club (Tipp = Logo groß, bei mehreren Clubs mit Wechsel) und deine stärkste Disziplin samt Punkten in der Zahlenreihe. Club-Logos sind jetzt schärfer."],
+    en: ["New on your identity card: a tile with your club (tap = big logo, with a switch if you have several clubs) and your strongest discipline with its points in the numbers row. Club logos are now sharper."] },
   { version: "412.9", icon: "🖼️",
     items: ["Clubs können ein Logo bekommen: Die Club-Leitung wählt ein Bild, und es erscheint im Club-Tag."],
     en: ["Clubs can have a logo: the club leader picks an image and it shows in the club tag."] },

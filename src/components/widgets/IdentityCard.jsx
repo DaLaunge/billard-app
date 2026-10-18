@@ -53,15 +53,9 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       </div>
       {motto && <p className="id-card-motto">"<EmojiText>{motto}</EmojiText>"</p>}
       {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
-      {(clubs[0] || best) && (
+      {clubs[0] && (
         <div className="id-tiles">
-          {clubs[0] && <ClubEmblem club={clubs[0]} more={clubs.length - 1} onOpen={setViewClub} />}
-          {best && (
-            <span className="id-tile" title={t("Stärkste Disziplin")}>
-              <span className="id-tile-disc ball"><DiscBall disc={best.discipline} size={34} /></span>
-              <span className="id-tile-text"><strong>{t(best.discipline)}</strong><small>{best.rating} {t("Punkte")}</small></span>
-            </span>
-          )}
+          <ClubEmblem club={clubs[0]} more={clubs.length - 1} onOpen={setViewClub} />
         </div>
       )}
     </>
@@ -98,6 +92,12 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
         <div><b>{stats?.siege ?? 0}</b><span>{t("Siege")}</span></div>
         <div><b>{stats?.quote ?? 0} %</b><span>{t("Quote")}</span></div>
         <div><b>{stats ? (stats.streak > 0 ? `+${stats.streak}` : stats.streak) : 0}</b><span>{t("Serie")}</span></div>
+        {best && (
+          <div title={t("Stärkste Disziplin")}>
+            <b>{best.rating}</b>
+            <span className="id-kpi-disc"><DiscBall disc={best.discipline} size={13} /> {t(best.discipline)}</span>
+          </div>
+        )}
       </div>
       {actions}
     </section>

@@ -11,6 +11,7 @@ import "./App.css";
 import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs, clearRef, getClubCode, clearClubCode } from "./lib/session";
 import { setClubData, setClubLoader, reloadClubs } from "./lib/clubStore";
+import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
@@ -1217,13 +1218,13 @@ export default function App() {
         supabase.from("clubs").select("id, name, tag, color, logo_at, created_by, created_at")
           .then((r) => (r.error ? supabase.from("clubs").select("id, name, tag, color, created_by, created_at") : r)),   // logo_at fehlt vor Migration 19e
         supabase.from("club_members").select("club_id, player_id, role, joined_at"),
-        supabase.from("players").select("id, home_club_id"),
+        supabase.from("players").select("id, nickname, home_club_id"),
         supabase.from("club_requests").select("id, club_id, player_id, kind, status, created_by, created_at, decided_at"),   // fehlt die Tabelle (Migration 19c): leer
       ]);
       if (c.error || m.error) return;
       const home = {};
       (h.data ?? []).forEach((r) => { if (r.home_club_id) home[r.id] = r.home_club_id; });
-      setClubData(c.data ?? [], m.data ?? [], home, rq.error ? [] : (rq.data ?? []));
+      setClubData(c.data ?? [], m.data ?? [], home, rq.error ? [] : (rq.data ?? []), h.data ?? []);
     } catch { /* offline: alter Stand bleibt */ }
   }, []);
   useEffect(() => { setClubLoader(loadClubs); }, [loadClubs]);
@@ -1606,6 +1607,7 @@ export default function App() {
         {session && player && !player.must_change_password && initialLoadDone && (
           <>
             <ConfirmHost />
+            <ClubMembersHost me={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={openProfile} toast={toast} />
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
                 <div className="celebrate-card scrolls" onClick={(e) => e.stopPropagation()}>

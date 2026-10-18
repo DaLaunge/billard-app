@@ -3247,3 +3247,28 @@ button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointe
 .id-tile-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .id-tile-text strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .id-tile-text small { font-size: 11.5px; color: var(--ivory-dim); letter-spacing: .03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Club-Tag neben Spielernamen in Listen (Klick: Mitgliederliste) und das Mitglieder-Fenster */
+.club-tag-link { display: inline-flex; flex: 0 0 auto; margin-left: 6px; vertical-align: middle; cursor: pointer; line-height: 1; }
+.club-tag-link .club-tag { font-size: 10px; padding: 0 6px; line-height: 1.6; }
+.club-tag-link:hover .club-tag, .club-tag-link:focus-visible .club-tag { filter: brightness(1.12); }
+.opp-card .club-tag-link { margin: 2px 0 0; }
+.club-members-modal { display: flex; flex-direction: column; gap: 12px; max-height: min(80dvh, 640px); }
+.cm-head { display: flex; align-items: center; gap: 12px; }
+.cm-logo { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; border: none; padding: 0; display: grid; place-items: center; flex: 0 0 auto; font-size: 15px; cursor: pointer; }
+.cm-logo:disabled { cursor: default; }
+.cm-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cm-title { min-width: 0; }
+.cm-title h3 { margin: 0; overflow-wrap: anywhere; }
+.cm-sub { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12.5px; color: var(--ivory-dim); }
+.cm-list { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.cm-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border-radius: 12px; border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); font: inherit; text-align: left; cursor: pointer; }
+.cm-row:hover { border-color: var(--btn-border); }
+.cm-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
+/* Rekorde-Tabelle ist schmal: der Club-Tag steht UNTER dem Namen, damit dieser nicht buchstabenweise umbricht */
+.rt-namebox { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.rt-namebox .club-tag-link { margin: 2px 0 0; }
+
+/* Stärkste Disziplin als fünfter Wert der Zahlenreihe: Punkte gross, darunter Kugel und Name */
+.id-kpi-disc { display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; }

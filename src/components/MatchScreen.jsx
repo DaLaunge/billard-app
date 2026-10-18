@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
+import NickClubTag from "./widgets/NickClubTag";
 import { ChevronLeft, Check, X, Minus, Plus, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star, Sparkles } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
@@ -852,6 +853,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                         <button className={"opp-card" + (role ? " sel" : "") + (isRec ? " rec" : "")} onClick={(e) => pickPlayer(p, e.currentTarget)}>
                           <Ball nick={p.nickname} color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={48} />
                           <span>{p.nickname}{p.is_guest && <span className="guest-tag">{t("Gast")}</span>}</span>
+                          <NickClubTag nickname={p.nickname} />
                           {/* Schon gewaehlt: bleibt in der Liste, Kugel abgedunkelt, die
                               Rolle steht dabei - antippen nimmt den Spieler wieder heraus.
                               Sonst: moegliche Punkte bei einem Sieg (Einzel). */}

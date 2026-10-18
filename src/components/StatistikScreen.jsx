@@ -23,6 +23,7 @@ import EntwicklungBlock from "./EntwicklungBlock";
 import PlayerPicker from "./PlayerPicker";
 import UserPanel from "./widgets/UserPanel";
 import DecayBadge from "./widgets/DecayBadge";
+import NickClubTag from "./widgets/NickClubTag";
 import InfoButton from "./widgets/InfoButton";
 import ImprintFooter from "./widgets/ImprintFooter";
 import TournamentFlag from "./TournamentFlag";
@@ -128,6 +129,7 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
         <span className="medal">{medals && rank < 3 && !r.vorlaeufig ? <Emoji e={MEDAL_EMOJI[rank]} /> : `${rank + 1}.`}</span>
         <Ball nick={name} color={colorOf(name)} label={initials(name)} badge={badgeOf(name)} photo={photoOf(name)} size={34} />
         <span className="stat-name">{name}</span>
+        <NickClubTag nickname={name} />
         <span className="stat-val">{valOf(r)}</span>
         {extra && <span className="stat-decay-slot">{extra(r)}</span>}
       </button>
@@ -246,16 +248,16 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
                     {type === "match" ? (
                       <span className="rt-match">
                         <span className="rt-match-names">
-                          <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button>
+                          <button className="name-link" onClick={() => onOpenProfile(holder.p1Name)}>{holder.p1Name}</button><NickClubTag nickname={holder.p1Name} />
                           {" vs. "}
-                          <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button>
+                          <button className="name-link" onClick={() => onOpenProfile(holder.p2Name)}>{holder.p2Name}</button><NickClubTag nickname={holder.p2Name} />
                         </span>
                         <span className="rt-match-disc">{t(holder.discipline)}</span>
                       </span>
                     ) : (
                       <button className="rt-holder-btn" onClick={() => onOpenProfile(holder.name)}>
                         <Ball nick={holder.name} color={colorOf(holder.name)} label={initials(holder.name)} badge={badgeOf(holder.name)} photo={photoOf(holder.name)} size={26} />
-                        <span className="rt-name">{holder.name}</span>
+                        <span className="rt-namebox"><span className="rt-name">{holder.name}</span><NickClubTag nickname={holder.name} /></span>
                       </button>
                     )}
                   </td>
@@ -426,7 +428,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
           <span className="m-date m-datetime">{fmtDateTime(m.played_at)}</span>
           <span className="m-txt">
             {sideNames(m, 1).map((n, i) => (
-              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
+              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button><NickClubTag nickname={n} /></span>
             ))}
             {/* Der Sieger ist eingefaerbt, statt dass man zwei Zahlen
                 vergleichen muss (Nutzer-Vorgabe: lieber visuell). --win ist
@@ -439,7 +441,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
               <span className={m.score2 > m.score1 ? "m-win" : undefined}>{m.score2}</span>
             </b>{" "}
             {sideNames(m, 2).map((n, i) => (
-              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button></span>
+              <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button><NickClubTag nickname={n} /></span>
             ))}
           </span>
           <span className="m-disc">{t(m.discipline)}</span>

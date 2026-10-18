@@ -15,10 +15,10 @@ export const inkFor = (color) => {
   return lum > 0.6 ? "#111" : "#fff";
 };
 
-export default function ClubTag({ club, withName = false, title }) {
+export default function ClubTag({ club, withName = false, title, compact = false }) {
   if (!club) return null;
   const bg = clubColor(club);
-  const logo = clubLogoUrl(club);
+  const logo = compact ? null : clubLogoUrl(club);
   return (
     <span className="club-tag" style={{ background: bg, color: inkFor(bg) }} title={title || club.name} aria-label={club.name}>
       {logo && <img className="club-tag-logo" src={logo} alt="" width="18" height="18" loading="lazy" />}
