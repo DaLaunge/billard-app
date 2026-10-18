@@ -3162,3 +3162,32 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 .app-drawer-pick-chip { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: 0; border-radius: 9px; background: var(--felt-3); color: var(--ivory); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
 .app-drawer-pick-chip b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 11px; }
 .app-drawer-pick-chip svg { color: var(--accent); }
+
+/* Clubs / Club-Tags (supabase/2026-10-19b_clubs.sql). Farben kommen vom Club (inline), alles Uebrige aus den Theme-Tokens. */
+.club-tag { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  letter-spacing: .05em; line-height: 1.6; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.club-tag-name { font-weight: 500; letter-spacing: 0; }
+.club-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
+.clubs-card .club-block { margin-top: 8px; }
+.club-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 12px; border: 1.5px solid transparent;
+  background: var(--surface-btn); color: var(--ivory); text-align: left; cursor: pointer; font: inherit; }
+.club-row:hover { border-color: var(--btn-border); }
+.club-row-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.club-row-meta { font-size: 12px; color: var(--ivory-dim); white-space: nowrap; }
+.club-home { color: var(--accent); flex: 0 0 auto; }
+.club-chev { flex: 0 0 auto; color: var(--ivory-dim); }
+.club-chev.open { transform: rotate(180deg); }
+.club-detail { padding: 8px 4px 4px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.club-sub { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ivory-dim); margin: 10px 0 2px; }
+.club-members { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 4px; }
+.club-members li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.club-member-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.club-member-actions { display: inline-flex; gap: 2px; flex: 0 0 auto; }
+.club-form { display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; }
+.club-form input:not([type="color"]) { flex: 1 1 140px; min-width: 0; }
+.club-form .club-tag-input, .club-form .club-code-input { flex: 0 1 110px; text-transform: uppercase; letter-spacing: .08em; }
+.club-code { display: flex; align-items: center; gap: 6px; }
+.club-code code { font-size: 17px; letter-spacing: .12em; padding: 4px 10px; border-radius: 8px; background: var(--felt); }
+.club-danger { margin-top: 10px; display: flex; gap: 8px; }
+.club-create-btn { margin-top: 12px; }
+.admin-club-row { margin-top: 8px; cursor: default; }

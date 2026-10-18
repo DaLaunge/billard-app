@@ -69,3 +69,30 @@ function captureVs() {
 captureVs();
 export const getVs = () => { try { return sessionStorage.getItem("match_vs") || null; } catch { return null; } };
 export const clearVs = () => { try { sessionStorage.removeItem("match_vs"); } catch { /* */ } };
+
+/* Club-Einladung aus der URL (?club=CODE): localStorage wie bei ?ref= (der Magic-Link oeffnet oft einen neuen Tab), 30 Tage gueltig.
+   App.jsx loest sie ein (join_club), sobald ein Spieler da ist, und loescht sie danach. */
+const CLUB_KEY = "club_join";
+function captureClub() {
+  try {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("club");
+    if (code) {
+      localStorage.setItem(CLUB_KEY, JSON.stringify({ code: code.trim().toUpperCase(), at: Date.now() }));
+      url.searchParams.delete("club");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
+  } catch { /* ignore */ }
+}
+captureClub();
+export const getClubCode = () => {
+  try {
+    const raw = localStorage.getItem(CLUB_KEY);
+    if (!raw) return null;
+    const { code, at } = JSON.parse(raw);
+    if (code && Date.now() - at < 30 * 24 * 60 * 60 * 1000) return code;
+    localStorage.removeItem(CLUB_KEY);
+  } catch { /* ignore */ }
+  return null;
+};
+export const clearClubCode = () => { try { localStorage.removeItem(CLUB_KEY); } catch { /* */ } };

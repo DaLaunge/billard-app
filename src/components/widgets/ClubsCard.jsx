@@ -1,0 +1,191 @@
+import { useState } from "react";
+import { Users, Plus, Star, Copy, RefreshCw, Trash2, LogOut, Crown, ShieldCheck, UserMinus, ChevronDown, KeyRound, Check } from "lucide-react";
+import { supabase } from "../../supabase";
+import { t } from "../../lib/i18n";
+import { appConfirm } from "../../lib/confirmDialog";
+import { useClubData, reloadClubs, roleIn } from "../../lib/clubStore";
+import ClubTag from "./ClubTag";
+
+/* "Clubs" unter Profil bearbeiten: eigene Clubs (Tag im Profil), Club gruenden, per Code beitreten und - fuer die Leitung -
+   Mitglieder, Rollen, Einladungs-Code/-Link, Name/Kuerzel/Farbe. Alles laeuft ueber RPCs (supabase/2026-10-19b_clubs.sql),
+   die selbst pruefen, wer was darf; die Knoepfe hier blenden nur aus, was ohnehin abgelehnt wuerde. */
+const ROLE_LABEL = { owner: "Gründer", admin: "Admin", member: "Mitglied" };
+
+export default function ClubsCard({ meRow, players, toast }) {
+  const data = useClubData();
+  const me = meRow?.id;
+  const mine = data.clubs.filter((c) => roleIn(data, c.id, me));
+  const home = data.home[me];
+  const [open, setOpen] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [create, setCreate] = useState(null);       // { name, tag, color }
+  const [joinCode, setJoinCode] = useState("");
+  const [codes, setCodes] = useState({});           // club id -> Code (nur Leitung)
+  const [edit, setEdit] = useState({});             // club id -> { name, tag, color }
+
+  if (!data.loaded) return null;   // Migration fehlt: Karte erscheint gar nicht
+
+  const run = async (rpc, args, okMsg) => {
+    setBusy(true);
+    const { data: res, error } = await supabase.rpc(rpc, args);
+    setBusy(false);
+    if (error) { toast(error.message); return null; }
+    await reloadClubs();
+    if (okMsg) toast(okMsg);
+    return res ?? true;
+  };
+  const nickOf = (pid) => players.find((p) => p.id === pid)?.nickname || "?";
+
+  const doCreate = async () => {
+    const r = await run("create_club", { p_name: create.name, p_tag: create.tag, p_color: create.color || null }, t("Club gegründet."));
+    if (r) setCreate(null);
+  };
+  const doJoin = async () => {
+    const r = await run("join_club", { p_code: joinCode }, t("Du bist dem Club beigetreten."));
+    if (r) setJoinCode("");
+  };
+  const showCode = async (c, rotate = false) => {
+    if (rotate && !(await appConfirm(t("Neuen Code erzeugen? Der alte Code und alle alten Links funktionieren dann nicht mehr.")))) return;
+    const { data: code, error } = await supabase.rpc("club_join_code", { p_club: c.id, p_rotate: rotate });
+    if (error) { toast(error.message); return; }
+    setCodes((x) => ({ ...x, [c.id]: code }));
+  };
+  const linkOf = (code) => `${window.location.origin}/?club=${code}`;
+  const copy = async (text) => {
+    try { await navigator.clipboard.writeText(text); toast(t("Link kopiert!")); } catch { toast(text); }
+  };
+
+  const clubBlock = (c) => {
+    const members = data.members.filter((m) => m.club_id === c.id)
+      .sort((a, b) => ["owner", "admin", "member"].indexOf(a.role) - ["owner", "admin", "member"].indexOf(b.role) || nickOf(a.player_id).localeCompare(nickOf(b.player_id)));
+    const myRole = roleIn(data, c.id, me);
+    const canManage = myRole === "owner" || myRole === "admin";
+    const isOwner = myRole === "owner";
+    const isOpen = open === c.id;
+    const ed = edit[c.id] || { name: c.name, tag: c.tag, color: c.color || "" };
+    return (
+      <div key={c.id} className="club-block">
+        <button className="club-row" onClick={() => setOpen(isOpen ? null : c.id)} aria-expanded={isOpen}>
+          <ClubTag club={c} />
+          <span className="club-row-name">{c.name}</span>
+          <span className="club-row-meta">{t(ROLE_LABEL[myRole])} · {members.length}</span>
+          {home === c.id && <Star size={14} className="club-home" aria-label={t("Hauptclub")} />}
+          <ChevronDown size={16} className={"club-chev" + (isOpen ? " open" : "")} />
+        </button>
+        <div className={"collapsible" + (isOpen ? " open" : "")} inert={isOpen ? undefined : ""}>
+          <div className="collapsible-inner">
+            <div className="club-detail">
+              {home !== c.id && (
+                <button className="btn ghost small" disabled={busy} onClick={() => run("set_home_club", { p_club: c.id }, t("Hauptclub gesetzt."))}>
+                  <Star size={14} /> {t("Als Hauptclub im Profil zeigen")}
+                </button>
+              )}
+
+              <p className="club-sub">{t("Mitglieder")}</p>
+              <ul className="club-members">
+                {members.map((m) => (
+                  <li key={m.player_id}>
+                    <span className="club-member-name">
+                      {m.role === "owner" ? <Crown size={13} /> : m.role === "admin" ? <ShieldCheck size={13} /> : null}
+                      {nickOf(m.player_id)}
+                    </span>
+                    <span className="club-member-actions">
+                      {m.role !== "owner" && canManage && m.role === "member" && (
+                        <button className="icon-btn small" disabled={busy} title={t("Zum Admin machen")} aria-label={t("Zum Admin machen")}
+                          onClick={() => run("club_set_role", { p_club: c.id, p_player: m.player_id, p_role: "admin" })}><ShieldCheck size={15} /></button>
+                      )}
+                      {m.role === "admin" && isOwner && (
+                        <button className="icon-btn small" disabled={busy} title={t("Admin absetzen")} aria-label={t("Admin absetzen")}
+                          onClick={() => run("club_set_role", { p_club: c.id, p_player: m.player_id, p_role: "member" })}><ShieldCheck size={15} style={{ opacity: .45 }} /></button>
+                      )}
+                      {isOwner && m.role !== "owner" && (
+                        <button className="icon-btn small" disabled={busy} title={t("Leitung übergeben")} aria-label={t("Leitung übergeben")}
+                          onClick={async () => { if (await appConfirm(t("Leitung des Clubs an {name} übergeben? Du wirst Admin.", { name: nickOf(m.player_id) }))) run("club_transfer_owner", { p_club: c.id, p_player: m.player_id }, t("Leitung übergeben.")); }}><Crown size={15} /></button>
+                      )}
+                      {m.role !== "owner" && canManage && (isOwner || m.role === "member") && (
+                        <button className="icon-btn small warn" disabled={busy} title={t("Entfernen")} aria-label={t("Entfernen")}
+                          onClick={async () => { if (await appConfirm(t("{name} aus dem Club entfernen?", { name: nickOf(m.player_id) }))) run("club_remove_member", { p_club: c.id, p_player: m.player_id }); }}><UserMinus size={15} /></button>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {canManage && (
+                <>
+                  <p className="club-sub">{t("Einladen")}</p>
+                  {codes[c.id] ? (
+                    <div className="club-code">
+                      <code>{codes[c.id]}</code>
+                      <button className="icon-btn small" title={t("Link kopieren")} aria-label={t("Link kopieren")} onClick={() => copy(linkOf(codes[c.id]))}><Copy size={15} /></button>
+                      <button className="icon-btn small" title={t("Neuen Code erzeugen")} aria-label={t("Neuen Code erzeugen")} onClick={() => showCode(c, true)}><RefreshCw size={15} /></button>
+                    </div>
+                  ) : (
+                    <button className="btn ghost small" onClick={() => showCode(c)}><KeyRound size={14} /> {t("Einladungs-Code zeigen")}</button>
+                  )}
+
+                  <p className="club-sub">{t("Name, Kürzel und Farbe")}</p>
+                  <div className="club-form">
+                    <input value={ed.name} maxLength={40} placeholder={t("Clubname")} onChange={(e) => setEdit((x) => ({ ...x, [c.id]: { ...ed, name: e.target.value } }))} />
+                    <input value={ed.tag} maxLength={5} placeholder={t("Kürzel")} className="club-tag-input"
+                      onChange={(e) => setEdit((x) => ({ ...x, [c.id]: { ...ed, tag: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") } }))} />
+                    <input type="color" className="color-input" value={ed.color || "#3a7bd5"} aria-label={t("Farbe")}
+                      onChange={(e) => setEdit((x) => ({ ...x, [c.id]: { ...ed, color: e.target.value } }))} />
+                    <button className="icon-btn small primary" disabled={busy} title={t("Speichern")} aria-label={t("Speichern")}
+                      onClick={() => run("update_club", { p_club: c.id, p_name: ed.name, p_tag: ed.tag, p_color: ed.color || null }, t("Gespeichert."))}><Check size={15} /></button>
+                  </div>
+                </>
+              )}
+
+              <div className="club-danger">
+                {!isOwner && (
+                  <button className="btn ghost small" disabled={busy}
+                    onClick={async () => { if (await appConfirm(t("Den Club „{name}“ verlassen?", { name: c.name }))) run("leave_club", { p_club: c.id }, t("Club verlassen.")); }}>
+                    <LogOut size={14} /> {t("Club verlassen")}
+                  </button>
+                )}
+                {isOwner && (
+                  <button className="btn ghost small warn" disabled={busy}
+                    onClick={async () => { if (await appConfirm(t("Den Club „{name}“ endgültig löschen? Alle Mitglieder verlieren den Tag.", { name: c.name }))) run("delete_club", { p_club: c.id }, t("Club gelöscht.")); }}>
+                    <Trash2 size={14} /> {t("Club löschen")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <section className="stat-block clubs-card">
+      <h3><Users size={17} /> {t("Clubs")}</h3>
+      {mine.length === 0 && <p className="hint">{t("Du bist noch in keinem Club. Gründe einen oder tritt mit einem Code bei.")}</p>}
+      {mine.map(clubBlock)}
+
+      <p className="club-sub">{t("Club beitreten")}</p>
+      <div className="club-form">
+        <input value={joinCode} maxLength={12} placeholder={t("Einladungs-Code")} className="club-code-input"
+          onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} />
+        <button className="icon-btn small primary" disabled={busy || joinCode.length < 4} title={t("Beitreten")} aria-label={t("Beitreten")} onClick={doJoin}><Check size={15} /></button>
+      </div>
+
+      {create ? (
+        <>
+          <p className="club-sub">{t("Club gründen")}</p>
+          <div className="club-form">
+            <input value={create.name} maxLength={40} placeholder={t("Clubname")} onChange={(e) => setCreate({ ...create, name: e.target.value })} />
+            <input value={create.tag} maxLength={5} placeholder={t("Kürzel")} className="club-tag-input"
+              onChange={(e) => setCreate({ ...create, tag: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })} />
+            <input type="color" className="color-input" value={create.color || "#3a7bd5"} aria-label={t("Farbe")} onChange={(e) => setCreate({ ...create, color: e.target.value })} />
+            <button className="icon-btn small primary" disabled={busy || create.name.trim().length < 2 || create.tag.length < 2} title={t("Gründen")} aria-label={t("Gründen")} onClick={doCreate}><Check size={15} /></button>
+          </div>
+          <p className="hint">{t("Das Kürzel (2 bis 5 Zeichen) erscheint als Tag in deinem Profil und bei allen Mitgliedern. Du wirst Gründer und kannst die Leitung später erweitern oder übergeben.")}</p>
+        </>
+      ) : (
+        <button className="btn ghost small club-create-btn" onClick={() => setCreate({ name: "", tag: "", color: "" })}><Plus size={14} /> {t("Club gründen")}</button>
+      )}
+    </section>
+  );
+}

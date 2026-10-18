@@ -18,6 +18,15 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.5", icon: "🏷️",
+    items: [
+      "Clubs: Gründe deinen eigenen Club mit Kürzel und Farbe – er erscheint als Tag in deinem Profil. Du wirst Club-Leiter, kannst weitere Admins ernennen und die Leitung übergeben.",
+      "Mitglieder treten per Einladungs-Code oder Link bei. Spieler ohne Club sind ganz normal – nichts ändert sich für dich, wenn du keinem Club angehörst.",
+    ],
+    en: [
+      "Clubs: found your own club with a tag and color – it shows as a tag in your profile. You become club leader, can appoint more admins and hand over the leadership.",
+      "Members join with an invite code or link. Players without a club are perfectly normal – nothing changes for you if you are not in a club.",
+    ] },
   { version: "412.4", icon: "🌱",
     items: [
       "Anfänger-Bonus: In den ersten 10 Spielen zählt jedes Match doppelt so stark – dein Rating findet schneller seinen Platz.",

@@ -28,9 +28,10 @@ Jede Frage hat meine Empfehlung. Ohne Antwort baue ich nach der Empfehlung.
 1. **Rating global oder je Club?** Empfehlung: **ein globales Rating pro Spieler**, der Club ist nur ein Filter. Nur so sind Clubs vergleichbar, sobald jemand clubübergreifend spielt.
 2. **Wer sieht wen?** Empfehlung: Rating, Nickname und Platzierung sind **für alle Angemeldeten** sichtbar (damit die globale Rangliste Sinn hat). Matchlisten, Pings, Planungen und Herausforderungen sind **auf gemeinsame Clubs begrenzt**. Ein Match sehen immer seine Beteiligten.
 3. **Darf ein Spieler in mehreren Clubs sein?** Empfehlung: ja (`club_members` n:m), dazu ein Hauptclub.
-4. **Wer legt Clubs an?** Empfehlung: nur App-Admins (Rolle `admin`), später Anfrage-Formular. Sonst entstehen Wildwuchs und Namensmissbrauch.
-5. **Wie kommen bestehende Spieler anderer Clubs in ihren Club?** Empfehlung: Admin-Zuweisung (Liste mit Auswahl) plus Selbstauswahl bei der nächsten Anmeldung („In welchem Club spielst du?“).
-6. **Ist der Stammclub der Standard-Club?** Empfehlung: Der heutige Bestand wird zu einem Club „Stammclub“ (Name änderbar), Spieler ohne Zuordnung bleiben „ohne Club“ und erscheinen in „Alle“.
+4. **Wer legt Clubs an?** **ENTSCHIEDEN (2026-10-19): jeder angemeldete Spieler (kein Gast)** und wird dadurch Club-Leiter („owner“). Die Leitung lässt sich erweitern (weitere „admin“) und übergeben. Missbrauchsbremse: höchstens 3 geleitete Clubs je Spieler, App-Admins können jeden Club löschen.
+5. **Wie kommen Spieler in einen Club?** **ENTSCHIEDEN: nur per Einladungs-Code/-Link** (`/?club=CODE` oder Code-Eingabe), niemand wird ohne eigenes Zutun getaggt. Der Code ist für normale Spieler nicht lesbar, nur die Leitung sieht und erneuert ihn.
+6. **Spieler ohne Club?** **ENTSCHIEDEN: ausdrücklich normal.** Kein Pflichtfeld, keine Meldung, im Filter „Alle“ wie bisher enthalten; Phase 2 bekommt dafür die Filter-Option „Ohne Club“. Der Bestand wird zum Club „Stammclub“ (Tag HOME) nur mit einem Leiter angelegt, alle anderen treten per Code bei.
+7. **Der Club als Tag im Profil:** Kürzel (2–5 Zeichen, eindeutig) + optionale Farbe, erscheint als Pille auf der Identitätskarte (Hauptclub zuerst), später auch neben Namen in Listen.
 
 ---
 
@@ -39,8 +40,9 @@ Jede Frage hat meine Empfehlung. Ohne Antwort baue ich nach der Empfehlung.
 Neue Tabellen (jede Migration, die eine Tabelle in `public` anlegt, braucht im selben File die `GRANT`s, siehe CLAUDE.md):
 
 ```
-clubs            id uuid pk, name text unique, slug text unique, created_at, created_by uuid, hidden bool
-club_members     club_id fk, player_id fk, role text ('member'|'admin'), joined_at   -- pk (club_id, player_id)
+clubs            id uuid pk, name text (unique, 2-40), tag text (unique, A-Z0-9, 2-5), color text null (#RRGGBB),
+                 join_code text unique (nur Leitung lesbar, Spalten-Rechte), created_by, created_at
+club_members     club_id fk, player_id fk, role text ('owner'|'admin'|'member'), joined_at   -- pk (club_id, player_id), genau ein owner je Club
 ```
 
 Neue Spalten:
@@ -121,7 +123,7 @@ Umsetzung: neue `SELECT`-Regeln mit `my_club_ids()`; die bisherigen `true`-Regel
 | Phase | Inhalt | Migration | Risiko |
 |---|---|---|---|
 | **0** | Entscheidungen aus Abschnitt 2 | – | – |
-| **1** | Datenmodell: `clubs`, `club_members`, Spalten, Hilfsfunktionen, Backfill (Stammclub), Admin-Zuweisung, Club bei Registrierung | `…_clubs.sql` | niedrig (additiv, nichts bricht) |
+| **1** | **gebaut (412.5):** Datenmodell `clubs`/`club_members`, Spalten, RPCs (gründen, beitreten per Code, Rollen, Leitung übergeben, entfernen, löschen), Karte „Clubs“ unter Profil bearbeiten, Tag auf der Identitätskarte, App-Admin-Moderation, `/?club=CODE` | `2026-10-19b_clubs.sql` | niedrig (additiv, nichts bricht) |
 | **2** | Club-Filter in Statistik, Club-Auswahl im Menü, Gegnerliste, `club_id` beim Speichern, Profil-Chips | – (App) | niedrig |
 | **3** | Begrenztes Laden und Rechte (RLS), Caches pro Club | `…_clubs_rls.sql` | **hoch**, eigener Test mit mehreren Konten |
 | **4** | Rating pro zusammenhängender Gruppe berechnen (Skalierung) | `…_rebuild_per_group.sql` | mittel |

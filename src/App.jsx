@@ -9,7 +9,8 @@ import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs, clearRef } from "./lib/session";
+import { getVs, clearVs, clearRef, getClubCode, clearClubCode } from "./lib/session";
+import { setClubData, setClubLoader, reloadClubs } from "./lib/clubStore";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
@@ -901,6 +902,7 @@ export default function App() {
     // Kein harter Fehler, falls die RPC (noch) nicht existiert (Migration nicht
     // eingespielt) oder scheitert - Fortschrittsanzeige faellt dann einfach weg.
     setAchievementCounters(ac?.data ?? null);
+    loadClubs();   // eigenstaendig: fehlende Tabelle (Migration) darf das Laden nie stoeren
     setInitialLoadDone(true);
     const snap = await snapPromise;
     if (snap.error && !err) toast(isNetworkError(snap.error) ? t("Keine Verbindung – zeige die zuletzt geladenen Daten.") : t("Fehler beim Laden: ") + snap.error.message);
@@ -1207,6 +1209,32 @@ export default function App() {
   // spaeter irgendwo gutgeschrieben werden. Ein Neuer hat noch keinen
   // "player", dessen Code bleibt also bis zur Registrierung erhalten.
   useEffect(() => { if (player) clearRef(); }, [player]);
+  // Clubs (supabase/2026-10-19b_clubs.sql): Clubs, Mitglieder und Hauptclub je Spieler. Fehlt die Tabelle noch, bleibt der
+  // Speicher leer und alle Club-Stellen der App erscheinen gar nicht. Spieler OHNE Club sind der Normalfall.
+  const loadClubs = useCallback(async () => {
+    try {
+      const [c, m, h] = await Promise.all([
+        supabase.from("clubs").select("id, name, tag, color, created_by, created_at"),
+        supabase.from("club_members").select("club_id, player_id, role, joined_at"),
+        supabase.from("players").select("id, home_club_id"),
+      ]);
+      if (c.error || m.error) return;
+      const home = {};
+      (h.data ?? []).forEach((r) => { if (r.home_club_id) home[r.id] = r.home_club_id; });
+      setClubData(c.data ?? [], m.data ?? [], home);
+    } catch { /* offline: alter Stand bleibt */ }
+  }, []);
+  useEffect(() => { setClubLoader(loadClubs); }, [loadClubs]);
+  // Einladungs-Link /?club=CODE: sobald ein Spieler da ist, beitreten (einmalig), dann Code verwerfen
+  useEffect(() => {
+    const code = getClubCode();
+    if (!code || !player) return;
+    clearClubCode();
+    supabase.rpc("join_club", { p_code: code }).then(({ data, error }) => {
+      if (error) toast(error.message);
+      else { toast(t("Du bist dem Club „{name}“ beigetreten.", { name: data?.name || "" })); reloadClubs(); }
+    });
+  }, [player]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;

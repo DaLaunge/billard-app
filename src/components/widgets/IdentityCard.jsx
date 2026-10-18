@@ -3,6 +3,8 @@ import { t } from "../../lib/i18n";
 import { initials, fmtDate } from "../../lib/format";
 import Ball from "../Ball";
 import DecayBadge from "./DecayBadge";
+import ClubTag from "./ClubTag";
+import { useClubData, clubsOfPlayer } from "../../lib/clubStore";
 import { EmojiText } from "../Emoji";
 
 /* Vereinheitlichte Identitaets-Karte: grosses, zentriertes Foto im Fokus,
@@ -32,7 +34,9 @@ import { EmojiText } from "../Emoji";
    gehoert. Beide sitzen in EINEM absolut positionierten Container, damit
    das jeweils vorhandene Symbol immer buendig rechts steht. */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
-  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88 }) {
+  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88, playerId }) {
+  // Club-Tags (Hauptclub zuerst); wer in keinem Club ist, bekommt einfach keine Zeile
+  const clubs = clubsOfPlayer(useClubData(), playerId);
   const head = (
     <>
       <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
@@ -43,6 +47,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       </div>
       {motto && <p className="id-card-motto">"<EmojiText>{motto}</EmojiText>"</p>}
       {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
+      {clubs.length > 0 && <div className="club-tags">{clubs.map((c) => <ClubTag key={c.id} club={c} withName={clubs.length === 1} />)}</div>}
     </>
   );
   return (

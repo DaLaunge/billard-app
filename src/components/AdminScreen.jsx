@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown, Users, Trash2 } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -11,9 +11,19 @@ import PlayerPicker from "./PlayerPicker";
 import FeedbackThread from "./FeedbackThread";
 import { rpcRetry } from "../lib/rpcRetry";
 import { EmojiText } from "./Emoji";
+import ClubTag from "./widgets/ClubTag";
+import { useClubData, reloadClubs } from "../lib/clubStore";
 
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
+  const clubData = useClubData();
+  const deleteClub = async (c) => {
+    if (!(await appConfirm(t("Den Club „{name}“ endgültig löschen? Alle Mitglieder verlieren den Tag.", { name: c.name })))) return;
+    const { error } = await supabase.rpc("delete_club", { p_club: c.id });
+    if (error) { toast(error.message); return; }
+    await reloadClubs();
+    toast(t("Club gelöscht."));
+  };
   const [busy, setBusy] = useState(false);
   const [busyBadges, setBusyBadges] = useState(false);
   const [nu, setNu] = useState({ email: "", password: "", nickname: "" });
@@ -612,6 +622,26 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         {logins && logins.length > 0 && visibleLogins.length === 0 && <p className="hint">{t("Keine Treffer.")}</p>}
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
       </section>
+
+      {clubData.loaded && (
+        <section className="stat-block">
+          <h3><Users size={17} /> {t("Clubs")} ({clubData.clubs.length})</h3>
+          {clubData.clubs.length === 0 && <p className="hint">{t("Noch keine Clubs.")}</p>}
+          {clubData.clubs.map((c) => {
+            const members = clubData.members.filter((m) => m.club_id === c.id);
+            const owner = players.find((p) => p.id === members.find((m) => m.role === "owner")?.player_id);
+            return (
+              <div key={c.id} className="club-row admin-club-row">
+                <ClubTag club={c} />
+                <span className="club-row-name">{c.name}</span>
+                <span className="club-row-meta">{owner?.nickname || "?"} · {members.length}</span>
+                <button className="icon-btn small warn" title={t("Club löschen")} aria-label={t("Club löschen")} onClick={() => deleteClub(c)}><Trash2 size={15} /></button>
+              </div>
+            );
+          })}
+          <p className="hint">{t("Moderation: Clubs gründet jeder selbst (Profil bearbeiten → Clubs). Hier lassen sich Clubs bei Missbrauch löschen.")}</p>
+        </section>
+      )}
 
       <section className="stat-block">
         <h3><Shield size={17} /> {t("Diagnose")}</h3>
