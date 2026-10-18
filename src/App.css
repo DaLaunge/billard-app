@@ -3275,3 +3275,22 @@ button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointe
 
 /* Stärkste Disziplin als fünfter Wert der Zahlenreihe: Punkte gross, darunter Kugel und Name */
 .id-kpi-disc { display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; }
+
+/* Club-Profil: groesseres Logo, Motto, Kennzahlen; Entdecken-Zeilen sind klickbar */
+.cm-logo { width: 76px; height: 76px; }
+.cm-motto { margin: 6px 0 0; font-style: italic; color: var(--ivory-dim); font-size: 13px; overflow-wrap: anywhere; }
+.cm-kpis { gap: 8px; }
+.cm-kpis b { font-size: 17px; }
+.cm-owner { margin: 0; font-size: 12.5px; color: var(--ivory-dim); }
+.club-form-col { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.club-row-main { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; padding: 0; background: none; border: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.club-row-textcol { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.club-row-motto { font-size: 11.5px; font-style: italic; color: var(--ivory-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.club-row-main:hover .club-row-name { text-decoration: underline dotted; text-underline-offset: 3px; }
+
+/* "Clubs entdecken": Tag, Name und Motto bekommen die volle Breite, der Knopf rutscht in eine eigene Zeile darunter (sonst wird alles abgeschnitten) */
+.club-discover-row { flex-wrap: wrap; row-gap: 8px; align-items: center; }
+.club-discover-row .club-row-main { flex: 1 1 100%; }
+.club-discover-row .club-row-main + * { margin-left: auto; }
+.club-discover-row .club-tag { flex: 0 0 auto; max-width: none; }
+.club-discover-row .club-row-name { white-space: normal; overflow: visible; }

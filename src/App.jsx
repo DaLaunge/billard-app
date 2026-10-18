@@ -1215,7 +1215,8 @@ export default function App() {
   const loadClubs = useCallback(async () => {
     try {
       const [c, m, h, rq] = await Promise.all([
-        supabase.from("clubs").select("id, name, tag, color, logo_at, created_by, created_at")
+        supabase.from("clubs").select("id, name, tag, color, logo_at, motto, created_by, created_at")
+          .then((r) => (r.error ? supabase.from("clubs").select("id, name, tag, color, logo_at, created_by, created_at") : r))   // motto fehlt vor Migration 19f
           .then((r) => (r.error ? supabase.from("clubs").select("id, name, tag, color, created_by, created_at") : r)),   // logo_at fehlt vor Migration 19e
         supabase.from("club_members").select("club_id, player_id, role, joined_at"),
         supabase.from("players").select("id, nickname, home_club_id"),
@@ -1607,7 +1608,7 @@ export default function App() {
         {session && player && !player.must_change_password && initialLoadDone && (
           <>
             <ConfirmHost />
-            <ClubMembersHost me={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={openProfile} toast={toast} />
+            <ClubMembersHost me={player} rangliste={rangliste} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={openProfile} toast={toast} />
             {celebrate && (
               <div className="celebrate-overlay" onClick={() => setCelebrate(null)}>
                 <div className="celebrate-card scrolls" onClick={(e) => e.stopPropagation()}>

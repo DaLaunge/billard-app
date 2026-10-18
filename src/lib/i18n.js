@@ -1111,6 +1111,11 @@ const TRANSLATIONS = {
     "Stärkste Disziplin": "Strongest discipline",
     "{n} Mitglieder": "{n} members",
     "Beitritt anfragen": "Request to join",
+    "Name, Kürzel, Motto und Farbe": "Name, tag, motto and color",
+    "Motto des Clubs (optional)": "Club motto (optional)",
+    "Club ansehen": "View club",
+    "Ø Rating": "Avg. rating",
+    "gegründet": "founded",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

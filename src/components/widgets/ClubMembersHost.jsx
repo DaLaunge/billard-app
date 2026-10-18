@@ -2,19 +2,20 @@ import { useState } from "react";
 import { Crown, ShieldCheck, UserPlus, X } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
-import { initials } from "../../lib/format";
+import { initials, fmtDate } from "../../lib/format";
 import { useClubData, useViewingClub, closeClub, reloadClubs, roleIn } from "../../lib/clubStore";
 import Ball from "../Ball";
 import ClubTag, { clubColor, inkFor } from "./ClubTag";
 import ClubLogoModal from "./ClubLogoModal";
 import { clubLogoUrl } from "../../lib/clubLogo";
 
-/* Mitgliederliste eines Clubs als Fenster: einmal in App.jsx eingehaengt, geoeffnet per openClub(id) (Klick auf einen Club-Tag in einer
-   Liste). Kopf mit Logo, Name, Tag und Anzahl, darunter alle Mitglieder (Gruender, Admins, dann alphabetisch); ein Tipp auf ein
-   Mitglied oeffnet dessen Profil. Wer noch kein Mitglied ist, kann hier direkt Beitritt anfragen. */
+/* Club-Profil als Fenster: einmal in App.jsx eingehaengt, geoeffnet per openClub(id) (Klick auf einen Club-Tag in einer Liste oder auf einen
+   Club unter "Clubs entdecken"). Oben Logo (Tipp = in voller Aufloesung), Name, Tag und Motto; darunter drei Kennzahlen (Mitglieder,
+   Durchschnitts-Rating, gegruendet am), der Gruender und alle Mitglieder (Gruender, Admins, dann alphabetisch); ein Tipp auf ein Mitglied
+   oeffnet dessen Profil. Wer noch kein Mitglied ist, kann hier direkt Beitritt anfragen. */
 const ORDER = { owner: 0, admin: 1, member: 2 };
 
-export default function ClubMembersHost({ me, colorOf, badgeOf, photoOf, onOpenProfile, toast }) {
+export default function ClubMembersHost({ me, rangliste, colorOf, badgeOf, photoOf, onOpenProfile, toast }) {
   const id = useViewingClub();
   const d = useClubData();
   const [busy, setBusy] = useState(false);
@@ -29,6 +30,13 @@ export default function ClubMembersHost({ me, colorOf, badgeOf, photoOf, onOpenP
   const req = (d.requests || []).find((r) => r.club_id === club.id && r.player_id === me?.id && r.status === "pending");
   const logo = clubLogoUrl(club);
   const bg = clubColor(club);
+  const owner = members.find((m) => m.role === "owner");
+  // Durchschnitt der Gesamt-Ratings der Mitglieder; gefestigte zuerst (ein einzelnes vorlaeufiges Rating verfaelscht sonst den Schnitt)
+  const nicks = new Set(members.map((m) => m.nick));
+  const rows = (rangliste || []).filter((r) => r.discipline === "Gesamt" && nicks.has(r.nickname) && r.rating != null);
+  const settled = rows.filter((r) => !r.vorlaeufig);
+  const pool = settled.length ? settled : rows;
+  const avg = pool.length ? Math.round(pool.reduce((a, r) => a + r.rating, 0) / pool.length) : null;
 
   const ask = async () => {
     setBusy(true);
@@ -46,13 +54,20 @@ export default function ClubMembersHost({ me, colorOf, badgeOf, photoOf, onOpenP
         <div className="cm-head">
           <button type="button" className="cm-logo" style={{ background: logo ? "#fff" : bg, color: inkFor(bg) }}
             onClick={() => logo && setLogoOpen(true)} aria-label={t("Club-Logo ansehen")} disabled={!logo}>
-            {logo ? <img src={logo} alt="" width="56" height="56" /> : <b>{club.tag}</b>}
+            {logo ? <img src={logo} alt="" width="76" height="76" /> : <b>{club.tag}</b>}
           </button>
           <div className="cm-title">
             <h3>{club.name}</h3>
-            <div className="cm-sub"><ClubTag club={club} compact /> <span>{t("{n} Mitglieder", { n: members.length })}</span></div>
+            <div className="cm-sub"><ClubTag club={club} compact /></div>
+            {club.motto && <p className="cm-motto">"{club.motto}"</p>}
           </div>
         </div>
+        <div className="dash-stats cm-kpis">
+          <div><b>{members.length}</b><span>{t("Mitglieder")}</span></div>
+          {avg != null && <div><b>{avg}</b><span>{t("Ø Rating")}</span></div>}
+          <div><b>{fmtDate(club.created_at)}</b><span>{t("gegründet")}</span></div>
+        </div>
+        {owner && <p className="cm-owner">{t("Gründer")}: <button type="button" className="name-link" onClick={() => openMember(owner.nick)}>{owner.nick}</button></p>}
         <div className="cm-list">
           {members.map((m) => (
             <button key={m.player_id} type="button" className="cm-row" onClick={() => openMember(m.nick)}>

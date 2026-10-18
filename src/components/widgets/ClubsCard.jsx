@@ -4,7 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { appConfirm } from "../../lib/confirmDialog";
-import { useClubData, reloadClubs, roleIn } from "../../lib/clubStore";
+import { useClubData, reloadClubs, roleIn, openClub } from "../../lib/clubStore";
 import ClubTag from "./ClubTag";
 import ClubLogoModal from "./ClubLogoModal";
 import { compressClubLogo, clubLogoPath, clubLogoUrl } from "../../lib/clubLogo";
@@ -127,7 +127,7 @@ export default function ClubsCard({ meRow, players, toast }) {
     const canManage = myRole === "owner" || myRole === "admin";
     const isOwner = myRole === "owner";
     const isOpen = open === c.id;
-    const ed = edit[c.id] || { name: c.name, tag: c.tag, color: c.color || "" };
+    const ed = edit[c.id] || { name: c.name, tag: c.tag, color: c.color || "", motto: c.motto || "" };
     return (
       <div key={c.id} className="club-block">
         <button className="club-row" onClick={() => setOpen(isOpen ? null : c.id)} aria-expanded={isOpen}>
@@ -241,15 +241,21 @@ export default function ClubsCard({ meRow, players, toast }) {
                     )}
                   </div>
 
-                  <p className="club-sub">{t("Name, Kürzel und Farbe")}</p>
+                  <p className="club-sub">{t("Name, Kürzel, Motto und Farbe")}</p>
+                  <div className="club-form-col">
                   <div className="club-form">
                     <input value={ed.name} maxLength={40} placeholder={t("Clubname")} onChange={(e) => setEdit((x) => ({ ...x, [c.id]: { ...ed, name: e.target.value } }))} />
                     <input value={ed.tag} maxLength={5} placeholder={t("Kürzel")} className="club-tag-input"
                       onChange={(e) => setEdit((x) => ({ ...x, [c.id]: { ...ed, tag: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") } }))} />
                     <input type="color" className="color-input" value={ed.color || "#3a7bd5"} aria-label={t("Farbe")}
                       onChange={(e) => setEdit((x) => ({ ...x, [c.id]: { ...ed, color: e.target.value } }))} />
+                  </div>
+                  <div className="club-form">
+                    <input value={ed.motto} maxLength={80} placeholder={t("Motto des Clubs (optional)")}
+                      onChange={(e) => setEdit((x) => ({ ...x, [c.id]: { ...ed, motto: e.target.value } }))} />
                     <button className="icon-btn small primary" disabled={busy} title={t("Speichern")} aria-label={t("Speichern")}
-                      onClick={() => run("update_club", { p_club: c.id, p_name: ed.name, p_tag: ed.tag, p_color: ed.color || null }, t("Gespeichert."))}><Check size={15} /></button>
+                      onClick={() => run("update_club", { p_club: c.id, p_name: ed.name, p_tag: ed.tag, p_color: ed.color || null, p_motto: ed.motto }, t("Gespeichert."))}><Check size={15} /></button>
+                  </div>
                   </div>
                 </>
               )}
@@ -301,9 +307,14 @@ export default function ClubsCard({ meRow, players, toast }) {
             {discoverList().map((c) => {
               const r = myReq(c.id);
               return (
-                <div key={c.id} className="club-row club-inbox-row">
-                  <ClubTag club={c} />
-                  <span className="club-row-name">{c.name}</span>
+                <div key={c.id} className="club-row club-inbox-row club-discover-row">
+                  <button type="button" className="club-row-main" onClick={() => openClub(c.id)} title={t("Club ansehen")}>
+                    <ClubTag club={c} />
+                    <span className="club-row-textcol">
+                      <span className="club-row-name">{c.name}</span>
+                      {c.motto && <span className="club-row-motto">{c.motto}</span>}
+                    </span>
+                  </button>
                   {r?.status === "pending" && r.kind === "invite" ? (
                     <button className="btn small" disabled={busy} onClick={() => run("club_respond", { p_request: r.id, p_accept: true }, t("Du bist dem Club beigetreten."))}>{t("Einladung annehmen")}</button>
                   ) : r?.status === "pending" ? (

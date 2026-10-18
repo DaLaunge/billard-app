@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.18", icon: "🏛️",
+    items: ["Club-Profile: Unter „Clubs entdecken“ (und per Klick auf einen Club-Tag) siehst du zu jedem Club Logo, Motto, Gründer, Mitglieder und das Durchschnitts-Rating. Die Club-Leitung kann ein Motto setzen."],
+    en: ["Club profiles: under \"Discover clubs\" (and by tapping a club tag) you see each club's logo, motto, founder, members and average rating. Club leaders can set a motto."] },
   { version: "412.15", icon: "👥",
     items: ["In Listen steht neben Spielern jetzt das Tag ihres Clubs. Ein Tipp darauf zeigt alle Mitglieder des Clubs – und wenn du noch nicht dabei bist, kannst du gleich Beitritt anfragen."],
     en: ["Lists now show the tag of a player's club next to their name. Tap it to see all members of the club – and if you are not in yet, you can request to join right away."] },
