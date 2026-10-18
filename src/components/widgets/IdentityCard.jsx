@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { QrCode, Settings } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { initials, fmtDate, fmtRating } from "../../lib/format";
@@ -6,9 +5,7 @@ import Ball from "../Ball";
 import DecayBadge from "./DecayBadge";
 import ClubEmblem from "./ClubEmblem";
 import DiscBall from "./DiscBall";
-import ClubLogoModal from "./ClubLogoModal";
-import { supabase } from "../../supabase";
-import { useClubData, clubsOfPlayer, reloadClubs } from "../../lib/clubStore";
+import { useClubData, clubsOfPlayer, openClub } from "../../lib/clubStore";
 import { EmojiText } from "../Emoji";
 
 /* Vereinheitlichte Identitaets-Karte: grosses, zentriertes Foto im Fokus,
@@ -44,14 +41,6 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
   // jeweilige Kachel einfach nicht.
   const clubData = useClubData();
   const clubs = clubsOfPlayer(clubData, playerId);
-  const [viewClub, setViewClub] = useState(null);
-  // Nur auf dem EIGENEN Profil: einen anderen Club in der Vollansicht antippen = ihn zum Hauptclub machen
-  const pickHome = ownProfile ? async (c) => {
-    const { error } = await supabase.rpc("set_home_club", { p_club: c.id });
-    if (error) return false;
-    await reloadClubs();
-    return true;
-  } : undefined;
   const head = (
     <>
       <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
@@ -64,7 +53,7 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
       {clubs[0] && (
         <div className="id-tiles">
-          <ClubEmblem club={clubs[0]} more={clubs.length - 1} onOpen={setViewClub} />
+          <ClubEmblem club={clubs[0]} more={clubs.length - 1} onOpen={(c) => openClub(c.id, { playerId, own: ownProfile })} />
         </div>
       )}
     </>
@@ -80,7 +69,6 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
           ? <div className="id-card-hero">{sideActions.left}{headEl}{sideActions.right}</div>
           : headEl;
       })()}
-      {viewClub && <ClubLogoModal club={viewClub} clubs={clubs} onPick={pickHome} onClose={() => setViewClub(null)} />}
       <DecayBadge player={gesamt} className="id-card-decay-warn" iconSize={20} pulse />
       {(onSettings || onInvite) && (
         <div className="id-card-corner">

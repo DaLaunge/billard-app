@@ -3,7 +3,7 @@ import { Crown, ShieldCheck, UserPlus, X, Trophy } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { initials, fmtDate, fmtRating } from "../../lib/format";
-import { useClubData, useViewingClub, closeClub, reloadClubs, roleIn } from "../../lib/clubStore";
+import { useClubData, useViewing, openClub, closeClub, reloadClubs, roleIn, clubsOfPlayer } from "../../lib/clubStore";
 import Ball from "../Ball";
 import ClubTag, { clubColor, inkFor } from "./ClubTag";
 import ClubLogoModal from "./ClubLogoModal";
@@ -15,7 +15,9 @@ import { clubLogoUrl } from "../../lib/clubLogo";
    Club-Rangliste nach Gesamt-Rating (Krone = Gruender, Schild = Admin); ein Tipp auf ein Mitglied oeffnet dessen Profil. Wer noch kein
    Mitglied ist, kann hier direkt Beitritt anfragen. Alles wird aus den schon geladenen Matches und Ratings gerechnet, es gibt keine eigene Abfrage. */
 export default function ClubMembersHost({ me, rangliste, matches, colorOf, badgeOf, photoOf, onOpenProfile, toast }) {
-  const id = useViewingClub();
+  const viewing = useViewing();
+  const id = viewing?.id ?? null;
+  const ctx = viewing?.ctx ?? null;
   const d = useClubData();
   const [busy, setBusy] = useState(false);
   const [logoOpen, setLogoOpen] = useState(false);
@@ -67,6 +69,19 @@ export default function ClubMembersHost({ me, rangliste, matches, colorOf, badge
     toast(data === "joined" ? t("Du bist dem Club beigetreten.") : t("Anfrage gesendet."));
   };
   const openMember = (nick) => { closeClub(); onOpenProfile(nick); };
+  // Weitere Clubs der Person, deren Profil (Identitaetskarte) oder Tag (Liste) angetippt wurde: als Tags zum Wechseln. Auf dem EIGENEN Profil
+  // macht das Antippen den Club zum Hauptclub und zeigt gleich seine Statistik (Nutzer-Wunsch 412.29).
+  const others = ctx?.playerId ? clubsOfPlayer(d, ctx.playerId).filter((c) => c.id !== club.id) : [];
+  const switchTo = async (c) => {
+    if (ctx.own) {
+      setBusy(true);
+      const { error } = await supabase.rpc("set_home_club", { p_club: c.id });
+      setBusy(false);
+      if (error) { toast(error.message); return; }
+      await reloadClubs();
+    }
+    openClub(c.id, ctx);
+  };
 
   return (
     <div className="modal-overlay" onClick={closeClub}>
@@ -90,6 +105,16 @@ export default function ClubMembersHost({ me, rangliste, matches, colorOf, badge
           <div title={t("Stärkstes Mitglied")}><b>{stats.best ? <><Trophy size={12} /> {fmtRating(stats.best.rating)}</> : "–"}</b><span className="cm-ellip">{stats.best?.nickname || t("Stärkstes Mitglied")}</span></div>
           <div><b>{fmtDate(club.created_at)}</b><span>{t("gegründet")}</span></div>
         </div>
+        {others.length > 0 && (
+          <div className="cm-others">
+            <span className="cm-others-label">{ctx.own ? t("Antippen macht einen Club zum Hauptclub.") : t("Weitere Clubs")}</span>
+            <div className="club-tags">
+              {others.map((c) => (
+                <button key={c.id} type="button" className="club-tag-btn" disabled={busy} aria-label={c.name} onClick={() => switchTo(c)}><ClubTag club={c} /></button>
+              ))}
+            </div>
+          </div>
+        )}
         {owner && <p className="cm-owner">{t("Gründer")}: <button type="button" className="name-link" onClick={() => openMember(owner.nick)}>{owner.nick}</button></p>}
         <div className="cm-list">
           {sorted.map((m, i) => (

@@ -1121,6 +1121,7 @@ const TRANSLATIONS = {
     "Quote vs. andere": "Win rate vs. others",
     "{n} Matches gegen Nicht-Mitglieder": "{n} matches against non-members",
     "Stärkstes Mitglied": "Strongest member",
+    "Weitere Clubs": "More clubs",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

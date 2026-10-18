@@ -41,12 +41,16 @@ export const primaryClubOfNick = (d, nick) => {
   return id ? clubsOfPlayer(d, id)[0] || null : null;
 };
 
-/* Mitgliederliste eines Clubs oeffnen (Klick auf einen Tag in einer Liste): nur die ID, gezeigt wird sie von ClubMembersHost. */
+/* Club-Profil oeffnen (Klick auf einen Tag in einer Liste, auf die Club-Kachel der Identitaetskarte, auf einen Club unter "Clubs entdecken"):
+   gezeigt wird es von ClubMembersHost. ctx ist optional: { playerId, own } - dann zeigt das Profil die weiteren Clubs dieser Person zum
+   Wechseln, und auf dem EIGENEN Profil (own) macht das Antippen eines anderen Clubs ihn zum Hauptclub. Das Snapshot-Objekt wird nur in
+   openClub ersetzt (stabil fuer useSyncExternalStore). */
 let viewing = null;
 const viewSubs = new Set();
-export const openClub = (id) => { viewing = id; viewSubs.forEach((f) => f()); };
+export const openClub = (id, ctx = null) => { viewing = id ? { id, ctx } : null; viewSubs.forEach((f) => f()); };
 export const closeClub = () => openClub(null);
-export const useViewingClub = () => useSyncExternalStore(
+export const useViewing = () => useSyncExternalStore(
   (cb) => { viewSubs.add(cb); return () => viewSubs.delete(cb); },
   () => viewing,
 );
+export const useViewingClub = () => useViewing()?.id ?? null;
