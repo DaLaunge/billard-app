@@ -5,6 +5,7 @@ import { initials, fmtDate } from "../../lib/format";
 import Ball from "../Ball";
 import DecayBadge from "./DecayBadge";
 import ClubEmblem from "./ClubEmblem";
+import DiscBall from "./DiscBall";
 import ClubLogoModal from "./ClubLogoModal";
 import { useClubData, clubsOfPlayer } from "../../lib/clubStore";
 import { EmojiText } from "../Emoji";
@@ -36,27 +37,15 @@ import { EmojiText } from "../Emoji";
    gehoert. Beide sitzen in EINEM absolut positionierten Container, damit
    das jeweils vorhandene Symbol immer buendig rechts steht. */
 export default function IdentityCard({ nickname, gesamt, motto, since, stats, colorOf, badgeOf, photoOf,
-  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88, playerId }) {
-  // Clubs (Hauptclub zuerst) als Emblem links und rechts NEBEN der Kugel - dort ist Platz, und die Kugel bleibt frei (kein Wappen
-  // darauf, kein Tag-Streifen darunter). Mehr als zwei Clubs: "+n" unter dem zweiten, die Vollansicht kennt alle.
-  // Wer in keinem Club ist, bekommt einfach nichts.
+  onHeadClick, onInvite, onSettings, actions, sideActions, photoSize = 88, playerId, best }) {
+  // Unter dem Namen zwei gleich gebaute Kacheln nebeneinander: Hauptclub (Logo, Name, Kuerzel, "+n" bei mehreren - die Vollansicht kennt
+  // alle) und staerkste Disziplin mit Punkten. Die Kugel bleibt frei. Wer in keinem Club ist bzw. noch kein Rating hat, bekommt die
+  // jeweilige Kachel einfach nicht.
   const clubs = clubsOfPlayer(useClubData(), playerId);
   const [viewClub, setViewClub] = useState(null);
-  const extra = Math.max(0, clubs.length - 2);
   const head = (
     <>
-      <div className="id-avatar-row">
-        <div className="id-avatar-side left">{clubs[0] && <ClubEmblem club={clubs[0]} onOpen={setViewClub} />}</div>
-        <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
-        <div className="id-avatar-side right">
-          {clubs[1] && <ClubEmblem club={clubs[1]} onOpen={setViewClub} />}
-          {extra > 0 && (
-            <span className="club-more" role="button" tabIndex={0} title={t("Alle Clubs ansehen")} aria-label={t("Alle Clubs ansehen")}
-              onClick={(e) => { e.stopPropagation(); setViewClub(clubs[0]); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setViewClub(clubs[0]); } }}>+{extra}</span>
-          )}
-        </div>
-      </div>
+      <Ball nick={nickname} color={colorOf(nickname)} label={initials(nickname)} badge={badgeOf(nickname)} photo={photoOf(nickname)} size={photoSize} />
       <h3 className="id-card-name">{nickname}</h3>
       <div className="id-card-rating">
         {gesamt ? gesamt.rating : "-"}
@@ -64,6 +53,17 @@ export default function IdentityCard({ nickname, gesamt, motto, since, stats, co
       </div>
       {motto && <p className="id-card-motto">"<EmojiText>{motto}</EmojiText>"</p>}
       {since && <p className="id-card-since">{t("Dabei seit {date}", { date: fmtDate(since) })}</p>}
+      {(clubs[0] || best) && (
+        <div className="id-tiles">
+          {clubs[0] && <ClubEmblem club={clubs[0]} more={clubs.length - 1} onOpen={setViewClub} />}
+          {best && (
+            <span className="id-tile" title={t("Stärkste Disziplin")}>
+              <span className="id-tile-disc ball"><DiscBall disc={best.discipline} size={34} /></span>
+              <span className="id-tile-text"><strong>{t(best.discipline)}</strong><small>{best.rating} {t("Punkte")}</small></span>
+            </span>
+          )}
+        </div>
+      )}
     </>
   );
   return (

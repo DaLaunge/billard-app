@@ -1108,6 +1108,7 @@ const TRANSLATIONS = {
     "Pink": "Pink",
     "Club-Logo ansehen": "View club logo",
     "Alle Clubs ansehen": "View all clubs",
+    "Stärkste Disziplin": "Strongest discipline",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

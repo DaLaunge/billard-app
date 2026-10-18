@@ -3233,16 +3233,17 @@ button.club-logo-prev:hover { border-color: var(--btn-border); }
 .club-logo-big { width: min(70vw, 256px); height: min(70vw, 256px); border-radius: 50%; object-fit: cover; background: #fff; }
 button.club-tag-btn { background: none; border: none; padding: 0; cursor: pointer; line-height: 0; }
 
-/* Club-Emblem links/rechts der Kugel auf der Identitaetskarte: drei gleich breite Spalten, die Kugel bleibt in der Mitte */
-.id-avatar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 10px; width: 100%; }
-.id-avatar-side { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
-.id-avatar-side.left { justify-self: end; }
-.id-avatar-side.right { justify-self: start; }
-.club-emblem { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; max-width: 100%; }
-.club-emblem-disc { display: grid; place-items: center; border-radius: 50%; overflow: hidden; font-weight: 800; letter-spacing: .02em; line-height: 1;
-  box-shadow: 0 0 0 2px var(--line), 0 3px 10px #0004; flex: 0 0 auto; }
-.club-emblem-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.club-emblem:hover .club-emblem-disc { box-shadow: 0 0 0 2px var(--accent), 0 3px 10px #0004; }
-.club-emblem-tag { padding: 0 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; line-height: 1.6; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.club-more { padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--surface-btn); color: var(--ivory-dim); cursor: pointer; line-height: 1.7; }
 .club-logo-none { display: grid; place-items: center; font-size: 56px; font-weight: 800; letter-spacing: .04em; }
+
+/* Zwei gleich gebaute Info-Kacheln unter dem Namen: Club und staerkste Disziplin (Identitaetskarte) */
+.id-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 220px)); justify-content: center; gap: 8px; width: 100%; margin: 12px auto 0; }
+.id-tile { display: inline-flex; align-items: center; gap: 9px; padding: 6px 14px 6px 6px; border-radius: 16px; background: var(--surface-btn);
+  min-width: 0; text-align: left; }
+.id-tile-club { cursor: pointer; border: 1.5px solid transparent; }
+.id-tile-club:hover { border-color: var(--btn-border); }
+.id-tile-disc { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; flex: 0 0 auto; font-weight: 800; font-size: 12px; letter-spacing: .02em; }
+.id-tile-disc.ball { overflow: visible; background: none; }
+.id-tile-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.id-tile-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.id-tile-text strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.id-tile-text small { font-size: 11.5px; color: var(--ivory-dim); letter-spacing: .03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

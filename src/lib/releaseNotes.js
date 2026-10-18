@@ -18,9 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
-  { version: "412.13", icon: "🛡️",
-    items: ["Deine Clubs stehen jetzt als Emblem links und rechts neben deiner Kugel im Profil. Ein Tipp zeigt das Logo groß – bei mehreren Clubs kannst du zwischen ihnen wechseln. Logos sind jetzt schärfer."],
-    en: ["Your clubs now show as emblems to the left and right of your ball in the profile. Tap one to see the logo big – with several clubs you can switch between them. Logos are now sharper."] },
+  { version: "412.14", icon: "🛡️",
+    items: ["Neu auf deiner Identitätskarte: zwei Kacheln mit deinem Club (Tipp = Logo groß, bei mehreren Clubs mit Wechsel) und deiner stärksten Disziplin samt Punkten. Club-Logos sind jetzt schärfer."],
+    en: ["New on your identity card: two tiles with your club (tap = big logo, with a switch if you have several clubs) and your strongest discipline with its points. Club logos are now sharper."] },
   { version: "412.9", icon: "🖼️",
     items: ["Clubs können ein Logo bekommen: Die Club-Leitung wählt ein Bild, und es erscheint im Club-Tag."],
     en: ["Clubs can have a logo: the club leader picks an image and it shows in the club tag."] },

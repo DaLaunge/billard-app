@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { computeStats } from "../../lib/stats";
 import { numbersParts } from "../../lib/cardLayout";
 import IdentityCard from "./IdentityCard";
+import { bestDiscipline } from "../../lib/bestDiscipline";
 import NumbersDeck from "./NumbersDeck";
 
 /* Die immer gleiche linke Spalte am PC auf Statistik und Live (und, mit
@@ -33,7 +34,7 @@ export default function UserPanel({ nickname, matches, rangliste, players, chall
 
   return (
     <>
-      <IdentityCard nickname={nickname} playerId={playerObj?.id} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
+      <IdentityCard nickname={nickname} playerId={playerObj?.id} best={bestDiscipline(myRows)} gesamt={gesamt} motto={playerObj?.motto} since={playerObj?.created_at}
         stats={stats} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onHeadClick={() => onOpenProfile(nickname)}
         />
 
