@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.8", icon: "🍇",
+    items: ["Neues Farbdesign „Beere“ (Pflaume mit rosa Akzent). Es ersetzt „Petrol“, das Grün zu ähnlich sah – wer Petrol hatte, bekommt Grün."],
+    en: ["New color theme \"Berry\" (plum with a pink accent). It replaces \"Teal\", which looked too much like Green – if you had Teal you now get Green."] },
   { version: "412.6", icon: "💌",
     items: [
       "Club-Einladungen: Die Club-Leitung kann Spieler einladen – du entscheidest per Zusage. Oder du fragst selbst bei einem Club an, dann bestätigt ihn die Leitung.",

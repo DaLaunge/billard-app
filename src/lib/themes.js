@@ -29,9 +29,14 @@ export const THEME_CATALOG = {
     accent: "#C87CE8", accentDeep: "#8E46B4", ivory: "#F2EDE0", ivoryDim: "#B7A0C4" },
   brown: { name: "Braun", felt: "#2B1D0A", felt2: "#382610", felt3: "#493117", line: "#56412460",
     accent: "#E8C17C", accentDeep: "#B4923E", ivory: "#F2EDE0", ivoryDim: "#C4B49D" },
-  teal: { name: "Petrol", felt: "#0A2B28", felt2: "#103833", felt3: "#174943", line: "#24565060",
-    accent: "#7CE8C4", accentDeep: "#3EB491", ivory: "#F2EDE0", ivoryDim: "#9DBAB2" },
+  // "Beere" (seit 412.8) ersetzt "Petrol": Gruen (#0A2B21) und Petrol (#0A2B28) waren kaum zu unterscheiden. Die Toene liegen
+  // zwischen Rot (Farbwinkel ~345) und Lila (~280), also in einer Luecke des Sortiments; Akzent ein helles Rosa.
+  berry: { name: "Beere", felt: "#2B0A22", felt2: "#38102D", felt3: "#491739", line: "#5C2A4B60",
+    accent: "#F2A0D0", accentDeep: "#C0689F", ivory: "#F2EDE0", ivoryDim: "#C4A0B8" },
 };
+
+// Frueher gespeicherte Schluessel, die es nicht mehr gibt -> naechstes aehnliches Thema (Petrol sah fast wie Gruen aus)
+const LEGACY_THEME = { teal: "green" };
 
 export const THEME_KEYS = Object.keys(THEME_CATALOG);
 
@@ -118,7 +123,7 @@ export function buildCustomTheme(bgHex, accentHex) {
 
 export function resolveTheme(themeKey, customColors) {
   if (themeKey === "custom") return buildCustomTheme(customColors?.bg, customColors?.accent);
-  return THEME_CATALOG[themeKey] || THEME_CATALOG.green;
+  return THEME_CATALOG[LEGACY_THEME[themeKey] || themeKey] || THEME_CATALOG.green;
 }
 
 export function applyTheme(themeKey, customColors) {

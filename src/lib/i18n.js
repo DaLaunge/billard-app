@@ -1096,6 +1096,7 @@ const TRANSLATIONS = {
     "{n} Club(s) – verwalten, einladen, beitreten": "{n} club(s) – manage, invite, join",
     "Gründen, beitreten oder anfragen": "Create, join or request",
     "Gründe deinen eigenen Club mit Kürzel und Farbe – er erscheint als Tag in deinem Profil. Als Leiter lädst du Spieler ein, nimmst Anfragen an und kannst die Leitung weitergeben. Du kannst auch einem Club beitreten oder anfragen. Spieler ohne Club sind ganz normal.": "Found your own club with a tag and color – it shows as a tag in your profile. As leader you invite players, accept requests and can hand over the leadership. You can also join a club or request to join. Players without a club are perfectly normal.",
+    "Beere": "Berry",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":
