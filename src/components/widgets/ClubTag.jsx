@@ -1,3 +1,5 @@
+import { clubLogoUrl } from "../../lib/clubLogo";
+
 /* Club-Tag ("Clan-Tag"): Kuerzel des Clubs als kleine farbige Pille, z. B. [HOME]. Die Farbe stammt vom Club; hat er keine,
    wird sie stabil aus dem Kuerzel abgeleitet, damit zwei Clubs ohne Farbwahl trotzdem unterscheidbar sind. Die Schriftfarbe
    (hell/dunkel) richtet sich nach der Helligkeit des Hintergrunds. Voller Name steht in title/aria-label. */
@@ -16,8 +18,10 @@ const inkFor = (color) => {
 export default function ClubTag({ club, withName = false, title }) {
   if (!club) return null;
   const bg = clubColor(club);
+  const logo = clubLogoUrl(club);
   return (
     <span className="club-tag" style={{ background: bg, color: inkFor(bg) }} title={title || club.name} aria-label={club.name}>
+      {logo && <img className="club-tag-logo" src={logo} alt="" width="14" height="14" loading="lazy" />}
       {club.tag}{withName && <span className="club-tag-name"> · {club.name}</span>}
     </span>
   );

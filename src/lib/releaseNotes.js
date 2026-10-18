@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "412.9", icon: "🖼️",
+    items: ["Clubs können ein Logo bekommen: Die Club-Leitung wählt ein Bild, es wird auf winzige 128 Pixel verkleinert und erscheint im Club-Tag."],
+    en: ["Clubs can have a logo: the club leader picks an image, it is shrunk to a tiny 128 pixels and shows in the club tag."] },
   { version: "412.8", icon: "🍇",
     items: ["Neues Farbdesign „Beere“ (Pflaume mit rosa Akzent). Es ersetzt „Petrol“, das Grün zu ähnlich sah – wer Petrol hatte, bekommt Grün."],
     en: ["New color theme \"Berry\" (plum with a pink accent). It replaces \"Teal\", which looked too much like Green – if you had Teal you now get Green."] },

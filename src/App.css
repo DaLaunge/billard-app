@@ -3208,3 +3208,12 @@ html[data-sticky-heads="off"] .avatar-sheet-cat-head, html[data-sticky-heads="of
 .club-form input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
 .club-form input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 .club-form input[type="color"]:focus-visible { border-color: var(--accent); }
+
+/* Club-Logo: winziges Rundbild im Tag und eine Vorschau in der Verwaltung (supabase/2026-10-19e_club_logo.sql) */
+.club-tag-logo { width: 14px; height: 14px; border-radius: 50%; object-fit: cover; margin: 0 5px 0 -4px; background: #ffffff40; flex: 0 0 auto; }
+.club-tag { gap: 0; }
+.club-logo-row { display: flex; align-items: center; gap: 8px; }
+.club-logo-prev { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--felt); border: 1px solid var(--line); color: var(--ivory-dim); }
+.club-logo-prev img { width: 100%; height: 100%; object-fit: cover; display: block; }
+label.icon-btn { display: inline-grid; place-items: center; cursor: pointer; }
+label.icon-btn.disabled { opacity: .5; cursor: default; }

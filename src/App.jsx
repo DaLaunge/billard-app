@@ -1214,7 +1214,8 @@ export default function App() {
   const loadClubs = useCallback(async () => {
     try {
       const [c, m, h, rq] = await Promise.all([
-        supabase.from("clubs").select("id, name, tag, color, created_by, created_at"),
+        supabase.from("clubs").select("id, name, tag, color, logo_at, created_by, created_at")
+          .then((r) => (r.error ? supabase.from("clubs").select("id, name, tag, color, created_by, created_at") : r)),   // logo_at fehlt vor Migration 19e
         supabase.from("club_members").select("club_id, player_id, role, joined_at"),
         supabase.from("players").select("id, home_club_id"),
         supabase.from("club_requests").select("id, club_id, player_id, kind, status, created_by, created_at, decided_at"),   // fehlt die Tabelle (Migration 19c): leer

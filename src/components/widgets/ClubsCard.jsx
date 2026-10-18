@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Users, Plus, Star, Copy, RefreshCw, Trash2, LogOut, Crown, ShieldCheck, UserMinus, ChevronDown, KeyRound, Check, X, UserPlus, Search } from "lucide-react";
+import { Image as ImageIcon, Users, Plus, Star, Copy, RefreshCw, Trash2, LogOut, Crown, ShieldCheck, UserMinus, ChevronDown, KeyRound, Check, X, UserPlus, Search } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { appConfirm } from "../../lib/confirmDialog";
 import { useClubData, reloadClubs, roleIn } from "../../lib/clubStore";
 import ClubTag from "./ClubTag";
+import { compressClubLogo, clubLogoPath, clubLogoUrl } from "../../lib/clubLogo";
 
 /* "Clubs" unter Profil bearbeiten: eigene Clubs (Tag im Profil), Club gruenden, per Code beitreten und - fuer die Leitung -
    Mitglieder, Rollen, Einladungs-Code/-Link, Name/Kuerzel/Farbe. Alles laeuft ueber RPCs (supabase/2026-10-19b_clubs.sql),
@@ -63,6 +64,38 @@ export default function ClubsCard({ meRow, players, toast }) {
   const doCreate = async () => {
     const r = await run("create_club", { p_name: create.name, p_tag: create.tag, p_color: create.color || null }, t("Club gegründet."));
     if (r) setCreate(null);
+  };
+  // Logo: auf 128 px verkleinert, Datei im Storage (nicht in der Datenbank), nur der Zeitstempel kommt in die Tabelle
+  const uploadLogo = async (c, file) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const blob = await compressClubLogo(file);
+      const { error } = await supabase.storage.from("club-logos")
+        .upload(clubLogoPath(c.id), blob, { upsert: true, contentType: blob.type, cacheControl: "31536000" });
+      if (error) throw error;
+      const { error: e2 } = await supabase.rpc("set_club_logo", { p_club: c.id, p_has_logo: true });
+      if (e2) throw e2;
+      await reloadClubs();
+      toast(t("Logo gespeichert ({kb} KB).", { kb: Math.max(1, Math.round(blob.size / 1024)) }));
+    } catch (e) { toast(t("Fehler: ") + e.message); }
+    setBusy(false);
+  };
+  const removeLogo = async (c) => {
+    setBusy(true);
+    try {
+      await supabase.storage.from("club-logos").remove([clubLogoPath(c.id)]);
+      const { error } = await supabase.rpc("set_club_logo", { p_club: c.id, p_has_logo: false });
+      if (error) throw error;
+      await reloadClubs();
+      toast(t("Logo entfernt."));
+    } catch (e) { toast(t("Fehler: ") + e.message); }
+    setBusy(false);
+  };
+  // Die Datei muss ueber die Storage-API raus (direktes SQL-Loeschen auf storage.objects ist gesperrt), dann der Club
+  const removeClub = async (c) => {
+    if (c.logo_at) { try { await supabase.storage.from("club-logos").remove([clubLogoPath(c.id)]); } catch { /* egal */ } }
+    return run("delete_club", { p_club: c.id }, t("Club gelöscht."));
   };
   const doJoin = async () => {
     const r = await run("join_club", { p_code: joinCode }, t("Du bist dem Club beigetreten."));
@@ -185,6 +218,20 @@ export default function ClubsCard({ meRow, players, toast }) {
                     </>
                   )}
 
+                  <p className="club-sub">{t("Logo")}</p>
+                  <div className="club-logo-row">
+                    <span className="club-logo-prev">{clubLogoUrl(c) ? <img src={clubLogoUrl(c)} alt="" width="44" height="44" /> : <ImageIcon size={20} />}</span>
+                    <label className={"icon-btn small" + (busy ? " disabled" : "")} title={t("Logo wählen")} aria-label={t("Logo wählen")}>
+                      <ImageIcon size={15} />
+                      <input type="file" accept="image/*" style={{ display: "none" }} disabled={busy}
+                        onChange={(e) => { uploadLogo(c, e.target.files[0]); e.target.value = ""; }} />
+                    </label>
+                    {c.logo_at && (
+                      <button className="icon-btn small warn" disabled={busy} title={t("Logo entfernen")} aria-label={t("Logo entfernen")} onClick={() => removeLogo(c)}><Trash2 size={15} /></button>
+                    )}
+                  </div>
+                  <p className="hint">{t("Wird auf 128 Pixel verkleinert (meist unter 8 KB) – so bleibt der Speicher klein.")}</p>
+
                   <p className="club-sub">{t("Name, Kürzel und Farbe")}</p>
                   <div className="club-form">
                     <input value={ed.name} maxLength={40} placeholder={t("Clubname")} onChange={(e) => setEdit((x) => ({ ...x, [c.id]: { ...ed, name: e.target.value } }))} />
@@ -207,7 +254,7 @@ export default function ClubsCard({ meRow, players, toast }) {
                 )}
                 {isOwner && (
                   <button className="btn ghost small warn" disabled={busy}
-                    onClick={async () => { if (await appConfirm(t("Den Club „{name}“ endgültig löschen? Alle Mitglieder verlieren den Tag.", { name: c.name }))) run("delete_club", { p_club: c.id }, t("Club gelöscht.")); }}>
+                    onClick={async () => { if (await appConfirm(t("Den Club „{name}“ endgültig löschen? Alle Mitglieder verlieren den Tag.", { name: c.name }))) removeClub(c); }}>
                     <Trash2 size={14} /> {t("Club löschen")}
                   </button>
                 )}

@@ -19,6 +19,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
   const clubData = useClubData();
   const deleteClub = async (c) => {
     if (!(await appConfirm(t("Den Club „{name}“ endgültig löschen? Alle Mitglieder verlieren den Tag.", { name: c.name })))) return;
+    if (c.logo_at) { try { await supabase.storage.from("club-logos").remove([`${c.id}/logo`]); } catch { /* egal */ } }
     const { error } = await supabase.rpc("delete_club", { p_club: c.id });
     if (error) { toast(error.message); return; }
     await reloadClubs();
