@@ -3345,3 +3345,8 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .rs-case-wrap:last-child { border-bottom: 0; }
 .rs-cases > .search-row, .rs-cases > .rs-filters, .rs-cases > .rs-activetag { margin-bottom: 10px; }
 .rs-tagrow { margin: 4px 0 8px 22px; }
+
+/* Regelkunde am PC breiter (415.12): die Animationen stehen paarweise nebeneinander und profitieren von der Breite; seitlich blieb vorher viel leer. */
+@media (min-width: 900px) {
+  .phone.app .screen:has(.rs-cases) { max-width: 1200px; }
+}
