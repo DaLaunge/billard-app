@@ -993,7 +993,9 @@ export default function App() {
   const [keepAwakeDefault, setKeepAwakeDefaultState] = useState(getKeepAwake);
   const setKeepAwakeDefault = useCallback((on) => { setKeepAwakeDefaultState(on); storeKeepAwake(on); }, []);
   const [keepAwakeNow, setKeepAwakeNow] = useState(keepAwakeDefault);
-  const inLiveEntry = LIVE_ENTRY_TABS.includes(tab);
+  // Bildschirm-an gilt in der Live-Eingabe UND solange ein Turnier offen ist (turnierdetail: man wartet dort auf die naechste Partie, 417.9);
+  // das Turnier ist bewusst KEIN LIVE_ENTRY_TAB (es haelt keinen ungespeicherten Stand, Updates duerfen dort einspielen).
+  const inLiveEntry = LIVE_ENTRY_TABS.includes(tab) || tab === "turnierdetail";
   const wasInLiveEntry = useRef(inLiveEntry);
   useEffect(() => {
     if (inLiveEntry && !wasInLiveEntry.current) setKeepAwakeNow(keepAwakeDefault);
@@ -1912,7 +1914,8 @@ export default function App() {
               {tab === "turnierdetail" && tournamentId && (
                 <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} matches={matches} toast={toast}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => navReplace({ tab: "turnier" })}
-                  onReportTournamentMatch={(ctx) => navPush({ tab: "match", matchTournamentCtx: ctx })} />
+                  onReportTournamentMatch={(ctx) => navPush({ tab: "match", matchTournamentCtx: ctx })}
+                  keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} />
               )}
               {tab === "winnerstays" && winnerStaysId && (
                 <WinnerStaysScreen sessionId={winnerStaysId} me={player} players={players} matches={matches} toast={toast}
