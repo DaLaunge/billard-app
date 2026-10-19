@@ -41,6 +41,8 @@ import NumbersDeck from "./widgets/NumbersDeck";
 import { CARD_SCREENS, screenUnits, deckIds, splitCardColumns, foldedDeck, withoutFolded, deckColumn, phoneSlotOrder } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
 import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
+import StartPagePicker from "./widgets/StartPagePicker";
+import { START_TABS } from "../lib/menuPrefs";
 
 // Welche Karten des Profils sich je EINE Karte mit Reitern teilen (siehe
 // DECKS weiter unten und CardDeck.jsx). Hier oben, weil die Spaltenwahl
@@ -266,6 +268,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   };
 
   const [startTab, setStartTabLocal] = useState(meRow?.start_tab || "stats");
+  // letzte feste Wahl (beim Ausschalten von "Zuletzt geoeffnete Seite" kommt sie zurueck)
+  const [startPick, setStartPick] = useState(() => { try { return localStorage.getItem("startPick") || (meRow?.start_tab && meRow.start_tab !== "last" ? meRow.start_tab : "stats"); } catch { return "stats"; } });
+  useEffect(() => { if (startTab !== "last") { try { localStorage.setItem("startPick", startTab); } catch { /* ignore */ } } }, [startTab]);
   const pickStartTab = async (value) => {
     setStartTabLocal(value);
     setBusy(true);
@@ -600,21 +605,18 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               <span>{t("Startseite")}</span>
               <InfoButton title={t("Startseite")}>{t("Was soll beim Starten der App zuerst angezeigt werden?")}</InfoButton>
             </div>
-            {/* Dieselben Symbole wie in der Menueleiste unten - so muss man
-                die Woerter nicht lesen. */}
-            <div className="chips start-icons">
-              {[
-                ["stats", t("Statistik"), <BarChart3 size={18} />],
-                ["turnier", t("Turniere"), <Trophy size={18} />],
-                ["live", t("Live"), <Radio size={18} />],
-                ["profil", t("Profil"), <User size={18} />],
-                ["last", t("Zuletzt geöffnet"), <History size={18} />],
-              ].map(([v, label, icon]) => (
-                <button key={v} className={"chip chip-icon seg" + (startTab === v ? " active" : "")}
-                  disabled={busy} onClick={() => pickStartTab(v)} aria-label={label} title={label}>
-                  {icon}
-                </button>
-              ))}
+            {/* Grafik der eigenen Menueleiste: antippen, welcher Punkt beim Start oeffnet (415.19). "Zuletzt geoeffnet" graut sie aus. */}
+            <StartPagePicker value={startTab} onPick={(v) => { setStartPick(v); pickStartTab(v); }} disabled={busy} />
+            <div className="switch-row">
+              <label className="settings-switch">
+                <input type="checkbox" checked={startTab === "last"} disabled={busy}
+                  onChange={(e) => pickStartTab(e.target.checked ? "last" : (START_TABS.includes(startPick) ? startPick : "stats"))} />
+                <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                <span className="settings-switch-label">{t("Zuletzt geöffnete Seite")}</span>
+              </label>
+              <InfoButton title={t("Zuletzt geöffnete Seite")}>
+                {t("Statt einer festen Startseite öffnet die App die Seite, auf der du zuletzt warst.")}
+              </InfoButton>
             </div>
           </section>
           </Chap>

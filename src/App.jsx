@@ -55,7 +55,7 @@ import AvatarSheet from "./components/AvatarSheet";
 import { applyListPrefs, hasListModeChoice, clearListPrefs, storeListMode } from "./lib/uiPrefs";
 import ListChoiceDialog from "./components/ListChoiceDialog";
 import BottomBar from "./components/BottomBar";
-import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED } from "./lib/menuPrefs";
+import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED, START_TABS } from "./lib/menuPrefs";
 import ConfirmHost from "./components/ConfirmHost";
 import { rpcRetry } from "./lib/rpcRetry";
 import { EmojiText } from "./components/Emoji";
@@ -797,7 +797,7 @@ export default function App() {
         // Faengt veraltete gespeicherte Werte ab (z.B. "rang" von vor dem
         // Uebersicht/Statistik-Menue-Umbau) - sonst landet man auf einem
         // tab-Wert, den kein Screen mehr rendert (leere Seite mit Tabbar).
-        if (!["stats", "turnier", "live", "profil"].includes(target)) target = null;
+        if (!START_TABS.includes(target)) target = null;
         if (urlNavAtStart) {
           navReplace(urlNavAtStart);
           try { window.history.replaceState(urlNavAtStart, "", window.location.pathname); } catch { /* ignore */ }
@@ -1822,7 +1822,7 @@ export default function App() {
                     if (matchTournamentCtx) { allowLeaveMatchRef.current = true; window.history.back(); return; }
                     let target = player.start_tab;
                     if (target === "last") { try { target = localStorage.getItem("lastMainTab"); } catch { target = null; } }
-                    navReplace({ tab: MAIN_TABS.includes(target) ? target : "stats" });
+                    navReplace({ tab: START_TABS.includes(target) ? target : "stats" });
                   }} />
                 );
               })()}

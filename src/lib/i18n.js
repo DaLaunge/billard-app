@@ -1138,6 +1138,10 @@ const TRANSLATIONS = {
     "Gäste sind Platzhalter ohne Login, werden im Match immer von Hand eingetippt und zählen nicht fürs Rating.": "Guests are placeholders without a login, are always typed in by hand in a match and do not count for the rating.",
     "Bereiche": "Sections",
     "System": "System",
+    "Zuletzt geöffnete Seite": "Last opened page",
+    "Statt einer festen Startseite öffnet die App die Seite, auf der du zuletzt warst.": "Instead of a fixed start page the app opens the page you were on last.",
+    "wieder öffnen": "Reopen",
+    "Als erledigt markieren": "Mark as done",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":
