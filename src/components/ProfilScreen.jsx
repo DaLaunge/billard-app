@@ -73,6 +73,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const clubData = useClubData();
   const myClubCount = clubData.members.filter((m) => m.player_id === meRow?.id).length;
   const openClubs = () => {
+    editChap.choose("clubs");
     setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
     setTimeout(() => document.getElementById("pf-clubs")?.scrollIntoView({ behavior: "smooth", block: "start" }), 380);
   };

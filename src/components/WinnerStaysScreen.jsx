@@ -481,7 +481,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
       {waiting.length > 0 && (
         <section className="stat-block">
-          <h3><Repeat size={17} /> {t("Warteschlange")}</h3>
+          <div className="stat-block-head"><h3><Repeat size={17} /> {t("Warteschlange")}</h3></div>
           <div className="ws-queue">
             {waiting.map((e, i) => (
               <div key={e.id} className={"ws-queue-row" + (e.is_paused ? " is-paused" : "") + (e.id === myEntry?.id ? " is-me" : "")}>
@@ -553,7 +553,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       )}
 
       <section className="stat-block">
-        <h3><Crown size={17} /> {t("Live-Rangliste")}</h3>
+        <div className="stat-block-head"><h3><Crown size={17} /> {t("Live-Rangliste")}</h3></div>
         {ranked.length === 0 ? (
           <p className="hint">{t("Noch keine Teilnehmer.")}</p>
         ) : (
@@ -590,7 +590,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
       {games.length > 0 && (
         <section className="stat-block">
-          <h3><Repeat size={17} /> {t("Verlauf")}</h3>
+          <div className="stat-block-head"><h3><Repeat size={17} /> {t("Verlauf")}</h3></div>
           {games.map((g) => {
             const ea = entryById(g.entry_a_id), eb = entryById(g.entry_b_id);
             const wonA = g.winner_entry_id === g.entry_a_id;
