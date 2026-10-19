@@ -454,8 +454,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   if (edit) {
     return (
       <div className="screen">
-        <header className="screen-head with-back">
-          <button className="back-btn" onClick={() => setEdit(false)} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
+        <header className="screen-head">
           <h2>{t("Einstellungen")}</h2>
         </header>
 

@@ -3328,3 +3328,11 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 /* Regelkunde: Kapitel sind keine Ziehharmonika mehr (Tab-Freak/Doomscroller wie ueberall), die Ueberschrift ist nur noch Text. */
 .rs-chapter-btn.static { cursor: default; pointer-events: none; }
 .badge-cat-head.static { cursor: default; }
+
+/* EIN Aussehen fuer alle Kapitel-Ueberschriften zweiter Ebene (415.8, Nutzer: "die Kapitel mit der Akzentfarbe gefallen am besten, ueberall gleich"):
+   Akzentfarbe, Normalschrift (kein Grossbuchstaben-Weiss mehr), Symbol und Zaehler wie beim Kartenkopf (h3). */
+.num-section-head, .deck-sub-head, .badge-cat-title, .avatar-sheet-cat-title, .rs-chapter, .badge-sub-head {
+  font-size: 14px; font-weight: 700; color: var(--accent); text-transform: none; letter-spacing: 0; }
+.rs-chapter-btn { font-size: inherit; color: inherit; }
+.num-section-head, .deck-sub-head { padding: 10px 2px 7px; }
+.num-section-head svg, .deck-sub-head svg, .badge-sub-head svg { color: var(--accent); flex: none; }

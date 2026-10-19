@@ -354,8 +354,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
 
   return (
     <div className="screen">
-      <header className="screen-head with-back">
-        <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
+      <header className="screen-head">
         <h2>{t("Verwaltung")}</h2>
       </header>
 

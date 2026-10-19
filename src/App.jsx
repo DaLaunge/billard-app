@@ -1555,7 +1555,7 @@ export default function App() {
     stats: { icon: BarChart3, label: "Statistik", tour: "tab-stats", on: tab === "stats" || tab === "fremdprofil", run: () => navPush({ tab: "stats" }), badge: pendingForMe.length },
     turnier: { icon: Trophy, label: "Turniere", tour: "tab-turnier", on: tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays", run: openTurniereMenu, badge: tourneyReadyList.length + wsReadyList.length },
     live: { icon: Radio, label: "Live", tour: "tab-live", on: tab === "live", run: () => navPush({ tab: "live" }), badge: pings.length + openChallengesAll.length + plannings.length },
-    profil: { icon: User, label: "Identität", tour: "tab-profil", on: tab === "profil" || tab === "admin" || tab === "profilvorschau", run: () => navPush({ tab: "profil" }),
+    profil: { icon: User, label: "Identität", tour: "tab-profil", on: tab === "profil" || tab === "admin" || tab === "profilvorschau", run: () => { closeProfilEdit(); navPush({ tab: "profil" }); },
       badge: openChallengesToMe.length > 0 ? "!" : (player?.role === "admin" ? unconfirmed.length : 0) },
     achievements: { icon: Award, label: "Meine Erfolge", tour: "tab-erfolge", on: tab === "erfolge", run: () => navPush({ tab: "erfolge" }) },
     mystats: { icon: Activity, label: "Meine Zahlen", tour: "tab-zahlen", on: tab === "zahlen", run: () => navPush({ tab: "zahlen" }) },

@@ -54,8 +54,7 @@ export default function InviteScreen({ me, onBack, toast }) {
 
   return (
     <div className="screen">
-      <header className="screen-head with-back">
-        <button className="back-btn" onClick={onBack} aria-label={t("Zurück")}><ChevronLeft size={22} /></button>
+      <header className="screen-head">
         <h2>{t("Freund einladen")}</h2>
       </header>
 
