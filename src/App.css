@@ -3392,3 +3392,7 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .ticket-item.done .ticket-head { opacity: .55; }
 .ticket-done-ico { color: var(--win); flex: none; }
 .ticket-actions { display: flex; justify-content: flex-end; padding: 6px 0 10px; }
+
+/* Jeder Menue-Bildschirm ist ein eigenes Bauteil mit EINEM senkrechten Stapel (418.0): gleicher Abstand wie ueberall (--card-gap), die Karten tragen keinen eigenen Aussenabstand. */
+.screen-stack { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
+.screen-stack > .stat-block, .screen-stack > .chap > .stat-block { margin-bottom: 0; }
