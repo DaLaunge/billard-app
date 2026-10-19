@@ -25,7 +25,7 @@ export function storeMenuPrefs(p) {
 }
 
 /* Welche Menuepunkte eine Seite sind, die man als Startseite waehlen kann (Wert von players.start_tab = Seiten-Schluessel in App.jsx). */
-export const START_TAB_OF = { stats: "stats", turnier: "turnier", live: "live", profil: "profil", achievements: "erfolge", mystats: "zahlen", invite: "invite", clubs: "clubs", regeln: "regeln" };
+export const START_TAB_OF = { stats: "stats", turnier: "turnier", live: "live", profil: "profil", achievements: "erfolge", mystats: "zahlen", invite: "invite", clubs: "clubs", regeln: "regeln", settings: "settings", admin: "admin" };
 export const START_TABS = Object.values(START_TAB_OF);
 /* Die angehefteten Punkte in der Reihenfolge der Leiste (wie in App.jsx pinnedEntries). */
 export const pinnedOrder = (prefs) => prefs.order.filter((id) => prefs.pinned.includes(id));

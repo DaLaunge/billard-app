@@ -801,7 +801,9 @@ export default function App() {
         if (urlNavAtStart) {
           navReplace(urlNavAtStart);
           try { window.history.replaceState(urlNavAtStart, "", window.location.pathname); } catch { /* ignore */ }
-        } else if (target && target !== "stats") navReplace({ tab: target });
+        } else if (target === "settings") { setOpenSettings(true); navReplace({ tab: "profil" }); }
+        else if (target === "admin" && data.role !== "admin") { /* keine Admin-Startseite fuer Nicht-Admins */ }
+        else if (target && target !== "stats") navReplace({ tab: target });
         // Trigger D: direkt nachdem sich der Spieler zum ersten Mal in
         // diesem Seitenaufruf angemeldet hat (egal ob frischer Login oder
         // eine bestehende Session, die hier zum ersten Mal geladen wird) -
@@ -1822,7 +1824,8 @@ export default function App() {
                     if (matchTournamentCtx) { allowLeaveMatchRef.current = true; window.history.back(); return; }
                     let target = player.start_tab;
                     if (target === "last") { try { target = localStorage.getItem("lastMainTab"); } catch { target = null; } }
-                    navReplace({ tab: START_TABS.includes(target) ? target : "stats" });
+                    if (target === "settings") { setOpenSettings(true); navReplace({ tab: "profil" }); return; }
+                    navReplace({ tab: START_TABS.includes(target) && !(target === "admin" && player.role !== "admin") ? target : "stats" });
                   }} />
                 );
               })()}

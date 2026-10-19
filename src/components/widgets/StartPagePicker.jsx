@@ -1,11 +1,11 @@
-import { BarChart3, Trophy, Radio, User, Award, Activity, UserPlus, Users, BookOpen, Plus } from "lucide-react";
+import { BarChart3, Trophy, Radio, User, Award, Activity, UserPlus, Users, BookOpen, Plus, Settings, Shield, GraduationCap } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { loadMenuPrefs, pinnedOrder, START_TAB_OF } from "../../lib/menuPrefs";
 
 /* Startseite waehlen (415.19): eine Grafik der eigenen Menueleiste - dieselben Punkte in derselben Reihenfolge wie unten in der App, das runde "+"
    in der Mitte. Der Spieler tippt den Punkt an, der beim Start oeffnen soll. Steht "Zuletzt geoeffnete Seite" an (value === "last"), ist die
-   Grafik ausgegraut und nicht antippbar. Punkte, die keine Seite sind (Tutorial, Einstellungen, Verwaltung), sind nicht waehlbar. */
-const ICON = { stats: BarChart3, turnier: Trophy, live: Radio, profil: User, achievements: Award, mystats: Activity, invite: UserPlus, clubs: Users, regeln: BookOpen };
+   Grafik ausgegraut und nicht antippbar. Nur das Tutorial ist keine Seite: es bleibt sichtbar, ist aber nicht waehlbar. */
+const ICON = { stats: BarChart3, turnier: Trophy, live: Radio, profil: User, achievements: Award, mystats: Activity, invite: UserPlus, clubs: Users, regeln: BookOpen, settings: Settings, admin: Shield, tutorial: GraduationCap };
 const LABEL = { stats: "Statistik", turnier: "Turniere", live: "Live", profil: "Identität", achievements: "Meine Erfolge", mystats: "Meine Zahlen",
   invite: "Spieler einladen", clubs: "Clubs", regeln: "Regelkunde", tutorial: "Tutorial", settings: "Einstellungen", admin: "Verwaltung" };
 
