@@ -26,7 +26,7 @@ function Item({ s, active, onChange }) {
 export default function SegmentBar({ segments, active, onChange, label, storageKey }) {
   const [saved, setSaved] = useState(() => (storageKey ? readOrder(storageKey) : []));
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
   if (!segments || segments.length < 2) return null;

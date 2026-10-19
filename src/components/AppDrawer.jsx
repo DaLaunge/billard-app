@@ -81,7 +81,9 @@ export default function AppDrawer({
   };
   const go = (fn) => () => { onClose(); fn(); };
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    // Maus: sofort ab 6 px Bewegung (ein Klick bleibt ein Klick). Die frueheren 250 ms Halten galten auch fuer die Maus - wer gleich zog,
+    // brach die Aktivierung ab, und das Verschieben "ging nicht mehr". Touch behaelt das Halten (sonst waere Scrollen unmoeglich).
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
   // Zwei Gruppen: oben die in der Leiste angehefteten, darunter die uebrigen. Zwischen den Gruppen ziehen
