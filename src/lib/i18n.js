@@ -284,6 +284,7 @@ const TRANSLATIONS = {
     "Aussehen": "Appearance",
     "Suchen, eingeben, scannen …": "Search, enter, scan …",
     "Fun-Zahlen": "Fun numbers",
+    "Fun & Tempo": "Fun & pace",
     "Fun": "Fun",
     "{n} Matches mit Zusatzzählern": "{n} matches with extra counters",
     "Aus den optionalen Zusatzzählern (Fluke, Runout, Scratch, Foul): Summe, Schnitt pro Match, Bestwert in einem Match und dein Platz unter allen, die den Zähler benutzt haben. Zählt nur Einzel-Matches, in denen die Zähler benutzt wurden – reiner Spaß, ohne Einfluss auf Rating und Erfolge.": "From the optional extra counters (fluke, runout, scratch, foul): total, average per match, best in a single match and your rank among everyone who used the counter. Only singles matches in which the counters were used count – just for fun, no effect on rating or achievements.",
