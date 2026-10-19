@@ -3,14 +3,14 @@ import TutorialOverlay from "./components/TutorialOverlay";
 import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
 import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
 import { pendingReleaseItems, markReleaseSeen } from "./lib/releaseNotes";
-import { Trophy, Radio, BarChart3, User, RefreshCw, FileText, Menu, BookOpen, GraduationCap, Settings, Shield, Award, UserPlus, Activity } from "lucide-react";
+import { Trophy, Radio, BarChart3, User, RefreshCw, FileText, Menu, BookOpen, GraduationCap, Settings, Shield, Award, UserPlus, Activity, Users } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
 import { getVs, clearVs, clearRef, getClubCode, clearClubCode } from "./lib/session";
-import { setClubData, setClubLoader, reloadClubs } from "./lib/clubStore";
+import { setClubData, setClubLoader, reloadClubs, useClubData, roleIn } from "./lib/clubStore";
 import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
@@ -27,6 +27,7 @@ import { getHideTabbar, storeHideTabbar } from "./lib/uiPrefs";
 import { useHideTabbar } from "./lib/useHideTabbar";
 import { usePullToRefresh } from "./lib/usePullToRefresh";
 import { usePageTransition } from "./lib/usePageTransition";
+import { useStuckHeads } from "./lib/useStuckHeads";
 import { useSwipeNav } from "./lib/useSwipeNav";
 import ConfirmRoundButtons from "./components/widgets/ConfirmRoundButtons";
 import { getPendingPopup, storePendingPopup } from "./lib/uiPrefs";
@@ -48,6 +49,7 @@ import TurnierRasterScreen from "./components/TurnierRasterScreen";
 import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
+import ClubsScreen from "./components/ClubsScreen";
 import RulesScreen from "./components/RulesScreen";
 import AvatarSheet from "./components/AvatarSheet";
 import { applyListPrefs, hasListModeChoice, clearListPrefs, storeListMode } from "./lib/uiPrefs";
@@ -1002,6 +1004,10 @@ export default function App() {
   const [contentEl, setContentEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
+  const clubsMenu = useClubData();
+  // offene Club-Post (Einladungen an mich, Anfragen an meine Clubs) als Zaehler am Menuepunkt
+  const clubPostCount = (clubsMenu.requests || []).filter((r) => r.status === "pending" && ((r.kind === "invite" && r.player_id === player?.id)
+    || (r.kind === "request" && ["owner", "admin"].includes(roleIn(clubsMenu, r.club_id, player?.id))))).length;
   const [openSeg, setOpenSeg] = useState(null);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [listChoiceOpen, setListChoiceOpen] = useState(false);
@@ -1054,10 +1060,11 @@ export default function App() {
   // Wischreihenfolge = die in der Leiste unten angehefteten Menuepunkte in ihrer Reihenfolge (nicht mehr fest Statistik <
   // Turniere < Live < Profil): wer die Leiste umbaut, wischt auch in dieser Reihenfolge. Nur Punkte, die ein eigener
   // Bildschirm sind, zaehlen (Einstellungen/Tutorial sind Aktionen); Unterseiten (Fremdprofil, Turnierdetail, ...) gehen per Wisch zurueck.
-  const SWIPE_TAB_OF = { stats: "stats", turnier: "turnier", live: "live", profil: "profil", achievements: "erfolge", mystats: "zahlen", regeln: "regeln", invite: "invite", admin: "admin" };
+  const SWIPE_TAB_OF = { stats: "stats", turnier: "turnier", live: "live", profil: "profil", achievements: "erfolge", mystats: "zahlen", regeln: "regeln", clubs: "clubs", invite: "invite", admin: "admin" };
   const swipeIds = menuPrefs.order.filter((id) => menuPrefs.pinned.includes(id) && SWIPE_TAB_OF[id] && (id !== "admin" || player?.role === "admin"));
   const swipeTabs = swipeIds.map((id) => SWIPE_TAB_OF[id]);
   usePageTransition(contentEl, tab, swipeTabs);
+  useStuckHeads(contentEl, tab);
   const swipeIdx = swipeTabs.indexOf(tab);
   const goSwipe = (i) => {
     const target = swipeTabs[i];
@@ -1550,17 +1557,18 @@ export default function App() {
     stats: { icon: BarChart3, label: "Statistik", tour: "tab-stats", on: tab === "stats" || tab === "fremdprofil", run: () => navPush({ tab: "stats" }), badge: pendingForMe.length },
     turnier: { icon: Trophy, label: "Turniere", tour: "tab-turnier", on: tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays", run: openTurniereMenu, badge: tourneyReadyList.length + wsReadyList.length },
     live: { icon: Radio, label: "Live", tour: "tab-live", on: tab === "live", run: () => navPush({ tab: "live" }), badge: pings.length + openChallengesAll.length + plannings.length },
-    profil: { icon: User, label: "Identität", tour: "tab-profil", on: tab === "profil" || tab === "admin" || tab === "profilvorschau", run: () => navPush({ tab: "profil" }),
+    profil: { icon: User, label: "Identität", tour: "tab-profil", on: (tab === "profil" && !inSettings) || tab === "profilvorschau", run: () => { closeProfilEdit(); navPush({ tab: "profil" }); },
       badge: openChallengesToMe.length > 0 ? "!" : (player?.role === "admin" ? unconfirmed.length : 0) },
     achievements: { icon: Award, label: "Meine Erfolge", tour: "tab-erfolge", on: tab === "erfolge", run: () => navPush({ tab: "erfolge" }) },
     mystats: { icon: Activity, label: "Meine Zahlen", tour: "tab-zahlen", on: tab === "zahlen", run: () => navPush({ tab: "zahlen" }) },
     invite: { icon: UserPlus, label: "Spieler einladen", on: tab === "invite", run: () => navPush({ tab: "invite" }) },
+    clubs: { icon: Users, label: "Clubs", tour: "clubs-entry", on: tab === "clubs", run: () => navPush({ tab: "clubs" }), badge: clubPostCount },
     regeln: { icon: BookOpen, label: "Regelkunde", on: tab === "regeln", run: () => navPush({ tab: "regeln" }) },
     tutorial: { icon: GraduationCap, label: "Tutorial", on: false, run: () => startTutorial(null) },
-    settings: { icon: Settings, label: "Einstellungen", on: false, run: () => { setOpenSettings(true); navPush({ tab: "profil" }); } },
+    settings: { icon: Settings, label: "Einstellungen", on: inSettings, run: () => { setOpenSettings(true); navPush({ tab: "profil" }); } },
     admin: { icon: Shield, label: "Verwaltung", on: tab === "admin", run: () => navPush({ tab: "admin" }) },
   };
-  const orderedEntries = menuPrefs.order.filter((id) => id !== "admin" || player?.role === "admin").map((id) => ({ id, ...menuMeta[id] }));
+  const orderedEntries = menuPrefs.order.filter((id) => (id !== "admin" || player?.role === "admin") && (id !== "clubs" || clubsMenu.loaded)).map((id) => ({ id, ...menuMeta[id] }));
   const pinnedEntries = orderedEntries.filter((e) => menuPrefs.pinned.includes(e.id));
 
   return (
@@ -1768,7 +1776,7 @@ export default function App() {
                 onSwap={swapPin} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
-              {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge"].includes(tab)) && (
+              {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge", "clubs"].includes(tab)) && (
                 <button data-tour="burger" className="burger-btn" onClick={() => setDrawerOpen(true)} aria-label={t("Menü")} aria-expanded={drawerOpen}>
                   <Menu size={20} />
                 </button>
@@ -1844,7 +1852,7 @@ export default function App() {
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
                   achievementCounters={achievementCounters} onStartTutorial={startTutorial}
-                  openSettings={openSettings} onSettingsOpened={() => setOpenSettings(false)}
+                  openSettings={openSettings} onSettingsOpened={() => setOpenSettings(false)} onOpenClubs={() => navPush({ tab: "clubs" })}
                   openSeg={openSeg} onSegOpened={() => setOpenSeg(null)} onResetMenu={resetMenuLocal}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   lang={lang} onLang={changeLang}
@@ -1889,6 +1897,7 @@ export default function App() {
                   me={player} onBack={() => window.history.back()} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   toast={toast} onReload={loadData} matches={matches} />
               )}
+              {tab === "clubs" && <ClubsScreen meRow={players.find((p) => p.id === player.id) || player} players={players} toast={toast} />}
               {tab === "regeln" && <RulesScreen onViewRule={recordRuleView} isAdmin={player?.role === "admin"} />}
               {tab === "invite" && (
                 <InviteScreen me={player} onBack={() => window.history.back()} toast={toast} />

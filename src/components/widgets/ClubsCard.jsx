@@ -284,7 +284,7 @@ export default function ClubsCard({ meRow, players, toast }) {
   return (
     <section className="stat-block clubs-card" id="pf-clubs">
       {viewLogo && <ClubLogoModal club={viewLogo} onClose={() => setViewLogo(null)} />}
-      <h3><Users size={17} /> {t("Clubs")}</h3>
+      <div className="stat-block-head"><h3><Users size={17} /> {t("Clubs")}</h3></div>
       {mine.length === 0 && <p className="hint">{t("Du bist noch in keinem Club. Gründe einen oder tritt mit einem Code bei.")}</p>}
       {mine.map(clubBlock)}
 

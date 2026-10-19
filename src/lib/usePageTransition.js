@@ -28,6 +28,8 @@ export function usePageTransition(scrollEl, tab, order = MAIN) {
     const from = prev.current;
     prev.current = tab;
     if (!scrollEl || from === tab) return;
+    // Jede Seite beginnt oben - der Scroll-Container bleibt zwischen den Seiten derselbe und wuerde sonst die alte Position mitnehmen.
+    scrollEl.scrollTop = 0;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const page = scrollEl.querySelector(":scope > .screen");
     if (!page) return;

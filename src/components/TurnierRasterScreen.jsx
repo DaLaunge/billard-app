@@ -489,7 +489,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         </div>
 
         <section className="stat-block">
-          <h3><Users size={17} /> {t("Angemeldet")} ({(roster || []).length})</h3>
+          <div className="stat-block-head"><h3><Users size={17} /> {t("Angemeldet")} ({(roster || []).length})</h3></div>
           {(roster || []).length === 0 ? (
             <p className="hint">{t("Noch niemand angemeldet.")}</p>
           ) : (
@@ -676,7 +676,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
       {finalStandingsGrouped && (
         <section className="stat-block">
-          <h3><Trophy size={17} /> {t("Bestenliste")}</h3>
+          <div className="stat-block-head"><h3><Trophy size={17} /> {t("Bestenliste")}</h3></div>
           {finalStandingsGrouped.map(({ placement, playerIds }) => (
             <div key={placement} className="stat-row turnier-standings-row">
               <span className="medal">{placement}.</span>
@@ -699,7 +699,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
       {standings && (
         <section className="stat-block">
-          <h3><Trophy size={17} /> {t("Tabelle")}</h3>
+          <div className="stat-block-head"><h3><Trophy size={17} /> {t("Tabelle")}</h3></div>
           {standings.map((s, i) => (
             <div key={s.id} className="stat-row turnier-standings-row">
               <span className="medal">{i + 1}.</span>
@@ -713,7 +713,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
       {waitRanked.length > 0 && (
         <section className="stat-block">
-          <h3><Timer size={17} /> {t("Längste Wartezeiten")}</h3>
+          <div className="stat-block-head"><h3><Timer size={17} /> {t("Längste Wartezeiten")}</h3></div>
           <p className="hint" style={{ marginTop: 0 }}>{t("Zeit zwischen feststehender Paarung und gemeldetem Ergebnis.")}</p>
           {waitRanked.slice(0, 5).map(({ tm, waitMs }) => {
             const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
@@ -797,7 +797,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
       )}
       {viewMode === "players" ? (
         <section className="stat-block">
-          <h3><Users size={17} /> {t("Teilnehmer")}</h3>
+          <div className="stat-block-head"><h3><Users size={17} /> {t("Teilnehmer")}</h3></div>
           {journeyPlayerId && (() => {
             const jName = nameOf(journeyPlayerId);
             const path = journeyFor(journeyPlayerId);

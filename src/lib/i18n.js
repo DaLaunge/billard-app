@@ -440,6 +440,9 @@ const TRANSLATIONS = {
     "Regel(n)": "rule(s)",
     "Botschafter": "Ambassador",
     "Vereinsheld": "Club hero",
+    "Magnet": "Magnet",
+    "Gemeinschaft": "Community",
+    "Großfamilie": "Big family",
     "Erzrivale": "Arch-rival",
     "Dauerduell": "Endless duel",
     "Schicksalsgegner": "Destined rival",
@@ -1133,6 +1136,8 @@ const TRANSLATIONS = {
     "Weniger anzeigen": "Show less",
     "Alle {n} anzeigen": "Show all {n}",
     "Gäste sind Platzhalter ohne Login, werden im Match immer von Hand eingetippt und zählen nicht fürs Rating.": "Guests are placeholders without a login, are always typed in by hand in a match and do not count for the rating.",
+    "Bereiche": "Sections",
+    "System": "System",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

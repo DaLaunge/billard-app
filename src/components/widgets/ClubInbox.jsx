@@ -42,7 +42,7 @@ export default function ClubInbox({ meRow, players, toast }) {
 
   return (
     <section className="stat-block club-inbox">
-      <h3><MailPlus size={17} /> {t("Club-Post")} ({invites.length + requests.length})</h3>
+      <div className="stat-block-head"><h3><MailPlus size={17} /> {t("Club-Post")} ({invites.length + requests.length})</h3></div>
       {invites.map((r) => row(r, t("Einladung in „{name}“", { name: clubOf(r.club_id)?.name || "" })))}
       {requests.map((r) => row(r, t("{name} möchte in „{club}“", { name: nickOf(r.player_id), club: clubOf(r.club_id)?.name || "" })))}
     </section>

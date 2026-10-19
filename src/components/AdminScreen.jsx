@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown, Users, Trash2 } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown, Users, Trash2, Search } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -13,10 +13,19 @@ import { rpcRetry } from "../lib/rpcRetry";
 import { EmojiText } from "./Emoji";
 import ClubTag from "./widgets/ClubTag";
 import { useClubData, reloadClubs } from "../lib/clubStore";
+import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
 
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
   const clubData = useClubData();
+  // Kapitel der Verwaltung (Tab-Freak: Leiste + ein Kapitel, Doomscroller: alles untereinander, lib/useChapters.jsx)
+  const adminChap = useChapters("admin", [
+    { id: "matches", label: t("Matches") },
+    { id: "feedback", label: t("Feedback") },
+    { id: "mitglieder", label: t("Mitglieder") },
+    ...(clubData.loaded ? [{ id: "clubs", label: t("Clubs") }] : []),
+    { id: "system", label: t("System") },
+  ]);
   // Gaeste: Name, Matches, zuletzt gespielt, angelegt - plus Loeschen. Nur Anzeige und Aufraeumen; Gaeste zaehlen nicht fuers Rating.
   const [showAllGuests, setShowAllGuests] = useState(false);
   const guestRows = (() => {
@@ -345,14 +354,14 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
 
   return (
     <div className="screen">
-      <header className="screen-head with-back">
-        <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
+      <header className="screen-head">
         <h2>{t("Verwaltung")}</h2>
       </header>
 
+      <ChapterBar c={adminChap} label={t("Kapitel")} />
       <div className="admin-grid">
-      <section className="stat-block">
-        <h3><Check size={17} /> {t("Offene Matches")} ({allPending.length})</h3>
+      <Chap id="matches" c={adminChap}><section className="stat-block">
+        <div className="stat-block-head"><h3><Check size={17} /> {t("Offene Matches")} ({allPending.length})</h3></div>
         {allPending.length === 0 && <p className="hint">{t("Alles erledigt - keine offenen Matches.")}</p>}
         {allPending.map((m) => (
           <div key={m.id} className="pending-row">
@@ -364,10 +373,10 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             </div>
           </div>
         ))}
-      </section>
+      </section></Chap>
 
-      <section className="stat-block">
-        <h3><MessageCircle size={17} /> {t("Feedback")} ({feedback ? feedback.filter((f) => f.status === "open").length : 0})</h3>
+      <Chap id="feedback" c={adminChap}><section className="stat-block">
+        <div className="stat-block-head"><h3><MessageCircle size={17} /> {t("Feedback")} ({feedback ? feedback.filter((f) => f.status === "open").length : 0})</h3></div>
         {feedback == null ? (
           <p className="hint">{t("Lade ...")}</p>
         ) : feedback.length === 0 ? (
@@ -408,10 +417,10 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             </div>
           ))
         )}
-      </section>
+      </section></Chap>
 
-      <section className="stat-block">
-        <h3><Plus size={17} /> {t("Match nachtragen")}</h3>
+      <Chap id="matches" c={adminChap}><section className="stat-block">
+        <div className="stat-block-head"><h3><Plus size={17} /> {t("Match nachtragen")}</h3></div>
         <p className="hint" style={{ marginTop: 0 }}>{t("Als Admin ein bereits gespieltes Match eintragen – gilt sofort als bestätigt.")}</p>
         <div className="add-match">
           <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
@@ -435,10 +444,10 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             {busyAdd ? t("Speichere ...") : <>{t("Match nachtragen")} <Check size={16} /></>}
           </button>
         </div>
-      </section>
+      </section></Chap>
 
-      <section className="stat-block">
-        <h3><RotateCcw size={17} /> {t("Statistik & Erfolge")}</h3>
+      <Chap id="system" c={adminChap}><section className="stat-block">
+        <div className="stat-block-head"><h3><RotateCcw size={17} /> {t("Statistik & Erfolge")}</h3></div>
         <p className="hint" style={{ marginTop: 0 }}>{t("Rechnet Ratings, Verlauf und Erfolge sofort neu – nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.")}</p>
         <button className="btn primary" disabled={busy} onClick={refresh}>
           {busy ? "Rechne neu …" : <><RotateCcw size={16} /> {t("Statistik jetzt aktualisieren")}</>}
@@ -446,10 +455,10 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         <button className="btn ghost" disabled={busyBadges} onClick={recomputeBadges}>
           {busyBadges ? "Rechne neu …" : <><Award size={16} /> {t("Nur Erfolge neu berechnen")}</>}
         </button>
-      </section>
+      </section></Chap>
 
-      <section className="stat-block">
-        <h3><Send size={17} /> {t("SMTP-Testmail")}</h3>
+      <Chap id="system" c={adminChap}><section className="stat-block">
+        <div className="stat-block-head"><h3><Send size={17} /> {t("SMTP-Testmail")}</h3></div>
         <p className="hint" style={{ marginTop: 0 }}>{t("Verschickt eine einzelne Mail direkt über das konfigurierte SMTP-Konto (unabhängig von den Supabase-Auth-Mails) – zum gezielten Testen von Zustellung und Sendekapazität. Betreff/Text leer lassen für automatische Werte.")}</p>
         <div className="pw-box">
           <input type="email" placeholder={t("Empfänger-Adresse")} value={testMailTo} autoComplete="off"
@@ -472,10 +481,10 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             ))}
           </div>
         )}
-      </section>
+      </section></Chap>
 
-      <section className="stat-block">
-        <h3><User size={17} /> {t("Neuen Nutzer anlegen")}</h3>
+      <Chap id="mitglieder" c={adminChap}><section className="stat-block">
+        <div className="stat-block-head"><h3><User size={17} /> {t("Neuen Nutzer anlegen")}</h3></div>
         <p className="hint" style={{ marginTop: 0 }}>{t("Legt einen Login mit E-Mail, Passwort und Spielername an – sofort nutzbar, ohne dass eine Mail verschickt wird. Muss beim ersten Login das Passwort ändern.")}</p>
         <div className="pw-box">
           <input type="email" placeholder="E-Mail" value={nu.email} autoComplete="off"
@@ -488,9 +497,9 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             {busyUser ? t("Lege an …") : t("Nutzer anlegen")}
           </button>
         </div>
-      </section>
+      </section></Chap>
 
-      <section className="stat-block">
+      <Chap id="mitglieder" c={adminChap}><section className="stat-block">
         <div className="mem-head-row">
           <h3><User size={17} /> {t("Mitglieder")} ({logins ? memberLogins.length : players.length - guestIds.size})</h3>
           {logins && memberLogins.length > 0 && (
@@ -499,8 +508,11 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         </div>
         {logins && memberLogins.length > 0 && (
           <div className="mem-tools">
-            <input type="search" className="mem-search" placeholder={t("Suchen in allen Daten …")} value={memQuery}
-              onChange={(e) => setMemQuery(e.target.value)} />
+            <div className="search-row">
+              <Search size={16} className="mail-ico" />
+              <input placeholder={t("Suchen in allen Daten …")} value={memQuery} onChange={(e) => setMemQuery(e.target.value)} />
+              {memQuery && <button className="clear-btn" onClick={() => setMemQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
+            </div>
           </div>
         )}
         {logins == null ? (
@@ -648,11 +660,11 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         )}
         {logins && memberLogins.length > 0 && visibleLogins.length === 0 && <p className="hint">{t("Keine Treffer.")}</p>}
         <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
-      </section>
+      </section></Chap>
 
       {clubData.loaded && (
-        <section className="stat-block">
-          <h3><Users size={17} /> {t("Clubs")} ({clubData.clubs.length})</h3>
+        <Chap id="clubs" c={adminChap}><section className="stat-block">
+          <div className="stat-block-head"><h3><Users size={17} /> {t("Clubs")} ({clubData.clubs.length})</h3></div>
           {clubData.clubs.length === 0 && <p className="hint">{t("Noch keine Clubs.")}</p>}
           {clubData.clubs.map((c) => {
             const members = clubData.members.filter((m) => m.club_id === c.id);
@@ -667,11 +679,11 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             );
           })}
           <p className="hint">{t("Moderation: Clubs gründet jeder selbst (Profil bearbeiten → Clubs). Hier lassen sich Clubs bei Missbrauch löschen.")}</p>
-        </section>
+        </section></Chap>
       )}
 
-      <section className="stat-block">
-        <h3><User size={17} /> {t("Gäste")} ({guestRows.length})</h3>
+      <Chap id="mitglieder" c={adminChap}><section className="stat-block">
+        <div className="stat-block-head"><h3><User size={17} /> {t("Gäste")} ({guestRows.length})</h3></div>
         {guestRows.length === 0 && <p className="hint">{t("Noch keine Gäste.")}</p>}
         <div className="admin-guests">
           {(showAllGuests ? guestRows : guestRows.slice(0, 12)).map((g) => (
@@ -686,13 +698,13 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           <button className="btn ghost small" onClick={() => setShowAllGuests((v) => !v)}>{showAllGuests ? t("Weniger anzeigen") : t("Alle {n} anzeigen", { n: guestRows.length })}</button>
         )}
         <p className="hint">{t("Gäste sind Platzhalter ohne Login, werden im Match immer von Hand eingetippt und zählen nicht fürs Rating.")}</p>
-      </section>
+      </section></Chap>
 
-      <section className="stat-block">
-        <h3><Shield size={17} /> {t("Diagnose")}</h3>
+      <Chap id="system" c={adminChap}><section className="stat-block">
+        <div className="stat-block-head"><h3><Shield size={17} /> {t("Diagnose")}</h3></div>
         <div className="diag-row"><span>{t("Datenbank")}</span><code>{DB_REF}</code></div>
         <p className="hint" style={{ marginTop: 6 }}>{t("Diese Kennung muss sich zwischen Test und Produktion unterscheiden. Ist sie gleich, greifen beide auf dieselbe Datenbank zu.")}</p>
-      </section>
+      </section></Chap>
       </div>
 
     </div>
