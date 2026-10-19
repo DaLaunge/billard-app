@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "415.4", icon: "🧲",
+    items: ["Neue Erfolge fürs Werben: bei 10, 15 und 20 geworbenen Mitgliedern gibt es jetzt Magnet, Gemeinschaft und Großfamilie."],
+    en: ["New achievements for recruiting: at 10, 15 and 20 recruited members you now earn Magnet, Community and Big family."] },
   { version: "412.27", icon: "🔬",
     items: ["Ratings werden jetzt mit einer Nachkommastelle angezeigt (z. B. 503,4 statt 503) – so siehst du auch kleine Bewegungen."],
     en: ["Ratings now show one decimal place (e.g. 503.4 instead of 503) – so you can see even small movements."] },
