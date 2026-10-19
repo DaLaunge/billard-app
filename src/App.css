@@ -1743,7 +1743,7 @@ button.id-card-head { cursor: pointer; }
      eigenes :has()-Layout unten) am linken Rand kleben bleiben. Screens
      mit eigenem Layout unten setzen nur noch max-width, die Zentrierung
      erben sie von hier. */
-  .phone.app .screen { padding: 28px 32px 32px; max-width: 660px; margin: 0 auto; }
+  .phone.app .screen { padding: 28px 32px 32px; max-width: var(--screen-w, 1040px); margin: 0 auto; }
 
   /* Profil: durchgaengiges "duenn-breit-duenn"-Muster (wie Statistik und
      Live). Welche Karte in welcher der drei Spalten steht, entscheidet
@@ -1765,7 +1765,7 @@ button.id-card-head { cursor: pointer; }
      Identitaetskarte kleben, waehrend die Karten darunter wegscrollen und
      von ihr verdeckt werden (das sah aus wie "Spielerinfo bleibt beim
      Scrollen immer oben"). */
-  .phone.app .screen:has(.pf-layout) { max-width: 1440px; }
+  .phone.app .screen:has(.pf-layout) { max-width: var(--screen-w, 1040px); }
   .pf-layout { display: flex; flex-direction: row; gap: 24px; align-items: flex-start; }
   .pf-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
   .pf-col.left { flex: 0 0 300px; position: sticky; top: 28px; }
@@ -1780,7 +1780,7 @@ button.id-card-head { cursor: pointer; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
-  .phone.app .screen:has(.pf-edit-layout) { max-width: 820px; }
+  .phone.app .screen:has(.pf-edit-layout) { max-width: var(--screen-w, 1040px); }
   .pf-edit-layout { display: flex; flex-direction: column; gap: var(--card-gap); }
   .pf-edit-main, .pf-edit-side { display: contents; }
   /* Zweispaltig, aber SPALTENWEISE gefuellt (erst die linke Spalte von
@@ -1804,7 +1804,7 @@ button.id-card-head { cursor: pointer; }
      gerade eingeklappt und daher kurz waren (Nutzer-Feedback: "sehr viel
      Zwischenraum, wenn zugeklappt"), und eine leer gewordene Spalte liess
      ihre Spur als breite Luecke stehen. */
-  .phone.app .screen:has(.live-split) { max-width: 820px; }
+  .phone.app .screen:has(.live-split) { max-width: var(--screen-w, 1040px); }
   .live-split { display: flex; flex-direction: row; gap: 24px; align-items: flex-start; }
   .live-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
   .live-col.middle { flex: 1; }
@@ -1821,7 +1821,7 @@ button.id-card-head { cursor: pointer; }
      globale Disziplin-/Top-N-Auswahl (Nutzer-Feedback: dort statt als
      eigene volle Zeile ueber allen drei Spalten). */
   /* Statistik: EINE durchgehende Spalte auf jeder Breite (415.5) - Tab-Freak zeigt ein Kapitel, Doomscroller alle untereinander. */
-  .phone.app .screen:has(.stat-split) { max-width: 820px; }
+  .phone.app .screen:has(.stat-split) { max-width: var(--screen-w, 1040px); }
   .card-column-btn { display: inline-flex; }
   .card-maximize-btn { display: inline-flex; }
   .stat-empty-dropzone { display: flex; }
@@ -1839,7 +1839,7 @@ button.id-card-head { cursor: pointer; }
      nachtragen, ...) - per CSS-Mehrspaltensatz, damit unterschiedlich
      hohe Karten den Platz gut ausnutzen statt stur in einer Spalte
      untereinander zu stehen. */
-  .phone.app .screen:has(.admin-grid) { max-width: 820px; }
+  .phone.app .screen:has(.admin-grid) { max-width: var(--screen-w, 1040px); }
 
   /* Neues Match, uebrige Schritte (Disziplin/Pruefen/Bestaetigung):
      nur zentrieren, keine besondere Breite/Groesse noetig. */
@@ -2938,10 +2938,10 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 @media (min-width: 900px) {
   .pf-layout[data-mode="identity"], .pf-layout[data-mode="zahlen"], .pf-layout[data-mode="erfolge"], .pf-layout[data-mode="full"] { flex-direction: column; align-items: stretch; gap: var(--card-gap); }
   .pf-layout[data-mode="identity"] .pf-col, .pf-layout[data-mode="zahlen"] .pf-col, .pf-layout[data-mode="erfolge"] .pf-col, .pf-layout[data-mode="full"] .pf-col { display: contents; position: static; }
-  .phone.app .screen:has(.pf-layout[data-mode="full"]) { max-width: 960px; }
-  .phone.app .screen:has(.pf-layout[data-mode="identity"]) { max-width: 820px; }
-  .phone.app .screen:has(.pf-layout[data-mode="zahlen"]) { max-width: 960px; }
-  .phone.app .screen:has(.pf-layout[data-mode="erfolge"]) { max-width: 960px; }
+  .phone.app .screen:has(.pf-layout[data-mode="full"]) { max-width: var(--screen-w, 1040px); }
+  .phone.app .screen:has(.pf-layout[data-mode="identity"]) { max-width: var(--screen-w, 1040px); }
+  .phone.app .screen:has(.pf-layout[data-mode="zahlen"]) { max-width: var(--screen-w, 1040px); }
+  .phone.app .screen:has(.pf-layout[data-mode="erfolge"]) { max-width: var(--screen-w, 1040px); }
   .pf-layout[data-mode="identity"] .pf-identity-extra { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
   .pf-layout[data-mode="identity"] .pf-id-card { flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px; }
   .pf-layout[data-mode="identity"] .pf-id-card > svg:last-child { display: none; }
@@ -3348,10 +3348,18 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 
 /* Regelkunde am PC breiter (415.12): die Animationen stehen paarweise nebeneinander und profitieren von der Breite; seitlich blieb vorher viel leer. */
 @media (min-width: 900px) {
-  .phone.app .screen:has(.rs-cases) { max-width: 1200px; }
+  .phone.app .screen:has(.rs-cases) { max-width: var(--screen-w, 1040px); }
 }
 
 /* Heyball-Tisch in der Regelkunde (415.13): blaues Tuch, dunkle Banden, engere Taschen - gleiche Masse wie der Pooltisch, nur das Aussehen. */
 .rs-table.hb .rs-rail { fill: #1B1B22; }
 .rs-table.hb .rs-cloth { fill: #1F5A9E; }
 .rs-table.hb .rs-pocket { fill: #07080B; stroke: #2B2B35; stroke-width: .8; }
+
+/* EINE Inhaltsbreite am PC (415.15, Nutzer: "die horizontale Ausdehnung ist in jeder Anzeige anders, das verschwendet Platz"): alle Listen-/Karten-Seiten
+   nutzen --screen-w (660/820/960/1200 px waren vorher je Seite verschieden). Nur Arbeitsmasken mit zwei Spalten (Neues Match, Turnier-Tabellen) behalten
+   ihre eigene, groessere Breite; die Einladungsseite (ein QR-Code) bleibt schmal. */
+@media (min-width: 900px) {
+  :root { --screen-w: 1040px; }
+  .phone.app .screen:has(.invite-card) { max-width: 720px; }
+}
