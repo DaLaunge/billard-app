@@ -3371,3 +3371,8 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
   .invite-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 24px; }
   .invite-actions { padding-top: 6px; }
 }
+
+/* Meine Erfolge: die angeheftete Profilkugel (oben rechts) darf keinen Knopf und keinen Zaehler verdecken - Kartenkopf und Kategorie-Kopf
+   lassen rechts Platz fuer sie (416.2). */
+.screen:has(.pf-head-avatar-sticky) .stat-block:not(.is-maximized) > .stat-block-head,
+.screen:has(.pf-head-avatar-sticky) .stat-block .badge-cat-head { padding-right: 64px; }
