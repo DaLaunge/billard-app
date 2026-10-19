@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "415.5", icon: "📑",
+    items: ["Tab-Freak und Doomscroller gelten jetzt in allen Menüs: Statistik, Einstellungen, Verwaltung, Regelkunde, Erfolge und Bestenlisten zeigen entweder Kapitel-Tabs oder eine lange Liste mit angepinnten Überschriften.", "Am PC haben alle Seiten eine einheitliche, mittige Spalte."],
+    en: ["Tab freak and Doomscroller now apply in every menu: Statistics, Settings, Admin, Rules, Achievements and the leaderboards show either chapter tabs or one long list with pinned headings.", "On desktop all pages now share one centered column."] },
   { version: "415.4", icon: "🧲",
     items: ["Neue Erfolge fürs Werben: bei 10, 15 und 20 geworbenen Mitgliedern gibt es jetzt Magnet, Gemeinschaft und Großfamilie."],
     en: ["New achievements for recruiting: at 10, 15 and 20 recruited members you now earn Magnet, Community and Big family."] },

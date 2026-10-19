@@ -6,6 +6,8 @@ import RuleScene from "./widgets/RuleScene";
 import InfoButton from "./widgets/InfoButton";
 import DiscBall, { DiscAll, DiscPickRow } from "./widgets/DiscBall";
 import { HEYBALL, activeDisciplines } from "../lib/constants";
+import { getListMode } from "../lib/uiPrefs";
+import SegmentBar from "./widgets/SegmentBar";
 
 const ALL = "alle";
 const SORT_KEY = "ruleSort";
@@ -104,20 +106,24 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
 
   const [tag, setTag] = useState(null); // Schlagwort-Filter: nur Faelle mit diesem Tag
   const pool = casesForDisc(disc === ALL ? null : disc, { onlyReleased, ids }).filter((c) => !tag || (c.tags || []).includes(tag));
-  const chOpen = (n) => !!tag || openCh.has(n); // mit Tag-Filter sind alle Kapitel offen: das Ergebnis steht sofort da
   // Mit Suchbegriff gilt die Treffer-Reihenfolge (das Beste zuerst); ohne ihn die gewaehlte Sortierung.
   const shown = q.trim() ? searchCases(pool, q) : sortCases(pool, sort);
   const grouped = !q.trim() && sort === "book";
   const chapters = grouped ? [...new Set(shown.map(bookChapter))] : [];
+  // Ansicht der Listen (Einstellung pro Geraet, wie ueberall): Tab-Freak = Kapitel-Leiste, ein Kapitel zur Zeit; Doomscroller = alle
+  // Kapitel untereinander mit angepinnter Ueberschrift. Das Auf-/Zuklappen der Kapitel entfaellt damit; ein Schlagwort-Filter zeigt alles.
+  const listMode = getListMode();
+  const [chPick, setChPick] = useState(() => { try { return localStorage.getItem("ruleChapterPick") || ""; } catch { return ""; } });
+  const activeCh = chapters.map(String).includes(chPick) ? chPick : String(chapters[0]);
+  const pickCh = (id) => { setChPick(id); try { localStorage.setItem("ruleChapterPick", id); } catch { /* ignore */ } };
+  const chaptersBar = grouped && !tag && listMode === "chapters" && chapters.length > 1;
+  const chOpen = (n) => !!tag || (grouped ? (listMode === "stacked" || String(n) === activeCh || chapters.length < 2) : openCh.has(n));
   const countIn = (n) => shown.filter((c) => bookChapter(c) === n).length;
   // Wenige Treffer (Suche) oder ein gezielt angeforderter Fall sind gleich aufgeklappt.
   const autoOpen = (q.trim() && shown.length <= 3) || (ids && ids.length <= 3);
   const isCaseOpen = (id) => (id in caseOpen ? caseOpen[id] : !!autoOpen);
-  const allOpen = grouped ? chapters.length > 0 && chapters.every((n) => chOpen(n)) : shown.length > 0 && shown.every((c) => isCaseOpen(c.id));
-  const toggleAll = () => {
-    if (grouped) saveCh(allOpen ? new Set() : new Set(chapters));
-    else setCaseOpen(Object.fromEntries(shown.map((c) => [c.id, !allOpen])));
-  };
+  const allOpen = shown.length > 0 && shown.every((c) => isCaseOpen(c.id));
+  const toggleAll = () => setCaseOpen(Object.fromEntries(shown.map((c) => [c.id, !allOpen])));
 
   const heyball = disc === HEYBALL;
   const heyballShown = !heyball ? [] : HEYBALL_RULES.filter((r) => !q.trim() || searchText(`${t(r.title)} ${t(r.text)} ${r.ref}`).includes(searchText(q.trim())));
@@ -135,10 +141,11 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
             title={t("Wie im Regelwerk")} aria-label={t("Wie im Regelwerk")} aria-pressed={sort === "book"}><ListOrdered size={16} /></button>
           <button type="button" className={"chip chip-icon" + (sort === "az" ? " active" : "")} onClick={() => pickSort("az")}
             title={t("Alphabetisch")} aria-label={t("Alphabetisch")} aria-pressed={sort === "az"}><ArrowDownAZ size={16} /></button>
-          <button type="button" className="chip chip-icon" onClick={toggleAll} title={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}
-            aria-label={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}>{allOpen ? <ChevronsDownUp size={16} /> : <ChevronsUpDown size={16} />}</button>
+          {!grouped && <button type="button" className="chip chip-icon" onClick={toggleAll} title={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}
+            aria-label={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}>{allOpen ? <ChevronsDownUp size={16} /> : <ChevronsUpDown size={16} />}</button>}
         </span>
       </div>
+      {chaptersBar && <SegmentBar segments={chapters.map((n) => ({ id: String(n), label: t(BOOK_CHAPTERS[n]) }))} active={activeCh} onChange={pickCh} label={t("Kapitel")} storageKey="rules" />}
       {tag && (
         <div className="rs-activetag">
           <button type="button" className="chip active" onClick={() => setTag(null)} title={t("Schlagwort-Filter aufheben")} aria-label={t("Schlagwort-Filter aufheben")}>
@@ -153,16 +160,15 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
         const heading = grouped && (i === 0 || bookChapter(shown[i - 1]) !== chap) ? BOOK_CHAPTERS[chap] : null;
         const set = setFor(c, pick[c.id] || (disc === ALL ? null : disc));
         const multi = setsOf(c).length > 1;
-        if (grouped && !chOpen(chap) && !heading) return null; // Fall eines zugeklappten Kapitels: nichts, auch keinen Abstand
+        if (grouped && !chOpen(chap)) return null; // Fall eines nicht gezeigten Kapitels (Tab-Freak): nichts, auch keinen Abstand
         return (
           <Fragment key={c.id}>
             {heading && (
               <h3 className="rs-chapter rs-chapter-sticky">
-                <button type="button" className={"rs-chapter-btn" + (chOpen(chap) ? " open" : "")} aria-expanded={chOpen(chap)} onClick={() => toggleCh(chap)}>
-                  <ChevronRight size={16} className="rs-chev" />
+                <span className="rs-chapter-btn static">
                   <span>{t(heading)}</span>
                   <span className="rs-chapter-count">{countIn(chap)}</span>
-                </button>
+                </span>
               </h3>
             )}
             <div className="rs-case-wrap">

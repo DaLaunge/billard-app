@@ -1780,8 +1780,9 @@ button.id-card-head { cursor: pointer; }
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
-  .phone.app .screen:has(.pf-edit-layout) { max-width: 1280px; }
-  .pf-edit-layout { display: grid; grid-template-columns: 1fr 400px; gap: 24px; align-items: start; }
+  .phone.app .screen:has(.pf-edit-layout) { max-width: 820px; }
+  .pf-edit-layout { display: flex; flex-direction: column; gap: var(--card-gap); }
+  .pf-edit-main, .pf-edit-side { display: contents; }
   /* Zweispaltig, aber SPALTENWEISE gefuellt (erst die linke Spalte von
      oben nach unten, dann die rechte): die Liste zeigt die tatsaechliche
      Kartenreihenfolge, und ein Klick auf "nach oben" soll die Zeile auch
@@ -1819,19 +1820,8 @@ button.id-card-head { cursor: pointer; }
      (siehe StatistikScreen.jsx/cardLayout.js), ganz oben rechts fix die
      globale Disziplin-/Top-N-Auswahl (Nutzer-Feedback: dort statt als
      eigene volle Zeile ueber allen drei Spalten). */
-  .phone.app .screen:has(.stat-split) { max-width: 1240px; }
-  .stat-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
-  /* .stat-grid (alle rechten Karten, inkl. der globalen Auswahl - eine
-     einzelne Huelle, siehe .stat-right-col{display:contents} weiter oben)
-     bekommt hier ein eigenes Grid-Feld statt als eigenes mehrzeiliges
-     Grid-Kind neben .stat-chart-col zu stehen - CSS Grid bemisst eine
-     auto-Zeile sonst anhand des hoechsten Elements, das sie beruehrt, was
-     frueher (Nutzer-Feedback: "nach einem Push zu viel Platz zwischen den
-     Karten") eine grosse leere Luecke erzeugte. */
-  .stat-right-col { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; }
-  .stat-chart-col, .stat-grid { order: 0; }
-  .stat-chart-col, .stat-grid { display: flex; flex-direction: column; gap: var(--card-gap); }
-  .stat-chart-col { grid-column: 1; grid-row: 1; }
+  /* Statistik: EINE durchgehende Spalte auf jeder Breite (415.5) - Tab-Freak zeigt ein Kapitel, Doomscroller alle untereinander. */
+  .phone.app .screen:has(.stat-split) { max-width: 820px; }
   .card-column-btn { display: inline-flex; }
   .card-maximize-btn { display: inline-flex; }
   .stat-empty-dropzone { display: flex; }
@@ -1849,9 +1839,7 @@ button.id-card-head { cursor: pointer; }
      nachtragen, ...) - per CSS-Mehrspaltensatz, damit unterschiedlich
      hohe Karten den Platz gut ausnutzen statt stur in einer Spalte
      untereinander zu stehen. */
-  .phone.app .screen:has(.admin-grid) { max-width: 1300px; }
-  .admin-grid { columns: 2; column-gap: 24px; }
-  .admin-grid > .stat-block { break-inside: avoid; }
+  .phone.app .screen:has(.admin-grid) { max-width: 820px; }
 
   /* Neues Match, uebrige Schritte (Disziplin/Pruefen/Bestaetigung):
      nur zentrieren, keine besondere Breite/Groesse noetig. */
@@ -2837,20 +2825,14 @@ button.break-slot { cursor: pointer; }
 .seg-bar-item { flex: 1; border: none; background: none; color: var(--ivory-dim); font: inherit; font-size: 13px;
   padding: 7px 4px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
 .seg-bar-item.on { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
-@media (min-width: 900px) { .seg-bar { display: none; } }
-@media (max-width: 899px) {
-  .stat-split[data-seg="verlauf"] .sortable-card:not([data-seg="verlauf"]),
-  .stat-split[data-seg="matches"] .sortable-card:not([data-seg="matches"]),
-  .stat-split[data-seg="listen"] .sortable-card:not([data-seg="listen"]),
-  .stat-split[data-seg="rekorde"] .sortable-card:not([data-seg="rekorde"]) { display: none; }
-}
+.stat-split[data-seg="verlauf"] .sortable-card:not([data-seg="verlauf"]),
+.stat-split[data-seg="matches"] .sortable-card:not([data-seg="matches"]),
+.stat-split[data-seg="listen"] .sortable-card:not([data-seg="listen"]),
+.stat-split[data-seg="rekorde"] .sortable-card:not([data-seg="rekorde"]) { display: none; }
 .seg-slot:empty { display: none; }
 .seg-slot .seg-bar { margin-bottom: 0; }
-@media (min-width: 900px) { .seg-slot { display: none; } }
-@media (max-width: 899px) {
-  .pf-layout[data-seg="erfolge"] .card-slot:not([data-seg="erfolge"]),
-  .pf-layout[data-seg="zahlen"] .card-slot:not([data-seg="zahlen"]) { display: none; }
-}
+.pf-layout[data-seg="erfolge"] .card-slot:not([data-seg="erfolge"]),
+.pf-layout[data-seg="zahlen"] .card-slot:not([data-seg="zahlen"]) { display: none; }
 /* Weicher Auslauf unter der schwebenden Leiste: Inhalt blitzt an den Seiten und darunter nicht durch. */
 .tabbar::before { content: ""; position: absolute; left: -14px; right: -14px; bottom: calc(-10px - env(safe-area-inset-bottom));
   height: calc(100% + 44px); background: linear-gradient(transparent, var(--felt) 65%); z-index: -1; pointer-events: none; }
@@ -2860,17 +2842,13 @@ button.break-slot { cursor: pointer; }
 .card-vis-move, .card-vis-col { display: none !important; }
 
 /* Akzentrahmen: Leiste und gewaehlte Karte gehoeren sichtbar zusammen (nur am Handy, wo die Leiste existiert). */
-@media (max-width: 899px) {
-  .seg-bar { border-color: var(--accent); }
-  .stat-split[data-seg] .sortable-card[data-seg] > .stat-block,
-  .pf-layout[data-seg] .card-slot[data-seg] > .stat-block,
-  .pf-layout[data-seg] .card-slot[data-seg] .stat-block { border-color: var(--accent); }
-}
+.seg-bar { border-color: var(--accent); }
+.stat-split[data-seg] .sortable-card[data-seg] > .stat-block,
+.pf-layout[data-seg] .card-slot[data-seg] > .stat-block,
+.pf-layout[data-seg] .card-slot[data-seg] .stat-block { border-color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .screen:has(.pf-edit-layout) { animation: viewIn .4s cubic-bezier(.22, .61, .36, 1); }
-  @media (max-width: 899px) {
-    .stat-split[data-seg] .sortable-card[data-seg], .pf-layout[data-seg] .card-slot[data-seg] { animation: segIn .36s cubic-bezier(.22, .61, .36, 1); }
-  }
+  .stat-split[data-seg] .sortable-card[data-seg], .pf-layout[data-seg] .card-slot[data-seg] { animation: segIn .36s cubic-bezier(.22, .61, .36, 1); }
   .seg-bar-item { transition: background-color .2s ease, color .2s ease, transform .12s ease; }
   .seg-bar-item:active { transform: scale(.94); }
 }
@@ -2880,7 +2858,7 @@ button.break-slot { cursor: pointer; }
 /* Reiter in der Kopfzeile (CardDeck inlineTabs): am PC eigene Zeile wie bisher, am Handy neben den Knoepfen -
    die Segment-Leiste daruber nennt schon den Bereich, ein Kartentitel waere doppelt. */
 .deck-inline .stat-block-head > .deck-tabs { order: 3; flex: 1 0 100%; margin: 6px 0 4px; }
-@media (max-width: 899px) {
+@media (min-width: 0px) {
   .stat-split[data-seg] .deck-inline .stat-block-head > h3,
   .pf-layout[data-seg] .deck-inline .stat-block-head > h3 { display: none; }
   .stat-split[data-seg] .deck-inline .stat-block-head > .deck-tabs,
@@ -2958,8 +2936,9 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 /* Am PC bekommt jede der drei Seiten ihr eigenes Layout (nur eigene Seiten, nicht fremde Profile): die Spalten
    werden aufgeloest wie am Handy, nur die Breite ist groesser. */
 @media (min-width: 900px) {
-  .pf-layout[data-mode="identity"], .pf-layout[data-mode="zahlen"], .pf-layout[data-mode="erfolge"] { flex-direction: column; align-items: stretch; gap: var(--card-gap); }
-  .pf-layout[data-mode="identity"] .pf-col, .pf-layout[data-mode="zahlen"] .pf-col, .pf-layout[data-mode="erfolge"] .pf-col { display: contents; position: static; }
+  .pf-layout[data-mode="identity"], .pf-layout[data-mode="zahlen"], .pf-layout[data-mode="erfolge"], .pf-layout[data-mode="full"] { flex-direction: column; align-items: stretch; gap: var(--card-gap); }
+  .pf-layout[data-mode="identity"] .pf-col, .pf-layout[data-mode="zahlen"] .pf-col, .pf-layout[data-mode="erfolge"] .pf-col, .pf-layout[data-mode="full"] .pf-col { display: contents; position: static; }
+  .phone.app .screen:has(.pf-layout[data-mode="full"]) { max-width: 960px; }
   .phone.app .screen:has(.pf-layout[data-mode="identity"]) { max-width: 820px; }
   .phone.app .screen:has(.pf-layout[data-mode="zahlen"]) { max-width: 960px; }
   .phone.app .screen:has(.pf-layout[data-mode="erfolge"]) { max-width: 960px; }
@@ -3332,3 +3311,24 @@ button.club-tag-btn:disabled { opacity: .6; cursor: default; }
 @media (max-width: 899px) {
   .screen .stat-block:not(.is-maximized) > .stat-block-head.is-stuck { border-top-left-radius: 0; border-top-right-radius: 0; }
 }
+
+/* Kapitel (lib/useChapters.jsx): die Huelle verschwindet im Layout, inaktive Kapitel sind im Tab-Modus aus; bei vielen Kapiteln scrollt die Leiste. */
+.chap { display: contents; }
+.chap.off { display: none; }
+.seg-bar.scroll { overflow-x: auto; scrollbar-width: none; justify-content: flex-start; }
+.seg-bar.scroll::-webkit-scrollbar { display: none; }
+.seg-bar.scroll .seg-bar-item { flex: 0 0 auto; padding-inline: 14px; }
+.pf-edit-layout .stat-block { margin-bottom: 0; } /* Abstand macht allein der Gap der Flex-Spalte */
+
+/* Doomscroller im CardDeck: Abschnittskoepfe haengen direkt unter dem Kartenkopf (wie .badge-cat-head auf den Erfolgen). */
+.deck-sub-head { position: sticky; top: 40px; z-index: 3; display: flex; align-items: center; gap: 8px; background: var(--felt-2); padding: 8px 2px 6px;
+  font-size: 12px; font-weight: 700; color: var(--ivory); text-transform: uppercase; letter-spacing: .04em; box-shadow: 0 1px 0 var(--line); }
+.deck-sub-head svg { color: var(--accent); flex: none; }
+.deck-sub-head .deck-tab-count { margin-left: auto; }
+.deck-sub-body { padding: 4px 0 14px; }
+.deck-sub-body:last-child { padding-bottom: 0; }
+html[data-sticky-heads="off"] .deck-sub-head { position: static; }
+
+/* Regelkunde: Kapitel sind keine Ziehharmonika mehr (Tab-Freak/Doomscroller wie ueberall), die Ueberschrift ist nur noch Text. */
+.rs-chapter-btn.static { cursor: default; pointer-events: none; }
+.badge-cat-head.static { cursor: default; }

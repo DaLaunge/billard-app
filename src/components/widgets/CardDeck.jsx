@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+import { getListMode } from "../../lib/uiPrefs";
 import { useFunnel, FunnelButton, FunnelPanel } from "./FilterFunnel";
 import CardMenuButton from "./CardMenuButton";
 import CardCollapseButton from "./CardCollapseButton";
@@ -63,8 +65,10 @@ export default function CardDeck({
   // Sechs beschriftete Reiter passten am Handy nie nebeneinander und scrollten
   // zur Haelfte aus dem Bild (Nutzer-Feedback 2026-10-01).
   const compact = tabs.length >= 4 && tabs.every((x) => x.icon);
+  // Doomscroller (Einstellung "Ansicht der Listen"): statt Reiter stehen ALLE Teile untereinander, jeder mit angepinnter Abschnittsueberschrift.
+  const stacked = tabs.length > 1 && getListMode() === "stacked";
   const useSolo = solo && soloTitle;
-  const tabsBar = tabs.length > 1 && (
+  const tabsBar = tabs.length > 1 && !stacked && (
     <div className={"deck-tabs" + (compact ? " compact" : "")} role="tablist">
       {tabs.map((x) => (
         <button key={x.id} type="button" role="tab" aria-selected={x.id === active.id}
@@ -80,16 +84,16 @@ export default function CardDeck({
     </div>
   );
   return (
-    <section className={"stat-block" + (inlineTabs && tabs.length > 1 ? " deck-inline" : "")} id={id}>
+    <section className={"stat-block" + (inlineTabs && tabs.length > 1 && !stacked ? " deck-inline" : "")} id={id}>
       <div className={"stat-block-head" + (roomy ? " roomy" : "")}>
         <h3>{useSolo ? (active.icon || icon) : icon} <span className="stat-block-title-text">{useSolo ? (active.title || title) : title}</span>
           {filter?.pill && <span className="deck-filter-pill">{filter.pill}</span>}
         </h3>
         {inlineTabs && !collapsed && tabsBar}
         <div className="stat-block-head-actions">
-          {onHide && <CardMenuButton onHide={onHide} label={solo ? undefined : (hideLabel || t("Diesen Reiter ausblenden"))} />}
+          {onHide && !stacked && <CardMenuButton onHide={onHide} label={solo ? undefined : (hideLabel || t("Diesen Reiter ausblenden"))} />}
           {filter && !collapsed && <FunnelButton funnel={funnel} label={filter.label} />}
-          {info && <InfoButton title={active.title || title}>{info}</InfoButton>}
+          {info && !stacked && <InfoButton title={active.title || title}>{info}</InfoButton>}
           {onToggleColumn && <CardColumnButton column={column} onToggle={onToggleColumn} />}
           {onToggleCollapse && <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />}
         </div>
@@ -98,7 +102,15 @@ export default function CardDeck({
         <>
           {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
           {!inlineTabs && tabsBar}
-          {active.render()}
+          {stacked ? tabs.map((x) => (
+            <Fragment key={x.id}>
+              <div className="deck-sub-head">{x.icon}<span>{x.title || x.tab}</span>
+                {x.count != null && <span className="deck-tab-count">{x.count}</span>}
+                {x.info && <InfoButton title={x.title || x.tab}>{x.info}</InfoButton>}
+              </div>
+              <div className="deck-sub-body">{x.render()}</div>
+            </Fragment>
+          )) : active.render()}
         </>
       )}
     </section>

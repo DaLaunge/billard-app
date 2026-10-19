@@ -42,6 +42,7 @@ import CardDeck from "./widgets/CardDeck";
 import NumbersDeck from "./widgets/NumbersDeck";
 import { CARD_SCREENS, screenUnits, deckIds, splitCardColumns, foldedDeck, withoutFolded, deckColumn, phoneSlotOrder } from "../lib/cardLayout";
 import { useCardLayout } from "../lib/useCardLayout";
+import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
 
 // Welche Karten des Profils sich je EINE Karte mit Reitern teilen (siehe
 // DECKS weiter unten und CardDeck.jsx). Hier oben, weil die Spaltenwahl
@@ -122,6 +123,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   useEffect(() => {
     try { localStorage.setItem("badgeCats", JSON.stringify([...openCats])); } catch { /* ignore */ }
   }, [openCats]);
+  // Kategorien der Erfolge folgen der Listen-Einstellung: Tab-Freak = Kategorie-Leiste, eine Kategorie zur Zeit; Doomscroller = alle offen
+  // untereinander. Zu-/Aufklappen entfaellt in beiden; eine Suche zeigt alle Treffer-Kategorien offen.
+  const [catPick, setCatPick] = useState(() => { try { return localStorage.getItem("badgeCatPick") || ""; } catch { return ""; } });
+  const pickCat = (c) => { setCatPick(c); try { localStorage.setItem("badgeCatPick", c); } catch { /* ignore */ } };
   const toggleCat = (cat) => setOpenCats((prev) => {
     const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n;
   });
@@ -203,6 +208,15 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   const [color, setColor] = useState(meRow?.avatar_color || null);
   const [motto, setMotto] = useState(meRow?.motto || "");
   const [busy, setBusy] = useState(false);
+  // Kapitel der Einstellungen (Tab-Freak: Leiste + ein Kapitel, Doomscroller: alles untereinander, lib/useChapters.jsx)
+  const editChap = useChapters("settings", [
+    { id: "profil", label: t("Profil") },
+    ...(clubData.loaded ? [{ id: "clubs", label: t("Clubs") }] : []),
+    { id: "aussehen", label: t("Aussehen") },
+    { id: "allgemein", label: t("Allgemein") },
+    { id: "geraet", label: t("Dieses Gerät") },
+    { id: "konto", label: t("Konto & Hilfe") },
+  ]);
   useEffect(() => {
     if (!openClubsReq || !isMe) return;
     openClubs();
@@ -454,6 +468,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
 
         {/* Der Update-Knopf (mit Versionsanzeige) wohnt seit 411.10 im Menue (AppDrawer). */}
 
+        <ChapterBar c={editChap} label={t("Kapitel")} />
         <div className="pf-edit-layout">
         {/* Linke Spalte: Profilangaben + Karten-Sichtbarkeit. Beide stecken
             in EINEM Grid-Feld, das sie per Flexbox stapelt - sonst faengt
@@ -461,7 +476,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             ersten Grid-Zeile an (siehe "CSS Grid cross-column height
             coupling" in CLAUDE.md). */}
         <div className="pf-edit-main">
+        <Chap id="profil" c={editChap}>
         <section className="stat-block">
+          <div className="stat-block-head"><h3><User size={17} /> {t("Profil")}</h3></div>
           <label className="field-label" htmlFor="pnick">{t("Nickname")}</label>
           <div className="mail-row">
             <User size={18} className="mail-ico" />
@@ -484,15 +501,19 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               onBlur={() => { if (motto !== (meRow?.motto || "")) persist(); }} />
           </div>
         </section>
+        </Chap>
 
         {/* Clubs (Tag im Profil): erscheint nur, wenn die Club-Tabellen existieren; ohne Club ist der Normalfall */}
+        <Chap id="clubs" c={editChap}>
         <ClubsCard meRow={meRow} players={players} toast={toast} />
+        </Chap>
 
         {/* Beide Farbwahlen in EINER Karte, direkt untereinander (Nutzer-Feedback
             2026-09-30: "sorge dafuer, dass die Farben nahe beisammen sind - die
             Auswahl fuer 'Meine Kugel' und 'Skin'"). Vorher stand die Kugelfarbe
             links bei den Profilangaben und das Design ganz rechts in der
             Seitenspalte, dazwischen Sprache, Karten usw. */}
+        <Chap id="aussehen" c={editChap}>
         <section className="stat-block">
           <div className="stat-block-head">
             <h3><Palette size={17} /> {t("Aussehen")}</h3>
@@ -566,6 +587,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             </div>
           )}
         </section>
+        </Chap>
 
         </div>
 
@@ -577,8 +599,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               Konto & Hilfe (Anmeldung, Feedback, Tickets, Abmelden). Alle
               Erklaertexte stehen hinter Info-Knoepfen, breite Textknoepfe sind
               runde Symbolknoepfe mit Namen in title/aria-label. */}
+          <Chap id="allgemein" c={editChap}>
           <section className="stat-block">
-            <h3><SlidersHorizontal size={17} /> {t("Allgemein")}</h3>
+            <div className="stat-block-head"><h3><SlidersHorizontal size={17} /> {t("Allgemein")}</h3></div>
             <div className="lang-row compact">
               <button className={"lang-btn" + (lang === "de" ? " active" : "")} onClick={() => onLang("de")} aria-label="Deutsch" title="Deutsch">
                 <span className="flag"><Emoji e="🇩🇪" /></span>
@@ -608,9 +631,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               ))}
             </div>
           </section>
+          </Chap>
 
+          <Chap id="geraet" c={editChap}>
           <section className="stat-block">
-            <h3><Smartphone size={17} /> {t("Dieses Gerät")}</h3>
+            <div className="stat-block-head"><h3><Smartphone size={17} /> {t("Dieses Gerät")}</h3></div>
             {/* Standard ist an - waehrend eines Matches liegt das Handy meist
                 unberuehrt am Tisch und soll sich nicht dauernd sperren. Wer das
                 nicht will (Akku), schaltet es hier ab; die Einstellung gilt
@@ -706,6 +731,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               );
             })()}
           </section>
+          </Chap>
 
           {/* Konto und Support. Bis 2026-09-25 waren "Anmeldung & Sicherheit",
               "Feedback" und "Meine Tickets" frei anordenbare Karten auf dem
@@ -713,8 +739,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
               Zeilen EINER Karte - mit "Verwaltung"/"Abmelden" als runden
               Symbolknoepfen darunter (aus den Einstellungen herausfuehrende
               Aktionen stehen am Ende). */}
+          <Chap id="konto" c={editChap}>
           <section className="stat-block">
-            <h3><UserCog size={17} /> {t("Konto & Hilfe")}</h3>
+            <div className="stat-block-head"><h3><UserCog size={17} /> {t("Konto & Hilfe")}</h3></div>
             <PasswordSection toast={toast} />
             <ChangelogRow />
             {onStartTutorial && (
@@ -788,6 +815,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 aria-label={t("Abmelden")} title={t("Abmelden")}><LogOut size={18} /></button>
             </div>
           </section>
+          </Chap>
         </div>
         </div>
 
@@ -865,6 +893,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
     if (!b) return;
     setBadgeQuery(""); setBadgeStatus("all");
     setOpenCats((prev) => new Set(prev).add(b.category));
+    pickCat(b.category);
     let tries = 0;
     const go = () => {
       const el = document.querySelector(`[data-badge-key="${key}"]`);
@@ -903,28 +932,29 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
                 aria-label={t("Erreicht")} title={t("Erreicht")}><LockOpen size={16} /></button>
               <button className={"chip chip-icon" + (badgeStatus === "locked" ? " active" : "")} onClick={() => setBadgeStatus("locked")}
                 aria-label={t("Gesperrt")} title={t("Gesperrt")}><Lock size={16} /></button>
-              <button className="chip chip-icon" style={{ marginLeft: "auto" }} onClick={expandAll}
-                aria-label={t("Alles aufklappen")} title={t("Alles aufklappen")}><ChevronsDown size={16} /></button>
-              <button className="chip chip-icon" onClick={collapseAll}
-                aria-label={t("Alles zuklappen")} title={t("Alles zuklappen")}><ChevronsUp size={16} /></button>
             </div>
           )}
           {(() => {
             let anyVisible = false;
+            const catIds = visibleByCategory.filter(([, , v]) => v.length > 0).map(([c]) => c);
+            const listMode = getListMode();
+            const searching = !!badgeQuery.trim();
+            const activeCat = catIds.includes(catPick) ? catPick : catIds[0];
+            const catBar = listMode === "chapters" && !searching && catIds.length > 1;
             const rows = visibleByCategory.map(([cat, items, visible]) => {
               if (visible.length === 0) return null;
+              if (catBar && cat !== activeCat) return null; // Tab-Freak: nur die gewaehlte Kategorie
               anyVisible = true;
               // Zähler immer gegen die ECHTE Gesamtzahl der Kategorie (items.length).
               const earnedCount = items.filter((b) => earnedBadges.has(b.badge_key)).length;
-              const open = openCats.has(cat);
+              const open = true; // Zu-/Aufklappen entfaellt: Tab-Freak zeigt eine Kategorie, Doomscroller alle
               const liveStat = isMe ? catLiveStat(items, extendedExtras) : null;
               return (
                 <div key={cat} className="badge-cat">
-                  <button className="badge-cat-head" onClick={() => toggleCat(cat)}>
+                  <button className="badge-cat-head static" tabIndex={-1}>
                     <div className="badge-cat-head-row">
                       <span className="badge-cat-title">{t(cat)}</span>
                       <span className="badge-cat-count">{earnedCount} / {items.length}</span>
-                      <ChevronDown size={16} className={"cat-chev" + (open ? " open" : "")} />
                     </div>
                     <ProgressBar current={earnedCount} target={items.length} />
                     {liveStat && <span className="badge-cat-live">{liveStat}</span>}
@@ -987,6 +1017,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
             });
             return (
               <>
+                {catBar && <SegmentBar segments={catIds.map((c) => ({ id: c, label: t(c) }))} active={activeCat} onChange={pickCat} label={t("Kapitel")} storageKey="erfolgeCats" />}
                 {rows}
                 {!anyVisible && badgeFiltering && <p className="hint">{t("Keine passenden Erfolge gefunden.")}</p>}
               </>
@@ -1093,7 +1124,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </div>
       </header>
 
-      <div className="pf-layout" data-mode={mode} data-seg={mode === "zahlen" ? "zahlen" : mode === "erfolge" ? "erfolge" : mode === "identity" ? "none" : segments.length > 1 ? activeSeg : undefined}>
+      <div className="pf-layout" data-mode={mode} data-seg={mode === "zahlen" ? "zahlen" : mode === "erfolge" ? "erfolge" : mode === "identity" ? "none" : segments.length > 1 && getListMode() === "chapters" ? activeSeg : undefined}>
       {/* Drei frei befuellbare Spalten (am Handy per display:contents EINE
           durchgehende Liste, siehe App.css): duenn - breit - duenn, wie auf
           Statistik und Live. Fest sind nur die Identitaetskarte ganz oben
@@ -1157,7 +1188,9 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </div>
       )}
       {mode === "identity" && isMe && (
-        <div className="pf-identity-extra" style={{ order: 5 }}>
+        <section className="stat-block pf-more" style={{ order: 5 }}>
+          <div className="stat-block-head"><h3><User size={17} /> {t("Bereiche")}</h3></div>
+          <div className="pf-identity-extra">
           <button type="button" className="pf-id-card" onClick={onOpenAchievements}>
             <Award size={20} /><span className="pf-id-card-text"><strong>{t("Meine Erfolge")}</strong><small>{t("{n} von {m} freigeschaltet", { n: earnedBadges.size, m: catalog.length })}</small></span><ChevronRight size={18} />
           </button>
@@ -1175,9 +1208,10 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <button type="button" className="pf-id-card" onClick={() => { setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true); }}>
             <Palette size={20} /><span className="pf-id-card-text"><strong>{t("Aussehen")}</strong><small>{t("Kugelfarbe, Foto und Design")}</small></span><ChevronRight size={18} />
           </button>
-        </div>
+          </div>
+        </section>
       )}
-      {mode === "full" && (
+      {mode === "full" && getListMode() === "chapters" && (
       <div className="seg-slot" style={{ order: 5 }}><SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} storageKey="profil" /></div>
       )}
       {renderColumn("left")}

@@ -42,7 +42,7 @@ export default function SegmentBar({ segments, active, onChange, label, storageK
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={ordered.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
-        <div className="seg-bar" role="tablist" aria-label={label}>
+        <div className={"seg-bar" + (ordered.length > 4 ? " scroll" : "")} role="tablist" aria-label={label}>
           {ordered.map((s) => <Item key={s.id} s={s} active={active} onChange={onChange} />)}
         </div>
       </SortableContext>
