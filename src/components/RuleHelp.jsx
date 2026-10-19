@@ -157,7 +157,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
       {shown.length === 0 && !(heyball && heyballShown.length > 0) && <p className="hint">{t("Keine passende Regel gefunden.")}</p>}
       {shown.map((c, i) => {
         const chap = bookChapter(c);
-        const heading = grouped && (i === 0 || bookChapter(shown[i - 1]) !== chap) ? BOOK_CHAPTERS[chap] : null;
+        const heading = grouped && !chaptersBar && (i === 0 || bookChapter(shown[i - 1]) !== chap) ? BOOK_CHAPTERS[chap] : null;
         const set = setFor(c, pick[c.id] || (disc === ALL ? null : disc));
         const multi = setsOf(c).length > 1;
         if (grouped && !chOpen(chap)) return null; // Fall eines nicht gezeigten Kapitels (Tab-Freak): nichts, auch keinen Abstand
@@ -185,12 +185,12 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
               {!c.released && <span className="rs-badge">{t("nur Verwaltung")}</span>}
               <InfoButton title={t(c.title)}>{t(c.rule)} {t("Quelle:")} {sourceLine(c)}</InfoButton>
             </div>
-            <div className="rs-tagrow">
+            {isCaseOpen(c.id) && <div className="rs-tagrow">
               {(c.tags || []).map((k) => (
                 <button key={k} type="button" className={"rs-tagpill" + (tag === k ? " on" : "")} aria-pressed={tag === k}
                   onClick={() => setTag(tag === k ? null : k)} title={t("Nur Regeln mit diesem Schlagwort zeigen")}>{t(TAGS[k])}</button>
               ))}
-            </div>
+            </div>}
             {isCaseOpen(c.id) && (
               <>
                 <div className="rs-pair">

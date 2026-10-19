@@ -3336,3 +3336,12 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .rs-chapter-btn { font-size: inherit; color: inherit; }
 .num-section-head, .deck-sub-head { padding: 10px 2px 7px; }
 .num-section-head svg, .deck-sub-head svg, .badge-sub-head svg { color: var(--accent); flex: none; }
+
+/* Regelkunde kompakter (415.11): eine schlanke Zeile je Regel (Schlagwoerter erst im aufgeklappten Fall), Trennlinie statt grosser Abstaende;
+   im Tab-Modus nennt die Kapitel-Leiste das Kapitel, eine zweite Ueberschrift darunter entfaellt. */
+.rs-cases { gap: 0; }
+.rs-case-head { margin-bottom: 0; }
+.rs-case-wrap { border-bottom: 1px solid var(--line); padding: 4px 0; }
+.rs-case-wrap:last-child { border-bottom: 0; }
+.rs-cases > .search-row, .rs-cases > .rs-filters, .rs-cases > .rs-activetag { margin-bottom: 10px; }
+.rs-tagrow { margin: 4px 0 8px 22px; }
