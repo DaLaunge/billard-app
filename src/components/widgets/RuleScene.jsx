@@ -131,7 +131,7 @@ function Clock({ s, limit = 5 }) {
   );
 }
 
-export default function RuleScene({ scene, onEnd }) {
+export default function RuleScene({ scene, onEnd, heyball = false }) {
   const uid = useId().replace(/:/g, "");
   const last = scene.steps.length - 1;
   const [idx, setIdx] = useState(0);
@@ -252,7 +252,7 @@ export default function RuleScene({ scene, onEnd }) {
       )}
       {scene.steps.some((x) => x.stance) && <div className="rs-stancebox">{step.stance && <Stance mode={step.stance} />}</div>}
       {withClock && <Clock s={clockShown} limit={scene.clockLimit || 5} />}
-      <svg className="rs-table" viewBox="0 0 220 120" role="button" tabIndex={0} aria-label={t(step.text)}
+      <svg className={"rs-table" + (heyball ? " hb" : "")} viewBox="0 0 220 120" role="button" tabIndex={0} aria-label={t(step.text)}
         onClick={togglePlay} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlay(); } }}>
         <defs>
           {stripes.map((n) => (
@@ -274,7 +274,7 @@ export default function RuleScene({ scene, onEnd }) {
         )}
         {scene.table && scene.table.breakBox && <rect className="rs-breakbox" x="14" y="37" width="46" height="46" rx="1.5" aria-hidden="true" />}
         {scene.table && scene.table.triangle && <polygon className="rs-triangle" points="149,60 203.6,28.5 203.6,91.5" />}
-        {POCKETS.map((p, i) => <circle key={i} className="rs-pocket" cx={p[0]} cy={p[1]} r="6.5" />)}
+        {POCKETS.map((p, i) => <circle key={i} className="rs-pocket" cx={p[0]} cy={p[1]} r={heyball ? 5.9 : 6.5} />)}
 
         {step.aim && (
           <polyline key={"aim" + idx} className="rs-aim" fill="none" points={step.aim.map((p) => p.join(",")).join(" ")} />

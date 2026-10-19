@@ -3350,3 +3350,8 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 @media (min-width: 900px) {
   .phone.app .screen:has(.rs-cases) { max-width: 1200px; }
 }
+
+/* Heyball-Tisch in der Regelkunde (415.13): blaues Tuch, dunkle Banden, engere Taschen - gleiche Masse wie der Pooltisch, nur das Aussehen. */
+.rs-table.hb .rs-rail { fill: #1B1B22; }
+.rs-table.hb .rs-cloth { fill: #1F5A9E; }
+.rs-table.hb .rs-pocket { fill: #07080B; stroke: #2B2B35; stroke-width: .8; }

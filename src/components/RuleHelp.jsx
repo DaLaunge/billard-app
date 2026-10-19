@@ -194,7 +194,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
             {isCaseOpen(c.id) && (
               <>
                 <div className="rs-pair">
-                  {set.variants.map((v) => <RuleScene key={c.id + set.discs.join() + v.label} scene={{ ...v, tag: v.tag || set.tag }} onEnd={() => markWatched(c, set, v.label)} />)}
+                  {set.variants.map((v) => <RuleScene key={c.id + set.discs.join() + v.label} heyball={disc === HEYBALL || (set.discs.length === 1 && set.discs[0] === HEYBALL)} scene={{ ...v, tag: v.tag || set.tag }} onEnd={() => markWatched(c, set, v.label)} />)}
                 </div>
               </>
             )}
