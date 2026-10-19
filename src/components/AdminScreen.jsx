@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown, Users, Trash2 } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown, Users, Trash2, Search } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -508,8 +508,11 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         </div>
         {logins && memberLogins.length > 0 && (
           <div className="mem-tools">
-            <input type="search" className="mem-search" placeholder={t("Suchen in allen Daten …")} value={memQuery}
-              onChange={(e) => setMemQuery(e.target.value)} />
+            <div className="search-row">
+              <Search size={16} className="mail-ico" />
+              <input placeholder={t("Suchen in allen Daten …")} value={memQuery} onChange={(e) => setMemQuery(e.target.value)} />
+              {memQuery && <button className="clear-btn" onClick={() => setMemQuery("")} aria-label={t("Suche loeschen")}><X size={15} /></button>}
+            </div>
           </div>
         )}
         {logins == null ? (

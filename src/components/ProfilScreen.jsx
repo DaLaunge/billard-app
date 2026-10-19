@@ -18,8 +18,6 @@ import Ball from "./Ball";
 import PasswordSection from "./PasswordSection";
 import MyFeedbackTickets from "./MyFeedbackTickets";
 import IdentityCard from "./widgets/IdentityCard";
-import ClubsCard from "./widgets/ClubsCard";
-import ClubInbox from "./widgets/ClubInbox";
 import { bestDiscipline } from "../lib/bestDiscipline";
 import { useClubData } from "../lib/clubStore";
 import AchievementsProgressCard from "./widgets/AchievementsProgressCard";
@@ -62,7 +60,7 @@ const groupSubs = (list) => {
 export default function ProfilScreen({ nickname, matches, rangliste, onBack, isMe, onLogout, colorOf, badgeOf, photoOf,
   players, meRow, onSaveProfile, onOpenAdmin, earnedBadges, onSelectBadge, catalog, onInvite, toast, lang, onLang, onOpenProfile,
   onChallenge, onStartMatch, challenges, updateInterval, onSetUpdateInterval, onCheckUpdate, keepAwake, onSetKeepAwake, hideTabbar, onSetHideTabbar, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount, onReload, onSetTheme, onSetStartTab,
-  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, openClubsReq, onClubsOpened, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onOpenNumbers, onEditChange, closeEditTick }) {
+  onResetCardLayout, onSetCardLayout, achievementCounters, onStartTutorial, openSettings, onSettingsOpened, onOpenClubs, openSeg, onSegOpened, onResetMenu, mode = "full", asOthers = false, onPreview, onOpenAchievements, onOpenNumbers, onEditChange, closeEditTick }) {
   // Anordnung (Reihenfolge + Spalte) und Sichtbarkeit der Karten. Drei
   // Haken, weil die Karten-Einstellungen unter "Profil bearbeiten" ALLE
   // Bildschirme abdecken, nicht nur das Profil selbst - dort ist die eine
@@ -72,11 +70,7 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // oeffnet Profil bearbeiten und springt zur Karte
   const clubData = useClubData();
   const myClubCount = clubData.members.filter((m) => m.player_id === meRow?.id).length;
-  const openClubs = () => {
-    editChap.choose("clubs");
-    setNick(nickname); setColor(meRow?.avatar_color || null); setMotto(meRow?.motto || ""); setEdit(true);
-    setTimeout(() => document.getElementById("pf-clubs")?.scrollIntoView({ behavior: "smooth", block: "start" }), 380);
-  };
+  const openClubs = () => onOpenClubs?.();
   const layoutByScreen = {
     stats: useCardLayout("stats", meRow?.card_layout, onSetCardLayout, toast),
     live: useCardLayout("live", meRow?.card_layout, onSetCardLayout, toast),
@@ -214,18 +208,11 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   // Kapitel der Einstellungen (Tab-Freak: Leiste + ein Kapitel, Doomscroller: alles untereinander, lib/useChapters.jsx)
   const editChap = useChapters("settings", [
     { id: "profil", label: t("Profil") },
-    ...(clubData.loaded ? [{ id: "clubs", label: t("Clubs") }] : []),
     { id: "aussehen", label: t("Aussehen") },
     { id: "allgemein", label: t("Allgemein") },
     { id: "geraet", label: t("Dieses Gerät") },
     { id: "konto", label: t("Konto & Hilfe") },
   ]);
-  useEffect(() => {
-    if (!openClubsReq || !isMe) return;
-    openClubs();
-    onClubsOpened?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openClubsReq]);
   // Vom Menue ("Einstellungen"): direkt die Einstellungen oeffnen, wie das Zahnrad der Kopfkarte.
   useEffect(() => {
     if (!openSettings || !isMe) return;
@@ -506,9 +493,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
         </Chap>
 
         {/* Clubs (Tag im Profil): erscheint nur, wenn die Club-Tabellen existieren; ohne Club ist der Normalfall */}
-        <Chap id="clubs" c={editChap}>
-        <ClubsCard meRow={meRow} players={players} toast={toast} />
-        </Chap>
 
         {/* Beide Farbwahlen in EINER Karte, direkt untereinander (Nutzer-Feedback
             2026-09-30: "sorge dafuer, dass die Farben nahe beisammen sind - die
@@ -1182,11 +1166,6 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
           <ProfileHighlights nickname={nickname} matches={matches} extras={liveExtras} catalog={catalog} earnedBadges={earnedBadges}
             onOpenNumbers={isMe && !asOthers ? onOpenNumbers : undefined} onOpenProfile={onOpenProfile}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
-        </div>
-      )}
-      {mode === "identity" && isMe && (
-        <div className="pf-highlights-slot" style={{ order: 2 }}>
-          <ClubInbox meRow={meRow} players={players} toast={toast} />
         </div>
       )}
       {mode === "identity" && isMe && (
