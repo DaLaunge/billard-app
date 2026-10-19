@@ -60,6 +60,7 @@ export default function InviteScreen({ me, onBack, toast }) {
 
       {error && <p className="nick-status err"><X size={14} /> {error}</p>}
 
+      <div className="invite-layout">
       <section className="stat-block invite-card">
         <p className="invite-lead">{t("Neuer Spieler? Einfach diesen Code mit der Handykamera scannen – das öffnet die App und führt direkt zur Anmeldung. Mitglieder starten damit sofort ein Match gegen dich.")}</p>
         <div className="qr-box">
@@ -90,6 +91,7 @@ export default function InviteScreen({ me, onBack, toast }) {
         )}
       </section>
 
+      <div className="invite-actions">
       <button className="btn primary" onClick={share} disabled={!code}>
         <Share2 size={18} /> {t("Einladung teilen")}
       </button>
@@ -97,6 +99,8 @@ export default function InviteScreen({ me, onBack, toast }) {
         <Copy size={16} /> {t("Link kopieren")}
       </button>
       <p className="hint">{t("Dieser Code bleibt gültig – es können also mehrere Leute gleichzeitig damit beitreten. Wer damit beitritt, wird dir als geworbener Spieler gutgeschrieben; dafür gibt es eigene Erfolge. Mit dem Symbol unter dem Code bekommst du einen frischen Code, der alte gilt dann nicht mehr.")}</p>
+      </div>
+      </div>
     </div>
   );
 }
