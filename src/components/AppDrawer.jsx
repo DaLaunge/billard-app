@@ -1,4 +1,4 @@
-import { Fragment, useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Plus, X, ChevronDown, RefreshCw, Check, Pin } from "lucide-react";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
@@ -101,6 +101,31 @@ export default function AppDrawer({
     swapped[ai] = over.id; swapped[oi] = active.id;
     onChange(swapped, pinnedIds.map((x) => (x === active.id ? over.id : x === over.id ? active.id : x)));
   };
+  // EIN flaches Array mit stabilen keys: nur so behaelt React die Zeile, wenn sie zwischen den Gruppen wandert (verschachtelte Arrays waeren
+  // getrennte Slots und bauten die Zeile neu auf).
+  const drawerItems = [];
+  drawerItems.push(<div key="label-bar" className="app-drawer-label">{t("Menüleiste")}</div>);
+  pinnedList.forEach((e, i) => {
+    if (i === Math.ceil(pinnedList.length / 2)) {
+      drawerItems.push(
+        <button key="fab" data-tour="tab-fab" className="app-drawer-item app-drawer-new" onClick={go(onNewMatch)}>
+          <span className="app-drawer-fab"><Plus size={16} /></span><span>{t("Neues Match")}</span>
+        </button>
+      );
+    }
+    drawerItems.push(<Row key={e.id} e={e} pinned slot={i + 1} go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />);
+  });
+  drawerItems.push(<div key="sep" className="app-drawer-sep" />);
+  drawerItems.push(<div key="label-more" className="app-drawer-label">{t("Weitere Menüs")}</div>);
+  otherList.forEach((e) => {
+    drawerItems.push(
+      <Row key={e.id} e={e} pinned={false} pickOpen={pickFor === e.id} pinnedEntries={pinnedList}
+        onPick={() => setPickFor((cur) => (cur === e.id ? null : e.id))}
+        onSwap={(newId, oldId) => { setPickFor(null); onSwap(newId, oldId); }}
+        go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
+    );
+  });
+  if (otherList.length === 0) drawerItems.push(<p key="none" className="app-drawer-hint">{t("Alles ist an der Leiste angeheftet.")}</p>);
   return (
     <>
       {open && <div className="app-drawer-scrim" onClick={onClose} aria-hidden="true" />}
@@ -115,30 +140,11 @@ export default function AppDrawer({
         </div>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={display.map((x) => x.id)} strategy={verticalListSortingStrategy}>
-            <div className="app-drawer-label">{t("Menüleiste")}</div>
+            {/* EIN Behaelter fuer beide Gruppen und jede Zeile mit stabilem key (418.0): zieht man einen Punkt zwischen "Menueleiste" und
+                "Weitere Menues", wird die Zeile nur verschoben und nicht neu aufgebaut. Zwei getrennte <nav> mit verschiedenen Elternknoten
+                bauten die Zeile bei jedem Tausch neu auf - ein laufender Touch verlor dabei sein Ziel, das zweite Verschieben ging nicht mehr. */}
             <nav className="app-drawer-nav">
-              {/* Genau wie unten in der Leiste: Plaetze 1 bis n von links nach rechts, das runde "+" steht dazwischen. */}
-              {pinnedList.map((e, i) => (
-                <Fragment key={e.id}>
-                  {i === Math.ceil(pinnedList.length / 2) && (
-                    <button data-tour="tab-fab" className="app-drawer-item app-drawer-new" onClick={go(onNewMatch)}>
-                      <span className="app-drawer-fab"><Plus size={16} /></span><span>{t("Neues Match")}</span>
-                    </button>
-                  )}
-                  <Row e={e} pinned slot={i + 1} go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
-                </Fragment>
-              ))}
-            </nav>
-            <div className="app-drawer-sep" />
-            <div className="app-drawer-label">{t("Weitere Menüs")}</div>
-            <nav className="app-drawer-nav">
-              {otherList.map((e) => (
-                <Row key={e.id} e={e} pinned={false} pickOpen={pickFor === e.id} pinnedEntries={pinnedList}
-                  onPick={() => setPickFor((cur) => (cur === e.id ? null : e.id))}
-                  onSwap={(newId, oldId) => { setPickFor(null); onSwap(newId, oldId); }}
-                  go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
-              ))}
-              {otherList.length === 0 && <p className="app-drawer-hint">{t("Alles ist an der Leiste angeheftet.")}</p>}
+              {drawerItems}
             </nav>
           </SortableContext>
         </DndContext>
