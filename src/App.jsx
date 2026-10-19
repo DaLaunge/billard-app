@@ -1776,7 +1776,7 @@ export default function App() {
                 onSwap={swapPin} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
-              {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge", "clubs"].includes(tab)) && (
+              {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge", "clubs", "invite", "admin"].includes(tab)) && (
                 <button data-tour="burger" className="burger-btn" onClick={() => setDrawerOpen(true)} aria-label={t("Menü")} aria-expanded={drawerOpen}>
                   <Menu size={20} />
                 </button>
