@@ -194,6 +194,8 @@ export default function ProfilScreen({ nickname, matches, rangliste, onBack, isM
   useEffect(() => { onEditChange?.(edit); }, [edit]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => onEditChange?.(false), []);     // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (closeEditTick) setEdit(false); }, [closeEditTick]);
+  // Einstellungen oeffnen/schliessen: wie jede andere Seite oben beginnen
+  useEffect(() => { document.querySelector("main.content")?.scrollTo({ top: 0 }); }, [edit]);
   const avatarFlyRef = useRef(null);
   const avatarBadge = badgeOf(nickname);
   useEffect(() => {

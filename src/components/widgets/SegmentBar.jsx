@@ -19,7 +19,7 @@ function Item({ s, active, onChange }) {
   return (
     <button ref={setNodeRef} style={style} role="tab" aria-selected={active === s.id} {...attributes} {...listeners}
       className={"seg-bar-item" + (active === s.id ? " on" : "") + (isDragging ? " dragging" : "")}
-      onClick={() => onChange(s.id)}>{s.label}</button>
+      onClick={() => { onChange(s.id); document.querySelector("main.content")?.scrollTo({ top: 0 }); }}>{s.label}</button>
   );
 }
 

@@ -14,7 +14,7 @@ export function useChapters(key, items) {
   const [pick, setPick] = useState(() => { try { return localStorage.getItem("chap:" + key) || ""; } catch { return ""; } });
   const active = ids.includes(pick) ? pick : ids[0];
   const chaptered = getListMode() === "chapters" && ids.length > 1;
-  const choose = (id) => { setPick(id); try { localStorage.setItem("chap:" + key, id); } catch { /* ignore */ } };
+  const choose = (id) => { setPick(id); document.querySelector("main.content")?.scrollTo({ top: 0 }); try { localStorage.setItem("chap:" + key, id); } catch { /* ignore */ } };
   return { key, items, active, chaptered, choose };
 }
 
