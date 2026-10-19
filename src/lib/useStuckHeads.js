@@ -15,16 +15,21 @@ export function useStuckHeads(contentEl, tab) {
         const card = h.parentElement;
         const stuck = h.getBoundingClientRect().top - card.getBoundingClientRect().top > 0.5;
         if (h.classList.contains("is-stuck") !== stuck) h.classList.toggle("is-stuck", stuck);
+        // Hoehe des Kartenkopfs: darunter kleben die Abschnitts-/Kategorie-Ueberschriften (--head-h in App.css)
+        const hh = Math.round(h.getBoundingClientRect().height) + "px";
+        if (card.style.getPropertyValue("--head-h") !== hh) card.style.setProperty("--head-h", hh);
       });
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
     contentEl.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     const t0 = setTimeout(update, 350);
+    const t1 = setTimeout(update, 1200);
+    update();
     return () => {
       contentEl.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
-      clearTimeout(t0);
+      clearTimeout(t0); clearTimeout(t1);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [contentEl, tab]);

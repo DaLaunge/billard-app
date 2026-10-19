@@ -1734,7 +1734,7 @@ button.id-card-head { cursor: pointer; }
      Handy-Massnahme, am PC fehlt der Platz nicht (siehe :root/--card-gap
      und .screen ganz oben). */
   :root { --card-gap: 16px; }
-  .stat-block { padding: 16px 14px; }
+  .stat-block { --cp-y: 16px; --cp-x: 14px; padding: var(--cp-y) var(--cp-x); }
   .screen-head { margin-bottom: 16px; }
   .screen-head h2 { font-size: 26px; }
   .phone.app { max-width: 1500px; margin: 0 auto; }
@@ -3020,18 +3020,16 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 /* Statistik am Handy: alle Karten untereinander, die Ueberschrift der Karte bleibt beim Scrollen oben stehen, damit man
    immer weiss, in welcher Liste man gerade ist (Nutzer-Wunsch 411.28, gilt fuer alle Seiten mit Karten). Der Kartenkopf haengt sich an den oberen Rand des
    Scrollbereichs und deckt dabei den Kartenrand mit ab (negative Raender = Polster der Karte). */
-@media (max-width: 899px) {
-  .screen .stat-block:not(.is-maximized) > .stat-block-head { position: sticky; top: 0; z-index: 4; background: var(--felt-2);
-    /* Genau auf dem Kartenrand (Polster + 1px Rand) und mit dessen Radius/Farbe, damit Rand und Ecken beim Ruhen exakt deckungsgleich
-       sind (sonst wird die Rundung doppelt gezeichnet) und beim Anpinnen der obere Rand erhalten bleibt. */
-    margin: calc(-1 * (var(--cp-y, 13px) + 1px)) calc(-1 * (var(--cp-x, 12px) + 1px)) 6px; padding: var(--cp-y, 13px) var(--cp-x, 12px) 8px;
-    border: 1px solid; border-color: inherit; border-bottom: 0; border-top-left-radius: inherit; border-top-right-radius: inherit;
-    border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 1px 0 var(--line); }
-}
+.screen .stat-block:not(.is-maximized) > .stat-block-head { position: sticky; top: 0; z-index: 4; background: var(--felt-2);
+  /* Genau auf dem Kartenrand (Polster + 1px Rand) und mit dessen Radius/Farbe, damit Rand und Ecken beim Ruhen exakt deckungsgleich
+     sind (sonst wird die Rundung doppelt gezeichnet) und beim Anpinnen der obere Rand erhalten bleibt. */
+  margin: calc(-1 * (var(--cp-y, 13px) + 1px)) calc(-1 * (var(--cp-x, 12px) + 1px)) 6px; padding: var(--cp-y, 13px) var(--cp-x, 12px) 8px;
+  border: 1px solid; border-color: inherit; border-bottom: 0; border-top-left-radius: inherit; border-top-right-radius: inherit;
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 1px 0 var(--line); }
 
 /* Erfolge-Seite: auch die Kategorie-Ueberschrift (Skill, Regelkunde, ...) bleibt beim Scrollen unter dem Kartenkopf stehen. */
-@media (max-width: 899px) {
-  .badge-cat-head { position: sticky; top: 40px; z-index: 3; background: var(--felt-2); padding-top: 6px; padding-bottom: 6px; box-shadow: 0 1px 0 var(--line); }
+@media (min-width: 0px) {
+  .badge-cat-head { position: sticky; top: var(--head-h, 40px); z-index: 3; background: var(--felt-2); padding-top: 6px; padding-bottom: 6px; box-shadow: 0 1px 0 var(--line); }
 }
 
 /* Profilbild-Fenster: Kategorie-Kopf (Name, x / y, Fortschrittsbalken) bleibt oben, bis die naechste Kategorie kommt.
@@ -3308,9 +3306,7 @@ button.club-tag-btn:disabled { opacity: .6; cursor: default; }
 
 /* Angeheftete Kartenkoepfe (Klasse is-stuck, lib/useStuckHeads.js): eckig statt rund, sonst durchstossen die senkrechten Kartenraender
    und die darunter durchlaufenden Zeilen die runden Ecken (Erfolge-Seite, 415.3). Am Kartenanfang bleibt die Rundung. */
-@media (max-width: 899px) {
-  .screen .stat-block:not(.is-maximized) > .stat-block-head.is-stuck { border-top-left-radius: 0; border-top-right-radius: 0; }
-}
+.screen .stat-block:not(.is-maximized) > .stat-block-head.is-stuck { border-top-left-radius: 0; border-top-right-radius: 0; }
 
 /* Kapitel (lib/useChapters.jsx): die Huelle verschwindet im Layout, inaktive Kapitel sind im Tab-Modus aus; bei vielen Kapiteln scrollt die Leiste. */
 .chap { display: contents; }
@@ -3321,7 +3317,7 @@ button.club-tag-btn:disabled { opacity: .6; cursor: default; }
 .pf-edit-layout .stat-block { margin-bottom: 0; } /* Abstand macht allein der Gap der Flex-Spalte */
 
 /* Doomscroller im CardDeck: Abschnittskoepfe haengen direkt unter dem Kartenkopf (wie .badge-cat-head auf den Erfolgen). */
-.deck-sub-head { position: sticky; top: 40px; z-index: 3; display: flex; align-items: center; gap: 8px; background: var(--felt-2); padding: 8px 2px 6px;
+.deck-sub-head { position: sticky; top: var(--head-h, 40px); z-index: 3; display: flex; align-items: center; gap: 8px; background: var(--felt-2); padding: 8px 2px 6px;
   font-size: 12px; font-weight: 700; color: var(--ivory); text-transform: uppercase; letter-spacing: .04em; box-shadow: 0 1px 0 var(--line); }
 .deck-sub-head svg { color: var(--accent); flex: none; }
 .deck-sub-head .deck-tab-count { margin-left: auto; }
