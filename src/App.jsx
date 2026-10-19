@@ -1045,14 +1045,6 @@ export default function App() {
     updateMenuPrefs(sanitizeMenuPrefs(null));
     try { Object.keys(localStorage).filter((k) => k.startsWith("segOrder:") || k === "statSeg" || k === "profilSeg").forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
   };
-  // Anheften per Auswahl: der neue Punkt nimmt den Platz des gewaehlten ein, der ersetzte tauscht in die Gruppe "Weitere Menues".
-  const swapPin = (newId, oldId) => {
-    const order = [...menuPrefs.order];
-    const ai = order.indexOf(newId), oi = order.indexOf(oldId);
-    if (ai === -1 || oi === -1) return;
-    order[ai] = oldId; order[oi] = newId;
-    updateMenuPrefs({ order, pinned: menuPrefs.pinned.map((x) => (x === oldId ? newId : x)) });
-  };
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
   // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
   const ptr = usePullToRefresh(contentEl);
@@ -1567,7 +1559,7 @@ export default function App() {
     admin: { icon: Shield, label: "Verwaltung", on: tab === "admin", run: () => navPush({ tab: "admin" }) },
   };
   const orderedEntries = menuPrefs.order.filter((id) => (id !== "admin" || player?.role === "admin") && (id !== "clubs" || clubsMenu.loaded)).map((id) => ({ id, ...menuMeta[id] }));
-  const pinnedEntries = orderedEntries.filter((e) => menuPrefs.pinned.includes(e.id));
+  const pinnedEntries = orderedEntries.slice(0, MAX_PINNED);
 
   return (
     <div className="stage">
@@ -1769,9 +1761,12 @@ export default function App() {
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} player={player}
                 onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onCheckUpdate={requestUpdateNow}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                entries={orderedEntries} pinnedIds={menuPrefs.pinned}
-                onChange={(order, pinned) => updateMenuPrefs({ order, pinned })}
-                onSwap={swapPin} />
+                entries={orderedEntries} maxPinned={MAX_PINNED}
+                onReorder={(ids) => {
+                  // sichtbare Punkte in neuer Reihenfolge; ausgeblendete (Verwaltung ohne Admin, Clubs ohne Tabellen) bleiben hinten erhalten
+                  const order = [...ids, ...menuPrefs.order.filter((id) => !ids.includes(id))];
+                  updateMenuPrefs({ order, pinned: order.slice(0, MAX_PINNED) });
+                }} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
               {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge", "clubs", "invite", "admin", "einstellungen"].includes(tab)) && (

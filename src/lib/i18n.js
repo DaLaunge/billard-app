@@ -1142,6 +1142,7 @@ const TRANSLATIONS = {
     "Statt einer festen Startseite öffnet die App die Seite, auf der du zuletzt warst.": "Instead of a fixed start page the app opens the page you were on last.",
     "wieder öffnen": "Reopen",
     "Als erledigt markieren": "Mark as done",
+    "Zum Verschieben ziehen (am Handy gedrückt halten). Die obersten vier Punkte stehen unten in der Leiste.": "Drag to reorder (press and hold on a phone). The top four items form the bottom bar.",
     "Ruhend - mehr erfahren": "Dormant - learn more",
     "Ruhend": "Dormant",
     "Seit ueber 60 Tagen kein bestaetigtes Match - dieser Spieler steht nicht in der Rating-Rangliste, sein Rating bleibt aber erhalten.":

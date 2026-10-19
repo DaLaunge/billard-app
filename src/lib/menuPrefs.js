@@ -13,7 +13,12 @@ export function sanitizeMenuPrefs(raw) {
   pinned = pinned.slice(0, MAX_PINNED);
   // Die Leiste hat immer genau MAX_PINNED Plaetze: fehlende werden mit den Standard-Punkten, dann der Reihe nach aufgefuellt.
   [...DEFAULT_PINNED, ...order].forEach((id) => { if (pinned.length < MAX_PINNED && !pinned.includes(id) && id !== "admin") pinned.push(id); });
-  return { order: [...new Set(order)], pinned };
+  // Das Menue ist EINE Liste (Nutzer-Wunsch 2026-10-21): die obersten MAX_PINNED Punkte sind die Leiste unten. Gespeicherte Staende mit
+  // anderer Anheft-Auswahl werden hier einmalig so umsortiert, dass die angehefteten oben stehen.
+  const uniq = [...new Set(order)];
+  const top = uniq.filter((id) => pinned.includes(id));
+  const nextOrder = [...top, ...uniq.filter((id) => !top.includes(id))];
+  return { order: nextOrder, pinned: nextOrder.slice(0, MAX_PINNED) };
 }
 
 export function loadMenuPrefs() {

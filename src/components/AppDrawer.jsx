@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Plus, X, ChevronDown, RefreshCw, Check, Pin } from "lucide-react";
+import { Plus, X, ChevronDown, RefreshCw, Check } from "lucide-react";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -13,7 +13,7 @@ import { APP_VERSION } from "../lib/constants";
    in App.css). Alle Farben nur ueber die Theme-Variablen, damit Farbdesigns
    und eigener Akzent unveraendert greifen. Die vier Hauptpunkte stehen hier
    noch einmal, damit Seitenleiste und Leiste unten dieselben Ziele haben. */
-function Row({ e, pinned, slot, pickOpen, pinnedEntries, onPick, onSwap, go, tourOpen, onToggleTour, onTutorial }) {
+function Row({ e, pinned, slot, go, tourOpen, onToggleTour, onTutorial }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: e.id });
   const style = { transform: CSS.Translate.toString(transform), transition, opacity: isDragging ? 0.7 : 1, touchAction: "manipulation", zIndex: isDragging ? 3 : undefined };
   const Icon = e.icon;
@@ -26,28 +26,8 @@ function Row({ e, pinned, slot, pickOpen, pinnedEntries, onPick, onSwap, go, tou
         {e.badge ? <em className="app-drawer-badge">{e.badge}</em> : null}
         {isTour && <ChevronDown size={16} className={"app-drawer-chev" + (tourOpen ? " up" : "")} />}
       </button>
-      {pinned ? (
+      {pinned && (
         <span className="app-drawer-slot" title={t("Platz {n} in der Leiste", { n: slot })} aria-label={t("Platz {n} in der Leiste", { n: slot })}>{slot}</span>
-      ) : (
-        <button type="button" className={"app-drawer-pin" + (pickOpen ? " on" : "")} onClick={onPick} aria-expanded={pickOpen}
-          aria-label={t("An die Leiste anheften")} title={t("An die Leiste anheften")}>
-          <Pin size={15} />
-        </button>
-      )}
-      {!pinned && pickOpen && (
-        <div className="app-drawer-pick" role="group" aria-label={t("Welchen Punkt ersetzen?")}>
-          <span className="app-drawer-pick-title">{t("Statt welchem Punkt anheften?")}</span>
-          <div className="app-drawer-pick-chips">
-            {pinnedEntries.map((pe, i) => {
-              const PIcon = pe.icon;
-              return (
-                <button key={pe.id} type="button" className="app-drawer-pick-chip" onClick={() => onSwap(e.id, pe.id)}>
-                  <b>{i + 1}</b><PIcon size={15} /><span>{t(pe.label)}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       )}
       {isTour && tourOpen && (
         <div className="app-drawer-sub">
@@ -63,10 +43,9 @@ function Row({ e, pinned, slot, pickOpen, pinnedEntries, onPick, onSwap, go, tou
 
 export default function AppDrawer({
   open, onClose, player, onNewMatch, onTutorial, onCheckUpdate, colorOf, badgeOf, photoOf,
-  entries, pinnedIds, onChange, onSwap,
+  entries, maxPinned, onReorder,
 }) {
   const [tourOpen, setTourOpen] = useState(false);
-  const [pickFor, setPickFor] = useState(null);
   // Update-Zeile: idle | checking | found | current | error | unavailable (vorher im Profil)
   const [updState, setUpdState] = useState("idle");
   const updTimer = useRef(null);
@@ -86,22 +65,14 @@ export default function AppDrawer({
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
-  // Zwei Gruppen: oben die in der Leiste angehefteten, darunter die uebrigen. Zwischen den Gruppen ziehen
-  // heftet an bzw. loest. Gespeichert wird die Reihenfolge der angezeigten Liste.
-  const pinnedList = entries.filter((x) => pinnedIds.includes(x.id));
-  const otherList = entries.filter((x) => !pinnedIds.includes(x.id));
-  const display = [...pinnedList, ...otherList];
+  // EINE Liste (Nutzer-Wunsch): die obersten maxPinned Punkte sind die Leiste unten, alle anderen "Weitere Menues". Ziehen verschiebt wie in jeder
+  // normalen Liste - ueber die Grenze hinweg ruecken die uebrigen Punkte einfach nach (kein Tausch).
+  const pinnedList = entries.slice(0, maxPinned);
+  const otherList = entries.slice(maxPinned);
   const onDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) return;
-    const ids = display.map((x) => x.id);
-    const aPinned = pinnedIds.includes(active.id);
-    const oPinned = pinnedIds.includes(over.id);
-    if (aPinned === oPinned) { onChange(arrayMove(ids, ids.indexOf(active.id), ids.indexOf(over.id)), pinnedIds); return; }
-    // Ueber die Gruppen hinweg TAUSCHEN die beiden ihre Plaetze: die Leiste bleibt dadurch immer voll.
-    const swapped = [...ids];
-    const ai = ids.indexOf(active.id), oi = ids.indexOf(over.id);
-    swapped[ai] = over.id; swapped[oi] = active.id;
-    onChange(swapped, pinnedIds.map((x) => (x === active.id ? over.id : x === over.id ? active.id : x)));
+    const ids = entries.map((x) => x.id);
+    onReorder(arrayMove(ids, ids.indexOf(active.id), ids.indexOf(over.id)));
   };
   // EIN flaches Array mit stabilen keys: nur so behaelt React die Zeile, wenn sie zwischen den Gruppen wandert (verschachtelte Arrays waeren
   // getrennte Slots und bauten die Zeile neu auf).
@@ -121,10 +92,7 @@ export default function AppDrawer({
   drawerItems.push(<div key="label-more" className="app-drawer-label">{t("Weitere Menüs")}</div>);
   otherList.forEach((e) => {
     drawerItems.push(
-      <Row key={e.id} e={e} pinned={false} pickOpen={pickFor === e.id} pinnedEntries={pinnedList}
-        onPick={() => setPickFor((cur) => (cur === e.id ? null : e.id))}
-        onSwap={(newId, oldId) => { setPickFor(null); onSwap(newId, oldId); }}
-        go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
+      <Row key={e.id} e={e} pinned={false} go={go} tourOpen={tourOpen} onToggleTour={() => setTourOpen((v) => !v)} onTutorial={onTutorial} />
     );
   });
   if (otherList.length === 0) drawerItems.push(<p key="none" className="app-drawer-hint">{t("Alles ist an der Leiste angeheftet.")}</p>);
@@ -141,7 +109,7 @@ export default function AppDrawer({
           <button className="app-drawer-close" onClick={onClose} aria-label={t("Schließen")}><X size={18} /></button>
         </div>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={display.map((x) => x.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={entries.map((x) => x.id)} strategy={verticalListSortingStrategy}>
             {/* EIN Behaelter fuer beide Gruppen und jede Zeile mit stabilem key (418.0): zieht man einen Punkt zwischen "Menueleiste" und
                 "Weitere Menues", wird die Zeile nur verschoben und nicht neu aufgebaut. Zwei getrennte <nav> mit verschiedenen Elternknoten
                 bauten die Zeile bei jedem Tausch neu auf - ein laufender Touch verlor dabei sein Ziel, das zweite Verschieben ging nicht mehr. */}
@@ -150,7 +118,7 @@ export default function AppDrawer({
             </nav>
           </SortableContext>
         </DndContext>
-        <p className="app-drawer-hint">{t("Gedrückt halten zum Verschieben. Nadel: einen Punkt in die Leiste holen und dafür einen anderen ersetzen.")}</p>
+        <p className="app-drawer-hint">{t("Zum Verschieben ziehen (am Handy gedrückt halten). Die obersten vier Punkte stehen unten in der Leiste.")}</p>
         <button type="button" className={"app-drawer-update " + updState} data-tour="update-btn"
           disabled={updState === "checking" || updState === "found"} onClick={runUpdateCheck}>
           {updState === "found" || updState === "current" ? <Check size={18} /> : <RefreshCw size={17} className={updState === "checking" ? "spin" : ""} />}
