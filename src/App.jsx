@@ -619,12 +619,15 @@ export default function App() {
     }
     let seen;
     try { seen = new Set(JSON.parse(raw)); } catch { seen = new Set(); }
-    const fresh = earned.filter((k) => !seen.has(k));
+    // Nur mit bekanntem Katalogeintrag feiern: sonst zeigte das Popup das Ersatz-Emoji (🏅) statt des Bildes, das man spaeter als Avatar waehlt,
+    // und der Erfolg galt trotzdem als gesehen. Fehlt er noch, laeuft der Effekt nach dem naechsten Laden (catalog) erneut.
+    const fresh = earned.filter((k) => !seen.has(k) && BADGE_INFO[k]);
     if (fresh.length > 0) {
       setCelebrate(fresh);
-      try { localStorage.setItem(key, JSON.stringify(earned)); } catch {}
+      const done = earned.filter((k) => seen.has(k) || fresh.includes(k));
+      try { localStorage.setItem(key, JSON.stringify(done)); } catch {}
     }
-  }, [player, badgesByPlayer]);
+  }, [player, badgesByPlayer, catalog]);
 
   // Turnier "du bist dran"-Popup: pollt (kein Realtime, siehe CLAUDE.md),
   // ob fuer mich irgendwo eine Turnierpaarung bereitsteht - beide Spieler
@@ -904,8 +907,8 @@ export default function App() {
     setBadgesByPlayer(byPlayer);
     const cat = ct.data ?? [];
     setCatalog(cat);
-    // modulweite Map füllen, damit auch die Ball-Komponente Emojis kennt
-    Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
+    // modulweite Map füllen, damit auch die Ball-Komponente Emojis kennt (bei einem Ladefehler die alte behalten)
+    if (cat.length) Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
     cat.forEach((b) => { BADGE_INFO[b.badge_key] = { emoji: b.emoji, name: b.name, description: b.description }; });
     setConfirmations(mc.data ?? []);
     // Kein harter Fehler, falls die RPC (noch) nicht existiert (Migration nicht
