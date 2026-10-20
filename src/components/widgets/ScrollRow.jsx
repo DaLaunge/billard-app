@@ -1,5 +1,8 @@
 import { useRef, useState, useLayoutEffect, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+// Ausgefuelltes Dreieck (Nutzer-Wunsch: statt des offenen Pfeils)
+const Tri = ({ dir }) => (
+  <svg width="12" height="14" viewBox="0 0 12 14" aria-hidden="true"><path d={dir < 0 ? "M10 1 L2 7 L10 13 Z" : "M2 1 L10 7 L2 13 Z"} fill="currentColor" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" /></svg>
+);
 
 /* Waagerecht scrollbare Reihe (Reiter, Kapitel-Leiste) mit Pfeilen am Rand: ein Pfeil zeigt, dass es in diese Richtung weitergeht, und
    verschwindet, sobald man am Ende ist (Nutzer-Wunsch 417.20: "ueberall, wo man links/rechts scrollen kann"). Ein Tipp auf den Pfeil
@@ -27,8 +30,8 @@ export default function ScrollRow({ wrapClass = "", className = "", children, ..
   return (
     <div className={"scroll-wrap " + wrapClass}>
       <div ref={ref} className={className} onScroll={measure} {...rest}>{children}</div>
-      {edge.left && <button type="button" className="scroll-arrow left" tabIndex={-1} aria-hidden="true" onClick={() => go(-1)}><ChevronLeft size={16} /></button>}
-      {edge.right && <button type="button" className="scroll-arrow right" tabIndex={-1} aria-hidden="true" onClick={() => go(1)}><ChevronRight size={16} /></button>}
+      {edge.left && <button type="button" className="scroll-arrow left" tabIndex={-1} aria-hidden="true" onClick={() => go(-1)}><Tri dir={-1} /></button>}
+      {edge.right && <button type="button" className="scroll-arrow right" tabIndex={-1} aria-hidden="true" onClick={() => go(1)}><Tri dir={1} /></button>}
     </div>
   );
 }
