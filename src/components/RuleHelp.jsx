@@ -136,8 +136,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
       </div>
       <div className="rs-filters">
         {!lockDisc && <DiscPickRow discs={activeDisciplines()} value={disc} onChange={setDisc} all={ALL} />}
-      </div>
-      <div className="rs-switches">
+        <div className="rs-switches">
         <label className="settings-switch rs-switch" title={t("Aus: alphabetisch sortiert")}>
           <span className="settings-switch-label">{t("Kapitel")}</span>
           <input type="checkbox" checked={sort === "book"} onChange={(e) => pickSort(e.target.checked ? "book" : "az")} />
@@ -148,6 +147,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
           <input type="checkbox" checked={allOpen} onChange={toggleAll} />
           <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
         </label>
+        </div>
       </div>
       {chaptersBar && <SegmentBar segments={chapters.map((n) => ({ id: String(n), label: t(BOOK_CHAPTERS[n]) }))} active={activeCh} onChange={pickCh} label={t("Kapitel")} storageKey="rules" />}
       {tag && (
