@@ -5,6 +5,7 @@ import CardMenuButton from "./CardMenuButton";
 import CardCollapseButton from "./CardCollapseButton";
 import CardColumnButton from "./CardColumnButton";
 import InfoButton from "./InfoButton";
+import ScrollRow from "./ScrollRow";
 import { t } from "../../lib/i18n";
 
 /* Eine Karte, die mehrere gleichartige Karten als REITER buendelt, ohne
@@ -69,7 +70,7 @@ export default function CardDeck({
   const stacked = tabs.length > 1 && getListMode() === "stacked";
   const useSolo = solo && soloTitle;
   const tabsBar = tabs.length > 1 && !stacked && (
-    <div className={"deck-tabs" + (compact ? " compact" : "")} role="tablist">
+    <ScrollRow wrapClass="w-deck" className={"deck-tabs" + (compact ? " compact" : "")} role="tablist">
       {tabs.map((x) => (
         <button key={x.id} type="button" role="tab" aria-selected={x.id === active.id}
           className={"chip" + (x.id === active.id ? " active" : "")}
@@ -81,7 +82,7 @@ export default function CardDeck({
           {x.count != null && <span className="deck-tab-count">{x.count}</span>}
         </button>
       ))}
-    </div>
+    </ScrollRow>
   );
   return (
     <section className={"stat-block" + (inlineTabs && tabs.length > 1 && !stacked ? " deck-inline" : "")} id={id}>

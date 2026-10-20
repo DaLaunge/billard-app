@@ -6,6 +6,7 @@ import { fmtDateTime, mSide } from "../lib/format";
 import MatchProtokollTable from "./MatchProtokollTable";
 import TournamentFlag from "./TournamentFlag";
 import { exportMatchPdf } from "../lib/pdfExport";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 // Nachtraegliche Ansicht des gespeicherten Match-Protokolls, als echte
 // Tabelle (nicht als Fliesstext) - die eigentliche Tabellen-Logik steckt in
@@ -92,6 +93,7 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
           {pdfBusy ? <Loader2 size={16} className="spin" /> : <FileDown size={16} />} {t("Als PDF speichern")}
         </button>
       </div>
+      <ImprintFooter />
     </div>
   );
 }

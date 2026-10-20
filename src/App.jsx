@@ -50,12 +50,16 @@ import WinnerStaysScreen from "./components/WinnerStaysScreen";
 import Ball from "./components/Ball";
 import AppDrawer from "./components/AppDrawer";
 import ClubsScreen from "./components/ClubsScreen";
+import IdentityScreen from "./components/IdentityScreen";
+import AchievementsScreen from "./components/AchievementsScreen";
+import NumbersScreen from "./components/NumbersScreen";
+import SettingsScreen from "./components/SettingsScreen";
 import RulesScreen from "./components/RulesScreen";
 import AvatarSheet from "./components/AvatarSheet";
 import { applyListPrefs, hasListModeChoice, clearListPrefs, storeListMode } from "./lib/uiPrefs";
 import ListChoiceDialog from "./components/ListChoiceDialog";
 import BottomBar from "./components/BottomBar";
-import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED } from "./lib/menuPrefs";
+import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED, START_TABS } from "./lib/menuPrefs";
 import ConfirmHost from "./components/ConfirmHost";
 import { rpcRetry } from "./lib/rpcRetry";
 import { EmojiText } from "./components/Emoji";
@@ -615,12 +619,15 @@ export default function App() {
     }
     let seen;
     try { seen = new Set(JSON.parse(raw)); } catch { seen = new Set(); }
-    const fresh = earned.filter((k) => !seen.has(k));
+    // Nur mit bekanntem Katalogeintrag feiern: sonst zeigte das Popup das Ersatz-Emoji (🏅) statt des Bildes, das man spaeter als Avatar waehlt,
+    // und der Erfolg galt trotzdem als gesehen. Fehlt er noch, laeuft der Effekt nach dem naechsten Laden (catalog) erneut.
+    const fresh = earned.filter((k) => !seen.has(k) && BADGE_INFO[k]);
     if (fresh.length > 0) {
       setCelebrate(fresh);
-      try { localStorage.setItem(key, JSON.stringify(earned)); } catch {}
+      const done = earned.filter((k) => seen.has(k) || fresh.includes(k));
+      try { localStorage.setItem(key, JSON.stringify(done)); } catch {}
     }
-  }, [player, badgesByPlayer]);
+  }, [player, badgesByPlayer, catalog]);
 
   // Turnier "du bist dran"-Popup: pollt (kein Realtime, siehe CLAUDE.md),
   // ob fuer mich irgendwo eine Turnierpaarung bereitsteht - beide Spieler
@@ -797,11 +804,13 @@ export default function App() {
         // Faengt veraltete gespeicherte Werte ab (z.B. "rang" von vor dem
         // Uebersicht/Statistik-Menue-Umbau) - sonst landet man auf einem
         // tab-Wert, den kein Screen mehr rendert (leere Seite mit Tabbar).
-        if (!["stats", "turnier", "live", "profil"].includes(target)) target = null;
+        if (!START_TABS.includes(target)) target = null;
         if (urlNavAtStart) {
           navReplace(urlNavAtStart);
           try { window.history.replaceState(urlNavAtStart, "", window.location.pathname); } catch { /* ignore */ }
-        } else if (target && target !== "stats") navReplace({ tab: target });
+        } else if (target === "settings") { navReplace({ tab: "einstellungen" }); }
+        else if (target === "admin" && data.role !== "admin") { /* keine Admin-Startseite fuer Nicht-Admins */ }
+        else if (target && target !== "stats") navReplace({ tab: target });
         // Trigger D: direkt nachdem sich der Spieler zum ersten Mal in
         // diesem Seitenaufruf angemeldet hat (egal ob frischer Login oder
         // eine bestehende Session, die hier zum ersten Mal geladen wird) -
@@ -898,8 +907,8 @@ export default function App() {
     setBadgesByPlayer(byPlayer);
     const cat = ct.data ?? [];
     setCatalog(cat);
-    // modulweite Map füllen, damit auch die Ball-Komponente Emojis kennt
-    Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
+    // modulweite Map füllen, damit auch die Ball-Komponente Emojis kennt (bei einem Ladefehler die alte behalten)
+    if (cat.length) Object.keys(BADGE_INFO).forEach((k) => delete BADGE_INFO[k]);
     cat.forEach((b) => { BADGE_INFO[b.badge_key] = { emoji: b.emoji, name: b.name, description: b.description }; });
     setConfirmations(mc.data ?? []);
     // Kein harter Fehler, falls die RPC (noch) nicht existiert (Migration nicht
@@ -987,7 +996,9 @@ export default function App() {
   const [keepAwakeDefault, setKeepAwakeDefaultState] = useState(getKeepAwake);
   const setKeepAwakeDefault = useCallback((on) => { setKeepAwakeDefaultState(on); storeKeepAwake(on); }, []);
   const [keepAwakeNow, setKeepAwakeNow] = useState(keepAwakeDefault);
-  const inLiveEntry = LIVE_ENTRY_TABS.includes(tab);
+  // Bildschirm-an gilt in der Live-Eingabe UND solange ein Turnier offen ist (turnierdetail: man wartet dort auf die naechste Partie, 417.9);
+  // das Turnier ist bewusst KEIN LIVE_ENTRY_TAB (es haelt keinen ungespeicherten Stand, Updates duerfen dort einspielen).
+  const inLiveEntry = LIVE_ENTRY_TABS.includes(tab) || tab === "turnierdetail";
   const wasInLiveEntry = useRef(inLiveEntry);
   useEffect(() => {
     if (inLiveEntry && !wasInLiveEntry.current) setKeepAwakeNow(keepAwakeDefault);
@@ -1003,12 +1014,10 @@ export default function App() {
   const setHideTabbarPref = useCallback((on) => { setHideTabbarPrefState(on); storeHideTabbar(on); }, []);
   const [contentEl, setContentEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [openSettings, setOpenSettings] = useState(false);
   const clubsMenu = useClubData();
   // offene Club-Post (Einladungen an mich, Anfragen an meine Clubs) als Zaehler am Menuepunkt
   const clubPostCount = (clubsMenu.requests || []).filter((r) => r.status === "pending" && ((r.kind === "invite" && r.player_id === player?.id)
     || (r.kind === "request" && ["owner", "admin"].includes(roleIn(clubsMenu, r.club_id, player?.id))))).length;
-  const [openSeg, setOpenSeg] = useState(null);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [listChoiceOpen, setListChoiceOpen] = useState(false);
   useEffect(() => { applyListPrefs(); }, []);
@@ -1041,14 +1050,6 @@ export default function App() {
     updateMenuPrefs(sanitizeMenuPrefs(null));
     try { Object.keys(localStorage).filter((k) => k.startsWith("segOrder:") || k === "statSeg" || k === "profilSeg").forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
   };
-  // Anheften per Auswahl: der neue Punkt nimmt den Platz des gewaehlten ein, der ersetzte tauscht in die Gruppe "Weitere Menues".
-  const swapPin = (newId, oldId) => {
-    const order = [...menuPrefs.order];
-    const ai = order.indexOf(newId), oi = order.indexOf(oldId);
-    if (ai === -1 || oi === -1) return;
-    order[ai] = oldId; order[oi] = newId;
-    updateMenuPrefs({ order, pinned: menuPrefs.pinned.map((x) => (x === oldId ? newId : x)) });
-  };
   // Eigene Herunterziehen-Geste, NUR in der iPhone-Home-Bildschirm-App
   // (dort gibt es keine native) - siehe lib/usePullToRefresh.js.
   const ptr = usePullToRefresh(contentEl);
@@ -1059,8 +1060,8 @@ export default function App() {
   // hinter dem Zwangs-Update-Overlay.
   // Wischreihenfolge = die in der Leiste unten angehefteten Menuepunkte in ihrer Reihenfolge (nicht mehr fest Statistik <
   // Turniere < Live < Profil): wer die Leiste umbaut, wischt auch in dieser Reihenfolge. Nur Punkte, die ein eigener
-  // Bildschirm sind, zaehlen (Einstellungen/Tutorial sind Aktionen); Unterseiten (Fremdprofil, Turnierdetail, ...) gehen per Wisch zurueck.
-  const SWIPE_TAB_OF = { stats: "stats", turnier: "turnier", live: "live", profil: "profil", achievements: "erfolge", mystats: "zahlen", regeln: "regeln", clubs: "clubs", invite: "invite", admin: "admin" };
+  // Bildschirm sind, zaehlen (das Tutorial ist eine Aktion); Unterseiten (Fremdprofil, Turnierdetail, ...) gehen per Wisch zurueck.
+  const SWIPE_TAB_OF = { stats: "stats", turnier: "turnier", live: "live", profil: "profil", achievements: "erfolge", mystats: "zahlen", regeln: "regeln", clubs: "clubs", invite: "invite", settings: "einstellungen", admin: "admin" };
   const swipeIds = menuPrefs.order.filter((id) => menuPrefs.pinned.includes(id) && SWIPE_TAB_OF[id] && (id !== "admin" || player?.role === "admin"));
   const swipeTabs = swipeIds.map((id) => SWIPE_TAB_OF[id]);
   usePageTransition(contentEl, tab, swipeTabs);
@@ -1071,17 +1072,11 @@ export default function App() {
     if (!target || target === tab) return;
     if (target === "turnier") openTurniereMenu(); else navPush({ tab: target });
   };
-  // Die Einstellungen (Profil -> Aussehen) sind ein Zustand INNERHALB des Profils, kein eigener Tab: solange sie offen
-  // sind, schliesst jede Wischgeste sie wieder, statt zum Nachbar-Tab zu springen.
-  const [profilEdit, setProfilEdit] = useState(false);
-  const [closeEditTick, setCloseEditTick] = useState(0);
-  const closeProfilEdit = () => setCloseEditTick((n) => n + 1);
-  const inSettings = tab === "profil" && profilEdit;
   useSwipeNav(contentEl, {
     enabled: !!player && !mustUpdate && !LIVE_ENTRY_TABS.includes(tab),
-    onBack: inSettings ? closeProfilEdit : swipeIdx === -1 ? () => window.history.back() : undefined,
-    onPrev: inSettings ? closeProfilEdit : swipeIdx > 0 ? () => goSwipe(swipeIdx - 1) : undefined,
-    onNext: inSettings ? closeProfilEdit : swipeIdx !== -1 && swipeIdx < swipeTabs.length - 1 ? () => goSwipe(swipeIdx + 1) : undefined,
+    onBack: swipeIdx === -1 ? () => window.history.back() : undefined,
+    onPrev: swipeIdx > 0 ? () => goSwipe(swipeIdx - 1) : undefined,
+    onNext: swipeIdx !== -1 && swipeIdx < swipeTabs.length - 1 ? () => goSwipe(swipeIdx + 1) : undefined,
   });
 
   // --- Benachrichtigungen (siehe lib/notifications.js) -------------------
@@ -1557,19 +1552,18 @@ export default function App() {
     stats: { icon: BarChart3, label: "Statistik", tour: "tab-stats", on: tab === "stats" || tab === "fremdprofil", run: () => navPush({ tab: "stats" }), badge: pendingForMe.length },
     turnier: { icon: Trophy, label: "Turniere", tour: "tab-turnier", on: tab === "turnier" || tab === "turnierdetail" || tab === "winnerstays", run: openTurniereMenu, badge: tourneyReadyList.length + wsReadyList.length },
     live: { icon: Radio, label: "Live", tour: "tab-live", on: tab === "live", run: () => navPush({ tab: "live" }), badge: pings.length + openChallengesAll.length + plannings.length },
-    profil: { icon: User, label: "Identität", tour: "tab-profil", on: (tab === "profil" && !inSettings) || tab === "profilvorschau", run: () => { closeProfilEdit(); navPush({ tab: "profil" }); },
-      badge: openChallengesToMe.length > 0 ? "!" : (player?.role === "admin" ? unconfirmed.length : 0) },
+    profil: { icon: User, label: "Identität", tour: "tab-profil", on: tab === "profil" || tab === "profilvorschau", run: () => navPush({ tab: "profil" }) },
     achievements: { icon: Award, label: "Meine Erfolge", tour: "tab-erfolge", on: tab === "erfolge", run: () => navPush({ tab: "erfolge" }) },
     mystats: { icon: Activity, label: "Meine Zahlen", tour: "tab-zahlen", on: tab === "zahlen", run: () => navPush({ tab: "zahlen" }) },
     invite: { icon: UserPlus, label: "Spieler einladen", on: tab === "invite", run: () => navPush({ tab: "invite" }) },
     clubs: { icon: Users, label: "Clubs", tour: "clubs-entry", on: tab === "clubs", run: () => navPush({ tab: "clubs" }), badge: clubPostCount },
     regeln: { icon: BookOpen, label: "Regelkunde", on: tab === "regeln", run: () => navPush({ tab: "regeln" }) },
     tutorial: { icon: GraduationCap, label: "Tutorial", on: false, run: () => startTutorial(null) },
-    settings: { icon: Settings, label: "Einstellungen", on: inSettings, run: () => { setOpenSettings(true); navPush({ tab: "profil" }); } },
-    admin: { icon: Shield, label: "Verwaltung", on: tab === "admin", run: () => navPush({ tab: "admin" }) },
+    settings: { icon: Settings, label: "Einstellungen", on: tab === "einstellungen", run: () => navPush({ tab: "einstellungen" }) },
+    admin: { icon: Shield, label: "Verwaltung", on: tab === "admin", run: () => navPush({ tab: "admin" }), badge: player?.role === "admin" ? unconfirmed.length : 0 },
   };
   const orderedEntries = menuPrefs.order.filter((id) => (id !== "admin" || player?.role === "admin") && (id !== "clubs" || clubsMenu.loaded)).map((id) => ({ id, ...menuMeta[id] }));
-  const pinnedEntries = orderedEntries.filter((e) => menuPrefs.pinned.includes(e.id));
+  const pinnedEntries = orderedEntries.slice(0, MAX_PINNED);
 
   return (
     <div className="stage">
@@ -1771,12 +1765,15 @@ export default function App() {
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} player={player}
                 onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onCheckUpdate={requestUpdateNow}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                entries={orderedEntries} pinnedIds={menuPrefs.pinned}
-                onChange={(order, pinned) => updateMenuPrefs({ order, pinned })}
-                onSwap={swapPin} />
+                entries={orderedEntries} maxPinned={MAX_PINNED}
+                onReorder={(ids) => {
+                  // sichtbare Punkte in neuer Reihenfolge; ausgeblendete (Verwaltung ohne Admin, Clubs ohne Tabellen) bleiben hinten erhalten
+                  const order = [...ids, ...menuPrefs.order.filter((id) => !ids.includes(id))];
+                  updateMenuPrefs({ order, pinned: order.slice(0, MAX_PINNED) });
+                }} />
             )}
             <main ref={setContentEl} className={"content" + (tab === "match" ? " no-tabbar" : "") + ((tourneyReadyList.length > 0 || wsReadyList.length > 0) && tab !== "match" ? " has-table-banner" : "")}>
-              {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge", "clubs", "invite", "admin"].includes(tab)) && (
+              {(MAIN_TABS.includes(tab) || ["regeln", "zahlen", "erfolge", "clubs", "invite", "admin", "einstellungen"].includes(tab)) && (
                 <button data-tour="burger" className="burger-btn" onClick={() => setDrawerOpen(true)} aria-label={t("Menü")} aria-expanded={drawerOpen}>
                   <Menu size={20} />
                 </button>
@@ -1822,7 +1819,8 @@ export default function App() {
                     if (matchTournamentCtx) { allowLeaveMatchRef.current = true; window.history.back(); return; }
                     let target = player.start_tab;
                     if (target === "last") { try { target = localStorage.getItem("lastMainTab"); } catch { target = null; } }
-                    navReplace({ tab: MAIN_TABS.includes(target) ? target : "stats" });
+                    if (target === "settings") { navReplace({ tab: "einstellungen" }); return; }
+                    navReplace({ tab: START_TABS.includes(target) && !(target === "admin" && player.role !== "admin") ? target : "stats" });
                   }} />
                 );
               })()}
@@ -1846,27 +1844,35 @@ export default function App() {
                 // zurueck (z.B. noch unbestaetigtes eigenes Match).
                 <MatchProtokollScreen match={matches.find((mm) => mm.id === protokollMatch.id) || protokollMatch} me={player} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
               )}
-              {(tab === "profil" || tab === "zahlen" || tab === "erfolge") && (
-                <ProfilScreen key={tab} mode={tab === "profil" ? "identity" : tab} onPreview={() => navPush({ tab: "profilvorschau" })} onOpenAchievements={() => navPush({ tab: "erfolge" })} onOpenNumbers={() => navPush({ tab: "zahlen" })} onEditChange={setProfilEdit} closeEditTick={closeEditTick} nickname={player.nickname} matches={matches} rangliste={rangliste}
-                  onBack={null} isMe onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                  players={players} meRow={player} onSaveProfile={saveProfile}
-                  earnedBadges={badgesOfId(player.id)} onSelectBadge={selectBadge} catalog={catalog} challenges={challenges}
-                  achievementCounters={achievementCounters} onStartTutorial={startTutorial}
-                  openSettings={openSettings} onSettingsOpened={() => setOpenSettings(false)} onOpenClubs={() => navPush({ tab: "clubs" })}
-                  openSeg={openSeg} onSegOpened={() => setOpenSeg(null)} onResetMenu={resetMenuLocal}
-                  onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
-                  lang={lang} onLang={changeLang}
-                  updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval} onCheckUpdate={requestUpdateNow}
+              {tab === "profil" && (
+                <IdentityScreen nickname={player.nickname} matches={matches} rangliste={rangliste} players={players} challenges={challenges}
+                  achievementCounters={achievementCounters} catalog={catalog} earnedBadges={badgesOfId(player.id)} meRow={player}
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                  onOpenSettings={() => navPush({ tab: "einstellungen" })} onPreview={() => navPush({ tab: "profilvorschau" })}
+                  onOpenAchievements={() => navPush({ tab: "erfolge" })} onOpenNumbers={() => navPush({ tab: "zahlen" })}
+                  onOpenClubs={() => navPush({ tab: "clubs" })} onInvite={() => navPush({ tab: "invite" })} onOpenProfile={openProfile} />
+              )}
+              {tab === "erfolge" && (
+                <AchievementsScreen nickname={player.nickname} matches={matches} players={players} challenges={challenges}
+                  achievementCounters={achievementCounters} catalog={catalog} earnedBadges={badgesOfId(player.id)} meRow={player}
+                  onSelectBadge={selectBadge} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
+              )}
+              {tab === "zahlen" && (
+                <NumbersScreen nickname={player.nickname} matches={matches} rangliste={rangliste} players={players} challenges={challenges}
+                  catalog={catalog} earnedBadges={badgesOfId(player.id)} meRow={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                  onOpenProfile={openProfile} onSetCardLayout={setCardLayout} toast={toast} />
+              )}
+              {tab === "einstellungen" && (
+                <SettingsScreen nickname={player.nickname} players={players} meRow={player} photoOf={photoOf} toast={toast}
+                  lang={lang} onLang={changeLang} onSaveProfile={saveProfile} onSelectBadge={selectBadge} onSetTheme={setTheme}
+                  onSetStartTab={setStartTab} onResetCardLayout={resetCardLayout} onSetCardLayout={setCardLayout} onResetMenu={resetMenuLocal}
+                  onOpenAdmin={() => navPush({ tab: "admin" })} onLogout={logout} onStartTutorial={startTutorial}
+                  updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval}
                   keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
                   hideTabbar={hideTabbarPref} onSetHideTabbar={setHideTabbarPref}
                   notifyMode={notifyMode} onSetNotifyMode={setNotifyMode}
                   pendingPopup={pendingPopupOn} onSetPendingPopup={setPendingPopup}
-                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} onReload={loadData}
-                  onSetTheme={setTheme}
-                  onSetStartTab={setStartTab}
-                  onResetCardLayout={resetCardLayout}
-                  onSetCardLayout={setCardLayout}
-                  onOpenProfile={openProfile} />
+                  onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} />
               )}
               {tab === "profilvorschau" && (
                 <ProfilScreen nickname={player.nickname} matches={matches} rangliste={rangliste}
@@ -1910,7 +1916,8 @@ export default function App() {
               {tab === "turnierdetail" && tournamentId && (
                 <TurnierRasterScreen tournamentId={tournamentId} me={player} players={players} matches={matches} toast={toast}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onReload={loadData} onBack={() => navReplace({ tab: "turnier" })}
-                  onReportTournamentMatch={(ctx) => navPush({ tab: "match", matchTournamentCtx: ctx })} />
+                  onReportTournamentMatch={(ctx) => navPush({ tab: "match", matchTournamentCtx: ctx })}
+                  keepAwake={keepAwakeNow} onSetKeepAwake={setKeepAwakeNow} />
               )}
               {tab === "winnerstays" && winnerStaysId && (
                 <WinnerStaysScreen sessionId={winnerStaysId} me={player} players={players} matches={matches} toast={toast}

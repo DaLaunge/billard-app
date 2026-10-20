@@ -2636,7 +2636,9 @@ button.break-slot { cursor: pointer; }
 .rs-activetag .chip { display: inline-flex; align-items: center; gap: 6px; }
 .rs-activetag-n { font-size: 12px; opacity: .75; }
 .rs-filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.rs-sort { display: inline-flex; gap: 6px; }
+.rs-switches { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; }
+.rs-sortseg { display: inline-flex; gap: 4px; }
+.rs-switch { display: inline-flex; align-items: center; gap: 8px; margin: 0; width: auto; }
 .rs-chapter { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
 .rs-chapter-btn, .rs-case-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 9px 10px; border: 0; border-radius: 10px;
   background: var(--surface-btn); color: inherit; font: inherit; text-align: left; cursor: pointer; }
@@ -3370,4 +3372,47 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 @media (min-width: 900px) {
   .invite-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 24px; }
   .invite-actions { padding-top: 6px; }
+}
+
+/* Meine Erfolge: die angeheftete Profilkugel (oben rechts) darf keinen Knopf und keinen Zaehler verdecken - Kartenkopf und Kategorie-Kopf
+   lassen rechts Platz fuer sie (416.2). */
+.screen:has(.pf-head-avatar-sticky) .stat-block:not(.is-maximized) > .stat-block-head,
+.screen:has(.pf-head-avatar-sticky) .stat-block .badge-cat-head { padding-right: 64px; }
+
+/* Startseiten-Auswahl als Grafik der Menueleiste (StartPagePicker.jsx, 415.19) */
+.start-bar { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 8px 6px; margin: 4px 0 10px;
+  background: var(--felt-3); border: 1px solid var(--line); border-radius: 22px; transition: opacity .2s ease, filter .2s ease; }
+.start-bar.off { opacity: .38; filter: grayscale(1); }
+.start-bar-item { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border: 2px solid transparent;
+  border-radius: 14px; background: none; color: var(--ivory-dim); font: inherit; font-size: 11px; cursor: pointer; }
+.start-bar-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.start-bar-item.on { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.start-bar-item:disabled { cursor: default; }
+.start-bar-fab { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--ivory); color: #262220; opacity: .85; }
+
+/* Eigene Tickets: erledigte gedaempft mit Haken, Knopf "Als erledigt markieren" unter dem Verlauf (417.2) */
+.ticket-item.done .ticket-head { opacity: .55; }
+.ticket-done-ico { color: var(--win); flex: none; }
+.ticket-actions { display: flex; justify-content: flex-end; padding: 6px 0 10px; }
+
+/* Jeder Menue-Bildschirm ist ein eigenes Bauteil mit EINEM senkrechten Stapel (418.0): gleicher Abstand wie ueberall (--card-gap), die Karten tragen keinen eigenen Aussenabstand. */
+.screen-stack { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
+.screen-stack > .stat-block, .screen-stack > .chap > .stat-block { margin-bottom: 0; }
+
+/* Scroll-Pfeile an waagerecht scrollbaren Reihen (widgets/ScrollRow.jsx): erscheinen nur, wo es weitergeht */
+.scroll-wrap { position: relative; min-width: 0; }
+.scroll-wrap.w-seg { margin: 0 0 var(--card-gap); }
+.scroll-wrap.w-seg > .seg-bar { margin: 0; }
+.scroll-wrap.w-deck { margin: 2px 0 10px; }
+.scroll-wrap.w-deck > .deck-tabs { margin: 0; }
+.seg-slot .scroll-wrap.w-seg { margin-bottom: 0; }
+.scroll-arrow { position: absolute; top: 1px; bottom: 1px; width: 30px; border: 0; padding: 0; display: grid; place-items: center;
+  color: var(--accent); cursor: pointer; z-index: 2; }
+.scroll-arrow.left { left: 1px; border-radius: 999px 0 0 999px; background: linear-gradient(to right, var(--felt-2) 55%, transparent); justify-items: start; padding-left: 5px; }
+.scroll-arrow.right { right: 1px; border-radius: 0 999px 999px 0; background: linear-gradient(to left, var(--felt-2) 55%, transparent); justify-items: end; padding-right: 5px; }
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-arrow.right svg { animation: scroll-nudge-r 1.6s ease-in-out infinite; }
+  .scroll-arrow.left svg { animation: scroll-nudge-l 1.6s ease-in-out infinite; }
+  @keyframes scroll-nudge-r { 50% { transform: translateX(3px); } }
+  @keyframes scroll-nudge-l { 50% { transform: translateX(-3px); } }
 }

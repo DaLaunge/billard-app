@@ -150,7 +150,7 @@ export const CARD_SCREENS = [
     // saessen beide Karten je nach Ausblendung ploetzlich uebereinander in
     // einer Spalte und die anderen blieben leer.
     decks: [
-      { id: "zahlen", label: "Meine Zahlen", ids: ["ratings", "rekorde", "headToHead", "tempo", "fun"] },
+      { id: "zahlen", label: "Meine Zahlen", ids: ["ratings", "rekorde", "headToHead", "fun"] },
     ],
     cards: [
       // "Erfolge (Fortschritt)" ("Als Naechstes") ist seit 2026-10-03 keine eigene
@@ -160,8 +160,7 @@ export const CARD_SCREENS = [
       { id: "ratings", label: "Ratings nach Disziplin", col: "left" },
       { id: "rekorde", label: "Rekorde", col: "left" },
       { id: "headToHead", label: "Head-to-Head", col: "left" },
-      { id: "tempo", label: "Spielgeschwindigkeit", col: "left" },
-      { id: "fun", label: "Fun-Zahlen", col: "left" },
+      { id: "fun", label: "Fun & Tempo", col: "left" },
       // "Anmeldung & Sicherheit", "Feedback" und "Meine Tickets" waren bis
       // 2026-09-25 ebenfalls frei anordenbare Karten hier. Sie stehen jetzt
       // fest unter "Profil bearbeiten": das Profil selbst zeigt nur noch,

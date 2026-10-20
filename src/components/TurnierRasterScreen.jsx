@@ -15,6 +15,8 @@ import { exportTurnierProtocolPdf } from "./turnierBerichtPdf";
 import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout";
 import { rpcRetry } from "../lib/rpcRetry";
 import Emoji from "./Emoji";
+import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 const POLL_MS = 8000;
 
@@ -24,7 +26,7 @@ const bracketRank = { main: 0, winners: 0, losers: 1, final: 2 };
 // und pollt periodisch (kein Supabase Realtime im Einsatz, siehe CLAUDE.md) -
 // bewusste Ausnahme vom sonstigen "alles ueber App.jsx loadData()"-Muster,
 // weil das nur aktiv ist waehrend diese Seite offen ist.
-export default function TurnierRasterScreen({ tournamentId, me, players, matches, toast, onBack, colorOf, badgeOf, photoOf, onReload, onReportTournamentMatch }) {
+export default function TurnierRasterScreen({ tournamentId, me, players, matches, toast, onBack, colorOf, badgeOf, photoOf, onReload, onReportTournamentMatch, keepAwake, onSetKeepAwake }) {
   const [tour, setTour] = useState(null);
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
@@ -475,6 +477,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         <header className="screen-head with-back">
           <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
           <h2>{tour.name}</h2>
+          {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
         </header>
         <p className="hint" style={{ marginTop: -6 }}>
           {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {t("Anmeldung offen")}
@@ -625,6 +628,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{tour.name}</h2>
+        {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
         {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {tour.status === "finished" ? t("beendet") : t("läuft")}
@@ -924,6 +928,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           </div>
         </div>
       )}
+      <ImprintFooter />
     </div>
   );
 }
