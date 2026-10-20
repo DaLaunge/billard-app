@@ -1601,6 +1601,7 @@ const TRANSLATIONS = {
     "Wie im Regelwerk": "As in the rulebook",
     "Alphabetisch": "Alphabetical",
     "Aus: alphabetisch sortiert": "Off: sorted alphabetically",
+    "Alle aufgeklappt": "Expand all",
     "1 · Allgemeine Regeln": "1 · General rules",
     "2 · Begriffe": "2 · Definitions",
     "3 · Fouls": "3 · Fouls",

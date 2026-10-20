@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { Search, X, ChevronRight, ChevronsDownUp, ChevronsUpDown, Tag } from "lucide-react";
+import { Search, X, ChevronRight, Tag } from "lucide-react";
 import { RULE_CASES, ALL_DISCS, HEYBALL_RULES, HEYBALL_SOURCE, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS, displayTitle, TAGS } from "../lib/rules";
 import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
@@ -136,15 +136,18 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
       </div>
       <div className="rs-filters">
         {!lockDisc && <DiscPickRow discs={activeDisciplines()} value={disc} onChange={setDisc} all={ALL} />}
-        <span className="rs-sort" role="group" aria-label={t("Sortierung")}>
-          <label className="settings-switch rs-sort-switch" title={t("Aus: alphabetisch sortiert")}>
-            <input type="checkbox" checked={sort === "book"} onChange={(e) => pickSort(e.target.checked ? "book" : "az")} />
-            <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
-            <span className="settings-switch-label">{sort === "book" ? t("Kapitel") : t("Alphabetisch")}</span>
-          </label>
-          {!grouped && <button type="button" className="chip chip-icon" onClick={toggleAll} title={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}
-            aria-label={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}>{allOpen ? <ChevronsDownUp size={16} /> : <ChevronsUpDown size={16} />}</button>}
-        </span>
+      </div>
+      <div className="rs-switches">
+        <label className="settings-switch rs-switch" title={t("Aus: alphabetisch sortiert")}>
+          <span className="settings-switch-label">{t("Kapitel")}</span>
+          <input type="checkbox" checked={sort === "book"} onChange={(e) => pickSort(e.target.checked ? "book" : "az")} />
+          <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+        </label>
+        <label className="settings-switch rs-switch">
+          <span className="settings-switch-label">{t("Alle aufgeklappt")}</span>
+          <input type="checkbox" checked={allOpen} onChange={toggleAll} />
+          <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+        </label>
       </div>
       {chaptersBar && <SegmentBar segments={chapters.map((n) => ({ id: String(n), label: t(BOOK_CHAPTERS[n]) }))} active={activeCh} onChange={pickCh} label={t("Kapitel")} storageKey="rules" />}
       {tag && (
