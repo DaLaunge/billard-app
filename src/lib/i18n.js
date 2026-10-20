@@ -1600,6 +1600,7 @@ const TRANSLATIONS = {
     "{n} Regeln": "{n} rules",
     "Wie im Regelwerk": "As in the rulebook",
     "Alphabetisch": "Alphabetical",
+    "Aus: alphabetisch sortiert": "Off: sorted alphabetically",
     "1 · Allgemeine Regeln": "1 · General rules",
     "2 · Begriffe": "2 · Definitions",
     "3 · Fouls": "3 · Fouls",

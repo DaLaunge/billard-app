@@ -2636,7 +2636,7 @@ button.break-slot { cursor: pointer; }
 .rs-activetag .chip { display: inline-flex; align-items: center; gap: 6px; }
 .rs-activetag-n { font-size: 12px; opacity: .75; }
 .rs-filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.rs-sort { display: inline-flex; gap: 6px; }
+.rs-sort { display: inline-flex; gap: 10px; align-items: center; }
 .rs-chapter { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
 .rs-chapter-btn, .rs-case-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 9px 10px; border: 0; border-radius: 10px;
   background: var(--surface-btn); color: inherit; font: inherit; text-align: left; cursor: pointer; }

@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { Search, X, ArrowDownAZ, ListOrdered, ChevronRight, ChevronsDownUp, ChevronsUpDown, Tag } from "lucide-react";
+import { Search, X, ChevronRight, ChevronsDownUp, ChevronsUpDown, Tag } from "lucide-react";
 import { RULE_CASES, ALL_DISCS, HEYBALL_RULES, HEYBALL_SOURCE, casesForDisc, searchCases, sourceLine, setsOf, setFor, sortCases, bookChapter, BOOK_CHAPTERS, displayTitle, TAGS } from "../lib/rules";
 import { t } from "../lib/i18n";
 import RuleScene from "./widgets/RuleScene";
@@ -137,10 +137,11 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
       <div className="rs-filters">
         {!lockDisc && <DiscPickRow discs={activeDisciplines()} value={disc} onChange={setDisc} all={ALL} />}
         <span className="rs-sort" role="group" aria-label={t("Sortierung")}>
-          <button type="button" className={"chip chip-icon" + (sort === "book" ? " active" : "")} onClick={() => pickSort("book")}
-            title={t("Wie im Regelwerk")} aria-label={t("Wie im Regelwerk")} aria-pressed={sort === "book"}><ListOrdered size={16} /></button>
-          <button type="button" className={"chip chip-icon" + (sort === "az" ? " active" : "")} onClick={() => pickSort("az")}
-            title={t("Alphabetisch")} aria-label={t("Alphabetisch")} aria-pressed={sort === "az"}><ArrowDownAZ size={16} /></button>
+          <label className="settings-switch rs-sort-switch" title={t("Aus: alphabetisch sortiert")}>
+            <input type="checkbox" checked={sort === "book"} onChange={(e) => pickSort(e.target.checked ? "book" : "az")} />
+            <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+            <span className="settings-switch-label">{sort === "book" ? t("Kapitel") : t("Alphabetisch")}</span>
+          </label>
           {!grouped && <button type="button" className="chip chip-icon" onClick={toggleAll} title={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}
             aria-label={allOpen ? t("Alle zuklappen") : t("Alle aufklappen")}>{allOpen ? <ChevronsDownUp size={16} /> : <ChevronsUpDown size={16} />}</button>}
         </span>
