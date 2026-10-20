@@ -1599,6 +1599,8 @@ const TRANSLATIONS = {
     "Nur Regeln mit diesem Schlagwort zeigen": "Show only rules with this tag",
     "{n} Regeln": "{n} rules",
     "Wie im Regelwerk": "As in the rulebook",
+    "Themen": "Topics",
+    "Nach Themen, z. B. Foul oder Anstoß": "By topic, e.g. foul or break",
     "Alphabetisch": "Alphabetical",
     "Aus: alphabetisch sortiert": "Off: sorted alphabetically",
     "Alle aufgeklappt": "Expand all",
