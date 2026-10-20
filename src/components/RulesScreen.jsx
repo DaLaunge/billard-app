@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { t } from "../lib/i18n";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 const RuleHelp = lazy(() => import("./RuleHelp"));
 
@@ -15,6 +16,7 @@ export default function RulesScreen({ onViewRule, isAdmin }) {
       <Suspense fallback={<p className="hint">{t("Lädt …")}</p>}>
         <RuleHelp onlyReleased={!isAdmin} onView={onViewRule} />
       </Suspense>
+      <ImprintFooter />
     </div>
   );
 }

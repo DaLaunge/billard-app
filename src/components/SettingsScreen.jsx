@@ -19,6 +19,7 @@ import { appConfirm } from "../lib/confirmDialog";
 import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
 import { useCardLayout } from "../lib/useCardLayout";
 import { START_TABS } from "../lib/menuPrefs";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 /* EINSTELLUNGEN als eigener Bildschirm (Tab "einstellungen", 417.5; vorher ein Zustand von ProfilScreen). Kapitel: Profil, Aussehen, Allgemein,
    Dieses Geraet, Konto & Hilfe (lib/useChapters.jsx). Alle Auswahlen wirken sofort und werden sofort gespeichert. */
@@ -533,6 +534,8 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
             {t("Meine Daten löschen")}
           </button>
         </div>
+
+        <ImprintFooter />
 
         {deleteStep === 1 && (
           <div className="modal-overlay" onClick={() => setDeleteStep(0)}>

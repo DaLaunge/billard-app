@@ -14,6 +14,7 @@ import { EmojiText } from "./Emoji";
 import ClubTag from "./widgets/ClubTag";
 import { useClubData, reloadClubs } from "../lib/clubStore";
 import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
@@ -707,6 +708,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
       </section></Chap>
       </div>
 
+      <ImprintFooter />
     </div>
   );
 }

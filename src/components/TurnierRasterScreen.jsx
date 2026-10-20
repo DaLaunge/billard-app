@@ -16,6 +16,7 @@ import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout
 import { rpcRetry } from "../lib/rpcRetry";
 import Emoji from "./Emoji";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 const POLL_MS = 8000;
 
@@ -927,6 +928,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           </div>
         </div>
       )}
+      <ImprintFooter />
     </div>
   );
 }

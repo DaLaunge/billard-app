@@ -5,6 +5,7 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
 import { myCodeLink } from "../lib/inviteLink";
+import ImprintFooter from "./widgets/ImprintFooter";
 
 export default function InviteScreen({ me, onBack, toast }) {
   const [code, setCode] = useState(null);
@@ -101,6 +102,7 @@ export default function InviteScreen({ me, onBack, toast }) {
       <p className="hint">{t("Dieser Code bleibt gültig – es können also mehrere Leute gleichzeitig damit beitreten. Wer damit beitritt, wird dir als geworbener Spieler gutgeschrieben; dafür gibt es eigene Erfolge. Mit dem Symbol unter dem Code bekommst du einen frischen Code, der alte gilt dann nicht mehr.")}</p>
       </div>
       </div>
+      <ImprintFooter />
     </div>
   );
 }
