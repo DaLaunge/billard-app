@@ -11,9 +11,18 @@ import SegmentBar from "./widgets/SegmentBar";
 
 const ALL = "alle";
 const SORT_KEY = "ruleSort";
+// Themenbereiche: wenige, grobe Gruppen ueber den Schlagwoertern der Faelle (meta.js TAGS); ein Fall steht unter jedem Bereich, den er beruehrt.
+const AREAS = [
+  { id: "anstoss", label: "Anstoß & Aufbau", tags: ["anstoss", "kopffeld", "aufbau"] },
+  { id: "foul", label: "Fouls", tags: ["foul"] },
+  { id: "stoss", label: "Stoß & Weiße", tags: ["weisse", "stoss", "erstkontakt", "bande", "tasche"] },
+  { id: "ablauf", label: "Ansage & Ablauf", tags: ["ansage", "ablauf", "zeit", "verhalten"] },
+  { id: "tisch", label: "Tisch & Kugeln", tags: ["tisch"] },
+  { id: "doppel", label: "Doppel", tags: ["doppel"] },
+];
 const CH_KEY = "ruleChaptersOpen";
 const readChapters = () => { try { return new Set(JSON.parse(localStorage.getItem(CH_KEY) || "[]")); } catch { return new Set(); } };
-const readSort = () => { try { const v = localStorage.getItem(SORT_KEY); return v === "az" || v === "theme" ? v : "book"; } catch { return "book"; } };
+const readSort = () => { try { const v = localStorage.getItem(SORT_KEY); return v === "theme" ? v : "book"; } catch { return "book"; } };
 
 /* Disziplinen eines Falls als Kugel-Tags: nur die Kugeln, ohne Text. Gilt der
    Fall fuer alle vier, genuegt der Haufen (DiscAll) - das spart Platz. Hat der
@@ -94,7 +103,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
   };
   const [pick, setPick] = useState({}); // Fall-id -> Disziplin, deren Satz gezeigt wird
 
-  const [sort, setSort] = useState(readSort); // "book" = wie im Regelwerk (Standard), "theme" = nach Themen (Schlagwoertern), "az" = alphabetisch
+  const [sort, setSort] = useState(readSort); // "book" = wie im Regelwerk (Standard), "theme" = nach Themenbereichen
   const pickSort = (m) => { setSort(m); try { localStorage.setItem(SORT_KEY, m); } catch { /* Privatmodus */ } };
 
   // Aufklappen: Kapitel (nur in der Regelwerk-Reihenfolge) und einzelne Faelle. Standard: alles zu - so sieht man
@@ -107,13 +116,13 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
   const [tag, setTag] = useState(null); // Schlagwort-Filter: nur Faelle mit diesem Tag
   const pool = casesForDisc(disc === ALL ? null : disc, { onlyReleased, ids }).filter((c) => !tag || (c.tags || []).includes(tag));
   // Mit Suchbegriff gilt die Treffer-Reihenfolge (das Beste zuerst); ohne ihn die gewaehlte Sortierung.
-  const shown = q.trim() ? searchCases(pool, q) : sortCases(pool, sort === "book" ? "book" : "az");
-  const grouped = !q.trim() && sort !== "az";
+  const shown = q.trim() ? searchCases(pool, q) : sortCases(pool, "book");
+  const grouped = !q.trim();
   // Gruppen: Kapitel des Regelwerks oder Themen (Schlagwoerter). In der Themen-Ansicht steht ein Fall unter JEDEM seiner Themen.
   const items = !grouped ? shown.map((c) => ({ c, g: null }))
-    : sort === "theme" ? Object.keys(TAGS).flatMap((k) => shown.filter((c) => (c.tags || []).includes(k)).map((c) => ({ c, g: k })))
+    : sort === "theme" ? AREAS.flatMap((a) => shown.filter((c) => (c.tags || []).some((k) => a.tags.includes(k))).map((c) => ({ c, g: a.id })))
     : shown.map((c) => ({ c, g: bookChapter(c) }));
-  const groupLabel = (g) => (sort === "theme" ? TAGS[g] : BOOK_CHAPTERS[g]);
+  const groupLabel = (g) => (sort === "theme" ? AREAS.find((a) => a.id === g).label : BOOK_CHAPTERS[g]);
   const chapters = grouped ? [...new Set(items.map((x) => x.g))] : [];
   // Ansicht der Listen (Einstellung pro Geraet, wie ueberall): Tab-Freak = Kapitel-Leiste, ein Kapitel zur Zeit; Doomscroller = alle
   // Kapitel untereinander mit angepinnter Ueberschrift. Das Auf-/Zuklappen der Kapitel entfaellt damit; ein Schlagwort-Filter zeigt alles.
@@ -143,7 +152,7 @@ export default function RuleHelp({ disc: discProp, lockDisc = false, ids, onlyRe
         {!lockDisc && <DiscPickRow discs={activeDisciplines()} value={disc} onChange={setDisc} all={ALL} />}
         <div className="rs-switches">
         <span className="rs-sortseg" role="group" aria-label={t("Sortierung")}>
-          {[["book", "Kapitel", "Wie im Regelwerk"], ["theme", "Themen", "Nach Themen, z. B. Foul oder Anstoß"], ["az", "A–Z", "Alphabetisch"]].map(([m, label, tip]) => (
+          {[["book", "Kapitel", "Wie im Regelwerk"], ["theme", "Themen", "Nach Themen, z. B. Fouls oder Anstoß"]].map(([m, label, tip]) => (
             <button key={m} type="button" className={"chip" + (sort === m ? " active" : "")} aria-pressed={sort === m} title={t(tip)} onClick={() => pickSort(m)}>{t(label)}</button>
           ))}
         </span>
