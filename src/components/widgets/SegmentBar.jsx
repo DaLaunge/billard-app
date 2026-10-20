@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import ScrollRow from "./ScrollRow";
 
 /* Segment-Leiste: waehlt, welche Kartengruppe eines Bildschirms sichtbar ist.
    Nur am Handy (Klasse .seg-bar, ab 900px per CSS aus) - am PC stehen die
@@ -42,9 +43,9 @@ export default function SegmentBar({ segments, active, onChange, label, storageK
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={ordered.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
-        <div className={"seg-bar" + (ordered.length > 4 ? " scroll" : "")} role="tablist" aria-label={label}>
+        <ScrollRow wrapClass="w-seg" className={"seg-bar" + (ordered.length > 4 ? " scroll" : "")} role="tablist" aria-label={label}>
           {ordered.map((s) => <Item key={s.id} s={s} active={active} onChange={onChange} />)}
-        </div>
+        </ScrollRow>
       </SortableContext>
     </DndContext>
   );

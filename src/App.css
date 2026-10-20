@@ -3398,3 +3398,21 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 /* Jeder Menue-Bildschirm ist ein eigenes Bauteil mit EINEM senkrechten Stapel (418.0): gleicher Abstand wie ueberall (--card-gap), die Karten tragen keinen eigenen Aussenabstand. */
 .screen-stack { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
 .screen-stack > .stat-block, .screen-stack > .chap > .stat-block { margin-bottom: 0; }
+
+/* Scroll-Pfeile an waagerecht scrollbaren Reihen (widgets/ScrollRow.jsx): erscheinen nur, wo es weitergeht */
+.scroll-wrap { position: relative; min-width: 0; }
+.scroll-wrap.w-seg { margin: 0 0 var(--card-gap); }
+.scroll-wrap.w-seg > .seg-bar { margin: 0; }
+.scroll-wrap.w-deck { margin: 2px 0 10px; }
+.scroll-wrap.w-deck > .deck-tabs { margin: 0; }
+.seg-slot .scroll-wrap.w-seg { margin-bottom: 0; }
+.scroll-arrow { position: absolute; top: 1px; bottom: 1px; width: 30px; border: 0; padding: 0; display: grid; place-items: center;
+  color: var(--accent); cursor: pointer; z-index: 2; }
+.scroll-arrow.left { left: 1px; border-radius: 999px 0 0 999px; background: linear-gradient(to right, var(--felt-2) 55%, transparent); justify-items: start; padding-left: 5px; }
+.scroll-arrow.right { right: 1px; border-radius: 0 999px 999px 0; background: linear-gradient(to left, var(--felt-2) 55%, transparent); justify-items: end; padding-right: 5px; }
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-arrow.right svg { animation: scroll-nudge-r 1.6s ease-in-out infinite; }
+  .scroll-arrow.left svg { animation: scroll-nudge-l 1.6s ease-in-out infinite; }
+  @keyframes scroll-nudge-r { 50% { transform: translateX(3px); } }
+  @keyframes scroll-nudge-l { 50% { transform: translateX(-3px); } }
+}
