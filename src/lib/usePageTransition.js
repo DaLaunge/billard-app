@@ -33,7 +33,9 @@ export function usePageTransition(scrollEl, tab, order = MAIN) {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const page = scrollEl.querySelector(":scope > .screen");
     if (!page) return;
-    const cls = rankIn(order, tab) < rankIn(order, from) ? "page-in-left" : "page-in-right";
+    // Am PC (Seitenleiste statt Leiste unten) gibt es kein "links/rechts" der Menuepunkte: immer von rechts, damit alle Menues gleich wirken.
+    const wide = window.matchMedia?.("(min-width: 900px)").matches;
+    const cls = !wide && rankIn(order, tab) < rankIn(order, from) ? "page-in-left" : "page-in-right";
     page.classList.remove("page-in-left", "page-in-right");
     void page.offsetWidth; // Animation neu starten, falls dieselbe Klasse schon dran war
     page.classList.add(cls);
