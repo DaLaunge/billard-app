@@ -3424,7 +3424,7 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 /* Profilbild-Fenster: die grosse Kugel steht oben im freien Platz (.avatar-sheet-hero) der Liste und laeuft beim Scrollen mit dem Inhalt nach
    oben, waehrend sie schrumpft und in die Kopfzeile rutscht (nur transform, gesetzt in AvatarSheet.jsx updateBall). Foto-Ansicht in Originalgroesse. */
 .avatar-sheet { position: relative; }
-.avatar-sheet-bar { height: 64px; padding: 0 12px 0 74px; align-items: center; }
+.avatar-sheet-bar { height: 64px; padding: 0 12px 0 18px; align-items: center; }
 .avatar-sheet-bar .avatar-sheet-close { margin-left: auto; position: relative; z-index: 2; }
 .avatar-sheet-bar strong { opacity: 0; }
 .avatar-sheet-big { position: absolute; left: 0; top: 0; width: 128px; height: 128px; z-index: 5; transform-origin: 0 0; will-change: transform; }

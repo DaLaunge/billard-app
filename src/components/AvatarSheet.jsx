@@ -46,7 +46,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     const toolsTop = Math.max(64, t0 - sc);
     const d = Math.min(128, Math.max(SMALL, toolsTop - 20));
     const q = Math.min(1, Math.max(0, sc / (t0 - (SMALL + 20))));
-    const x = (sheet.clientWidth / 2 - d / 2) * (1 - q) + 14 * q;
+    const x = sheet.clientWidth / 2 - d / 2; // immer mittig: die Kugel waechst/schrumpft nur, sie wandert nicht seitlich
     ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
     if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (q - 0.6) * 2.5)));
   };
