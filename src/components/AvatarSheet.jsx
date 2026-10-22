@@ -25,101 +25,41 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   badgeRef.current = badge;
   useEffect(() => { if (!flying.current) setShown(badge); }, [badge]);
   const bigRef = useRef(null);
-  // Kinetisches Verhalten wie bei Telegram: ganz oben in der Liste steht die Kugel gross und mittig, sobald man runterscrollt wird sie
-  // sofort klein (links), und beim Zurueckkommen an den oberen Rand springt sie sofort wieder auf. Beides laeuft als Feder (leichtes
-  // Ueberschwingen), nicht als Funktion der Scrollposition. Zieht man oben weiter nach unten (Touch-Wischen oder Mausrad), dehnt sich die
-  // Liste samt Kugel gummiartig mit ("over") und federt beim Loslassen zurueck. Gemoved wird die Liste selbst per transform (Kopfplatz =
-  // HEAD), also ohne Layout; unten ragt sie dafuer um HEAD ueber das Fenster (Gegengewicht in CSS: negativer Rand + Innenabstand).
+  // Die Kugel haengt am Scrollen der Liste: oben steht sie gross und mittig im freien Platz ueber der Liste (.avatar-sheet-hero) und
+  // laeuft mit dem Inhalt nach oben, waehrend sie schrumpft und nach links in die Kopfzeile rutscht. Der Platz scrollt nativ weg, die Kugel
+  // bekommt nur ein transform (translate + scale, kein Layout) aus scrollTop - dadurch ruckelt nichts mehr (frueher: Kopfhoehe/-breite pro
+  // Bild veraendert -> Layout der ganzen Liste + doppelte Scrollgeschwindigkeit).
+  const t0Ref = useRef(148); // Abstand der Werkzeugzeile vom Fensterrand bei scrollTop 0 (Kopfzeile 64 + .avatar-sheet-hero 78 + Zeilenabstand), beim Mounten gemessen
   const SMALL = 48;
-  const HEAD = 84;        // Platz fuer die grosse Kugel ueber der Liste
-  const MAX_OVER = 64;
-  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0, lastT: 0, vel: 0, wheelT: 0, wsp: 0, kp: 240, cp: 24, pull: 0 });
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
   const titleRef = useRef(null);
-  const paint = () => {
+  const updateBall = () => {
     const sheet = sheetRef.current; const list = listRef.current; const ball = bigRef.current;
     if (!sheet || !list || !ball) return;
-    const st = stRef.current;
-    const pc = Math.min(1, Math.max(0, st.p));
-    const d = 128 - (128 - SMALL) * pc; // nie ueber 128 px: beim Ueberschwingen/Dehnen gibt nur die Liste nach
-    const x = (sheet.clientWidth / 2 - d / 2) * (1 - pc) + 14 * pc;
+    // Die Kugel sitzt von Anfang an in Hoehe der Kopfzeile (y = 8, Platz oben bleibt nicht leer). Phase 1: ihr Durchmesser ist der freie Platz
+    // bis zur Werkzeugzeile minus 20 (8 oben, 12 Luft unten), also schliesst sie unten immer mit gleichem Abstand ab - bis 48 px erreicht sind.
+    // Dieselbe Strecke bewegt sie auch von der Mitte nach links (q = 0..1): gross+mittig -> klein+links ist EINE durchgehende Bewegung.
+    const sc = Math.max(0, list.scrollTop);
+    const t0 = t0Ref.current;
+    const toolsTop = Math.max(64, t0 - sc);
+    const d = Math.min(128, Math.max(SMALL, toolsTop - 20));
+    const q = Math.min(1, Math.max(0, sc / (t0 - (SMALL + 20))));
+    const x = (sheet.clientWidth / 2 - d / 2) * (1 - q) + 14 * q;
     ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
-    list.style.transform = `translate3d(0, ${(HEAD * (1 - Math.min(1, st.p)) + st.o).toFixed(2)}px, 0)`;
-    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (pc - 0.6) * 2.5)));
+    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (q - 0.6) * 2.5)));
   };
-  // Zwei Federn (Kugelstufe p, Dehnung o) im Bildtakt; laeuft nur, solange noch etwas in Bewegung ist.
-  const tick = (now) => {
-    const st = stRef.current;
-    const dt = Math.min(0.032, (now - st.t) / 1000); st.t = now;
-    // feste kleine Teilschritte: harte Federn sind mit einem grossen Bildschritt numerisch instabil
-    const n = Math.max(1, Math.ceil(dt / 0.004)); const h = dt / n;
-    for (let i = 0; i < n; i += 1) {
-      st.v += ((st.pt - st.p) * st.kp - st.v * st.cp) * h; st.p += st.v * h;
-      st.ov += ((st.ot - st.o) * 1500 - st.ov * 62) * h; st.o += st.ov * h;
-    }
-    const still = Math.abs(st.pt - st.p) < 0.001 && Math.abs(st.v) < 0.01 && Math.abs(st.ot - st.o) < 0.1 && Math.abs(st.ov) < 0.5;
-    if (still) { st.p = st.pt; st.v = 0; st.o = st.ot; st.ov = 0; st.raf = 0; paint(); return; }
-    paint();
-    st.raf = requestAnimationFrame(tick);
-  };
-  const run = () => {
-    const st = stRef.current;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { st.p = st.pt; st.o = st.ot; st.v = 0; st.ov = 0; paint(); return; }
-    if (!st.raf) { st.t = performance.now(); st.raf = requestAnimationFrame(tick); }
-  };
-  const updateBall = () => {
-    const list = listRef.current;
-    if (!list) return;
-    const st = stRef.current;
-    const sc = list.scrollTop;
-    // Scrollgeschwindigkeit (px/s, geglaettet): bestimmt, wie schnell und wie wuchtig die Feder anspringt, wenn der obere Rand erreicht
-    // bzw. verlassen wird - ein schneller Wisch schnappt hart auf und laesst die Liste nachfedern, ein langsames Scrollen oeffnet sanft.
-    const now = performance.now();
-    const dtS = Math.max(0.004, (now - st.lastT) / 1000);
-    st.lastT = now;
-    st.vel = st.vel * 0.5 + Math.max(-6000, Math.min(6000, (sc - st.last) / dtS)) * 0.5;
-    st.last = sc;
-    const next = sc > 1 ? 1 : 0;
-    if (next !== st.pt) {
-      const sp = Math.abs(st.vel);
-      st.kp = 240 + Math.min(sp / 6, 900);
-      st.cp = 1.6 * Math.sqrt(st.kp);
-      st.v = (next > st.p ? 1 : -1) * Math.min(sp / 500, 10);
-      if (next === 0) st.ov += Math.min(sp * 0.5, 1400);
-      st.pt = next;
-    }
-    if (sc > 1) { st.ot = 0; st.pull = 0; }
-    run();
-  };
-  // Ziehen ueber den oberen Rand hinaus: Mausrad hoch (am Rand) bzw. Wischen nach unten (am Rand)
-  // Gummiband-Kennlinie: anfangs fest, zum Ende hin immer haerter (nie ueber MAX_OVER). "pull" ist der rohe Zugweg in px.
-  const rubber = (pull) => MAX_OVER * (1 - Math.exp(-Math.max(0, pull) / 120));
-  const setPull = (pull) => { const st = stRef.current; st.pull = Math.max(0, pull); st.ot = rubber(st.pull); run(); };
-  // Festgehalten wird die Dehnung, solange der Finger/die Maus sie haelt; erst beim Loslassen federt sie zurueck.
-  // Mausrad/Trackpad dehnen die Liste bewusst NICHT: der Browser meldet dort weder "gehalten" noch "losgelassen" (und das Trackpad schickt nach
-  // dem Abheben noch Traegheits-Impulse), jeder Erkennungsversuch fuehlte sich falsch an. Am PC bleiben das Oeffnen der Kugel am oberen Rand und
-  // der Huepfer bei schnellem Anlauf (laufen ueber normale Scroll-Ereignisse); das Dehnen gibt es per Touch, wo es ein echtes Loslassen gibt.
-  const onTouchStart = (e) => { stRef.current.y0 = listRef.current?.scrollTop <= 0 ? e.touches[0].clientY : null; };
-  const onTouchMove = (e) => {
-    const st = stRef.current;
-    if (st.y0 == null) { if (listRef.current?.scrollTop <= 0) st.y0 = e.touches[0].clientY; return; }
-    const dy = e.touches[0].clientY - st.y0;
-    if (listRef.current.scrollTop <= 0) setPull(dy);
-    else if (st.ot > 0) setPull(0);
-  };
-  const onTouchEnd = () => { stRef.current.y0 = null; setPull(0); };
   useLayoutEffect(() => {
-    const st = stRef.current;
-    paint();
+    if (toolsRef.current) t0Ref.current = toolsRef.current.offsetTop;
+    updateBall();
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
+      updateBall();
       // Die angepinnte Werkzeugzeile kann umbrechen: die Kategorie-Koepfe kleben direkt darunter
-      if (toolsRef.current && listRef.current) listRef.current.style.setProperty("--tools-h", `${toolsRef.current.getBoundingClientRect().height}px`);
-      paint();
+      if (toolsRef.current && listRef.current) listRef.current.style.setProperty("--tools-h", `${toolsRef.current.offsetHeight}px`);
     }) : null;
     if (ro) { ro.observe(sheetRef.current); if (toolsRef.current) ro.observe(toolsRef.current); }
-    return () => { ro?.disconnect(); cancelAnimationFrame(st.raf); clearTimeout(st.timer); };
+    return () => ro?.disconnect();
   }, []);
   const [viewPhoto, setViewPhoto] = useState(false);
   const [query, setQuery] = useState("");
@@ -185,8 +125,8 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
           onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
           <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={128} />
         </div>
-        <div className={"avatar-sheet-list " + view} ref={listRef} onScroll={updateBall}
-          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
+        <div className={"avatar-sheet-list " + view} ref={listRef} onScroll={updateBall}>
+          <div className="avatar-sheet-hero" aria-hidden="true" />
         {/* Die Werkzeugzeile klebt oben, sobald der Platz fuer die Kugel weggescrollt ist. Alles Feste ist bewusst klein (kleine Vorschau-Kugel, Foto-Knoepfe, Suche, Ansicht): die frueher 128 px grosse Kugel
             samt Kopfzone fraß am Handy - vor allem bei Schriftzoom - fast den ganzen Platz, die Erfolge waren kaum zu sehen (Nutzer-Feedback 412.28). */}
         <div className="avatar-sheet-tools" ref={toolsRef}>
