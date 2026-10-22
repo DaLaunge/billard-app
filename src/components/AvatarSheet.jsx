@@ -29,6 +29,8 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   // laeuft mit dem Inhalt nach oben, waehrend sie schrumpft und nach links in die Kopfzeile rutscht. Der Platz scrollt nativ weg, die Kugel
   // bekommt nur ein transform (translate + scale, kein Layout) aus scrollTop - dadurch ruckelt nichts mehr (frueher: Kopfhoehe/-breite pro
   // Bild veraendert -> Layout der ganzen Liste + doppelte Scrollgeschwindigkeit).
+  const HERO = 152; // Hoehe des freien Platzes ueber der Liste (muss zu .avatar-sheet-hero in App.css passen)
+  const SMALL = 48;
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
@@ -36,13 +38,17 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const updateBall = () => {
     const sheet = sheetRef.current; const list = listRef.current; const ball = bigRef.current;
     if (!sheet || !list || !ball) return;
-    const sc = list.scrollTop;
-    const p = Math.min(1, sc / 68);
-    const e = p * p * (3 - 2 * p);
-    const x = (sheet.clientWidth / 2 - 64) * (1 - e) + 14 * e;
-    const y = 76 - 68 * p;
-    ball.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${(1 - 0.625 * e).toFixed(4)})`;
-    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (p - 0.6) * 2.5)));
+    // Phase 1: die Kugel fuellt den freien Platz zwischen Kopfzeile und Werkzeugzeile (12 px Luft oben und unten), ihr Durchmesser ist
+    // also immer Platz - 24 und schliesst unten buendig mit der Werkzeugzeile ab, bis 48 px erreicht sind. Phase 2: mit 48 px rutscht sie
+    // in den restlichen Scrollweg nach oben links in die Kopfzeile.
+    const sc = Math.max(0, list.scrollTop);
+    const free = Math.max(0, HERO - sc);
+    const d = Math.max(SMALL, free - 24);
+    const q = free >= SMALL + 24 ? 0 : 1 - free / (SMALL + 24);
+    const x = (sheet.clientWidth / 2 - d / 2) * (1 - q) + 14 * q;
+    const y = 76 - 68 * q;
+    ball.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${(d / 128).toFixed(4)})`;
+    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (q - 0.6) * 2.5)));
   };
   useLayoutEffect(() => {
     updateBall();
