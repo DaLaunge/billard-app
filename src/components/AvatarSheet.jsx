@@ -130,7 +130,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
         {/* Die Werkzeugzeile klebt oben, sobald der Platz fuer die Kugel weggescrollt ist. Alles Feste ist bewusst klein (kleine Vorschau-Kugel, Foto-Knoepfe, Suche, Ansicht): die frueher 128 px grosse Kugel
             samt Kopfzone fraß am Handy - vor allem bei Schriftzoom - fast den ganzen Platz, die Erfolge waren kaum zu sehen (Nutzer-Feedback 412.28). */}
         <div className="avatar-sheet-tools" ref={toolsRef}>
-          <AvatarPhotoField hasPhoto={!!photo} onReload={onReload} toast={toast} onView={() => setViewPhoto(true)} />
+          <AvatarPhotoField hasPhoto={!!photo} hasBadge={!!selected} onClearBadge={() => { setShown(null); requestAnimationFrame(popBall); return onSelectBadge(null); }} onReload={onReload} toast={toast} onView={() => setViewPhoto(true)} />
           <label className="avatar-sheet-search">
             <Search size={16} />
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}

@@ -3432,6 +3432,8 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .avatar-sheet-hero { grid-column: 1 / -1; flex: none; height: 78px; }
 .avatar-sheet-list > .avatar-sheet-tools { grid-column: 1 / -1; flex: none; position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: 4px 14px 8px; background: var(--felt); }
 .avatar-sheet-list .avatar-sheet-cat-head { top: var(--tools-h, 52px); }
+/* Rueckfrage-Popup (appConfirm) muss ueber JEDEM anderen Fenster liegen - im DOM steht es vor dem Profilbild-Fenster und lag sonst unsichtbar dahinter */
+.confirm-overlay { z-index: 140; }
 .photo-lightbox { z-index: 130; background: #000000d0; }
 .photo-lightbox img { max-width: 92vw; max-height: 82dvh; width: auto; height: auto; border-radius: 16px; box-shadow: 0 8px 40px #000000a0; }
 .photo-lightbox-close { position: absolute; top: calc(14px + env(safe-area-inset-top)); right: 14px; }
