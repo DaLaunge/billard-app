@@ -33,7 +33,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const SMALL = 48;
   const HEAD = 84;        // Platz fuer die grosse Kugel ueber der Liste
   const MAX_OVER = 64;
-  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0, lastT: 0, vel: 0, wheelT: 0, wheelAbs: 0, dec: 0, momentum: false, kp: 240, cp: 24, pull: 0 });
+  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0, lastT: 0, vel: 0, wheelT: 0, wheelAbs: 0, dec: 0, momentum: false, topGesture: false, kp: 240, cp: 24, pull: 0 });
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
@@ -90,26 +90,34 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
       if (next === 0) st.ov += Math.min(sp * 0.5, 1400);
       st.pt = next;
     }
-    if (sc > 1) { st.ot = 0; st.pull = 0; }
+    if (sc > 1) { st.ot = 0; st.pull = 0; st.topGesture = false; st.momentum = false; }
     run();
   };
   // Ziehen ueber den oberen Rand hinaus: Mausrad hoch (am Rand) bzw. Wischen nach unten (am Rand)
   // Gummiband-Kennlinie: anfangs fest, zum Ende hin immer haerter (nie ueber MAX_OVER). "pull" ist der rohe Zugweg in px.
-  const rubber = (pull) => MAX_OVER * (1 - Math.exp(-Math.max(0, pull) / 190));
+  const rubber = (pull) => MAX_OVER * (1 - Math.exp(-Math.max(0, pull) / 120));
   const setPull = (pull) => { const st = stRef.current; st.pull = Math.max(0, pull); st.ot = rubber(st.pull); run(); };
   // Festgehalten wird die Dehnung, solange der Finger/die Maus sie haelt; erst beim Loslassen federt sie zurueck.
-  // Mausrad/Trackpad melden weder "gehalten" noch "losgelassen" (und das Trackpad schickt nach dem Abheben noch Traegheits-Impulse).
-  // Deshalb kein Halten: jeder Impuls am oberen Rand gibt der Feder einen Stoss (proportional zur Staerke). Wer weiter zieht, haelt die
-  // Dehnung durch die Folge der Stoesse; hoert er auf, federt sie von selbst zurueck - und der Traegheits-Nachlauf klingt ebenso natuerlich ab.
+  // Mausrad/Trackpad melden weder "gehalten" noch "losgelassen". Wie beim Touch folgt die Dehnung dem Fingerweg (Summe der Impulse, "pull"):
+  // sie bleibt, solange Impulse kommen, und federt 120 ms nach dem letzten zurueck. Das Trackpad schickt nach dem Abheben aber noch ein bis
+  // zwei Sekunden Traegheits-Impulse mit STETIG schwaecher werdender Staerke: fuenf schwaechere in Folge gelten als "losgelassen" - die
+  // Feder geht sofort zurueck und der Rest wird ueberhoert, bis eine neue Geste beginnt. Gezaehlt wird erst ab dem oberen Rand, nicht davor.
   const onWheel = (e) => {
     const list = listRef.current;
     if (!list) return;
     const st = stRef.current;
     if (e.deltaY < 0 && list.scrollTop < 1) {
-      const abs = Math.min(160, -e.deltaY);
-      if (st.o < MAX_OVER * 1.05) st.ov += abs * 18;
-      run();
-    } else if (e.deltaY > 0 && st.o > 0) { st.ov -= Math.min(st.ov, 400); run(); }
+      const abs = Math.min(200, -e.deltaY);
+      const now = performance.now();
+      const gap = now - st.wheelT; st.wheelT = now;
+      if (gap > 150 || !st.topGesture) { st.topGesture = true; st.momentum = false; st.dec = 0; st.wheelAbs = abs; }
+      else { if (abs < st.wheelAbs * 0.92) st.dec += 1; else st.dec = 0; st.wheelAbs = abs; }
+      clearTimeout(st.timer);
+      if (st.momentum) { st.timer = setTimeout(() => { st.topGesture = false; }, 150); return; }
+      if (st.dec >= 5) { st.momentum = true; setPull(0); st.timer = setTimeout(() => { st.topGesture = false; }, 150); return; }
+      setPull(st.pull + abs * 1.2);
+      st.timer = setTimeout(() => { st.topGesture = false; setPull(0); }, 120);
+    } else if (e.deltaY > 0 && st.ot > 0) { clearTimeout(st.timer); st.topGesture = false; setPull(0); }
   };
   const onTouchStart = (e) => { stRef.current.y0 = listRef.current?.scrollTop <= 0 ? e.touches[0].clientY : null; };
   const onTouchMove = (e) => {
