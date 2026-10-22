@@ -102,3 +102,29 @@ export function storeStickyHeads(on) {
 export function applyListPrefs() {
   try { document.documentElement.dataset.stickyHeads = getStickyHeads() ? "on" : "off"; } catch { /* ignore */ }
 }
+
+/* Schriftgroesse pro Geraet (Einstellungen -> Aussehen). Der Faktor (1 = Standard) steht in der CSS-Variable --fs;
+   jede font-size in App.css rechnet damit (calc(Npx * var(--fs, 1))). Nur ein vom Standard abweichender Wert wird gespeichert,
+   "Alle Einstellungen zuruecksetzen" ruft clearFontScale() auf. */
+const FONT_SCALE_KEY = "fontScale";
+export const FONT_SCALE_MIN = 0.8;
+export const FONT_SCALE_MAX = 1.4;
+export const FONT_SCALE_STEP = 0.05;
+
+export function getFontScale() {
+  try {
+    const v = parseFloat(localStorage.getItem(FONT_SCALE_KEY));
+    return Number.isFinite(v) ? Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, v)) : 1;
+  } catch { return 1; }
+}
+export function applyFontScale(scale = getFontScale()) {
+  try { document.documentElement.style.setProperty("--fs", String(scale)); } catch { /* ignore */ }
+}
+export function storeFontScale(scale) {
+  try { if (Math.abs(scale - 1) < 0.001) localStorage.removeItem(FONT_SCALE_KEY); else localStorage.setItem(FONT_SCALE_KEY, String(scale)); } catch { /* ignore */ }
+  applyFontScale(scale);
+}
+export function clearFontScale() {
+  try { localStorage.removeItem(FONT_SCALE_KEY); } catch { /* ignore */ }
+  applyFontScale(1);
+}
