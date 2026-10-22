@@ -33,7 +33,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const SMALL = 48;
   const HEAD = 84;        // Platz fuer die grosse Kugel ueber der Liste
   const MAX_OVER = 64;
-  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0, lastT: 0, vel: 0, kp: 240, cp: 24, pull: 0 });
+  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0, lastT: 0, vel: 0, wheelT: 0, wheelAbs: 0, dec: 0, momentum: false, kp: 240, cp: 24, pull: 0 });
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
@@ -103,9 +103,19 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     if (!list) return;
     const st = stRef.current;
     if (e.deltaY < 0 && list.scrollTop <= 0) {
-      // Mausrad/Trackpad melden kein Loslassen: gehalten wird, solange Impulse kommen; winzige Nachlauf-Impulse zaehlen nicht mehr
-      if (-e.deltaY < 3) return;
-      setPull(st.pull + -e.deltaY * 0.5);
+      // Mausrad/Trackpad melden kein Loslassen. Mausrad: gehalten, solange Impulse kommen, 140 ms nach dem letzten federt sie zurueck.
+      // Trackpad: nach dem Abheben laufen noch ein bis zwei Sekunden Traegheits-Impulse mit STETIG kleiner werdender Staerke - die
+      // erkennen wir (3x in Folge schwaecher) als "losgelassen", federn sofort zurueck und ueberhoeren den Rest, bis eine neue Geste beginnt.
+      const abs = -e.deltaY;
+      const now = performance.now();
+      const gap = now - st.wheelT; st.wheelT = now;
+      if (gap > 150 || abs > st.wheelAbs * 1.3) { st.momentum = false; st.dec = 0; }
+      if (abs < st.wheelAbs * 0.97) st.dec += 1; else st.dec = 0;
+      st.wheelAbs = abs;
+      if (st.momentum) return;
+      if (st.dec >= 3) { st.momentum = true; clearTimeout(st.timer); setPull(0); return; }
+      if (abs < 3) return;
+      setPull(st.pull + abs * 0.5);
       clearTimeout(st.timer);
       st.timer = setTimeout(() => setPull(0), 140);
     } else if (e.deltaY > 0 && st.ot > 0) { clearTimeout(st.timer); setPull(0); }
