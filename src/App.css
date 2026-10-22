@@ -3430,8 +3430,9 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .avatar-sheet-big { position: absolute; left: 0; top: 0; width: 128px; height: 128px; z-index: 5; transform-origin: 0 0; will-change: transform; }
 .avatar-sheet-big.clickable { cursor: zoom-in; }
 .avatar-sheet-hero { grid-column: 1 / -1; flex: none; height: 78px; }
-.avatar-sheet-list > .avatar-sheet-tools { grid-column: 1 / -1; flex: none; position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: 4px 14px 8px; background: var(--felt); }
-.avatar-sheet-list .avatar-sheet-cat-head { top: var(--tools-h, 52px); }
+.avatar-sheet-list > .avatar-sheet-tools { grid-column: 1 / -1; flex: none; position: sticky; top: var(--head-h, 84px); z-index: 3; margin: 0 -14px; padding: 4px 14px 8px; background: var(--felt); }
+.avatar-sheet-list .avatar-sheet-cat-head { top: calc(var(--head-h, 84px) + var(--tools-h, 52px)); }
+.avatar-sheet-plate { position: absolute; left: 0; right: 0; top: 64px; height: 84px; background: var(--felt); z-index: 4; pointer-events: none; }
 /* Rueckfrage-Popup (appConfirm) muss ueber JEDEM anderen Fenster liegen - im DOM steht es vor dem Profilbild-Fenster und lag sonst unsichtbar dahinter */
 .confirm-overlay { z-index: 140; }
 .photo-lightbox { z-index: 130; background: #000000d0; }

@@ -25,33 +25,38 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   badgeRef.current = badge;
   useEffect(() => { if (!flying.current) setShown(badge); }, [badge]);
   const bigRef = useRef(null);
-  // Die Kugel haengt am Scrollen der Liste: oben steht sie gross und mittig im freien Platz ueber der Liste (.avatar-sheet-hero) und
-  // laeuft mit dem Inhalt nach oben, waehrend sie schrumpft und nach links in die Kopfzeile rutscht. Der Platz scrollt nativ weg, die Kugel
-  // bekommt nur ein transform (translate + scale, kein Layout) aus scrollTop - dadurch ruckelt nichts mehr (frueher: Kopfhoehe/-breite pro
-  // Bild veraendert -> Layout der ganzen Liste + doppelte Scrollgeschwindigkeit).
-  const t0Ref = useRef(148); // Abstand der Werkzeugzeile vom Fensterrand bei scrollTop 0 (Kopfzeile 64 + .avatar-sheet-hero 78 + Zeilenabstand), beim Mounten gemessen
+  // Die Kugel folgt der Scrollrichtung, nicht der Position in der Liste (wie eine Werkzeugleiste, die beim Hochscrollen wiederkommt):
+  // jedes Runterscrollen staucht sie (gross+mittig -> klein+links, p waechst), jedes Hochscrollen zieht sie wieder auf - egal wo man steht.
+  // p ist die Summe der Scrollwege (80 px = ganze Bewegung). Gross liegt die Kugel samt Platte (.avatar-sheet-plate) UEBER dem Listeninhalt
+  // wie ein Kopf, der Inhalt selbst bewegt sich nicht (kein Layout, kein Ruckeln); die angepinnte Werkzeugzeile rutscht unter die Platte
+  // (--head-h). Ganz oben (scrollTop 0) ist p immer 0.
   const SMALL = 48;
+  const SPAN = 80;       // Scrollweg fuer die ganze Bewegung
+  const HEAD = 84;       // Plattenhoehe bei grosser Kugel (= .avatar-sheet-hero 78 + Zeilenabstand)
+  const pRef = useRef({ p: 0, last: 0 });
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
   const titleRef = useRef(null);
+  const plateRef = useRef(null);
   const updateBall = () => {
     const sheet = sheetRef.current; const list = listRef.current; const ball = bigRef.current;
     if (!sheet || !list || !ball) return;
-    // Die Kugel sitzt von Anfang an in Hoehe der Kopfzeile (y = 8, Platz oben bleibt nicht leer). Phase 1: ihr Durchmesser ist der freie Platz
-    // bis zur Werkzeugzeile minus 20 (8 oben, 12 Luft unten), also schliesst sie unten immer mit gleichem Abstand ab - bis 48 px erreicht sind.
-    // Dieselbe Strecke bewegt sie auch von der Mitte nach links (q = 0..1): gross+mittig -> klein+links ist EINE durchgehende Bewegung.
+    const st = pRef.current;
     const sc = Math.max(0, list.scrollTop);
-    const t0 = t0Ref.current;
-    const toolsTop = Math.max(64, t0 - sc);
-    const d = Math.min(128, Math.max(SMALL, toolsTop - 20));
-    const q = Math.min(1, Math.max(0, sc / (t0 - (SMALL + 20))));
-    const x = (sheet.clientWidth / 2 - d / 2) * (1 - q) + 14 * q;
+    const ds = sc - st.last;
+    st.last = sc;
+    st.p = sc <= 0 ? 0 : Math.min(1, Math.max(0, st.p + ds / SPAN));
+    const p = st.p;
+    const d = 128 - (128 - SMALL) * p;
+    const x = (sheet.clientWidth / 2 - d / 2) * (1 - p) + 14 * p;
     ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
-    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (q - 0.6) * 2.5)));
+    const head = HEAD * (1 - p);
+    list.style.setProperty("--head-h", `${head.toFixed(1)}px`);
+    if (plateRef.current) plateRef.current.style.height = `${head.toFixed(1)}px`;
+    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (p - 0.6) * 2.5)));
   };
   useLayoutEffect(() => {
-    if (toolsRef.current) t0Ref.current = toolsRef.current.offsetTop;
     updateBall();
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
       updateBall();
@@ -121,6 +126,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
           <strong ref={titleRef}>{t("Dein Profilbild")}</strong>
           <button type="button" className="avatar-sheet-close icon-btn" onClick={onClose} aria-label={t("Schließen")}><X size={20} /></button>
         </div>
+        <div className="avatar-sheet-plate" ref={plateRef} aria-hidden="true" />
         <div className={"avatar-sheet-big" + (photo ? " clickable" : "")} ref={bigRef}
           onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
           <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={128} />
