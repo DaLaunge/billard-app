@@ -108,7 +108,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
           <div className={"avatar-sheet-big" + (photo ? " clickable" : "")} ref={bigRef}
             onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
             <div className="avatar-sheet-big-in">
-              <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={100} />
+              <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={128} />
             </div>
           </div>
           <strong>{t("Dein Profilbild")}</strong>
