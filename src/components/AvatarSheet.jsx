@@ -40,12 +40,12 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     if (!sheet || !list || !ball) return;
     // Die Kugel sitzt von Anfang an in Hoehe der Kopfzeile (y = 8, Platz oben bleibt nicht leer). Phase 1: ihr Durchmesser ist der freie Platz
     // bis zur Werkzeugzeile minus 20 (8 oben, 12 Luft unten), also schliesst sie unten immer mit gleichem Abstand ab - bis 48 px erreicht sind.
-    // Phase 2: mit 48 px rutscht sie auf den naechsten 72 px Scrollweg von der Mitte nach links an ihren Platz in der Kopfzeile.
+    // Dieselbe Strecke bewegt sie auch von der Mitte nach links (q = 0..1): gross+mittig -> klein+links ist EINE durchgehende Bewegung.
     const sc = Math.max(0, list.scrollTop);
     const t0 = t0Ref.current;
     const toolsTop = Math.max(64, t0 - sc);
     const d = Math.min(128, Math.max(SMALL, toolsTop - 20));
-    const q = Math.min(1, Math.max(0, (sc - (t0 - (SMALL + 20))) / 72));
+    const q = Math.min(1, Math.max(0, sc / (t0 - (SMALL + 20))));
     const x = (sheet.clientWidth / 2 - d / 2) * (1 - q) + 14 * q;
     ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
     if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (q - 0.6) * 2.5)));
