@@ -43,7 +43,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     if (!sheet || !list || !ball) return;
     const st = stRef.current;
     const pc = Math.min(1, Math.max(0, st.p));
-    const d = 128 - (128 - SMALL) * st.p + st.o * 0.8;
+    const d = 128 - (128 - SMALL) * st.p; // beim Dehnen bleibt die Kugel bei 128 px, nur die Liste gibt nach
     const x = (sheet.clientWidth / 2 - d / 2) * (1 - pc) + 14 * pc;
     ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
     list.style.transform = `translate3d(0, ${(HEAD * (1 - st.p) + st.o).toFixed(2)}px, 0)`;
@@ -54,7 +54,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     const st = stRef.current;
     const dt = Math.min(0.032, (now - st.t) / 1000); st.t = now;
     st.v += ((st.pt - st.p) * 240 - st.v * 24) * dt; st.p += st.v * dt;
-    st.ov += ((st.ot - st.o) * 260 - st.ov * 22) * dt; st.o += st.ov * dt;
+    st.ov += ((st.ot - st.o) * 720 - st.ov * 42) * dt; st.o += st.ov * dt;
     const still = Math.abs(st.pt - st.p) < 0.001 && Math.abs(st.v) < 0.01 && Math.abs(st.ot - st.o) < 0.1 && Math.abs(st.ov) < 0.5;
     if (still) { st.p = st.pt; st.v = 0; st.o = st.ot; st.ov = 0; st.raf = 0; paint(); return; }
     paint();
@@ -83,7 +83,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     if (e.deltaY < 0 && list.scrollTop <= 0) {
       setOver(st.ot + -e.deltaY * 0.35);
       clearTimeout(st.timer);
-      st.timer = setTimeout(() => setOver(0), 110);
+      st.timer = setTimeout(() => setOver(0), 70);
     } else if (e.deltaY > 0 && st.ot > 0) { clearTimeout(st.timer); setOver(0); }
   };
   const onTouchStart = (e) => { stRef.current.y0 = listRef.current?.scrollTop <= 0 ? e.touches[0].clientY : null; };
