@@ -27,6 +27,27 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const bigRef = useRef(null);
   // Das Scrollen der Liste zieht die Kugel gross (oben, mittig) oder staucht sie zusammen (unten, links): --p direkt am Kopf, ohne React-Render.
   const barRef = useRef(null);
+  // Das Mausrad scrollt in Stufen: wuerde --p direkt folgen, ruckelt die Kugel. Deshalb laeuft der gezeigte Wert dem Ziel
+  // per rAF weich hinterher (zeitunabhaengig geglaettet) und geht zusaetzlich durch eine S-Kurve.
+  const pRef = useRef({ target: 0, cur: 0, raf: 0, last: 0 });
+  const setP = (target) => {
+    const st = pRef.current;
+    st.target = target;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const apply = () => { const x = st.cur; barRef.current?.style.setProperty("--p", String(x * x * (3 - 2 * x))); };
+    if (reduce) { st.cur = target; apply(); return; }
+    if (st.raf) return;
+    st.last = performance.now();
+    const step = (now) => {
+      const dt = Math.min(64, now - st.last); st.last = now;
+      st.cur += (st.target - st.cur) * (1 - Math.exp(-dt / 90));
+      if (Math.abs(st.target - st.cur) < 0.001) { st.cur = st.target; st.raf = 0; apply(); return; }
+      apply();
+      st.raf = requestAnimationFrame(step);
+    };
+    st.raf = requestAnimationFrame(step);
+  };
+  useEffect(() => () => cancelAnimationFrame(pRef.current.raf), []);
   const [viewPhoto, setViewPhoto] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState(() => {
@@ -109,7 +130,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
               aria-pressed={view === "detail"} title={t("Detail")}><List size={16} /></button>
           </div>
         </div>
-        <div className={"avatar-sheet-list " + view} onScroll={(e) => barRef.current?.style.setProperty("--p", String(Math.min(1, e.currentTarget.scrollTop / 90)))}>
+        <div className={"avatar-sheet-list " + view} onScroll={(e) => setP(Math.min(1, e.currentTarget.scrollTop / 90))}>
           <div className="avatar-sheet-label">
             <span className="avatar-sheet-label-text">{t("Freigeschaltete Erfolge")} <span>{shown.length}{q ? ` / ${unlocked.length}` : ""}</span></span>
             {onOpenAchievements && (
