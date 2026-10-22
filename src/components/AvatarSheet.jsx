@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { X, Search, LayoutGrid, List, ChevronRight } from "lucide-react";
 import Ball from "./Ball";
 import Emoji from "./Emoji";
@@ -25,29 +25,35 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   badgeRef.current = badge;
   useEffect(() => { if (!flying.current) setShown(badge); }, [badge]);
   const bigRef = useRef(null);
-  // Das Scrollen der Liste zieht die Kugel gross (oben, mittig) oder staucht sie zusammen (unten, links): --p direkt am Kopf, ohne React-Render.
-  const barRef = useRef(null);
-  // Das Mausrad scrollt in Stufen: wuerde --p direkt folgen, ruckelt die Kugel. Deshalb laeuft der gezeigte Wert dem Ziel
-  // per rAF weich hinterher (zeitunabhaengig geglaettet) und geht zusaetzlich durch eine S-Kurve.
-  const pRef = useRef({ target: 0, cur: 0, raf: 0, last: 0 });
-  const setP = (target) => {
-    const st = pRef.current;
-    st.target = target;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const apply = () => { const x = st.cur; barRef.current?.style.setProperty("--p", String(x * x * (3 - 2 * x))); };
-    if (reduce) { st.cur = target; apply(); return; }
-    if (st.raf) return;
-    st.last = performance.now();
-    const step = (now) => {
-      const dt = Math.min(64, now - st.last); st.last = now;
-      st.cur += (st.target - st.cur) * (1 - Math.exp(-dt / 90));
-      if (Math.abs(st.target - st.cur) < 0.001) { st.cur = st.target; st.raf = 0; apply(); return; }
-      apply();
-      st.raf = requestAnimationFrame(step);
-    };
-    st.raf = requestAnimationFrame(step);
+  // Die Kugel haengt am Scrollen der Liste: oben steht sie gross und mittig im freien Platz ueber der Liste (.avatar-sheet-hero) und
+  // laeuft mit dem Inhalt nach oben, waehrend sie schrumpft und nach links in die Kopfzeile rutscht. Der Platz scrollt nativ weg, die Kugel
+  // bekommt nur ein transform (translate + scale, kein Layout) aus scrollTop - dadurch ruckelt nichts mehr (frueher: Kopfhoehe/-breite pro
+  // Bild veraendert -> Layout der ganzen Liste + doppelte Scrollgeschwindigkeit).
+  const sheetRef = useRef(null);
+  const listRef = useRef(null);
+  const toolsRef = useRef(null);
+  const titleRef = useRef(null);
+  const updateBall = () => {
+    const sheet = sheetRef.current; const list = listRef.current; const ball = bigRef.current;
+    if (!sheet || !list || !ball) return;
+    const sc = list.scrollTop;
+    const p = Math.min(1, sc / 68);
+    const e = p * p * (3 - 2 * p);
+    const x = (sheet.clientWidth / 2 - 64) * (1 - e) + 14 * e;
+    const y = 76 - 68 * p;
+    ball.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${(1 - 0.625 * e).toFixed(4)})`;
+    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (p - 0.6) * 2.5)));
   };
-  useEffect(() => () => cancelAnimationFrame(pRef.current.raf), []);
+  useLayoutEffect(() => {
+    updateBall();
+    const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
+      updateBall();
+      // Die angepinnte Werkzeugzeile kann umbrechen: die Kategorie-Koepfe kleben direkt darunter
+      if (toolsRef.current && listRef.current) listRef.current.style.setProperty("--tools-h", `${toolsRef.current.offsetHeight}px`);
+    }) : null;
+    if (ro) { ro.observe(sheetRef.current); if (toolsRef.current) ro.observe(toolsRef.current); }
+    return () => ro?.disconnect();
+  }, []);
   const [viewPhoto, setViewPhoto] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState(() => {
@@ -103,20 +109,20 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   return (
     <>
     <div className="modal-overlay avatar-sheet-overlay" onClick={onClose}>
-      <div className="avatar-sheet" role="dialog" aria-modal="true" aria-label={t("Dein Profilbild")} onClick={(e) => e.stopPropagation()}>
-        <div className="avatar-sheet-bar" ref={barRef}>
-          <div className={"avatar-sheet-big" + (photo ? " clickable" : "")} ref={bigRef}
-            onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
-            <div className="avatar-sheet-big-in">
-              <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={128} />
-            </div>
-          </div>
-          <strong>{t("Dein Profilbild")}</strong>
+      <div className="avatar-sheet" ref={sheetRef} role="dialog" aria-modal="true" aria-label={t("Dein Profilbild")} onClick={(e) => e.stopPropagation()}>
+        <div className="avatar-sheet-bar">
+          <strong ref={titleRef}>{t("Dein Profilbild")}</strong>
           <button type="button" className="avatar-sheet-close icon-btn" onClick={onClose} aria-label={t("Schließen")}><X size={20} /></button>
         </div>
-        {/* Alles Feste ist bewusst NUR diese beiden Zeilen (kleine Vorschau-Kugel, Foto-Knoepfe, Suche, Ansicht): die frueher 128 px grosse Kugel
+        <div className={"avatar-sheet-big" + (photo ? " clickable" : "")} ref={bigRef}
+          onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
+          <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={128} />
+        </div>
+        <div className={"avatar-sheet-list " + view} ref={listRef} onScroll={updateBall}>
+          <div className="avatar-sheet-hero" aria-hidden="true" />
+        {/* Die Werkzeugzeile klebt oben, sobald der Platz fuer die Kugel weggescrollt ist. Alles Feste ist bewusst klein (kleine Vorschau-Kugel, Foto-Knoepfe, Suche, Ansicht): die frueher 128 px grosse Kugel
             samt Kopfzone fraß am Handy - vor allem bei Schriftzoom - fast den ganzen Platz, die Erfolge waren kaum zu sehen (Nutzer-Feedback 412.28). */}
-        <div className="avatar-sheet-tools">
+        <div className="avatar-sheet-tools" ref={toolsRef}>
           <AvatarPhotoField hasPhoto={!!photo} onReload={onReload} toast={toast} onView={() => setViewPhoto(true)} />
           <label className="avatar-sheet-search">
             <Search size={16} />
@@ -130,7 +136,6 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
               aria-pressed={view === "detail"} title={t("Detail")}><List size={16} /></button>
           </div>
         </div>
-        <div className={"avatar-sheet-list " + view} onScroll={(e) => setP(Math.min(1, e.currentTarget.scrollTop / 90))}>
           <div className="avatar-sheet-label">
             <span className="avatar-sheet-label-text">{t("Freigeschaltete Erfolge")} <span>{shown.length}{q ? ` / ${unlocked.length}` : ""}</span></span>
             {onOpenAchievements && (
