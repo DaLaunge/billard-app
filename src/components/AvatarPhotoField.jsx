@@ -3,6 +3,7 @@ import { Camera, Image as ImageIcon, Trash2 } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { compressImageFile } from "../lib/avatarPhoto";
+import { appConfirm } from "../lib/confirmDialog";
 
 export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
   const cameraRef = useRef(null);
@@ -34,6 +35,8 @@ export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
   };
 
   const removePhoto = async () => {
+    // Ein Fehltipp auf den Muelleimer kostet ein muehsam eingestelltes Foto - deshalb erst nachfragen
+    if (!(await appConfirm(t("Foto wirklich entfernen? Dein Foto wird gelöscht und du musst es bei Bedarf neu hochladen.")))) return;
     setBusy(true);
     try {
       const path = await myPath();
