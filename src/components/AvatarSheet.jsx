@@ -57,7 +57,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     const n = Math.max(1, Math.ceil(dt / 0.004)); const h = dt / n;
     for (let i = 0; i < n; i += 1) {
       st.v += ((st.pt - st.p) * st.kp - st.v * st.cp) * h; st.p += st.v * h;
-      st.ov += ((st.ot - st.o) * 1000 - st.ov * 50) * h; st.o += st.ov * h;
+      st.ov += ((st.ot - st.o) * 1500 - st.ov * 62) * h; st.o += st.ov * h;
     }
     const still = Math.abs(st.pt - st.p) < 0.001 && Math.abs(st.v) < 0.01 && Math.abs(st.ot - st.o) < 0.1 && Math.abs(st.ov) < 0.5;
     if (still) { st.p = st.pt; st.v = 0; st.o = st.ot; st.ov = 0; st.raf = 0; paint(); return; }
@@ -110,11 +110,14 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
       const abs = Math.min(300, -e.deltaY);
       const now = performance.now();
       const dt = Math.max(8, Math.min(100, now - st.wheelT)); st.wheelT = now;
-      st.wsp = st.wsp * 0.55 + (abs / dt * 1000) * 0.45;
-      st.ot = MAX_OVER * (1 - Math.exp(-st.wsp / 1100));
+      // Aufwaerts traege (0.55/0.45), abwaerts folgt die Geschwindigkeit fast sofort: sobald der Zug nachlaesst, gibt die Feder nach.
+      // Unter 250 px/s (langer Nachlauf des Trackpads) ist keine Dehnung mehr.
+      const inst = abs / dt * 1000;
+      st.wsp = inst < st.wsp ? st.wsp * 0.2 + inst * 0.8 : st.wsp * 0.55 + inst * 0.45;
+      st.ot = MAX_OVER * (1 - Math.exp(-Math.max(0, st.wsp - 250) / 900));
       run();
       clearTimeout(st.timer);
-      st.timer = setTimeout(() => { st.wsp = 0; st.ot = 0; run(); }, 90);
+      st.timer = setTimeout(() => { st.wsp = 0; st.ot = 0; run(); }, 60);
     } else if (e.deltaY > 0 && st.ot > 0) { clearTimeout(st.timer); st.wsp = 0; setPull(0); }
   };
   const onTouchStart = (e) => { stRef.current.y0 = listRef.current?.scrollTop <= 0 ? e.touches[0].clientY : null; };
