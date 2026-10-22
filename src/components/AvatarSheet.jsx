@@ -98,27 +98,9 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const rubber = (pull) => MAX_OVER * (1 - Math.exp(-Math.max(0, pull) / 120));
   const setPull = (pull) => { const st = stRef.current; st.pull = Math.max(0, pull); st.ot = rubber(st.pull); run(); };
   // Festgehalten wird die Dehnung, solange der Finger/die Maus sie haelt; erst beim Loslassen federt sie zurueck.
-  // Mausrad/Trackpad melden weder "gehalten" noch "losgelassen", und das Trackpad schickt nach dem Abheben noch ein bis zwei Sekunden
-  // Traegheits-Impulse. Die Dehnung ist deshalb ein "leckender Eimer": jeder Impuls fuellt ihn (pull, wie der Fingerweg beim Touch), zwischen
-  // den Impulsen laeuft er mit 250 ms Zeitkonstante leer. Wer gleichmaessig weiterzieht, haelt die Dehnung stabil (auch bei schwankenden
-  // Einzel-Impulsen - ein reines Folgen der Momentangeschwindigkeit zuckte); laeuft nur noch die Traegheit aus, sinkt sie mit ihr;
-  // ohne Impulse (70 ms) ist sie sofort zurueck.
-  const onWheel = (e) => {
-    const list = listRef.current;
-    if (!list) return;
-    const st = stRef.current;
-    if (e.deltaY < 0 && list.scrollTop < 1) {
-      const abs = Math.min(200, -e.deltaY);
-      const now = performance.now();
-      const dt = Math.min(150, now - st.wheelT); st.wheelT = now;
-      const fresh = st.pull <= 0.5 || dt >= 150;
-      st.pull = (fresh ? 0 : st.pull * Math.exp(-dt / 250)) + abs * 1.2;
-      st.ot = rubber(Math.max(0, st.pull - 24));
-      run();
-      clearTimeout(st.timer);
-      st.timer = setTimeout(() => { st.pull = 0; st.ot = 0; run(); }, 70);
-    } else if (e.deltaY > 0 && st.ot > 0) { clearTimeout(st.timer); setPull(0); }
-  };
+  // Mausrad/Trackpad dehnen die Liste bewusst NICHT: der Browser meldet dort weder "gehalten" noch "losgelassen" (und das Trackpad schickt nach
+  // dem Abheben noch Traegheits-Impulse), jeder Erkennungsversuch fuehlte sich falsch an. Am PC bleiben das Oeffnen der Kugel am oberen Rand und
+  // der Huepfer bei schnellem Anlauf (laufen ueber normale Scroll-Ereignisse); das Dehnen gibt es per Touch, wo es ein echtes Loslassen gibt.
   const onTouchStart = (e) => { stRef.current.y0 = listRef.current?.scrollTop <= 0 ? e.touches[0].clientY : null; };
   const onTouchMove = (e) => {
     const st = stRef.current;
@@ -203,7 +185,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
           onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
           <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={128} />
         </div>
-        <div className={"avatar-sheet-list " + view} ref={listRef} onScroll={updateBall} onWheel={onWheel}
+        <div className={"avatar-sheet-list " + view} ref={listRef} onScroll={updateBall}
           onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
         {/* Die Werkzeugzeile klebt oben, sobald der Platz fuer die Kugel weggescrollt ist. Alles Feste ist bewusst klein (kleine Vorschau-Kugel, Foto-Knoepfe, Suche, Ansicht): die frueher 128 px grosse Kugel
             samt Kopfzone fraß am Handy - vor allem bei Schriftzoom - fast den ganzen Platz, die Erfolge waren kaum zu sehen (Nutzer-Feedback 412.28). */}
