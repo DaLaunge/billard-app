@@ -33,38 +33,60 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const SMALL = 48;
   const SPAN = 80;       // Scrollweg fuer die ganze Bewegung
   const HEAD = 84;       // Plattenhoehe bei grosser Kugel (= .avatar-sheet-hero 78 + Zeilenabstand)
-  const pRef = useRef({ p: 0, last: 0 });
+  const pRef = useRef({ target: 0, cur: 0, last: 0, raf: 0, t: 0, toolsH: 52 });
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
   const titleRef = useRef(null);
   const plateRef = useRef(null);
-  const updateBall = () => {
+  // Zeichnet den Stand st.cur (0..1). Bewusst nur transform/opacity (Kugel, Platte) plus direkte "top"-Werte an der Werkzeugzeile und den
+  // Kategorie-Koepfen - KEINE CSS-Variable an der Liste: die wuerde bei jedem Bild die Styles aller Listeneintraege neu berechnen (Ruckeln).
+  const paint = () => {
     const sheet = sheetRef.current; const list = listRef.current; const ball = bigRef.current;
     if (!sheet || !list || !ball) return;
     const st = pRef.current;
-    const sc = Math.max(0, list.scrollTop);
-    const ds = sc - st.last;
-    st.last = sc;
-    st.p = sc <= 0 ? 0 : Math.min(1, Math.max(0, st.p + ds / SPAN));
-    const p = st.p;
+    const p = st.cur;
     const d = 128 - (128 - SMALL) * p;
     const x = (sheet.clientWidth / 2 - d / 2) * (1 - p) + 14 * p;
     ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
     const head = HEAD * (1 - p);
-    list.style.setProperty("--head-h", `${head.toFixed(1)}px`);
-    if (plateRef.current) plateRef.current.style.height = `${head.toFixed(1)}px`;
+    if (plateRef.current) plateRef.current.style.transform = `scaleY(${(head / HEAD).toFixed(4)})`;
+    if (toolsRef.current) toolsRef.current.style.top = `${head.toFixed(1)}px`;
+    list.querySelectorAll(".avatar-sheet-cat-head").forEach((h) => { h.style.top = `${(head + st.toolsH).toFixed(1)}px`; });
     if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (p - 0.6) * 2.5)));
   };
+  // Das Ziel folgt der Scrollrichtung; die gezeigte Stufe laeuft ihm im Takt der Bilder weich hinterher (zeitunabhaengig geglaettet), damit
+  // Mausrad-Stufen und Fling-Ruckler nicht durchschlagen.
+  const tick = (now) => {
+    const st = pRef.current;
+    const dt = Math.min(48, now - st.t); st.t = now;
+    st.cur += (st.target - st.cur) * (1 - Math.exp(-dt / 55));
+    if (Math.abs(st.target - st.cur) < 0.0008) { st.cur = st.target; st.raf = 0; paint(); return; }
+    paint();
+    st.raf = requestAnimationFrame(tick);
+  };
+  const updateBall = () => {
+    const list = listRef.current;
+    if (!list) return;
+    const st = pRef.current;
+    const sc = Math.max(0, list.scrollTop);
+    const ds = sc - st.last;
+    st.last = sc;
+    st.target = sc <= 0 ? 0 : Math.min(1, Math.max(0, st.target + ds / SPAN));
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { st.cur = st.target; paint(); return; }
+    if (!st.raf) { st.t = performance.now(); st.raf = requestAnimationFrame(tick); }
+  };
+  // Nach jedem Render neu zeichnen: Suche/Ansichtswechsel erzeugen neue Kategorie-Koepfe, die ihr "top" noch brauchen.
+  useLayoutEffect(() => { paint(); });
   useLayoutEffect(() => {
-    updateBall();
+    const st = pRef.current;
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
-      updateBall();
       // Die angepinnte Werkzeugzeile kann umbrechen: die Kategorie-Koepfe kleben direkt darunter
-      if (toolsRef.current && listRef.current) listRef.current.style.setProperty("--tools-h", `${toolsRef.current.offsetHeight}px`);
+      if (toolsRef.current) st.toolsH = toolsRef.current.offsetHeight;
+      paint();
     }) : null;
     if (ro) { ro.observe(sheetRef.current); if (toolsRef.current) ro.observe(toolsRef.current); }
-    return () => ro?.disconnect();
+    return () => { ro?.disconnect(); cancelAnimationFrame(st.raf); };
   }, []);
   const [viewPhoto, setViewPhoto] = useState(false);
   const [query, setQuery] = useState("");
