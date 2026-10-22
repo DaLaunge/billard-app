@@ -25,68 +25,86 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   badgeRef.current = badge;
   useEffect(() => { if (!flying.current) setShown(badge); }, [badge]);
   const bigRef = useRef(null);
-  // Die Kugel folgt der Scrollrichtung, nicht der Position in der Liste (wie eine Werkzeugleiste, die beim Hochscrollen wiederkommt):
-  // jedes Runterscrollen staucht sie (gross+mittig -> klein+links, p waechst), jedes Hochscrollen zieht sie wieder auf - egal wo man steht.
-  // p ist die Summe der Scrollwege (80 px = ganze Bewegung). Gross liegt die Kugel samt Platte (.avatar-sheet-plate) UEBER dem Listeninhalt
-  // wie ein Kopf, der Inhalt selbst bewegt sich nicht (kein Layout, kein Ruckeln); die angepinnte Werkzeugzeile rutscht unter die Platte
-  // (--head-h). Ganz oben (scrollTop 0) ist p immer 0.
+  // Kinetisches Verhalten wie bei Telegram: ganz oben in der Liste steht die Kugel gross und mittig, sobald man runterscrollt wird sie
+  // sofort klein (links), und beim Zurueckkommen an den oberen Rand springt sie sofort wieder auf. Beides laeuft als Feder (leichtes
+  // Ueberschwingen), nicht als Funktion der Scrollposition. Zieht man oben weiter nach unten (Touch-Wischen oder Mausrad), dehnt sich die
+  // Liste samt Kugel gummiartig mit ("over") und federt beim Loslassen zurueck. Gemoved wird die Liste selbst per transform (Kopfplatz =
+  // HEAD), also ohne Layout; unten ragt sie dafuer um HEAD ueber das Fenster (Gegengewicht in CSS: negativer Rand + Innenabstand).
   const SMALL = 48;
-  const SPAN = 80;       // Scrollweg fuer die ganze Bewegung
-  const HEAD = 84;       // Plattenhoehe bei grosser Kugel (= .avatar-sheet-hero 78 + Zeilenabstand)
-  const pRef = useRef({ target: 0, cur: 0, last: 0, raf: 0, t: 0, toolsH: 52 });
+  const HEAD = 84;        // Platz fuer die grosse Kugel ueber der Liste
+  const MAX_OVER = 90;
+  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0 });
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
   const titleRef = useRef(null);
-  const plateRef = useRef(null);
-  // Zeichnet den Stand st.cur (0..1). Bewusst nur transform/opacity (Kugel, Platte) plus direkte "top"-Werte an der Werkzeugzeile und den
-  // Kategorie-Koepfen - KEINE CSS-Variable an der Liste: die wuerde bei jedem Bild die Styles aller Listeneintraege neu berechnen (Ruckeln).
   const paint = () => {
     const sheet = sheetRef.current; const list = listRef.current; const ball = bigRef.current;
     if (!sheet || !list || !ball) return;
-    const st = pRef.current;
-    const p = st.cur;
-    const d = 128 - (128 - SMALL) * p;
-    const x = (sheet.clientWidth / 2 - d / 2) * (1 - p) + 14 * p;
+    const st = stRef.current;
+    const pc = Math.min(1, Math.max(0, st.p));
+    const d = 128 - (128 - SMALL) * st.p + st.o * 0.8;
+    const x = (sheet.clientWidth / 2 - d / 2) * (1 - pc) + 14 * pc;
     ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
-    const head = HEAD * (1 - p);
-    if (plateRef.current) plateRef.current.style.transform = `scaleY(${(head / HEAD).toFixed(4)})`;
-    if (toolsRef.current) toolsRef.current.style.top = `${head.toFixed(1)}px`;
-    list.querySelectorAll(".avatar-sheet-cat-head").forEach((h) => { h.style.top = `${(head + st.toolsH).toFixed(1)}px`; });
-    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (p - 0.6) * 2.5)));
+    list.style.transform = `translate3d(0, ${(HEAD * (1 - st.p) + st.o).toFixed(2)}px, 0)`;
+    if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (pc - 0.6) * 2.5)));
   };
-  // Das Ziel folgt der Scrollrichtung; die gezeigte Stufe laeuft ihm im Takt der Bilder weich hinterher (zeitunabhaengig geglaettet), damit
-  // Mausrad-Stufen und Fling-Ruckler nicht durchschlagen.
+  // Zwei Federn (Kugelstufe p, Dehnung o) im Bildtakt; laeuft nur, solange noch etwas in Bewegung ist.
   const tick = (now) => {
-    const st = pRef.current;
-    const dt = Math.min(48, now - st.t); st.t = now;
-    st.cur += (st.target - st.cur) * (1 - Math.exp(-dt / 55));
-    if (Math.abs(st.target - st.cur) < 0.0008) { st.cur = st.target; st.raf = 0; paint(); return; }
+    const st = stRef.current;
+    const dt = Math.min(0.032, (now - st.t) / 1000); st.t = now;
+    st.v += ((st.pt - st.p) * 240 - st.v * 24) * dt; st.p += st.v * dt;
+    st.ov += ((st.ot - st.o) * 260 - st.ov * 22) * dt; st.o += st.ov * dt;
+    const still = Math.abs(st.pt - st.p) < 0.001 && Math.abs(st.v) < 0.01 && Math.abs(st.ot - st.o) < 0.1 && Math.abs(st.ov) < 0.5;
+    if (still) { st.p = st.pt; st.v = 0; st.o = st.ot; st.ov = 0; st.raf = 0; paint(); return; }
     paint();
     st.raf = requestAnimationFrame(tick);
+  };
+  const run = () => {
+    const st = stRef.current;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { st.p = st.pt; st.o = st.ot; st.v = 0; st.ov = 0; paint(); return; }
+    if (!st.raf) { st.t = performance.now(); st.raf = requestAnimationFrame(tick); }
   };
   const updateBall = () => {
     const list = listRef.current;
     if (!list) return;
-    const st = pRef.current;
-    const sc = Math.max(0, list.scrollTop);
-    const ds = sc - st.last;
-    st.last = sc;
-    st.target = sc <= 0 ? 0 : Math.min(1, Math.max(0, st.target + ds / SPAN));
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { st.cur = st.target; paint(); return; }
-    if (!st.raf) { st.t = performance.now(); st.raf = requestAnimationFrame(tick); }
+    const st = stRef.current;
+    const sc = list.scrollTop;
+    st.pt = sc > 1 ? 1 : 0;
+    if (sc > 1) st.ot = 0;
+    run();
   };
-  // Nach jedem Render neu zeichnen: Suche/Ansichtswechsel erzeugen neue Kategorie-Koepfe, die ihr "top" noch brauchen.
-  useLayoutEffect(() => { paint(); });
+  // Ziehen ueber den oberen Rand hinaus: Mausrad hoch (am Rand) bzw. Wischen nach unten (am Rand)
+  const setOver = (v) => { stRef.current.ot = Math.min(MAX_OVER, Math.max(0, v)); run(); };
+  const onWheel = (e) => {
+    const list = listRef.current;
+    if (!list) return;
+    const st = stRef.current;
+    if (e.deltaY < 0 && list.scrollTop <= 0) {
+      setOver(st.ot + -e.deltaY * 0.35);
+      clearTimeout(st.timer);
+      st.timer = setTimeout(() => setOver(0), 110);
+    } else if (e.deltaY > 0 && st.ot > 0) { clearTimeout(st.timer); setOver(0); }
+  };
+  const onTouchStart = (e) => { stRef.current.y0 = listRef.current?.scrollTop <= 0 ? e.touches[0].clientY : null; };
+  const onTouchMove = (e) => {
+    const st = stRef.current;
+    if (st.y0 == null) { if (listRef.current?.scrollTop <= 0) st.y0 = e.touches[0].clientY; return; }
+    const dy = e.touches[0].clientY - st.y0;
+    if (dy > 0 && listRef.current.scrollTop <= 0) setOver(dy * 0.45);
+    else if (st.ot > 0) setOver(0);
+  };
+  const onTouchEnd = () => { stRef.current.y0 = null; setOver(0); };
   useLayoutEffect(() => {
-    const st = pRef.current;
+    const st = stRef.current;
+    paint();
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
       // Die angepinnte Werkzeugzeile kann umbrechen: die Kategorie-Koepfe kleben direkt darunter
-      if (toolsRef.current) st.toolsH = toolsRef.current.offsetHeight;
+      if (toolsRef.current && listRef.current) listRef.current.style.setProperty("--tools-h", `${toolsRef.current.offsetHeight}px`);
       paint();
     }) : null;
     if (ro) { ro.observe(sheetRef.current); if (toolsRef.current) ro.observe(toolsRef.current); }
-    return () => { ro?.disconnect(); cancelAnimationFrame(st.raf); };
+    return () => { ro?.disconnect(); cancelAnimationFrame(st.raf); clearTimeout(st.timer); };
   }, []);
   const [viewPhoto, setViewPhoto] = useState(false);
   const [query, setQuery] = useState("");
@@ -148,13 +166,12 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
           <strong ref={titleRef}>{t("Dein Profilbild")}</strong>
           <button type="button" className="avatar-sheet-close icon-btn" onClick={onClose} aria-label={t("Schließen")}><X size={20} /></button>
         </div>
-        <div className="avatar-sheet-plate" ref={plateRef} aria-hidden="true" />
         <div className={"avatar-sheet-big" + (photo ? " clickable" : "")} ref={bigRef}
           onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
           <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={128} />
         </div>
-        <div className={"avatar-sheet-list " + view} ref={listRef} onScroll={updateBall}>
-          <div className="avatar-sheet-hero" aria-hidden="true" />
+        <div className={"avatar-sheet-list " + view} ref={listRef} onScroll={updateBall} onWheel={onWheel}
+          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
         {/* Die Werkzeugzeile klebt oben, sobald der Platz fuer die Kugel weggescrollt ist. Alles Feste ist bewusst klein (kleine Vorschau-Kugel, Foto-Knoepfe, Suche, Ansicht): die frueher 128 px grosse Kugel
             samt Kopfzone fraß am Handy - vor allem bei Schriftzoom - fast den ganzen Platz, die Erfolge waren kaum zu sehen (Nutzer-Feedback 412.28). */}
         <div className="avatar-sheet-tools" ref={toolsRef}>

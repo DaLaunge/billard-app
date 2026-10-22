@@ -3421,18 +3421,17 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .font-scale-row { display: flex; align-items: center; gap: 10px; color: var(--ivory-dim); }
 .font-scale-row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
 
-/* Profilbild-Fenster: die grosse Kugel steht oben im freien Platz (.avatar-sheet-hero) der Liste und laeuft beim Scrollen mit dem Inhalt nach
-   oben, waehrend sie schrumpft und in die Kopfzeile rutscht (nur transform, gesetzt in AvatarSheet.jsx updateBall). Foto-Ansicht in Originalgroesse. */
+/* Profilbild-Fenster: die Liste wird beim Erreichen des oberen Rands per transform nach unten geschoben und macht Platz fuer die grosse Kugel
+   (Federn in AvatarSheet.jsx); damit unten nichts abgeschnitten wird, ist sie um genau diesen Platz hoeher und bekommt ihn als Innenabstand. */
 .avatar-sheet { position: relative; }
+.avatar-sheet-list { margin-bottom: -84px; padding-bottom: calc(14px + 84px + env(safe-area-inset-bottom)); will-change: transform; }
 .avatar-sheet-bar { height: 64px; padding: 0 12px 0 74px; align-items: center; }
 .avatar-sheet-bar .avatar-sheet-close { margin-left: auto; position: relative; z-index: 2; }
 .avatar-sheet-bar strong { opacity: 0; }
 .avatar-sheet-big { position: absolute; left: 0; top: 0; width: 128px; height: 128px; z-index: 5; transform-origin: 0 0; will-change: transform; }
 .avatar-sheet-big.clickable { cursor: zoom-in; }
-.avatar-sheet-hero { grid-column: 1 / -1; flex: none; height: 78px; }
-.avatar-sheet-list > .avatar-sheet-tools { grid-column: 1 / -1; flex: none; position: sticky; top: var(--head-h, 84px); z-index: 3; margin: 0 -14px; padding: 4px 14px 8px; background: var(--felt); }
-.avatar-sheet-list .avatar-sheet-cat-head { top: calc(var(--head-h, 84px) + var(--tools-h, 52px)); }
-.avatar-sheet-plate { position: absolute; left: 0; right: 0; top: 64px; height: 84px; background: var(--felt); z-index: 4; pointer-events: none; transform-origin: 0 0; will-change: transform; }
+.avatar-sheet-list > .avatar-sheet-tools { grid-column: 1 / -1; flex: none; position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: 4px 14px 8px; background: var(--felt); }
+.avatar-sheet-list .avatar-sheet-cat-head { top: var(--tools-h, 52px); }
 /* Rueckfrage-Popup (appConfirm) muss ueber JEDEM anderen Fenster liegen - im DOM steht es vor dem Profilbild-Fenster und lag sonst unsichtbar dahinter */
 .confirm-overlay { z-index: 140; }
 .photo-lightbox { z-index: 130; background: #000000d0; }
