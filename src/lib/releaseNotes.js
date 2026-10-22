@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "419.2", icon: "🖼️",
+    items: ["Dein Profilbild: Die Kugel wird beim Scrollen groß und rückt in die Mitte, ein gewählter Erfolg fliegt sanft in die Kugel, und dein Foto kannst du in voller Größe ansehen."],
+    en: ["Your profile picture: the ball grows and moves to the center as you scroll, a chosen achievement glides smoothly into the ball, and you can view your photo at full size."] },
   { version: "419", icon: "🔤",
     items: ["Neu in den Einstellungen unter Aussehen: ein Regler macht die Schrift der ganzen App größer oder kleiner."],
     en: ["New in Settings under Appearance: a slider makes the text of the whole app larger or smaller."] },

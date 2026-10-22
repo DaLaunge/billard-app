@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
-import { Camera, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Camera, Image as ImageIcon, Trash2, Eye } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { compressImageFile } from "../lib/avatarPhoto";
 import { appConfirm } from "../lib/confirmDialog";
 
-export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
+export default function AvatarPhotoField({ hasPhoto, onReload, toast, onView }) {
   const cameraRef = useRef(null);
   const galleryRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -69,6 +69,12 @@ export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
         aria-label={t("Aus Galerie wählen")} title={t("Aus Galerie wählen")}>
         <ImageIcon size={18} />
       </button>
+      {hasPhoto && onView && (
+        <button type="button" className="icon-btn" disabled={busy} onClick={onView}
+          aria-label={t("Foto ansehen")} title={t("Foto ansehen")}>
+          <Eye size={18} />
+        </button>
+      )}
       {hasPhoto && (
         <button type="button" className="icon-btn warn" disabled={busy} onClick={removePhoto}
           aria-label={t("Foto entfernen")} title={t("Foto entfernen")}>

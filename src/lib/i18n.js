@@ -1329,6 +1329,7 @@ const TRANSLATIONS = {
     "Alle Einstellungen zurücksetzen? Kugelfarbe, Design, Schriftgröße, Startseite, Karten, Menü und Leiste gehen auf den Standard zurück.": "Reset all settings? Ball color, design, font size, start page, cards, menu and bar go back to the defaults.",
     "Alle Einstellungen zurücksetzen": "Reset all settings",
     "Schriftgröße": "Font size",
+    "Foto ansehen": "View photo",
     "Foto wirklich entfernen? Dein Foto wird gelöscht und du musst es bei Bedarf neu hochladen.": "Really remove your photo? It will be deleted and you will have to upload it again if you want it back.",
     "Macht alle Texte der App größer oder kleiner. Gilt nur auf diesem Gerät.": "Makes all text in the app larger or smaller. Applies to this device only.",
     "Kugelfarbe, Design, Schriftgröße, Startseite, Karten, Menü und Leiste": "Ball color, design, font size, start page, cards, menu and bar",

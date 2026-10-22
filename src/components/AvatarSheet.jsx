@@ -5,7 +5,7 @@ import Emoji from "./Emoji";
 import AvatarPhotoField from "./AvatarPhotoField";
 import ProgressBar from "./widgets/ProgressBar";
 import { initials } from "../lib/format";
-import { flyIn } from "../lib/flyBall";
+import { flyGlyph } from "../lib/flyBall";
 import { t } from "../lib/i18n";
 
 /* Fenster fuer das eigene Profilbild (oeffnet bei einem Tipp auf die eigene Kugel, egal wo - siehe App.jsx).
@@ -16,8 +16,18 @@ import { t } from "../lib/i18n";
 export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog, earned, onSelectBadge, onReload, toast, onClose, onOpenAchievements }) {
   const nick = player.nickname;
   const selected = player.selected_badge || null;
-  const flyRef = useRef(null);
   const badge = badgeOf(nick);
+  const photo = photoOf(nick);
+  // Die Kugel zeigt "ballBadge": bei der Auswahl bleibt der alte Stand bis das Symbol gelandet ist (flyGlyph), erst dann wechselt sie.
+  const [ballBadge, setShown] = useState(badge);
+  const flying = useRef(0);
+  const badgeRef = useRef(badge);
+  badgeRef.current = badge;
+  useEffect(() => { if (!flying.current) setShown(badge); }, [badge]);
+  const bigRef = useRef(null);
+  // Beim Runterscrollen waechst die Kugel und wandert in die Mitte (mit Huerde, damit es an der Schwelle nicht flackert).
+  const [big, setBig] = useState(false);
+  const [viewPhoto, setViewPhoto] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState(() => {
     try { return localStorage.getItem("avatarSheetView") === "detail" ? "detail" : "normal"; } catch { return "normal"; }
@@ -28,19 +38,10 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   };
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e) => { if (e.key === "Escape") { if (viewPhoto) setViewPhoto(false); else onClose(); } };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  // Erst fliegen, wenn das grosse Bild den Erfolg wirklich zeigt (die Spielerliste laedt nach dem Speichern kurz nach).
-  useEffect(() => {
-    const f = flyRef.current;
-    if (!f || badge !== f.key) return undefined;
-    flyRef.current = null;
-    const id = setTimeout(() => flyIn(document.querySelector(".avatar-sheet-big .ball"), f.rect), 30);
-    return () => clearTimeout(id);
-  }, [badge]);
+  }, [onClose, viewPhoto]);
 
   const unlocked = useMemo(() => (catalog || []).filter((b) => earned.has(b.badge_key)), [catalog, earned]);
   const q = query.trim().toLowerCase();
@@ -60,18 +61,34 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     return [...m].map(([cat, items]) => ({ cat, items, earned: earnedIn[cat] || 0, total: total[cat] || items.length }));
   }, [catalog, unlocked, shown]);
 
-  const pick = (e, b) => {
-    const isSel = selected === b.badge_key;
-    if (!isSel) flyRef.current = { key: b.badge_key, rect: e.currentTarget.querySelector(".avatar-sheet-emoji")?.getBoundingClientRect() };
-    onSelectBadge(isSel ? null : b.badge_key);
+  const popBall = () => {
+    const el = bigRef.current?.querySelector(".ball");
+    if (el?.animate) el.animate([{ transform: "scale(1)" }, { transform: "scale(1.14)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 380, easing: "ease-out" });
+  };
+  const pick = async (e, b) => {
+    const next = selected === b.badge_key ? null : b.badge_key;
+    const src = e.currentTarget.querySelector(".avatar-sheet-emoji");
+    const land = () => { setShown(next); requestAnimationFrame(popBall); };
+    if (next) {
+      flying.current += 1;
+      const landed = () => { flying.current = Math.max(0, flying.current - 1); land(); };
+      if (!flyGlyph(src, bigRef.current?.querySelector(".ball"), !!photo, landed)) landed();
+    } else land();
+    const ok = await onSelectBadge(next);
+    // Speichern fehlgeschlagen: die Kugel zeigt wieder den echten Stand
+    if (ok === false) setTimeout(() => setShown(badgeRef.current), 700);
   };
 
   return (
+    <>
     <div className="modal-overlay avatar-sheet-overlay" onClick={onClose}>
       <div className="avatar-sheet" role="dialog" aria-modal="true" aria-label={t("Dein Profilbild")} onClick={(e) => e.stopPropagation()}>
-        <div className="avatar-sheet-bar">
-          <div className="avatar-sheet-big">
-            <Ball color={colorOf(nick)} label={initials(nick)} badge={badge} photo={photoOf(nick)} size={48} />
+        <div className={"avatar-sheet-bar" + (big ? " big" : "")}>
+          <div className={"avatar-sheet-big" + (photo ? " clickable" : "")} ref={bigRef}
+            onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
+            <div className="avatar-sheet-big-in">
+              <Ball color={colorOf(nick)} label={initials(nick)} badge={ballBadge} photo={photo} size={88} />
+            </div>
           </div>
           <strong>{t("Dein Profilbild")}</strong>
           <button type="button" className="avatar-sheet-close icon-btn" onClick={onClose} aria-label={t("Schließen")}><X size={20} /></button>
@@ -79,7 +96,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
         {/* Alles Feste ist bewusst NUR diese beiden Zeilen (kleine Vorschau-Kugel, Foto-Knoepfe, Suche, Ansicht): die frueher 128 px grosse Kugel
             samt Kopfzone fraß am Handy - vor allem bei Schriftzoom - fast den ganzen Platz, die Erfolge waren kaum zu sehen (Nutzer-Feedback 412.28). */}
         <div className="avatar-sheet-tools">
-          <AvatarPhotoField hasPhoto={!!photoOf(nick)} onReload={onReload} toast={toast} />
+          <AvatarPhotoField hasPhoto={!!photo} onReload={onReload} toast={toast} onView={() => setViewPhoto(true)} />
           <label className="avatar-sheet-search">
             <Search size={16} />
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
@@ -92,7 +109,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
               aria-pressed={view === "detail"} title={t("Detail")}><List size={16} /></button>
           </div>
         </div>
-        <div className={"avatar-sheet-list " + view}>
+        <div className={"avatar-sheet-list " + view} onScroll={(e) => { const y = e.currentTarget.scrollTop; setBig((v) => (v ? y > 6 : y > 48)); }}>
           <div className="avatar-sheet-label">
             <span className="avatar-sheet-label-text">{t("Freigeschaltete Erfolge")} <span>{shown.length}{q ? ` / ${unlocked.length}` : ""}</span></span>
             {onOpenAchievements && (
@@ -123,5 +140,12 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
         </div>
       </div>
     </div>
+    {viewPhoto && photo && (
+      <div className="modal-overlay photo-lightbox" onClick={() => setViewPhoto(false)}>
+        <img src={photo} alt={nick} onClick={(e) => e.stopPropagation()} />
+        <button type="button" className="avatar-sheet-close icon-btn photo-lightbox-close" onClick={() => setViewPhoto(false)} aria-label={t("Schließen")}><X size={20} /></button>
+      </div>
+    )}
+    </>
   );
 }
