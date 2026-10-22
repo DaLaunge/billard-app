@@ -3423,13 +3423,13 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 
 /* Profilbild-Fenster: oben ist die Kugel gross und mittig; beim Runterscrollen wird sie vom Scrollen selbst zusammengestaucht und wandert
    nach links (--p = Scroll-Fortschritt 0..1, gesetzt in AvatarSheet.jsx), beim Hochscrollen wird sie wieder grossgezogen. Foto-Ansicht in Originalgroesse. */
-.avatar-sheet-bar { --p: 0; position: relative; height: calc(110px - 46px * var(--p)); padding: 0 12px 0 74px; align-items: center; }
+.avatar-sheet-bar { --p: 0; position: relative; height: calc(122px - 44px * var(--p)); padding: 0 12px 0 88px; align-items: center; }
 .avatar-sheet-bar .avatar-sheet-close { margin-left: auto; position: relative; z-index: 2; }
 .avatar-sheet-bar strong { opacity: clamp(0, (var(--p) - 0.6) * 2.5, 1); }
-.avatar-sheet-big { position: absolute; z-index: 1; will-change: left, top, width, height; left: calc((50% - 44px) * (1 - var(--p)) + 14px * var(--p));
-  top: calc(11px - 3px * var(--p)); width: calc(88px - 40px * var(--p)); height: calc(88px - 40px * var(--p)); }
+.avatar-sheet-big { position: absolute; z-index: 1; will-change: left, top, width, height; left: calc((50% - 50px) * (1 - var(--p)) + 14px * var(--p));
+  top: calc(11px - 3px * var(--p)); width: calc(100px - 38px * var(--p)); height: calc(100px - 38px * var(--p)); }
 .avatar-sheet-big.clickable { cursor: zoom-in; }
-.avatar-sheet-big-in { width: 88px; height: 88px; transform-origin: 0 0; transform: scale(calc(1 - 0.4545 * var(--p))); }
+.avatar-sheet-big-in { width: 100px; height: 100px; transform-origin: 0 0; transform: scale(calc(1 - 0.38 * var(--p))); }
 .photo-lightbox { z-index: 130; background: #000000d0; }
 .photo-lightbox img { max-width: 92vw; max-height: 82dvh; width: auto; height: auto; border-radius: 16px; box-shadow: 0 8px 40px #000000a0; }
 .photo-lightbox-close { position: absolute; top: calc(14px + env(safe-area-inset-top)); right: 14px; }
