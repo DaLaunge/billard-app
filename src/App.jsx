@@ -1389,10 +1389,11 @@ export default function App() {
 
   const selectBadge = async (badgeKey) => {
     const { data, error } = await supabase.rpc("select_badge", { p_badge_key: badgeKey });
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     setPlayer(data);
     toast(t(badgeKey ? "Erfolg als Avatar gesetzt." : "Wieder deine Kugel."));
     loadData();
+    return true;
   };
 
   const setTheme = async (themeKey, themeCustom) => {

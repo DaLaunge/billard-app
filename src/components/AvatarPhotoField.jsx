@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
-import { Camera, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Camera, Image as ImageIcon, Trash2, Eye } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { compressImageFile } from "../lib/avatarPhoto";
+import { appConfirm } from "../lib/confirmDialog";
 
-export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
+export default function AvatarPhotoField({ hasPhoto, hasBadge, onClearBadge, onReload, toast, onView }) {
   const cameraRef = useRef(null);
   const galleryRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -34,13 +35,25 @@ export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
   };
 
   const removePhoto = async () => {
+    // Der Muelleimer setzt das Profilbild zurueck: Foto UND als Avatar gewaehlter Erfolg. Ein Fehltipp kostet ein muehsam eingestelltes Foto,
+    // deshalb erst nachfragen und genau sagen, was entfernt wird.
+    const what = hasPhoto && hasBadge ? "Foto und Erfolg" : hasPhoto ? "Foto" : "Erfolg";
+    const msg = {
+      "Foto und Erfolg": t("Foto und Erfolg als Avatar entfernen? Dein Foto wird gelöscht und der gewählte Erfolg abgewählt. Deine Kugel zeigt danach wieder ihre normale Farbe."),
+      "Foto": t("Foto wirklich entfernen? Dein Foto wird gelöscht und du musst es bei Bedarf neu hochladen."),
+      "Erfolg": t("Erfolg als Avatar abwählen? Deine Kugel zeigt danach wieder ihre normale Farbe."),
+    }[what];
+    if (!(await appConfirm(msg))) return;
     setBusy(true);
     try {
-      const path = await myPath();
-      await supabase.storage.from("avatars").remove([path]);
-      const { error } = await supabase.rpc("set_avatar_photo", { p_has_photo: false });
-      if (error) throw error;
-      toast(t("Foto entfernt."));
+      if (hasPhoto) {
+        const path = await myPath();
+        await supabase.storage.from("avatars").remove([path]);
+        const { error } = await supabase.rpc("set_avatar_photo", { p_has_photo: false });
+        if (error) throw error;
+      }
+      if (hasBadge) await onClearBadge?.();
+      toast(t(what === "Foto" ? "Foto entfernt." : what === "Erfolg" ? "Erfolg abgewählt." : "Foto und Erfolg entfernt."));
       await onReload();
     } catch (e) {
       toast(t("Fehler: ") + e.message);
@@ -66,9 +79,15 @@ export default function AvatarPhotoField({ hasPhoto, onReload, toast }) {
         aria-label={t("Aus Galerie wählen")} title={t("Aus Galerie wählen")}>
         <ImageIcon size={18} />
       </button>
-      {hasPhoto && (
+      {hasPhoto && onView && (
+        <button type="button" className="icon-btn" disabled={busy} onClick={onView}
+          aria-label={t("Foto ansehen")} title={t("Foto ansehen")}>
+          <Eye size={18} />
+        </button>
+      )}
+      {(hasPhoto || hasBadge) && (
         <button type="button" className="icon-btn warn" disabled={busy} onClick={removePhoto}
-          aria-label={t("Foto entfernen")} title={t("Foto entfernen")}>
+          aria-label={t("Foto und Erfolg entfernen")} title={t("Foto und Erfolg entfernen")}>
           <Trash2 size={18} />
         </button>
       )}

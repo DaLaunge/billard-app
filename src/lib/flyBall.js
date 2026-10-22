@@ -111,3 +111,40 @@ export function vanishBall(slotBall) {
   setTimeout(end, 900);
   return true;
 }
+
+// Erfolgs-Symbol fliegt von seiner Kachel in die Kugel (Profilbild-Fenster). Anders als flyIn() wird die Kugel NICHT
+// ausgetauscht und versteckt: sie zeigt bis zur Landung ihren alten Stand, nur das Symbol selbst (eine Kopie unter
+// <body>) fliegt, und im Moment der Landung ruft onLand() den neuen Stand der Kugel ein - so gibt es kein Loeschen
+// und Drueberzeichnen mehr. Ziel ist die Mitte der Kugel (bei einem Foto die Plakette unten rechts, siehe .ball-badge-chip).
+// Gilt unabhaengig von der Match-Einstellung, nur "Bewegung reduzieren" schaltet es ab. Gibt false zurueck, wenn nichts
+// geflogen wird - der Aufrufer landet dann selbst sofort.
+export function flyGlyph(src, ballEl, hasPhoto, onLand) {
+  try {
+    if (!src || !ballEl || typeof Element.prototype.animate !== "function"
+      || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+    const from = src.getBoundingClientRect();
+    const ball = ballEl.getBoundingClientRect();
+    if (!inView(from) || !inView(ball)) return false;
+    const font = hasPhoto ? ball.width * 0.26 : ball.width * 0.5;
+    const box = font * 1.15;
+    const to = hasPhoto
+      ? { x: ball.right - ball.width * 0.17, y: ball.bottom - ball.width * 0.17 }
+      : centerOf(ball);
+    const a = centerOf(from);
+    const startFont = parseFloat(getComputedStyle(src).fontSize) || font;
+    const ghost = src.cloneNode(true);
+    Object.assign(ghost.style, {
+      position: "fixed", left: `${to.x - box / 2}px`, top: `${to.y - box / 2}px`, margin: "0", width: `${box}px`, height: `${box}px`,
+      display: "grid", placeItems: "center", lineHeight: "1", fontSize: `${font}px`, zIndex: "9999", pointerEvents: "none",
+      willChange: "transform", filter: "drop-shadow(0 1px 2px #00000060)",
+    });
+    document.body.appendChild(ghost);
+    let done = false;
+    const end = () => { if (done) return; done = true; ghost.remove(); onLand(); };
+    const anim = ghost.animate(path(a.x - to.x, a.y - to.y, startFont / font), { duration: DURATION, easing: "linear", fill: "forwards" });
+    anim.onfinish = end;
+    anim.oncancel = end;
+    setTimeout(end, DURATION * 2);
+    return true;
+  } catch { return false; }
+}

@@ -19,7 +19,7 @@ export default function ConfirmHost() {
   const finish = (result) => { state.resolve(result); setState(null); };
 
   return (
-    <div className="modal-overlay" onClick={() => finish(false)}>
+    <div className="modal-overlay confirm-overlay" onClick={() => finish(false)}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <p style={{ marginBottom: 16 }}>{state.message}</p>
         <div className="sp-controls">
