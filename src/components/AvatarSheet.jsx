@@ -33,7 +33,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const SMALL = 48;
   const HEAD = 84;        // Platz fuer die grosse Kugel ueber der Liste
   const MAX_OVER = 90;
-  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0 });
+  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0, wheel: false });
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
@@ -54,6 +54,8 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     const st = stRef.current;
     const dt = Math.min(0.032, (now - st.t) / 1000); st.t = now;
     st.v += ((st.pt - st.p) * 240 - st.v * 24) * dt; st.p += st.v * dt;
+    // Mausrad/Trackpad melden kein "Loslassen": die Dehnung klingt deshalb von selbst ab, solange keine neuen Impulse kommen
+    if (st.wheel) { st.ot *= Math.exp(-dt / 0.08); if (st.ot < 0.4) { st.ot = 0; st.wheel = false; } }
     st.ov += ((st.ot - st.o) * 720 - st.ov * 42) * dt; st.o += st.ov * dt;
     const still = Math.abs(st.pt - st.p) < 0.001 && Math.abs(st.v) < 0.01 && Math.abs(st.ot - st.o) < 0.1 && Math.abs(st.ov) < 0.5;
     if (still) { st.p = st.pt; st.v = 0; st.o = st.ot; st.ov = 0; st.raf = 0; paint(); return; }
@@ -75,16 +77,16 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     run();
   };
   // Ziehen ueber den oberen Rand hinaus: Mausrad hoch (am Rand) bzw. Wischen nach unten (am Rand)
-  const setOver = (v) => { stRef.current.ot = Math.min(MAX_OVER, Math.max(0, v)); run(); };
+  const setOver = (v) => { stRef.current.wheel = false; stRef.current.ot = Math.min(MAX_OVER, Math.max(0, v)); run(); };
   const onWheel = (e) => {
     const list = listRef.current;
     if (!list) return;
     const st = stRef.current;
     if (e.deltaY < 0 && list.scrollTop <= 0) {
-      setOver(st.ot + -e.deltaY * 0.35);
-      clearTimeout(st.timer);
-      st.timer = setTimeout(() => setOver(0), 70);
-    } else if (e.deltaY > 0 && st.ot > 0) { clearTimeout(st.timer); setOver(0); }
+      st.wheel = true;
+      st.ot = Math.min(MAX_OVER, st.ot + -e.deltaY * 0.35);
+      run();
+    } else if (e.deltaY > 0 && st.ot > 0) setOver(0);
   };
   const onTouchStart = (e) => { stRef.current.y0 = listRef.current?.scrollTop <= 0 ? e.touches[0].clientY : null; };
   const onTouchMove = (e) => {
