@@ -29,7 +29,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   // laeuft mit dem Inhalt nach oben, waehrend sie schrumpft und nach links in die Kopfzeile rutscht. Der Platz scrollt nativ weg, die Kugel
   // bekommt nur ein transform (translate + scale, kein Layout) aus scrollTop - dadurch ruckelt nichts mehr (frueher: Kopfhoehe/-breite pro
   // Bild veraendert -> Layout der ganzen Liste + doppelte Scrollgeschwindigkeit).
-  const HERO = 152; // Hoehe des freien Platzes ueber der Liste (muss zu .avatar-sheet-hero in App.css passen)
+  const t0Ref = useRef(148); // Abstand der Werkzeugzeile vom Fensterrand bei scrollTop 0 (Kopfzeile 64 + .avatar-sheet-hero 78 + Zeilenabstand), beim Mounten gemessen
   const SMALL = 48;
   const sheetRef = useRef(null);
   const listRef = useRef(null);
@@ -38,19 +38,20 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const updateBall = () => {
     const sheet = sheetRef.current; const list = listRef.current; const ball = bigRef.current;
     if (!sheet || !list || !ball) return;
-    // Phase 1: die Kugel fuellt den freien Platz zwischen Kopfzeile und Werkzeugzeile (12 px Luft oben und unten), ihr Durchmesser ist
-    // also immer Platz - 24 und schliesst unten buendig mit der Werkzeugzeile ab, bis 48 px erreicht sind. Phase 2: mit 48 px rutscht sie
-    // in den restlichen Scrollweg nach oben links in die Kopfzeile.
+    // Die Kugel sitzt von Anfang an in Hoehe der Kopfzeile (y = 8, Platz oben bleibt nicht leer). Phase 1: ihr Durchmesser ist der freie Platz
+    // bis zur Werkzeugzeile minus 20 (8 oben, 12 Luft unten), also schliesst sie unten immer mit gleichem Abstand ab - bis 48 px erreicht sind.
+    // Phase 2: mit 48 px rutscht sie auf den naechsten 72 px Scrollweg von der Mitte nach links an ihren Platz in der Kopfzeile.
     const sc = Math.max(0, list.scrollTop);
-    const free = Math.max(0, HERO - sc);
-    const d = Math.max(SMALL, free - 24);
-    const q = free >= SMALL + 24 ? 0 : 1 - free / (SMALL + 24);
+    const t0 = t0Ref.current;
+    const toolsTop = Math.max(64, t0 - sc);
+    const d = Math.min(128, Math.max(SMALL, toolsTop - 20));
+    const q = Math.min(1, Math.max(0, (sc - (t0 - (SMALL + 20))) / 72));
     const x = (sheet.clientWidth / 2 - d / 2) * (1 - q) + 14 * q;
-    const y = 76 - 68 * q;
-    ball.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${(d / 128).toFixed(4)})`;
+    ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
     if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (q - 0.6) * 2.5)));
   };
   useLayoutEffect(() => {
+    if (toolsRef.current) t0Ref.current = toolsRef.current.offsetTop;
     updateBall();
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
       updateBall();
