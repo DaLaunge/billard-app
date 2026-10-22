@@ -98,27 +98,18 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const rubber = (pull) => MAX_OVER * (1 - Math.exp(-Math.max(0, pull) / 190));
   const setPull = (pull) => { const st = stRef.current; st.pull = Math.max(0, pull); st.ot = rubber(st.pull); run(); };
   // Festgehalten wird die Dehnung, solange der Finger/die Maus sie haelt; erst beim Loslassen federt sie zurueck.
+  // Mausrad/Trackpad melden weder "gehalten" noch "losgelassen" (und das Trackpad schickt nach dem Abheben noch Traegheits-Impulse).
+  // Deshalb kein Halten: jeder Impuls am oberen Rand gibt der Feder einen Stoss (proportional zur Staerke). Wer weiter zieht, haelt die
+  // Dehnung durch die Folge der Stoesse; hoert er auf, federt sie von selbst zurueck - und der Traegheits-Nachlauf klingt ebenso natuerlich ab.
   const onWheel = (e) => {
     const list = listRef.current;
     if (!list) return;
     const st = stRef.current;
-    if (e.deltaY < 0 && list.scrollTop <= 0) {
-      // Mausrad/Trackpad melden kein Loslassen. Mausrad: gehalten, solange Impulse kommen, 140 ms nach dem letzten federt sie zurueck.
-      // Trackpad: nach dem Abheben laufen noch ein bis zwei Sekunden Traegheits-Impulse mit STETIG kleiner werdender Staerke - die
-      // erkennen wir (3x in Folge schwaecher) als "losgelassen", federn sofort zurueck und ueberhoeren den Rest, bis eine neue Geste beginnt.
-      const abs = -e.deltaY;
-      const now = performance.now();
-      const gap = now - st.wheelT; st.wheelT = now;
-      if (gap > 150 || abs > st.wheelAbs * 1.3) { st.momentum = false; st.dec = 0; }
-      if (abs < st.wheelAbs * 0.97) st.dec += 1; else st.dec = 0;
-      st.wheelAbs = abs;
-      if (st.momentum) return;
-      if (st.dec >= 3) { st.momentum = true; clearTimeout(st.timer); setPull(0); return; }
-      if (abs < 3) return;
-      setPull(st.pull + abs * 0.5);
-      clearTimeout(st.timer);
-      st.timer = setTimeout(() => setPull(0), 140);
-    } else if (e.deltaY > 0 && st.ot > 0) { clearTimeout(st.timer); setPull(0); }
+    if (e.deltaY < 0 && list.scrollTop < 1) {
+      const abs = Math.min(160, -e.deltaY);
+      if (st.o < MAX_OVER * 1.05) st.ov += abs * 18;
+      run();
+    } else if (e.deltaY > 0 && st.o > 0) { st.ov -= Math.min(st.ov, 400); run(); }
   };
   const onTouchStart = (e) => { stRef.current.y0 = listRef.current?.scrollTop <= 0 ? e.touches[0].clientY : null; };
   const onTouchMove = (e) => {
@@ -134,7 +125,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     paint();
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
       // Die angepinnte Werkzeugzeile kann umbrechen: die Kategorie-Koepfe kleben direkt darunter
-      if (toolsRef.current && listRef.current) listRef.current.style.setProperty("--tools-h", `${toolsRef.current.offsetHeight}px`);
+      if (toolsRef.current && listRef.current) listRef.current.style.setProperty("--tools-h", `${toolsRef.current.getBoundingClientRect().height}px`);
       paint();
     }) : null;
     if (ro) { ro.observe(sheetRef.current); if (toolsRef.current) ro.observe(toolsRef.current); }
