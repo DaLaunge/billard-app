@@ -25,8 +25,8 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   badgeRef.current = badge;
   useEffect(() => { if (!flying.current) setShown(badge); }, [badge]);
   const bigRef = useRef(null);
-  // Beim Runterscrollen waechst die Kugel und wandert in die Mitte (mit Huerde, damit es an der Schwelle nicht flackert).
-  const [big, setBig] = useState(false);
+  // Das Scrollen der Liste zieht die Kugel gross (oben, mittig) oder staucht sie zusammen (unten, links): --p direkt am Kopf, ohne React-Render.
+  const barRef = useRef(null);
   const [viewPhoto, setViewPhoto] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState(() => {
@@ -83,7 +83,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     <>
     <div className="modal-overlay avatar-sheet-overlay" onClick={onClose}>
       <div className="avatar-sheet" role="dialog" aria-modal="true" aria-label={t("Dein Profilbild")} onClick={(e) => e.stopPropagation()}>
-        <div className={"avatar-sheet-bar" + (big ? " big" : "")}>
+        <div className="avatar-sheet-bar" ref={barRef}>
           <div className={"avatar-sheet-big" + (photo ? " clickable" : "")} ref={bigRef}
             onClick={photo ? () => setViewPhoto(true) : undefined} title={photo ? t("Foto ansehen") : undefined}>
             <div className="avatar-sheet-big-in">
@@ -109,7 +109,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
               aria-pressed={view === "detail"} title={t("Detail")}><List size={16} /></button>
           </div>
         </div>
-        <div className={"avatar-sheet-list " + view} onScroll={(e) => { const y = e.currentTarget.scrollTop; setBig((v) => (v ? y > 6 : y > 48)); }}>
+        <div className={"avatar-sheet-list " + view} onScroll={(e) => barRef.current?.style.setProperty("--p", String(Math.min(1, e.currentTarget.scrollTop / 90)))}>
           <div className="avatar-sheet-label">
             <span className="avatar-sheet-label-text">{t("Freigeschaltete Erfolge")} <span>{shown.length}{q ? ` / ${unlocked.length}` : ""}</span></span>
             {onOpenAchievements && (
