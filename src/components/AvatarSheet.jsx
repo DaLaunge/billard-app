@@ -33,7 +33,7 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
   const SMALL = 48;
   const HEAD = 84;        // Platz fuer die grosse Kugel ueber der Liste
   const MAX_OVER = 64;
-  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0, pull: 0 });
+  const stRef = useRef({ p: 0, v: 0, pt: 0, o: 0, ov: 0, ot: 0, raf: 0, t: 0, timer: 0, y0: null, last: 0, lastT: 0, vel: 0, kp: 240, cp: 24, pull: 0 });
   const sheetRef = useRef(null);
   const listRef = useRef(null);
   const toolsRef = useRef(null);
@@ -43,18 +43,22 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     if (!sheet || !list || !ball) return;
     const st = stRef.current;
     const pc = Math.min(1, Math.max(0, st.p));
-    const d = 128 - (128 - SMALL) * st.p; // beim Dehnen bleibt die Kugel bei 128 px, nur die Liste gibt nach
+    const d = 128 - (128 - SMALL) * pc; // nie ueber 128 px: beim Ueberschwingen/Dehnen gibt nur die Liste nach
     const x = (sheet.clientWidth / 2 - d / 2) * (1 - pc) + 14 * pc;
     ball.style.transform = `translate3d(${x.toFixed(2)}px, 8px, 0) scale(${(d / 128).toFixed(4)})`;
-    list.style.transform = `translate3d(0, ${(HEAD * (1 - st.p) + st.o).toFixed(2)}px, 0)`;
+    list.style.transform = `translate3d(0, ${(HEAD * (1 - Math.min(1, st.p)) + st.o).toFixed(2)}px, 0)`;
     if (titleRef.current) titleRef.current.style.opacity = String(Math.min(1, Math.max(0, (pc - 0.6) * 2.5)));
   };
   // Zwei Federn (Kugelstufe p, Dehnung o) im Bildtakt; laeuft nur, solange noch etwas in Bewegung ist.
   const tick = (now) => {
     const st = stRef.current;
     const dt = Math.min(0.032, (now - st.t) / 1000); st.t = now;
-    st.v += ((st.pt - st.p) * 240 - st.v * 24) * dt; st.p += st.v * dt;
-    st.ov += ((st.ot - st.o) * 1000 - st.ov * 50) * dt; st.o += st.ov * dt;
+    // feste kleine Teilschritte: harte Federn sind mit einem grossen Bildschritt numerisch instabil
+    const n = Math.max(1, Math.ceil(dt / 0.004)); const h = dt / n;
+    for (let i = 0; i < n; i += 1) {
+      st.v += ((st.pt - st.p) * st.kp - st.v * st.cp) * h; st.p += st.v * h;
+      st.ov += ((st.ot - st.o) * 1000 - st.ov * 50) * h; st.o += st.ov * h;
+    }
     const still = Math.abs(st.pt - st.p) < 0.001 && Math.abs(st.v) < 0.01 && Math.abs(st.ot - st.o) < 0.1 && Math.abs(st.ov) < 0.5;
     if (still) { st.p = st.pt; st.v = 0; st.o = st.ot; st.ov = 0; st.raf = 0; paint(); return; }
     paint();
@@ -70,7 +74,22 @@ export default function AvatarSheet({ player, colorOf, badgeOf, photoOf, catalog
     if (!list) return;
     const st = stRef.current;
     const sc = list.scrollTop;
-    st.pt = sc > 1 ? 1 : 0;
+    // Scrollgeschwindigkeit (px/s, geglaettet): bestimmt, wie schnell und wie wuchtig die Feder anspringt, wenn der obere Rand erreicht
+    // bzw. verlassen wird - ein schneller Wisch schnappt hart auf und laesst die Liste nachfedern, ein langsames Scrollen oeffnet sanft.
+    const now = performance.now();
+    const dtS = Math.max(0.004, (now - st.lastT) / 1000);
+    st.lastT = now;
+    st.vel = st.vel * 0.5 + Math.max(-6000, Math.min(6000, (sc - st.last) / dtS)) * 0.5;
+    st.last = sc;
+    const next = sc > 1 ? 1 : 0;
+    if (next !== st.pt) {
+      const sp = Math.abs(st.vel);
+      st.kp = 240 + Math.min(sp / 6, 900);
+      st.cp = 1.6 * Math.sqrt(st.kp);
+      st.v = (next > st.p ? 1 : -1) * Math.min(sp / 500, 10);
+      if (next === 0) st.ov += Math.min(sp * 0.5, 1400);
+      st.pt = next;
+    }
     if (sc > 1) { st.ot = 0; st.pull = 0; }
     run();
   };
