@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "419", icon: "🔤",
+    items: ["Neu in den Einstellungen unter Aussehen: ein Regler macht die Schrift der ganzen App größer oder kleiner."],
+    en: ["New in Settings under Appearance: a slider makes the text of the whole app larger or smaller."] },
   { version: "415.5", icon: "📑",
     items: ["Tab-Freak und Doomscroller gelten jetzt in allen Menüs: Statistik, Einstellungen, Verwaltung, Regelkunde, Erfolge und Bestenlisten zeigen entweder Kapitel-Tabs oder eine lange Liste mit angepinnten Überschriften.", "Am PC haben alle Seiten eine einheitliche, mittige Spalte."],
     en: ["Tab freak and Doomscroller now apply in every menu: Statistics, Settings, Admin, Rules, Achievements and the leaderboards show either chapter tabs or one long list with pinned headings.", "On desktop all pages now share one centered column."] },

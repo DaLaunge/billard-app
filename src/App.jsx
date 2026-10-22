@@ -56,7 +56,7 @@ import NumbersScreen from "./components/NumbersScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import RulesScreen from "./components/RulesScreen";
 import AvatarSheet from "./components/AvatarSheet";
-import { applyListPrefs, hasListModeChoice, clearListPrefs, storeListMode } from "./lib/uiPrefs";
+import { applyFontScale, applyListPrefs, hasListModeChoice, clearListPrefs, storeListMode } from "./lib/uiPrefs";
 import ListChoiceDialog from "./components/ListChoiceDialog";
 import BottomBar from "./components/BottomBar";
 import { loadMenuPrefs, storeMenuPrefs, sanitizeMenuPrefs, MAX_PINNED, START_TABS } from "./lib/menuPrefs";
@@ -1020,7 +1020,7 @@ export default function App() {
     || (r.kind === "request" && ["owner", "admin"].includes(roleIn(clubsMenu, r.club_id, player?.id))))).length;
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [listChoiceOpen, setListChoiceOpen] = useState(false);
-  useEffect(() => { applyListPrefs(); }, []);
+  useEffect(() => { applyListPrefs(); applyFontScale(); }, []);
   // Ein Tipp auf die EIGENE Kugel (egal wo) oeffnet das Profilbild-Fenster. Ausgenommen: die Match-Eingabe (dort waehlt man
   // sich selbst als Spieler aus), das Fenster selbst und Filter-Chips (".chip", z. B. "Meine Umgebung" in der Statistik: dort ist die
   // Kugel ein Filter-Knopf, kein Profilbild).

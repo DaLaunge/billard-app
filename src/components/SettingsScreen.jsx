@@ -14,6 +14,8 @@ import MatchFlySwitch from "./widgets/MatchFlySwitch";
 import PendingPopupSwitch from "./widgets/PendingPopupSwitch";
 import FiltersOpenSwitch from "./widgets/FiltersOpenSwitch";
 import ListPrefs from "./widgets/ListPrefs";
+import FontScaleSlider from "./widgets/FontScaleSlider";
+import { getFontScale, clearFontScale } from "../lib/uiPrefs";
 import StartPagePicker from "./widgets/StartPagePicker";
 import { appConfirm } from "../lib/confirmDialog";
 import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
@@ -36,6 +38,7 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
   const [color, setColor] = useState(meRow?.avatar_color || null);
   const [motto, setMotto] = useState(meRow?.motto || "");
   const [busy, setBusy] = useState(false);
+  const [fontScale, setFontScale] = useState(getFontScale);
   // Kapitel der Einstellungen (Tab-Freak: Leiste + ein Kapitel, Doomscroller: alles untereinander, lib/useChapters.jsx)
   const editChap = useChapters("settings", [
     { id: "profil", label: t("Profil") },
@@ -128,9 +131,11 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
   const pickAuto = () => { pickColor(null); if (meRow?.selected_badge) onSelectBadge(null); };
 
   const resetDefaults = async () => {
-    if (!(await appConfirm(t("Alle Einstellungen zurücksetzen? Kugelfarbe, Design, Startseite, Karten, Menü und Leiste gehen auf den Standard zurück.")))) return;
+    if (!(await appConfirm(t("Alle Einstellungen zurücksetzen? Kugelfarbe, Design, Schriftgröße, Startseite, Karten, Menü und Leiste gehen auf den Standard zurück.")))) return;
     setBusy(true);
     onResetMenu?.();
+    clearFontScale();
+    setFontScale(1);
     try { localStorage.removeItem("profilSeg"); } catch { /* ignore */ }
     await Promise.all([
       onSaveProfile(nickValid ? cleanNick : nickname, null, motto),
@@ -162,7 +167,7 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
           <RotateCcw size={18} />
           <span className="pf-reset-all-text">
             <strong>{t("Alle Einstellungen zurücksetzen")}</strong>
-            <small>{t("Kugelfarbe, Design, Startseite, Karten, Menü und Leiste")}</small>
+            <small>{t("Kugelfarbe, Design, Schriftgröße, Startseite, Karten, Menü und Leiste")}</small>
           </span>
         </button>
 
@@ -283,6 +288,7 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
               </label>
             </div>
           )}
+          <FontScaleSlider value={fontScale} onChange={setFontScale} />
         </section>
         </Chap>
 
