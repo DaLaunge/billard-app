@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { TrendingUp, Plus, Search, X, Check } from "lucide-react";
 import { t } from "../lib/i18n";
 import DiscBall from "./widgets/DiscBall";
@@ -6,6 +6,7 @@ import { dateMinusDays, todayStr } from "../lib/stats";
 import { initials, readableColor, fmtRating } from "../lib/format";
 import DevChart from "./DevChart";
 import Ball from "./Ball";
+import { flyIn, vanishBall } from "../lib/flyBall";
 import InfoButton from "./widgets/InfoButton";
 import CardMaximizeButton from "./widgets/CardMaximizeButton";
 import CardMenuButton from "./widgets/CardMenuButton";
@@ -79,11 +80,31 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   const toggleMaximize = () => setMaximized((m) => !m);
   useEffect(() => { setSel(defaultSel); }, [defaultSel]);
 
+  // Kugel-Sprung wie in "Neues Match" (lib/flyBall.js): ein neu gewaehlter Spieler hopst aus der Auswahl nach oben in
+  // die Legende, ein entfernter (bei offener Auswahl) von der Legende zurueck in die Vorschlagsliste; bei
+  // geschlossener Auswahl loest sich seine Kugel auf. Gemerkt wird der Startpunkt VOR dem Umschalten, geflogen
+  // wird nach dem Rendern, sobald das Ziel im DOM steht.
+  const flyRef = useRef(null);
+  const ballOf = (area, nick) => document.querySelector(`${area} .ball[data-nick="${CSS.escape(nick)}"]`);
   const toggle = (nick) => {
+    const adding = !sel.includes(nick);
+    const src = ballOf(adding ? ".cand-row" : ".dev-legend", nick);
+    if (src) {
+      if (adding || addOpen) flyRef.current = { nick, adding, rect: src.getBoundingClientRect() };
+      else vanishBall(src);
+    }
     setSel((cur) => cur.includes(nick)
       ? cur.filter((x) => x !== nick)
       : (cur.length < 6 ? [...cur, nick] : cur));
   };
+
+  useLayoutEffect(() => {
+    const f = flyRef.current;
+    if (!f) return;
+    flyRef.current = null;
+    const target = ballOf(f.adding ? ".dev-legend" : ".cand-row", f.nick);
+    if (target) flyIn(target, f.rect);
+  }, [sel]);
 
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES.at(-1);
   const cutoff = range.days ? dateMinusDays(todayStr(), range.days) : null;
