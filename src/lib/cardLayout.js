@@ -150,7 +150,7 @@ export const CARD_SCREENS = [
     // saessen beide Karten je nach Ausblendung ploetzlich uebereinander in
     // einer Spalte und die anderen blieben leer.
     decks: [
-      { id: "zahlen", label: "Meine Zahlen", ids: ["ratings", "rekorde", "headToHead", "fun"] },
+      { id: "zahlen", label: "Meine Zahlen", ids: ["ratings", "verlauf", "rekorde", "headToHead", "fun"] },
     ],
     cards: [
       // "Erfolge (Fortschritt)" ("Als Naechstes") ist seit 2026-10-03 keine eigene
@@ -158,6 +158,7 @@ export const CARD_SCREENS = [
       // (alte gespeicherte Reihenfolgen werfen die id automatisch raus).
       { id: "erfolge", label: "Erfolge", col: "middle" },
       { id: "ratings", label: "Ratings nach Disziplin", col: "left" },
+      { id: "verlauf", label: "Match-Historie", col: "left" },
       { id: "rekorde", label: "Rekorde", col: "left" },
       { id: "headToHead", label: "Head-to-Head", col: "left" },
       { id: "fun", label: "Fun & Tempo", col: "left" },

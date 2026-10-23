@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import SegmentBar from "./SegmentBar";
 import InfoButton from "./InfoButton";
-import { BarChart3, Trophy, Star, Swords, Clock, PartyPopper } from "lucide-react";
+import { BarChart3, History, Trophy, Star, Swords, Clock, PartyPopper } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { fmtDuration, fmtRating } from "../../lib/format";
 import { computeAchievementExtras } from "../../lib/achievements";
@@ -13,6 +13,7 @@ import { META as COUNTER_META } from "./ExtraCounters";
 import CardDeck from "./CardDeck";
 import RecordsCard from "./RecordsCard";
 import HeadToHeadCard from "./HeadToHeadCard";
+import MyMatchHistory from "./MyMatchHistory";
 
 /* "Meine Zahlen": Ratings, Rekorde, Head-to-Head und Spielgeschwindigkeit als
    EINE Karte mit Reitern - die linke Spalte am PC, auf jedem Bildschirm
@@ -76,6 +77,7 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
         {myRows.length === 0 && <p className="hint">{t("Noch kein Rating - erst ein Match spielen!")}</p>}
       </>
     ),
+    verlauf: <MyMatchHistory nickname={nickname} matches={matches} players={players} />,
     rekorde: <RecordsCard embedded extras={extras} catalog={catalog} earnedBadges={earnedBadges} />,
     headToHead: (
       <HeadToHeadCard embedded nickname={nickname} matches={matches} rangliste={rangliste} onOpenProfile={onOpenProfile}
@@ -119,6 +121,8 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
   };
   const meta = {
     ratings: { tab: t("Ratings"), title: t("Ratings nach Disziplin"), icon: <Trophy size={15} /> },
+    verlauf: { tab: t("Historie"), title: t("Match-Historie"), icon: <History size={15} />,
+      info: t("Alle bestätigten Matches mit Ausgang und den Rating-Punkten, die das Match in seiner Disziplin gebracht oder gekostet hat (Doppel: Doppel-Rating). Gast-Matches und Walkover zählen nicht fürs Rating.") },
     rekorde: { tab: t("Rekorde"), title: t("Rekorde"), icon: <Star size={15} /> },
     headToHead: { tab: t("Gegner"), title: t("Head-to-Head (Match-Siege)"), icon: <Swords size={15} /> },
     fun: { tab: t("Fun"), title: t("Fun & Tempo"), icon: <PartyPopper size={15} />,

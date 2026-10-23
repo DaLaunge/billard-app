@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "420.1", icon: "📜",
+    items: ["Meine Zahlen hat einen neuen Reiter „Historie“: alle deine Matches mit Ausgang und den Rating-Punkten, die jedes Match gebracht oder gekostet hat."],
+    en: ["My numbers has a new “History” tab: all your matches with the result and the rating points each match won or cost."] },
   { version: "420", icon: "🖼️",
     items: ["Dein Profilbild: Die Kugel steht oben groß in der Mitte und schrumpft beim Scrollen, ein gewählter Erfolg fliegt sanft in die Kugel, und dein Foto kannst du in voller Größe ansehen."],
     en: ["Your profile picture: the ball sits large in the center and shrinks as you scroll, a chosen achievement glides smoothly into the ball, and you can view your photo at full size."] },

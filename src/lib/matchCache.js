@@ -25,13 +25,13 @@ import { fetchAllRows } from "./data";
    Mal alles geladen. Sicherheitsnetz: nach FULL_REFRESH_DAYS komplett neu;
    CACHE_VERSION erhoehen, wenn sich COLS aendert. */
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;   // 2: Spalte walkover (Rating-Punkte je Match im Client)
 const FULL_REFRESH_DAYS = 14;
 const OVERLAP_MS = 10 * 60000;
 const KEY = `matchCache:${DB_REF}`;
 const COLS = ["id", "played_at", "score1", "score2", "high_run1", "high_run2", "discipline", "confirmed",
   "reported_by", "player1_id", "player2_id", "player1b_id", "player2b_id", "run_log", "tournament_id",
-  "winner_stays_session_id", "manual_entry_note", "tournament", "winner_stays_session"];
+  "winner_stays_session_id", "walkover", "manual_entry_note", "tournament", "winner_stays_session"];
 const JOINS = "tournament:tournaments(name, format, organizer_id), winner_stays_session:winner_stays_sessions(name, is_doubles)";
 const BASE = COLS.filter((c) => c !== "tournament" && c !== "winner_stays_session").join(", ");
 const SELECT = `${BASE}, updated_at, ${JOINS}`;
