@@ -602,9 +602,13 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   useEffect(() => { try { localStorage.setItem("statGlobalMode", globalMode); } catch { /* ignore */ } }, [globalMode]);
   // Welche Rating-"Disziplin" die Auswahl trifft: fuer Doppel gibt es serverseitig
   // NUR ein Gesamt-Doppel-Rating (keins je Disziplin), sonst gilt die gewaehlte
-  // Disziplin bzw. Gesamt. Fuer Einzel + Alle gibt es ebenfalls nur "Gesamt"
-  // (Einzel und Doppel zusammen) - siehe elo_anchor_rows() in supabase/.
-  const ratingDisc = globalMode === "double" ? "Doppel" : globalDisc;
+  // Disziplin bzw. Gesamt (Einzel und Doppel zusammen); nur Einzel + Alle hat ein eigenes Rating "Einzel"
+  // - siehe elo_anchor_rows() in supabase/.
+  // Einzel + Alle: eigenes Einzel-Rating ("Einzel", ohne Doppel; supabase/2026-10-23b_single_rating.sql). Ohne die Migration
+  // gibt es die Zeilen noch nicht - dann bleibt es beim Gesamt-Rating.
+  const hasEinzelRating = useMemo(() => rangliste.some((r) => r.discipline === "Einzel"), [rangliste]);
+  const ratingDisc = globalMode === "double" ? "Doppel"
+    : (globalMode === "single" && globalDisc === "Gesamt" && hasEinzelRating) ? "Einzel" : globalDisc;
   useEffect(() => { try { localStorage.setItem("statGlobalCount", String(globalCount)); } catch { /* ignore */ } }, [globalCount]);
   useEffect(() => { try { localStorage.setItem("statGlobalNearby", globalNearby ? "1" : "0"); } catch { /* ignore */ } }, [globalNearby]);
 
@@ -876,7 +880,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       nameOf: (r) => r.nickname, valOf: (r) => fmtRating(r.rating),
       extra: (r) => <DecayBadge player={r} iconSize={15} />,
       emptyText: t("Noch keine Ratings in dieser Disziplin."),
-      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. In den ersten 10 Spielen gilt ein Rating als vorläufig (Anfänger-Bonus: jedes Match zählt doppelt so stark) und steht unter den gefestigten Ratings; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt das Gesamt-Rating (Einzel und Doppel zusammen)."),
+      info: t("Rating nach einem Fargo-ähnlichen Elo-System: mehr Punkte = besser, 100 Punkte Unterschied entsprechen ungefähr einer Gewinnchance von 2:1. Ohne bestätigtes Match sinkt ein Rating über 500 mit der Zeit wieder Richtung 500 (Startwert), ein Rating darunter bleibt unverändert. In den ersten 10 Spielen gilt ein Rating als vorläufig (Anfänger-Bonus: jedes Match zählt doppelt so stark) und steht unter den gefestigten Ratings; ohne Match seit 60 Tagen steht ein Spieler nicht in dieser Rangliste (ruhend).") + " " + t("Ein Doppel-Rating gibt es nur insgesamt, nicht je Disziplin; ohne Disziplin-Auswahl zählt bei „Einzel“ das Einzel-Rating und bei „Beides“ das Gesamt-Rating (Einzel und Doppel zusammen)."),
     },
     aufsteiger: {
       id: "aufsteiger", tab: t("Aufsteiger§Liste"), title: t("Aufsteiger (30 Tage)"), icon: <TrendingUp size={15} />,
