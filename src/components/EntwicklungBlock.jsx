@@ -212,7 +212,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               <div className="cand-row">
                 {suggestions.slice(0, 12).map((n) => (
                   <button key={n} className="cand-chip" onClick={() => toggle(n)}>
-                    <Plus size={13} /> {n}{freqByNick[n] ? ` (${freqByNick[n]})` : ""}
+                    <Ball nick={n} color={colorOf(n)} label={initials(n)} badge={badgeOf && badgeOf(n)} photo={photoOf && photoOf(n)} size={20} /> {n}{freqByNick[n] ? ` (${freqByNick[n]})` : ""}
                   </button>
                 ))}
                 {suggestions.length === 0 && <p className="hint">{t("Keine weiteren Spieler.")}</p>}
