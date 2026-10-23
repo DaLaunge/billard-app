@@ -3447,3 +3447,11 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .mh-score { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mh-opp { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mh-pts { font-variant-numeric: tabular-nums; text-align: right; min-width: 3.4em; }
+
+/* Match-Protokoll: kleine Tabelle "Rating-Punkte" (wer wie viel gewonnen/verloren hat und warum). */
+.protokoll-rating { margin-top: 14px; }
+.protokoll-rating-head { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: calc(14px * var(--fs, 1)); color: var(--accent); }
+.rating-table td, .rating-table th { text-align: left; }
+.rating-table td:nth-child(2), .rating-table td:nth-child(3), .rating-table td:nth-child(4),
+.rating-table th:nth-child(2), .rating-table th:nth-child(3), .rating-table th:nth-child(4) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rating-why { min-width: 16em; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; }

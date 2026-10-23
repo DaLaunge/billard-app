@@ -4,6 +4,8 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDateTime, mSide } from "../lib/format";
 import MatchProtokollTable from "./MatchProtokollTable";
+import MatchRatingTable from "./widgets/MatchRatingTable";
+import { matchRatingBreakdown } from "../lib/ratingHistory";
 import TournamentFlag from "./TournamentFlag";
 import { exportMatchPdf } from "../lib/pdfExport";
 import ImprintFooter from "./widgets/ImprintFooter";
@@ -14,7 +16,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 // genutzt, siehe TurnierBerichtScreen.jsx). "Als PDF speichern" nutzt den
 // PDF direkt (lib/pdfExport.js, Datei "JJJJMMDD_Name_gegen_Name_Disziplin_Stand.pdf")
 // statt des Druckdialogs des Browsers.
-export default function MatchProtokollScreen({ match: m, me, toast, onReload, onBack }) {
+export default function MatchProtokollScreen({ match: m, me, matches, players, toast, onReload, onBack }) {
   const names = [mSide(m, 1), mSide(m, 2)];
   const hasProtocol = !!m.run_log?.length;
   // Nutzer-Feedback: "Wenn kein Protokoll vorhanden ist, gib in der
@@ -34,7 +36,7 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
   const savePdf = async () => {
     setPdfBusy(true);
     try {
-      await exportMatchPdf(m, names, m.tournament?.name);
+      await exportMatchPdf(m, names, m.tournament?.name, matches && players ? matchRatingBreakdown(m, matches, players) : null);
     } catch (e) {
       console.warn("PDF-Export fehlgeschlagen", e);
       toast(t("PDF konnte nicht erstellt werden."));
@@ -88,6 +90,7 @@ export default function MatchProtokollScreen({ match: m, me, toast, onReload, on
         )}
 
         <MatchProtokollTable match={m} names={names} />
+        <MatchRatingTable match={m} matches={matches} players={players} />
 
         <button className="btn primary" disabled={pdfBusy} onClick={savePdf}>
           {pdfBusy ? <Loader2 size={16} className="spin" /> : <FileDown size={16} />} {t("Als PDF speichern")}

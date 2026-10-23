@@ -1,6 +1,6 @@
 import { supabase } from "../supabase";
 import { t } from "./i18n";
-import { fmtTime, fmtDuration, fmtDateTime } from "./format";
+import { fmtTime, fmtDuration, fmtDateTime, fmtRating } from "./format";
 import { runLogEntryParts } from "./runLog";
 import { protocolData } from "./protocolData";
 
@@ -285,7 +285,24 @@ export class Pdf {
 // Dasselbe wie MatchProtokollTable.jsx am Bildschirm: Tabelle (einfache
 // Standtabelle oder Rack-fuer-Rack je Spieler beim 14/1) plus Dauer-Zeilen.
 // clock = { net_ms, total_ms } aus match_clock oder null.
-export function addMatchProtocol(pdf, m, names, clock) {
+// Kleine Tabelle "Rating-Punkte": Spieler, Rating vorher/nachher, Punkte; darunter je Spieler der Grund.
+// info = matchRatingBreakdown() aus lib/ratingHistory.js (oder null: dann entfaellt der Block).
+export function addRatingBlock(pdf, info) {
+  if (!info?.rows?.length) return;
+  const fr = (v) => fmtRating(v);
+  pdf.gap(2);
+  pdf.text(`${t("Rating-Punkte")} - ${t(info.slot)}`, { size: 10, bold: true });
+  pdf.table({
+    cols: [{ label: t("Spieler"), w: 3 }, { label: t("Vorher"), w: 1.4, align: "right" }, { label: t("Punkte"), w: 1.4, align: "right" }, { label: t("Nachher"), w: 1.4, align: "right" }],
+    width: 90,
+    rows: info.rows.map((r) => [r.name, fr(r.before),
+      { text: (r.change > 0 ? "+" : r.change < 0 ? "-" : "") + fr(Math.abs(r.change)), bold: true, color: r.change >= 0 ? [40, 130, 70] : [190, 60, 50] },
+      fr(r.after)]),
+  });
+  info.rows.forEach((r) => pdf.text(`${r.name}: ${r.reason} ${r.formula}`, { size: 8, color: DIM }));
+}
+
+export function addMatchProtocol(pdf, m, names, clock, ratingInfo) {
   const p = protocolData(m);
   if (!m.run_log?.length) {
     pdf.text(t("Kein Protokoll vorhanden - wurde vermutlich nachträglich als Ergebnis eingetragen."), { size: 9, color: DIM });
@@ -333,6 +350,7 @@ export function addMatchProtocol(pdf, m, names, clock) {
     [t("Reine Spielzeit"), p.playTime != null ? fmtDuration(p.playTime) : null],
     [p.simple ? t("Ø pro Spiel") : t("Ø pro Aufnahme"), p.units > 0 && p.avgUnit != null ? fmtDuration(p.avgUnit) : null],
   ]);
+  addRatingBlock(pdf, ratingInfo);
 }
 
 // Uhr-Dauer(n) aus match_clock; fehlt die Tabelle oder der Eintrag, bleibt es leer.
@@ -346,13 +364,13 @@ export async function loadClocks(matchIds) {
 }
 
 // Ein einzelnes Match-Protokoll als PDF speichern (Knopf "Als PDF speichern").
-export async function exportMatchPdf(m, names, tournamentName) {
+export async function exportMatchPdf(m, names, tournamentName, ratingInfo) {
   const pdf = await newPdf();
   pdf.title(`${names[0]}  ${m.score1} : ${m.score2}  ${names[1]}`);
   pdf.meta([t(m.discipline), fmtDateTime(m.played_at), tournamentName].filter(Boolean).join(" · "));
   pdf.gap(2);
   const clocks = await loadClocks([m.id]);
-  addMatchProtocol(pdf, m, names, clocks[m.id] || null);
+  addMatchProtocol(pdf, m, names, clocks[m.id] || null, ratingInfo);
   pdf.finish();
   await savePdf(pdf.doc, matchFileName(m, names));
 }

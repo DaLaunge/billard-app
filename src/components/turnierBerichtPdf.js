@@ -2,6 +2,7 @@ import { t } from "../lib/i18n";
 import { fmtDate, fmtDateTime, fmtDuration } from "../lib/format";
 import { matchDurationMs } from "../lib/runLog";
 import { computeTurnierLayout, bracketLabel, formatLabel, BOX_W, BOX_H, FINAL_BOX_W, FINAL_BOX_H } from "../lib/turnierLayout";
+import { matchRatingBreakdown } from "../lib/ratingHistory";
 import { newPdf, clean, savePdf, tournamentFileName, addMatchProtocol, loadClocks, MARGIN } from "../lib/pdfExport";
 import { tmScores } from "./TurnierMatchActions";
 
@@ -120,7 +121,7 @@ function drawBracket(pdf, matches, nameOf) {
 }
 
 // Kompletter Turnierbericht. logDetail: "kompakt" | "voll" (wie am Bildschirm gewaehlt).
-export async function exportTurnierBerichtPdf({ tour, standingsGrouped, aggByPlayer, timeline, logDetail, bracketMatches, hasTree, nameOf }) {
+export async function exportTurnierBerichtPdf({ tour, standingsGrouped, aggByPlayer, timeline, logDetail, bracketMatches, hasTree, nameOf, ratingCtx }) {
   const pdf = await newPdf();
   pdf.title(tour.name);
   pdf.meta(`${formatLabel(tour.format)} · ${t(tour.discipline)} · ${fmtDate(tour.finished_at || tour.created_at)}`);
@@ -186,7 +187,8 @@ export async function exportTurnierBerichtPdf({ tour, standingsGrouped, aggByPla
       pdf.ensure(34);
       pdf.gap(2);
       pdf.text(`${n1} ${tm.match.score1}:${tm.match.score2} ${n2} · ${fmtDateTime(tm.match.played_at)}`, { size: 10, bold: true });
-      addMatchProtocol(pdf, tm.match, [n1, n2], clocks[tm.match.id] || null);
+      addMatchProtocol(pdf, tm.match, [n1, n2], clocks[tm.match.id] || null,
+        ratingCtx ? matchRatingBreakdown(tm.match, ratingCtx.matches, ratingCtx.players) : null);
     });
   }
 

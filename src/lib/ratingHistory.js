@@ -8,14 +8,19 @@
    Angezeigt wird nur die Aenderung durch das Match selbst (ohne Verfall), also genau ka * delta.
    Zur Anzeige reicht Double-Genauigkeit - die Datenbank rechnet exakt, hier geht es um eine Stelle.
    Aendert sich die Engine, muss diese Datei mit (Konstanten und Reihenfolge unten). */
+import { t } from "./i18n";
+import { fmtRating } from "./format";
+
 const K = 4, KNEW = 8, NEWG = 10, GRACE = 30, HALF = 200;
 const DAY = 86400000;
 
 const decayed = (r, lastAny, at) =>
   (r > 500 && lastAny != null) ? 500 + (r - 500) * Math.pow(0.5, Math.max(0, (at - lastAny) / DAY - GRACE) / HALF) : r;
 
-/* Liefert Map "matchId:playerId" -> Punkte in der Disziplin des Matches (Doppel -> Rating "Doppel"). */
-export function computeMatchPoints(matches, players) {
+/* Liefert Map "matchId:playerId" -> Einzelheiten der Rating-Aenderung in der Disziplin des Matches
+   (Doppel -> Rating "Doppel"): { change, before, after, k, games, share, ea, nf, own, opp, teamOwn, teamOpp, dbl, slot }.
+   before = Stand vor dem Match NACH dem Verfall, share = Punkteanteil der eigenen Seite, ea = erwarteter Anteil. */
+export function computeMatchRatings(matches, players) {
   const guest = new Set((players || []).filter((p) => p.is_guest).map((p) => p.id));
   const list = (matches || [])
     .filter((m) => m.confirmed && !m.walkover && (m.score1 !== m.score2 || m.winner_stays_session_id)
@@ -50,13 +55,59 @@ export function computeMatchPoints(matches, players) {
       const delta = nf * (a1 / n - ea);
       const apply = (side, sign) => side.forEach((pid) => {
         const c = cur.get(pid);
-        const change = sign * (c.g < NEWG ? KNEW : K) * delta;
+        const k = c.g < NEWG ? KNEW : K;
+        const change = sign * k * delta;
         st.set(`${slot}|${pid}`, { r: c.r + change, g: c.g + 1, t: at });
-        if (slot !== "G") out.set(`${m.id}:${pid}`, change);
+        if (slot !== "G") {
+          const mineSide = sign > 0;
+          out.set(`${m.id}:${pid}`, {
+            change, before: c.r, after: c.r + change, k, games: c.g, nf,
+            share: (mineSide ? a1 : a2) / n, ea: mineSide ? ea : 1 - ea,
+            own: mineSide ? m.score1 : m.score2, opp: mineSide ? m.score2 : m.score1,
+            teamOwn: mineSide ? avg(sideA) : avg(sideB), teamOpp: mineSide ? avg(sideB) : avg(sideA),
+            dbl, slot: dbl ? "Doppel" : m.discipline,
+          });
+        }
       });
       apply(sideA, 1);
       apply(sideB, -1);
     }
   }
   return out;
+}
+
+/* Nur die Punkte (Zahl) je "matchId:playerId" - fuer die Historie. */
+export function computeMatchPoints(matches, players) {
+  const out = new Map();
+  computeMatchRatings(matches, players).forEach((v, k) => out.set(k, v.change));
+  return out;
+}
+
+/* Zeilen fuer die kleine Tabelle im Match-Protokoll: wer wie viele Punkte bekam oder verlor - und warum.
+   Liefert { slot, rows: [{ pid, name, before, change, after, reason, formula }] } oder null, wenn das Match
+   nicht ins Rating zaehlt (Gast, Walkover, Unentschieden, nicht bestaetigt). */
+export function matchRatingBreakdown(match, matches, players) {
+  if (!match?.confirmed) return null;
+  const all = computeMatchRatings(matches, players);
+  const ids = [match.player1_id, match.player1b_id, match.player2_id, match.player2b_id].filter(Boolean);
+  const nick = (id) => players.find((p) => p.id === id)?.nickname || "?";
+  const rows = ids.map((pid) => ({ pid, d: all.get(`${match.id}:${pid}`) })).filter((r) => r.d)
+    .map(({ pid, d }) => ({
+      pid, name: nick(pid), before: d.before, change: d.change, after: d.after, ...ratingReason(d),
+    }));
+  if (!rows.length) return null;
+  return { slot: all.get(`${match.id}:${rows[0].pid}`).slot, rows };
+}
+
+const pct = (x) => Math.round(x * 100);
+const signed = (v) => { const r = Math.round(v * 10) / 10; return (r > 0 ? "+" : r < 0 ? "−" : "±") + fmtRating(Math.abs(r)); };
+
+/* Begruendung einer Rating-Aenderung in zwei Zeilen: was ist passiert (gegen Erwartung), und die Rechnung dazu. */
+export function ratingReason(d) {
+  const res = d.own > d.opp ? t("Sieg") : d.own < d.opp ? t("Niederlage") : t("Unentschieden");
+  const reason = t("{res} {own}:{opp} - {share} % der Punkte geholt, erwartet waren {ea} % (Rating {a} gegen {b}).",
+    { res, own: d.own, opp: d.opp, share: pct(d.share), ea: pct(d.ea), a: fmtRating(d.teamOwn), b: fmtRating(d.teamOpp) });
+  const formula = t("Punkte = K {k}{newbie} × Gewicht {nf} × ({share} % − {ea} %) = {pts}",
+    { k: d.k, newbie: d.k > K ? " " + t("(Anfänger-K, unter 10 Spielen)") : "", nf: d.nf, share: pct(d.share), ea: pct(d.ea), pts: signed(d.change) });
+  return { reason, formula };
 }

@@ -6,6 +6,7 @@ import { computeTurnierLayout, bracketLabel, formatLabel, BOX_W, BOX_H, FINAL_BO
 import { tmScores } from "./TurnierMatchActions";
 import Ball from "./Ball";
 import MatchProtokollTable from "./MatchProtokollTable";
+import MatchRatingTable from "./widgets/MatchRatingTable";
 import DiscBall from "./widgets/DiscBall";
 import { tableTimeMs, exportTurnierBerichtPdf } from "./turnierBerichtPdf";
 
@@ -89,7 +90,7 @@ function StaticBracket({ matches, nameOf }) {
 // Kompletter Turnierbericht (Nutzer-Feedback). "Als PDF speichern" erzeugt das PDF
 // direkt (turnierBerichtPdf.js, Datei "JJJJMMDD_Turnier_Name_Bericht.pdf") statt den
 // Druckdialog des Browsers zu oeffnen; die Bildschirm-Ansicht ist die Vorschau dazu.
-export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf, colorOf, badgeOf, photoOf, onBack, toast }) {
+export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf, colorOf, badgeOf, photoOf, onBack, toast, matches, players }) {
   // "Vollstaendig" zeigt pro Match das komplette Rack-/Punkte-Protokoll
   // (Nutzer-Wunsch: beide Detailgrade zur Wahl stellen, mit Erklaerung).
   const [logDetail, setLogDetail] = useState("kompakt"); // "kompakt" | "voll"
@@ -98,7 +99,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
   const savePdf = async () => {
     setPdfBusy(true);
     try {
-      await exportTurnierBerichtPdf({ tour, standingsGrouped, aggByPlayer, timeline, logDetail, bracketMatches, hasTree, nameOf });
+      await exportTurnierBerichtPdf({ tour, standingsGrouped, aggByPlayer, timeline, logDetail, bracketMatches, hasTree, nameOf, ratingCtx: matches && players ? { matches, players } : null });
     } catch (e) {
       console.warn("PDF-Export fehlgeschlagen", e);
       toast && toast(t("PDF konnte nicht erstellt werden."));
@@ -266,6 +267,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
                     <b>{n1} {tm.match.score1}:{tm.match.score2} {n2}</b> · {fmtDateTime(tm.match.played_at)}
                   </p>
                   <MatchProtokollTable match={tm.match} names={[n1, n2]} />
+                  <MatchRatingTable match={tm.match} matches={matches} players={players} />
                 </div>
               );
             })

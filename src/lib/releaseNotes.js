@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "421.1", icon: "🧮",
+    items: ["Jedes Match-Protokoll zeigt jetzt eine kleine Tabelle: wer wie viele Rating-Punkte gewonnen oder verloren hat – und warum."],
+    en: ["Every match protocol now shows a small table: who won or lost how many rating points – and why."] },
   { version: "420.4", icon: "🎯",
     items: ["Neues Einzel-Rating: In der Statistik zeigt „Einzel“ bei „Alle Disziplinen“ jetzt eine Rangliste nur aus Einzelmatches, ohne Doppel."],
     en: ["New singles rating: in Statistics, “Singles” with “All disciplines” now shows a leaderboard based on singles matches only, without doubles."] },
