@@ -1206,7 +1206,7 @@ const TRANSLATIONS = {
     "Historie": "History",
     "Match-Historie": "Match history",
     "Alle bestätigten Matches mit Ausgang und den Rating-Punkten, die das Match in seiner Disziplin gebracht oder gekostet hat (Doppel: Doppel-Rating). Gast-Matches und Walkover zählen nicht fürs Rating.": "All confirmed matches with the result and the rating points the match won or cost in its discipline (doubles: doubles rating). Guest matches and walkovers don't count toward the rating.",
-    "{n} Matches": "{n} matches",
+    "{n} von {total} Matches": "{n} of {total} matches",
     "gegen": "vs",
     "mit": "with",
     "Mehr anzeigen": "Show more",
