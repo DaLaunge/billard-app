@@ -3437,3 +3437,13 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .photo-lightbox { z-index: 130; background: #000000d0; }
 .photo-lightbox img { max-width: 92vw; max-height: 82dvh; width: auto; height: auto; border-radius: 16px; box-shadow: 0 8px 40px #000000a0; }
 .photo-lightbox-close { position: absolute; top: calc(14px + env(safe-area-inset-top)); right: 14px; }
+
+/* Match-Historie (Meine Zahlen): feste Spalten, damit Datum, Kugel, S/N, Ausgang und Punkte
+   in jeder Zeile an derselben Stelle stehen. */
+.mh-row { display: grid; grid-template-columns: 5.4em 18px 1.2em 3.2em minmax(0, 1fr) auto; align-items: center; column-gap: 8px; }
+.mh-date { color: var(--ivory-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mh-disc { display: inline-flex; justify-content: center; }
+.mh-res { font-weight: 700; text-align: center; }
+.mh-score { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mh-opp { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mh-pts { font-variant-numeric: tabular-nums; text-align: right; min-width: 3.4em; }

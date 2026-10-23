@@ -1251,7 +1251,7 @@ export default function App() {
   }, [player, players, toast, navPush]);
 
   const disciplines = useMemo(() => {
-    const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt"));
+    const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt" && d !== "Einzel"));
     DEFAULT_DISCIPLINES.forEach((d) => found.add(d));
     found.add(HEYBALL);
     return [...found].sort();

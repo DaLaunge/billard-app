@@ -41,7 +41,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Die Disziplin steht schon im Formular (Schritt 0); der frueher eigene
   // Schritt 1 entfaellt. Alte Entwuerfe mit step 1 landen beim Ergebnis (2),
   // falls sie eine Disziplin hatten, sonst wieder im Formular.
-  const matchDiscs = sortDisciplines((disciplines || activeDisciplines()).filter((d) => d !== "Doppel" && d !== "Gesamt"));
+  const matchDiscs = sortDisciplines((disciplines || activeDisciplines()).filter((d) => d !== "Doppel" && d !== "Gesamt" && d !== "Einzel"));
   const lastDisc = () => {
     try { const d = localStorage.getItem("matchDisc"); if (d && matchDiscs.includes(d)) return d; } catch { /* Privatmodus */ }
     return matchDiscs[0] || DEFAULT_DISCIPLINES[0];
