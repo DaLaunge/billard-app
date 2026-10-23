@@ -638,6 +638,7 @@ button.side-row-progress:hover .side-row-name { color: var(--accent); }
 .disc-pick:not(.sel) .pool-ball { opacity: .72; }
 /* Kompakte Variante fuer die Filterfelder der Statistik: Kugeln, "Alle" und
    "Doppel" (Chip) in EINER Zeile. */
+.disc-sep { width: 1px; align-self: stretch; margin: 4px 2px; background: var(--btn-border, rgba(255,255,255,.18)); }
 .disc-picks.compact { gap: 6px; align-items: center; margin-bottom: 0; }
 .disc-pick.compact { padding: 4px; border-radius: 12px; }
 /* "Alle Disziplinen": vier ueberlappende Kugeln in einer Kachel */

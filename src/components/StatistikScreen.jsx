@@ -172,10 +172,8 @@ function StatFilterContent({ disc, disciplines, onDisc, mode, onMode, count, nea
           solche gefuehrt) und steht deshalb nicht in dieser Reihe, sondern als
           eigene Achse darunter: Einzel / Doppel / Beides. */}
       <div style={{ marginBottom: 8 }}>
-        <DiscPickRow all="Gesamt" discs={disciplines.filter((d) => d !== "Doppel")} value={disc} onChange={onDisc} />
-      </div>
-      <div style={{ marginBottom: 8 }}>
-        <ModePick value={mode} onChange={onMode} />
+        <DiscPickRow all="Gesamt" discs={disciplines.filter((d) => d !== "Doppel")} value={disc} onChange={onDisc}
+          trailing={<ModePick inline value={mode} onChange={onMode} />} />
       </div>
       <div className="chips small" style={{ marginBottom: 0 }}>
         {LIST_COUNT_OPTIONS.map((c) => (
@@ -397,8 +395,8 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
               ))}
             </div>
           )}
-          <DiscPickRow all="all" discs={activeDisciplines()} value={filterDisc} onChange={setFilterDisc} />
-          <ModePick value={filterMode} onChange={setFilterMode} />
+          <DiscPickRow all="all" discs={activeDisciplines()} value={filterDisc} onChange={setFilterDisc}
+            trailing={<ModePick inline value={filterMode} onChange={setFilterMode} />} />
           <div className="chips small" style={{ marginBottom: 0 }}>
             <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
               {t("Turniermatches ausblenden")}
