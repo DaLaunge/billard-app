@@ -45,7 +45,8 @@ const writeTab = (v) => { try { localStorage.setItem(TAB_KEY, v); } catch { /* P
 export default function NumbersDeck({ nickname, isMe = true, parts, matches, rangliste, players, challenges,
   catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, stacked = false, barMode = false }) {
   const playerObj = players.find((p) => p.nickname === nickname);
-  const myRows = rangliste.filter((r) => r.nickname === nickname);
+  // 'Doppel:D'/'Gesamt:D' (Ratings je Disziplin und Spielart) bleiben der Statistik vorbehalten
+  const myRows = rangliste.filter((r) => r.nickname === nickname && !r.discipline.includes(":"));
   const extras = useMemo(
     () => computeAchievementExtras(nickname, matches, players, challenges),
     [matches, players, challenges, nickname]

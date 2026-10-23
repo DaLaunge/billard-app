@@ -166,7 +166,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               zeigt deshalb selbst, was er gerade darstellt. Bewusst in der
               Zeitraum-Zeile statt im Titel: am Handy kuerzte die Pille im
               Kartenkopf den Titel zu "Entwicklung ueber die ...". */}
-          {disc && disc !== "Gesamt" && <span className="deck-filter-pill deck-filter-pill-end"><DiscBall disc={disc} size={16} /></span>}
+          {disc && disc !== "Gesamt" && <span className="deck-filter-pill deck-filter-pill-end"><DiscBall disc={disc.includes(":") ? disc.split(":")[1] : disc} size={16} /></span>}
         </div>
       )}
       {allDates.length === 0 ? (
