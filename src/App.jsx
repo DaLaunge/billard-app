@@ -1251,7 +1251,7 @@ export default function App() {
   }, [player, players, toast, navPush]);
 
   const disciplines = useMemo(() => {
-    const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt" && d !== "Einzel"));
+    const found = new Set(rangliste.map((r) => r.discipline).filter((d) => d !== "Gesamt" && d !== "Einzel" && !d.includes(":")));
     DEFAULT_DISCIPLINES.forEach((d) => found.add(d));
     found.add(HEYBALL);
     return [...found].sort();
@@ -1843,7 +1843,7 @@ export default function App() {
                 // in der (nur bestaetigte Matches enthaltenden) globalen
                 // Liste auftaucht, faellt sonst auf die Momentaufnahme
                 // zurueck (z.B. noch unbestaetigtes eigenes Match).
-                <MatchProtokollScreen match={matches.find((mm) => mm.id === protokollMatch.id) || protokollMatch} me={player} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
+                <MatchProtokollScreen match={matches.find((mm) => mm.id === protokollMatch.id) || protokollMatch} me={player} matches={matches} players={players} toast={toast} onReload={loadData} onBack={() => window.history.back()} />
               )}
               {tab === "profil" && (
                 <IdentityScreen nickname={player.nickname} matches={matches} rangliste={rangliste} players={players} challenges={challenges}

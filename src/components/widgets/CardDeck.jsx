@@ -2,8 +2,6 @@ import { Fragment } from "react";
 import { getListMode } from "../../lib/uiPrefs";
 import { useFunnel, FunnelButton, FunnelPanel } from "./FilterFunnel";
 import CardMenuButton from "./CardMenuButton";
-import CardCollapseButton from "./CardCollapseButton";
-import CardColumnButton from "./CardColumnButton";
 import InfoButton from "./InfoButton";
 import ScrollRow from "./ScrollRow";
 import { t } from "../../lib/i18n";
@@ -48,7 +46,7 @@ import { t } from "../../lib/i18n";
    holte genau die Hoehe zurueck, die diese Karte einspart. */
 export default function CardDeck({
   icon, title, tabs, activeId, onActive,
-  collapsed, onToggleCollapse, column, onToggleColumn, onHide, hideLabel,
+  onHide, hideLabel, tabsExtra,
   roomy, id, soloTitle = true, filter, inlineTabs = false,
 }) {
   const funnel = useFunnel();
@@ -82,6 +80,7 @@ export default function CardDeck({
           {x.count != null && <span className="deck-tab-count">{x.count}</span>}
         </button>
       ))}
+      {tabsExtra}
     </ScrollRow>
   );
   return (
@@ -90,16 +89,14 @@ export default function CardDeck({
         <h3>{useSolo ? (active.icon || icon) : icon} <span className="stat-block-title-text">{useSolo ? (active.title || title) : title}</span>
           {filter?.pill && <span className="deck-filter-pill">{filter.pill}</span>}
         </h3>
-        {inlineTabs && !collapsed && tabsBar}
+        {inlineTabs && tabsBar}
         <div className="stat-block-head-actions">
           {onHide && !stacked && <CardMenuButton onHide={onHide} label={solo ? undefined : (hideLabel || t("Diesen Reiter ausblenden"))} />}
-          {filter && !collapsed && <FunnelButton funnel={funnel} label={filter.label} />}
+          {filter && <FunnelButton funnel={funnel} label={filter.label} />}
           {info && !stacked && <InfoButton title={active.title || title}>{info}</InfoButton>}
-          {onToggleColumn && <CardColumnButton column={column} onToggle={onToggleColumn} />}
-          {onToggleCollapse && <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />}
         </div>
       </div>
-      {!collapsed && (
+      {(
         <>
           {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
           {!inlineTabs && tabsBar}

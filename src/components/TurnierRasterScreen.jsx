@@ -450,7 +450,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     return (
       <TurnierBerichtScreen tour={tour} tms={tms} finalStandings={finalStandings}
         nameOf={nameOf} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-        onBack={() => setShowReport(false)} toast={toast} />
+        onBack={() => setShowReport(false)} toast={toast} matches={matches} players={players} />
     );
   }
 

@@ -43,9 +43,10 @@ const readTab = () => { try { return localStorage.getItem(TAB_KEY); } catch { re
 const writeTab = (v) => { try { localStorage.setItem(TAB_KEY, v); } catch { /* Privatmodus */ } };
 
 export default function NumbersDeck({ nickname, isMe = true, parts, matches, rangliste, players, challenges,
-  catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, column, onToggleColumn, stacked = false, barMode = false }) {
+  catalog, earnedBadges, onOpenProfile, colorOf, badgeOf, photoOf, onHidePart, roomy, stacked = false, barMode = false }) {
   const playerObj = players.find((p) => p.nickname === nickname);
-  const myRows = rangliste.filter((r) => r.nickname === nickname);
+  // 'Doppel:D'/'Gesamt:D' (Ratings je Disziplin und Spielart) bleiben der Statistik vorbehalten
+  const myRows = rangliste.filter((r) => r.nickname === nickname && !r.discipline.includes(":"));
   const extras = useMemo(
     () => computeAchievementExtras(nickname, matches, players, challenges),
     [matches, players, challenges, nickname]
@@ -166,7 +167,6 @@ export default function NumbersDeck({ nickname, isMe = true, parts, matches, ran
     <CardDeck inlineTabs roomy={roomy} icon={<BarChart3 size={17} />} title={isMe ? t("Meine Zahlen") : t("Zahlen")}
       tabs={shown.map((id) => ({ id, ...meta[id], render: () => bodies[id] }))}
       activeId={activeId} onActive={(id) => { setTab(id); writeTab(id); }}
-      column={column} onToggleColumn={onToggleColumn}
       onHide={onHidePart ? () => onHidePart(activeId) : undefined} />
   );
 }

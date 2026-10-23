@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { TrendingUp, Plus, Search, X, Check } from "lucide-react";
 import { t } from "../lib/i18n";
 import DiscBall from "./widgets/DiscBall";
@@ -6,9 +6,8 @@ import { dateMinusDays, todayStr } from "../lib/stats";
 import { initials, readableColor, fmtRating } from "../lib/format";
 import DevChart from "./DevChart";
 import Ball from "./Ball";
+import { flyIn, vanishBall } from "../lib/flyBall";
 import InfoButton from "./widgets/InfoButton";
-import CardCollapseButton from "./widgets/CardCollapseButton";
-import CardColumnButton from "./widgets/CardColumnButton";
 import CardMaximizeButton from "./widgets/CardMaximizeButton";
 import CardMenuButton from "./widgets/CardMenuButton";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
@@ -27,7 +26,7 @@ const RANGES = [
 // braucht der Graph keine eigenen Disziplin-Buttons mehr. Alle folgenden
 // Werte (Spieler-Reihenfolge, Kurven, verfuegbare Daten) haengen weiterhin
 // von der Disziplin ab.
-export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, filter, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
+export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, filter, onHide }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
@@ -81,11 +80,31 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
   const toggleMaximize = () => setMaximized((m) => !m);
   useEffect(() => { setSel(defaultSel); }, [defaultSel]);
 
+  // Kugel-Sprung wie in "Neues Match" (lib/flyBall.js): ein neu gewaehlter Spieler hopst aus der Auswahl nach oben in
+  // die Legende, ein entfernter (bei offener Auswahl) von der Legende zurueck in die Vorschlagsliste; bei
+  // geschlossener Auswahl loest sich seine Kugel auf. Gemerkt wird der Startpunkt VOR dem Umschalten, geflogen
+  // wird nach dem Rendern, sobald das Ziel im DOM steht.
+  const flyRef = useRef(null);
+  const ballOf = (area, nick) => document.querySelector(`${area} .ball[data-nick="${CSS.escape(nick)}"]`);
   const toggle = (nick) => {
+    const adding = !sel.includes(nick);
+    const src = ballOf(adding ? ".cand-row" : ".dev-legend", nick);
+    if (src) {
+      if (adding || addOpen) flyRef.current = { nick, adding, rect: src.getBoundingClientRect() };
+      else vanishBall(src);
+    }
     setSel((cur) => cur.includes(nick)
       ? cur.filter((x) => x !== nick)
       : (cur.length < 6 ? [...cur, nick] : cur));
   };
+
+  useLayoutEffect(() => {
+    const f = flyRef.current;
+    if (!f) return;
+    flyRef.current = null;
+    const target = ballOf(f.adding ? ".dev-legend" : ".cand-row", f.nick);
+    if (target) flyIn(target, f.rect);
+  }, [sel]);
 
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES.at(-1);
   const cutoff = range.days ? dateMinusDays(todayStr(), range.days) : null;
@@ -132,12 +151,6 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     return latest(nick);
   };
 
-  // Zellen-Mindestbreite fuer das .dev-userlist-Grid an den laengsten
-  // gewaehlten Namen gekoppelt (ch-Einheit statt JS-Textmessung) - so
-  // stehen kurze Namen bei breitem Fenster zu mehreren nebeneinander,
-  // lange Namen bekommen automatisch mehr Platz bzw. eine eigene Spalte.
-  const rowMinCh = Math.max(6, sel.reduce((m, n) => Math.max(m, n.length), 0));
-
   return (
     <section className={"stat-block" + (maximized ? " is-maximized" : "")}>
       <div className="stat-block-head">
@@ -147,16 +160,14 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
           {/* Nur gesetzt, wenn die Bestenlisten-Karte fehlt (alle sechs
               ausgeblendet): dort haengt der Trichter sonst, und ohne ihn liesse
               sich die Disziplin dieses Graphen nicht mehr aendern. */}
-          {filter && !collapsed && <FunnelButton funnel={funnel} label={filter.label} />}
+          {filter && <FunnelButton funnel={funnel} label={filter.label} />}
           <InfoButton title={t("Entwicklung über die Zeit")}>
-            {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
+            {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen. Ein Tipp auf einen Spieler entfernt ihn, über „Spieler“ kommen weitere dazu.")}
           </InfoButton>
-          {!maximized && <CardColumnButton column={column} onToggle={onToggleColumn} />}
           <CardMaximizeButton maximized={maximized} onToggle={toggleMaximize} />
-          {!maximized && <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />}
         </div>
       </div>
-      {!collapsed && (
+      {(
       <>
       {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
       {allDates.length > 0 && (
@@ -170,38 +181,35 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               zeigt deshalb selbst, was er gerade darstellt. Bewusst in der
               Zeitraum-Zeile statt im Titel: am Handy kuerzte die Pille im
               Kartenkopf den Titel zu "Entwicklung ueber die ...". */}
-          {disc && disc !== "Gesamt" && <span className="deck-filter-pill deck-filter-pill-end"><DiscBall disc={disc} size={16} /></span>}
+          {disc && disc !== "Gesamt" && <span className="deck-filter-pill deck-filter-pill-end"><DiscBall disc={disc.includes(":") ? disc.split(":")[1] : disc} size={16} /></span>}
         </div>
       )}
       {allDates.length === 0 ? (
         <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
         <>
-          <div className="dev-userlist" style={{ "--row-min": `calc(${rowMinCh}ch + 120px)` }}>
+          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
+          {/* Spielerauswahl als kompakte Legende UNTER dem Graphen (Nutzer-Wunsch): ein Chip je Spieler mit Kugel,
+              Name und Wert (beim Ziehen ueber den Graphen der Wert des Tages); ein Tipp auf den Chip entfernt den
+              Spieler (kein Kreuz noetig), der letzte Chip oeffnet die Auswahl. */}
+          <div className="dev-legend">
             {sel.map((nick) => {
               const val = displayVal(nick);
               return (
-                <div key={nick} className="stat-row">
-                  <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={30} />
-                  <span className="stat-name">{nick}</span>
-                  <span className="stat-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? fmtRating(val) : "–"}</span>
-                  <button type="button" className="pmp-remove" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>
-                    <X size={14} />
-                  </button>
-                </div>
+                <button key={nick} type="button" className="dev-chip dev-chip-player" onClick={() => toggle(nick)}
+                  aria-label={`${nick} ${t("Entfernen")}`} title={t("Entfernen")}>
+                  <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={22} />
+                  <span className="dev-chip-name">{nick}</span>
+                  <span className="dev-chip-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? fmtRating(val) : "–"}</span>
+                </button>
               );
             })}
-            {/* Statt eines breiten Knopfs unter dem Graphen: eine Zeile am Ende
-                der Spielerliste, in der Form der Spielerzeilen (Nutzer-
-                Feedback 2026-09-30: passt besser zur sichtbaren Auflistung,
-                spart den Knopf und ist intuitiver). Bei 6 Spielern gibt es
-                nichts mehr hinzuzufuegen. Offen wird sie zu "Fertig". */}
             {(addOpen || sel.length < 6) && (
-              <button type="button" className="stat-row as-btn dev-add-row"
+              <button type="button" className={"dev-chip dev-chip-add" + (addOpen ? " open" : "")}
                 onClick={() => { if (addOpen) setQuery(""); setAddOpen((o) => !o); }}
-                aria-expanded={addOpen}>
-                <span className="dev-add-ico">{addOpen ? <Check size={16} /> : <Plus size={16} />}</span>
-                <span className="stat-name">{addOpen ? t("Fertig") : t("Spieler hinzufügen")}</span>
+                aria-expanded={addOpen} title={addOpen ? t("Fertig") : t("Spieler hinzufügen")} aria-label={addOpen ? t("Fertig") : t("Spieler hinzufügen")}>
+                {addOpen ? <Check size={16} /> : <Plus size={16} />}
+                <span className="dev-chip-name">{addOpen ? t("Fertig") : t("Spieler")}</span>
               </button>
             )}
           </div>
@@ -223,14 +231,13 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               <div className="cand-row">
                 {suggestions.slice(0, 12).map((n) => (
                   <button key={n} className="cand-chip" onClick={() => toggle(n)}>
-                    <Plus size={13} /> {n}{freqByNick[n] ? ` (${freqByNick[n]})` : ""}
+                    <Ball nick={n} color={colorOf(n)} label={initials(n)} badge={badgeOf && badgeOf(n)} photo={photoOf && photoOf(n)} size={20} /> {n}{freqByNick[n] ? ` (${freqByNick[n]})` : ""}
                   </button>
                 ))}
                 {suggestions.length === 0 && <p className="hint">{t("Keine weiteren Spieler.")}</p>}
               </div>
             </div>
           )}
-          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
         </>
       )}
       </>

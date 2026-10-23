@@ -83,7 +83,7 @@ export function DiscAll({ size = 26 }) {
   );
 }
 
-export function DiscPickRow({ discs, value, onChange, all }) {
+export function DiscPickRow({ discs, value, onChange, all, trailing }) {
   return (
     <div className="disc-picks compact">
       {all && (
@@ -97,6 +97,7 @@ export function DiscPickRow({ discs, value, onChange, all }) {
       ) : (
         <button key={d} type="button" className={"chip" + (value === d ? " active" : "")} onClick={() => onChange(d)}>{t(d)}</button>
       )))}
+      {trailing}
     </div>
   );
 }
