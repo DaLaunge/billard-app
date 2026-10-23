@@ -3443,7 +3443,14 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .rating-why { min-width: 16em; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; }
 
 /* Statistik: gemeinsame Filterleiste, Spaltenkoepfe der Siege-Tabelle, "Mehr anzeigen" */
-.stat-filterbar { padding: 2px 0; }
+.stat-filterbar { background: var(--felt-2); border: 1px solid var(--line); border-radius: 18px;
+  padding: 8px 12px; margin-bottom: var(--card-gap); }
+/* Kugeln und Einzel/Doppel gleichmaessig ueber die Kartenbreite verteilt (Handy), am PC mittig gruppiert. */
+.stat-filterbar .disc-picks.compact { justify-content: space-between; flex-wrap: nowrap; }
+@media (min-width: 900px) {
+  .stat-filterbar .disc-picks.compact { justify-content: center; gap: 10px; }
+  .stat-filterbar .disc-sep { margin-inline: 8px; }
+}
 /* Spaltenkoepfe = Sortier-Knoepfe: Akzent-Umrandung zeigt, dass man darauf tippen kann; der aktive ist gefuellt.
    Gleiche Breite/Mitte wie die Werte darunter (.stat-col), gleicher Abstand wie in .stat-row. */
 .stat-colhead { display: flex; justify-content: flex-end; gap: 10px; margin: 0 0 6px; }
