@@ -3441,3 +3441,13 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .rating-table td:nth-child(2), .rating-table td:nth-child(3), .rating-table td:nth-child(4),
 .rating-table th:nth-child(2), .rating-table th:nth-child(3), .rating-table th:nth-child(4) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rating-why { min-width: 16em; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; }
+
+/* Statistik: gemeinsame Filterleiste, Spaltenkoepfe der Siege-Tabelle, "Mehr anzeigen" */
+.stat-filterbar { padding: 2px 0; }
+.stat-colhead { display: flex; justify-content: flex-end; gap: 4px; margin: 0 0 4px; }
+.stat-colbtn { background: none; border: none; color: var(--ivory-dim); font: inherit; font-size: calc(12px * var(--fs, 1));
+  padding: 4px 6px; min-width: 56px; text-align: right; cursor: pointer; border-radius: 8px; }
+.stat-colbtn.active { color: var(--accent); font-weight: 700; }
+.stat-col { min-width: 56px; text-align: right; }
+.stat-col.dim { color: var(--ivory-dim); font-weight: 500; }
+.more-btn { align-self: center; margin: 8px auto 0; display: block; }

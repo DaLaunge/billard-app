@@ -61,13 +61,12 @@ const writeTabPref = (v) => { try { localStorage.setItem(LEADERBOARD_TAB_KEY, v)
 // ungekuerzten "rows"-Liste ermittelt (nicht aus "visible") - liegt er
 // ausserhalb der gerade sichtbaren Top-N, wird die eigene Zeile per Trenner
 // angehaengt statt nur als Text erwaehnt.
-function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, count, nearby, colorOf, badgeOf, photoOf, onOpenProfile }) {
+function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, colorOf, badgeOf, photoOf, onOpenProfile, cols, colVal, sortId, onSort }) {
+  const [limit, setLimit] = useState(DEFAULT_LIST_COUNT);
   const myIndex = rows.findIndex((r) => nameOf(r) === me?.nickname);
-  const showNearby = nearby && myIndex >= 0;
-  const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
-  const visible = showNearby ? rows.slice(sliceStart, myIndex + 3) : (count === "all" ? rows : rows.slice(0, count));
-  const myRowShown = showNearby || count === "all" || (myIndex >= 0 && myIndex < count);
-  const pinMyRow = myIndex >= 0 && !myRowShown;
+  const visible = rows.slice(0, limit);
+  const pinMyRow = myIndex >= limit;
+  const rest = rows.length - limit;
   const row = (r, rank) => {
     const name = nameOf(r);
     return (
@@ -76,65 +75,51 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
         <Ball nick={name} color={colorOf(name)} label={initials(name)} badge={badgeOf(name)} photo={photoOf(name)} size={34} />
         <span className="stat-name">{name}</span>
         <NickClubTag nickname={name} />
-        <span className="stat-val">{valOf(r)}</span>
+        {cols
+          ? cols.map((c) => <span key={c.id} className={"stat-val stat-col" + (c.id === sortId ? "" : " dim")}>{colVal(r, c.id)}</span>)
+          : <span className="stat-val">{valOf(r)}</span>}
         {extra && <span className="stat-decay-slot">{extra(r)}</span>}
       </button>
     );
   };
   return (
     <>
+      {cols && (
+        <div className="stat-colhead" role="group" aria-label={t("Sortieren nach")}>
+          {cols.map((c) => (
+            <button key={c.id} type="button" className={"stat-colbtn" + (c.id === sortId ? " active" : "")}
+              aria-pressed={c.id === sortId} onClick={() => onSort(c.id)}>{c.label}</button>
+          ))}
+        </div>
+      )}
       {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{emptyText || t("Noch keine Daten.")}</p>}
-      {visible.map((r, i) => row(r, sliceStart + i))}
+      {visible.map((r, i) => row(r, i))}
       {pinMyRow && (
         <>
           <div className="stat-row-sep">···</div>
           {row(rows[myIndex], myIndex)}
         </>
       )}
+      {rest > 0 && (
+        <button type="button" className="chip more-btn" onClick={() => setLimit((l) => l + 20)}>
+          {t("Mehr anzeigen")} ({rest})
+        </button>
+      )}
     </>
   );
 }
 
-// Inhalt des Trichter-Felds der Bestenlisten-Karte: Disziplin und Top-N bzw.
-// "Meine Umgebung" fuer ALLE Bestenlisten und den Verlaufs-Graphen.
-//
-// Bis 2026-09-30 war das eine eigene Karte ("Auswahl fuer alle
-// Statistiken") mit drei Zeilen Chips, dauerhaft aufgeklappt - obwohl man
-// sie selten aendert und alle Bestenlisten inzwischen in EINER Karte
-// stecken. Jetzt klappt sie hinter dem Trichter-Symbol der Bestenlisten-
-// Karte auf (siehe CardDeck.jsx, Prop "filter"). Die Auswahl selbst bleibt
-// unveraendert am Bildschirm (statGlobalDisc/-Count/-Nearby im
-// localStorage), das Feld schliesst sich nur.
-//
-// Nutzer-Feedback, das zu dieser Aufteilung gefuehrt hat (unveraendert
-// gueltig): jede Bestenliste hatte vorher ihre eigenen Top-3/10/Alle-
-// Knoepfe, das waren zu viele Buttons - daher EIN Satz fuer alle.
-function StatFilterContent({ disc, disciplines, onDisc, mode, onMode, count, nearby, onCount, onNearby, me, colorOf, badgeOf, photoOf }) {
+// Gemeinsame Filterleiste fuer Verlauf, Listen und Matches (415.x, Nutzer-Wunsch:
+// "zu verschachtelt"): Disziplin als Kugeln + Einzel/Doppel/Beides in EINER Zeile,
+// immer sichtbar. Sie ersetzt den Trichter an Bestenlisten und Verlauf; die
+// Auswahl selbst bleibt in statGlobalDisc/-Mode (localStorage).
+function StatFilterBar({ disc, disciplines, onDisc, mode, onMode }) {
   return (
-    <>
-      {/* Disziplin als Kugeln (Nutzer-Feedback 2026-09-30: "verwende die Kugeln
-          auch bei Statistik-Filtern"), "Alle" und "Doppel" als Chips. */}
-      {/* "Doppel" ist KEINE Disziplin (das Rating dafuer wird nur intern als
-          solche gefuehrt) und steht deshalb nicht in dieser Reihe, sondern als
-          eigene Achse darunter: Einzel / Doppel / Beides. */}
-      <div style={{ marginBottom: 8 }}>
-        <DiscPickRow all="Gesamt" discs={disciplines.filter((d) => d !== "Doppel")} value={disc} onChange={onDisc}
-          trailing={<ModePick inline value={mode} onChange={onMode} />} />
-      </div>
-      <div className="chips small" style={{ marginBottom: 0 }}>
-        {LIST_COUNT_OPTIONS.map((c) => (
-          <button key={c} className={"chip" + (!nearby && count === c ? " active" : "")}
-            onClick={() => { onCount(c); onNearby(false); }}>
-            {c === "all" ? t("Alle") : c}
-          </button>
-        ))}
-        <button className={"chip chip-icon" + (nearby ? " active" : "")} onClick={() => onNearby((n) => !n)}
-          aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")}>
-          <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
-        </button>
-      </div>
-    </>
+    <div className="stat-filterbar">
+      <DiscPickRow all="Gesamt" discs={disciplines.filter((d) => d !== "Doppel")} value={disc} onChange={onDisc}
+        trailing={<ModePick inline value={mode} onChange={onMode} />} />
+    </div>
   );
 }
 
@@ -232,11 +217,12 @@ function RecordsBoard({ records, colorOf, badgeOf, photoOf, onOpenProfile, onOpe
 // aus demselben Grund wie LeaderboardDeck/RecordsBoard oben: sonst
 // verliert ihr lokaler Filter-State bei jedem Render der Eltern-
 // Komponente seine Identitaet.
-function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokoll, onHide }) {
+function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokoll, onHide, discFilter, modeFilter }) {
   const [filterPlayer, setFilterPlayer] = useState("");
   const [filterResult, setFilterResult] = useState("all"); // all | win | loss
-  const [filterDisc, setFilterDisc] = useState("all"); // all | "8 Ball" | ...
-  const [filterMode, setFilterMode] = useState("both"); // single | double | both (siehe widgets/ModePick.jsx)
+  // Disziplin und Einzel/Doppel kommen aus der gemeinsamen Filterleiste (StatFilterBar).
+  const filterDisc = discFilter === "Gesamt" ? "all" : discFilter;
+  const filterMode = modeFilter;
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [matchCount, setMatchCount] = useState(DEFAULT_LIST_COUNT);
@@ -270,9 +256,9 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
   }, [matches, hideTournament, filterPlayer, filterResult, filterDisc, filterMode, dateFrom, dateTo]);
 
   const visibleMatches = matchCount === "all" ? filteredMatches : filteredMatches.slice(0, matchCount);
-  const filtersActive = !!(filterPlayer || filterDisc !== "all" || filterMode !== "both" || dateFrom || dateTo || hideTournament);
+  const filtersActive = !!(filterPlayer || dateFrom || dateTo || hideTournament);
   const resetFilters = () => {
-    setFilterPlayer(""); setFilterResult("all"); setFilterDisc("all"); setFilterMode("both"); setDateFrom(""); setDateTo("");
+    setFilterPlayer(""); setFilterResult("all"); setDateFrom(""); setDateTo("");
     setMatchCount(DEFAULT_LIST_COUNT); setHideTournament(false);
   };
 
@@ -286,11 +272,8 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
   const filterBits = [
     bit(filterPlayer || null),
     filterPlayer && filterResult !== "all" ? bit(filterResult === "win" ? t("Siege") : t("Niederlagen")) : null,
-    filterDisc !== "all" ? bit(DISC_LABEL[filterDisc] || filterDisc, <DiscBall disc={filterDisc} size={15} />) : null,
-    filterMode !== "both" ? bit(t(filterMode === "single" ? "Einzel" : "Doppel")) : null,
     hideTournament ? bit(t("ohne Turnier")) : null,
     dateFrom || dateTo ? bit(t("Zeitraum")) : null,
-    matchCount !== DEFAULT_LIST_COUNT ? bit(matchCount === "all" ? t("Alle") : t("Top {n}", { n: matchCount })) : null,
   ].filter(Boolean);
   const filterPillLength = filterBits.map((b) => b.text).join(" · ").length;
   const filterPill = filterBits.length === 0 ? null
@@ -324,7 +307,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
           dauerhaft ueber der Liste, vor dem ersten Match. Die Anzahl-Chips
           (10/20/50/100/Alle) sind bewusst mit hineingewandert, so wie Top-N
           bei den Bestenlisten. Die Zeile "x von y Matches" bleibt sichtbar. */}
-      <FunnelPanel funnel={funnel} onReset={filtersActive || matchCount !== DEFAULT_LIST_COUNT ? resetFilters : undefined}>
+      <FunnelPanel funnel={funnel} onReset={filtersActive ? resetFilters : undefined}>
         <div className="match-filters" style={{ marginBottom: 0 }}>
           <PlayerPicker players={players} matches={matches} me={me} allowAll
             value={filterPlayer || null}
@@ -338,8 +321,6 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
               ))}
             </div>
           )}
-          <DiscPickRow all="all" discs={activeDisciplines()} value={filterDisc} onChange={setFilterDisc}
-            trailing={<ModePick inline value={filterMode} onChange={setFilterMode} />} />
           <div className="chips small" style={{ marginBottom: 0 }}>
             <button className={"chip" + (hideTournament ? " active" : "")} onClick={() => setHideTournament((h) => !h)}>
               {t("Turniermatches ausblenden")}
@@ -349,13 +330,6 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label={t("Von")} />
             <span>{t("bis")}</span>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label={t("Bis")} />
-          </div>
-          <div className="chips small" style={{ marginBottom: 0 }}>
-            {LIST_COUNT_OPTIONS.map((c) => (
-              <button key={c} className={"chip" + (matchCount === c ? " active" : "")} onClick={() => setMatchCount(c)}>
-                {c === "all" ? t("Alle") : c}
-              </button>
-            ))}
           </div>
         </div>
       </FunnelPanel>
@@ -399,6 +373,11 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
           )}
         </div>
       ))}
+      {filteredMatches.length > visibleMatches.length && (
+        <button type="button" className="chip more-btn" onClick={() => setMatchCount(visibleMatches.length + 20 >= filteredMatches.length ? "all" : visibleMatches.length + 20)}>
+          {t("Mehr anzeigen")} ({filteredMatches.length - visibleMatches.length})
+        </button>
+      )}
       {filteredMatches.length === 0 && (
         <p className="hint">{filtersActive ? t("Keine Matches fuer diese Filter.") : t("Noch keine bestaetigten Matches.")}</p>
       )}
@@ -467,12 +446,6 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       return localStorage.getItem("statGlobalDisc") === "Doppel" ? "double" : "both";
     } catch { return "both"; }
   });
-  const [globalCount, setGlobalCount] = useState(() => {
-    try { return normalizeListCount(localStorage.getItem("statGlobalCount")); } catch { return DEFAULT_LIST_COUNT; }
-  });
-  const [globalNearby, setGlobalNearby] = useState(() => {
-    try { return localStorage.getItem("statGlobalNearby") === "1"; } catch { return false; }
-  });
   useEffect(() => { try { localStorage.setItem("statGlobalDisc", globalDisc); } catch { /* ignore */ } }, [globalDisc]);
   useEffect(() => { try { localStorage.setItem("statGlobalMode", globalMode); } catch { /* ignore */ } }, [globalMode]);
   // Welche Rating-"Disziplin" die Auswahl trifft: fuer Doppel gibt es serverseitig
@@ -484,8 +457,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const hasEinzelRating = useMemo(() => rangliste.some((r) => r.discipline === "Einzel"), [rangliste]);
   const ratingDisc = globalMode === "double" ? "Doppel"
     : (globalMode === "single" && globalDisc === "Gesamt" && hasEinzelRating) ? "Einzel" : globalDisc;
-  useEffect(() => { try { localStorage.setItem("statGlobalCount", String(globalCount)); } catch { /* ignore */ } }, [globalCount]);
-  useEffect(() => { try { localStorage.setItem("statGlobalNearby", globalNearby ? "1" : "0"); } catch { /* ignore */ } }, [globalNearby]);
+
 
   // Meiste Siege/Beste Siegquote/Aktuelle Serien nach Disziplin UND Einzel/
   // Doppel: die Disziplin filtert die Matches, der Modus sagt computeStats(),
@@ -731,6 +703,19 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Registry aller per Drag & Drop sortierbaren Karten dieser Seite - IDs muessen zu cardLayout.js passen.
   // Es gibt nur EINE Spalte, die Reihenfolge ist cards.visibleOrder.
   const [leaderboardTab, setLeaderboardTab] = useState(readTabPref);
+  // Sortierung der Siege-Tabelle (Siege / Quote / Serie) - EIN Reiter statt drei.
+  const [siegeSort, setSiegeSort] = useState("siege");
+  const siegeRows = useMemo(() => {
+    const all = Object.values(stats);
+    const qual = (p) => p.spiele >= 10;
+    const key = {
+      siege: (p) => p.siege,
+      quote: (p) => (qual(p) ? p.quote : -1),
+      streak: (p) => p.streak,
+    }[siegeSort];
+    return all.filter((p) => p.spiele > 0)
+      .sort((a, b) => key(b) - key(a) || b.siege - a.siege || a.name.localeCompare(b.name));
+  }, [stats, siegeSort]);
   const cardHide = (id) => ({ onHide: () => cards.hideCard(id) });
   // Katalog der sechs Bestenlisten. Die Reihenfolge hier ist nur ein
   // Rueckfall - welche Listen es als Reiter gibt und in welcher Reihenfolge,
@@ -781,42 +766,17 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     },
   };
 
-  // Kurzfassung der gewaehlten Filter fuer den Kartenkopf: die Disziplin immer,
-  // Einzel/Doppel und die Menge nur, wenn sie vom Standard (Beides, Top 10)
-  // abweichen. Bei geschlossenem Trichter-Feld sieht man so, was die Listen zeigen.
-  const pillBits = [
-    // Die Disziplin steht IMMER in der Ueberschrift, auch bei "Alle" (dann als
-    // Kugelhaufen) - Nutzer-Feedback 2026-09-30: sonst sieht man bei
-    // "Alle" nicht, dass die Auswahl ueberhaupt eine Disziplin betrifft.
-    globalDisc !== "Gesamt" ? <DiscBall key="d" disc={globalDisc} size={20} /> : <DiscAll key="d" size={26} />,
-    globalMode !== "both" ? t(globalMode === "single" ? "Einzel" : "Doppel") : null,
-    globalNearby ? t("Umgebung") : (globalCount !== DEFAULT_LIST_COUNT ? (globalCount === "all" ? t("Alle") : t("Top {n}", { n: globalCount })) : null),
-  ].filter(Boolean);
-  const filterPill = pillBits.length
-    ? pillBits.map((b, i) => <Fragment key={i}>{i > 0 && " · "}{b}</Fragment>)
-    : null;
   const LEADERBOARD_IDS = LEADERBOARD_ID_LIST;
   const { parts: deckParts, anchor: deckAnchor } = foldedDeck(cards.visibleOrder, LEADERBOARD_IDS);
-  // Der Trichter haengt an der Bestenlisten-Karte. Fehlt sie (alle sechs
-  // Listen ausgeblendet), uebernimmt ihn der Verlaufs-Graph - sonst liesse
-  // sich dessen Disziplin nirgends mehr aendern.
-  const statFilter = {
-    label: t("Auswahl fuer alle Statistiken"),
-    pill: filterPill,
-    content: <StatFilterContent disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc} mode={globalMode} onMode={setGlobalMode}
-      count={globalCount} nearby={globalNearby} onCount={setGlobalCount} onNearby={setGlobalNearby}
-      me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />,
-  };
-
   const cardsById = {
     entwicklung: (
-      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={ratingDisc} filter={deckAnchor ? undefined : statFilter} {...cardHide("entwicklung")} />
+      <EntwicklungBlock snapshots={snapshots} players={players} rangliste={rangliste} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} matches={matches} disc={ratingDisc} {...cardHide("entwicklung")} />
     ),
     rekordeClub: (
       <RecordsBoard records={recordRows} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardHide("rekordeClub")} />
     ),
     letzteMatches: (
-      <MatchHistoryBlock matches={matches} players={players} me={me} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardHide("letzteMatches")} />
+      <MatchHistoryBlock discFilter={globalDisc} modeFilter={globalMode} matches={matches} players={players} me={me} onOpenProfile={onOpenProfile} onOpenProtokoll={onOpenProtokoll} {...cardHide("letzteMatches")} />
     ),
   };
   // Ausgeblendete Karten fliegen erst HIER raus, nicht schon aus cardOrder:
@@ -831,20 +791,42 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // unveraendert - die Karte laesst sich ziehen wie jede andere, und
   // @dnd-kit sieht weiterhin genau die ids, die auch wirklich als Knoten im
   // DOM stehen.
-  const deckActive = deckParts.includes(leaderboardTab) ? leaderboardTab : deckAnchor;
+  // Vier Reiter statt sieben: Siege/Quote/Serien sind EINE Tabelle mit sortierbaren Spalten, die beiden
+  // Tempo-Listen EINE (14/1 -> Zeit pro Kugel, sonst Zeit pro Spiel). Die sieben Katalog-ids bleiben
+  // (gespeicherte Reihenfolgen), ein Reiter steht an der Stelle seines ersten Teils.
+  const TAB_GROUPS = {
+    rangliste: ["rangliste"],
+    siege: ["meisteSiege", "besteSiegquote", "aktuelleSerien"],
+    tempo: ["schnellstesTempo", "schnellste141"],
+    aufsteiger: ["aufsteiger"],
+  };
+  const groupOf = (id) => Object.keys(TAB_GROUPS).find((g) => g === id || TAB_GROUPS[g].includes(id));
+  const groupIds = [];
+  deckParts.forEach((id) => { const g = groupOf(id); if (g && !groupIds.includes(g)) groupIds.push(g); });
+  const deckActive = groupIds.includes(groupOf(leaderboardTab)) ? groupOf(leaderboardTab) : groupIds[0];
+  const is141 = globalDisc === "14/1 Endlos";
+  const SIEGE_COLS = [{ id: "siege", label: t("Siege") }, { id: "quote", label: t("Quote") }, { id: "streak", label: t("Serie") }];
+  const siegeVal = (p, id) => (id === "siege" ? p.siege : id === "quote" ? (p.spiele >= 10 ? `${p.quote} %` : "–") : p.streak);
+  const groupTab = {
+    rangliste: () => ({ ...leaderboardById.rangliste, tab: t("Rating") }),
+    siege: () => ({
+      id: "siege", tab: t("Siege"), title: t("Siege, Quote, Serie"), icon: <Trophy size={15} />,
+      rows: siegeRows, nameOf: (p) => p.name, cols: SIEGE_COLS, colVal: siegeVal, sortId: siegeSort, onSort: setSiegeSort,
+      info: t("Anteil gewonnener Matches (Siege ÷ Spiele) in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.") + " " + t("Wie viele Matches in Folge gewonnen wurden, seit der letzten Niederlage, in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel.") + " " + t("Tippe auf eine Spaltenüberschrift, um danach zu sortieren."),
+    }),
+    tempo: () => (is141 ? { ...leaderboardById.schnellste141, tab: t("Tempo"), icon: <Timer size={15} /> }
+      : { ...leaderboardById.schnellstesTempo, tab: t("Tempo") }),
+    aufsteiger: () => leaderboardById.aufsteiger,
+  };
   if (deckAnchor) {
-    const rowProps = { me, count: globalCount, nearby: globalNearby, colorOf, badgeOf, photoOf, onOpenProfile };
+    const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile };
     cardsById[deckAnchor] = (
       <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")}
-        tabs={deckParts.map((id) => {
-          const b = leaderboardById[id];
-          return { ...b, render: () => <LeaderboardRows {...rowProps} {...b} /> };
+        tabs={groupIds.map((g) => {
+          const b = groupTab[g]();
+          return { ...b, id: g, render: () => <LeaderboardRows key={g + (is141 ? "141" : "")} {...rowProps} {...b} /> };
         })}
-        activeId={deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
-        hideLabel={t("Diese Liste ausblenden")}
-        filter={statFilter}
-       
-        onHide={() => cards.hideCard(deckActive)} />
+        activeId={deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }} />
     );
   }
 
@@ -929,6 +911,9 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       )}
 
       {showChapterBar && <SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} storageKey="stat" />}
+      {(!chaptersMode || activeSeg !== "rekorde") && (
+        <StatFilterBar disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc} mode={globalMode} onMode={setGlobalMode} />
+      )}
       <div className="stat-split" data-seg={chaptersMode && segments.length > 1 ? activeSeg : undefined}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={visibleOrder} strategy={verticalListSortingStrategy}>
