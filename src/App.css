@@ -243,7 +243,7 @@ h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Archivo', sans-serif; }
    angeglichen) - UND der Graph automatisch mitwaechst, wenn die Box mehr
    Platz bekommt, ohne dass DevChart.jsx selbst einen dieser Faelle kennen
    muss. */
-.dev-plot { width: 100%; height: 210px; margin-bottom: 10px; }
+.dev-plot { width: 100%; height: 300px; margin-bottom: 10px; }
 /* touch-action: pan-y (NICHT none) - das Ziehen am Graphen (Ablesen des
    Standes zu einem Zeitpunkt, siehe DevChart.jsx) ist eine rein waagrechte
    Geste, also gibt der Browser nur die waagrechte Richtung an uns ab und
@@ -3477,3 +3477,15 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
   .stat-row:has(.stat-col) .stat-name { min-width: 58px; flex: 1 1 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .stat-colbtn { font-size: calc(11px * var(--fs, 1)); padding-inline: 2px; }
 }
+
+/* Entwicklung: Spieler-Legende unter dem Graphen */
+.dev-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 4px; }
+.dev-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-btn); border: 1.5px solid transparent;
+  border-radius: 999px; padding: 3px 6px 3px 4px; font-size: calc(13px * var(--fs, 1)); color: var(--ivory); min-width: 0; }
+.dev-chip-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 11ch; }
+.dev-chip-val { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; white-space: nowrap; }
+.dev-chip-x { display: grid; place-items: center; background: none; border: none; padding: 2px; color: var(--ivory-dim); cursor: pointer; border-radius: 50%; }
+.dev-chip-x:hover { color: var(--accent); }
+.dev-chip-add { cursor: pointer; color: var(--accent); padding: 4px 11px 4px 8px; font-family: inherit; }
+.dev-chip-add .dev-chip-name { color: var(--ivory-dim); }
+.dev-chip-add:hover, .dev-chip-add.open { border-color: var(--accent); background: var(--accent-soft); }

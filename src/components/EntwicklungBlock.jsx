@@ -130,12 +130,6 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
     return latest(nick);
   };
 
-  // Zellen-Mindestbreite fuer das .dev-userlist-Grid an den laengsten
-  // gewaehlten Namen gekoppelt (ch-Einheit statt JS-Textmessung) - so
-  // stehen kurze Namen bei breitem Fenster zu mehreren nebeneinander,
-  // lange Namen bekommen automatisch mehr Platz bzw. eine eigene Spalte.
-  const rowMinCh = Math.max(6, sel.reduce((m, n) => Math.max(m, n.length), 0));
-
   return (
     <section className={"stat-block" + (maximized ? " is-maximized" : "")}>
       <div className="stat-block-head">
@@ -173,31 +167,30 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
         <p className="hint">{t("Sobald Verlaufsdaten vorliegen, erscheinen hier die Kurven.")}</p>
       ) : (
         <>
-          <div className="dev-userlist" style={{ "--row-min": `calc(${rowMinCh}ch + 120px)` }}>
+          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
+          {/* Spielerauswahl als kompakte Legende UNTER dem Graphen (Nutzer-Wunsch): ein Chip je Spieler mit Kugel,
+              Name, Wert (beim Ziehen ueber den Graphen der Wert des Tages) und Entfernen-Kreuz; der letzte Chip
+              oeffnet die Auswahl. */}
+          <div className="dev-legend">
             {sel.map((nick) => {
               const val = displayVal(nick);
               return (
-                <div key={nick} className="stat-row">
-                  <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={30} />
-                  <span className="stat-name">{nick}</span>
-                  <span className="stat-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? fmtRating(val) : "–"}</span>
-                  <button type="button" className="pmp-remove" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>
-                    <X size={14} />
+                <div key={nick} className="dev-chip">
+                  <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={22} />
+                  <span className="dev-chip-name">{nick}</span>
+                  <span className="dev-chip-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? fmtRating(val) : "–"}</span>
+                  <button type="button" className="dev-chip-x" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>
+                    <X size={13} />
                   </button>
                 </div>
               );
             })}
-            {/* Statt eines breiten Knopfs unter dem Graphen: eine Zeile am Ende
-                der Spielerliste, in der Form der Spielerzeilen (Nutzer-
-                Feedback 2026-09-30: passt besser zur sichtbaren Auflistung,
-                spart den Knopf und ist intuitiver). Bei 6 Spielern gibt es
-                nichts mehr hinzuzufuegen. Offen wird sie zu "Fertig". */}
             {(addOpen || sel.length < 6) && (
-              <button type="button" className="stat-row as-btn dev-add-row"
+              <button type="button" className={"dev-chip dev-chip-add" + (addOpen ? " open" : "")}
                 onClick={() => { if (addOpen) setQuery(""); setAddOpen((o) => !o); }}
-                aria-expanded={addOpen}>
-                <span className="dev-add-ico">{addOpen ? <Check size={16} /> : <Plus size={16} />}</span>
-                <span className="stat-name">{addOpen ? t("Fertig") : t("Spieler hinzufügen")}</span>
+                aria-expanded={addOpen} title={addOpen ? t("Fertig") : t("Spieler hinzufügen")} aria-label={addOpen ? t("Fertig") : t("Spieler hinzufügen")}>
+                {addOpen ? <Check size={16} /> : <Plus size={16} />}
+                <span className="dev-chip-name">{addOpen ? t("Fertig") : t("Spieler")}</span>
               </button>
             )}
           </div>
@@ -226,7 +219,6 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               </div>
             </div>
           )}
-          <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
         </>
       )}
       </>
