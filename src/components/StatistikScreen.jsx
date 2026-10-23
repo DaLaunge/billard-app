@@ -61,7 +61,7 @@ const writeTabPref = (v) => { try { localStorage.setItem(LEADERBOARD_TAB_KEY, v)
 // ungekuerzten "rows"-Liste ermittelt (nicht aus "visible") - liegt er
 // ausserhalb der gerade sichtbaren Top-N, wird die eigene Zeile per Trenner
 // angehaengt statt nur als Text erwaehnt.
-function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, colorOf, badgeOf, photoOf, onOpenProfile, cols, colVal, sortId, onSort, nearby, onNearby }) {
+function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, colorOf, badgeOf, photoOf, onOpenProfile, cols, colVal, sortId, onSort, nearby }) {
   const [limit, setLimit] = useState(DEFAULT_LIST_COUNT);
   const myIndex = rows.findIndex((r) => nameOf(r) === me?.nickname);
   // Highscore (Top-Liste) oder "Meine Umgebung" (zwei Plaetze davor/dahinter) - Umschalter oben in der Liste.
@@ -87,16 +87,6 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
   };
   return (
     <>
-      {onNearby && (
-        <div className="stat-scope" role="group" aria-label={t("Ansicht")}>
-          <button type="button" className={"chip" + (!nearby ? " active" : "")} aria-pressed={!nearby} onClick={() => onNearby(false)}>
-            <Trophy size={14} /> {t("Highscore")}
-          </button>
-          <button type="button" className={"chip" + (nearby ? " active" : "")} aria-pressed={nearby} onClick={() => onNearby(true)}>
-            <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} /> {t("Meine Umgebung")}
-          </button>
-        </div>
-      )}
       {cols && (
         <div className="stat-colhead" role="group" aria-label={t("Sortieren nach")}>
           {cols.map((c) => (
@@ -840,14 +830,27 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     aufsteiger: () => leaderboardById.aufsteiger,
   };
   if (deckAnchor) {
-    const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile, nearby: globalNearby, onNearby: setGlobalNearby };
+    const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile, nearby: globalNearby };
     cardsById[deckAnchor] = (
       <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")}
         tabs={groupIds.map((g) => {
           const b = groupTab[g]();
           return { ...b, id: g, render: () => <LeaderboardRows key={g + (is141 ? "141" : "")} {...rowProps} {...b} /> };
         })}
-        activeId={deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }} />
+        activeId={deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
+        tabsExtra={(
+          <>
+            <span className="disc-sep deck-sep" aria-hidden="true" />
+            <button type="button" className={"chip chip-icon" + (!globalNearby ? " active" : "")} role="tab" aria-selected={!globalNearby}
+              title={t("Highscore")} aria-label={t("Highscore")} onClick={() => setGlobalNearby(false)}>
+              <Trophy size={15} />
+            </button>
+            <button type="button" className={"chip chip-icon" + (globalNearby ? " active" : "")} role="tab" aria-selected={globalNearby}
+              title={t("Meine Umgebung")} aria-label={t("Meine Umgebung")} onClick={() => setGlobalNearby(true)}>
+              <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
+            </button>
+          </>
+        )} />
     );
   }
 

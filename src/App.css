@@ -3455,5 +3455,18 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .stat-col { width: 64px; text-align: center; flex-shrink: 0; }
 .stat-col.dim { color: var(--ivory-dim); font-weight: 500; }
 .more-btn { align-self: center; margin: 8px auto 0; display: block; }
-.stat-scope { display: flex; gap: 6px; margin: 0 0 8px; flex-wrap: wrap; }
-.stat-scope .chip { display: inline-flex; align-items: center; gap: 6px; }
+.deck-tabs .deck-sep { flex: 0 0 1px; align-self: stretch; margin: 4px 2px; }
+.deck-tabs.compact .chip.chip-icon { padding: 6px 10px; }
+/* Schmale Handys: Disziplin-Kugeln + Einzel/Doppel sollen in EINER Zeile bleiben. */
+@media (max-width: 430px) {
+  .stat-filterbar .disc-picks.compact { gap: 3px; flex-wrap: nowrap; }
+  .stat-filterbar .disc-pick.compact { padding: 2px; }
+}
+/* Siege-Tabelle auf schmalen Handys: schmalere Spalten, Name behaelt Mindestbreite (sonst bricht er Buchstabe fuer Buchstabe um). */
+@media (max-width: 430px) {
+  .stat-col, .stat-colbtn { width: 46px; }
+  .stat-colhead { gap: 4px; }
+  .stat-row:has(.stat-col) { gap: 4px; }
+  .stat-row:has(.stat-col) .stat-name { min-width: 58px; flex: 1 1 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stat-colbtn { font-size: calc(11px * var(--fs, 1)); padding-inline: 2px; }
+}

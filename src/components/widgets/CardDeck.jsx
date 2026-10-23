@@ -46,7 +46,7 @@ import { t } from "../../lib/i18n";
    holte genau die Hoehe zurueck, die diese Karte einspart. */
 export default function CardDeck({
   icon, title, tabs, activeId, onActive,
-  onHide, hideLabel,
+  onHide, hideLabel, tabsExtra,
   roomy, id, soloTitle = true, filter, inlineTabs = false,
 }) {
   const funnel = useFunnel();
@@ -80,6 +80,7 @@ export default function CardDeck({
           {x.count != null && <span className="deck-tab-count">{x.count}</span>}
         </button>
       ))}
+      {tabsExtra}
     </ScrollRow>
   );
   return (
