@@ -413,7 +413,11 @@ button.side-row-progress:hover .side-row-name { color: var(--accent); }
 .deck-tabs.compact { overflow-x: visible; }
 .deck-tabs.compact .chip { padding: 6px 10px; justify-content: center; }
 .deck-tabs.compact .chip:not(.active) .deck-tab-label { display: none; }
-.deck-tabs.compact .chip.active { flex: 1 1 auto; min-width: 0; }
+.deck-tabs.compact .chip.active { flex: 0 1 auto; min-width: 0; }
+/* Der aktive Reiter waechst nicht mehr ueber die ganze Zeile (413+: wirkte am PC
+   riesig, anders als jede andere Chip-Gruppe): alle Reiter haben Chip-Groesse. */
+.deck-tabs.compact .chip { min-height: 32px; }
+.deck-tabs.compact .chip:not(.active) { padding: 5px 10px; }
 .deck-tabs.compact .chip.active .deck-tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* --- Formularfeld-Ueberschrift mit Info-Knopf ---------------------------
