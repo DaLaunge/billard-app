@@ -9,7 +9,7 @@ import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
 import { useCardLayout } from "../lib/useCardLayout";
-import { deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phoneSlotOrder } from "../lib/cardLayout";
+import { deckIds, foldedDeck, withoutFolded } from "../lib/cardLayout";
 
 // Die drei Bereiche dieses Bildschirms teilen sich seit 2026-09-30 EINE
 // Karte mit Reitern (siehe CardDeck.jsx). Live hatte dabei das umgekehrte
@@ -24,7 +24,6 @@ import { deckIds, foldedDeck, withoutFolded, deckColumn, splitCardColumns, phone
 // Admins sehen zusaetzlich noch nicht freigegebene Faelle (`released: false`).
 const LIVE_DECK_IDS = deckIds("live", "mitspieler");
 const DECK_TAB_KEY = "liveDeckTab";
-const DECK_COLLAPSE_KEY = "liveDeckCollapsed";
 const readLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* Privatmodus */ } };
 
@@ -237,7 +236,6 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
     : (parts.find((id) => counts[id] > 0) || (parts.includes("pings") ? "pings" : parts[0]));
   // Einklappen ersetzt das fruehere Zuklappen je Bereich - dieselbe Geste,
   // nur einmal statt dreimal, und wie dort nur auf diesem Geraet gemerkt.
-  const [collapsed, setCollapsed] = useState(() => readLocal(DECK_COLLAPSE_KEY) === "1");
 
   const cardsById = {};
   if (anchor) {
@@ -245,24 +243,13 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
       <CardDeck icon={<Users size={17} />} title={t("Mitspieler finden")}
         tabs={parts.map((id) => ({ id, ...TAB_META[id], count: counts[id], render: () => bodyById[id] }))}
         activeId={activeId} onActive={(id) => { setDeckTab(id); writeLocal(DECK_TAB_KEY, id); }}
-        collapsed={collapsed} onToggleCollapse={() => { writeLocal(DECK_COLLAPSE_KEY, collapsed ? "0" : "1"); setCollapsed(!collapsed); }}
         onHide={() => cards.hideCard(activeId)} />
     );
   }
 
-  // Die Deck-Karte zaehlt am Desktop als EINE Karte und braucht daher EINE
-  // Spalte (siehe deckColumn()), unabhaengig davon, welcher Teil gerade der
-  // erste sichtbare ist.
-  const deckCol = deckColumn(cards.columns, LIVE_DECK_IDS, "live");
-  const byCol = splitCardColumns(cards.visibleOrder,
-    { ...cards.columns, ...Object.fromEntries(LIVE_DECK_IDS.map((id) => [id, deckCol])) }, "live");
-  const middleCardIds = withoutFolded(byCol.middle, LIVE_DECK_IDS, anchor);
-  const rightCardIds = withoutFolded(byCol.right, LIVE_DECK_IDS, anchor);
   const visibleOrder = withoutFolded(cards.visibleOrder, LIVE_DECK_IDS, anchor);
-  // "order" = Platz in der Gesamtreihenfolge; am Handy ergibt das EINE
-  // durchgehende Liste ueber beide Spalten hinweg (siehe CardSlot.jsx).
-  const renderColumn = (ids, col) => ids.filter((id) => cardsById[id]).map((id) => (
-    <CardSlot key={id} order={phoneSlotOrder(col, visibleOrder.indexOf(id))}>{cardsById[id]}</CardSlot>
+  const renderCards = (ids) => ids.filter((id) => cardsById[id]).map((id) => (
+    <CardSlot key={id} order={10 + visibleOrder.indexOf(id)}>{cardsById[id]}</CardSlot>
   ));
 
   return (
@@ -274,14 +261,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
 
       <div className="live-split">
       {/* Keine linke Profil-Spalte mehr: am PC steht die Kugel ohnehin dauerhaft oben links in der Seitenleiste (AppDrawer). */}
-      {/* Zwei frei befuellbare Spalten (am Handy per display:contents EINE
-          durchgehende Liste, siehe App.css): breit in der Mitte, schmal
-          rechts. Eine leere Spalte verschwindet per CSS ganz, statt eine
-          Luecke zu hinterlassen (Nutzer-Feedback: "die Luecken zwischen den
-          Karten sind unnoetig gross, wenn manche dazwischen ausgeblendet
-          sind"). */}
-      <div className="live-col middle">{renderColumn(middleCardIds, "middle")}</div>
-      <div className="live-col right">{renderColumn(rightCardIds, "right")}</div>
+      <div className="live-col middle">{renderCards(visibleOrder)}</div>
       </div>
       <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
       <ImprintFooter />

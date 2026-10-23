@@ -7,8 +7,6 @@ import { initials, readableColor, fmtRating } from "../lib/format";
 import DevChart from "./DevChart";
 import Ball from "./Ball";
 import InfoButton from "./widgets/InfoButton";
-import CardCollapseButton from "./widgets/CardCollapseButton";
-import CardColumnButton from "./widgets/CardColumnButton";
 import CardMaximizeButton from "./widgets/CardMaximizeButton";
 import CardMenuButton from "./widgets/CardMenuButton";
 import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
@@ -27,7 +25,7 @@ const RANGES = [
 // braucht der Graph keine eigenen Disziplin-Buttons mehr. Alle folgenden
 // Werte (Spieler-Reihenfolge, Kurven, verfuegbare Daten) haengen weiterhin
 // von der Disziplin ab.
-export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, filter, collapsed, onToggleCollapse, column, onToggleColumn, onHide }) {
+export default function EntwicklungBlock({ snapshots, players, rangliste, me, colorOf, badgeOf, photoOf, matches, disc, filter, onHide }) {
   const nickById = useMemo(() => {
     const m = {}; players.forEach((p) => { m[p.id] = p.nickname; }); return m;
   }, [players]);
@@ -147,16 +145,14 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
           {/* Nur gesetzt, wenn die Bestenlisten-Karte fehlt (alle sechs
               ausgeblendet): dort haengt der Trichter sonst, und ohne ihn liesse
               sich die Disziplin dieses Graphen nicht mehr aendern. */}
-          {filter && !collapsed && <FunnelButton funnel={funnel} label={filter.label} />}
+          {filter && <FunnelButton funnel={funnel} label={filter.label} />}
           <InfoButton title={t("Entwicklung über die Zeit")}>
             {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
           </InfoButton>
-          {!maximized && <CardColumnButton column={column} onToggle={onToggleColumn} />}
           <CardMaximizeButton maximized={maximized} onToggle={toggleMaximize} />
-          {!maximized && <CardCollapseButton collapsed={collapsed} onToggle={onToggleCollapse} />}
         </div>
       </div>
-      {!collapsed && (
+      {(
       <>
       {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
       {allDates.length > 0 && (

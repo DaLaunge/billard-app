@@ -955,17 +955,12 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
    Info-Button + Einklapp-Knopf) alle drei ueber die volle Breite verteilt
    statt Info-Button und Einklapp-Knopf rechts nebeneinander zu bleiben. */
 .stat-block-head-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
-.card-collapse-btn { background: none; border: none; padding: 4px; margin: -4px -4px -4px 0;
-  border-radius: 8px; color: var(--ivory-dim); display: inline-flex; align-items: center;
-  cursor: pointer; flex-shrink: 0; }
-.card-collapse-btn:hover { color: var(--accent); background: var(--felt-3); }
+
 /* Manuelle Spalten-Zuordnung (siehe CardColumnButton.jsx/cardLayout.js
    Stufe 4) - am Handy gibt es keine zwei Spalten, daher hier ausgeblendet
    und erst ab der 3-Spalten-Desktop-Breite (siehe @media (min-width: 900px)
    weiter unten) sichtbar. */
-.card-column-btn { display: none; background: none; border: none; padding: 4px; margin: -4px 0;
-  border-radius: 8px; color: var(--ivory-dim); align-items: center; cursor: pointer; flex-shrink: 0; }
-.card-column-btn:hover { color: var(--accent); background: var(--felt-3); }
+
 /* Maximieren-Knopf einer einzelnen Karte (CardMaximizeButton.jsx, siehe dort
    und .stat-block.is-maximized weiter unten fuer den eigentlichen Zustand) -
    aus demselben Grund wie .card-column-btn am Handy ausgeblendet: eine Karte
@@ -1068,7 +1063,7 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
   background: var(--surface-btn); padding: 1px 6px; border-radius: 8px; flex-shrink: 0; }
 .card-vis-parts { margin: 0 0 2px 22px; padding-left: 8px; border-left: 2px solid var(--accent-line); }
 .card-vis-partrow .card-vis-name { font-size: calc(12.5px * var(--fs, 1)); }
-.card-vis-col-gap { width: 0; }
+
 /* Eine Zeile je Karte: ganz links die Pfeile fuer die Reihenfolge, dann
    Name + Schalter (der bekannte Schalter aus "Bildschirm", nur mit
    umgedrehter Anzeige-Reihenfolge: im Markup muss der Schieber direkt
@@ -1096,15 +1091,12 @@ html.live-entry, html.live-entry body { overscroll-behavior-y: none; }
 /* Spalten gibt es nur in der dreispaltigen PC-Ansicht - am Handy steht
    ohnehin alles untereinander (gleicher Grund wie bei .card-column-btn an
    der Karte selbst). */
-.card-vis-col { display: none; }
+
 /* Ablageflaeche einer leeren Spalte (siehe EmptyColumnDropZone.jsx -
    Nutzer-Feedback: "ich habe alle Karten in der Mitte, kann aber keine
    Karte nach rechts schieben") - aus demselben Grund wie .card-column-btn
    am Handy ausgeblendet (kein Spaltenkonzept dort). */
-.stat-empty-dropzone { display: none; align-items: center; justify-content: center; text-align: center;
-  min-height: 90px; border: 2px dashed var(--line); border-radius: 18px; padding: 16px;
-  color: var(--ivory-dim); font-size: calc(13px * var(--fs, 1)); }
-.stat-empty-dropzone.over { border-color: var(--accent); color: var(--accent); }
+
 .chips.small { gap: 6px; margin-bottom: 8px; }
 .chips.small .chip { padding: 5px 11px; font-size: calc(12.5px * var(--fs, 1)); }
 .chip:disabled { opacity: 0.4; cursor: default; }
@@ -1652,15 +1644,15 @@ button.id-card-head { cursor: pointer; }
    linke Spalte, Erfolge stehen als zentrales Element breiter in der Mitte,
    Statistiken+Konto teilen sich die rechte Spalte - die Reihenfolge hier
    spielt dort keine Rolle mehr. */
-.pf-layout { display: flex; flex-direction: column; gap: var(--card-gap); }
+
 /* Die drei Spalten sind am Handy unsichtbare Huellen: ihre Kinder (die
    Karten) werden dadurch direkte Flex-Kinder von .pf-layout und ordnen
    sich ueber ihr eigenes "order" zu EINER durchgehenden Liste in der vom
    Nutzer gespeicherten Reihenfolge (siehe CardSlot.jsx) - quer ueber die
    Spalten hinweg, die es hier ohnehin nicht gibt. Gleicher Aufbau wie auf
    Live und Statistik. */
-.pf-col { display: contents; }
-.pf-identity > *, .card-slot > * { margin-bottom: 0; }
+
+.card-slot > * { margin-bottom: 0; }
 /* Konto-Knoepfe (Turniere/Verwaltung/Abmelden): keine Karten, deshalb per
    festem "order" immer ganz am Ende. Den Abstand machen die Knoepfe selbst
    (.btn.ghost hat margin-top), nur der erste braucht keinen. */
@@ -1686,13 +1678,15 @@ button.id-card-head { cursor: pointer; }
 /* Die Karten tragen selbst margin-bottom: var(--card-gap) - hier uebernimmt der gap, sonst
    waere der Abstand doppelt so gross wie auf den anderen Bildschirmen (siehe CLAUDE.md). */
 .match-split .stat-block { margin-bottom: 0; }
-.stat-chart-col, .stat-grid, .match-selectors, .match-players { min-width: 0; }
+.stat-chart-col,
+.match-selectors,
+.match-players { min-width: 0; }
 /* Am Handy unsichtbare Spalten-Huellen: ihre Kinder werden dadurch direkte
    Flex-Kinder des Bildschirms und ordnen sich ueber ihr eigenes "order" zu
    EINER durchgehenden Liste in der gespeicherten Reihenfolge (siehe
    CardSlot.jsx/SortableCard.jsx) - unabhaengig davon, in welcher Spalte
    eine Karte am PC steht. */
-.live-col { display: contents; }
+.live-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
 .card-slot { min-width: 0; }
 
 /* .stat-right-col fasst am Desktop alle rechten Karten zu EINEM Grid-Feld
@@ -1703,7 +1697,7 @@ button.id-card-head { cursor: pointer; }
    fruehere Fassungen stapelten hier stattdessen erst die mittlere, dann
    die rechte Gruppe, was nicht mehr zur Reihenfolge passte, die der
    Nutzer per Ziehen bzw. in den Einstellungen sieht. */
-.stat-right-col, .stat-chart-col, .stat-grid { display: contents; }
+.stat-chart-col { display: contents; }
 /* Nutzer-Feedback: "zu grosse Luecke... vermute die Unterscheidung
    zwischen Mitte/Breit und Rechts/schmal". Seit Stufe 4 (cardLayout.js)
    ist die Spaltenwahl reine Nutzerentscheidung - am Handy sollen
@@ -1721,7 +1715,7 @@ button.id-card-head { cursor: pointer; }
    "order" EINE gemeinsame Liste bilden (siehe oben), sind die Huellen dort
    gar keine eigenen Kaesten mehr - den einzigen Abstand macht der Gap von
    .stat-split, und der ist derselbe wie ueberall. */
-.stat-chart-col .stat-block, .stat-grid .stat-block { margin-bottom: 0; }
+.stat-chart-col .stat-block { margin-bottom: 0; }
 /* Per Drag & Drop sortierbare Karten (siehe SortableCard.jsx) - Cursor/
    Transform/Opacity beim Ziehen setzt die Komponente selbst inline (haengt
    vom Drag-Status ab), hier nur das app-weit Statische: kein Textmarkieren
@@ -1770,18 +1764,17 @@ button.id-card-head { cursor: pointer; }
      Identitaetskarte kleben, waehrend die Karten darunter wegscrollen und
      von ihr verdeckt werden (das sah aus wie "Spielerinfo bleibt beim
      Scrollen immer oben"). */
-  .phone.app .screen:has(.pf-layout) { max-width: var(--screen-w, 1040px); }
-  .pf-layout { display: flex; flex-direction: row; gap: 24px; align-items: flex-start; }
-  .pf-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
-  .pf-col.left { flex: 0 0 300px; position: sticky; top: 28px; }
-  .pf-col.middle { flex: 1; }
-  .pf-col.right { flex: 0 0 300px; }
-  .pf-col:empty { display: none; }
+  
+  
+  
+  
+  
+  
+  
   /* Faellt ausgerechnet die breite Mitte weg, waere sonst rechts neben den
      beiden schmalen Spalten die halbe Seite leer - dann duerfen die beiden
      den Platz nehmen. */
-  .pf-layout:has(.pf-col.middle:empty) .pf-col.left,
-  .pf-layout:has(.pf-col.middle:empty) .pf-col.right { flex: 1 1 300px; }
+  
 
   /* Profil bearbeiten: Identitaet (Name/Foto/Farbe) links, Praeferenzen
      (Motto ist Teil der Identitaetskarte, Sprache/Design) rechts */
@@ -1794,8 +1787,8 @@ button.id-card-head { cursor: pointer; }
      nach oben schieben statt sie zeilenweise in die andere Spalte
      springen zu lassen. --card-vis-rows setzt die Komponente je Liste. */
   .card-vis-list { display: block; columns: 2; column-gap: 14px; }
-  .card-vis-col { display: inline-flex; }
-  .card-vis-col-gap { width: 20px; }
+  
+  
 
   /* Live: duenn-breit-duenn wie Statistik/Profil - UserPanel links
      (dieselbe Konstante), daneben zwei frei befuellbare Spalten. Standard
@@ -1810,15 +1803,15 @@ button.id-card-head { cursor: pointer; }
      Zwischenraum, wenn zugeklappt"), und eine leer gewordene Spalte liess
      ihre Spur als breite Luecke stehen. */
   .phone.app .screen:has(.live-split) { max-width: var(--screen-w, 1040px); }
-  .live-split { display: flex; flex-direction: row; gap: 24px; align-items: flex-start; }
+  .live-split { gap: var(--card-gap); }
   .live-col { display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; }
   .live-col.middle { flex: 1; }
-  .live-col.right { flex: 0 0 300px; }
-  .live-col:empty { display: none; }
+  
+  
   /* Steht in der breiten Mitte nichts mehr, nimmt die rechte Spalte den
      Platz - sonst klebte eine 300px-Karte an einer ansonsten leeren Seite
      (Nutzer-Feedback zu den zu grossen Luecken beim Ausblenden). */
-  .live-split:has(.live-col.middle:empty) .live-col.right { flex: 1; }
+  
 
   /* Statistik: duenn-breit-duenn wie Profil - UserPanel links (dieselbe
      Konstante), mittlere und rechte Spalte frei per Drag & Drop sortierbar
@@ -1827,9 +1820,9 @@ button.id-card-head { cursor: pointer; }
      eigene volle Zeile ueber allen drei Spalten). */
   /* Statistik: EINE durchgehende Spalte auf jeder Breite (415.5) - Tab-Freak zeigt ein Kapitel, Doomscroller alle untereinander. */
   .phone.app .screen:has(.stat-split) { max-width: var(--screen-w, 1040px); }
-  .card-column-btn { display: inline-flex; }
+  
   .card-maximize-btn { display: inline-flex; }
-  .stat-empty-dropzone { display: flex; }
+  
 
   /* Neues Match, Schritt "Gegner waehlen": Auswahl-Elemente links, Spieler-Raster rechts */
   .phone.app .screen:has(.match-split) { max-width: 1160px; }
@@ -2775,7 +2768,6 @@ button.break-slot { cursor: pointer; }
 .score-body { transition: opacity .2s, filter .2s; }
 .score-body.is-paused { opacity: 0.35; filter: grayscale(0.6); pointer-events: none; }
 
-
 /* ===== Layout-Redesign: Menue, schwebende Leiste, Karten fast randlos ===== */
 .burger-btn { position: absolute; top: 14px; left: 8px; z-index: 5; width: 38px; height: 38px;
   border-radius: 12px; border: 1px solid var(--line); background: var(--felt-3); color: var(--ivory);
@@ -2838,24 +2830,21 @@ button.break-slot { cursor: pointer; }
 .stat-split[data-seg="rekorde"] .sortable-card:not([data-seg="rekorde"]) { display: none; }
 .seg-slot:empty { display: none; }
 .seg-slot .seg-bar { margin-bottom: 0; }
-.pf-layout[data-seg="erfolge"] .card-slot:not([data-seg="erfolge"]),
-.pf-layout[data-seg="zahlen"] .card-slot:not([data-seg="zahlen"]) { display: none; }
+
 /* Weicher Auslauf unter der schwebenden Leiste: Inhalt blitzt an den Seiten und darunter nicht durch. */
 .tabbar::before { content: ""; position: absolute; left: -14px; right: -14px; bottom: calc(-10px - env(safe-area-inset-bottom));
   height: calc(100% + 44px); background: linear-gradient(transparent, var(--felt) 65%); z-index: -1; pointer-events: none; }
 
 /* Kartenanordnung per Pfeile/Spaltenwahl entfaellt: die Segment-Leiste und die breiteren Karten sparen genug Platz.
    Sichtbarkeit (Schalter) bleibt. Die Knoepfe sind nur versteckt, nicht entfernt. */
-.card-vis-move, .card-vis-col { display: none !important; }
+.card-vis-move { display: none !important; }
 
 /* Akzentrahmen: Leiste und gewaehlte Karte gehoeren sichtbar zusammen (nur am Handy, wo die Leiste existiert). */
 .seg-bar { border-color: var(--accent); }
-.stat-split[data-seg] .sortable-card[data-seg] > .stat-block,
-.pf-layout[data-seg] .card-slot[data-seg] > .stat-block,
-.pf-layout[data-seg] .card-slot[data-seg] .stat-block { border-color: var(--accent); }
+.stat-split[data-seg] .sortable-card[data-seg] > .stat-block { border-color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .screen:has(.pf-edit-layout) { animation: viewIn .4s cubic-bezier(.22, .61, .36, 1); }
-  .stat-split[data-seg] .sortable-card[data-seg], .pf-layout[data-seg] .card-slot[data-seg] { animation: segIn .36s cubic-bezier(.22, .61, .36, 1); }
+  .stat-split[data-seg] .sortable-card[data-seg] { animation: segIn .36s cubic-bezier(.22, .61, .36, 1); }
   .seg-bar-item { transition: background-color .2s ease, color .2s ease, transform .12s ease; }
   .seg-bar-item:active { transform: scale(.94); }
 }
@@ -2866,18 +2855,12 @@ button.break-slot { cursor: pointer; }
    die Segment-Leiste daruber nennt schon den Bereich, ein Kartentitel waere doppelt. */
 .deck-inline .stat-block-head > .deck-tabs { order: 3; flex: 1 0 100%; margin: 6px 0 4px; }
 @media (min-width: 0px) {
-  .stat-split[data-seg] .deck-inline .stat-block-head > h3,
-  .pf-layout[data-seg] .deck-inline .stat-block-head > h3 { display: none; }
-  .stat-split[data-seg] .deck-inline .stat-block-head > .deck-tabs,
-  .pf-layout[data-seg] .deck-inline .stat-block-head > .deck-tabs { order: 0; flex: 1 1 0; min-width: 0; margin: 0; }
-  .stat-split[data-seg] .deck-inline .stat-block-head,
-  .pf-layout[data-seg] .deck-inline .stat-block-head { flex-wrap: nowrap; margin-bottom: 10px; }
-  .stat-split[data-seg] .deck-inline .deck-tabs.compact .chip.active,
-  .pf-layout[data-seg] .deck-inline .deck-tabs.compact .chip.active { flex: 0 0 auto; min-width: 74px; padding-inline: 10px; }
-  .stat-split[data-seg] .deck-inline .deck-tabs,
-  .pf-layout[data-seg] .deck-inline .deck-tabs { overflow-x: auto; gap: 4px; }
-  .stat-split[data-seg] .deck-inline .card-collapse-btn,
-  .pf-layout[data-seg] .deck-inline .card-collapse-btn { display: none; }
+  .stat-split[data-seg] .deck-inline .stat-block-head > h3 { display: none; }
+  .stat-split[data-seg] .deck-inline .stat-block-head > .deck-tabs { order: 0; flex: 1 1 0; min-width: 0; margin: 0; }
+  .stat-split[data-seg] .deck-inline .stat-block-head { flex-wrap: nowrap; margin-bottom: 10px; }
+  .stat-split[data-seg] .deck-inline .deck-tabs.compact .chip.active { flex: 0 0 auto; min-width: 74px; padding-inline: 10px; }
+  .stat-split[data-seg] .deck-inline .deck-tabs { overflow-x: auto; gap: 4px; }
+  
 }
 
 .app-drawer-update { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 10px 12px;
@@ -2928,7 +2911,7 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .pf-reset-all small { font-size: calc(12px * var(--fs, 1)); color: var(--ivory-dim); }
 
 /* Profil in drei Seiten (Identitaet / Zahlen / Erfolge): am Handy zeigt jede nur ihren Teil, am PC bleibt alles auf einer Seite. */
-.pf-identity-extra { display: flex; flex-direction: column; gap: 8px; }
+
 .pf-id-card { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1px solid var(--accent-line);
   border-radius: 18px; background: var(--felt-2); color: var(--ivory); font: inherit; text-align: left; cursor: pointer; }
 .pf-id-card:hover { border-color: var(--accent); }
@@ -2937,25 +2920,23 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .pf-id-card-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pf-id-card strong { font-size: calc(15px * var(--fs, 1)); font-weight: 700; }
 .pf-id-card small { font-size: calc(12px * var(--fs, 1)); color: var(--ivory-dim); }
-.pf-layout[data-mode="zahlen"] .pf-identity, .pf-layout[data-mode="erfolge"] .pf-identity { display: none; }
-.pf-layout[data-seg="none"] .card-slot { display: none; }
-.pf-layout[data-mode="zahlen"] .card-slot:not([data-seg="zahlen"]), .pf-layout[data-mode="erfolge"] .card-slot:not([data-seg="erfolge"]) { display: none; }
+
 /* Am PC bekommt jede der drei Seiten ihr eigenes Layout (nur eigene Seiten, nicht fremde Profile): die Spalten
    werden aufgeloest wie am Handy, nur die Breite ist groesser. */
 @media (min-width: 900px) {
-  .pf-layout[data-mode="identity"], .pf-layout[data-mode="zahlen"], .pf-layout[data-mode="erfolge"], .pf-layout[data-mode="full"] { flex-direction: column; align-items: stretch; gap: var(--card-gap); }
-  .pf-layout[data-mode="identity"] .pf-col, .pf-layout[data-mode="zahlen"] .pf-col, .pf-layout[data-mode="erfolge"] .pf-col, .pf-layout[data-mode="full"] .pf-col { display: contents; position: static; }
-  .phone.app .screen:has(.pf-layout[data-mode="full"]) { max-width: var(--screen-w, 1040px); }
-  .phone.app .screen:has(.pf-layout[data-mode="identity"]) { max-width: var(--screen-w, 1040px); }
-  .phone.app .screen:has(.pf-layout[data-mode="zahlen"]) { max-width: var(--screen-w, 1040px); }
-  .phone.app .screen:has(.pf-layout[data-mode="erfolge"]) { max-width: var(--screen-w, 1040px); }
-  .pf-layout[data-mode="identity"] .pf-identity-extra { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-  .pf-layout[data-mode="identity"] .pf-id-card { flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px; }
-  .pf-layout[data-mode="identity"] .pf-id-card > svg:last-child { display: none; }
+  
+  
+  
+  
+  
+  
+  
+  
+  
 }
 
 /* Auf einen Blick (oeffentliche Kennzahlen im Profil) */
-.pf-highlights-slot:empty { display: none; }
+
 .pf-highlights { margin-bottom: 0; }
 .pf-hl-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line);
   width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; color: var(--ivory); font: inherit; text-align: left; }
@@ -2965,7 +2946,7 @@ html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, .content::-webkit-
 .pf-hl-val { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
 .pf-hl-val strong { font-weight: 700; }
 .pf-hl-val small { color: var(--ivory-dim); font-size: calc(12px * var(--fs, 1)); }
-.pf-layout[data-mode="zahlen"] .pf-highlights-slot, .pf-layout[data-mode="erfolge"] .pf-highlights-slot { display: none; }
+
 .pf-avatar-badge-btn { width: 100%; margin: 8px 0 4px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
 /* Avatar oben rechts auf der Erfolge-Seite: Ziel der Flug-Animation, bleibt beim Scrollen stehen */

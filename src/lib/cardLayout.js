@@ -96,7 +96,6 @@ export const CARD_SCREENS = [
   {
     screen: "stats",
     label: "Statistik",
-    columns: ["middle", "right"],
     // "Auswahl fuer alle Statistiken" (Disziplin + Top-N) war bis 2026-09-30
     // eine eigene Karte und sitzt jetzt hinter dem Trichter-Symbol der
     // Bestenlisten-Karte (siehe CardDeck.jsx, Prop "filter"). Alte
@@ -124,7 +123,6 @@ export const CARD_SCREENS = [
   {
     screen: "live",
     label: "Live",
-    columns: ["middle", "right"],
     // Alle drei teilen sich EINE Karte mit Reitern (siehe CardDeck.jsx) und
     // stehen deshalb in derselben Standard-Spalte - sonst haengt ihr Platz
     // davon ab, welcher Teil gerade der erste sichtbare ist.
@@ -140,7 +138,6 @@ export const CARD_SCREENS = [
   {
     screen: "profil",
     label: "Profil",
-    columns: ["left", "middle", "right"],
     // Zwei Gruppen, die sich je EINE Karte mit Reitern teilen (siehe
     // "decks" und CardDeck.jsx). Jede Gruppe steht zusammenhaengend und ganz
     // in DERSELBEN Standard-Spalte - die Karte uebernimmt Platz und Spalte
@@ -210,8 +207,10 @@ export function screenCards(screen) {
 
 // Waehlbare Spalten eines Bildschirms; die erste gilt als Rueckfallwert fuer
 // eine Karte ohne (gueltige) Spaltenangabe.
-export function screenColumns(screen) {
-  return CARD_SCREEN_BY_ID[screen]?.columns || ["middle"];
+// Es gibt nur noch EINE Spalte (Menue + eine Spalte, 415.x): der Katalog-Eintrag
+// "columns" und gespeicherte Spaltenwahlen aelterer Staende werden ignoriert.
+export function screenColumns() {
+  return ["middle"];
 }
 
 export function defaultCardOrder(screen) {
