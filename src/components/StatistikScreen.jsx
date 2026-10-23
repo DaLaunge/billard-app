@@ -95,7 +95,7 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
           ))}
         </div>
       )}
-      {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
+      {myIndex < 0 && rows.length > 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{emptyText || t("Noch keine Daten.")}</p>}
       {visible.map((r, i) => row(r, sliceStart + i))}
       {pinMyRow && (
