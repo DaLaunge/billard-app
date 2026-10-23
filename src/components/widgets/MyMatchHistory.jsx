@@ -54,14 +54,17 @@ export default function MyMatchHistory({ nickname, matches, players }) {
         const pts = points.get(`${m.id}:${pid}`);
         return (
           <div key={m.id} className="stat-row mh-row">
-            <span className="stat-name mh-main">
-              <DiscBall disc={m.discipline} size={16} />{" "}
-              <span style={{ fontWeight: 700, color: res === "win" ? "var(--win)" : res === "loss" ? "var(--loss)" : undefined }}>{res === "win" ? t("S") : res === "loss" ? t("N") : "="}</span>{" "}
-              {my}:{their} {t("gegen")} {opp}
-              {partner && <span className="rank-meta"> · {t("mit")} {partner.nickname}</span>}
-              <span className="rank-meta"> · {fmtDate(m.played_at)}</span>
+            <span className="mh-date">{fmtDate(m.played_at)}</span>
+            <span className="mh-disc"><DiscBall disc={m.discipline} size={16} /></span>
+            <span className="mh-res" style={{ color: res === "win" ? "var(--win)" : res === "loss" ? "var(--loss)" : undefined }}>
+              {res === "win" ? t("S") : res === "loss" ? t("N") : "="}
             </span>
-            <span className="stat-val" style={{ color: pts == null ? "var(--ivory-dim)" : pts >= 0 ? "var(--win)" : "var(--loss)" }}
+            <span className="mh-score">{my}:{their}</span>
+            <span className="mh-opp">
+              {opp}
+              {partner && <span className="rank-meta"> · {t("mit")} {partner.nickname}</span>}
+            </span>
+            <span className="stat-val mh-pts" style={{ color: pts == null ? "var(--ivory-dim)" : pts >= 0 ? "var(--win)" : "var(--loss)" }}
               title={pts == null ? t("Zählt nicht fürs Rating") : t("Rating-Punkte")}>
               {pts == null ? "–" : fmtPts(pts)}
             </span>
