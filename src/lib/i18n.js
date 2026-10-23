@@ -1210,6 +1210,7 @@ const TRANSLATIONS = {
     "gegen": "vs",
     "mit": "with",
     "Mehr anzeigen": "Show more",
+    "Highscore": "High score",
     "Siege, Quote, Serie": "Wins, rate, run",
     "Sortieren nach": "Sort by",
     "Tippe auf eine Spaltenüberschrift, um danach zu sortieren.": "Tap a column heading to sort by it.",

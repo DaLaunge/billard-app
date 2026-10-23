@@ -3455,3 +3455,5 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .stat-col { width: 64px; text-align: center; flex-shrink: 0; }
 .stat-col.dim { color: var(--ivory-dim); font-weight: 500; }
 .more-btn { align-self: center; margin: 8px auto 0; display: block; }
+.stat-scope { display: flex; gap: 6px; margin: 0 0 8px; flex-wrap: wrap; }
+.stat-scope .chip { display: inline-flex; align-items: center; gap: 6px; }

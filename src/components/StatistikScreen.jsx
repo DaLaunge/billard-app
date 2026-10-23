@@ -61,12 +61,15 @@ const writeTabPref = (v) => { try { localStorage.setItem(LEADERBOARD_TAB_KEY, v)
 // ungekuerzten "rows"-Liste ermittelt (nicht aus "visible") - liegt er
 // ausserhalb der gerade sichtbaren Top-N, wird die eigene Zeile per Trenner
 // angehaengt statt nur als Text erwaehnt.
-function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, colorOf, badgeOf, photoOf, onOpenProfile, cols, colVal, sortId, onSort }) {
+function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, colorOf, badgeOf, photoOf, onOpenProfile, cols, colVal, sortId, onSort, nearby, onNearby }) {
   const [limit, setLimit] = useState(DEFAULT_LIST_COUNT);
   const myIndex = rows.findIndex((r) => nameOf(r) === me?.nickname);
-  const visible = rows.slice(0, limit);
-  const pinMyRow = myIndex >= limit;
-  const rest = rows.length - limit;
+  // Highscore (Top-Liste) oder "Meine Umgebung" (zwei Plaetze davor/dahinter) - Umschalter oben in der Liste.
+  const showNearby = nearby && myIndex >= 0;
+  const sliceStart = showNearby ? Math.max(0, myIndex - 2) : 0;
+  const visible = showNearby ? rows.slice(sliceStart, myIndex + 3) : rows.slice(0, limit);
+  const pinMyRow = !showNearby && myIndex >= limit;
+  const rest = showNearby ? 0 : rows.length - limit;
   const row = (r, rank) => {
     const name = nameOf(r);
     return (
@@ -84,6 +87,16 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
   };
   return (
     <>
+      {onNearby && (
+        <div className="stat-scope" role="group" aria-label={t("Ansicht")}>
+          <button type="button" className={"chip" + (!nearby ? " active" : "")} aria-pressed={!nearby} onClick={() => onNearby(false)}>
+            <Trophy size={14} /> {t("Highscore")}
+          </button>
+          <button type="button" className={"chip" + (nearby ? " active" : "")} aria-pressed={nearby} onClick={() => onNearby(true)}>
+            <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} /> {t("Meine Umgebung")}
+          </button>
+        </div>
+      )}
       {cols && (
         <div className="stat-colhead" role="group" aria-label={t("Sortieren nach")}>
           {cols.map((c) => (
@@ -94,7 +107,7 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
       )}
       {myIndex < 0 && <p className="stat-my-rank hint">{t("Du bist in dieser Liste nicht vertreten.")}</p>}
       {visible.length === 0 && <p className="hint">{emptyText || t("Noch keine Daten.")}</p>}
-      {visible.map((r, i) => row(r, i))}
+      {visible.map((r, i) => row(r, sliceStart + i))}
       {pinMyRow && (
         <>
           <div className="stat-row-sep">···</div>
@@ -709,6 +722,8 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Registry aller per Drag & Drop sortierbaren Karten dieser Seite - IDs muessen zu cardLayout.js passen.
   // Es gibt nur EINE Spalte, die Reihenfolge ist cards.visibleOrder.
   const [leaderboardTab, setLeaderboardTab] = useState(readTabPref);
+  const [globalNearby, setGlobalNearby] = useState(() => { try { return localStorage.getItem("statGlobalNearby") === "1"; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem("statGlobalNearby", globalNearby ? "1" : "0"); } catch { /* ignore */ } }, [globalNearby]);
   // Sortierung der Siege-Tabelle (Siege / Quote / Serie) - EIN Reiter statt drei.
   const [siegeSort, setSiegeSort] = useState("siege");
   const siegeRows = useMemo(() => {
@@ -825,7 +840,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     aufsteiger: () => leaderboardById.aufsteiger,
   };
   if (deckAnchor) {
-    const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile };
+    const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile, nearby: globalNearby, onNearby: setGlobalNearby };
     cardsById[deckAnchor] = (
       <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")}
         tabs={groupIds.map((g) => {
