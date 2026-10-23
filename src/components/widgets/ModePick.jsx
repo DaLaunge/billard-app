@@ -60,13 +60,21 @@ export function ModeTiles({ value, onChange }) {
   );
 }
 
+// Mehrfachauswahl (421.7): zwei Schalter Einzel/Doppel statt drei Knoepfe. Beide an = "both" (alles);
+// der letzte noch aktive Schalter laesst sich nicht abwaehlen, damit die Auswahl nie leer ist.
 export default function ModePick({ value, onChange, inline }) {
   const Wrap = inline ? ModeInline : "div";
+  const on = (key) => value === "both" || value === key;
+  const toggle = (key) => {
+    const other = key === "single" ? "double" : "single";
+    if (value === "both") onChange(other);
+    else if (value !== key) onChange("both");
+  };
   return (
     <Wrap className="disc-picks compact">
-      {MODES.map(([key, label]) => (
-        <button key={key} type="button" className={"disc-pick compact mode-pick" + (value === key ? " sel" : "")}
-          aria-pressed={value === key} aria-label={t(label)} title={t(label)} onClick={() => onChange(key)}>
+      {MODES.filter(([key]) => key !== "both").map(([key, label]) => (
+        <button key={key} type="button" className={"disc-pick compact mode-pick" + (on(key) ? " sel" : "")}
+          aria-pressed={on(key)} aria-label={t(label)} title={t(label)} onClick={() => toggle(key)}>
           <ModeGlyph mode={key} />
         </button>
       ))}
