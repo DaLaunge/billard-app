@@ -3444,10 +3444,14 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 
 /* Statistik: gemeinsame Filterleiste, Spaltenkoepfe der Siege-Tabelle, "Mehr anzeigen" */
 .stat-filterbar { padding: 2px 0; }
-.stat-colhead { display: flex; justify-content: flex-end; gap: 4px; margin: 0 0 4px; }
-.stat-colbtn { background: none; border: none; color: var(--ivory-dim); font: inherit; font-size: calc(12px * var(--fs, 1));
-  padding: 4px 6px; min-width: 56px; text-align: right; cursor: pointer; border-radius: 8px; }
-.stat-colbtn.active { color: var(--accent); font-weight: 700; }
-.stat-col { min-width: 56px; text-align: right; }
+/* Spaltenkoepfe = Sortier-Knoepfe: Akzent-Umrandung zeigt, dass man darauf tippen kann; der aktive ist gefuellt.
+   Gleiche Breite/Mitte wie die Werte darunter (.stat-col), gleicher Abstand wie in .stat-row. */
+.stat-colhead { display: flex; justify-content: flex-end; gap: 10px; margin: 0 0 6px; }
+.stat-colbtn { width: 64px; box-sizing: border-box; background: transparent; color: var(--accent);
+  border: 1.5px solid var(--accent-line, var(--accent)); font: inherit; font-size: calc(12px * var(--fs, 1)); font-weight: 600;
+  padding: 3px 4px; text-align: center; cursor: pointer; border-radius: 999px; transition: background .15s, color .15s; }
+.stat-colbtn:hover { background: var(--accent-soft, transparent); border-color: var(--accent); }
+.stat-colbtn.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink, #000); }
+.stat-col { width: 64px; text-align: center; flex-shrink: 0; }
 .stat-col.dim { color: var(--ivory-dim); font-weight: 500; }
 .more-btn { align-self: center; margin: 8px auto 0; display: block; }
