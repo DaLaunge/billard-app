@@ -493,9 +493,15 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Feedback: "egal was ich einstelle, keine Werte"), weil kaum ein Spieler
   // bisher so viele qualifizierende Matches hat - avgGameMs/avgBallMs sind
   // bereits null ohne jeden Treffer, das reicht als Filter.
+  // Seit 421.8 folgt das Tempo der gemeinsamen Filterleiste (Disziplin + Einzel/Doppel); vorher
+  // ignorierte es sie und zeigte bei JEDER Disziplin dieselben Zeiten.
+  const speedMatches = useMemo(
+    () => discFilteredMatches.filter((m) => (globalMode === "single" ? !isDoubles(m) : globalMode === "double" ? isDoubles(m) : true)),
+    [discFilteredMatches, globalMode]
+  );
   const speedStats = useMemo(
-    () => players.map((p) => ({ name: p.nickname, ...computeSpeedStats(matches, p.id) })),
-    [players, matches]
+    () => players.map((p) => ({ name: p.nickname, ...computeSpeedStats(speedMatches, p.id) })),
+    [players, speedMatches]
   );
   const topGameSpeed = useMemo(
     () => speedStats.filter((p) => p.avgGameMs != null).sort((a, b) => a.avgGameMs - b.avgGameMs),
