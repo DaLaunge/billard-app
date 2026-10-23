@@ -162,7 +162,7 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
               sich die Disziplin dieses Graphen nicht mehr aendern. */}
           {filter && <FunnelButton funnel={funnel} label={filter.label} />}
           <InfoButton title={t("Entwicklung über die Zeit")}>
-            {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.")}
+            {t("Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen. Ein Tipp auf einen Spieler entfernt ihn, über „Spieler“ kommen weitere dazu.")}
           </InfoButton>
           <CardMaximizeButton maximized={maximized} onToggle={toggleMaximize} />
         </div>
@@ -190,20 +190,18 @@ export default function EntwicklungBlock({ snapshots, players, rangliste, me, co
         <>
           <DevChart dates={visibleDates} lines={lines} onActiveChange={setActive} />
           {/* Spielerauswahl als kompakte Legende UNTER dem Graphen (Nutzer-Wunsch): ein Chip je Spieler mit Kugel,
-              Name, Wert (beim Ziehen ueber den Graphen der Wert des Tages) und Entfernen-Kreuz; der letzte Chip
-              oeffnet die Auswahl. */}
+              Name und Wert (beim Ziehen ueber den Graphen der Wert des Tages); ein Tipp auf den Chip entfernt den
+              Spieler (kein Kreuz noetig), der letzte Chip oeffnet die Auswahl. */}
           <div className="dev-legend">
             {sel.map((nick) => {
               const val = displayVal(nick);
               return (
-                <div key={nick} className="dev-chip">
+                <button key={nick} type="button" className="dev-chip dev-chip-player" onClick={() => toggle(nick)}
+                  aria-label={`${nick} ${t("Entfernen")}`} title={t("Entfernen")}>
                   <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf && badgeOf(nick)} photo={photoOf && photoOf(nick)} size={22} />
                   <span className="dev-chip-name">{nick}</span>
                   <span className="dev-chip-val" style={{ color: readableColor(colorOf(nick)) }}>{val != null ? fmtRating(val) : "–"}</span>
-                  <button type="button" className="dev-chip-x" onClick={() => toggle(nick)} aria-label={t("Entfernen")} title={t("Entfernen")}>
-                    <X size={13} />
-                  </button>
-                </div>
+                </button>
               );
             })}
             {(addOpen || sel.length < 6) && (

@@ -3485,6 +3485,8 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .dev-chip-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 11ch; }
 .dev-chip-val { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; white-space: nowrap;
   font-variant-numeric: tabular-nums; min-width: 5.2ch; text-align: right; }
+.dev-chip-player { cursor: pointer; font-family: inherit; padding-right: 10px; }
+.dev-chip-player:hover { border-color: var(--accent); }
 .dev-chip-x { display: grid; place-items: center; background: none; border: none; padding: 2px; color: var(--ivory-dim); cursor: pointer; border-radius: 50%; }
 .dev-chip-x:hover { color: var(--accent); }
 .dev-chip-add { cursor: pointer; color: var(--accent); padding: 4px 11px 4px 8px; font-family: inherit; }

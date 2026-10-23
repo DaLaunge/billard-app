@@ -702,7 +702,7 @@ const TRANSLATIONS = {
     "Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.": "Practice match – not saved and doesn't count toward rating.",
     "Noch {time} …": "{time} left …",
     "Ein echtes Training dauert länger – bitte warte, bis der Timer abgelaufen ist.": "A real training session takes longer – please wait until the timer runs out.",
-    "Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen.": "By default you see yourself and your closest neighbors. Up to 6 players, switch the period above, drag across the graph to read values.",
+    "Standardmäßig siehst du dich und deine direkten Nachbarn. Bis zu 6 Spieler, Zeitraum oben umschaltbar, zum Ablesen über den Graphen ziehen. Ein Tipp auf einen Spieler entfernt ihn, über „Spieler“ kommen weitere dazu.": "By default you see yourself and your closest neighbors. Up to 6 players, switch the period above, drag across the graph to read values. Tap a player to remove them; use \"Player\" to add more.",
     "Sprache": "Language",
     "Rangliste": "Ranking",
     "Erklärung": "Explanation",
