@@ -664,7 +664,8 @@ export default function App() {
   useEffect(() => {
     if (!player) return;
     checkTourneyReady();
-    const id = setInterval(checkTourneyReady, 20000);
+    // Nur im Vordergrund und alle 45 s: jeder Abruf ist eine Logzeile (Supabase Log Ingestion); beim Zurueckkehren fragt onVis sofort
+    const id = setInterval(() => { if (document.visibilityState === "visible") checkTourneyReady(); }, 45000);
     const onVis = () => { if (document.visibilityState === "visible") checkTourneyReady(); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
@@ -730,7 +731,7 @@ export default function App() {
   useEffect(() => {
     if (!player) return;
     checkWinnerStaysReady();
-    const id = setInterval(checkWinnerStaysReady, 20000);
+    const id = setInterval(() => { if (document.visibilityState === "visible") checkWinnerStaysReady(); }, 45000);
     const onVis = () => { if (document.visibilityState === "visible") checkWinnerStaysReady(); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
@@ -1202,7 +1203,7 @@ export default function App() {
       } finally { busy = false; }
     };
     poll();
-    const id = setInterval(poll, 30000);
+    const id = setInterval(() => { if (document.visibilityState === "visible") poll(); }, 30000);
     const onVis = () => { if (document.visibilityState === "visible") poll(); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
