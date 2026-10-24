@@ -664,8 +664,8 @@ export default function App() {
   useEffect(() => {
     if (!player) return;
     checkTourneyReady();
-    // Nur im Vordergrund und alle 45 s: jeder Abruf ist eine Logzeile (Supabase Log Ingestion); beim Zurueckkehren fragt onVis sofort
-    const id = setInterval(() => { if (document.visibilityState === "visible") checkTourneyReady(); }, 45000);
+    // Alle 45 s (jeder Abruf ist eine Logzeile, Supabase Log Ingestion); bewusst auch im Hintergrund, damit "Du bist dran" nicht auf die Rueckkehr wartet
+    const id = setInterval(checkTourneyReady, 45000);
     const onVis = () => { if (document.visibilityState === "visible") checkTourneyReady(); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
@@ -731,7 +731,7 @@ export default function App() {
   useEffect(() => {
     if (!player) return;
     checkWinnerStaysReady();
-    const id = setInterval(() => { if (document.visibilityState === "visible") checkWinnerStaysReady(); }, 45000);
+    const id = setInterval(checkWinnerStaysReady, 45000);
     const onVis = () => { if (document.visibilityState === "visible") checkWinnerStaysReady(); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
