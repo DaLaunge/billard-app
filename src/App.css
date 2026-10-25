@@ -3502,6 +3502,10 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .extra-grid.single .extra-label { justify-content: flex-start; }
 
 /* Highscore / Meine Umgebung in der Statistik-Filterleiste: ausgegraut, solange sie nichts aendern wuerden. */
+/* Doomscroller: Filterleiste haftet oben, Kartenkoepfe pinnen darunter (--fb-h = gemessene Hoehe). */
+.stat-filterbar.pinned { position: sticky; top: 0; z-index: 6; box-shadow: 0 var(--card-gap) 0 var(--felt); }
+.screen:has(.stat-filterbar.pinned) .stat-block:not(.is-maximized) > .stat-block-head { top: calc(var(--fb-h, 56px) + var(--card-gap)); }
+.screen:has(.stat-filterbar.pinned) .deck-sub-head, .screen:has(.stat-filterbar.pinned) .badge-cat-head { top: calc(var(--fb-h, 56px) + var(--card-gap) + var(--head-h, 40px)); }
 .stat-filterbar .disc-pick:disabled { opacity: .35; cursor: default; pointer-events: none; }
 @media (max-width: 430px) { .stat-filterbar .nearby-sep { display: none; } .stat-filterbar .disc-picks.compact { gap: 2px; } }
 .deck-split { display: flex; flex-direction: column; gap: var(--card-gap); }
