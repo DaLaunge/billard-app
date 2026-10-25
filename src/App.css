@@ -3503,10 +3503,4 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 
 /* Highscore / Meine Umgebung in der Statistik-Filterleiste: ausgegraut, solange sie nichts aendern wuerden. */
 .stat-filterbar .disc-pick:disabled { opacity: .35; cursor: default; pointer-events: none; }
-.stat-filterbar .nearby-group { display: contents; }
-/* Handy: Highscore / Meine Umgebung bekommen eine eigene Zeile in der Filterleiste (sonst passt alles nicht nebeneinander). */
-@media (max-width: 600px) {
-  .stat-filterbar .disc-picks.compact { flex-wrap: wrap; row-gap: 6px; }
-  .stat-filterbar .nearby-group { display: flex; flex: 1 0 100%; justify-content: center; gap: 10px; }
-  .stat-filterbar .nearby-group .disc-sep { display: none; }
-}
+@media (max-width: 430px) { .stat-filterbar .nearby-sep { display: none; } .stat-filterbar .disc-picks.compact { gap: 2px; } }

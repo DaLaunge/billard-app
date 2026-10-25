@@ -849,18 +849,16 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   const nearbyRelevant = (g) => { const b = groupTab[g](); const rows = b.rows || []; return rows.length > 5 && rows.some((r) => b.nameOf(r) === me?.nickname); };
   const nearbyUsable = chaptersMode ? (listSeg && nearbyRelevant(activeSeg)) : groupIds.some(nearbyRelevant);
   const nearbyOn = globalNearby && nearbyUsable;
+  // EIN Umschalter, das Symbol zeigt den aktuellen Zustand: Pokal = Highscore, eigene Kugel = Meine Umgebung.
+  const nearbyLabel = nearbyOn ? t("Meine Umgebung") : t("Highscore");
   const nearbyChips = (
-    <span className="nearby-group">
-      <span className="disc-sep" aria-hidden="true" />
-      <button type="button" className={"disc-pick compact mode-pick" + (nearbyUsable && !nearbyOn ? " sel" : "")} disabled={!nearbyUsable}
-        aria-pressed={nearbyUsable && !nearbyOn} aria-label={t("Highscore")} title={t("Highscore")} onClick={() => setGlobalNearby(false)}>
-        <Trophy size={18} />
-      </button>
-      <button type="button" className={"disc-pick compact mode-pick" + (nearbyOn ? " sel" : "")} disabled={!nearbyUsable}
-        aria-pressed={nearbyOn} aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")} onClick={() => setGlobalNearby(true)}>
-        <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={20} />
-      </button>
-    </span>
+    <><span className="disc-sep nearby-sep" aria-hidden="true" /><button type="button" className={"disc-pick compact mode-pick" + (nearbyOn ? " sel" : "")} disabled={!nearbyUsable}
+      aria-label={nearbyLabel} title={nearbyUsable ? nearbyLabel + " – " + t("tippen zum Umschalten") : nearbyLabel}
+      onClick={() => setGlobalNearby(!nearbyOn)}>
+      {nearbyOn
+        ? <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={20} />
+        : <Trophy size={18} />}
+    </button></>
   );
   if (deckAnchor) {
     const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile, nearby: nearbyOn };
