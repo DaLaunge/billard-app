@@ -1210,6 +1210,7 @@ const TRANSLATIONS = {
     "gegen": "vs",
     "mit": "with",
     "Mehr anzeigen": "Show more",
+    "tippen zum Umschalten": "tap to switch",
     "Fehlanstoß": "Failed break",
     "Long Pot": "Long pot",
     "Bandenstoß": "Bank shot",

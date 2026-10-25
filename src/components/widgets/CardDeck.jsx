@@ -47,7 +47,7 @@ import { t } from "../../lib/i18n";
 export default function CardDeck({
   icon, title, tabs, activeId, onActive,
   onHide, hideLabel, tabsExtra,
-  roomy, id, soloTitle = true, filter, inlineTabs = false,
+  roomy, id, soloTitle = true, filter, inlineTabs = false, hideTabs = false,
 }) {
   const funnel = useFunnel();
   const active = tabs.find((x) => x.id === activeId) || tabs[0];
@@ -58,16 +58,17 @@ export default function CardDeck({
   // (sonst hiesse eine einzelne Head-to-Head-Karte "Meine Zahlen"), und das
   // Kartenmenue sagt wieder schlicht "Karte ausblenden". soloTitle={false}
   // fuer Decks, deren Sammelname auch allein stimmt ("Erfolge (20 / 149)").
-  const solo = tabs.length === 1;
+  // hideTabs: der Aufrufer waehlt den Reiter selbst (Statistik-Kapitelleiste) - die Karte verhaelt sich wie mit einem Teil.
+  const solo = tabs.length === 1 || hideTabs;
   // Ab vier Reitern (und wenn jeder ein Symbol hat) als Symbolstreifen: nur der
   // aktive Reiter zeigt seinen Namen, die uebrigen sind Symbole mit Tooltip.
   // Sechs beschriftete Reiter passten am Handy nie nebeneinander und scrollten
   // zur Haelfte aus dem Bild (Nutzer-Feedback 2026-10-01).
   const compact = tabs.length >= 4 && tabs.every((x) => x.icon);
   // Doomscroller (Einstellung "Ansicht der Listen"): statt Reiter stehen ALLE Teile untereinander, jeder mit angepinnter Abschnittsueberschrift.
-  const stacked = tabs.length > 1 && getListMode() === "stacked";
+  const stacked = tabs.length > 1 && !hideTabs && getListMode() === "stacked";
   const useSolo = solo && soloTitle;
-  const tabsBar = tabs.length > 1 && !stacked && (
+  const tabsBar = tabs.length > 1 && !stacked && !hideTabs && (
     <ScrollRow wrapClass="w-deck" className={"deck-tabs" + (compact ? " compact" : "")} role="tablist">
       {tabs.map((x) => (
         <button key={x.id} type="button" role="tab" aria-selected={x.id === active.id}

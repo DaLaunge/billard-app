@@ -3500,3 +3500,9 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 /* Zusatzzaehler im Ghost-Training: eine Spalte (Name links, Zaehler rechts), keine Gegner-Seite. */
 .extra-grid.single .extra-row { grid-template-columns: 1fr auto; }
 .extra-grid.single .extra-label { justify-content: flex-start; }
+
+/* Highscore / Meine Umgebung in der Statistik-Filterleiste: ausgegraut, solange sie nichts aendern wuerden. */
+.stat-filterbar .disc-pick:disabled { opacity: .35; cursor: default; pointer-events: none; }
+@media (max-width: 430px) { .stat-filterbar .nearby-sep { display: none; } .stat-filterbar .disc-picks.compact { gap: 2px; } }
+.deck-split { display: flex; flex-direction: column; gap: var(--card-gap); }
+.deck-split > .stat-block { margin-bottom: 0; }
