@@ -862,14 +862,19 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   );
   if (deckAnchor) {
     const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile, nearby: nearbyOn };
-    cardsById[deckAnchor] = (
-      <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")}
-        tabs={groupIds.map((g) => {
-          const b = groupTab[g]();
-          return { ...b, id: g, render: () => <LeaderboardRows key={g + (is141 ? "141" : "")} {...rowProps} {...b} /> };
-        })}
-        activeId={chaptersMode && listSeg ? activeSeg : deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
-        hideTabs={chaptersMode} />
+    const tabOf = (g) => { const b = groupTab[g](); return { ...b, id: g, render: () => <LeaderboardRows key={g + (is141 ? "141" : "")} {...rowProps} {...b} /> }; };
+    cardsById[deckAnchor] = chaptersMode ? (
+      <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")} tabs={groupIds.map(tabOf)}
+        activeId={listSeg ? activeSeg : deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }} hideTabs />
+    ) : (
+      // Doomscroller (422.5): jede Liste ist eine eigene Karte, gleichrangig mit Verlauf, Matches und Rekorden - keine Unterkapitel.
+      // Sie teilen sich den Platz (und den Ziehgriff) des Bestenlisten-Ankers.
+      <div className="deck-split">
+        {groupIds.map((g) => (
+          <CardDeck key={g} icon={<Trophy size={17} />} title={t("Bestenlisten")} tabs={[tabOf(g)]}
+            activeId={g} onActive={() => {}} onHide={() => cards.setDeckHidden(TAB_GROUPS[g], true)} />
+        ))}
+      </div>
     );
   }
   const showChapterBar = segments.length > 1 && chaptersMode;
