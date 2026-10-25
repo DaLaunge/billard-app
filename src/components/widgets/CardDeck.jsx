@@ -100,6 +100,8 @@ export default function CardDeck({
         <>
           {filter && <FunnelPanel funnel={funnel}>{filter.content}</FunnelPanel>}
           {!inlineTabs && tabsBar}
+          {/* Doomscroller: keine Reiterleiste, die Zusatz-Schalter (Highscore / Meine Umgebung) stehen dann als eigene Zeile oben. */}
+          {stacked && tabsExtra && <div className="deck-extra-row">{tabsExtra}</div>}
           {stacked ? tabs.map((x) => (
             <Fragment key={x.id}>
               <div className="deck-sub-head">{x.icon}<span>{x.title || x.tab}</span>
