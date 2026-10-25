@@ -17,7 +17,7 @@ import { rpcRetry } from "./rpcRetry";
 export const COUNTER_KEYS = ["fluke", "runout", "scratch", "foul"];
 // Nur im Ghost-Training (422.2, Nutzer-Wunsch: "was mache ich gut, was falsch"): gute Stoesse zum Zaehlen.
 // Bewusst NICHT in COUNTER_KEYS - die Fun-Statistiken (funStats.js, Meine Zahlen) kennen nur die vier alten.
-export const EXTRA_KEYS = ["longpot", "bank", "combo", "carom"];
+export const EXTRA_KEYS = ["badbreak", "longpot", "bank", "combo", "carom"];
 export const ALL_KEYS = [...COUNTER_KEYS, ...EXTRA_KEYS];
 export const MAX_COUNT = 99;
 

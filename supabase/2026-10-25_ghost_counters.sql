@@ -1,7 +1,7 @@
 -- Zusatzzaehler im Ghost-Training (Fehler und gute Stoesse zaehlen).
 --
 -- Ghost-Training erzeugt keine Zeile in matches, nur eine in ghost_games (zaehlt fuer die Ghost-Erfolge). Damit die
--- Zaehler aus dem Training (Fluke, Runout, Scratch, Foul + Long Pot, Bandenstoss, Kombination, Karambol) nicht verloren
+-- Zaehler aus dem Training (Fluke, Runout, Scratch, Foul + Fehlanstoss, Long Pot, Bandenstoss, Kombination, Karambol) nicht verloren
 -- gehen, bekommt ghost_games vier neue, optionale Spalten:
 --   discipline, score1, score2   - Disziplin und Ergebnis des Trainings (Grundlage fuer eine spaetere Auswertung)
 --   counters (jsonb)             - {"fluke":[a,b], ..., "carom":[a,b]}; Index 0 = der Trainierende, Index 1 = Ghost (immer 0)
@@ -58,7 +58,7 @@ begin
   if p_counters is not null then
     if jsonb_typeof(p_counters) <> 'object' then raise exception 'Ungültige Zusatzzähler.'; end if;
     for k in select jsonb_object_keys(p_counters) loop
-      if k not in ('fluke', 'runout', 'scratch', 'foul', 'longpot', 'bank', 'combo', 'carom') then
+      if k not in ('fluke', 'runout', 'scratch', 'foul', 'badbreak', 'longpot', 'bank', 'combo', 'carom') then
         raise exception 'Unbekannter Zusatzzähler: %', k;
       end if;
       if jsonb_typeof(p_counters -> k) <> 'array' or jsonb_array_length(p_counters -> k) <> 2 then

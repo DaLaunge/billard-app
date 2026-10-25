@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clover, Zap, CircleSlash, Flag, ChevronDown, Minus, Plus, AlertTriangle, Crosshair, CornerDownRight, Link2, Orbit } from "lucide-react";
+import { Clover, Zap, CircleSlash, Flag, ChevronDown, Minus, Plus, AlertTriangle, Crosshair, CornerDownRight, Link2, Orbit, Triangle } from "lucide-react";
 import { t } from "../../lib/i18n";
 import InfoButton from "./InfoButton";
 import { COUNTER_KEYS, ALL_KEYS, hasCounters } from "../../lib/matchCounters";
@@ -14,6 +14,7 @@ export const META = {
   runout: { icon: Zap, label: "Runout" },
   scratch: { icon: CircleSlash, label: "Scratch" },
   foul: { icon: Flag, label: "Foul" },
+  badbreak: { icon: Triangle, label: "Fehlanstoß" },
   longpot: { icon: Crosshair, label: "Long Pot" },
   bank: { icon: CornerDownRight, label: "Bandenstoß" },
   combo: { icon: Link2, label: "Kombination" },
@@ -36,7 +37,7 @@ export default function ExtraCounters({ value, onBump, names, defaultOpen = fals
         </button>
         <InfoButton title={t("Zusatzzähler")}>
           {single
-            ? t("Training: zähle, was du am Tisch machst – Fehler (Scratch, Foul) und gute Stöße (Long Pot, Bandenstoß, Kombination, Karambol). Die Zähler werden nur für dich gespeichert und ändern nichts am Training.")
+            ? t("Training: zähle, was du am Tisch machst – Fehler (Scratch, Foul, Fehlanstoß) und gute Stöße (Long Pot, Bandenstoß, Kombination, Karambol). Die Zähler werden nur für dich gespeichert und ändern nichts am Training.")
             : t("Optional: Fluke (Glückstreffer), Runout (Tisch leergeräumt), Scratch (weiße Kugel versenkt) und Foul zählen. Die Zähler werden mit dem Match gespeichert, ändern aber weder das Ergebnis noch das Rating.")}
         </InfoButton>
       </div>
