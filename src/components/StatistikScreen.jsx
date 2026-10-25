@@ -852,7 +852,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // EIN Umschalter, das Symbol zeigt den aktuellen Zustand: Pokal = Highscore, eigene Kugel = Meine Umgebung.
   const nearbyLabel = nearbyOn ? t("Meine Umgebung") : t("Highscore");
   const nearbyChips = (
-    <><span className="disc-sep nearby-sep" aria-hidden="true" /><button type="button" className={"disc-pick compact mode-pick" + (nearbyOn ? " sel" : "")} disabled={!nearbyUsable}
+    <><span className="disc-sep nearby-sep" aria-hidden="true" /><button type="button" className={"disc-pick compact mode-pick" + (nearbyOn ? " sel" : "")} disabled={!nearbyUsable} data-no-avatar
       aria-label={nearbyLabel} title={nearbyUsable ? nearbyLabel + " – " + t("tippen zum Umschalten") : nearbyLabel}
       onClick={() => setGlobalNearby(!nearbyOn)}>
       {nearbyOn
