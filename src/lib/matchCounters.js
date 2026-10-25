@@ -15,9 +15,13 @@ import { rpcRetry } from "./rpcRetry";
    auf matches loest per Trigger eine komplette Neuberechnung aller Ratings
    aus, und die Zaehler duerfen das Rating weder beruehren noch verteuern. */
 export const COUNTER_KEYS = ["fluke", "runout", "scratch", "foul"];
+// Nur im Ghost-Training (422.2, Nutzer-Wunsch: "was mache ich gut, was falsch"): gute Stoesse zum Zaehlen.
+// Bewusst NICHT in COUNTER_KEYS - die Fun-Statistiken (funStats.js, Meine Zahlen) kennen nur die vier alten.
+export const EXTRA_KEYS = ["longpot", "bank", "combo", "carom"];
+export const ALL_KEYS = [...COUNTER_KEYS, ...EXTRA_KEYS];
 export const MAX_COUNT = 99;
 
-export const emptyCounters = () => ({ fluke: [0, 0], runout: [0, 0], scratch: [0, 0], foul: [0, 0] });
+export const emptyCounters = () => Object.fromEntries(ALL_KEYS.map((k) => [k, [0, 0]]));
 
 const clamp = (n) => Math.max(0, Math.min(MAX_COUNT, Math.floor(Number(n) || 0)));
 
@@ -25,14 +29,14 @@ const clamp = (n) => Math.max(0, Math.min(MAX_COUNT, Math.floor(Number(n) || 0))
 export function normalizeCounters(c) {
   const out = emptyCounters();
   if (c && typeof c === "object") {
-    COUNTER_KEYS.forEach((k) => {
+    ALL_KEYS.forEach((k) => {
       if (Array.isArray(c[k])) out[k] = [clamp(c[k][0]), clamp(c[k][1])];
     });
   }
   return out;
 }
 
-export const hasCounters = (c) => !!c && COUNTER_KEYS.some((k) => (c[k]?.[0] || 0) + (c[k]?.[1] || 0) > 0);
+export const hasCounters = (c) => !!c && ALL_KEYS.some((k) => (c[k]?.[0] || 0) + (c[k]?.[1] || 0) > 0);
 
 export const bumpCounter = (c, key, side, delta) => ({
   ...c,

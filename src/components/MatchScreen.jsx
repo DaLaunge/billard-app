@@ -547,7 +547,13 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
     }
     if (isGhost) {
       setBusy(true);
-      const { error } = await rpcRetry("record_ghost_game", { p_discipline: disc, p_score1: s1, p_score2: s2 });
+      // Zusatzzaehler des Trainings mitschicken (supabase/2026-10-25_ghost_counters.sql); fehlt die Migration noch,
+      // bleibt es beim alten Aufruf ohne Zaehler - das Training selbst darf daran nie scheitern.
+      const ghostParams = { p_discipline: disc, p_score1: s1, p_score2: s2 };
+      let { error } = await rpcRetry("record_ghost_game", hasCounters(counters) ? { ...ghostParams, p_counters: counters } : ghostParams);
+      if (error && hasCounters(counters) && /p_counters|schema cache|does not exist|Could not find/i.test(error.message || "")) {
+        ({ error } = await rpcRetry("record_ghost_game", ghostParams));
+      }
       setBusy(false);
       if (error) { toast(t("Fehler: ") + error.message); return; }
       setStep(4); return;
@@ -984,9 +990,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </div>
               {/* Optionale Zusatzzaehler (Fluke/Runout/Scratch/Foul), zugeklappt.
                   Hier, waehrend des Spiels, nicht erst am Ende. */}
-              {!isGhost && (
-                <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} warnings={warnings()} />
-              )}
+              {/* Ghost-Training: nur die eigene Seite, dazu Long Pot/Bandenstoss/Kombination/Karambol */}
+              <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} warnings={warnings()} single={isGhost} />
               <div className="sticky-cta">
                 <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
                   {t("Beenden")} <ArrowRight size={18} />
@@ -1043,7 +1048,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </div>
             </div>
             <div className="sum-disc">{t(disc)}{isGhost ? t(" · Training") : isGuestMatch ? t(" · Gast") : ""}</div>
-            {!isGhost && !is141 && <CountersSummary value={counters} warnings={warnings()} />}
+            {!is141 && <CountersSummary value={counters} warnings={warnings()} single={isGhost} />}
             {is141 && (hr[0] != null || hr[1] != null) && (
               <div className="sum-141">
                 {t("Höchstserie:")} {me.nickname} {hr[0]} · {opp.nickname} {hr[1]}
@@ -1053,7 +1058,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               </div>
             )}
             {isGhost ? (
-              <p className="hint center" style={{ marginBottom: 0 }}>{t("Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.")}</p>
+              <p className="hint center" style={{ marginBottom: 0 }}>{hasCounters(counters) ? t("Trainingsmatch – zählt nicht fürs Rating, deine Zähler werden für dich gespeichert.") : t("Trainingsmatch – wird nicht gespeichert und zählt nicht fürs Rating.")}</p>
             ) : isGuestMatch ? (
               <p className="hint center" style={{ marginBottom: 0 }}>{t("Gast-Match – zählt nicht fürs Rating, braucht keine Bestätigung.")}</p>
             ) : (
