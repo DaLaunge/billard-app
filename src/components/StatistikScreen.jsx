@@ -117,11 +117,11 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
 // "zu verschachtelt"): Disziplin als Kugeln + Einzel/Doppel/Beides in EINER Zeile,
 // immer sichtbar. Sie ersetzt den Trichter an Bestenlisten und Verlauf; die
 // Auswahl selbst bleibt in statGlobalDisc/-Mode (localStorage).
-function StatFilterBar({ disc, disciplines, onDisc, mode, onMode }) {
+function StatFilterBar({ disc, disciplines, onDisc, mode, onMode, nearbyChips }) {
   return (
     <div className="stat-filterbar">
       <DiscPickRow all="Gesamt" discs={disciplines.filter((d) => d !== "Doppel")} value={disc} onChange={onDisc}
-        trailing={<ModePick inline value={mode} onChange={onMode} />} />
+        trailing={<><ModePick inline value={mode} onChange={onMode} />{nearbyChips}</>} />
     </div>
   );
 }
@@ -830,44 +830,51 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
       : { ...leaderboardById.schnellstesTempo, tab: t("Tempo") }),
     aufsteiger: () => leaderboardById.aufsteiger,
   };
+  // Kapitelleiste (Einstellung "Ansicht der Listen", lib/uiPrefs.js): "stacked" (Doomscroller) = alle Karten untereinander ohne
+  // Buttons; "chapters" (Tab-Freak) = die Buttons oben schalten um. Die Bestenlisten sind seit 422.5 KEINE Unterebene "Listen"
+  // mehr, sondern stehen mit Rating / Siege / Tempo / Aufsteiger direkt in dieser Leiste.
+  const chaptersMode = getListMode() === "chapters";
+  const [segPick, setSegPick] = useState(() => { try { return localStorage.getItem("statSeg") || ""; } catch { return ""; } });
+  const pickSeg = (sid) => { setSegPick(sid); try { localStorage.setItem("statSeg", sid); } catch { /* ignore */ } };
+  const segOf = (id) => (id === "entwicklung" ? "verlauf" : id === "letzteMatches" ? "matches" : id === "rekordeClub" ? "rekorde" : "listen");
+  const visibleOrder = withoutFolded(cards.visibleOrder, LEADERBOARD_IDS, deckAnchor);
+  const segments = [];
+  ["verlauf", "matches"].forEach((sid) => { if (visibleOrder.some((id) => segOf(id) === sid)) segments.push({ id: sid, label: t(sid === "verlauf" ? "Verlauf" : "Matches") }); });
+  groupIds.forEach((g) => segments.push({ id: g, label: groupTab[g]().tab }));
+  if (visibleOrder.some((id) => segOf(id) === "rekorde")) segments.push({ id: "rekorde", label: t("Rekorde") });
+  const activeSeg = segments.some((x) => x.id === segPick) ? segPick : segments[0]?.id;
+  const listSeg = groupIds.includes(activeSeg);
+  // Highscore / Meine Umgebung (Nutzer-Wunsch 422.5: in die Filterleiste) sind nur dann bedienbar, wenn sie etwas aendern:
+  // es muss eine Liste zu sehen sein, in der man selbst vorkommt und die laenger ist als die 5 Zeilen der Umgebung.
+  const nearbyRelevant = (g) => { const b = groupTab[g](); const rows = b.rows || []; return rows.length > 5 && rows.some((r) => b.nameOf(r) === me?.nickname); };
+  const nearbyUsable = chaptersMode ? (listSeg && nearbyRelevant(activeSeg)) : groupIds.some(nearbyRelevant);
+  const nearbyOn = globalNearby && nearbyUsable;
+  const nearbyChips = (
+    <span className="nearby-group">
+      <span className="disc-sep" aria-hidden="true" />
+      <button type="button" className={"disc-pick compact mode-pick" + (nearbyUsable && !nearbyOn ? " sel" : "")} disabled={!nearbyUsable}
+        aria-pressed={nearbyUsable && !nearbyOn} aria-label={t("Highscore")} title={t("Highscore")} onClick={() => setGlobalNearby(false)}>
+        <Trophy size={18} />
+      </button>
+      <button type="button" className={"disc-pick compact mode-pick" + (nearbyOn ? " sel" : "")} disabled={!nearbyUsable}
+        aria-pressed={nearbyOn} aria-label={t("Meine Umgebung")} title={t("Meine Umgebung")} onClick={() => setGlobalNearby(true)}>
+        <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={20} />
+      </button>
+    </span>
+  );
   if (deckAnchor) {
-    const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile, nearby: globalNearby };
+    const rowProps = { me, colorOf, badgeOf, photoOf, onOpenProfile, nearby: nearbyOn };
     cardsById[deckAnchor] = (
       <CardDeck icon={<Trophy size={17} />} title={t("Bestenlisten")}
         tabs={groupIds.map((g) => {
           const b = groupTab[g]();
           return { ...b, id: g, render: () => <LeaderboardRows key={g + (is141 ? "141" : "")} {...rowProps} {...b} /> };
         })}
-        activeId={deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
-        tabsExtra={(
-          <>
-            <span className="disc-sep deck-sep" aria-hidden="true" />
-            <button type="button" className={"chip chip-icon" + (!globalNearby ? " active" : "")} role="tab" aria-selected={!globalNearby}
-              title={t("Highscore")} aria-label={t("Highscore")} onClick={() => setGlobalNearby(false)}>
-              <Trophy size={15} />
-            </button>
-            <button type="button" className={"chip chip-icon" + (globalNearby ? " active" : "")} role="tab" aria-selected={globalNearby}
-              title={t("Meine Umgebung")} aria-label={t("Meine Umgebung")} onClick={() => setGlobalNearby(true)}>
-              <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={18} />
-            </button>
-          </>
-        )} />
+        activeId={chaptersMode && listSeg ? activeSeg : deckActive} onActive={(id) => { setLeaderboardTab(id); writeTabPref(id); }}
+        hideTabs={chaptersMode} />
     );
   }
-
-  const visibleOrder = withoutFolded(cards.visibleOrder, LEADERBOARD_IDS, deckAnchor);
-  // Kapitel der Statistik (Einstellung "Ansicht der Listen", lib/uiPrefs.js): "stacked" (Doomscroller) = alle Karten untereinander ohne
-  // Buttons; "chapters" (Tab-Freak) = die Buttons oben schalten je eine Karte um (wie frueher).
-  const segOf = (id) => (id === "entwicklung" ? "verlauf" : id === "letzteMatches" ? "matches" : id === "rekordeClub" ? "rekorde" : "listen");
-  const SEG_LABELS = { verlauf: "Verlauf", matches: "Matches", listen: "Listen", rekorde: "Rekorde" };
-  const segments = ["verlauf", "matches", "listen", "rekorde"]
-    .filter((sid) => visibleOrder.some((id) => segOf(id) === sid))
-    .map((sid) => ({ id: sid, label: t(SEG_LABELS[sid]) }));
-  const chaptersMode = getListMode() === "chapters";
   const showChapterBar = segments.length > 1 && chaptersMode;
-  const [segPick, setSegPick] = useState(() => { try { return localStorage.getItem("statSeg") || ""; } catch { return ""; } });
-  const activeSeg = segments.some((x) => x.id === segPick) ? segPick : segments[0]?.id;
-  const pickSeg = (sid) => { setSegPick(sid); try { localStorage.setItem("statSeg", sid); } catch { /* ignore */ } };
   const slotOrder = (id) => 10 + visibleOrder.indexOf(id);
 
   return (
@@ -937,9 +944,9 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
       {showChapterBar && <SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} storageKey="stat" />}
       {(!chaptersMode || activeSeg !== "rekorde") && (
-        <StatFilterBar disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc} mode={globalMode} onMode={setGlobalMode} />
+        <StatFilterBar disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc} mode={globalMode} onMode={setGlobalMode} nearbyChips={nearbyChips} />
       )}
-      <div className="stat-split" data-seg={chaptersMode && segments.length > 1 ? activeSeg : undefined}>
+      <div className="stat-split" data-seg={chaptersMode && segments.length > 1 ? (listSeg ? "listen" : activeSeg) : undefined}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={visibleOrder} strategy={verticalListSortingStrategy}>
         <div className="stat-chart-col">
