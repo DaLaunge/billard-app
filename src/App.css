@@ -3492,3 +3492,7 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .dev-chip-add { cursor: pointer; color: var(--accent); padding: 4px 11px 4px 8px; font-family: inherit; }
 .dev-chip-add .dev-chip-name { color: var(--ivory-dim); }
 .dev-chip-add:hover, .dev-chip-add.open { border-color: var(--accent); background: var(--accent-soft); }
+
+.deck-extra-row { display: flex; gap: 6px; margin: 4px 0 8px; }
+.deck-extra-row .deck-sep { display: none; }
+.deck-extra-row .chip { display: inline-flex; align-items: center; justify-content: center; padding: 6px 12px; }
