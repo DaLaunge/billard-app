@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs, clearRef, getClubCode, clearClubCode, getTurnierInvite, clearTurnierInvite } from "./lib/session";
+import { getVs, clearVs, clearRef, getClubCode, clearClubCode, getTurnierInvite, clearTurnierInvite, getGuestSession, setGuestSession, clearGuestSession } from "./lib/session";
 import { setClubData, setClubLoader, reloadClubs, useClubData, roleIn } from "./lib/clubStore";
 import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
@@ -37,6 +37,7 @@ import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safe
 
 import LoginScreen from "./components/LoginScreen";
 import TurnierInviteScreen from "./components/TurnierInviteScreen";
+import GuestTournamentScreen from "./components/GuestTournamentScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
 import NicknameScreen from "./components/NicknameScreen";
 import LiveScreen from "./components/LiveScreen";
@@ -166,6 +167,7 @@ export default function App() {
   // Turnier-Einladung ohne Konto: Wahl "Anmelden / Gast" (TurnierInviteScreen); turnierLogin = hat "Anmelden" gewaehlt
   const [turnierInvite, setTurnierInvite] = useState(() => getTurnierInvite());
   const [turnierLogin, setTurnierLogin] = useState(false);
+  const [guestSess, setGuestSess] = useState(() => getGuestSession());   // Gast ohne Konto: Token fuer sein Turnier-Dashboard
   const turnierJoinBusy = useRef(false);
   const [player, setPlayer] = useState(null);
   const [loadErr, setLoadErr] = useState(false);
@@ -1220,7 +1222,7 @@ export default function App() {
   // (?ref=) unnoetig gemerkt - er soll weder am Login als "eingeladen" noch
   // spaeter irgendwo gutgeschrieben werden. Ein Neuer hat noch keinen
   // "player", dessen Code bleibt also bis zur Registrierung erhalten.
-  useEffect(() => { if (player) clearRef(); }, [player]);
+  useEffect(() => { if (player) { clearRef(); clearGuestSession(); } }, [player]);
   // Clubs (supabase/2026-10-19b_clubs.sql): Clubs, Mitglieder und Hauptclub je Spieler. Fehlt die Tabelle noch, bleibt der
   // Speicher leer und alle Club-Stellen der App erscheinen gar nicht. Spieler OHNE Club sind der Normalfall.
   const loadClubs = useCallback(async () => {
@@ -1635,10 +1637,15 @@ export default function App() {
   return (
     <div className="stage">
       <div className={"phone" + (session && player && !player.must_change_password ? " app" : "")}>
-        {!session && (turnierInvite && !turnierLogin
-          ? <TurnierInviteScreen tournamentId={turnierInvite} onLogin={() => setTurnierLogin(true)}
-              onDone={() => { clearTurnierInvite(); setTurnierInvite(null); }} />
-          : <LoginScreen />)}
+        {!session && (turnierLogin ? <LoginScreen />
+          : turnierInvite && !(guestSess && guestSess.tournamentId === turnierInvite)
+            ? <TurnierInviteScreen tournamentId={turnierInvite} onLogin={() => setTurnierLogin(true)}
+                onGuest={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }}
+                onDone={() => { clearTurnierInvite(); setTurnierInvite(null); }} />
+            : guestSess
+              ? <GuestTournamentScreen session={guestSess} onLogin={() => setTurnierLogin(true)}
+                  onForget={() => { clearGuestSession(); setGuestSess(null); }} />
+              : <LoginScreen />)}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
 

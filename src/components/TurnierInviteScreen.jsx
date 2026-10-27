@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trophy, UserCheck, UserPlus, ArrowRight, Check, X } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { Trophy, UserCheck, ArrowRight, X } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { setRef } from "../lib/session";
@@ -12,13 +11,12 @@ import Ball from "./Ball";
    Zwei Wege: "Anmelden" (normaler Anmeldevorgang, die Turnierleitung wird als Werber gutgeschrieben, die Turnier-Anmeldung folgt in App.jsx
    automatisch nach der Registrierung) oder "Als Gast mitspielen" (nur ein Name, kein Login). Beides laeuft ueber Funktionen, die ohne
    Login aufrufbar sind (supabase/2026-10-29_tournament_invite.sql). */
-export default function TurnierInviteScreen({ tournamentId, onLogin, onDone }) {
+export default function TurnierInviteScreen({ tournamentId, onLogin, onDone, onGuest }) {
   const [info, setInfo] = useState(undefined);   // undefined = laedt, null = nicht gefunden/Fehler
   const [guest, setGuest] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [joined, setJoined] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -34,11 +32,12 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone }) {
     setBusy(true); setError("");
     const { data, error: e } = await supabase.rpc("tournament_join_guest", { p_tournament_id: tournamentId, p_nickname: name.trim() });
     setBusy(false);
-    if (e) setError(e.message); else setJoined(data);
+    if (e) { setError(e.message); return; }
+    // Ab jetzt hat der Gast sein eigenes Dashboard (Abmelden, "Du bist dran", Match mitzaehlen/bestaetigen)
+    onGuest({ token: data.token, tournamentId, nickname: data.nickname });
   };
 
   const open = info?.status === "setup";
-  const inviteLink = (() => { const u = new URL("/", window.location.origin); u.searchParams.set("turnier", tournamentId); return u.toString(); })();
 
   return (
     <div className="screen login-screen">
@@ -63,28 +62,14 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone }) {
           </>
         )}
 
-        {info && !open && !joined && (
+        {info && !open && (
           <>
             <p className="hint center">{t("Die Anmeldung für dieses Turnier ist nicht mehr offen.")}</p>
             <button className="btn primary" onClick={onDone}>{t("Weiter zur App")} <ArrowRight size={18} /></button>
           </>
         )}
 
-        {info && open && joined && (
-          <>
-            <div className="sent-check"><Check size={28} /></div>
-            <p className="sent-text">{t("Du bist dabei, {name}!", { name: joined.nickname })}</p>
-            <p className="hint center">{t("Die Turnierleitung sieht dich in der Liste. Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.")}</p>
-            {/* QR-Code zum Turnier: weitere Personen am Tisch koennen ihn gleich scannen */}
-            <div className="qr-box">
-              <QRCodeSVG value={inviteLink} size={170} level="M" bgColor="#F2EDE0" fgColor="#0A2B21" includeMargin />
-            </div>
-            <p className="hint center">{t("Dieser QR-Code führt zum Turnier – andere können ihn gleich scannen.")}</p>
-            <button className="btn ghost" onClick={login}><UserPlus size={16} /> {t("Doch lieber registrieren")}</button>
-          </>
-        )}
-
-        {info && open && !joined && !guest && (
+        {info && open && !guest && (
           <>
             <p className="hint center">{t("Du bist zu diesem Turnier eingeladen.")}</p>
             <button className="btn primary" onClick={login}><UserCheck size={18} /> {t("Anmelden")} <ArrowRight size={18} /></button>
@@ -92,7 +77,7 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone }) {
           </>
         )}
 
-        {info && open && !joined && guest && (
+        {info && open && guest && (
           <>
             <label className="field-label" htmlFor="guestname">{t("Dein Name")}</label>
             <div className="mail-row">

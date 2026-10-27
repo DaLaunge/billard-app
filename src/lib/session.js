@@ -84,6 +84,22 @@ export const getTurnierInvite = () => {
 };
 export const clearTurnierInvite = () => { try { localStorage.removeItem(TURNIER_KEY); } catch { /* */ } };
 
+/* Gast im Turnier OHNE Konto: das geheime Zeichen (Token) aus tournament_join_guest bleibt in localStorage dieses Browsers
+   (supabase/2026-10-29b_guest_tournament.sql). Damit oeffnet die App beim naechsten Start wieder das Gast-Dashboard. */
+const GUEST_KEY = "guest_tournament";
+export const getGuestSession = () => {
+  try {
+    const raw = localStorage.getItem(GUEST_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (v?.token && Date.now() - (v.at || 0) < 14 * 24 * 60 * 60 * 1000) return v;
+    localStorage.removeItem(GUEST_KEY);
+  } catch { /* ignore */ }
+  return null;
+};
+export const setGuestSession = (v) => { try { localStorage.setItem(GUEST_KEY, JSON.stringify({ ...v, at: Date.now() })); } catch { /* */ } };
+export const clearGuestSession = () => { try { localStorage.removeItem(GUEST_KEY); } catch { /* */ } };
+
 /* Schnellmatch-Code aus der URL (?vs=PLAYER_ID) einmalig sichern. */
 function captureVs() {
   try {
