@@ -3698,3 +3698,18 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 /* Ping ganz oben, gross: Hoehe = Radar + je 96px Ringe nach oben und unten, damit die Ringe nie abgeschnitten werden */
 .ping-btn { padding: 0; min-height: 292px; justify-content: center; align-items: center; flex-direction: column; }
 .ping-txt { position: absolute; left: 0; right: 0; bottom: 14px; align-items: center; }
+
+/* PING-Schriftzug links und rechts vom Radar: verspielt, in die Animation einbezogen */
+.ping-btn { flex-direction: row; gap: 14px; }
+.ping-word { display: inline-flex; gap: 2px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: calc(30px * var(--fs, 1)); line-height: 1; color: var(--accent); text-shadow: 0 0 10px var(--accent-soft); letter-spacing: .04em; z-index: 1; }
+.ping-word.l { transform: rotate(-6deg); }
+.ping-word.r { transform: rotate(6deg); }
+.ping-word i { font-style: normal; display: inline-block; }
+.ping-word i:nth-child(even) { font-size: .86em; align-self: flex-end; }
+@media (max-width: 520px) { .ping-word { font-size: calc(22px * var(--fs, 1)); } .ping-btn { gap: 8px; } }
+@media (prefers-reduced-motion: no-preference) {
+  .ping-btn:not(.pinging) .ping-word i { animation: ping-bob 2.8s ease-in-out infinite; animation-delay: calc(var(--d) * .18s); }
+  .ping-btn.pinging .ping-word i { animation: ping-hop .9s cubic-bezier(.3, 1.6, .5, 1) 1; animation-delay: calc(var(--d) * .14s); }
+  @keyframes ping-bob { 0%, 100% { transform: translateY(0); opacity: .75; } 50% { transform: translateY(-4px); opacity: 1; } }
+  @keyframes ping-hop { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-16px) scale(1.35); text-shadow: 0 0 18px var(--accent); } 100% { transform: translateY(0) scale(1); } }
+}

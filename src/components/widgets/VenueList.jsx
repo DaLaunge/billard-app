@@ -331,12 +331,21 @@ export function VenueProvider({ children, me, pings = [], plannings = [], challe
 }
 
 /* Der grosse Ping-Knopf samt Ergebnis: steht ganz oben auf dem Live-Bildschirm, ueber den Duellen */
+const PING_LETTERS = ["P", "I", "N", "G"];
+// Das Wort PING links und rechts vom Radar: die Buchstaben huepfen nacheinander von innen nach aussen (--d = Abstand zum Radar)
+const PingWord = ({ side }) => (
+  <span className={"ping-word " + side} aria-hidden="true">
+    {PING_LETTERS.map((c, i) => <i key={i} style={{ "--d": side === "l" ? PING_LETTERS.length - 1 - i : i }}>{c}</i>)}
+  </span>
+);
+
 export function PingBlock() {
   const { pinging, pinged, doPing, nearLive, entry } = useContext(VenueCtx);
   return (
     <>
       <div className="ping-box">
         <button type="button" className={"ping-btn" + (pinging ? " pinging" : "")} onClick={doPing} aria-label={t("Ping – wer spielt in meiner Nähe?")}>
+          <PingWord side="l" />
           <span className="ping-orb">
             <i className="ping-ring" /><i className="ping-ring r2" /><i className="ping-ring r3" />
             <i className="ping-sweep" />
@@ -346,10 +355,8 @@ export function PingBlock() {
               <circle cx="67" cy="33" r="4" className="ping-blip" /><circle cx="36" cy="62" r="3" className="ping-blip" />
             </svg>
           </span>
-          <span className="ping-txt">
-            <b>{t("Ping")}</b>
-            {!pinged && <span className="rank-meta">{t("Wer spielt in meiner Nähe?")}</span>}
-          </span>
+          <PingWord side="r" />
+          {!pinged && <span className="ping-txt"><span className="rank-meta">{t("Wer spielt in meiner Nähe?")}</span></span>}
         </button>
         <div className={"collapsible" + (pinged ? " open" : "")} inert={pinged ? undefined : ""}>
           <div className="collapsible-inner">
