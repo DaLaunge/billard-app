@@ -1497,10 +1497,14 @@ export default function App() {
     loadData();
   };
 
-  const createChallenge = async (playerId, message) => {
-    const { error } = await supabase.rpc("create_challenge", { p_challenged_id: playerId, p_message: message || null });
+  const createChallenge = async (playerId, message, locationId) => {
+    const { data, error } = await supabase.rpc("create_challenge", { p_challenged_id: playerId, p_message: message || null });
     if (error) toast(t("Fehler: ") + error.message);
-    else toast(t("Herausforderung gesendet!"));
+    else {
+      toast(t("Herausforderung gesendet!"));
+      // Ortsvorschlag (supabase/2026-10-28b_challenge_location.sql); fehlt die Migration, bleibt das Duell ohne Ort
+      if (locationId && data?.id) await supabase.rpc("set_challenge_location", { p_challenge_id: data.id, p_location_id: locationId });
+    }
     loadData();
   };
   const editChallengeMessage = async (id, message) => {

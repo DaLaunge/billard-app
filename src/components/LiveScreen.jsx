@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Swords, ChevronDown } from "lucide-react";
 import { t } from "../lib/i18n";
+import { supabase } from "../supabase";
+import { useLocations } from "../lib/locationStore";
 import ChallengeCard from "./ChallengeCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
@@ -53,6 +55,26 @@ export default function LiveScreen({ me, pings, plannings, challenges, players,
   // Sichtbarkeit der Duell-Karte (Einstellungen -> Karten, oder im Kartenmenue hier)
   const cards = useCardLayout("live", me.card_layout, onSetCardLayout, toast);
 
+  // Ortsvorschlaege der Duelle (eigene Abfrage, damit ein Fehlen der Migration 2026-10-28b nichts anderes stoert)
+  const locs = useLocations();
+  const [clocs, setClocs] = useState({});
+  const loadClocs = () => supabase.from("challenges").select("id, location_id, location_by").not("location_id", "is", null)
+    .then(({ data, error }) => { if (!error) setClocs(Object.fromEntries((data || []).map((r) => [r.id, r]))); });
+  useEffect(() => { loadClocs(); }, [openChallenges.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const setPlace = async (id, locId) => {
+    const { error } = await supabase.rpc("set_challenge_location", { p_challenge_id: id, p_location_id: locId || null });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(locId ? t("Ortsvorschlag gespeichert.") : t("Ortsvorschlag entfernt."));
+    loadClocs();
+  };
+  const placeProps = (c) => {
+    const r = clocs[c.id];
+    return {
+      place: r ? locs.list.find((l) => l.id === r.location_id) || null : null,
+      placeBy: r ? players?.find((p) => p.id === r.location_by)?.nickname : null,
+      onSetPlace: locs.available ? setPlace : null, toast, me,
+    };
+  };
   const [duelOpen, setDuelOpen] = useState(false); // Duelle sind standardmaessig eingeklappt, der Zaehler im Kopf zeigt, wie viele es sind
 
   const duelleBody = (
@@ -60,12 +82,12 @@ export default function LiveScreen({ me, pings, plannings, challenges, players,
       {challengesToMe.length > 0 && <p className="q">{t("Herausforderungen an dich")}</p>}
       {challengesToMe.map((c) => (
         <ChallengeCard key={c.id} challenge={c} role="to" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-          isNewMsg={isNew(c, "msg")} onDecline={onDeclineChallenge} onReply={onReplyToChallenge} />
+          isNewMsg={isNew(c, "msg")} onDecline={onDeclineChallenge} onReply={onReplyToChallenge} {...placeProps(c)} />
       ))}
       {challengesFromMe.length > 0 && <p className="q" style={{ marginTop: challengesToMe.length ? 18 : 0 }}>{t("Deine offenen Herausforderungen")}</p>}
       {challengesFromMe.map((c) => (
         <ChallengeCard key={c.id} challenge={c} role="from" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-          isNewReply={isNew(c, "reply")} onCancel={onCancelChallenge} onEditMessage={onEditChallengeMessage} />
+          isNewReply={isNew(c, "reply")} onCancel={onCancelChallenge} onEditMessage={onEditChallengeMessage} {...placeProps(c)} />
       ))}
     </>
   );
@@ -75,7 +97,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, players,
   return (
     <VenueProvider me={me} players={players} toast={toast} pings={pings} plannings={plannings} challengesFromMe={challengesFromMe} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
       onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning} onUpdatePlanning={onUpdatePlanning} onDeletePlanning={onDeletePlanning}
-      onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning} onChallenge={onCreateChallenge}>
+      onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning} onChallenge={(pid, msg, locId) => { onCreateChallenge(pid, msg, locId); setDuelOpen(true); }}>
       <div className="screen">
         <header className="screen-head">
           <h2>{t("Live")}</h2>

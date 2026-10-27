@@ -1,16 +1,19 @@
 import { useState } from "react";
-import { X, Pencil, Swords } from "lucide-react";
+import { X, Pencil, Swords, MapPin } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials, timeLeft } from "../lib/format";
 import Ball from "./Ball";
 import { EmojiText } from "./Emoji";
+import RouteButton from "./widgets/RouteButton";
+import LocationPicker from "./widgets/LocationPicker";
 
-export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, photoOf, isNewMsg, isNewReply, onDecline, onCancel, onEditMessage, onReply, onOpenProfile }) {
+export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, photoOf, isNewMsg, isNewReply, onDecline, onCancel, onEditMessage, onReply, onOpenProfile, place, placeBy, onSetPlace, toast, me }) {
   const other = role === "to" ? c.challenger : c.challenged;
   const [editingMsg, setEditingMsg] = useState(false);
   const [msgDraft, setMsgDraft] = useState(c.message || "");
   const [editingReply, setEditingReply] = useState(false);
   const [replyDraft, setReplyDraft] = useState(c.reply || "");
+  const [pickPlace, setPickPlace] = useState(false);
 
   return (
     <section className={"stat-block challenge-card" + (role === "to" ? " to-me" : "")}>
@@ -77,6 +80,25 @@ export default function ChallengeCard({ challenge: c, role, colorOf, badgeOf, ph
             {isNewReply && <span className="new-dot" title={t("Neu")} />}"{c.reply}"
           </p>
         )
+      )}
+
+      {onSetPlace && (
+        <div className="challenge-place">
+          {place && !pickPlace && (
+            <p className="venue-where">
+              <MapPin size={13} /> <b>{place.name}</b>
+              {place.lat != null && <RouteButton place={place} size={14} />}
+              {placeBy && <span className="rank-meta">· {t("Vorschlag von {n}", { n: placeBy })}</span>}
+            </p>
+          )}
+          {pickPlace ? (
+            <LocationPicker value={place?.id || null} onChange={(id) => { onSetPlace(c.id, id); setPickPlace(false); }} toast={toast} me={me} />
+          ) : (
+            <button type="button" className="chip-btn" onClick={() => setPickPlace(true)}>
+              <MapPin size={14} /> {place ? t("Anderen Ort vorschlagen") : t("Ort vorschlagen")}
+            </button>
+          )}
+        </div>
       )}
 
       <button className="btn ghost small" onClick={() => (role === "to" ? onDecline(c.id) : onCancel(c.id))}>

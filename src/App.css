@@ -3754,3 +3754,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .duel-chev.open { transform: rotate(180deg); }
 
 .duel-card { margin-top: 8px; }
+
+.challenge-place { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin: 6px 0; }
+.challenge-place .venue-where { margin: 0; }
+.challenge-place .loc-picker, .challenge-place .loc-sel { width: 100%; }

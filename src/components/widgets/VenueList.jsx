@@ -294,14 +294,16 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
     const msg = myPing ? `Ich bin live: ${myPing.location} – Duell?`
       : item.location ? `Du bist live bei ${item.location} – Duell?`
       : `Duell am ${fmtDate(item.planned_date)}${place ? ` (${place})` : ""}?`;
-    onChallenge(item.player_id, msg.slice(0, 120));
+    // Ortsvorschlag: der eigene Live-Ort, sonst der Ort des Eintrags (nur Lokale aus dem Katalog)
+    const v = myPing ? venueOfPing(myPing) : item.location ? venueOfPing(item) : venueOfPlan(item);
+    onChallenge(item.player_id, msg.slice(0, 120), v && !v.loose ? v.id : undefined);
   };
 
   // Spielersuche: Treffer lassen sich mit einem Tipp zum Duell herausfordern
   const hits = nq.length >= 2
     ? players.filter((p) => p.id !== me?.id && !p.is_guest && !p.is_ghost && !p.blocked && norm(p.nickname).includes(nq)).slice(0, 6) : [];
   const challengedIds = new Set(challengesFromMe.map((c) => c.challenged_id));
-  const challengeTo = (p) => onChallenge?.(p.id, myPing ? `Ich bin live: ${myPing.location} – Duell?` : "Duell?");
+  const challengeTo = (p) => { const v = myPing ? venueOfPing(myPing) : null; onChallenge?.(p.id, myPing ? `Ich bin live: ${myPing.location} – Duell?` : "Duell?", v && !v.loose ? v.id : undefined); };
 
   const entry = (x, dist) => (
     <div key={x.kind + x.item.id} className={"venue-row" + (x.kind === "ping" ? " is-live" : "")}>
