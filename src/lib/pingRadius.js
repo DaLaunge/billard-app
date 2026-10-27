@@ -1,9 +1,9 @@
-// Ping-Radius: wie weit der "Ping" (Live-Bildschirm) nach Live-Spielern sucht. Pro Geraet in localStorage, Standard 5 km.
-// Der Schieberegler deckt 100 m bis 50 km ab; groessere Werte (bis zum halben Erdumfang) gehen nur per Eingabefeld (Easteregg).
+﻿// Ping-Radius: wie weit der "Ping" (Live-Bildschirm) nach Live-Spielern sucht. Pro Geraet in localStorage, Standard 5 km.
+// Der Schieberegler deckt 100 m bis 50 km ab; groessere Werte (bis ueber den halben Erdumfang hinaus) gehen nur per Eingabefeld (Easteregg).
 export const PING_RADIUS_DEFAULT = 5;
 export const PING_RADIUS_MIN = 0.1;
 export const PING_RADIUS_SLIDER_MAX = 50;
-export const PING_RADIUS_MAX = 20000;
+export const PING_RADIUS_MAX = 20100; // halber Erdumfang ~20.015 km: vom Suedpol aus reicht der Radius damit bis zum Nordpol
 const KEY = "pingRadiusKm";
 
 export function getPingRadiusKm() {

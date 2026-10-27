@@ -861,12 +861,16 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   }, [barEl, chaptersMode]);
   const nearbyOn = globalNearby && nearbyUsable;
   // EIN Umschalter, das Symbol zeigt den aktuellen Zustand: Pokal = Highscore, eigene Kugel = Meine Umgebung.
-  const nearbyLabel = nearbyOn ? t("Meine Umgebung") : t("Highscore");
+  // Der Umschalter ist IMMER antippbar (Nutzer-Feedback 424.42: "das ist nicht immer klickbar"): Symbol und Beschriftung zeigen die gewaehlte
+  // Einstellung; wirksam wird sie nur auf einer Liste, in der man selbst vorkommt. Tippt man ihn in einem anderen Kapitel (Tab-Freak: Verlauf,
+  // Matches, Rekorde), springt die Ansicht zur ersten Liste, damit man die Wirkung gleich sieht.
+  const nearbyPref = globalNearby;
+  const nearbyLabel = nearbyPref ? t("Meine Umgebung") : t("Highscore");
   const nearbyChips = (
-    <><span className="disc-sep nearby-sep" aria-hidden="true" /><button type="button" className={"disc-pick compact mode-pick" + (nearbyOn ? " sel" : "")} disabled={!nearbyUsable} data-no-avatar
-      aria-label={nearbyLabel} title={nearbyUsable ? nearbyLabel + " – " + t("tippen zum Umschalten") : nearbyLabel}
-      onClick={() => setGlobalNearby(!nearbyOn)}>
-      {nearbyOn
+    <><span className="disc-sep nearby-sep" aria-hidden="true" /><button type="button" className={"disc-pick compact mode-pick" + (nearbyPref ? " sel" : "")} data-no-avatar
+      aria-label={nearbyLabel} title={nearbyLabel + " – " + t("tippen zum Umschalten")}
+      onClick={() => { const next = !globalNearby; setGlobalNearby(next); if (chaptersMode && !listSeg && groupIds[0]) pickSeg(groupIds[0]); }}>
+      {nearbyPref
         ? <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={20} />
         : <Trophy size={18} />}
     </button></>

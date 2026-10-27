@@ -16,6 +16,7 @@ import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
 import { loadMatches, attachMatchPlayers } from "./lib/matchCache";
 import { loadBadgeCatalog } from "./lib/catalogCache";
+import { fetchAll } from "./lib/fetchAll";
 import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
 import { hashColor, initials, isDoubles, mSide, fmtDate, withRatingDecimals } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
@@ -878,7 +879,8 @@ export default function App() {
         .select("id, location, message, created_at, expires_at, player_id, player:players!pings_player_id_fkey(nickname), replies:ping_replies(id, message, created_at, player_id, player:players!ping_replies_player_id_fkey(nickname))")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false }),
-      supabase.from("player_badges").select("player_id, badge_key"),
+      // seitenweise: PostgREST kappt eine Abfrage bei 1000 Zeilen, die Testdatenbank hat laengst mehr (Erfolge am Ende fehlten still)
+      fetchAll((from, to) => supabase.from("player_badges").select("player_id, badge_key").order("player_id").order("badge_key").range(from, to)),
       supabase.from("match_confirmations").select("match_id, player_id, status"),
       supabase.from("challenges")
         .select("id, challenger_id, challenged_id, status, created_at, expires_at, resolved_match_id, message, message_updated_at, reply, reply_updated_at, challenger:players!challenges_challenger_id_fkey(nickname), challenged:players!challenges_challenged_id_fkey(nickname)")
