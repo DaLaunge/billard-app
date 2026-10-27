@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import NickClubTag from "./widgets/NickClubTag";
-import { ChevronLeft, Check, X, Minus, Plus, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star, Sparkles } from "lucide-react";
+import { ChevronLeft, Check, X, Minus, Plus, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -28,7 +28,6 @@ import { BreakGlyph, BreakPill, BreakSwitch, breakApplies, normalizeBreakRule, n
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
 import { rpcRetry } from "../lib/rpcRetry";
 import { flyIn, vanishBall, flyEnabled } from "../lib/flyBall";
-import { getMatchFly, storeMatchFly } from "../lib/uiPrefs";
 import Emoji from "./Emoji";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
@@ -239,10 +238,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Rueckflug zur Kachel - beim Entfernen verschiebt sich die Liste, das Ziel waere
   // schon beim Start veraltet gewesen und die Kugel neben die Kachel gehuepft.
   const vanishSlot = (key) => vanishBall(document.querySelector(`.vs-slot[data-slot="${key}"] .ball`));
-  // Kugel-Animation ein/aus (Geraeteeinstellung, siehe uiPrefs.js; auch unter Profil
-  // bearbeiten -> Dieses Geraet). Hier ein Schalter direkt im Optionsfeld der Liste.
-  const [flyOn, setFlyOn] = useState(getMatchFly);
-  const toggleFly = () => { const v = !flyOn; setFlyOn(v); storeMatchFly(v); };
+  // Die Kugel-Animation wird NUR in den Einstellungen (Dieses Geraet) ein-/ausgeschaltet, Standard an (uiPrefs.js getMatchFly) -
+  // im Match-Bildschirm gibt es dafuer keinen Schalter.
   const pickPlayer = (p, tile) => {
     if (mode === "single") {
       if (opp?.id === p.id) { vanishSlot("opp"); setOpp(null); return; }
@@ -774,12 +771,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                         <Icon size={14} style={{ marginRight: 4, verticalAlign: -2 }} />{label}
                       </button>
                     ))}
-                  </div>
-                  <div className="chips small" style={{ marginTop: 8 }}>
-                    <button className={"chip" + (flyOn ? " active" : "")} aria-pressed={flyOn} onClick={toggleFly}
-                      title={t("Kugel springt in die Aufstellung")}>
-                      <Sparkles size={14} style={{ marginRight: 4, verticalAlign: -2 }} />{t("Kugel-Animation")}
-                    </button>
                   </div>
                   {allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
                     <div className="chips small" style={{ marginTop: 8 }}>
