@@ -893,6 +893,7 @@ const TRANSLATIONS = {
     "Du bist zum Turnier „{name}“ eingeladen:": "You are invited to the tournament “{name}”:",
     "Du bist für das Turnier angemeldet.": "You are registered for the tournament.",
     "Du bist im Turnier.": "You are in the tournament.",
+    "Dieser QR-Code führt zum Turnier – andere können ihn gleich scannen.": "This QR code leads to the tournament – others can scan it right away.",
     "Code:": "Code:",
     "Code wird erstellt …": "Creating code …",
     "Kopieren nicht möglich – Link markieren und kopieren.": "Copy failed – select and copy the link.",

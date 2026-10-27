@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Trophy, UserCheck, UserPlus, ArrowRight, Check, X } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { setRef } from "../lib/session";
@@ -37,6 +38,7 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone }) {
   };
 
   const open = info?.status === "setup";
+  const inviteLink = (() => { const u = new URL("/", window.location.origin); u.searchParams.set("turnier", tournamentId); return u.toString(); })();
 
   return (
     <div className="screen login-screen">
@@ -73,6 +75,11 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone }) {
             <div className="sent-check"><Check size={28} /></div>
             <p className="sent-text">{t("Du bist dabei, {name}!", { name: joined.nickname })}</p>
             <p className="hint center">{t("Die Turnierleitung sieht dich in der Liste. Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.")}</p>
+            {/* QR-Code zum Turnier: weitere Personen am Tisch koennen ihn gleich scannen */}
+            <div className="qr-box">
+              <QRCodeSVG value={inviteLink} size={170} level="M" bgColor="#F2EDE0" fgColor="#0A2B21" includeMargin />
+            </div>
+            <p className="hint center">{t("Dieser QR-Code führt zum Turnier – andere können ihn gleich scannen.")}</p>
             <button className="btn ghost" onClick={login}><UserPlus size={16} /> {t("Doch lieber registrieren")}</button>
           </>
         )}
