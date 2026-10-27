@@ -167,10 +167,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [own, setOwn] = useState(false); // live mit dem eigenen Standort, ohne Lokal (z. B. privater Tisch)
   const [locating, setLocating] = useState(false);
   const [acc, setAcc] = useState(null); // GPS-Genauigkeit in Metern
-  const [showAddr, setShowAddr] = useState(false);
   const [showMap, setShowMap] = useState(false);
-  const [aq, setAq] = useState("");
-  const [results, setResults] = useState(null);
   // Position setzen (GPS, Adresse oder Karte): bekannte Lokale bis 300 m anbieten, genau eines vorwaehlen, sonst nur der Standort.
   // Ein Lokal ist NIE Pflicht - der Standort allein genuegt (z. B. privater Tisch).
   const applyPos = (p, address) => {
@@ -201,16 +198,10 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (p) => { setPlaceText(""); setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
-      () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib eine Adresse ein oder wähle den Ort auf der Karte.")); setShowAddr(true); },
+      () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib unten eine Adresse oder ein Lokal ein.")); },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
   };
-  const searchAddr = async () => {
-    const q = aq.trim();
-    if (q.length < 3) return;
-    try { setResults(await searchAddress(q)); } catch { toast?.(t("Adresssuche gerade nicht erreichbar.")); setResults([]); }
-  };
-  const pickAddr = (r) => { setPlaceText(""); setAcc(null); applyPos({ lat: r.lat, lng: r.lng }, r.label.split(", ").slice(0, 4).join(", ")); setResults(null); setShowMap(true); };
   const onMapPick = (p) => { setPlaceText(""); setAcc(null); applyPos(p); };
   const venue = list.find((l) => l.id === locId) || null;
   return (
@@ -221,7 +212,6 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
             <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
           </button>
-          <button type="button" className={"chip-btn" + (showAddr ? " sel" : "")} onClick={() => setShowAddr((v) => !v)}><Search size={14} /> {t("Adresse")}</button>
           <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
           <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
             {placeText && !here ? placeText
@@ -242,23 +232,6 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           )}
         </div>
       )}
-      {live && showAddr && (
-        <>
-          <div className="search-row">
-            <Search size={16} className="mail-ico" />
-            <input autoFocus placeholder={t("Adresse, z. B. Praterstraße 1, Wien")} value={aq} maxLength={200}
-              onChange={(e) => setAq(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") searchAddr(); }} />
-            <button type="button" className="icon-btn small" onClick={searchAddr} disabled={aq.trim().length < 3}
-              aria-label={t("Adresse suchen")} title={t("Adresse suchen")}><Search size={16} /></button>
-          </div>
-          {results && (
-            <div className="loc-results">
-              {results.length === 0 && <p className="hint">{t("Nichts gefunden – Adresse genauer eingeben oder auf der Karte wählen.")}</p>}
-              {results.map((r, i) => <button key={i} type="button" className="loc-result" onClick={() => pickAddr(r)}>{r.label}</button>)}
-            </div>
-          )}
-        </>
-      )}
       {live && showMap && (
         <>
           <Suspense fallback={<div className="loc-map" />}>
@@ -270,9 +243,10 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {live && acc != null && acc > 100 && (
         <p className="hint">{t("Genauigkeit ca. {m} m – bei Bedarf auf der Karte korrigieren.", { m: acc })}</p>
       )}
-      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setOwn(false); setPlaceText(""); } }} toast={toast} me={me} onUseText={live ? useText : undefined} />
+      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setOwn(false); setPlaceText(""); } }} toast={toast} me={me} onUseText={live ? useText : undefined}
+        placeholder={live ? t("Lokal oder Adresse suchen oder eingeben") : undefined} />
       {live && !venue && !(own && (here || placeText)) && (
-        <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“, gib eine Adresse ein oder wähle ein Lokal.")}</p>
+        <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“ oder gib unten eine Adresse oder ein Lokal ein.")}</p>
       )}
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
       {/* unten alles in EINER (umbrechenden) Zeile: Dauer, Nachricht, Abbrechen, Absenden */}

@@ -10,7 +10,7 @@ import LocationForm from "./LocationForm";
    Routen-Knopf und einen Stift zum Korrigieren; das X hebt die Auswahl auf. */
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 
-export default function LocationPicker({ value, onChange, toast, me, onUseText }) {
+export default function LocationPicker({ value, onChange, toast, me, onUseText, placeholder }) {
   const { list } = useLocations();
   const [mode, setMode] = useState(null); // null | "new" | "edit"
   const [q, setQ] = useState("");
@@ -75,7 +75,7 @@ export default function LocationPicker({ value, onChange, toast, me, onUseText }
     <div className="loc-picker">
       <div className="search-row">
         <Search size={16} className="mail-ico" />
-        <input placeholder={t("Lokal suchen oder eingeben, z. B. Billardcafe Mitte")} value={q} maxLength={60}
+        <input placeholder={placeholder || t("Lokal suchen oder eingeben, z. B. Billardcafe Mitte")} value={q} maxLength={60}
           onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") onEnter(); }} />
       </div>
       <div className={"collapsible" + (open && !mode ? " open" : "")} inert={open && !mode ? undefined : ""}>
