@@ -893,6 +893,8 @@ const TRANSLATIONS = {
     "Du bist zum Turnier „{name}“ eingeladen:": "You are invited to the tournament “{name}”:",
     "Du bist für das Turnier angemeldet.": "You are registered for the tournament.",
     "Du bist im Turnier.": "You are in the tournament.",
+    "Die Anmeldungen haben sich geändert: jetzt {n} Teilnehmer. Bitte die Liste prüfen und nochmal starten.": "The registrations have changed: now {n} participants. Please check the list and start again.",
+    "Turnier jetzt mit {n} Teilnehmern starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost – danach sind keine Änderungen an der Anmeldung mehr möglich.": "Start the tournament now with {n} participants? The bracket is drawn from the currently registered players – afterwards the registration can no longer be changed.",
     "Dieser Gast-Zugang ist nicht mehr gültig.": "This guest access is no longer valid.",
     "Ergebnis {a} : {b} jetzt melden?": "Report the result {a} : {b} now?",
     "Ja, melden": "Yes, report",

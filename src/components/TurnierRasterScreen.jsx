@@ -412,7 +412,23 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
   const startTournament = async () => {
     if (missingPlayers > 0) { toast(t("Es fehlen noch {n} Spieler zum Start.", { n: missingPlayers })); return; }
-    if (!(await appConfirm(t("Turnier jetzt starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost.")))) return;
+    // Vor dem Start immer den aktuellen Stand der Anmeldungen holen: Per Einladungslink melden sich Leute auch waehrend die Liste offen ist
+    // an oder ab. Hat sich seit der Anzeige etwas geaendert, wird NICHT gestartet - die Turnierleitung sieht erst die neue Liste.
+    setBusyId("start");
+    const { data: fresh, error: freshErr } = await supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId);
+    if (freshErr) { setBusyId(null); toast(t("Fehler: ") + freshErr.message); return; }
+    const before = new Set((roster || []).map((r) => r.player_id));
+    const now = new Set((fresh || []).map((r) => r.player_id));
+    const changed = before.size !== now.size || [...now].some((id) => !before.has(id));
+    if (changed) {
+      setBusyId(null);
+      await load();
+      if (onReload) await onReload();
+      toast(t("Die Anmeldungen haben sich geändert: jetzt {n} Teilnehmer. Bitte die Liste prüfen und nochmal starten.", { n: now.size }));
+      return;
+    }
+    setBusyId(null);
+    if (!(await appConfirm(t("Turnier jetzt mit {n} Teilnehmern starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost – danach sind keine Änderungen an der Anmeldung mehr möglich.", { n: now.size })))) return;
     setBusyId("start");
     const { error } = await supabase.rpc("tournament_start", { p_tournament_id: tournamentId });
     setBusyId(null);
