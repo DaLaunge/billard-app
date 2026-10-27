@@ -1270,6 +1270,7 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "Neues Lokal anlegen": "Add new venue",
     "Lokal suchen …": "Search venue …",
     "Hier live gehen": "Go live here",
     "Hier einen Termin planen": "Plan a date here",

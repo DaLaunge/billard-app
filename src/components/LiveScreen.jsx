@@ -237,7 +237,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
 
   const { parts, anchor } = foldedDeck(cards.visibleOrder, LIVE_DECK_IDS);
   bodyById.orte = (
-    <VenueList me={me} liveBusy={!!myPing}
+    <VenueList me={me} toast={toast} liveBusy={!!myPing}
       onLive={parts.includes("pings") ? liveAt : null} onPlan={parts.includes("planung") ? planAt : null} />
   );
   // Offener Reiter: die letzte Wahl dieses Geraets, sonst der erste Teil, in

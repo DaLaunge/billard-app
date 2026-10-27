@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { MapPin, Search, Radio, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MapPin, Search, Radio, Calendar, Plus } from "lucide-react";
 import { t } from "../../lib/i18n";
 import { useLocations } from "../../lib/locationStore";
 import RouteButton from "./RouteButton";
+import LocationForm from "./LocationForm";
 
 /* Alle Lokale auf einen Blick, mit Suche: Der schnelle Weg zu einer Planung ueber den ORT. Pro Lokal zwei Knoepfe
    ("Live" / "Planung"), die das jeweilige Formular mit diesem Lokal vorbelegt oeffnen. Der andere Weg (erst Live/Planung,
@@ -10,9 +11,18 @@ import RouteButton from "./RouteButton";
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const SHOWN = 30;
 
-export default function VenueList({ me, onLive, onPlan, liveBusy }) {
+export default function VenueList({ me, onLive, onPlan, liveBusy, toast }) {
   const { list } = useLocations();
   const [q, setQ] = useState("");
+  // Neues Lokal: Formular klappt unter der Suche auf (Name aus der Suche, wenn getippt; sonst eigenes Namensfeld)
+  const [adding, setAdding] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  useEffect(() => {
+    if (adding) { setMounted(true); return undefined; }
+    const id = setTimeout(() => setMounted(false), 350);
+    return () => clearTimeout(id);
+  }, [adding]);
   const visible = list
     .filter((l) => l.status === "approved" || l.created_by === me?.id || me?.role === "admin")
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -25,6 +35,19 @@ export default function VenueList({ me, onLive, onPlan, liveBusy }) {
       <div className="search-row">
         <Search size={16} className="mail-ico" />
         <input placeholder={t("Lokal suchen …")} value={q} maxLength={60} onChange={(e) => setQ(e.target.value)} />
+      </div>
+      <button type="button" className="btn ghost small" onClick={() => { if (!adding) setFormKey((k) => k + 1); setAdding((v) => !v); }} aria-expanded={adding}>
+        <Plus size={15} /> {t("Neues Lokal anlegen")}
+      </button>
+      <div className={"collapsible" + (adding ? " open" : "")} inert={adding ? undefined : ""}>
+        <div className="collapsible-inner">
+          <div className="loc-panel">
+            {mounted && (
+              <LocationForm key={formKey} fixedName={nq.length >= 2 ? q.trim() : undefined} toast={toast}
+                onCancel={() => setAdding(false)} onSaved={() => { setAdding(false); setQ(""); }} />
+            )}
+          </div>
+        </div>
       </div>
       {visible.length === 0 && <p className="hint center">{t("Noch kein Lokal eingetragen – leg das erste bei „Live“ oder „Planung“ an.")}</p>}
       {visible.length > 0 && found.length === 0 && <p className="hint center">{t("Kein Lokal gefunden.")}</p>}
