@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Navigation, ChevronDown, Check } from "lucide-react";
 import { t } from "../../lib/i18n";
 
@@ -27,11 +28,24 @@ export default function RouteButton({ place, className = "icon-btn small", size 
   const [pref, setPref] = useState(read);
   const [open, setOpen] = useState(false);
   const box = useRef(null);
+  const pop = useRef(null);
+  // Das Menue haengt am Body (fixed), nicht im Knopf: in einklappbaren Karten (overflow: hidden) wurde es sonst abgeschnitten
+  const [at, setAt] = useState(null);
+  const openMenu = () => {
+    const r = box.current?.getBoundingClientRect();
+    if (!r) return;
+    const h = 8 * 2 + 28 + APPS.length * 40; // grobe Menuehoehe
+    const below = r.bottom + 4 + h <= window.innerHeight || r.top < h;
+    setAt({ right: Math.max(8, window.innerWidth - r.right), top: below ? r.bottom + 4 : undefined, bottom: below ? undefined : window.innerHeight - r.top + 4 });
+    setOpen(true);
+  };
   useEffect(() => {
     if (!open) return undefined;
-    const close = (e) => { if (!box.current?.contains(e.target)) setOpen(false); };
+    const close = (e) => { if (!box.current?.contains(e.target) && !pop.current?.contains(e.target)) setOpen(false); };
+    const shut = () => setOpen(false);
     document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
+    window.addEventListener("scroll", shut, true);
+    return () => { document.removeEventListener("pointerdown", close); window.removeEventListener("scroll", shut, true); };
   }, [open]);
 
   const go = (app) => { window.open(app.url(place), app.id === "geo" ? "_self" : "_blank", "noopener"); };
@@ -42,15 +56,15 @@ export default function RouteButton({ place, className = "icon-btn small", size 
   return (
     <span className="route-btn" ref={box}>
       <button type="button" className={className} title={label} aria-label={label}
-        onClick={(e) => { e.stopPropagation(); if (app) go(app); else setOpen((v) => !v); }}>
+        onClick={(e) => { e.stopPropagation(); if (app) go(app); else if (open) setOpen(false); else openMenu(); }}>
         <Navigation size={size} />{children}
       </button>
       {app && (
         <button type="button" className="route-more" aria-label={t("Karten-App wechseln")} title={t("Karten-App wechseln")}
-          aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}><ChevronDown size={13} /></button>
+          aria-expanded={open} onClick={(e) => { e.stopPropagation(); if (open) setOpen(false); else openMenu(); }}><ChevronDown size={13} /></button>
       )}
-      <span className={"collapsible route-menu-wrap" + (open ? " open" : "")} inert={open ? undefined : ""}>
-        <span className="collapsible-inner">
+      {open && at && createPortal(
+        <div className="route-pop" ref={pop} style={{ right: at.right, top: at.top, bottom: at.bottom }}>
           <span className="route-menu" role="menu">
             <b className="route-menu-title">{t("Route mit …")}</b>
             {APPS.map((a) => (
@@ -59,8 +73,7 @@ export default function RouteButton({ place, className = "icon-btn small", size 
               </button>
             ))}
           </span>
-        </span>
-      </span>
+        </div>, document.body)}
     </span>
   );
 }
