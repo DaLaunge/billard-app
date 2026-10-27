@@ -9,6 +9,8 @@ import Emoji, { EmojiText } from "../Emoji";
 import RouteButton from "./RouteButton";
 import LocationForm from "./LocationForm";
 import LocationPicker from "./LocationPicker";
+import PingButton from "./PingButton";
+import { getPingRadiusKm, santaDistanceKm } from "../../lib/pingRadius";
 import DayPicker from "./DayPicker";
 
 /* "Wer spielt wo": alle Lokale mit Suche. Pro Lokal steht, wer gerade live dort ist und welche Planungen es dort gibt;
@@ -318,9 +320,12 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
     </div>
   );
 
-  // Naechste Live-Spieler (nur Lokale mit Koordinaten), nach Entfernung
+  // Live-Spieler im Ping-Radius (Einstellung, Standard 5 km; nur Lokale mit Koordinaten), nach Entfernung
+  const radiusKm = getPingRadiusKm();
+  const santaKm = santaDistanceKm(pos, radiusKm); // Easteregg: der Weihnachtsmann am Nordpol
   const nearLive = pos ? [...pings].map((item) => ({ kind: "ping", item, venue: venueOfPing(item) }))
-    .filter((x) => x.venue.lat != null).map((x) => ({ ...x, dist: distanceM(pos, x.venue) })).sort((a, b) => a.dist - b.dist).slice(0, 5) : [];
+    .filter((x) => x.venue.lat != null).map((x) => ({ ...x, dist: distanceM(pos, x.venue) })).filter((x) => x.dist <= radiusKm * 1000)
+    .sort((a, b) => a.dist - b.dist).slice(0, 10) : [];
 
   // Planungen als Kapitel: ein Kapitel je Datum
   const loc = getLang() === "en" ? "en-US" : "de-AT";
@@ -340,7 +345,7 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
   };
 
   const value = {
-    me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
+    me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, radiusKm, santaKm, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
     canAdd, nq, setNewName, setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done,
     usable, confirm, myPing, askPos, vq, setVq, nvq, addName, planItems, hits, challengedIds, challengeTo, colorOf, badgeOf, photoOf,
   };
@@ -348,39 +353,27 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
 }
 
 /* Der grosse Ping-Knopf samt Ergebnis: steht ganz oben auf dem Live-Bildschirm, ueber den Duellen */
-const PING_LETTERS = ["P", "I", "N", "G"];
-// Das Wort PING links und rechts vom Radar: die Buchstaben huepfen nacheinander von innen nach aussen (--d = Abstand zum Radar)
-const PingWord = ({ side }) => (
-  <span className={"ping-word " + side} aria-hidden="true">
-    {PING_LETTERS.map((c, i) => <i key={i} style={{ "--d": side === "l" ? PING_LETTERS.length - 1 - i : i }}>{c}</i>)}
-  </span>
-);
-
 export function PingBlock() {
-  const { pinging, pinged, doPing, nearLive, entry } = useContext(VenueCtx);
+  const { pinging, pinged, doPing, nearLive, entry, radiusKm, santaKm } = useContext(VenueCtx);
   return (
     <>
       <div className="ping-box">
-        <button type="button" className={"ping-btn" + (pinging ? " pinging" : "")} onClick={doPing} aria-label={t("Ping – wer spielt in meiner Nähe?")}>
-          <PingWord side="l" />
-          <span className="ping-orb">
-            <i className="ping-ring" /><i className="ping-ring r2" /><i className="ping-ring r3" />
-            <i className="ping-sweep" />
-            <svg viewBox="0 0 100 100" className="ping-scope" aria-hidden="true">
-              <circle cx="50" cy="50" r="46" /><circle cx="50" cy="50" r="31" /><circle cx="50" cy="50" r="16" />
-              <path d="M50 4V96M4 50H96" />
-              <circle cx="67" cy="33" r="4" className="ping-blip" /><circle cx="36" cy="62" r="3" className="ping-blip" />
-            </svg>
-          </span>
-          <PingWord side="r" />
-          {!pinged && <span className="ping-txt"><span className="rank-meta">{t("Wer spielt in meiner Nähe?")}</span></span>}
-        </button>
+        <PingButton pinging={pinging} onClick={doPing} hint={!pinged ? t("Wer spielt in meiner Nähe?") : null} />
         <div className={"collapsible" + (pinged ? " open" : "")} inert={pinged ? undefined : ""}>
           <div className="collapsible-inner">
             <div className="ping-result">
-              {nearLive.length > 0
-                ? <><p className="q venue-sec">{t("Gerade live in deiner Nähe")}</p><div className="venue-list">{nearLive.map((x) => entry(x, x.dist))}</div></>
-                : <p className="hint center">{t("Gerade ist in deiner Nähe niemand live – sei du der Erste!")}</p>}
+              {(nearLive.length > 0 || santaKm != null)
+                ? <><p className="q venue-sec">{t("Live im Umkreis von {km} km", { km: radiusKm })}</p><div className="venue-list">
+                  {santaKm != null && (
+                    <div className="venue-row is-live santa-row">
+                      <Emoji e="🎅" /> <b>{t("Weihnachtsmann")}</b>
+                      <span className="live-pill small"><span className="live-dot" /> LIVE</span>
+                      <span className="venue-place"><MapPin size={13} /> {t("Nordpol-Workshop")} · {santaKm.toLocaleString()} km</span>
+                    </div>
+                  )}
+                  {nearLive.map((x) => entry(x, x.dist))}
+                </div></>
+                : <p className="hint center">{t("Im Umkreis von {km} km ist gerade niemand live – sei du der Erste!", { km: radiusKm })}</p>}
             </div>
           </div>
         </div>

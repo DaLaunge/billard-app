@@ -1884,7 +1884,7 @@ export default function App() {
                   onOpenAdmin={() => navPush({ tab: "admin" })} onLogout={logout} onStartTutorial={startTutorial}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval}
                   keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
-                  hideTabbar={hideTabbarPref} onSetHideTabbar={setHideTabbarPref}
+                  hideTabbar={hideTabbarPref} onSetHideTabbar={setHideTabbarPref} pings={pings}
                   notifyMode={notifyMode} onSetNotifyMode={setNotifyMode}
                   pendingPopup={pendingPopupOn} onSetPendingPopup={setPendingPopup}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} />

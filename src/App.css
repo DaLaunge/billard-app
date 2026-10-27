@@ -3767,3 +3767,15 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .venue-new { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 12px; border: 1.5px solid transparent; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
 .venue-new.on { border-color: var(--accent-line); background: var(--accent-mid); color: var(--ivory); }
 .venue-chap + .venue-chap { margin-top: 4px; }
+
+/* Ping-Radius in den Einstellungen */
+.ping-setting { display: flex; flex-direction: column; gap: 6px; padding: 4px 0 10px; }
+.ping-setting-head { display: flex; align-items: center; gap: 6px; }
+.ping-btn.compact { min-height: 150px; }
+.ping-btn.compact .ping-orb { width: 64px; height: 64px; }
+.ping-btn.compact .ping-word { font-size: calc(22px * var(--fs, 1)); }
+.ping-radius-chips { justify-content: center; }
+.ping-found { margin: 0; text-align: center; font-weight: 600; color: var(--accent); }
+
+.ping-santa { margin: 0; text-align: center; color: var(--ivory); }
+.santa-row { flex-direction: row; align-items: center; gap: 8px; flex-wrap: wrap; }
