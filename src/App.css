@@ -3676,3 +3676,18 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 /* Ping-Ringe bleiben im Knopf: sie werden am Rand sauber abgeschnitten statt von der Karte angeschnitten */
 .ping-btn { position: relative; overflow: hidden; }
 .ping-txt { position: relative; z-index: 1; }
+
+/* Eintraege kompakt: alles in einer Zeile, Details (Zusagen) klappen unter dem Zaehler auf */
+.venue-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.venue-line .venue-person { min-width: 0; }
+.venue-place { display: inline-flex; align-items: center; gap: 4px; min-width: 0; font-size: calc(13px * var(--fs, 1)); color: var(--ivory-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.venue-line-end { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.venue-count.as-btn { display: inline-flex; align-items: center; gap: 3px; width: auto; margin: 0; padding: 3px 8px; border-radius: 999px; border: 1.5px solid transparent; background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+.venue-count.on { border-color: var(--accent-line); }
+.venue-chev { transition: transform .2s; }
+.venue-count.on .venue-chev { transform: rotate(180deg); }
+.venue-entry { gap: 0; }
+.venue-entry > .collapsible:not(.open) { margin-top: 0; }
+.venue-details { display: flex; flex-direction: column; gap: 6px; padding: 8px 0 2px 4px; }
+.venue-reply { padding-left: 0; }
+.venue-reply-who { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }

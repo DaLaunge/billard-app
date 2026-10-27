@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2 } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, MessageSquare, ChevronDown } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
@@ -23,96 +23,110 @@ const REACTIONS = ["👍", "🎱", "❤️"];
 /* Ein Live-Eintrag oder eine Planung samt Zusagen: wer zugesagt hat, kleine Reaktionen darauf (👍 🎱 ❤️) und - fuer alle
    anderen - der Knopf zum Zusagen (mit oder ohne Nachricht) bzw. Zurueckziehen. */
 function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile, onReply, onUnreply, reacts, onReact,
-  onChallenge, challenged, onUpdate, onDelete, dist }) {
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
+  onChallenge, challenged, onUpdate, onDelete, onClose, dist }) {
+  const [show, setShow] = useState(false); // Liste der gemeldeten Personen
+  const [msgOpen, setMsgOpen] = useState(false);
   const [msg, setMsg] = useState("");
+  const [editing, setEditing] = useState(false);
   const mine = item.player_id === me?.id;
   const myReply = item.replies?.find((r) => r.player_id === me?.id);
   const nick = item.player.nickname;
   const ping = kind === "ping";
+  const replies = item.replies || [];
+  const people = new Set([item.player_id, ...replies.map((r) => r.player_id)]).size;
+  const word = ping ? t("Bin unterwegs") : t("Bin interessiert");
+  const person = (n, size) => (
+    <button type="button" className="venue-person as-btn" onClick={() => onOpenProfile?.(n)}>
+      <Ball nick={n} color={colorOf(n)} label={initials(n)} badge={badgeOf(n)} photo={photoOf(n)} size={size} />
+      <b>{n}</b>
+    </button>
+  );
   return (
     <div className="venue-entry">
-      <button type="button" className="venue-person as-btn" onClick={() => onOpenProfile?.(nick)}>
-        <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={24} />
-        <span>
-          <b>{nick}</b>{" "}
-          {ping
-            ? <><span className="live-pill small"><span className="live-dot" /> LIVE</span> <span className="rank-meta">{timeLeft(item.expires_at)}</span></>
-            : <span className="plan-pill small"><Calendar size={11} /> {fmtDate(item.planned_date)}</span>}
+      <div className="venue-line">
+        {person(nick, 24)}
+        {ping
+          ? <span className="live-pill small"><span className="live-dot" /> LIVE <span className="rank-meta">{timeLeft(item.expires_at)}</span></span>
+          : <span className="plan-pill small"><Calendar size={11} /> {fmtDate(item.planned_date)}</span>}
+        {place && <span className="venue-place"><MapPin size={13} /> {place.name}{dist != null && <> · {fmtDist(dist)}</>}</span>}
+        <span className="venue-line-end">
+          <button type="button" className={"venue-count as-btn" + (show ? " on" : "")} onClick={() => setShow((v) => !v)} aria-expanded={show}
+            title={t("Gemeldete Spieler")} aria-label={t("Gemeldete Spieler")}>
+            <Users size={12} /> {people}<ChevronDown size={12} className="venue-chev" />
+          </button>
+          {place && place.lat != null && <RouteButton place={place} size={15} />}
+          {!mine && !myReply && (
+            <>
+              <button type="button" className="icon-btn small primary" onClick={() => onReply(item.id, "")} title={word} aria-label={word}>{ping ? <Swords size={15} /> : <Check size={15} />}</button>
+              <button type="button" className="icon-btn small" onClick={() => { setShow(true); setMsgOpen((v) => !v); }} title={t("mit Nachricht")} aria-label={t("mit Nachricht")}><MessageSquare size={15} /></button>
+            </>
+          )}
+          {!mine && myReply && (
+            <button type="button" className="icon-btn small" onClick={() => onUnreply(item.id)} title={t("Zusage zurueckziehen")} aria-label={t("Zusage zurueckziehen")}><X size={15} /></button>
+          )}
+          {!mine && onChallenge && (challenged
+            ? <span className="icon-btn small venue-done" title={t("Duell angefragt")} aria-label={t("Duell angefragt")}><Swords size={15} /></span>
+            : <button type="button" className="icon-btn small" onClick={() => onChallenge(item)} title={t("Zum Duell herausfordern")} aria-label={t("Zum Duell herausfordern")}><Swords size={15} /></button>)}
+          {mine && !ping && onUpdate && (
+            <button type="button" className="icon-btn small" onClick={() => { setShow(true); setEditing((v) => !v); }} title={t("Ändern")} aria-label={t("Ändern")}><Pencil size={15} /></button>
+          )}
+          {mine && ping && onClose && (
+            <button type="button" className="icon-btn small" onClick={onClose} title={t("Live beenden")} aria-label={t("Live beenden")}><X size={15} /></button>
+          )}
+          {mine && !ping && onDelete && (
+            <button type="button" className="icon-btn small" onClick={() => onDelete(item.id)} title={t("Löschen")} aria-label={t("Löschen")}><Trash2 size={15} /></button>
+          )}
         </span>
-      </button>
-      <div className="venue-where">
-        {place && <><MapPin size={13} /> <b>{place.name}</b>{dist != null && <span>· {fmtDist(dist)}</span>}{place.lat != null && <RouteButton place={place} size={14} />}</>}
-        <span className="venue-count" title={t("Spieler gemeldet")}><Users size={12} /> {new Set([item.player_id, ...(item.replies || []).map((r) => r.player_id)]).size}</span>
       </div>
-      {item.message && <p className="venue-msg">"<EmojiText>{item.message}</EmojiText>"</p>}
-      {item.replies?.map((r) => {
-        const here = reacts.filter((x) => x.kind === kind && x.reply_id === r.id);
-        return (
-          <div key={r.id} className="venue-reply">
-            <button type="button" className="venue-person as-btn" onClick={() => onOpenProfile?.(r.player.nickname)}>
-              <Ball nick={r.player.nickname} color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={20} />
-              <span><b>{r.player.nickname}</b>{r.message ? <>: <EmojiText>{r.message}</EmojiText></> : (ping ? t(" ist unterwegs!") : t(" ist interessiert!"))}</span>
-            </button>
-            {onReact && (
-              <span className="venue-react">
-                {REACTIONS.map((e) => {
-                  const n = here.filter((x) => x.emoji === e).length;
-                  const on = here.some((x) => x.emoji === e && x.player_id === me?.id);
-                  return (
-                    <button key={e} type="button" className={"react-btn" + (on ? " on" : "")} onClick={() => onReact(kind, r.id, e)} aria-pressed={on}>
-                      <Emoji e={e} />{n > 0 && <i>{n}</i>}
-                    </button>
-                  );
-                })}
-              </span>
+
+      <div className={"collapsible" + (show ? " open" : "")} inert={show ? undefined : ""}>
+        <div className="collapsible-inner">
+          <div className="venue-details">
+            {item.message && <p className="venue-msg">"<EmojiText>{item.message}</EmojiText>"</p>}
+            {replies.length === 0 && !editing && !msgOpen && <span className="rank-meta">{t("Noch keine Zusagen.")}</span>}
+            {replies.map((r) => {
+              const here = reacts.filter((x) => x.kind === kind && x.reply_id === r.id);
+              return (
+                <div key={r.id} className="venue-reply">
+                  <span className="venue-reply-who">
+                    {person(r.player.nickname, 20)}
+                    <span>{r.message ? <EmojiText>{r.message}</EmojiText> : (ping ? t("ist unterwegs!") : t("ist interessiert!"))}</span>
+                  </span>
+                  {onReact && (
+                    <span className="venue-react">
+                      {REACTIONS.map((e) => {
+                        const n = here.filter((x) => x.emoji === e).length;
+                        const on = here.some((x) => x.emoji === e && x.player_id === me?.id);
+                        return (
+                          <button key={e} type="button" className={"react-btn" + (on ? " on" : "")} onClick={() => onReact(kind, r.id, e)} aria-pressed={on}>
+                            <Emoji e={e} />{n > 0 && <i>{n}</i>}
+                          </button>
+                        );
+                      })}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            {!mine && !myReply && msgOpen && (
+              <div className="venue-form">
+                <div className="search-row">
+                  <input autoFocus placeholder={ping ? t("Nachricht (optional), z. B. 'Bin in 20 Min da'") : t("Nachricht (optional), z. B. 'Passt mir gut'")}
+                    value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
+                </div>
+                <div className="venue-actions">
+                  <button type="button" className="chip-btn sel" onClick={() => { onReply(item.id, msg); setMsgOpen(false); setMsg(""); }}><Check size={14} /> {word}</button>
+                  <button type="button" className="chip-btn no" onClick={() => setMsgOpen(false)}><X size={14} /> {t("Abbrechen")}</button>
+                </div>
+              </div>
+            )}
+            {mine && !ping && editing && (
+              <PlanForm initial={{ date: item.planned_date, msg: item.message || "" }} label={t("Speichern")}
+                onSubmit={(d, m) => onUpdate(item.id, d, m, null)} onDone={() => setEditing(false)} />
             )}
           </div>
-        );
-      })}
-      {!mine && !myReply && !open && (
-        <div className="venue-actions">
-          <button type="button" className="chip-btn sel" onClick={() => onReply(item.id, "")}>
-            {ping ? <Swords size={14} /> : <Calendar size={14} />} {ping ? t("Bin unterwegs") : t("Bin interessiert")}
-          </button>
-          <button type="button" className="chip-btn" onClick={() => setOpen(true)}>{t("mit Nachricht")}</button>
         </div>
-      )}
-      {!mine && !myReply && open && (
-        <div className="venue-form">
-          <div className="search-row">
-            <input autoFocus placeholder={ping ? t("Nachricht (optional), z. B. 'Bin in 20 Min da'") : t("Nachricht (optional), z. B. 'Passt mir gut'")}
-              value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
-          </div>
-          <div className="venue-actions">
-            <button type="button" className="chip-btn sel" onClick={() => { onReply(item.id, msg); setOpen(false); setMsg(""); }}><Check size={14} /> {ping ? t("Unterwegs") : t("Interessiert")}</button>
-            <button type="button" className="chip-btn no" onClick={() => setOpen(false)}><X size={14} /> {t("Abbrechen")}</button>
-          </div>
-        </div>
-      )}
-      {!mine && myReply && (
-        <div className="venue-actions">
-          <button type="button" className="chip-btn no" onClick={() => onUnreply(item.id)}><X size={14} /> {t("Zusage zurueckziehen")}</button>
-        </div>
-      )}
-      {!mine && onChallenge && (
-        <div className="venue-actions">
-          {challenged
-            ? <span className="rank-meta"><Swords size={13} /> {t("Duell angefragt")}</span>
-            : <button type="button" className="chip-btn" onClick={() => onChallenge(item)} title={t("Zum Duell herausfordern")}><Swords size={14} /> {t("Duell")}</button>}
-        </div>
-      )}
-      {mine && !ping && !editing && (
-        <div className="venue-actions">
-          {onUpdate && <button type="button" className="chip-btn" onClick={() => setEditing(true)}><Pencil size={14} /> {t("Ändern")}</button>}
-          {onDelete && <button type="button" className="chip-btn no" onClick={() => onDelete(item.id)}><Trash2 size={14} /> {t("Löschen")}</button>}
-        </div>
-      )}
-      {mine && !ping && editing && (
-        <PlanForm initial={{ date: item.planned_date, msg: item.message || "" }} label={t("Speichern")}
-          onSubmit={(d, m) => onUpdate(item.id, d, m, null)} onDone={() => setEditing(false)} />
-      )}
+      </div>
     </div>
   );
 }
@@ -280,10 +294,7 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
         onReply={x.kind === "ping" ? onReply : onReplyPlanning} onUnreply={x.kind === "ping" ? onUnreply : onUnreplyPlanning}
         reacts={reacts} onReact={reactOk ? react : null}
         onChallenge={onChallenge ? challenge : null} challenged={challengesFromMe.some((c) => c.challenged_id === x.item.player_id)}
-        onUpdate={onUpdatePlanning} onDelete={onDeletePlanning} />
-      {x.kind === "ping" && x.item.player_id === me?.id && (
-        <div className="venue-actions"><button type="button" className="chip-btn no" onClick={onClose}><X size={14} /> {t("Live beenden")}</button></div>
-      )}
+        onUpdate={onUpdatePlanning} onDelete={onDeletePlanning} onClose={onClose} />
     </div>
   );
 
