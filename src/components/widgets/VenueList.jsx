@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, MessageSquare, ChevronDown } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
@@ -221,7 +222,15 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
   // Der grosse "In der Naehe"-Ping: Animation + die naechsten Spieler, die gerade LIVE sind
   const [pinging, setPinging] = useState(false);
   const [pinged, setPinged] = useState(false);
+  // Die Ping-Welle laeuft ueber den ganzen Bildschirm (Overlay am Body, vom Radar aus), nicht nur im Knopf
+  const orbRef = useRef(null);
+  const [wave, setWave] = useState(null);
   const doPing = () => {
+    const r = orbRef.current?.getBoundingClientRect();
+    if (r && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setWave({ x: r.left + r.width / 2, y: r.top + r.height / 2, k: Date.now() });
+      setTimeout(() => setWave(null), 2900);
+    }
     setPinging(true);
     const stop = setTimeout(() => setPinging(false), 1900);
     askPos(false, (ok) => { if (ok) setPinged(true); else { clearTimeout(stop); setPinging(false); } });
@@ -320,9 +329,13 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
 
   return (
     <>
+      {wave && createPortal(
+        <div className="ping-wave" key={wave.k} aria-hidden="true">
+          <i style={{ left: wave.x, top: wave.y }} /><i className="w2" style={{ left: wave.x, top: wave.y }} /><i className="w3" style={{ left: wave.x, top: wave.y }} />
+        </div>, document.body)}
       <div className="ping-box">
         <button type="button" className={"ping-btn" + (pinging ? " pinging" : "")} onClick={doPing} aria-label={t("Ping – wer spielt in meiner Nähe?")}>
-          <span className="ping-orb">
+          <span className="ping-orb" ref={orbRef}>
             <i className="ping-ring" /><i className="ping-ring r2" /><i className="ping-ring r3" />
             <i className="ping-sweep" />
             <svg viewBox="0 0 100 100" className="ping-scope" aria-hidden="true">
