@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, MessageSquare, ChevronDown } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
@@ -190,7 +190,11 @@ const NEAR_KEY = "venueNear";
 const readLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const writeLocal = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* Privatmodus */ } };
 
-export default function VenueList({ me, pings = [], plannings = [], challengesFromMe = [], colorOf, badgeOf, photoOf, onOpenProfile,
+/* Alle Daten und Handler der Orte-Ansicht liegen EINMAL im Provider (VenueProvider, vom Live-Bildschirm um alles gelegt);
+   der Ping-Knopf (PingBlock, ganz oben auf dem Bildschirm) und die Liste (VenueList, im Reiter) lesen sie aus dem Kontext. */
+const VenueCtx = createContext(null);
+
+export function VenueProvider({ children, me, pings = [], plannings = [], challengesFromMe = [], colorOf, badgeOf, photoOf, onOpenProfile,
   onCreate, onClose, onCreatePlanning, onUpdatePlanning, onDeletePlanning, onReply, onUnreply, onReplyPlanning, onUnreplyPlanning, onChallenge, toast }) {
   // Reaktionen auf Zusagen (supabase/2026-10-27e_reply_reactions.sql); fehlt die Tabelle, gibt es einfach keine Knoepfe
   const [reacts, setReacts] = useState([]);
@@ -318,6 +322,17 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
     return diff === 0 ? `${t("Heute")} · ${base}` : diff === 1 ? `${t("Morgen")} · ${base}` : base;
   };
 
+  const value = {
+    me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
+    canAdd, nq, setNewName, setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done,
+    usable, confirm, myPing,
+  };
+  return <VenueCtx.Provider value={value}>{children}</VenueCtx.Provider>;
+}
+
+/* Der grosse Ping-Knopf samt Ergebnis: steht ganz oben auf dem Live-Bildschirm, ueber den Duellen */
+export function PingBlock() {
+  const { pinging, pinged, doPing, nearLive, entry } = useContext(VenueCtx);
   return (
     <>
       <div className="ping-box">
@@ -333,7 +348,7 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
           </span>
           <span className="ping-txt">
             <b>{t("Ping")}</b>
-            <span className="rank-meta">{pinged ? t("Tippen zum Aktualisieren") : t("Wer spielt in meiner Nähe?")}</span>
+            {!pinged && <span className="rank-meta">{t("Wer spielt in meiner Nähe?")}</span>}
           </span>
         </button>
         <div className={"collapsible" + (pinged ? " open" : "")} inert={pinged ? undefined : ""}>
@@ -347,6 +362,16 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
         </div>
       </div>
 
+    </>
+  );
+}
+
+/* Die Liste im Reiter "Live & Planung": Suche, Aktivitaeten, Lokale */
+export default function VenueList() {
+  const { me, toast, onClose, onCreate, onCreatePlanning, q, setQ, liveItems, chapters, dayLabel, entry, feed, list, pos, canAdd, nq, setNewName,
+    setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done, usable, confirm, myPing } = useContext(VenueCtx);
+  return (
+    <>
       <div className="search-row">
         <Search size={16} className="mail-ico" />
         <input placeholder={t("Lokal oder Spieler suchen …")} value={q} maxLength={60} onChange={(e) => setQ(e.target.value)} />

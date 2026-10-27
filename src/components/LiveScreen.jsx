@@ -6,7 +6,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
-import VenueList from "./widgets/VenueList";
+import VenueList, { VenueProvider, PingBlock } from "./widgets/VenueList";
 import LocationReview from "./widgets/LocationReview";
 import { useCardLayout } from "../lib/useCardLayout";
 import { deckIds, foldedDeck, withoutFolded } from "../lib/cardLayout";
@@ -103,9 +103,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
 
   const { parts, anchor } = foldedDeck(cards.visibleOrder, LIVE_DECK_IDS);
   bodyById.orte = (
-    <VenueList me={me} toast={toast} pings={pings} plannings={plannings} challengesFromMe={challengesFromMe} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-      onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning} onUpdatePlanning={onUpdatePlanning} onDeletePlanning={onDeletePlanning}
-      onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning} onChallenge={onCreateChallenge} />
+    <VenueList />
   );
   // Offener Reiter: die letzte Wahl dieses Geraets, sonst der erste Teil, in
   // dem ueberhaupt etwas steht - das erspart auf einem vollen Bildschirm den
@@ -136,11 +134,17 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   ));
 
   return (
+    <VenueProvider me={me} toast={toast} pings={pings} plannings={plannings} challengesFromMe={challengesFromMe} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+      onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning} onUpdatePlanning={onUpdatePlanning} onDeletePlanning={onDeletePlanning}
+      onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning} onChallenge={onCreateChallenge} >
     <div className="screen">
       <header className="screen-head">
         <h2>{t("Live")}</h2>
         <span className="head-note">{t("Wer ist gerade am Tisch oder sucht ein Match?")}</span>
       </header>
+
+      {/* Der Ping steht ganz oben, noch vor den Duellen - sehr praesent */}
+      <PingBlock />
 
       <div className="live-split">
       {/* Keine linke Profil-Spalte mehr: am PC steht die Kugel ohnehin dauerhaft oben links in der Seitenleiste (AppDrawer). */}
@@ -150,5 +154,6 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
       <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
       <ImprintFooter />
     </div>
+    </VenueProvider>
   );
 }

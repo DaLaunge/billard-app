@@ -3650,7 +3650,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   .ping-btn.pinging .ping-ring.r3 { animation-delay: .6s; }
   .ping-btn.pinging .ping-orb { animation: ping-pop .5s ease-out; }
   @keyframes ping-idle { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.5); opacity: 0; } }
-  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(2.1); opacity: 0; } }
+  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.1); opacity: 0; } }
   @keyframes ping-pop { 0% { transform: scale(1); } 40% { transform: scale(.88); } 100% { transform: scale(1); } }
 }
 
@@ -3694,3 +3694,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 
 /* Ping-Ringe: dezent und vollstaendig im Knopf - oben genug Luft fuer den groessten Ring */
 .ping-btn { padding: 48px 14px 16px; }
+
+/* Ping ganz oben, gross: Hoehe = Radar + je 96px Ringe nach oben und unten, damit die Ringe nie abgeschnitten werden */
+.ping-btn { padding: 0; min-height: 292px; justify-content: center; align-items: center; flex-direction: column; }
+.ping-txt { position: absolute; left: 0; right: 0; bottom: 14px; align-items: center; }
