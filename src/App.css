@@ -3555,3 +3555,15 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .loc-pin span { display: block; width: 22px; height: 22px; margin: 2px; border-radius: 50% 50% 50% 0; background: var(--accent); border: 2px solid #fff;
   transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); }
 @media (min-width: 900px) { .loc-map { height: 300px; } }
+
+/* Standort: Vorschlagsliste und Formular klappen unter dem Feld auf */
+.loc-picker .loc-results { padding-top: 8px; }
+.loc-panel { padding-top: 10px; }
+.loc-result { display: flex; align-items: center; gap: 6px; width: 100%; }
+.loc-result.loc-new { color: var(--accent); font-weight: 600; }
+.loc-q { margin: 4px 0 0; font-weight: 700; font-size: calc(13px * var(--fs, 1)); }
+.loc-how { display: flex; flex-wrap: wrap; gap: 6px; }
+.loc-how .chip { display: inline-flex; align-items: center; gap: 5px; }
+.loc-warn { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: var(--surface-btn); color: var(--warn); font-size: calc(13px * var(--fs, 1)); }
+.loc-linkbtn { align-self: flex-start; background: none; border: 0; padding: 2px 0; color: var(--ivory-dim); font: inherit; font-size: calc(12px * var(--fs, 1)); text-decoration: underline; cursor: pointer; }
+.loc-sel-ico { color: var(--accent); flex: none; }
