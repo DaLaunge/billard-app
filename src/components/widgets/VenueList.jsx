@@ -201,7 +201,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const venue = list.find((l) => l.id === locId) || null;
   return (
     <div className="venue-form">
-      {!live && <DayPicker value={date} onChange={setDate} />}
+      {!live && <DayPicker compact value={date} onChange={setDate} />}
       {live && (
         <div className="venue-here-row">
           <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
@@ -260,23 +260,24 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
         <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“, gib eine Adresse ein oder wähle ein Lokal.")}</p>
       )}
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
-      {live && (
-        <div className="chips small">
-          {[1, 2, 3, 6].map((h) => (
-            <button key={h} type="button" className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>{t("{n} Std", { n: h })}</button>
-          ))}
+      {/* unten alles in EINER (umbrechenden) Zeile: Dauer, Nachricht, Abbrechen, Absenden */}
+      <div className="venue-bottom">
+        {live && (
+          <div className="chips small">
+            {[1, 2, 3, 6].map((h) => (
+              <button key={h} type="button" className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>{t("{n} Std", { n: h })}</button>
+            ))}
+          </div>
+        )}
+        <div className="search-row">
+          <Pencil size={16} className="mail-ico" />
+          <input placeholder={live ? t("Nachricht (optional)") : t("Hinweis (optional), z. B. 'Bin flexibel'")}
+            value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
         </div>
-      )}
-      <div className="search-row">
-        <Pencil size={16} className="mail-ico" />
-        <input placeholder={live ? t("Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'") : t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")}
-          value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
-      </div>
-      <div className="sp-controls">
-        <button type="button" className="btn ghost" onClick={onDone}>{t("Abbrechen")}</button>
-        <button type="button" className="btn primary" disabled={!live && !date}
+        <button type="button" className="icon-btn" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
+        <button type="button" className="venue-go" disabled={!live && !date}
           onClick={() => { onSubmit({ date, msg, hours, locId, venue, here: own && !venue ? here : null }); onDone(); }}>
-          {live ? <Radio size={17} /> : <Calendar size={17} />} {label || (live ? t("Live gehen") : t("Planung eintragen"))}
+          {live ? <Radio size={16} /> : <Calendar size={16} />} {label || (live ? t("Live gehen") : t("Eintragen"))}
         </button>
       </div>
     </div>

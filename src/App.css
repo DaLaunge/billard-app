@@ -3805,3 +3805,15 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 
 .venue-here-row { flex-wrap: wrap; row-gap: 6px; }
 .venue-here-txt { flex: 1 1 140px; }
+
+/* Platz sparen: Tageskacheln einzeilig, untere Zeile der Maske (Dauer, Nachricht, Abbrechen, Absenden) in einer Zeile */
+.day-picker.compact { gap: 4px; margin-bottom: 2px; }
+.day-picker.compact .day-chip { flex-direction: row; gap: 4px; min-width: 0; padding: 6px 9px; }
+.day-picker.compact .day-chip b { font-size: calc(15px * var(--fs, 1)); }
+.day-picker.compact .day-wd, .day-picker.compact .day-mon { font-size: calc(11px * var(--fs, 1)); }
+.day-picker.compact .day-more .day-chip { min-height: 0; padding: 6px 9px; }
+.venue-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.venue-bottom .chips { margin: 0; }
+.venue-bottom .search-row { flex: 1 1 180px; min-width: 0; margin: 0; }
+.venue-go { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 12px; border: 1.5px solid transparent; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.venue-go:disabled { opacity: .45; cursor: default; }
