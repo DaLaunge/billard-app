@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, X, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { getRef, getTurnierInvite } from "../lib/session";
+import { getRef, getTurnierInvite, getWsInvite } from "../lib/session";
 import { isIos, isStandalone } from "../lib/notifications";
 import Ball from "./Ball";
 import LegalModal from "./LegalModal";
@@ -35,6 +35,8 @@ export default function LoginScreen() {
     const ru = new URL("/", window.location.origin);
     if (ref) ru.searchParams.set("ref", ref);
     if (turnier) ru.searchParams.set("turnier", turnier);   // Turnier-Einladung ueberlebt den Browserwechsel
+    const ws = getWsInvite();
+    if (ws) ru.searchParams.set("ws", ws);
     const redirect = ru.search ? ru.toString() : window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),

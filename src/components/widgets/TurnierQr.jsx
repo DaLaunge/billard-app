@@ -7,11 +7,11 @@ import { t } from "../../lib/i18n";
 /* Einladungs-QR eines Turniers (/?turnier=<id>): ein Knopf, der einen grossen QR-Code in einem Fenster zeigt - zum Vorzeigen am Tisch.
    Mitglieder sind damit sofort angemeldet, Neue melden sich an oder spielen als Gast (TurnierInviteScreen). Der Knopf steht im geoeffneten
    Turnier gross oben und in der Turnieruebersicht an jeder Zeile (dort mit stopPropagation: die Zeile soll sich nicht oeffnen). */
-export const turnierLink = (id) => { const u = new URL("/", window.location.origin); u.searchParams.set("turnier", id); return u.toString(); };
+export const turnierLink = (id, kind = "tournament") => { const u = new URL("/", window.location.origin); u.searchParams.set(kind === "ws" ? "ws" : "turnier", id); return u.toString(); };
 
-export default function TurnierQrButton({ tour, toast, size = 18, className = "icon-btn" }) {
+export default function TurnierQrButton({ tour, toast, size = 18, className = "icon-btn", kind = "tournament" }) {
   const [open, setOpen] = useState(false);
-  const link = turnierLink(tour.id);
+  const link = turnierLink(tour.id, kind);
   const copy = async () => {
     try { await navigator.clipboard.writeText(link); toast(t("Link kopiert!")); }
     catch { toast(t("Kopieren nicht möglich – Link markieren und kopieren.")); }

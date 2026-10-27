@@ -11,7 +11,8 @@ import Ball from "./Ball";
    Zwei Wege: "Anmelden" (normaler Anmeldevorgang, die Turnierleitung wird als Werber gutgeschrieben, die Turnier-Anmeldung folgt in App.jsx
    automatisch nach der Registrierung) oder "Als Gast mitspielen" (nur ein Name, kein Login). Beides laeuft ueber Funktionen, die ohne
    Login aufrufbar sind (supabase/2026-10-29_tournament_invite.sql). */
-export default function TurnierInviteScreen({ tournamentId, onLogin, onDone, onGuest }) {
+export default function TurnierInviteScreen({ tournamentId, onLogin, onDone, onGuest, kind = "tournament" }) {
+  const ws = kind === "ws";   // Winner-Stays-Runde statt Turnier: andere Funktionen, sonst derselbe Ablauf
   const [info, setInfo] = useState(undefined);   // undefined = laedt, null = nicht gefunden/Fehler
   const [guest, setGuest] = useState(false);
   const [name, setName] = useState("");
@@ -20,7 +21,7 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone, onG
 
   useEffect(() => {
     let alive = true;
-    supabase.rpc("tournament_invite_info", { p_tournament_id: tournamentId }).then(({ data, error: e }) => {
+    supabase.rpc(ws ? "winner_stays_invite_info" : "tournament_invite_info", ws ? { p_session_id: tournamentId } : { p_tournament_id: tournamentId }).then(({ data, error: e }) => {
       if (alive) setInfo(e ? null : (data || null));
     });
     return () => { alive = false; };
@@ -30,14 +31,14 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone, onG
 
   const joinAsGuest = async () => {
     setBusy(true); setError("");
-    const { data, error: e } = await supabase.rpc("tournament_join_guest", { p_tournament_id: tournamentId, p_nickname: name.trim() });
+    const { data, error: e } = await supabase.rpc(ws ? "winner_stays_join_guest" : "tournament_join_guest", ws ? { p_session_id: tournamentId, p_nickname: name.trim() } : { p_tournament_id: tournamentId, p_nickname: name.trim() });
     setBusy(false);
     if (e) { setError(e.message); return; }
     // Ab jetzt hat der Gast sein eigenes Dashboard (Abmelden, "Du bist dran", Match mitzaehlen/bestaetigen)
-    onGuest({ token: data.token, tournamentId, nickname: data.nickname });
+    onGuest({ kind, token: data.token, tournamentId, nickname: data.nickname });
   };
 
-  const open = info?.status === "setup";
+  const open = ws ? info?.status === "running" && !info?.is_doubles : info?.status === "setup";
 
   return (
     <div className="screen login-screen">
@@ -46,7 +47,7 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone, onG
         <h1 className="app-title">{info?.name || "Break & Rank"}</h1>
         {info && (
           <p className="app-sub">
-            {formatLabel(info.format)} · <DiscBall disc={info.discipline} size={16} /> · {t("{n} angemeldet", { n: info.players })}
+            {ws ? t("Winner Stays") : formatLabel(info.format)} · <DiscBall disc={info.discipline} size={16} /> · {t("{n} angemeldet", { n: info.players })}
             {info.organizer && <><br />{t("Turnierleitung")}: <b>{info.organizer}</b></>}
           </p>
         )}

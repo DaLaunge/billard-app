@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs, clearRef, getClubCode, clearClubCode, getTurnierInvite, clearTurnierInvite, getGuestSession, setGuestSession, clearGuestSession } from "./lib/session";
+import { getVs, clearVs, clearRef, getClubCode, clearClubCode, getTurnierInvite, clearTurnierInvite, getGuestSession, setGuestSession, clearGuestSession, getWsInvite, clearWsInvite } from "./lib/session";
 import { setClubData, setClubLoader, reloadClubs, useClubData, roleIn } from "./lib/clubStore";
 import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
@@ -38,6 +38,7 @@ import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safe
 import LoginScreen from "./components/LoginScreen";
 import TurnierInviteScreen from "./components/TurnierInviteScreen";
 import GuestTournamentScreen from "./components/GuestTournamentScreen";
+import GuestWsScreen from "./components/GuestWsScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
 import NicknameScreen from "./components/NicknameScreen";
 import LiveScreen from "./components/LiveScreen";
@@ -167,6 +168,7 @@ export default function App() {
   // Turnier-Einladung ohne Konto: Wahl "Anmelden / Gast" (TurnierInviteScreen); turnierLogin = hat "Anmelden" gewaehlt
   const [turnierInvite, setTurnierInvite] = useState(() => getTurnierInvite());
   const [turnierLogin, setTurnierLogin] = useState(false);
+  const [wsInvite, setWsInvite] = useState(() => getWsInvite());   // Winner-Stays-Einladung ohne Konto
   const [guestSess, setGuestSess] = useState(() => getGuestSession());   // Gast ohne Konto: Token fuer sein Turnier-Dashboard
   const turnierJoinBusy = useRef(false);
   const [player, setPlayer] = useState(null);
@@ -1288,6 +1290,24 @@ export default function App() {
     const id = getTurnierInvite();
     if (id && tab === "turnierdetail" && tournamentId === id) clearTurnierInvite();
   }, [tab, tournamentId]);
+  // Winner-Stays-Einladung /?ws=ID: Angemeldete reihen sich (auch nach dem Start der Runde) selbst ein und landen dort
+  const wsJoinBusy = useRef(false);
+  useEffect(() => {
+    const id = getWsInvite();
+    if (!id || !player || player.must_change_password || wsJoinBusy.current) return;
+    wsJoinBusy.current = true;
+    (async () => {
+      const { error } = await supabase.rpc("winner_stays_join_self", { p_session_id: id });
+      wsJoinBusy.current = false;
+      if (error) { clearWsInvite(); toast(error.message); return; }
+      toast(t("Du bist in der Warteschlange."));
+      navPush({ tab: "winnerstays", winnerStaysId: id });
+    })();
+  }, [player, toast, navPush]);
+  useEffect(() => {
+    const id = getWsInvite();
+    if (id && tab === "winnerstays" && winnerStaysId === id) clearWsInvite();
+  }, [tab, winnerStaysId]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1638,14 +1658,19 @@ export default function App() {
     <div className="stage">
       <div className={"phone" + (session && player && !player.must_change_password ? " app" : "")}>
         {!session && (turnierLogin ? <LoginScreen />
-          : turnierInvite && !(guestSess && guestSess.tournamentId === turnierInvite)
+          : turnierInvite && !(guestSess && guestSess.kind !== "ws" && guestSess.tournamentId === turnierInvite)
             ? <TurnierInviteScreen tournamentId={turnierInvite} onLogin={() => setTurnierLogin(true)}
                 onGuest={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }}
                 onDone={() => { clearTurnierInvite(); setTurnierInvite(null); }} />
-            : guestSess
-              ? <GuestTournamentScreen session={guestSess} onLogin={() => setTurnierLogin(true)}
-                  onForget={() => { clearGuestSession(); setGuestSess(null); }} />
-              : <LoginScreen />)}
+            : wsInvite && !(guestSess && guestSess.kind === "ws" && guestSess.tournamentId === wsInvite)
+              ? <TurnierInviteScreen kind="ws" tournamentId={wsInvite} onLogin={() => setTurnierLogin(true)}
+                  onGuest={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }}
+                  onDone={() => { clearWsInvite(); setWsInvite(null); }} />
+              : guestSess
+                ? (guestSess.kind === "ws"
+                    ? <GuestWsScreen session={guestSess} onLogin={() => setTurnierLogin(true)} onForget={() => { clearGuestSession(); setGuestSess(null); }} />
+                    : <GuestTournamentScreen session={guestSess} onLogin={() => setTurnierLogin(true)} onForget={() => { clearGuestSession(); setGuestSess(null); }} />)
+                : <LoginScreen />)}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
 

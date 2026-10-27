@@ -14,6 +14,7 @@ import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
 import PlaceLink from "./widgets/PlaceLink";
+import TurnierQrButton from "./widgets/TurnierQr";
 import Emoji from "./Emoji";
 
 const POLL_MS = 8000;
@@ -384,6 +385,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{session.name}</h2>
+        {session.status === "running" && !session.is_doubles && <TurnierQrButton tour={session} toast={toast} size={24} className="icon-btn tqr-top" kind="ws" />}
         <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
