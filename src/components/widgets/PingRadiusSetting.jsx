@@ -17,8 +17,8 @@ export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSant
   const [km, setKm] = useState(getPingRadiusKm);
   const [txt, setTxt] = useState(() => String(getPingRadiusKm()).replace(".", ","));
   const [pinging, setPinging] = useState(false);
-  const [found, setFound] = useState(null);
-  const [pos, setPos] = useState(null);
+  // Ergebnis des LETZTEN Pings (Anzahl, Radius, Weihnachtsmann): aendert sich nur durch einen Klick auf den Radar, nie durch den Regler
+  const [result, setResult] = useState(null);
 
   const countAt = (here, radius) => {
     const ids = new Set();
@@ -29,10 +29,10 @@ export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSant
     });
     return ids.size + (santaDistanceKm(here, radius) != null ? 1 : 0); // + Weihnachtsmann (Easteregg)
   };
+  // Radius aendern speichert nur den Wert - die Anzeige unten bleibt, bis man wieder auf den Radar tippt
   const apply = (v, fromInput) => {
     setKm(v); setPingRadiusKm(v);
     if (!fromInput) setTxt(String(v).replace(".", ","));
-    if (pos) { setFound(countAt(pos, v)); if (!santaKnown && santaDistanceKm(pos, v) != null) onFoundSanta?.(); }
   };
   const onInput = (e) => {
     const raw = e.target.value;
@@ -47,8 +47,9 @@ export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSant
     navigator.geolocation.getCurrentPosition(
       (p) => {
         const here = { lat: p.coords.latitude, lng: p.coords.longitude };
-        setPos(here); setFound(countAt(here, km));
-        if (!santaKnown && santaDistanceKm(here, km) != null) onFoundSanta?.();
+        const santa = santaDistanceKm(here, km);
+        setResult({ n: countAt(here, km), km, santa });
+        if (!santaKnown && santa != null) onFoundSanta?.();
       },
       () => { clearTimeout(stop); setPinging(false); toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); },
       { timeout: 8000, maximumAge: 60000 },
@@ -75,13 +76,13 @@ export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSant
         </label>
       </div>
       <div className="ping-radius-scale"><span>100 m</span><b>{fmtRadius(km)}</b><span>{PING_RADIUS_SLIDER_MAX} km</span></div>
-      {pos && santaDistanceKm(pos, km) != null && (
-        <p className="ping-santa"><Emoji e="🎅" /> {t("Der Weihnachtsmann ist auch live – im Nordpol-Workshop, {d} km entfernt!", { d: santaDistanceKm(pos, km) })}</p>
+      {result && result.santa != null && (
+        <p className="ping-santa"><Emoji e="🎅" /> {t("Der Weihnachtsmann ist auch live – im Nordpol-Workshop, {d} km entfernt!", { d: result.santa })}</p>
       )}
       <p className="ping-found">
-        {found == null
+        {result == null
           ? t("Tippe auf den Radar, um zu sehen, wie viele Spieler in deinem Radius live sind.")
-          : t("{n} Spieler im Umkreis von {r} live", { n: found, r: fmtRadius(km) })}
+          : t("{n} Spieler im Umkreis von {r} live", { n: result.n, r: fmtRadius(result.km) })}
       </p>
     </div>
   );
