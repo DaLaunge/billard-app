@@ -13,6 +13,7 @@ import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
+import PlaceLink from "./widgets/PlaceLink";
 import Emoji from "./Emoji";
 
 const POLL_MS = 8000;
@@ -397,6 +398,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
         <Ball nick={session.organizer?.nickname} color={colorOf(session.organizer?.nickname)} label={initials(session.organizer?.nickname)} badge={badgeOf(session.organizer?.nickname)} photo={photoOf(session.organizer?.nickname)} size={22} />
         <b>{session.organizer?.nickname || "?"}</b>
+        <PlaceLink locationId={session.location_id} text={session.location_text} />
       </div>
 
       {isOrganizer && (

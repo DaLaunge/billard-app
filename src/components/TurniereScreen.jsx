@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
 import LocationPicker from "./widgets/LocationPicker";
+import PlaceLink from "./widgets/PlaceLink";
 import { useLocations } from "../lib/locationStore";
 import { suggestNames, randomName } from "../lib/turnierNames";
 import { supabase } from "../supabase";
@@ -90,14 +91,17 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     // Screen laedt sonst keine Spielerliste, ein Join spart eine zusaetzliche
     // Anfrage/Prop-Kette.
     const { data, error } = await supabase.from("tournaments")
-      .select("id, name, format, discipline, status, created_at, organizer:players!tournaments_organizer_id_fkey(nickname)")
-      .order("created_at", { ascending: false });
+      .select("id, name, format, discipline, status, created_at, location_id, location_text, organizer:players!tournaments_organizer_id_fkey(nickname)")
+      .order("created_at", { ascending: false })
+      // Spalten Ort fehlen vor der Migration 2026-10-30: dann ohne sie laden
+      .then((r) => (r.error ? supabase.from("tournaments").select("id, name, format, discipline, status, created_at, organizer:players!tournaments_organizer_id_fkey(nickname)").order("created_at", { ascending: false }) : r));
     if (!error) setTournaments(data || []);
   };
   const loadWs = async () => {
     const { data, error } = await supabase.from("winner_stays_sessions")
-      .select("id, name, discipline, is_doubles, table_number, status, created_at, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
-      .order("created_at", { ascending: false });
+      .select("id, name, discipline, is_doubles, table_number, status, created_at, location_id, location_text, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
+      .order("created_at", { ascending: false })
+      .then((r) => (r.error ? supabase.from("winner_stays_sessions").select("id, name, discipline, is_doubles, table_number, status, created_at, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)").order("created_at", { ascending: false }) : r));
     if (!error) setWsSessions(data || []);
   };
   useEffect(() => { load(); loadWs(); }, []);
@@ -149,6 +153,12 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     if (error) toast(t("Fehler: ") + error.message);
   };
 
+  // Ort (Lokal aus dem Katalog oder getippter Text) am neuen Turnier speichern; fehlt die Migration, bleibt es still (der Name enthaelt den Ort ohnehin)
+  const saveLocation = async (kind, id) => {
+    if (!placeLocId && !placeText.trim()) return;
+    const { error } = await supabase.rpc("set_tournament_location", { p_kind: kind, p_id: id, p_location_id: placeLocId, p_text: placeText.trim() || null });
+    if (error) console.warn("Ort konnte nicht gespeichert werden:", error.message);
+  };
   const create = async () => {
     if (!name.trim()) { toast(t("Turniername fehlt.")); return; }
 
@@ -163,6 +173,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       setBusy(false);
       if (error) { toast(t("Fehler: ") + error.message); return; }
       await applyBreakRule("winner_stays", data.id);
+      await saveLocation("winner_stays", data.id);
       toast(t("Winner-Stays-Runde erstellt."));
       resetForm();
       await loadWs();
@@ -181,6 +192,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await applyBreakRule("tournament", data.id);
+    await saveLocation("tournament", data.id);
     toast(t("Turnier erstellt – Anmeldung ist jetzt offen."));
     resetForm();
     await load();
@@ -367,8 +379,9 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
             // Wort zu lesen. Der Name steht weiterhin daneben.
             const Glyph = FORMAT_GLYPH[it._kind === "winnerstays" ? "winner_stays" : it.format] || FORMAT_GLYPH.ko;
             return (
-              <button key={it.id} className="turnier-list-row reveal"
-                onClick={() => it._kind === "winnerstays" ? onOpenWinnerStays(it.id) : onOpenTournament(it.id)}>
+              <div key={it.id} className="turnier-list-row reveal" role="button" tabIndex={0}
+                onClick={() => it._kind === "winnerstays" ? onOpenWinnerStays(it.id) : onOpenTournament(it.id)}
+                onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); e.currentTarget.click(); } }}>
                 <span className="turnier-list-row-glyph" title={formatLabel(it)}><Glyph /></span>
                 <span className="turnier-list-row-main">
                   <span className="turnier-list-row-title">
@@ -381,9 +394,10 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                     {" · "}{fmtDate(it.created_at)}
                   </span>
                   <span className="turnier-list-row-meta">{t("Turnierleitung")}: {it.organizer?.nickname || "?"}</span>
+                  <PlaceLink locationId={it.location_id} text={it.location_text} className="place-link turnier-list-row-meta" />
                 </span>
                 <ChevronRight size={20} className="turnier-list-row-chevron" />
-              </button>
+              </div>
             );
           });
         })()}

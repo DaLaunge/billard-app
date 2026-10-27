@@ -53,7 +53,7 @@ export default function LocationReview({ me, players, toast }) {
                 <span className="rank-meta">{t("Eingetragen von {n}", { n: nick(l.created_by) })} · {count(l.id)}/{NEEDED} {t("bestätigt")}</span>
               </div>
               <a className="icon-btn small" href={mapUrl(l.lat, l.lng)} target="_blank" rel="noreferrer"
-                aria-label={t("Auf der Karte ansehen")} title={t("Auf der Karte ansehen")}><ExternalLink size={15} /></a>
+                aria-label={t("Auf der Karte ansehen")} title={t("Auf der Karte ansehen")}><MapPin size={15} /></a>
               <RouteButton place={l} size={15} />
               {done(l.id) ? (
                 <span className="loc-review-done"><Check size={14} /> {t("Bestätigt")}</span>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Navigation, ChevronDown, Check } from "lucide-react";
+import { MapPin, ChevronDown, Check } from "lucide-react";
 import { t } from "../../lib/i18n";
 
 /* Route zu einem Lokal in der Lieblings-Karten-App. Beim ersten Tippen waehlt man die App (Google Maps, Apple Karten,
@@ -57,7 +57,7 @@ export default function RouteButton({ place, className = "icon-btn small", size 
     <span className="route-btn" ref={box}>
       <button type="button" className={className} title={label} aria-label={label}
         onClick={(e) => { e.stopPropagation(); if (app) go(app); else if (open) setOpen(false); else openMenu(); }}>
-        <Navigation size={size} />{children}
+        <MapPin size={size} />{children}
       </button>
       {app && (
         <button type="button" className="route-more" aria-label={t("Karten-App wechseln")} title={t("Karten-App wechseln")}

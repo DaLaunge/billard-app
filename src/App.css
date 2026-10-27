@@ -3821,3 +3821,9 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 /* Neues Turnier: Wuerfel links neben dem Namensfeld (Zufallsname) */
 .name-row { display: flex; align-items: center; gap: 8px; }
 .name-row input { flex: 1; min-width: 0; }
+
+/* Ort an Turnieren: Kartenstift + Name, anklickbar (PlaceLink) */
+.place-link { display: inline-flex; align-items: center; margin-left: 10px; }
+.turnier-list-row-main .place-link { margin-left: 0; }
+.place-link .route-link { margin-left: 0; }
+.place-link a.route-link { text-decoration: none; }

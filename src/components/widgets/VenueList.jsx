@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext, lazy, Suspense } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, MessageSquare, ChevronDown, Map as MapIcon } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Map as MapIcon } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
@@ -210,7 +210,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {live && (
         <div className="venue-here-row">
           <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
-            <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
+            <MapPin size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
           </button>
           <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
           <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
@@ -227,7 +227,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           {near && (
             <button type="button" className={"chip-btn" + (own ? " sel" : "")} onClick={() => { setOwn(true); setLocId(null); }}
               title={t("Ohne Lokal live gehen, z. B. an einem privaten Tisch")}>
-              <LocateFixed size={14} /> {t("Nur mein Standort")}
+              <MapPin size={14} /> {t("Nur mein Standort")}
             </button>
           )}
         </div>

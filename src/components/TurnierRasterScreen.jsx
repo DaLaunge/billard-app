@@ -17,6 +17,7 @@ import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout
 import { rpcRetry } from "../lib/rpcRetry";
 import Emoji from "./Emoji";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import PlaceLink from "./widgets/PlaceLink";
 import ImprintFooter from "./widgets/ImprintFooter";
 
 const POLL_MS = 8000;
@@ -527,6 +528,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
           <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
           <b>{organizerName || "?"}</b>
+          <PlaceLink locationId={tour.location_id} text={tour.location_text} />
         </div>
 
         <section className="stat-block">
@@ -705,6 +707,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
         <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
         <b>{organizerName || "?"}</b>
+        <PlaceLink locationId={tour.location_id} text={tour.location_text} />
       </div>
 
       {isOrganizer && (tour.status === "running" || canDeleteTournament || canConfirmResults) && (
