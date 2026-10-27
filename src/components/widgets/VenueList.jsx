@@ -407,7 +407,11 @@ export default function VenueList() {
       ))}
       {feed.length === 0 && list.length > 0 && <p className="hint center">{t("Gerade ist nichts live oder geplant – sei der Erste: Such dir unten ein Lokal aus.")}</p>}
 
-      <div className="deck-sub-head"><MapPin size={14} /> {pos ? t("Lokale in deiner Nähe") : t("Lokale")}</div>
+      <div className="deck-sub-head"><MapPin size={14} /> {pos ? t("Lokale in deiner Nähe") : t("Lokale")}
+        <button type="button" className={"icon-btn small venue-add-btn" + (adding ? " primary" : "")} aria-expanded={adding}
+          onClick={() => { if (adding) { setAdding(false); return; } setNewName(""); setFormKey((k) => k + 1); setAdding(true); }}
+          title={t("Lokal gezielt angeben")} aria-label={t("Lokal gezielt angeben")}><Plus size={15} /></button>
+      </div>
       {canAdd && (
         <button type="button" className="chip-btn venue-add" onClick={() => { setNewName(q.trim()); setFormKey((k) => k + 1); setAdding(true); }}>
           <Plus size={14} /> {nq.length >= 2 ? t("„{name}“ als neues Lokal anlegen", { name: q.trim() }) : t("Erstes Lokal anlegen")}
