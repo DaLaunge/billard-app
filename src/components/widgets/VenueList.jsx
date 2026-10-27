@@ -45,16 +45,17 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
     <div className="venue-entry">
       <div className="venue-line">
         {person(nick, 24)}
-        {ping
-          ? <span className="live-pill small"><span className="live-dot" /> LIVE <span className="rank-meta">{timeLeft(item.expires_at)}</span></span>
-          : <span className="plan-pill small"><Calendar size={11} /> {fmtDate(item.planned_date)}</span>}
-        {place && <span className="venue-place"><MapPin size={13} /> {place.name}{dist != null && <> · {fmtDist(dist)}</>}</span>}
+        {ping && <span className="live-pill small"><span className="live-dot" /> LIVE <span className="rank-meta">{timeLeft(item.expires_at)}</span></span>}
+        {place && (
+          <span className="venue-place"><MapPin size={13} /> <b>{place.name}</b>{dist != null && <> · {fmtDist(dist)}</>}
+            {place.lat != null && <RouteButton place={place} size={14} />}
+          </span>
+        )}
         <span className="venue-line-end">
           <button type="button" className={"venue-count as-btn" + (show ? " on" : "")} onClick={() => setShow((v) => !v)} aria-expanded={show}
             title={t("Gemeldete Spieler")} aria-label={t("Gemeldete Spieler")}>
             <Users size={12} /> {people}<ChevronDown size={12} className="venue-chev" />
           </button>
-          {place && place.lat != null && <RouteButton place={place} size={15} />}
           {!mine && !myReply && (
             <>
               <button type="button" className="icon-btn small primary" onClick={() => onReply(item.id, "")} title={word} aria-label={word}>{ping ? <Swords size={15} /> : <Check size={15} />}</button>

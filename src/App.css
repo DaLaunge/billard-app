@@ -3717,3 +3717,6 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 /* Ping steht frei, ohne Karte: kein Hintergrund/Rand, Ringe duerfen ueber den Knopf hinauslaufen (verblassen vor dem Rand) */
 .ping-box { position: relative; z-index: 2; }
 .ping-btn { background: none; border: 0; box-shadow: none; overflow: visible; min-height: 190px; padding: 0; }
+
+.venue-place { overflow: visible; max-width: none; white-space: normal; color: var(--ivory); }
+.venue-place b { font-weight: 600; }
