@@ -1270,6 +1270,8 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "Ping": "Ping",
+    "Ping – wer spielt in meiner Nähe?": "Ping – who is playing near me?",
     "Heute": "Today",
     "Morgen": "Tomorrow",
     "Wer spielt in meiner Nähe?": "Who is playing near me?",

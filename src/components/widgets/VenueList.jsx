@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, Radar } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2 } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
@@ -310,14 +310,19 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
   return (
     <>
       <div className="ping-box">
-        <button type="button" className={"ping-btn" + (pinging ? " pinging" : "")} onClick={doPing} aria-label={t("Wer spielt in meiner Nähe?")}>
+        <button type="button" className={"ping-btn" + (pinging ? " pinging" : "")} onClick={doPing} aria-label={t("Ping – wer spielt in meiner Nähe?")}>
           <span className="ping-orb">
             <i className="ping-ring" /><i className="ping-ring r2" /><i className="ping-ring r3" />
-            <Radar size={30} />
+            <i className="ping-sweep" />
+            <svg viewBox="0 0 100 100" className="ping-scope" aria-hidden="true">
+              <circle cx="50" cy="50" r="46" /><circle cx="50" cy="50" r="31" /><circle cx="50" cy="50" r="16" />
+              <path d="M50 4V96M4 50H96" />
+              <circle cx="67" cy="33" r="4" className="ping-blip" /><circle cx="36" cy="62" r="3" className="ping-blip" />
+            </svg>
           </span>
           <span className="ping-txt">
-            <b>{t("Wer spielt in meiner Nähe?")}</b>
-            <span className="rank-meta">{pinged ? t("Tippen zum Aktualisieren") : t("Tippen, um dich zu orten")}</span>
+            <b>{t("Ping")}</b>
+            <span className="rank-meta">{pinged ? t("Tippen zum Aktualisieren") : t("Wer spielt in meiner Nähe?")}</span>
           </span>
         </button>
         <div className={"collapsible" + (pinged ? " open" : "")} inert={pinged ? undefined : ""}>
