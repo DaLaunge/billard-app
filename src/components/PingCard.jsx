@@ -26,7 +26,7 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
         </div>
         <span className="live-pill"><span className="live-dot" /> LIVE</span>
       </button>
-      <div className="ping-loc"><MapPin size={16} /> {ping.location}{place && <RouteButton place={place} className="route-link" size={14}> {t("Route")}</RouteButton>}</div>
+      <div className="ping-loc">{place ? <RouteButton place={place} className="route-link route-left" size={16} /> : <MapPin size={16} />} {ping.location}</div>
       {ping.message && <p className="ping-msg">"<EmojiText>{ping.message}</EmojiText>"</p>}
 
       {ping.replies?.length > 0 && (

@@ -51,8 +51,9 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
         {ping && <span className="live-pill small"><span className="live-dot" /> LIVE <span className="rank-meta">{timeLeft(item.expires_at)}</span></span>}
         {!place && !ping && <span className="venue-place open"><MapPin size={13} /> {t("Ort noch auszumachen")}</span>}
         {place && (
-          <span className="venue-place"><MapPin size={13} /> <b>{place.name}</b>{dist != null && <> · {fmtDist(dist)}</>}
-            {place.lat != null && <RouteButton place={place} size={14} />}
+          <span className="venue-place">
+            {/* der Kartenstift IST der Route-Knopf und steht links vom Ortsnamen (ohne Koordinaten: nur der Stift als Zeichen) */}
+            {place.lat != null ? <RouteButton place={place} size={14} /> : <MapPin size={13} />} <b>{place.name}</b>{dist != null && <> · {fmtDist(dist)}</>}
           </span>
         )}
         <span className="venue-line-end">
