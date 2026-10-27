@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown, Users, Trash2, Search } from "lucide-react";
+import { ChevronLeft, Check, X, Plus, RotateCcw, Award, User, Download, Pencil, Shield, MessageCircle, ChevronDown, Lock, Mail, Send, ArrowUp, ArrowDown, Users, Trash2, Search, MapPin } from "lucide-react";
 import { supabase, DB_REF } from "../supabase";
 import { t } from "../lib/i18n";
 import { appConfirm } from "../lib/confirmDialog";
@@ -15,16 +15,20 @@ import ClubTag from "./widgets/ClubTag";
 import { useClubData, reloadClubs } from "../lib/clubStore";
 import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
 import ImprintFooter from "./widgets/ImprintFooter";
+import AdminLocations from "./widgets/AdminLocations";
+import { useLocations } from "../lib/locationStore";
 
 
 export default function AdminScreen({ allPending, players, onConfirm, me, onBack, colorOf, badgeOf, photoOf, toast, onReload, matches }) {
   const clubData = useClubData();
+  const locData = useLocations();
   // Kapitel der Verwaltung (Tab-Freak: Leiste + ein Kapitel, Doomscroller: alles untereinander, lib/useChapters.jsx)
   const adminChap = useChapters("admin", [
     { id: "matches", label: t("Matches") },
     { id: "feedback", label: t("Feedback") },
     { id: "mitglieder", label: t("Mitglieder") },
     ...(clubData.loaded ? [{ id: "clubs", label: t("Clubs") }] : []),
+    ...(locData.available ? [{ id: "standorte", label: t("Standorte") }] : []),
     { id: "system", label: t("System") },
   ]);
   // Gaeste: Name, Matches, zuletzt gespielt, angelegt - plus Loeschen. Nur Anzeige und Aufraeumen; Gaeste zaehlen nicht fuers Rating.
@@ -680,6 +684,13 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             );
           })}
           <p className="hint">{t("Moderation: Clubs gründet jeder selbst (Profil bearbeiten → Clubs). Hier lassen sich Clubs bei Missbrauch löschen.")}</p>
+        </section></Chap>
+      )}
+
+      {locData.available && (
+        <Chap id="standorte" c={adminChap}><section className="stat-block">
+          <div className="stat-block-head"><h3><MapPin size={17} /> {t("Standorte")} ({locData.list.length})</h3></div>
+          <AdminLocations players={players} toast={toast} />
         </section></Chap>
       )}
 

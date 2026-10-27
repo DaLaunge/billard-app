@@ -3502,7 +3502,292 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .extra-grid.single .extra-label { justify-content: flex-start; }
 
 /* Highscore / Meine Umgebung in der Statistik-Filterleiste: ausgegraut, solange sie nichts aendern wuerden. */
+/* Doomscroller: Filterleiste haftet oben, Kartenkoepfe pinnen darunter (--fb-h = gemessene Hoehe). */
+.stat-filterbar.pinned { position: sticky; top: 0; z-index: 6; box-shadow: 0 var(--card-gap) 0 var(--felt); }
+.screen:has(.stat-filterbar.pinned) .stat-block:not(.is-maximized) > .stat-block-head { top: calc(var(--fb-h, 56px) + var(--card-gap)); }
+.screen:has(.stat-filterbar.pinned) .deck-sub-head, .screen:has(.stat-filterbar.pinned) .badge-cat-head { top: calc(var(--fb-h, 56px) + var(--card-gap) + var(--head-h, 40px)); }
 .stat-filterbar .disc-pick:disabled { opacity: .35; cursor: default; pointer-events: none; }
 @media (max-width: 430px) { .stat-filterbar .nearby-sep { display: none; } .stat-filterbar .disc-picks.compact { gap: 2px; } }
 .deck-split { display: flex; flex-direction: column; gap: var(--card-gap); }
 .deck-split > .stat-block { margin-bottom: 0; }
+
+/* Tagesauswahl (Planung): 14 Tage als Kacheln mit Wochentag, gewaehltes Datum ausgeschrieben darunter. */
+.day-picker { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.day-row { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: thin; }
+.day-chip { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 52px;
+  padding: 6px 4px; border-radius: 12px; font: inherit; color: var(--ivory); cursor: pointer; }
+.day-chip b { font-size: calc(17px * var(--fs, 1)); line-height: 1.1; }
+.day-wd, .day-mon { font-size: calc(11px * var(--fs, 1)); color: var(--ivory-dim); text-transform: uppercase; letter-spacing: .03em; }
+.day-chip.sel { background: var(--accent); border-color: var(--accent); color: var(--accent-ink, #000); }
+.day-chip.sel .day-wd, .day-chip.sel .day-mon { color: inherit; }
+.day-full { font-weight: 700; color: var(--accent); font-size: calc(14px * var(--fs, 1)); }
+.day-more { position: relative; display: flex; }
+.day-more .day-chip { min-height: 100%; }
+.day-more input { position: absolute; inset: 0; opacity: 0; pointer-events: none; width: 100%; }
+
+/* Standorte (Auswahl, Formular, Verwaltung) */
+.loc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; max-height: 190px; overflow-y: auto; }
+.loc-chips .chip { display: inline-flex; align-items: center; gap: 4px; }
+.loc-sel { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 8px; border-radius: 12px; background: var(--surface-btn); }
+.loc-sel-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.loc-sel .icon-btn, .admin-loc-actions .icon-btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.loc-form { display: flex; flex-direction: column; gap: 8px; }
+.loc-results { display: flex; flex-direction: column; gap: 4px; }
+.loc-result { text-align: left; padding: 8px 10px; border-radius: 10px; font: inherit; font-size: calc(13px * var(--fs, 1)); color: var(--ivory); cursor: pointer; }
+.loc-pos { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0; }
+.loc-pos a, .route-link { color: var(--accent); display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: 600; }
+.route-link { margin-left: 10px; font-size: calc(13px * var(--fs, 1)); }
+.loc-near { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); font-size: calc(13px * var(--fs, 1)); }
+.admin-loc-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.admin-loc-row > .loc-form { flex: 1 1 100%; }
+.admin-loc-actions { display: flex; gap: 6px; }
+
+/* Standort-Vorschlaege und Tageskacheln: Flaeche statt Browser-Weiss, Auswahl/Hover im Akzent */
+.loc-result, .day-chip { background: var(--surface-btn); border: 1.5px solid transparent; color: var(--ivory); }
+.loc-result:hover, .day-chip:hover { border-color: var(--accent-line, var(--accent)); }
+.loc-result:hover { background: var(--accent-soft); color: var(--accent); }
+.day-chip.sel, .day-chip.sel:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink, #000); }
+
+/* Standort-Karte (Leaflet) */
+.loc-map { height: 240px; border-radius: 12px; overflow: hidden; background: var(--surface-btn); position: relative; z-index: 0; }
+.loc-map .leaflet-container { font: inherit; }
+.loc-pin { background: none; border: 0; }
+.loc-pin span { display: block; width: 22px; height: 22px; margin: 2px; border-radius: 50% 50% 50% 0; background: var(--accent); border: 2px solid #fff;
+  transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); }
+@media (min-width: 900px) { .loc-map { height: 300px; } }
+
+/* Standort: Vorschlagsliste und Formular klappen unter dem Feld auf */
+.loc-picker .loc-results { padding-top: 8px; }
+.loc-panel { padding-top: 10px; }
+.loc-result { display: flex; align-items: center; gap: 6px; width: 100%; }
+.loc-result.loc-new { color: var(--accent); font-weight: 600; }
+.loc-q { margin: 4px 0 0; font-weight: 700; font-size: calc(13px * var(--fs, 1)); }
+.loc-how { display: flex; flex-wrap: wrap; gap: 6px; }
+.loc-how .chip { display: inline-flex; align-items: center; gap: 5px; }
+.loc-warn { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: var(--surface-btn); color: var(--warn); font-size: calc(13px * var(--fs, 1)); }
+.loc-linkbtn { align-self: flex-start; background: none; border: 0; padding: 2px 0; color: var(--ivory-dim); font: inherit; font-size: calc(12px * var(--fs, 1)); text-decoration: underline; cursor: pointer; }
+.loc-sel-ico { color: var(--accent); flex: none; }
+
+/* Route-Knopf mit Karten-App-Auswahl */
+.route-btn { position: relative; display: inline-flex; align-items: center; gap: 2px; vertical-align: middle; }
+button.route-link { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; margin-left: 10px; color: var(--accent); display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+.route-more { background: none; border: 0; padding: 2px; color: var(--ivory-dim); cursor: pointer; display: inline-flex; border-radius: 6px; }
+.route-menu-wrap { position: absolute; top: 100%; right: 0; z-index: 30; min-width: 190px; margin-top: 4px; }
+.route-menu { display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 12px; background: var(--felt-2); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); }
+.route-menu-title { font-size: calc(11px * var(--fs, 1)); color: var(--ivory-dim); padding: 4px 8px; text-transform: uppercase; letter-spacing: .04em; }
+.route-opt { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; padding: 8px 10px; border-radius: 8px; border: 0; background: var(--surface-btn); color: var(--ivory); font: inherit; cursor: pointer; }
+.route-opt:hover { background: var(--accent-soft); color: var(--accent); }
+
+/* Lokale bestaetigen */
+.loc-review-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.loc-review-count { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; }
+.loc-review-done { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+.loc-review .stat-block-head { display: flex; align-items: center; gap: 8px; }
+
+/* Orte-Liste (Live) */
+.venue-list { display: flex; flex-direction: column; gap: 6px; }
+.venue-row { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--surface-btn); border: 1.5px solid transparent; flex-wrap: wrap; }
+.venue-row .loc-sel-txt { flex: 1 1 140px; min-width: 0; }
+.venue-row .chip-btn { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Orte: wer spielt wo */
+.venue-row { flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 8px; }
+.venue-row.is-live { border-color: var(--accent-line); background: var(--accent-soft); }
+.venue-top { display: flex; align-items: center; gap: 6px; }
+.venue-top .loc-sel-txt { flex: 1 1 auto; }
+.venue-people { display: flex; flex-direction: column; gap: 4px; }
+.venue-person { display: flex; align-items: center; gap: 8px; text-align: left; padding: 2px 0; }
+.venue-person span { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.venue-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.venue-form { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.live-pill.small, .plan-pill.small { font-size: calc(10px * var(--fs, 1)); padding: 1px 6px; }
+
+.venue-entry { display: flex; flex-direction: column; gap: 4px; padding: 6px 0; border-top: 1px solid var(--line); }
+.venue-entry:first-child { border-top: 0; padding-top: 0; }
+.venue-msg { margin: 0; font-size: calc(13px * var(--fs, 1)); color: var(--ivory-dim); }
+.venue-reply { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-left: 28px; font-size: calc(13px * var(--fs, 1)); }
+.venue-react { display: inline-flex; gap: 4px; }
+.react-btn { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 999px; border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); font: inherit; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+.react-btn i { font-style: normal; font-size: calc(11px * var(--fs, 1)); }
+.react-btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+
+.venue-person.as-btn { background: none; border: 0; box-shadow: none; color: inherit; font: inherit; width: auto; max-width: 100%; padding: 2px 0; cursor: pointer; }
+.venue-people { gap: 0; }
+.venue-actions + .venue-actions { margin-top: -2px; }
+
+.venue-sec { margin: 6px 0 0; }
+.venue-sec-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.venue-where { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: calc(13px * var(--fs, 1)); color: var(--ivory-dim); }
+.venue-where b { color: var(--ivory); }
+.venue-count { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.venue-livetag { color: var(--accent); font-weight: 600; }
+
+.venue-pick.as-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; flex: 1 1 auto; min-width: 0; width: auto; text-align: left; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.venue-body { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+.venue-row.is-open { border-color: var(--accent-line); }
+.venue-add { align-self: flex-start; }
+.venue-row .collapsible { margin-bottom: 0; }
+.venue-row > .collapsible:not(.open) { margin-top: -8px; }
+
+.venue-pick { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; flex: 1 1 auto; min-width: 0; }
+.venue-icons { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.venue-done { color: var(--win); display: inline-flex; align-items: center; justify-content: center; }
+
+/* "In der Naehe": grosser Ping-Knopf (Ruhezustand = sichtbar, Animation nur ohne reduzierte Bewegung) */
+.ping-box { display: flex; flex-direction: column; gap: 8px; }
+.ping-btn { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 10px 14px; border-radius: 16px; border: 1.5px solid var(--accent-line); background: var(--accent-soft); color: var(--ivory); font: inherit; cursor: pointer; }
+.ping-orb { position: relative; flex: none; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: inline-flex; align-items: center; justify-content: center; }
+.ping-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; pointer-events: none; }
+.ping-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ping-txt b { font-size: calc(15px * var(--fs, 1)); }
+.ping-result { display: flex; flex-direction: column; gap: 8px; }
+.venue-chap { display: flex; flex-direction: column; gap: 6px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ping-btn:not(.pinging) .ping-ring { animation: ping-idle 2.8s ease-out infinite; }
+  .ping-btn:not(.pinging) .ping-ring.r2, .ping-btn:not(.pinging) .ping-ring.r3 { animation: none; }
+  .ping-btn.pinging .ping-ring { animation: ping-burst 1.6s ease-out 1; }
+  .ping-btn.pinging .ping-ring.r2 { animation-delay: .3s; }
+  .ping-btn.pinging .ping-ring.r3 { animation-delay: .6s; }
+  .ping-btn.pinging .ping-orb { animation: ping-pop .5s ease-out; }
+  @keyframes ping-idle { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.5); opacity: 0; } }
+  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 70% { opacity: .18; } 100% { transform: scale(3.1); opacity: 0; } }
+  @keyframes ping-pop { 0% { transform: scale(1); } 40% { transform: scale(.88); } 100% { transform: scale(1); } }
+}
+
+/* Ping-Knopf zentriert */
+.ping-btn { flex-direction: column; justify-content: center; text-align: center; gap: 10px; padding: 18px 14px; }
+.ping-txt { align-items: center; }
+.ping-orb { width: 72px; height: 72px; }
+
+/* Ping: Radarschirm im Stil alter Radargeraete (Ringe, Fadenkreuz, Suchstrahl, Echos) */
+.ping-orb { width: 92px; height: 92px; background: var(--felt); border: 2px solid var(--accent); box-shadow: inset 0 0 14px var(--accent-soft); overflow: visible; }
+.ping-sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0deg 250deg, var(--accent) 360deg); opacity: .5; transform: rotate(40deg); pointer-events: none; }
+.ping-scope { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .85; }
+.ping-scope .ping-blip { fill: var(--accent); stroke: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .ping-sweep { animation: ping-sweep 3.2s linear infinite; }
+  .ping-btn.pinging .ping-sweep { animation-duration: .9s; }
+  .ping-scope .ping-blip { animation: ping-blip 3.2s ease-in-out infinite; }
+  .ping-scope .ping-blip:nth-of-type(2) { animation-delay: 1.4s; }
+  @keyframes ping-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes ping-blip { 0%, 100% { opacity: .25; } 40% { opacity: 1; } }
+}
+
+/* Ping-Ringe bleiben im Knopf: sie werden am Rand sauber abgeschnitten statt von der Karte angeschnitten */
+.ping-btn { position: relative; overflow: hidden; }
+.ping-txt { position: relative; z-index: 1; }
+
+/* Eintraege kompakt: alles in einer Zeile, Details (Zusagen) klappen unter dem Zaehler auf */
+.venue-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.venue-line .venue-person { min-width: 0; }
+.venue-place { display: inline-flex; align-items: center; gap: 4px; min-width: 0; font-size: calc(13px * var(--fs, 1)); color: var(--ivory-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.venue-line-end { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.venue-count.as-btn { display: inline-flex; align-items: center; gap: 3px; width: auto; margin: 0; padding: 3px 8px; border-radius: 999px; border: 1.5px solid transparent; background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+.venue-count.on { border-color: var(--accent-line); }
+.venue-chev { transition: transform .2s; }
+.venue-count.on .venue-chev { transform: rotate(180deg); }
+.venue-entry { gap: 0; }
+.venue-entry > .collapsible:not(.open) { margin-top: 0; }
+.venue-details { display: flex; flex-direction: column; gap: 6px; padding: 8px 0 2px 4px; }
+.venue-reply { padding-left: 0; }
+.venue-reply-who { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+
+/* Ping-Ringe: dezent und vollstaendig im Knopf - oben genug Luft fuer den groessten Ring */
+.ping-btn { padding: 48px 14px 16px; }
+
+/* Ping ganz oben, gross: Hoehe = Radar + je 96px Ringe nach oben und unten, damit die Ringe nie abgeschnitten werden */
+.ping-btn { padding: 0; min-height: 292px; justify-content: center; align-items: center; flex-direction: column; }
+.ping-txt { position: absolute; left: 0; right: 0; bottom: 14px; align-items: center; }
+
+/* PING-Schriftzug links und rechts vom Radar: verspielt, in die Animation einbezogen */
+.ping-btn { flex-direction: row; gap: 14px; }
+.ping-word { display: inline-flex; gap: 2px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: calc(30px * var(--fs, 1)); line-height: 1; color: var(--accent); text-shadow: 0 0 10px var(--accent-soft); letter-spacing: .04em; z-index: 1; }
+.ping-word.l { transform: rotate(-6deg); }
+.ping-word.r { transform: rotate(6deg); }
+.ping-word i { font-style: normal; display: inline-block; }
+.ping-word i:nth-child(even) { font-size: .86em; align-self: flex-end; }
+@media (max-width: 520px) { .ping-word { font-size: calc(22px * var(--fs, 1)); } .ping-btn { gap: 8px; } }
+@media (prefers-reduced-motion: no-preference) {
+  .ping-btn:not(.pinging) .ping-word i { animation: ping-bob 2.8s ease-in-out infinite; animation-delay: calc(var(--d) * .18s); }
+  .ping-btn.pinging .ping-word i { animation: ping-hop .9s cubic-bezier(.3, 1.6, .5, 1) 1; animation-delay: calc(var(--d) * .14s); }
+  @keyframes ping-bob { 0%, 100% { transform: translateY(0); opacity: .75; } 50% { transform: translateY(-4px); opacity: 1; } }
+  @keyframes ping-hop { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-16px) scale(1.35); text-shadow: 0 0 18px var(--accent); } 100% { transform: translateY(0) scale(1); } }
+}
+
+/* Ping steht frei, ohne Karte: kein Hintergrund/Rand, Ringe duerfen ueber den Knopf hinauslaufen (verblassen vor dem Rand) */
+.ping-box { position: relative; z-index: 2; }
+.ping-btn { background: none; border: 0; box-shadow: none; overflow: visible; min-height: 190px; padding: 0; }
+
+.venue-place { overflow: visible; max-width: none; white-space: normal; color: var(--ivory); }
+.venue-place b { font-weight: 600; }
+
+/* Schnellaktionen unter der Suche */
+.quick { display: flex; flex-direction: column; gap: 8px; }
+.quick-row { display: flex; gap: 8px; }
+.quick-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border-radius: 12px; border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); font: inherit; font-weight: 600; cursor: pointer; }
+.quick-btn.live { background: var(--accent); color: var(--accent-ink); }
+.quick-btn.on { border-color: var(--accent); }
+.quick-panel { padding-top: 2px; }
+.quick-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick .collapsible { margin-bottom: 0; }
+.quick > .collapsible:not(.open) { margin-top: -8px; }
+/* Spieler-Treffer der Suche */
+.venue-hit { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.venue-hit.as-btn { border: 1.5px solid transparent; background: var(--surface-btn); }
+.venue-hit.as-btn:hover { border-color: var(--accent-line); }
+.venue-hit-end { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; color: var(--accent); font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+
+.venue-row.venue-hit { flex-direction: row; align-items: center; justify-content: flex-start; flex-wrap: nowrap; }
+
+.quick { margin-top: 8px; }
+.screen > .venue-list { margin-top: 8px; }
+
+.venue-warn { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--warn); }
+.venue-place.open { color: var(--warn); }
+
+/* Duelle: eingeklappt, Zaehler im Kopf */
+.duel-toggle.as-btn { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; width: auto; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.duel-toggle h3 { margin: 0; display: inline-flex; align-items: center; gap: 8px; }
+.duel-count { background: var(--accent); color: var(--accent-ink); }
+.duel-sub { margin-left: auto; white-space: nowrap; }
+.duel-chev { flex: none; transition: transform .2s; }
+.duel-chev.open { transform: rotate(180deg); }
+
+.duel-card { margin-top: 8px; }
+
+.challenge-place { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin: 6px 0; }
+.challenge-place .venue-where { margin: 0; }
+.challenge-place .loc-picker, .challenge-place .loc-sel { width: 100%; }
+
+.venue-add-btn { margin-left: auto; }
+
+/* Orte-Karte: Ortssuche + auffaelliger "Neuer Ort"-Knopf */
+.venue-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.venue-toolbar .search-row { flex: 1; min-width: 0; margin: 0; }
+.venue-new { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 12px; border: 1.5px solid transparent; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.venue-new.on { border-color: var(--accent-line); background: var(--accent-mid); color: var(--ivory); }
+.venue-chap + .venue-chap { margin-top: 4px; }
+
+/* Ping-Radius in den Einstellungen */
+.ping-setting { display: flex; flex-direction: column; gap: 6px; padding: 4px 0 10px; }
+.ping-setting-head { display: flex; align-items: center; gap: 6px; }
+.ping-btn.compact { min-height: 150px; }
+.ping-btn.compact .ping-orb { width: 64px; height: 64px; }
+.ping-btn.compact .ping-word { font-size: calc(22px * var(--fs, 1)); }
+.ping-radius-chips { justify-content: center; }
+.ping-found { margin: 0; text-align: center; font-weight: 600; color: var(--accent); }
+
+.ping-santa { margin: 0; text-align: center; color: var(--ivory); }
+.santa-row { flex-direction: row; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Kapitelkoepfe in den einklappbaren Live-Karten nicht anheften: der Ueberlauf-Container der Karte macht sonst einen 40px-Versatz und der Kopf verdeckt den ersten Eintrag */
+.venue-chap .deck-sub-head { position: static; }
+
+/* Ping-Radius: Schieberegler + Eingabefeld */
+.ping-radius-row { display: flex; align-items: center; gap: 12px; padding: 0 4px; }
+.ping-slider { flex: 1; min-width: 0; accent-color: var(--accent); }
+.ping-km-field { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px; background: var(--surface-btn); }
+.ping-km-field input { width: 64px; border: 0; background: none; color: var(--ivory); font: inherit; font-weight: 600; text-align: right; outline: none; }
+.ping-km-field span { color: var(--ivory-dim); }
+.ping-radius-scale { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; font-size: calc(12px * var(--fs, 1)); color: var(--ivory-dim); }
+.ping-radius-scale b { color: var(--accent); font-size: calc(14px * var(--fs, 1)); }

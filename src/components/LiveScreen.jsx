@@ -1,56 +1,25 @@
-import { useState, useEffect, useRef } from "react";
-import { Radio, MapPin, Pencil, X, Swords, Calendar, Users, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Swords, ChevronDown } from "lucide-react";
 import { t } from "../lib/i18n";
-import PingCard from "./PingCard";
-import PlanungCard from "./PlanungCard";
+import { supabase } from "../supabase";
+import { useLocations } from "../lib/locationStore";
 import ChallengeCard from "./ChallengeCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
-import CardDeck from "./widgets/CardDeck";
+import CardMenuButton from "./widgets/CardMenuButton";
+import VenueList, { VenueProvider, PingBlock, VenueSearch, VenueQuick } from "./widgets/VenueList";
+import LocationReview from "./widgets/LocationReview";
 import { useCardLayout } from "../lib/useCardLayout";
-import { deckIds, foldedDeck, withoutFolded } from "../lib/cardLayout";
 
-// Die drei Bereiche dieses Bildschirms teilen sich seit 2026-09-30 EINE
-// Karte mit Reitern (siehe CardDeck.jsx). Live hatte dabei das umgekehrte
-// Problem von Statistik/Profil: nicht zu voll, sondern zu leer - drei
-// Klapp-Balken, von denen zwei fast nur aus einem Eingabeformular bestanden
-// ("Ich bin bereit!", "Planung erstellen"), zusammen 1341px Hoehe bei NULL
-// Eintraegen. Jetzt steht die Liste vorne und das Formular hinter einem
-// Knopf; die Zaehler an den Reitern zeigen weiterhin auf einen Blick, wo
-// etwas liegt.
-// Regelkunde (animierte Regelfaelle) als eigene Live-Karte: dort schaut man nach, wenn am Tisch etwas
-// strittig ist. Eigener Chunk, geladen erst nach dem Aufklappen. Seit der Freigabe (2026-10-07) fuer alle;
-// Admins sehen zusaetzlich noch nicht freigegebene Faelle (`released: false`).
-const LIVE_DECK_IDS = deckIds("live", "mitspieler");
-const DECK_TAB_KEY = "liveDeckTab";
-const readLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-const writeLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* Privatmodus */ } };
-
-export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
+// Live-Bildschirm (seit 424.31 ohne Reiter-Karte): ganz oben der Ping, direkt darunter die Suche (wer ueber den Ping nicht
+// gefunden wird, wird hier gesucht), dann die zwei Schnellaktionen "Online gehen" / "Planung erstellen", danach die Duelle
+// (nur wenn es welche gibt) und die Liste mit allem, was gerade live oder geplant ist, sowie die Lokale.
+// Daten und Handler der Orte-Ansicht liegen einmal im VenueProvider (siehe VenueList.jsx).
+export default function LiveScreen({ me, pings, plannings, challenges, players, earnedBadges, onFoundSanta,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
-  onCreatePlanning, onDeletePlanning, onReplyPlanning, onUnreplyPlanning,
-  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout, toast }) {
-  const myPing = pings.find((p) => p.player_id === me.id);
-  const others = pings.filter((p) => p.player_id !== me.id);
-  const [loc, setLoc] = useState("");
-  const [msg, setMsg] = useState("");
-  const [hours, setHours] = useState(3);
-  // Die beiden Formulare standen frueher dauerhaft offen und fuellten den
-  // halben Bildschirm, obwohl man sie selten braucht - jetzt hinter einem
-  // Knopf, damit oben steht, wofuer man herkommt: wer gerade da ist.
-  const [pingForm, setPingForm] = useState(false);
-  const [planForm, setPlanForm] = useState(false);
-
-  const myPlannings = plannings.filter((p) => p.player_id === me.id);
-  const otherPlannings = plannings.filter((p) => p.player_id !== me.id);
-  const [planDate, setPlanDate] = useState("");
-  const [planMsg, setPlanMsg] = useState("");
-  const todayISO = new Date().toISOString().slice(0, 10);
-  const maxPlanDate = new Date();
-  maxPlanDate.setDate(maxPlanDate.getDate() + 120);
-  const maxPlanISO = maxPlanDate.toISOString().slice(0, 10);
-
+  onCreatePlanning, onDeletePlanning, onUpdatePlanning, onReplyPlanning, onUnreplyPlanning,
+  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onSetCardLayout, onCreateChallenge, toast }) {
   const openChallenges = (challenges || []).filter((c) => c.status === "open" && new Date(c.expires_at) > new Date());
   const challengesToMe = openChallenges.filter((c) => c.challenged_id === me.id);
   const challengesFromMe = openChallenges.filter((c) => c.challenger_id === me.id);
@@ -83,188 +52,92 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
     return () => { clearTimeout(id); save(); };
   });
 
-  // Anordnung + Sichtbarkeit der drei Bereiche Duelle/Live/Planung (die
-  // "Karten" dieses Bildschirms; die ids stehen im Katalog in cardLayout.js).
-  // Beides aendert der Nutzer in den Einstellungen (Profil bearbeiten ->
-  // Karten), das Ausblenden zusaetzlich direkt im Kartenmenue hier.
+  // Sichtbarkeit der Duell-Karte (Einstellungen -> Karten, oder im Kartenmenue hier)
   const cards = useCardLayout("live", me.card_layout, onSetCardLayout, toast);
 
-  const counts = { duelle: openChallenges.length, pings: pings.length, planung: plannings.length };
-
-  // Inhalte der drei Teile - Rahmen, Titel und Kartenmenue kommen von der
-  // gemeinsamen Deck-Karte.
-  const bodyById = {
-    duelle: (
-      <>
-        {challengesToMe.length > 0 && <p className="q">{t("Herausforderungen an dich")}</p>}
-        {challengesToMe.map((c) => (
-          <ChallengeCard key={c.id} challenge={c} role="to" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-            isNewMsg={isNew(c, "msg")} onDecline={onDeclineChallenge} onReply={onReplyToChallenge} />
-        ))}
-        {challengesFromMe.length > 0 && <p className="q" style={{ marginTop: challengesToMe.length ? 18 : 0 }}>{t("Deine offenen Herausforderungen")}</p>}
-        {challengesFromMe.map((c) => (
-          <ChallengeCard key={c.id} challenge={c} role="from" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
-            isNewReply={isNew(c, "reply")} onCancel={onCancelChallenge} onEditMessage={onEditChallengeMessage} />
-        ))}
-        {openChallenges.length === 0 && (
-          <p className="hint center">
-            {t("Noch keine Herausforderungen - fordere jemanden beim Match anlegen oder im Profil heraus.")}
-          </p>
-        )}
-      </>
-    ),
-    pings: (
-      <>
-        {myPing ? (
-          <>
-            <PingCard ping={myPing} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onReply={onReply} onUnreply={onUnreply} />
-            <button className="btn ghost small" onClick={onClose}><X size={15} /> {t("Live-Eintrag beenden")}</button>
-          </>
-        ) : pingForm ? (
-          <>
-            <div className="search-row">
-              <MapPin size={16} className="mail-ico" />
-              <input autoFocus placeholder={t("Wo bist du? z. B. Schwedenplatz")} value={loc}
-                maxLength={60} onChange={(e) => setLoc(e.target.value)} />
-            </div>
-            <div className="search-row">
-              <Pencil size={16} className="mail-ico" />
-              <input placeholder={t("Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'")} value={msg}
-                maxLength={120} onChange={(e) => setMsg(e.target.value)} />
-            </div>
-            <div className="chips small" style={{ marginBottom: 6 }}>
-              {[1, 2, 3, 6].map((h) => (
-                <button key={h} className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>
-                  {t("{n} Std", { n: h })}
-                </button>
-              ))}
-            </div>
-            <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setPingForm(false)}>{t("Abbrechen")}</button>
-              <button className="btn primary" disabled={loc.trim().length < 2}
-                onClick={() => { onCreate(loc, msg, hours); setLoc(""); setMsg(""); setPingForm(false); }}>
-                <Radio size={17} /> {t("Live gehen")}
-              </button>
-            </div>
-            <p className="hint">{t("Dein Eintrag verschwindet nach der gewaehlten Zeit von selbst.")}</p>
-          </>
-        ) : (
-          <button className="btn primary" onClick={() => setPingForm(true)}>
-            <Radio size={17} /> {t("Ich bin am Tisch")}
-          </button>
-        )}
-
-        {others.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Gerade aktiv:")}</p>}
-        {others.map((p) => (
-          <PingCard key={p.id} ping={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onReply={onReply} onUnreply={onUnreply} />
-        ))}
-        {others.length === 0 && !myPing && (
-          <p className="hint center">
-            {t("Gerade ist niemand live. Sei du der Erste - dein Eintrag erscheint hier fuer alle sichtbar.")}
-          </p>
-        )}
-      </>
-    ),
-    planung: (
-      <>
-        {planForm ? (
-          <>
-            <p className="hint" style={{ marginTop: 0 }}>
-              {t("Wann bist du voraussichtlich verfuegbar? Andere koennen dir dann direkt eine Nachricht schicken - spart laestiges Hin-und-Her bei der Terminfindung.")}
-            </p>
-            <div className="search-row">
-              <Calendar size={16} className="mail-ico" />
-              <input type="date" value={planDate} min={todayISO} max={maxPlanISO} aria-label={t("Datum")}
-                onChange={(e) => setPlanDate(e.target.value)} />
-            </div>
-            <div className="search-row">
-              <Pencil size={16} className="mail-ico" />
-              <input placeholder={t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")} value={planMsg}
-                maxLength={120} onChange={(e) => setPlanMsg(e.target.value)} />
-            </div>
-            <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setPlanForm(false)}>{t("Abbrechen")}</button>
-              <button className="btn primary" disabled={!planDate}
-                onClick={() => { onCreatePlanning(planDate, planMsg); setPlanDate(""); setPlanMsg(""); setPlanForm(false); }}>
-                <Calendar size={17} /> {t("Planung eintragen")}
-              </button>
-            </div>
-            <p className="hint">{t("Deine Planung verschwindet automatisch nach dem gewaehlten Tag.")}</p>
-          </>
-        ) : (
-          <button className="btn primary" onClick={() => setPlanForm(true)}>
-            <Plus size={17} /> {t("Termin eintragen")}
-          </button>
-        )}
-
-        {myPlannings.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Meine Planungen:")}</p>}
-        {myPlannings.map((p) => (
-          <PlanungCard key={p.id} planning={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onOpenProfile={onOpenProfile} onDelete={onDeletePlanning} />
-        ))}
-
-        {otherPlannings.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Weitere Planungen:")}</p>}
-        {otherPlannings.map((p) => (
-          <PlanungCard key={p.id} planning={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onOpenProfile={onOpenProfile} onReply={onReplyPlanning} onUnreply={onUnreplyPlanning} />
-        ))}
-        {plannings.length === 0 && (
-          <p className="hint center">
-            {t("Noch keine Planungen. Leg die erste an - dein Eintrag ist fuer alle sichtbar.")}
-          </p>
-        )}
-      </>
-    ),
+  // Ortsvorschlaege der Duelle (eigene Abfrage, damit ein Fehlen der Migration 2026-10-28b nichts anderes stoert)
+  const locs = useLocations();
+  const [clocs, setClocs] = useState({});
+  const loadClocs = () => supabase.from("challenges").select("id, location_id, location_by").not("location_id", "is", null)
+    .then(({ data, error }) => { if (!error) setClocs(Object.fromEntries((data || []).map((r) => [r.id, r]))); });
+  useEffect(() => { loadClocs(); }, [openChallenges.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const setPlace = async (id, locId) => {
+    const { error } = await supabase.rpc("set_challenge_location", { p_challenge_id: id, p_location_id: locId || null });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(locId ? t("Ortsvorschlag gespeichert.") : t("Ortsvorschlag entfernt."));
+    loadClocs();
   };
-
-  const TAB_META = {
-    duelle: { tab: t("Duelle"), title: t("Duelle"), icon: <Swords size={15} /> },
-    pings: { tab: t("Live"), title: t("Live"), icon: <Radio size={15} /> },
-    planung: { tab: t("Planung"), title: t("Planung"), icon: <Calendar size={15} /> },
+  const placeProps = (c) => {
+    const r = clocs[c.id];
+    return {
+      place: r ? locs.list.find((l) => l.id === r.location_id) || null : null,
+      placeBy: r ? players?.find((p) => p.id === r.location_by)?.nickname : null,
+      onSetPlace: locs.available ? setPlace : null, toast, me,
+    };
   };
+  const [duelOpen, setDuelOpen] = useState(false); // Duelle sind standardmaessig eingeklappt, der Zaehler im Kopf zeigt, wie viele es sind
 
-  const { parts, anchor } = foldedDeck(cards.visibleOrder, LIVE_DECK_IDS);
-  // Offener Reiter: die letzte Wahl dieses Geraets, sonst der erste Teil, in
-  // dem ueberhaupt etwas steht - das erspart auf einem vollen Bildschirm den
-  // ersten Klick. Ist NICHTS eingetragen, gewinnt "Live": das ist der
-  // einzige Teil mit einer Handlung ("Ich bin am Tisch"), und genau die
-  // gehoert auf einen leeren Bildschirm, statt ihn mit einer leeren
-  // Duell-Liste zu eroeffnen.
-  const [deckTab, setDeckTab] = useState(() => readLocal(DECK_TAB_KEY));
-  const activeId = parts.includes(deckTab)
-    ? deckTab
-    : (parts.find((id) => counts[id] > 0) || (parts.includes("pings") ? "pings" : parts[0]));
-  // Einklappen ersetzt das fruehere Zuklappen je Bereich - dieselbe Geste,
-  // nur einmal statt dreimal, und wie dort nur auf diesem Geraet gemerkt.
-
-  const cardsById = {};
-  if (anchor) {
-    cardsById[anchor] = (
-      <CardDeck icon={<Users size={17} />} title={t("Mitspieler finden")}
-        tabs={parts.map((id) => ({ id, ...TAB_META[id], count: counts[id], render: () => bodyById[id] }))}
-        activeId={activeId} onActive={(id) => { setDeckTab(id); writeLocal(DECK_TAB_KEY, id); }}
-        onHide={() => cards.hideCard(activeId)} />
-    );
-  }
-
-  const visibleOrder = withoutFolded(cards.visibleOrder, LIVE_DECK_IDS, anchor);
-  const renderCards = (ids) => ids.filter((id) => cardsById[id]).map((id) => (
-    <CardSlot key={id} order={10 + visibleOrder.indexOf(id)}>{cardsById[id]}</CardSlot>
-  ));
+  const duelleBody = (
+    <>
+      {challengesToMe.length > 0 && <p className="q">{t("Herausforderungen an dich")}</p>}
+      {challengesToMe.map((c) => (
+        <ChallengeCard key={c.id} challenge={c} role="to" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+          isNewMsg={isNew(c, "msg")} onDecline={onDeclineChallenge} onReply={onReplyToChallenge} {...placeProps(c)} />
+      ))}
+      {challengesFromMe.length > 0 && <p className="q" style={{ marginTop: challengesToMe.length ? 18 : 0 }}>{t("Deine offenen Herausforderungen")}</p>}
+      {challengesFromMe.map((c) => (
+        <ChallengeCard key={c.id} challenge={c} role="from" colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+          isNewReply={isNew(c, "reply")} onCancel={onCancelChallenge} onEditMessage={onEditChallengeMessage} {...placeProps(c)} />
+      ))}
+    </>
+  );
+  // Ohne Duelle gibt es die Karte samt Ueberschrift gar nicht
+  const showDuelle = openChallenges.length > 0 && cards.visibleOrder.includes("duelle");
 
   return (
-    <div className="screen">
-      <header className="screen-head">
-        <h2>{t("Live")}</h2>
-        <span className="head-note">{t("Wer ist gerade am Tisch oder sucht ein Match?")}</span>
-      </header>
+    <VenueProvider me={me} players={players} toast={toast} santaKnown={earnedBadges?.has?.("easter_santa")} onFoundSanta={onFoundSanta} pings={pings} plannings={plannings} challengesFromMe={challengesFromMe} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+      onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning} onUpdatePlanning={onUpdatePlanning} onDeletePlanning={onDeletePlanning}
+      onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning} onChallenge={(pid, msg, locId) => { onCreateChallenge(pid, msg, locId); setDuelOpen(true); }}>
+      <div className="screen">
+        <header className="screen-head">
+          <h2>{t("Live")}</h2>
+          <span className="head-note">{t("Wer ist gerade am Tisch oder sucht ein Match?")}</span>
+        </header>
 
-      <div className="live-split">
-      {/* Keine linke Profil-Spalte mehr: am PC steht die Kugel ohnehin dauerhaft oben links in der Seitenleiste (AppDrawer). */}
-      <div className="live-col middle">{renderCards(visibleOrder)}</div>
+        <PingBlock />
+        <VenueSearch />
+        <VenueQuick />
+
+        {showDuelle && (
+          <CardSlot order={10}>
+            <section className="stat-block duel-card">
+              <div className="stat-block-head">
+                <button type="button" className="duel-toggle as-btn" onClick={() => setDuelOpen((v) => !v)} aria-expanded={duelOpen}
+                  title={duelOpen ? t("Zuklappen") : t("Aufklappen")}>
+                  <h3><Swords size={17} /> <span className="stat-block-title-text">{t("Duelle")}</span>
+                    <span className="deck-tab-count duel-count">{openChallenges.length}</span>
+                  </h3>
+                  <span className="rank-meta duel-sub">
+                    {challengesToMe.length > 0 && t("{n} an dich", { n: challengesToMe.length })}
+                    {challengesToMe.length > 0 && challengesFromMe.length > 0 && " · "}
+                    {challengesFromMe.length > 0 && t("{n} von dir", { n: challengesFromMe.length })}
+                  </span>
+                  <ChevronDown size={16} className={"duel-chev" + (duelOpen ? " open" : "")} />
+                </button>
+                <div className="stat-block-head-actions"><CardMenuButton onHide={() => cards.hideCard("duelle")} /></div>
+              </div>
+              <div className={"collapsible" + (duelOpen ? " open" : "")} inert={duelOpen ? undefined : ""}>
+                <div className="collapsible-inner">{duelleBody}</div>
+              </div>
+            </section>
+          </CardSlot>
+        )}
+
+        <VenueList />
+        <LocationReview me={me} players={players} toast={toast} />
+        <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
+        <ImprintFooter />
       </div>
-      <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
-      <ImprintFooter />
-    </div>
+    </VenueProvider>
   );
 }

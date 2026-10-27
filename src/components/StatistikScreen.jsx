@@ -117,9 +117,9 @@ function LeaderboardRows({ rows, nameOf, valOf, extra, medals, emptyText, me, co
 // "zu verschachtelt"): Disziplin als Kugeln + Einzel/Doppel/Beides in EINER Zeile,
 // immer sichtbar. Sie ersetzt den Trichter an Bestenlisten und Verlauf; die
 // Auswahl selbst bleibt in statGlobalDisc/-Mode (localStorage).
-function StatFilterBar({ disc, disciplines, onDisc, mode, onMode, nearbyChips }) {
+function StatFilterBar({ disc, disciplines, onDisc, mode, onMode, nearbyChips, pinned, barRef }) {
   return (
-    <div className="stat-filterbar">
+    <div className={"stat-filterbar" + (pinned ? " pinned" : "")} ref={barRef}>
       <DiscPickRow all="Gesamt" discs={disciplines.filter((d) => d !== "Doppel")} value={disc} onChange={onDisc}
         trailing={<><ModePick inline value={mode} onChange={onMode} />{nearbyChips}</>} />
     </div>
@@ -847,15 +847,30 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Highscore / Meine Umgebung (Nutzer-Wunsch 422.5: in die Filterleiste) sind nur dann bedienbar, wenn sie etwas aendern:
   // es muss eine Liste zu sehen sein, in der man selbst vorkommt und die laenger ist als die 5 Zeilen der Umgebung.
   const nearbyRelevant = (g) => { const b = groupTab[g](); const rows = b.rows || []; return rows.length > 5 && rows.some((r) => b.nameOf(r) === me?.nickname); };
-  const nearbyUsable = chaptersMode ? (listSeg && nearbyRelevant(activeSeg)) : groupIds.some(nearbyRelevant);
+  // Doomscroller (Nutzer-Wunsch 424.1): Leiste haftet oben und der Umschalter ist immer bedienbar.
+  const nearbyUsable = chaptersMode ? (listSeg && nearbyRelevant(activeSeg)) : true;
+  const [barEl, setBarEl] = useState(null);
+  useEffect(() => {
+    if (!barEl || chaptersMode) return undefined;
+    const screen = barEl.closest(".screen");
+    const set = () => screen && screen.style.setProperty("--fb-h", barEl.offsetHeight + "px");
+    set();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(set) : null;
+    ro?.observe(barEl);
+    return () => { ro?.disconnect(); screen?.style.removeProperty("--fb-h"); };
+  }, [barEl, chaptersMode]);
   const nearbyOn = globalNearby && nearbyUsable;
   // EIN Umschalter, das Symbol zeigt den aktuellen Zustand: Pokal = Highscore, eigene Kugel = Meine Umgebung.
-  const nearbyLabel = nearbyOn ? t("Meine Umgebung") : t("Highscore");
+  // Der Umschalter ist IMMER antippbar (Nutzer-Feedback 424.42: "das ist nicht immer klickbar"): Symbol und Beschriftung zeigen die gewaehlte
+  // Einstellung; wirksam wird sie nur auf einer Liste, in der man selbst vorkommt. Tippt man ihn in einem anderen Kapitel (Tab-Freak: Verlauf,
+  // Matches, Rekorde), springt die Ansicht zur ersten Liste, damit man die Wirkung gleich sieht.
+  const nearbyPref = globalNearby;
+  const nearbyLabel = nearbyPref ? t("Meine Umgebung") : t("Highscore");
   const nearbyChips = (
-    <><span className="disc-sep nearby-sep" aria-hidden="true" /><button type="button" className={"disc-pick compact mode-pick" + (nearbyOn ? " sel" : "")} disabled={!nearbyUsable} data-no-avatar
-      aria-label={nearbyLabel} title={nearbyUsable ? nearbyLabel + " – " + t("tippen zum Umschalten") : nearbyLabel}
-      onClick={() => setGlobalNearby(!nearbyOn)}>
-      {nearbyOn
+    <><span className="disc-sep nearby-sep" aria-hidden="true" /><button type="button" className={"disc-pick compact mode-pick" + (nearbyPref ? " sel" : "")} data-no-avatar
+      aria-label={nearbyLabel} title={nearbyLabel + " – " + t("tippen zum Umschalten")}
+      onClick={() => { const next = !globalNearby; setGlobalNearby(next); if (chaptersMode && !listSeg && groupIds[0]) pickSeg(groupIds[0]); }}>
+      {nearbyPref
         ? <Ball nick={me?.nickname} color={colorOf(me?.nickname)} label={initials(me?.nickname)} badge={badgeOf(me?.nickname)} photo={photoOf(me?.nickname)} size={20} />
         : <Trophy size={18} />}
     </button></>
@@ -947,7 +962,8 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
 
       {showChapterBar && <SegmentBar segments={segments} active={activeSeg} onChange={pickSeg} label={t("Bereich")} storageKey="stat" />}
       {(!chaptersMode || activeSeg !== "rekorde") && (
-        <StatFilterBar disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc} mode={globalMode} onMode={setGlobalMode} nearbyChips={nearbyChips} />
+        <StatFilterBar disc={globalDisc} disciplines={disciplines} onDisc={setGlobalDisc} mode={globalMode} onMode={setGlobalMode} nearbyChips={nearbyChips}
+          pinned={!chaptersMode} barRef={chaptersMode ? undefined : setBarEl} />
       )}
       <div className="stat-split" data-seg={chaptersMode && segments.length > 1 ? (listSeg ? "listen" : activeSeg) : undefined}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
