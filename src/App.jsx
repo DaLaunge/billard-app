@@ -1448,9 +1448,11 @@ export default function App() {
     return true;
   };
 
-  const createPing = async (loc, msg, hours) => {
+  const createPing = async (loc, msg, hours, coords) => {
     const { error } = await supabase.rpc("create_ping", {
       p_location: loc.trim(), p_message: msg.trim() || null, p_hours: hours,
+      // eigener Standort ohne Lokal (supabase/2026-10-28d_ping_position.sql)
+      ...(coords ? { p_lat: coords.lat, p_lng: coords.lng } : {}),
     });
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Du bist jetzt live!"));

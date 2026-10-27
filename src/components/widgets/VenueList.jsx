@@ -159,17 +159,21 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [locId, setLocId] = useState(venueId || initial?.locId || null);
   // "Mein Standort": Standort abfragen und bekannte Billardlokale in der Naehe (bis 300 m) zum Auswaehlen anbieten
   const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
+  const [here, setHere] = useState(null); // eigene Position { lat, lng }
+  const [own, setOwn] = useState(false); // live mit dem eigenen Standort, ohne Lokal (z. B. privater Tisch)
   const [locating, setLocating] = useState(false);
   const findMe = () => {
     if (!navigator.geolocation) { toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (p) => {
-        const here = { lat: p.coords.latitude, lng: p.coords.longitude };
+        const me2 = { lat: p.coords.latitude, lng: p.coords.longitude };
+        setHere(me2);
         const found = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
-          .map((l) => ({ l, d: distanceM(here, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
+          .map((l) => ({ l, d: distanceM(me2, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
         setNear(found);
-        if (found.length === 1) setLocId(found[0].l.id); // genau ein Treffer: gleich vorwaehlen
+        if (found.length === 1) { setLocId(found[0].l.id); setOwn(false); } // genau ein Treffer: gleich vorwaehlen
+        else if (found.length === 0) { setLocId(null); setOwn(true); }    // kein Lokal: mit dem eigenen Standort live gehen
         setLocating(false);
       },
       () => { setLocating(false); toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); },
@@ -185,19 +189,22 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
             <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
           </button>
-          {near && near.length > 0 && (
+          {near && (
             <div className="quick-chips">
               {near.map(({ l, d }) => (
-                <button key={l.id} type="button" className={"chip-btn" + (locId === l.id ? " sel" : "")} onClick={() => setLocId(l.id)}>
+                <button key={l.id} type="button" className={"chip-btn" + (locId === l.id && !own ? " sel" : "")} onClick={() => { setLocId(l.id); setOwn(false); }}>
                   <MapPin size={14} /> {l.name}<span className="rank-meta"> · {fmtDist(d)}</span>
                 </button>
               ))}
+              <button type="button" className={"chip-btn" + (own ? " sel" : "")} onClick={() => { setOwn(true); setLocId(null); }}>
+                <LocateFixed size={14} /> {t("Nur mein Standort")}
+              </button>
             </div>
           )}
-          {near && near.length === 0 && <p className="hint">{t("Kein bekanntes Lokal in deiner Nähe – such unten eines oder lege es neu an.")}</p>}
+          {near && near.length === 0 && <p className="hint">{t("Kein bekanntes Lokal in deiner Nähe – du gehst mit deinem Standort live (z. B. privater Tisch). Ein Lokal ist optional, du kannst unten eines wählen.")}</p>}
         </>
       )}
-      <LocationPicker value={locId} onChange={setLocId} toast={toast} me={me} />
+      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) setOwn(false); }} toast={toast} me={me} />
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
       {live && (
         <div className="chips small">
@@ -213,8 +220,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       </div>
       <div className="sp-controls">
         <button type="button" className="btn ghost" onClick={onDone}>{t("Abbrechen")}</button>
-        <button type="button" className="btn primary" disabled={live ? !venue : !date}
-          onClick={() => { onSubmit({ date, msg, hours, locId, venue }); onDone(); }}>
+        <button type="button" className="btn primary" disabled={live ? !(venue || (own && here)) : !date}
+          onClick={() => { onSubmit({ date, msg, hours, locId, venue, here: own && !venue ? here : null }); onDone(); }}>
           {live ? <Radio size={17} /> : <Calendar size={17} />} {label || (live ? t("Live gehen") : t("Planung eintragen"))}
         </button>
       </div>
@@ -244,6 +251,13 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
     loadReacts();
   };
   const { list, confirms, planLoc } = useLocations();
+  // Positionen von Live-Eintraegen (eigener Standort ohne Lokal, supabase/2026-10-28d_ping_position.sql) - eigene Abfrage, tolerant
+  const [pingPos, setPingPos] = useState({});
+  const pingKey = pings.map((p) => p.id).join(",");
+  useEffect(() => {
+    supabase.from("pings").select("id, lat, lng").not("lat", "is", null)
+      .then(({ data, error }) => { if (!error) setPingPos(Object.fromEntries((data || []).map((r) => [r.id, r]))); });
+  }, [pingKey]);
   const [busy, setBusy] = useState(null);
   const [q, setQ] = useState("");
   const [vq, setVq] = useState(""); // Suche nur in der Orte-Karte
@@ -295,7 +309,9 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
   const today = new Date().toISOString().slice(0, 10);
   const nq = norm(q);
   const nvq = norm(vq);
-  const venueOfPing = (p) => list.find((l) => norm(l.name) === norm(p.location)) || { id: "loose:" + p.location, name: p.location, loose: true };
+  const venueOfPing = (p) => list.find((l) => norm(l.name) === norm(p.location))
+    || (pingPos[p.id] ? { id: "pos:" + p.id, name: p.location, lat: pingPos[p.id].lat, lng: pingPos[p.id].lng, loose: true }
+      : { id: "loose:" + p.location, name: p.location, loose: true });
   const venueOfPlan = (p) => list.find((l) => l.id === planLoc[p.id]) || null;
   const pass = (v, nick) => !nq || norm(`${v?.name || ""} ${v?.address || ""} ${nick}`).includes(nq);
 
@@ -550,7 +566,7 @@ export default function VenueList() {
                 <div className={"collapsible" + (open && form ? " open" : "")} inert={open && form ? undefined : ""}>
                   <div className="collapsible-inner">
                     <div className="venue-body">
-                      {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours }) => onCreate(venue.name, msg, hours)} onDone={() => setForm(null)} /></Unfold>}
+                      {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours, here }) => onCreate(venue ? venue.name : t("Mein Standort"), msg, hours, venue ? null : here)} onDone={() => setForm(null)} /></Unfold>}
                       {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setForm(null)} /></Unfold>}
                     </div>
                   </div>
@@ -613,7 +629,7 @@ export function VenueQuick() {
       </div>
       <div className={"collapsible" + (open ? " open" : "")} inert={open ? undefined : ""}>
         <div className="collapsible-inner">
-          {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours }) => onCreate(venue.name, msg, hours)} onDone={() => setOpen(null)} />}
+          {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours, here }) => onCreate(venue ? venue.name : t("Mein Standort"), msg, hours, venue ? null : here)} onDone={() => setOpen(null)} />}
           {open === "plan" && <VenueMask kind="plan" onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setOpen(null)} />}
         </div>
       </div>
