@@ -3831,3 +3831,9 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 /* Kartenstift (Route-Knopf) steht LINKS vom Ortsnamen, ohne eigenen Abstand */
 .route-link.route-left, button.route-link.route-left { margin-left: 0; }
 .venue-place .route-btn { margin-right: 2px; }
+
+/* Turnier-QR: grosser Knopf oben im Turnier, kleiner an jeder Zeile der Uebersicht, Fenster mit grossem Code */
+.tqr-top { width: 44px; height: 44px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); flex: 0 0 auto; }
+.tqr-row { flex: 0 0 auto; width: 40px; height: 40px; }
+.tqr-card { position: relative; text-align: center; }
+.tqr-close { position: absolute; top: 8px; right: 8px; }

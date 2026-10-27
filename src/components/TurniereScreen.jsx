@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
 import LocationPicker from "./widgets/LocationPicker";
 import PlaceLink from "./widgets/PlaceLink";
+import TurnierQrButton from "./widgets/TurnierQr";
 import { useLocations } from "../lib/locationStore";
 import { suggestNames, randomName } from "../lib/turnierNames";
 import { supabase } from "../supabase";
@@ -396,6 +397,9 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                   <span className="turnier-list-row-meta">{t("Turnierleitung")}: {it.organizer?.nickname || "?"}</span>
                   <PlaceLink locationId={it.location_id} text={it.location_text} className="place-link turnier-list-row-meta" />
                 </span>
+                {it._kind !== "winnerstays" && (it.status === "setup" || it.status === "running") && (
+                  <TurnierQrButton tour={it} toast={toast} size={20} className="icon-btn tqr-row" />
+                )}
                 <ChevronRight size={20} className="turnier-list-row-chevron" />
               </div>
             );
