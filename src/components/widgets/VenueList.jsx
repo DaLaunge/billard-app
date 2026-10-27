@@ -325,14 +325,16 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
   const santaKm = santaDistanceKm(pos, radiusKm); // Easteregg: der Weihnachtsmann am Nordpol
   const withDist = pos ? [...pings].map((item) => ({ kind: "ping", item, venue: venueOfPing(item) }))
     .filter((x) => x.venue.lat != null).map((x) => ({ ...x, dist: distanceM(pos, x.venue) })).sort((a, b) => a.dist - b.dist) : [];
-  // Niemand im Radius? Dann wird der Suchradius schrittweise vergroessert (x2, x4, ... bis 50 km), aber nur, solange noch niemand gefunden wurde.
+  // Niemand im Radius? Dann wird der Suchradius schrittweise vergroessert (x2, x4, ...), aber HOECHSTENS bis 50 km und nur, solange noch
+  // niemand gefunden wurde. Jeder Ping startet wieder beim eingestellten Radius, das Erweitern summiert sich nie auf; der Weihnachtsmann
+  // (Easteregg) rechnet ausschliesslich mit dem eingestellten Radius (santaKm) und kann dadurch nie durch wiederholtes Klicken gefunden werden.
+  const AUTO_MAX_KM = 50;
   let usedKm = radiusKm;
-  if (pos && !withDist.some((x) => x.dist <= radiusKm * 1000)) {
-    const cap = Math.max(50, radiusKm);
+  if (pos && radiusKm < AUTO_MAX_KM && !withDist.some((x) => x.dist <= radiusKm * 1000)) {
     for (let r = radiusKm * 2; ; r *= 2) {
-      const step = snapKm(Math.min(r, cap));
+      const step = snapKm(Math.min(r, AUTO_MAX_KM));
       if (withDist.some((x) => x.dist <= step * 1000)) { usedKm = step; break; }
-      if (step >= cap) break;
+      if (step >= AUTO_MAX_KM) break;
     }
   }
   const nearLive = withDist.filter((x) => x.dist <= usedKm * 1000).slice(0, 10);
