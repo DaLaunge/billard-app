@@ -166,6 +166,7 @@ export default function App() {
   // Turnier-Einladung ohne Konto: Wahl "Anmelden / Gast" (TurnierInviteScreen); turnierLogin = hat "Anmelden" gewaehlt
   const [turnierInvite, setTurnierInvite] = useState(() => getTurnierInvite());
   const [turnierLogin, setTurnierLogin] = useState(false);
+  const turnierJoinBusy = useRef(false);
   const [player, setPlayer] = useState(null);
   const [loadErr, setLoadErr] = useState(false);
   const [playerChecked, setPlayerChecked] = useState(false);
@@ -1252,14 +1253,21 @@ export default function App() {
   // Turnier-Einladung /?turnier=ID: wer angemeldet ist (auch frisch registriert), wird sofort fuer das Turnier angemeldet und landet dort.
   useEffect(() => {
     const id = getTurnierInvite();
-    if (!id || !player || player.must_change_password) return;
-    clearTurnierInvite();
+    if (!id || !player || player.must_change_password || turnierJoinBusy.current) return;
+    // Der Wert bleibt gespeichert, bis das Turnier wirklich offen ist (naechster Effekt): ein Neuladen durch ein wartendes Update oder die
+    // Startseiten-Weiche wuerde die Navigation sonst verschlucken (der erste Scan landete dann auf einem Hauptmenue). Anmelden ist idempotent.
+    turnierJoinBusy.current = true;
     supabase.rpc("tournament_register", { p_tournament_id: id }).then(({ error }) => {
-      if (error) { toast(error.message); return; }
+      turnierJoinBusy.current = false;
+      if (error) { clearTurnierInvite(); toast(error.message); return; }
       toast(t("Du bist für das Turnier angemeldet."));
       navPush({ tab: "turnierdetail", tournamentId: id });
     });
   }, [player, toast, navPush]);
+  useEffect(() => {
+    const id = getTurnierInvite();
+    if (id && tab === "turnierdetail" && tournamentId === id) clearTurnierInvite();
+  }, [tab, tournamentId]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
