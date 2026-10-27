@@ -3541,3 +3541,9 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .admin-loc-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .admin-loc-row > .loc-form { flex: 1 1 100%; }
 .admin-loc-actions { display: flex; gap: 6px; }
+
+/* Standort-Vorschlaege und Tageskacheln: Flaeche statt Browser-Weiss, Auswahl/Hover im Akzent */
+.loc-result, .day-chip { background: var(--surface-btn); border: 1.5px solid transparent; color: var(--ivory); }
+.loc-result:hover, .day-chip:hover { border-color: var(--accent-line, var(--accent)); }
+.loc-result:hover { background: var(--accent-soft); color: var(--accent); }
+.day-chip.sel, .day-chip.sel:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink, #000); }
