@@ -3,7 +3,7 @@ import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users,
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
-import { useLocations, loadLocations, distanceM } from "../../lib/locationStore";
+import { useLocations, loadLocations, distanceM, reverseAddress } from "../../lib/locationStore";
 import Ball from "../Ball";
 import Emoji, { EmojiText } from "../Emoji";
 import RouteButton from "./RouteButton";
@@ -160,6 +160,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   // "Mein Standort": Standort abfragen und bekannte Billardlokale in der Naehe (bis 300 m) zum Auswaehlen anbieten
   const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
   const [here, setHere] = useState(null); // eigene Position { lat, lng }
+  const [addr, setAddr] = useState(null); // Adresse zur eigenen Position (Nominatim), "" = keine gefunden
   const [own, setOwn] = useState(false); // live mit dem eigenen Standort, ohne Lokal (z. B. privater Tisch)
   const [locating, setLocating] = useState(false);
   const findMe = () => {
@@ -169,6 +170,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       (p) => {
         const me2 = { lat: p.coords.latitude, lng: p.coords.longitude };
         setHere(me2);
+        setAddr(null);
+        reverseAddress(me2.lat, me2.lng).then((a) => setAddr(a || ""));
         const found = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
           .map((l) => ({ l, d: distanceM(me2, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
         setNear(found);
@@ -186,9 +189,16 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {!live && <DayPicker value={date} onChange={setDate} />}
       {live && (
         <>
-          <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
-            <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
-          </button>
+          <div className="venue-here-row">
+            <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
+              <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
+            </button>
+            <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
+              {!here ? t("noch kein Standort")
+                : addr === null ? t("Adresse wird gesucht …")
+                : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}
+            </span>
+          </div>
           {near && (
             <div className="quick-chips">
               {near.map(({ l, d }) => (

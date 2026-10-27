@@ -1270,6 +1270,8 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "noch kein Standort": "no location yet",
+    "Adresse wird gesucht …": "Looking up address …",
     "Nur mein Standort": "Just my location",
     "Kein bekanntes Lokal in deiner Nähe – du gehst mit deinem Standort live (z. B. privater Tisch). Ein Lokal ist optional, du kannst unten eines wählen.": "No known venue near you – you go live with your location (e.g. a private table). A venue is optional, you can pick one below.",
     "Mein Standort": "My location",

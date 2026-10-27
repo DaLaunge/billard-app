@@ -3797,3 +3797,8 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .route-pop .route-menu { display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 12px; background: var(--felt-2); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); }
 
 .venue-here { align-self: flex-start; }
+
+.venue-here-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.venue-here-row .venue-here { flex: none; }
+.venue-here-txt { min-width: 0; overflow-wrap: anywhere; }
+.venue-here-txt.has { color: var(--ivory); }
