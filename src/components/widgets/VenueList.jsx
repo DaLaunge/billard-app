@@ -66,7 +66,7 @@ function Entry({ kind, item, me, colorOf, badgeOf, photoOf, onOpenProfile, onRep
       })}
       {!mine && !myReply && !open && (
         <div className="venue-actions">
-          <button type="button" className="chip-btn ok" onClick={() => onReply(item.id, "")}>
+          <button type="button" className="chip-btn sel" onClick={() => onReply(item.id, "")}>
             {ping ? <Swords size={14} /> : <Calendar size={14} />} {ping ? t("Bin unterwegs") : t("Bin interessiert")}
           </button>
           <button type="button" className="chip-btn" onClick={() => setOpen(true)}>{t("mit Nachricht")}</button>
@@ -79,7 +79,7 @@ function Entry({ kind, item, me, colorOf, badgeOf, photoOf, onOpenProfile, onRep
               value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
           </div>
           <div className="venue-actions">
-            <button type="button" className="chip-btn ok" onClick={() => { onReply(item.id, msg); setOpen(false); setMsg(""); }}><Check size={14} /> {ping ? t("Unterwegs") : t("Interessiert")}</button>
+            <button type="button" className="chip-btn sel" onClick={() => { onReply(item.id, msg); setOpen(false); setMsg(""); }}><Check size={14} /> {ping ? t("Unterwegs") : t("Interessiert")}</button>
             <button type="button" className="chip-btn no" onClick={() => setOpen(false)}><X size={14} /> {t("Abbrechen")}</button>
           </div>
         </div>
