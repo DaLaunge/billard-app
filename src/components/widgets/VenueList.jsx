@@ -151,23 +151,52 @@ function Unfold({ children }) {
    bei der Planung der Kalender. Bei Live ist der Ort Pflicht (mit bekanntem Standort ist das naechste Lokal vorgewaehlt),
    bei der Planung optional - dann steht der Hinweis, dass man sich den Ort noch ausmachen muss. */
 function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
-  const { me, toast, list, pos, askPos } = useContext(VenueCtx);
+  const { me, toast, list } = useContext(VenueCtx);
   const live = kind === "live";
   const [date, setDate] = useState(initial?.date || "");
   const [msg, setMsg] = useState(initial?.msg || "");
   const [hours, setHours] = useState(3);
   const [locId, setLocId] = useState(venueId || initial?.locId || null);
-  useEffect(() => { if (live && !venueId && !pos) askPos(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (!live || locId || !pos) return;
-    const best = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
-      .map((l) => ({ id: l.id, d: distanceM(pos, l) })).sort((a, b) => a.d - b.d)[0];
-    if (best) setLocId(best.id);
-  }, [pos]); // eslint-disable-line react-hooks/exhaustive-deps
+  // "Mein Standort": Standort abfragen und bekannte Billardlokale in der Naehe (bis 300 m) zum Auswaehlen anbieten
+  const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
+  const [locating, setLocating] = useState(false);
+  const findMe = () => {
+    if (!navigator.geolocation) { toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        const here = { lat: p.coords.latitude, lng: p.coords.longitude };
+        const found = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
+          .map((l) => ({ l, d: distanceM(here, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
+        setNear(found);
+        if (found.length === 1) setLocId(found[0].l.id); // genau ein Treffer: gleich vorwaehlen
+        setLocating(false);
+      },
+      () => { setLocating(false); toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); },
+      { timeout: 8000, maximumAge: 30000 },
+    );
+  };
   const venue = list.find((l) => l.id === locId) || null;
   return (
     <div className="venue-form">
       {!live && <DayPicker value={date} onChange={setDate} />}
+      {live && (
+        <>
+          <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
+            <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
+          </button>
+          {near && near.length > 0 && (
+            <div className="quick-chips">
+              {near.map(({ l, d }) => (
+                <button key={l.id} type="button" className={"chip-btn" + (locId === l.id ? " sel" : "")} onClick={() => setLocId(l.id)}>
+                  <MapPin size={14} /> {l.name}<span className="rank-meta"> · {fmtDist(d)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {near && near.length === 0 && <p className="hint">{t("Kein bekanntes Lokal in deiner Nähe – such unten eines oder lege es neu an.")}</p>}
+        </>
+      )}
       <LocationPicker value={locId} onChange={setLocId} toast={toast} me={me} />
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
       {live && (
