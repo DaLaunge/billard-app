@@ -18,9 +18,19 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
-  { version: "426.10", icon: "🔗",
-    items: ["Turniere haben jetzt einen Einladungslink mit QR-Code: Mitglieder sind damit sofort angemeldet, Neue melden sich an oder spielen nur mit Namen als Gast mit."],
-    en: ["Tournaments now have an invitation link with a QR code: members are registered at once, new people sign up or join as a guest with just a name."] },
+  { version: "427", icon: "🔗",
+    items: [
+      "Turniere haben einen Einladungslink mit QR-Code (solange die Anmeldung offen ist): Mitglieder sind damit sofort angemeldet, Neue melden sich an oder spielen nur mit ihrem Namen als Gast mit. Gäste sehen, wann sie dran sind, zählen ihr Match mit und melden und bestätigen es selbst.",
+      "Auch Winner Stays hat einen QR-Code: Mitglieder und Gäste reihen sich damit jederzeit selbst in die Warteschlange ein, Gäste am Tisch melden ihr Spiel selbst.",
+      "Neues Turnier: Namensvorschläge, ein Würfel für Zufallsnamen und ein Ort (Lokal oder Text). Der Ort ist in der Übersicht und im Turnier anklickbar und öffnet die Route.",
+      "Orte tragen überall den Kartenstift, im Live-Screen steht er als Route-Knopf links vom Ortsnamen.",
+    ],
+    en: [
+      "Tournaments have an invitation link with a QR code (while registration is open): members are registered at once, new people sign up or join as a guest with just their name. Guests see when they are up, track their match and report and confirm it themselves.",
+      "Winner Stays has a QR code too: members and guests join the queue themselves at any time, guests at the table report their game themselves.",
+      "New tournament: name suggestions, a dice for random names and a place (venue or text). The place is clickable in the overview and in the tournament and opens the route.",
+      "Places carry the map pin everywhere; in the Live screen it is the route button to the left of the place name.",
+    ] },
   { version: "421.1", icon: "🧮",
     items: ["Jedes Match-Protokoll zeigt jetzt eine kleine Tabelle: wer wie viele Rating-Punkte gewonnen oder verloren hat – und warum."],
     en: ["Every match protocol now shows a small table: who won or lost how many rating points – and why."] },
