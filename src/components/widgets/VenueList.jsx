@@ -188,33 +188,32 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     <div className="venue-form">
       {!live && <DayPicker value={date} onChange={setDate} />}
       {live && (
-        <>
-          <div className="venue-here-row">
-            <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
-              <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
+        <div className="venue-here-row">
+          <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
+            <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
+          </button>
+          <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
+            {!here ? t("noch kein Standort")
+              : addr === null ? t("Adresse wird gesucht …")
+              : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}
+          </span>
+          {near && near.map(({ l, d }) => (
+            <button key={l.id} type="button" className={"chip-btn" + (locId === l.id && !own ? " sel" : "")} onClick={() => { setLocId(l.id); setOwn(false); }}>
+              <MapPin size={14} /> {l.name}<span className="rank-meta"> · {fmtDist(d)}</span>
             </button>
-            <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
-              {!here ? t("noch kein Standort")
-                : addr === null ? t("Adresse wird gesucht …")
-                : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}
-            </span>
-          </div>
+          ))}
           {near && (
-            <div className="quick-chips">
-              {near.map(({ l, d }) => (
-                <button key={l.id} type="button" className={"chip-btn" + (locId === l.id && !own ? " sel" : "")} onClick={() => { setLocId(l.id); setOwn(false); }}>
-                  <MapPin size={14} /> {l.name}<span className="rank-meta"> · {fmtDist(d)}</span>
-                </button>
-              ))}
-              <button type="button" className={"chip-btn" + (own ? " sel" : "")} onClick={() => { setOwn(true); setLocId(null); }}>
-                <LocateFixed size={14} /> {t("Nur mein Standort")}
-              </button>
-            </div>
+            <button type="button" className={"chip-btn" + (own ? " sel" : "")} onClick={() => { setOwn(true); setLocId(null); }}
+              title={t("Ohne Lokal live gehen, z. B. an einem privaten Tisch")}>
+              <LocateFixed size={14} /> {t("Nur mein Standort")}
+            </button>
           )}
-          {near && near.length === 0 && <p className="hint">{t("Kein bekanntes Lokal in deiner Nähe – du gehst mit deinem Standort live (z. B. privater Tisch). Ein Lokal ist optional, du kannst unten eines wählen.")}</p>}
-        </>
+        </div>
       )}
       <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) setOwn(false); }} toast={toast} me={me} />
+      {live && !venue && !(own && here) && (
+        <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“ oder wähle ein Lokal.")}</p>
+      )}
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
       {live && (
         <div className="chips small">
@@ -230,7 +229,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       </div>
       <div className="sp-controls">
         <button type="button" className="btn ghost" onClick={onDone}>{t("Abbrechen")}</button>
-        <button type="button" className="btn primary" disabled={live ? !(venue || (own && here)) : !date}
+        <button type="button" className="btn primary" disabled={!live && !date}
           onClick={() => { onSubmit({ date, msg, hours, locId, venue, here: own && !venue ? here : null }); onDone(); }}>
           {live ? <Radio size={17} /> : <Calendar size={17} />} {label || (live ? t("Live gehen") : t("Planung eintragen"))}
         </button>
@@ -576,7 +575,7 @@ export default function VenueList() {
                 <div className={"collapsible" + (open && form ? " open" : "")} inert={open && form ? undefined : ""}>
                   <div className="collapsible-inner">
                     <div className="venue-body">
-                      {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours, here }) => onCreate(venue ? venue.name : t("Mein Standort"), msg, hours, venue ? null : here)} onDone={() => setForm(null)} /></Unfold>}
+                      {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours, here }) => onCreate(venue ? venue.name : here ? t("Mein Standort") : t("Ort offen"), msg, hours, venue ? null : here)} onDone={() => setForm(null)} /></Unfold>}
                       {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setForm(null)} /></Unfold>}
                     </div>
                   </div>
@@ -639,7 +638,7 @@ export function VenueQuick() {
       </div>
       <div className={"collapsible" + (open ? " open" : "")} inert={open ? undefined : ""}>
         <div className="collapsible-inner">
-          {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours, here }) => onCreate(venue ? venue.name : t("Mein Standort"), msg, hours, venue ? null : here)} onDone={() => setOpen(null)} />}
+          {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours, here }) => onCreate(venue ? venue.name : here ? t("Mein Standort") : t("Ort offen"), msg, hours, venue ? null : here)} onDone={() => setOpen(null)} />}
           {open === "plan" && <VenueMask kind="plan" onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setOpen(null)} />}
         </div>
       </div>

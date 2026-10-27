@@ -3802,3 +3802,6 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .venue-here-row .venue-here { flex: none; }
 .venue-here-txt { min-width: 0; overflow-wrap: anywhere; }
 .venue-here-txt.has { color: var(--ivory); }
+
+.venue-here-row { flex-wrap: wrap; row-gap: 6px; }
+.venue-here-txt { flex: 1 1 140px; }
