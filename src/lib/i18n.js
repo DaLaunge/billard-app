@@ -1270,6 +1270,8 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "Unterwegs": "On my way",
+    "Nachricht (optional), z. B. 'Bin in 20 Min da'": "Message (optional), e.g. 'Be there in 20 min'",
     "Hier live gehen": "Go live here",
     "Hier planen": "Plan here",
     "Live beenden": "End live",

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
 import { useLocations, loadLocations } from "../../lib/locationStore";
 import Ball from "../Ball";
+import Emoji, { EmojiText } from "../Emoji";
 import RouteButton from "./RouteButton";
 import LocationForm from "./LocationForm";
 import DayPicker from "./DayPicker";
@@ -16,6 +17,81 @@ import DayPicker from "./DayPicker";
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const SHOWN = 30;
 const NEEDED = 2;
+const REACTIONS = ["👍", "🎱", "❤️"];
+
+/* Ein Live-Eintrag oder eine Planung samt Zusagen: wer zugesagt hat, kleine Reaktionen darauf (👍 🎱 ❤️) und - fuer alle
+   anderen - der Knopf zum Zusagen (mit oder ohne Nachricht) bzw. Zurueckziehen. */
+function Entry({ kind, item, me, colorOf, badgeOf, photoOf, onOpenProfile, onReply, onUnreply, reacts, onReact }) {
+  const [open, setOpen] = useState(false);
+  const [msg, setMsg] = useState("");
+  const mine = item.player_id === me?.id;
+  const myReply = item.replies?.find((r) => r.player_id === me?.id);
+  const nick = item.player.nickname;
+  const ping = kind === "ping";
+  return (
+    <div className="venue-entry">
+      <button type="button" className="venue-person as-btn" onClick={() => onOpenProfile?.(nick)}>
+        <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={24} />
+        <span>
+          <b>{nick}</b>{" "}
+          {ping
+            ? <><span className="live-pill small"><span className="live-dot" /> LIVE</span> <span className="rank-meta">{timeLeft(item.expires_at)}</span></>
+            : <span className="plan-pill small"><Calendar size={11} /> {fmtDate(item.planned_date)}</span>}
+        </span>
+      </button>
+      {item.message && <p className="venue-msg">"<EmojiText>{item.message}</EmojiText>"</p>}
+      {item.replies?.map((r) => {
+        const here = reacts.filter((x) => x.kind === kind && x.reply_id === r.id);
+        return (
+          <div key={r.id} className="venue-reply">
+            <button type="button" className="venue-person as-btn" onClick={() => onOpenProfile?.(r.player.nickname)}>
+              <Ball nick={r.player.nickname} color={colorOf(r.player.nickname)} label={initials(r.player.nickname)} badge={badgeOf(r.player.nickname)} photo={photoOf(r.player.nickname)} size={20} />
+              <span><b>{r.player.nickname}</b>{r.message ? <>: <EmojiText>{r.message}</EmojiText></> : (ping ? t(" ist unterwegs!") : t(" ist interessiert!"))}</span>
+            </button>
+            {onReact && (
+              <span className="venue-react">
+                {REACTIONS.map((e) => {
+                  const n = here.filter((x) => x.emoji === e).length;
+                  const on = here.some((x) => x.emoji === e && x.player_id === me?.id);
+                  return (
+                    <button key={e} type="button" className={"react-btn" + (on ? " on" : "")} onClick={() => onReact(kind, r.id, e)} aria-pressed={on}>
+                      <Emoji e={e} />{n > 0 && <i>{n}</i>}
+                    </button>
+                  );
+                })}
+              </span>
+            )}
+          </div>
+        );
+      })}
+      {!mine && !myReply && !open && (
+        <div className="venue-actions">
+          <button type="button" className="chip-btn ok" onClick={() => onReply(item.id, "")}>
+            {ping ? <Swords size={14} /> : <Calendar size={14} />} {ping ? t("Bin unterwegs") : t("Bin interessiert")}
+          </button>
+          <button type="button" className="chip-btn" onClick={() => setOpen(true)}>{t("mit Nachricht")}</button>
+        </div>
+      )}
+      {!mine && !myReply && open && (
+        <div className="venue-form">
+          <div className="search-row">
+            <input autoFocus placeholder={ping ? t("Nachricht (optional), z. B. 'Bin in 20 Min da'") : t("Nachricht (optional), z. B. 'Passt mir gut'")}
+              value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
+          </div>
+          <div className="venue-actions">
+            <button type="button" className="chip-btn ok" onClick={() => { onReply(item.id, msg); setOpen(false); setMsg(""); }}><Check size={14} /> {ping ? t("Unterwegs") : t("Interessiert")}</button>
+            <button type="button" className="chip-btn no" onClick={() => setOpen(false)}><X size={14} /> {t("Abbrechen")}</button>
+          </div>
+        </div>
+      )}
+      {!mine && myReply && (
+        <div className="venue-actions">
+          <button type="button" className="chip-btn no" onClick={() => onUnreply(item.id)}><X size={14} /> {t("Zusage zurueckziehen")}</button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* Klappt beim Einhaengen animiert auf (die Hoehe ist unbekannt, daher .collapsible). */
 function Unfold({ children }) {
@@ -73,7 +149,18 @@ function PlanForm({ venue, onCreatePlanning, onDone }) {
 }
 
 export default function VenueList({ me, pings = [], plannings = [], colorOf, badgeOf, photoOf, onOpenProfile,
-  onCreate, onClose, onCreatePlanning, canLive = true, canPlan = true, toast }) {
+  onCreate, onClose, onCreatePlanning, onReply, onUnreply, onReplyPlanning, onUnreplyPlanning, canLive = true, canPlan = true, toast }) {
+  // Reaktionen auf Zusagen (supabase/2026-10-27e_reply_reactions.sql); fehlt die Tabelle, gibt es einfach keine Knoepfe
+  const [reacts, setReacts] = useState([]);
+  const [reactOk, setReactOk] = useState(false);
+  const loadReacts = () => supabase.from("reply_reactions").select("kind, reply_id, player_id, emoji")
+    .then(({ data, error }) => { if (!error) { setReacts(data || []); setReactOk(true); } });
+  useEffect(() => { loadReacts(); }, [pings.length, plannings.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const react = async (kind, replyId, emoji) => {
+    const { error } = await supabase.rpc("toggle_reply_reaction", { p_kind: kind, p_reply_id: replyId, p_emoji: emoji });
+    if (error) toast?.(t("Fehler: ") + error.message);
+    loadReacts();
+  };
   const { list, confirms, planLoc } = useLocations();
   const [busy, setBusy] = useState(null);
   const [q, setQ] = useState("");
@@ -118,13 +205,6 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
   const rows = found.slice(0, SHOWN);
   const nothing = all.length === 0;
 
-  const person = (nick, key, extra) => (
-    <button key={key} type="button" className="venue-person as-btn" onClick={() => onOpenProfile?.(nick)}>
-      <Ball nick={nick} color={colorOf(nick)} label={initials(nick)} badge={badgeOf(nick)} photo={photoOf(nick)} size={24} />
-      <span><b>{nick}</b> {extra}</span>
-    </button>
-  );
-
   return (
     <>
       <div className="search-row">
@@ -164,8 +244,14 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
 
               {(live.length > 0 || plan.length > 0) && (
                 <div className="venue-people">
-                  {live.map((p) => person(p.player.nickname, "l" + p.id, <><span className="live-pill small"><span className="live-dot" /> LIVE</span> <span className="rank-meta">{timeLeft(p.expires_at)}</span></>))}
-                  {plan.slice(0, 4).map((p) => person(p.player.nickname, "p" + p.id, <span className="plan-pill small"><Calendar size={11} /> {fmtDate(p.planned_date)}</span>))}
+                  {live.map((p) => (
+                    <Entry key={"l" + p.id} kind="ping" item={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                      onOpenProfile={onOpenProfile} onReply={onReply} onUnreply={onUnreply} reacts={reacts} onReact={reactOk ? react : null} />
+                  ))}
+                  {plan.slice(0, 4).map((p) => (
+                    <Entry key={"p" + p.id} kind="planning" item={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                      onOpenProfile={onOpenProfile} onReply={onReplyPlanning} onUnreply={onUnreplyPlanning} reacts={reacts} onReact={reactOk ? react : null} />
+                  ))}
                   {plan.length > 4 && <span className="rank-meta">{t("{n} weitere Planungen", { n: plan.length - 4 })}</span>}
                 </div>
               )}

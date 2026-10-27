@@ -235,6 +235,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   bodyById.orte = (
     <VenueList me={me} toast={toast} pings={pings} plannings={plannings} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
       onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning}
+      onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning}
       canLive={parts.includes("pings")} canPlan={parts.includes("planung")} />
   );
   // Offener Reiter: die letzte Wahl dieses Geraets, sonst der erste Teil, in

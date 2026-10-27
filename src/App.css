@@ -3601,3 +3601,12 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .venue-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .venue-form { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
 .live-pill.small, .plan-pill.small { font-size: calc(10px * var(--fs, 1)); padding: 1px 6px; }
+
+.venue-entry { display: flex; flex-direction: column; gap: 4px; padding: 6px 0; border-top: 1px solid var(--line); }
+.venue-entry:first-child { border-top: 0; padding-top: 0; }
+.venue-msg { margin: 0; font-size: calc(13px * var(--fs, 1)); color: var(--ivory-dim); }
+.venue-reply { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-left: 28px; font-size: calc(13px * var(--fs, 1)); }
+.venue-react { display: inline-flex; gap: 4px; }
+.react-btn { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 999px; border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); font: inherit; font-size: calc(13px * var(--fs, 1)); cursor: pointer; }
+.react-btn i { font-style: normal; font-size: calc(11px * var(--fs, 1)); }
+.react-btn.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
