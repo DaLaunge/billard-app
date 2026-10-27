@@ -3650,7 +3650,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   .ping-btn.pinging .ping-ring.r3 { animation-delay: .6s; }
   .ping-btn.pinging .ping-orb { animation: ping-pop .5s ease-out; }
   @keyframes ping-idle { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.5); opacity: 0; } }
-  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
+  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(4.6); opacity: 0; } }
   @keyframes ping-pop { 0% { transform: scale(1); } 40% { transform: scale(.88); } 100% { transform: scale(1); } }
 }
 
@@ -3672,3 +3672,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   @keyframes ping-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @keyframes ping-blip { 0%, 100% { opacity: .25; } 40% { opacity: 1; } }
 }
+
+/* Ping-Ringe bleiben im Knopf: sie werden am Rand sauber abgeschnitten statt von der Karte angeschnitten */
+.ping-btn { position: relative; overflow: hidden; }
+.ping-txt { position: relative; z-index: 1; }
