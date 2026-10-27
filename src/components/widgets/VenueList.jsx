@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2 } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, Navigation } from "lucide-react";
 import { supabase } from "../../supabase";
-import { t } from "../../lib/i18n";
+import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
 import { useLocations, loadLocations, distanceM } from "../../lib/locationStore";
 import Ball from "../Ball";
@@ -17,12 +17,13 @@ import DayPicker from "./DayPicker";
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const SHOWN = 30;
 const NEEDED = 2;
+const fmtDist = (m) => (m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(m / 1000)} km`);
 const REACTIONS = ["👍", "🎱", "❤️"];
 
 /* Ein Live-Eintrag oder eine Planung samt Zusagen: wer zugesagt hat, kleine Reaktionen darauf (👍 🎱 ❤️) und - fuer alle
    anderen - der Knopf zum Zusagen (mit oder ohne Nachricht) bzw. Zurueckziehen. */
 function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile, onReply, onUnreply, reacts, onReact,
-  onChallenge, challenged, onUpdate, onDelete }) {
+  onChallenge, challenged, onUpdate, onDelete, dist }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState("");
@@ -42,7 +43,7 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
         </span>
       </button>
       <div className="venue-where">
-        {place && <><MapPin size={13} /> <b>{place.name}</b>{place.lat != null && <RouteButton place={place} size={14} />}</>}
+        {place && <><MapPin size={13} /> <b>{place.name}</b>{dist != null && <span>· {fmtDist(dist)}</span>}{place.lat != null && <RouteButton place={place} size={14} />}</>}
         <span className="venue-count" title={t("Spieler gemeldet")}><Users size={12} /> {new Set([item.player_id, ...(item.replies || []).map((r) => r.player_id)]).size}</span>
       </div>
       {item.message && <p className="venue-msg">"<EmojiText>{item.message}</EmojiText>"</p>}
@@ -174,7 +175,6 @@ function PlanForm({ initial, label, onSubmit, onDone }) {
 const NEAR_KEY = "venueNear";
 const readLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const writeLocal = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* Privatmodus */ } };
-const fmtDist = (m) => (m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(m / 1000)} km`);
 
 export default function VenueList({ me, pings = [], plannings = [], challengesFromMe = [], colorOf, badgeOf, photoOf, onOpenProfile,
   onCreate, onClose, onCreatePlanning, onUpdatePlanning, onDeletePlanning, onReply, onUnreply, onReplyPlanning, onUnreplyPlanning, onChallenge, toast }) {
@@ -196,13 +196,21 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
   const [form, setForm] = useState(null); // "live" | "plan" fuer das aufgeklappte Lokal
   // Umgebung: Standort nur auf Wunsch (Knopf), danach wird die Wahl auf diesem Geraet gemerkt
   const [pos, setPos] = useState(null);
-  const askPos = (quiet) => {
-    if (!navigator.geolocation) { if (!quiet) toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
+  const askPos = (quiet, then) => {
+    if (!navigator.geolocation) { if (!quiet) toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); then?.(false); return; }
     navigator.geolocation.getCurrentPosition(
-      (p) => { setPos({ lat: p.coords.latitude, lng: p.coords.longitude }); writeLocal(NEAR_KEY, "1"); },
-      () => { if (!quiet) toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); },
-      { timeout: 8000, maximumAge: 300000 },
+      (p) => { setPos({ lat: p.coords.latitude, lng: p.coords.longitude }); writeLocal(NEAR_KEY, "1"); then?.(true); },
+      () => { if (!quiet) toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); then?.(false); },
+      { timeout: 8000, maximumAge: 60000 },
     );
+  };
+  // Der grosse "In der Naehe"-Ping: Animation + die naechsten Spieler, die gerade LIVE sind
+  const [pinging, setPinging] = useState(false);
+  const [pinged, setPinged] = useState(false);
+  const doPing = () => {
+    setPinging(true);
+    const stop = setTimeout(() => setPinging(false), 1900);
+    askPos(false, (ok) => { if (ok) setPinged(true); else { clearTimeout(stop); setPinging(false); } });
   };
   useEffect(() => { if (readLocal(NEAR_KEY) === "1") askPos(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Neues Lokal: erst anbieten, wenn jemand nach einem Lokal sucht, das es (noch) nicht gibt; das Formular klappt darunter auf
@@ -266,9 +274,9 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
     onChallenge(item.player_id, msg.slice(0, 120));
   };
 
-  const entry = (x) => (
+  const entry = (x, dist) => (
     <div key={x.kind + x.item.id} className={"venue-row" + (x.kind === "ping" ? " is-live" : "")}>
-      <Entry kind={x.kind} item={x.item} place={x.venue} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+      <Entry kind={x.kind} item={x.item} place={x.venue} dist={dist} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
         onReply={x.kind === "ping" ? onReply : onReplyPlanning} onUnreply={x.kind === "ping" ? onUnreply : onUnreplyPlanning}
         reacts={reacts} onReact={reactOk ? react : null}
         onChallenge={onChallenge ? challenge : null} challenged={challengesFromMe.some((c) => c.challenged_id === x.item.player_id)}
@@ -279,25 +287,70 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
     </div>
   );
 
+  // Naechste Live-Spieler (nur Lokale mit Koordinaten), nach Entfernung
+  const nearLive = pos ? [...pings].map((item) => ({ kind: "ping", item, venue: venueOfPing(item) }))
+    .filter((x) => x.venue.lat != null).map((x) => ({ ...x, dist: distanceM(pos, x.venue) })).sort((a, b) => a.dist - b.dist).slice(0, 5) : [];
+
+  // Planungen als Kapitel: ein Kapitel je Datum
+  const loc = getLang() === "en" ? "en-US" : "de-AT";
+  const chapters = [];
+  planItems.forEach((x) => {
+    const d = String(x.item.planned_date).slice(0, 10);
+    let c = chapters[chapters.length - 1];
+    if (!c || c.date !== d) { c = { date: d, items: [] }; chapters.push(c); }
+    c.items.push(x);
+  });
+  const dayLabel = (d) => {
+    const dt = new Date(d + "T12:00:00");
+    const diff = Math.round((new Date(d + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
+    const base = dt.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
+    return diff === 0 ? `${t("Heute")} · ${base}` : diff === 1 ? `${t("Morgen")} · ${base}` : base;
+  };
+
   return (
     <>
+      <div className="ping-box">
+        <button type="button" className={"ping-btn" + (pinging ? " pinging" : "")} onClick={doPing} aria-label={t("Wer spielt in meiner Nähe?")}>
+          <span className="ping-orb">
+            <i className="ping-ring" /><i className="ping-ring r2" /><i className="ping-ring r3" />
+            <Navigation size={22} />
+          </span>
+          <span className="ping-txt">
+            <b>{t("Wer spielt in meiner Nähe?")}</b>
+            <span className="rank-meta">{pinged ? t("Tippen zum Aktualisieren") : t("Tippen, um dich zu orten")}</span>
+          </span>
+        </button>
+        <div className={"collapsible" + (pinged ? " open" : "")} inert={pinged ? undefined : ""}>
+          <div className="collapsible-inner">
+            <div className="ping-result">
+              {nearLive.length > 0
+                ? <><p className="q venue-sec">{t("Gerade live in deiner Nähe")}</p><div className="venue-list">{nearLive.map((x) => entry(x, x.dist))}</div></>
+                : <p className="hint center">{t("Gerade ist in deiner Nähe niemand live – sei du der Erste!")}</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="search-row">
         <Search size={16} className="mail-ico" />
         <input placeholder={t("Lokal oder Spieler suchen …")} value={q} maxLength={60} onChange={(e) => setQ(e.target.value)} />
       </div>
 
-      {feed.length > 0 && <p className="q venue-sec">{t("Aktuell und geplant")}</p>}
-      {liveItems.length > 0 && <div className="venue-list">{liveItems.map(entry)}</div>}
-      {planItems.length > 0 && <div className="venue-list">{planItems.map(entry)}</div>}
+      {liveItems.length > 0 && (
+        <>
+          <div className="deck-sub-head"><Radio size={14} /> {t("Jetzt live")}<span className="deck-tab-count">{liveItems.length}</span></div>
+          <div className="venue-list">{liveItems.map((x) => entry(x))}</div>
+        </>
+      )}
+      {chapters.map((c) => (
+        <div key={c.date} className="venue-chap">
+          <div className="deck-sub-head"><Calendar size={14} /> {dayLabel(c.date)}<span className="deck-tab-count">{c.items.length}</span></div>
+          <div className="venue-list">{c.items.map((x) => entry(x))}</div>
+        </div>
+      ))}
       {feed.length === 0 && list.length > 0 && <p className="hint center">{t("Gerade ist nichts live oder geplant – sei der Erste: Such dir unten ein Lokal aus.")}</p>}
 
-      <div className="venue-sec-row">
-        <p className="q venue-sec">{pos ? t("Lokale in deiner Nähe") : t("Lokale")}</p>
-        <button type="button" className={"chip-btn" + (pos ? " sel" : "")} aria-pressed={!!pos}
-          onClick={() => { if (pos) { setPos(null); writeLocal(NEAR_KEY, null); } else askPos(false); }}>
-          <LocateFixed size={14} /> {t("In meiner Nähe")}
-        </button>
-      </div>
+      <div className="deck-sub-head"><MapPin size={14} /> {pos ? t("Lokale in deiner Nähe") : t("Lokale")}</div>
       {canAdd && (
         <button type="button" className="chip-btn venue-add" onClick={() => { setNewName(q.trim()); setFormKey((k) => k + 1); setAdding(true); }}>
           <Plus size={14} /> {nq.length >= 2 ? t("„{name}“ als neues Lokal anlegen", { name: q.trim() }) : t("Erstes Lokal anlegen")}

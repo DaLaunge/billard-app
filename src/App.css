@@ -3632,3 +3632,24 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .venue-pick { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; flex: 1 1 auto; min-width: 0; }
 .venue-icons { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 .venue-done { color: var(--win); display: inline-flex; align-items: center; justify-content: center; }
+
+/* "In der Naehe": grosser Ping-Knopf (Ruhezustand = sichtbar, Animation nur ohne reduzierte Bewegung) */
+.ping-box { display: flex; flex-direction: column; gap: 8px; }
+.ping-btn { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 10px 14px; border-radius: 16px; border: 1.5px solid var(--accent-line); background: var(--accent-soft); color: var(--ivory); font: inherit; cursor: pointer; }
+.ping-orb { position: relative; flex: none; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: inline-flex; align-items: center; justify-content: center; }
+.ping-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; pointer-events: none; }
+.ping-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ping-txt b { font-size: calc(15px * var(--fs, 1)); }
+.ping-result { display: flex; flex-direction: column; gap: 8px; }
+.venue-chap { display: flex; flex-direction: column; gap: 6px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ping-btn:not(.pinging) .ping-ring { animation: ping-idle 2.8s ease-out infinite; }
+  .ping-btn:not(.pinging) .ping-ring.r2, .ping-btn:not(.pinging) .ping-ring.r3 { animation: none; }
+  .ping-btn.pinging .ping-ring { animation: ping-burst 1.6s ease-out 1; }
+  .ping-btn.pinging .ping-ring.r2 { animation-delay: .3s; }
+  .ping-btn.pinging .ping-ring.r3 { animation-delay: .6s; }
+  .ping-btn.pinging .ping-orb { animation: ping-pop .5s ease-out; }
+  @keyframes ping-idle { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.5); opacity: 0; } }
+  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
+  @keyframes ping-pop { 0% { transform: scale(1); } 40% { transform: scale(.88); } 100% { transform: scale(1); } }
+}
