@@ -9,6 +9,8 @@ import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
 import DayPicker from "./widgets/DayPicker";
+import LocationPicker from "./widgets/LocationPicker";
+import { useLocations } from "../lib/locationStore";
 import { useCardLayout } from "../lib/useCardLayout";
 import { deckIds, foldedDeck, withoutFolded } from "../lib/cardLayout";
 
@@ -35,6 +37,10 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
   const [loc, setLoc] = useState("");
+  const locs = useLocations();
+  const [pingLocId, setPingLocId] = useState(null);
+  const [planLocId, setPlanLocId] = useState(null);
+  const pingLoc = locs.list.find((l) => l.id === pingLocId);
   const [msg, setMsg] = useState("");
   const [hours, setHours] = useState(3);
   // Die beiden Formulare standen frueher dauerhaft offen und fuellten den
@@ -119,11 +125,15 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
           </>
         ) : pingForm ? (
           <>
-            <div className="search-row">
-              <MapPin size={16} className="mail-ico" />
-              <input autoFocus placeholder={t("Wo bist du? z. B. Schwedenplatz")} value={loc}
-                maxLength={60} onChange={(e) => setLoc(e.target.value)} />
-            </div>
+            {locs.available ? (
+              <LocationPicker value={pingLocId} onChange={setPingLocId} toast={toast} me={me} />
+            ) : (
+              <div className="search-row">
+                <MapPin size={16} className="mail-ico" />
+                <input autoFocus placeholder={t("Wo bist du? z. B. Schwedenplatz")} value={loc}
+                  maxLength={60} onChange={(e) => setLoc(e.target.value)} />
+              </div>
+            )}
             <div className="search-row">
               <Pencil size={16} className="mail-ico" />
               <input placeholder={t("Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'")} value={msg}
@@ -138,8 +148,8 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
             </div>
             <div className="sp-controls">
               <button className="btn ghost" onClick={() => setPingForm(false)}>{t("Abbrechen")}</button>
-              <button className="btn primary" disabled={loc.trim().length < 2}
-                onClick={() => { onCreate(loc, msg, hours); setLoc(""); setMsg(""); setPingForm(false); }}>
+              <button className="btn primary" disabled={locs.available ? !pingLoc : loc.trim().length < 2}
+                onClick={() => { onCreate(locs.available ? pingLoc.name : loc, msg, hours); setLoc(""); setPingLocId(null); setMsg(""); setPingForm(false); }}>
                 <Radio size={17} /> {t("Live gehen")}
               </button>
             </div>
@@ -170,6 +180,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
               {t("Wann bist du voraussichtlich verfuegbar? Andere koennen dir dann direkt eine Nachricht schicken - spart laestiges Hin-und-Her bei der Terminfindung.")}
             </p>
             <DayPicker value={planDate} onChange={setPlanDate} />
+            {locs.available && <LocationPicker value={planLocId} onChange={setPlanLocId} optional toast={toast} me={me} />}
             <div className="search-row">
               <Pencil size={16} className="mail-ico" />
               <input placeholder={t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")} value={planMsg}
@@ -178,7 +189,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
             <div className="sp-controls">
               <button className="btn ghost" onClick={() => setPlanForm(false)}>{t("Abbrechen")}</button>
               <button className="btn primary" disabled={!planDate}
-                onClick={() => { onCreatePlanning(planDate, planMsg); setPlanDate(""); setPlanMsg(""); setPlanForm(false); }}>
+                onClick={() => { onCreatePlanning(planDate, planMsg, planLocId); setPlanLocId(null); setPlanDate(""); setPlanMsg(""); setPlanForm(false); }}>
                 <Calendar size={17} /> {t("Planung eintragen")}
               </button>
             </div>
@@ -193,7 +204,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
         {myPlannings.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Meine Planungen:")}</p>}
         {myPlannings.map((p) => (
           <PlanungCard key={p.id} planning={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onOpenProfile={onOpenProfile} onDelete={onDeletePlanning} onUpdate={onUpdatePlanning} />
+            onOpenProfile={onOpenProfile} onDelete={onDeletePlanning} onUpdate={onUpdatePlanning} toast={toast} />
         ))}
 
         {otherPlannings.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Weitere Planungen:")}</p>}

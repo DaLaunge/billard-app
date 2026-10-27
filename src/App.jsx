@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { loadLocations } from "./lib/locationStore";
 import TutorialOverlay from "./components/TutorialOverlay";
 import { initialRun, markSeen } from "./lib/tutorial/tutorialState";
 import { TUTORIAL_STEPS } from "./lib/tutorial/steps";
@@ -1464,17 +1465,19 @@ export default function App() {
     loadData();
   };
 
-  const createPlanning = async (date, msg) => {
-    const { error } = await supabase.rpc("create_planning", { p_planned_date: date, p_message: msg.trim() || null });
+  const createPlanning = async (date, msg, locId) => {
+    const { error } = await supabase.rpc("create_planning", { p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}) });
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Planung eingetragen!"));
     loadData();
+    loadLocations(true);
   };
-  const updatePlanning = async (id, date, msg) => {
-    const { error } = await supabase.rpc("update_planning", { p_planning_id: id, p_planned_date: date, p_message: msg.trim() || null });
+  const updatePlanning = async (id, date, msg, locId) => {
+    const { error } = await supabase.rpc("update_planning", { p_planning_id: id, p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}) });
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Planung geändert."));
     loadData();
+    loadLocations(true);
   };
   const deletePlanning = async (id) => {
     const { error } = await supabase.rpc("close_planning", { p_planning_id: id });

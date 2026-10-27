@@ -3524,3 +3524,20 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .day-more { position: relative; display: flex; }
 .day-more .day-chip { min-height: 100%; }
 .day-more input { position: absolute; inset: 0; opacity: 0; pointer-events: none; width: 100%; }
+
+/* Standorte (Auswahl, Formular, Verwaltung) */
+.loc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; max-height: 190px; overflow-y: auto; }
+.loc-chips .chip { display: inline-flex; align-items: center; gap: 4px; }
+.loc-sel { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 8px; border-radius: 12px; background: var(--surface-btn); }
+.loc-sel-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.loc-sel .icon-btn, .admin-loc-actions .icon-btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.loc-form { display: flex; flex-direction: column; gap: 8px; }
+.loc-results { display: flex; flex-direction: column; gap: 4px; }
+.loc-result { text-align: left; padding: 8px 10px; border-radius: 10px; font: inherit; font-size: calc(13px * var(--fs, 1)); color: var(--ivory); cursor: pointer; }
+.loc-pos { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0; }
+.loc-pos a, .route-link { color: var(--accent); display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: 600; }
+.route-link { margin-left: 10px; font-size: calc(13px * var(--fs, 1)); }
+.loc-near { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); font-size: calc(13px * var(--fs, 1)); }
+.admin-loc-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.admin-loc-row > .loc-form { flex: 1 1 100%; }
+.admin-loc-actions { display: flex; gap: 6px; }

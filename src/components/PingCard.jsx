@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { MapPin, Swords, Check, X } from "lucide-react";
+import { MapPin, Swords, Check, X, Navigation } from "lucide-react";
+import { useLocations, routeUrl } from "../lib/locationStore";
 import { t } from "../lib/i18n";
 import { initials, timeAgo, timeLeft } from "../lib/format";
 import Ball from "./Ball";
@@ -11,6 +12,8 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
   const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
   const mine = ping.player_id === me.id;
+  const { list: locList } = useLocations();
+  const place = locList.find((l) => l.name === ping.location);
 
   return (
     <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
@@ -22,7 +25,7 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
         </div>
         <span className="live-pill"><span className="live-dot" /> LIVE</span>
       </button>
-      <div className="ping-loc"><MapPin size={16} /> {ping.location}</div>
+      <div className="ping-loc"><MapPin size={16} /> {ping.location}{place && <a className="route-link" href={routeUrl(place)} target="_blank" rel="noreferrer" title={place.address || ""}><Navigation size={14} /> {t("Route")}</a>}</div>
       {ping.message && <p className="ping-msg">"<EmojiText>{ping.message}</EmojiText>"</p>}
 
       {ping.replies?.length > 0 && (
