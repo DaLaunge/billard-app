@@ -397,7 +397,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                   <span className="turnier-list-row-meta">{t("Turnierleitung")}: {it.organizer?.nickname || "?"}</span>
                   <PlaceLink locationId={it.location_id} text={it.location_text} className="place-link turnier-list-row-meta" />
                 </span>
-                {it._kind !== "winnerstays" && (it.status === "setup" || it.status === "running") && (
+                {it._kind !== "winnerstays" && it.status === "setup" && (   /* nur solange die Anmeldung offen ist - nach dem Start ist es zu spaet */
                   <TurnierQrButton tour={it} toast={toast} size={20} className="icon-btn tqr-row" />
                 )}
                 <ChevronRight size={20} className="turnier-list-row-chevron" />
