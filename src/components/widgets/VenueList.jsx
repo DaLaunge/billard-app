@@ -319,10 +319,13 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
         {rows.map(({ l, live, plan, players, dist }) => {
           const open = sel === l.id;
           const mineHere = live.some((p) => p.player_id === me?.id);
+          const pending = l.status === "pending" && l.created_by !== me?.id;
+          const can = usable(l);
+          const pickForm = (k) => { setSel(l.id); setForm(form === k && open ? null : k); };
           return (
             <div key={l.id} className={"venue-row" + (open ? " is-open" : "")}>
               <div className="venue-top">
-                <button type="button" className="venue-pick as-btn" aria-expanded={open} onClick={() => { setSel(open ? null : l.id); setForm(null); }}>
+                <div className="venue-pick">
                   <b><MapPin size={14} /> {l.name}{l.status === "pending" ? " ⏳" : ""}</b>
                   {l.address && <span className="rank-meta">{l.address}</span>}
                   <span className="rank-meta">
@@ -332,34 +335,28 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
                     {plan.length > 0 && <> · {t("{n} geplant", { n: plan.length })}</>}
                   </span>
                   {l.status === "pending" && <span className="rank-meta">{count(l.id)}/{NEEDED} {t("bestätigt")}</span>}
-                </button>
-                <RouteButton place={l} size={15} />
+                </div>
+                <div className="venue-icons">
+                  {pending && (done(l.id)
+                    ? <span className="icon-btn small venue-done" title={t("Bestätigt")} aria-label={t("Bestätigt")}><Check size={15} /></span>
+                    : <button type="button" className="icon-btn small primary" disabled={busy === l.id} onClick={() => confirm(l)} title={t("Stimmt")} aria-label={t("Stimmt")}><Check size={15} /></button>)}
+                  {can && (mineHere ? (
+                    <button type="button" className="icon-btn small" onClick={onClose} title={t("Live beenden")} aria-label={t("Live beenden")}><X size={15} /></button>
+                  ) : !myPing && (
+                    <button type="button" className={"icon-btn small" + (open && form === "live" ? " primary" : "")} onClick={() => pickForm("live")}
+                      title={t("Hier live gehen")} aria-label={t("Hier live gehen")} aria-expanded={open && form === "live"}><Radio size={15} /></button>
+                  ))}
+                  {can && (
+                    <button type="button" className={"icon-btn small" + (open && form === "plan" ? " primary" : "")} onClick={() => pickForm("plan")}
+                      title={t("Hier planen")} aria-label={t("Hier planen")} aria-expanded={open && form === "plan"}><Calendar size={15} /></button>
+                  )}
+                  <RouteButton place={l} size={15} />
+                </div>
               </div>
 
-              <div className={"collapsible" + (open ? " open" : "")} inert={open ? undefined : ""}>
+              <div className={"collapsible" + (open && form ? " open" : "")} inert={open && form ? undefined : ""}>
                 <div className="collapsible-inner">
                   <div className="venue-body">
-                    {l.status === "pending" && l.created_by !== me?.id && (
-                      <div className="venue-actions">
-                        {done(l.id)
-                          ? <span className="loc-review-done"><Check size={14} /> {t("Bestätigt")}</span>
-                          : <button type="button" className="chip-btn ok" disabled={busy === l.id} onClick={() => confirm(l)}><Check size={14} /> {t("Stimmt")}</button>}
-                      </div>
-                    )}
-                    {usable(l) && (
-                      <div className="venue-actions">
-                        {mineHere ? (
-                          <button type="button" className="chip-btn no" onClick={onClose}><X size={14} /> {t("Live beenden")}</button>
-                        ) : !myPing && (
-                          <button type="button" className={"chip-btn" + (form === "live" ? " sel" : "")} onClick={() => setForm(form === "live" ? null : "live")} aria-expanded={form === "live"}>
-                            <Radio size={14} /> {t("Hier live gehen")}
-                          </button>
-                        )}
-                        <button type="button" className={"chip-btn" + (form === "plan" ? " sel" : "")} onClick={() => setForm(form === "plan" ? null : "plan")} aria-expanded={form === "plan"}>
-                          <Calendar size={14} /> {t("Hier planen")}
-                        </button>
-                      </div>
-                    )}
                     {open && form === "live" && <Unfold><LiveForm venue={l} onCreate={onCreate} onDone={() => setForm(null)} /></Unfold>}
                     {open && form === "plan" && <Unfold><PlanForm onSubmit={(d, m) => onCreatePlanning(d, m, l.id)} onDone={() => setForm(null)} /></Unfold>}
                   </div>
