@@ -201,7 +201,7 @@ const writeLocal = (k, v) => { try { if (v === null) localStorage.removeItem(k);
    der Ping-Knopf (PingBlock, ganz oben auf dem Bildschirm) und die Liste (VenueList, im Reiter) lesen sie aus dem Kontext. */
 const VenueCtx = createContext(null);
 
-export function VenueProvider({ children, players = [], me, pings = [], plannings = [], challengesFromMe = [], colorOf, badgeOf, photoOf, onOpenProfile,
+export function VenueProvider({ children, santaKnown, onFoundSanta, players = [], me, pings = [], plannings = [], challengesFromMe = [], colorOf, badgeOf, photoOf, onOpenProfile,
   onCreate, onClose, onCreatePlanning, onUpdatePlanning, onDeletePlanning, onReply, onUnreply, onReplyPlanning, onUnreplyPlanning, onChallenge, toast }) {
   // Reaktionen auf Zusagen (supabase/2026-10-27e_reply_reactions.sql); fehlt die Tabelle, gibt es einfach keine Knoepfe
   const [reacts, setReacts] = useState([]);
@@ -326,6 +326,9 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
   const nearLive = pos ? [...pings].map((item) => ({ kind: "ping", item, venue: venueOfPing(item) }))
     .filter((x) => x.venue.lat != null).map((x) => ({ ...x, dist: distanceM(pos, x.venue) })).filter((x) => x.dist <= radiusKm * 1000)
     .sort((a, b) => a.dist - b.dist).slice(0, 10) : [];
+
+  // Easteregg: Weihnachtsmann gefunden -> verstecktes Achievement (einmalig)
+  useEffect(() => { if (pinged && santaKm != null && !santaKnown) onFoundSanta?.(); }, [pinged, santaKm, santaKnown]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Planungen als Kapitel: ein Kapitel je Datum
   const loc = getLang() === "en" ? "en-US" : "de-AT";

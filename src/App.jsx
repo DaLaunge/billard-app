@@ -19,7 +19,7 @@ import { loadBadgeCatalog } from "./lib/catalogCache";
 import { loadMatchDraft, clearMatchDraft, describeDraft } from "./lib/matchDraft";
 import { hashColor, initials, isDoubles, mSide, fmtDate, withRatingDecimals } from "./lib/format";
 import { getPendingReport, sendPendingReport, isNetworkError } from "./lib/offlineReport";
-import { DEFAULT_DISCIPLINES, BADGE_INFO, badgeInfo, APP_VERSION, HEYBALL } from "./lib/constants";
+import { DEFAULT_DISCIPLINES, BADGE_INFO, HIDDEN_BADGE_KEYS, badgeInfo, APP_VERSION, HEYBALL } from "./lib/constants";
 import Emoji from "./components/Emoji";
 import "./lib/disciplineBadgesI18n";
 import { applyTheme } from "./lib/themes";
@@ -1282,6 +1282,13 @@ export default function App() {
   }, [players]);
 
   const badgesOfId = useCallback((id) => badgesByPlayer[id] || new Set(), [badgesByPlayer]);
+  // Versteckte Erfolge (Easteregg) erscheinen in keiner Liste, bis der Spieler sie selbst hat; BADGE_INFO kennt sie trotzdem (Popup, Avatar)
+  const catalogShown = useMemo(() => catalog.filter((b) => !HIDDEN_BADGE_KEYS.includes(b.badge_key) || badgesByPlayer[player?.id]?.has(b.badge_key)),
+    [catalog, badgesByPlayer, player?.id]);
+  const findSanta = async () => {
+    const { data, error } = await supabase.rpc("find_santa");
+    if (!error && data) loadData();
+  };
 
   const MATCH_EXPIRY_DAYS = 7;
   const notExpired = (m) => (Date.now() - new Date(m.played_at)) < MATCH_EXPIRY_DAYS * 86400000;
@@ -1772,7 +1779,7 @@ export default function App() {
             )}
             {listChoiceOpen && <ListChoiceDialog onChoose={(m) => { storeListMode(m); setListChoiceOpen(false); }} />}
             {avatarOpen && (
-              <AvatarSheet player={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} catalog={catalog}
+              <AvatarSheet player={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} catalog={catalogShown}
                 earned={badgesOfId(player.id)} onSelectBadge={selectBadge} onReload={loadData} toast={toast}
                 onClose={() => setAvatarOpen(false)} onOpenAchievements={() => { setAvatarOpen(false); navPush({ tab: "erfolge" }); }} />
             )}
@@ -1795,7 +1802,7 @@ export default function App() {
               )}
               {tab === "live" && (
                 <LiveScreen me={player} pings={pings} plannings={plannings} challenges={challenges} matches={matches} rangliste={rangliste}
-                  players={players} catalog={catalog} earnedBadges={badgesOfId(player.id)}
+                  players={players} catalog={catalogShown} earnedBadges={badgesOfId(player.id)}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
@@ -1803,7 +1810,7 @@ export default function App() {
                   onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
-                  onSetCardLayout={setCardLayout} onCreateChallenge={createChallenge} toast={toast}
+                  onSetCardLayout={setCardLayout} onCreateChallenge={createChallenge} onFoundSanta={findSanta} toast={toast}
                   onInvite={() => navPush({ tab: "invite" })} />
               )}
               {tab === "match" && (() => {
@@ -1843,7 +1850,7 @@ export default function App() {
                 onOpenProtokoll={openProtokoll}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} snapshots={snapshots} players={players}
                 rangliste={rangliste} me={player} challenges={challenges}
-                catalog={catalog} earnedBadges={badgesOfId(player.id)}
+                catalog={catalogShown} earnedBadges={badgesOfId(player.id)}
                 onInvite={() => navPush({ tab: "invite" })} disciplines={disciplines}
                 pending={pendingForMe} onConfirm={confirmMatch} myOpenReports={myOpenReports}
                 onSetCardLayout={setCardLayout} toast={toast} />}
@@ -1861,7 +1868,7 @@ export default function App() {
               )}
               {tab === "profil" && (
                 <IdentityScreen nickname={player.nickname} matches={matches} rangliste={rangliste} players={players} challenges={challenges}
-                  achievementCounters={achievementCounters} catalog={catalog} earnedBadges={badgesOfId(player.id)} meRow={player}
+                  achievementCounters={achievementCounters} catalog={catalogShown} earnedBadges={badgesOfId(player.id)} meRow={player}
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onOpenSettings={() => navPush({ tab: "einstellungen" })} onPreview={() => navPush({ tab: "profilvorschau" })}
                   onOpenAchievements={() => navPush({ tab: "erfolge" })} onOpenNumbers={() => navPush({ tab: "zahlen" })}
@@ -1869,12 +1876,12 @@ export default function App() {
               )}
               {tab === "erfolge" && (
                 <AchievementsScreen nickname={player.nickname} matches={matches} players={players} challenges={challenges}
-                  achievementCounters={achievementCounters} catalog={catalog} earnedBadges={badgesOfId(player.id)} meRow={player}
+                  achievementCounters={achievementCounters} catalog={catalogShown} earnedBadges={badgesOfId(player.id)} meRow={player}
                   onSelectBadge={selectBadge} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} />
               )}
               {tab === "zahlen" && (
                 <NumbersScreen nickname={player.nickname} matches={matches} rangliste={rangliste} players={players} challenges={challenges}
-                  catalog={catalog} earnedBadges={badgesOfId(player.id)} meRow={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+                  catalog={catalogShown} earnedBadges={badgesOfId(player.id)} meRow={player} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onOpenProfile={openProfile} onSetCardLayout={setCardLayout} toast={toast} />
               )}
               {tab === "einstellungen" && (
@@ -1884,7 +1891,7 @@ export default function App() {
                   onOpenAdmin={() => navPush({ tab: "admin" })} onLogout={logout} onStartTutorial={startTutorial}
                   updateInterval={updateInterval} onSetUpdateInterval={setUpdateCheckInterval}
                   keepAwake={keepAwakeDefault} onSetKeepAwake={setKeepAwakeDefault}
-                  hideTabbar={hideTabbarPref} onSetHideTabbar={setHideTabbarPref} pings={pings}
+                  hideTabbar={hideTabbarPref} onSetHideTabbar={setHideTabbarPref} pings={pings} onFoundSanta={findSanta} santaKnown={badgesOfId(player.id).has("easter_santa")}
                   notifyMode={notifyMode} onSetNotifyMode={setNotifyMode}
                   pendingPopup={pendingPopupOn} onSetPendingPopup={setPendingPopup}
                   onSubmitFeedback={submitFeedback} onDeleteAccount={deleteAccount} />
@@ -1895,7 +1902,7 @@ export default function App() {
                   onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId(player.id)}
-                  onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} onStartMatch={startMatchVs} challenges={challenges}
+                  onSelectBadge={selectBadge} catalog={catalogShown} onChallenge={createChallenge} onStartMatch={startMatchVs} challenges={challenges}
                   achievementCounters={achievementCounters} toast={toast} lang={lang} onLang={changeLang} onSetTheme={setTheme}
                   onReload={loadData} onSetCardLayout={setCardLayout} onOpenProfile={openProfile} />
               )}
@@ -1905,7 +1912,7 @@ export default function App() {
                   onLogout={logout} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   players={players} meRow={player} onSaveProfile={saveProfile}
                   earnedBadges={badgesOfId((players.find((x) => x.nickname === profileName) || {}).id)}
-                  onSelectBadge={selectBadge} catalog={catalog} onChallenge={createChallenge} onStartMatch={startMatchVs} challenges={challenges}
+                  onSelectBadge={selectBadge} catalog={catalogShown} onChallenge={createChallenge} onStartMatch={startMatchVs} challenges={challenges}
                   achievementCounters={achievementCounters}
                   onOpenAdmin={() => navPush({ tab: "admin" })} onInvite={() => navPush({ tab: "invite" })} toast={toast}
                   lang={lang} onLang={changeLang} onSetTheme={setTheme}

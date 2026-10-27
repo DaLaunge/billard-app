@@ -1270,6 +1270,8 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "Ho Ho Ho": "Ho Ho Ho",
+    "Den Weihnachtsmann am Nordpol gefunden": "Found Santa at the North Pole",
     "Der Weihnachtsmann ist auch live – im Nordpol-Workshop, {d} km entfernt!": "Santa is live too – at the North Pole workshop, {d} km away!",
     "Weihnachtsmann": "Santa Claus",
     "Nordpol-Workshop": "North Pole workshop",

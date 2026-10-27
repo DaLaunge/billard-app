@@ -16,7 +16,7 @@ import { useCardLayout } from "../lib/useCardLayout";
 // gefunden wird, wird hier gesucht), dann die zwei Schnellaktionen "Online gehen" / "Planung erstellen", danach die Duelle
 // (nur wenn es welche gibt) und die Liste mit allem, was gerade live oder geplant ist, sowie die Lokale.
 // Daten und Handler der Orte-Ansicht liegen einmal im VenueProvider (siehe VenueList.jsx).
-export default function LiveScreen({ me, pings, plannings, challenges, players,
+export default function LiveScreen({ me, pings, plannings, challenges, players, earnedBadges, onFoundSanta,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
   onCreatePlanning, onDeletePlanning, onUpdatePlanning, onReplyPlanning, onUnreplyPlanning,
   onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onSetCardLayout, onCreateChallenge, toast }) {
@@ -95,7 +95,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, players,
   const showDuelle = openChallenges.length > 0 && cards.visibleOrder.includes("duelle");
 
   return (
-    <VenueProvider me={me} players={players} toast={toast} pings={pings} plannings={plannings} challengesFromMe={challengesFromMe} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+    <VenueProvider me={me} players={players} toast={toast} santaKnown={earnedBadges?.has?.("easter_santa")} onFoundSanta={onFoundSanta} pings={pings} plannings={plannings} challengesFromMe={challengesFromMe} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
       onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning} onUpdatePlanning={onUpdatePlanning} onDeletePlanning={onDeletePlanning}
       onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning} onChallenge={(pid, msg, locId) => { onCreateChallenge(pid, msg, locId); setDuelOpen(true); }}>
       <div className="screen">

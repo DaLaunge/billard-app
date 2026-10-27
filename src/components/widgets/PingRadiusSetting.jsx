@@ -8,7 +8,7 @@ import InfoButton from "./InfoButton";
 
 /* Einstellung "Ping-Radius": derselbe Radar-Knopf wie auf dem Live-Bildschirm (antippbar) plus die Radiuswahl. Ein Tipp pingt
    mit dem gewaehlten Radius und zeigt, wie viele Spieler dort gerade live sind. Gilt nur auf diesem Geraet, Standard 5 km. */
-export default function PingRadiusSetting({ pings = [], meId, toast }) {
+export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSanta, santaKnown }) {
   const { list } = useLocations();
   const [km, setKm] = useState(getPingRadiusKm);
   const [pinging, setPinging] = useState(false);
@@ -29,14 +29,14 @@ export default function PingRadiusSetting({ pings = [], meId, toast }) {
     const stop = setTimeout(() => setPinging(false), 1900);
     if (!navigator.geolocation) { clearTimeout(stop); setPinging(false); toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
     navigator.geolocation.getCurrentPosition(
-      (p) => { const here = { lat: p.coords.latitude, lng: p.coords.longitude }; setPos(here); setFound(countAt(here, km)); },
+      (p) => { const here = { lat: p.coords.latitude, lng: p.coords.longitude }; setPos(here); setFound(countAt(here, km)); if (!santaKnown && santaDistanceKm(here, km) != null) onFoundSanta?.(); },
       () => { clearTimeout(stop); setPinging(false); toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); },
       { timeout: 8000, maximumAge: 60000 },
     );
   };
   const choose = (k) => {
     setKm(k); setPingRadiusKm(k);
-    if (pos) setFound(countAt(pos, k));
+    if (pos) { setFound(countAt(pos, k)); if (!santaKnown && santaDistanceKm(pos, k) != null) onFoundSanta?.(); }
   };
 
   return (

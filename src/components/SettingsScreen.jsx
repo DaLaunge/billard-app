@@ -28,7 +28,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
    Dieses Geraet, Konto & Hilfe (lib/useChapters.jsx). Alle Auswahlen wirken sofort und werden sofort gespeichert. */
 export default function SettingsScreen({ nickname, players, meRow, photoOf, toast, lang, onLang, onSaveProfile, onSelectBadge, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, onResetMenu, onOpenAdmin, onLogout, onStartTutorial, updateInterval, onSetUpdateInterval, keepAwake, onSetKeepAwake,
-  hideTabbar, onSetHideTabbar, pings, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount }) {
+  hideTabbar, onSetHideTabbar, pings, onFoundSanta, santaKnown, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount }) {
   // Karten-Anordnung aller Bildschirme: nur fuer "Alle Einstellungen zuruecksetzen" (clearLocal haelt den lokalen Stand synchron)
   const layoutByScreen = {
     stats: useCardLayout("stats", meRow?.card_layout, onSetCardLayout, toast),
@@ -365,7 +365,7 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
                 {t("Beim Runterscrollen verschwindet die Leiste am unteren Rand, beim Hochscrollen kommt sie zurück. Mehr Platz für Ranglisten und Grafiken. Gilt nur auf diesem Gerät.")}
               </InfoButton>
             </div>
-            <PingRadiusSetting pings={pings} meId={meRow?.id} toast={toast} />
+            <PingRadiusSetting pings={pings} meId={meRow?.id} toast={toast} onFoundSanta={onFoundSanta} santaKnown={santaKnown} />
             <MatchFlySwitch />
             <PendingPopupSwitch on={pendingPopup} onChange={onSetPendingPopup} />
             <FiltersOpenSwitch />

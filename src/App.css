@@ -3779,3 +3779,6 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 
 .ping-santa { margin: 0; text-align: center; color: var(--ivory); }
 .santa-row { flex-direction: row; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Kapitelkoepfe in den einklappbaren Live-Karten nicht anheften: der Ueberlauf-Container der Karte macht sonst einen 40px-Versatz und der Kopf verdeckt den ersten Eintrag */
+.venue-chap .deck-sub-head { position: static; }
