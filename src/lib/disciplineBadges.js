@@ -8,6 +8,7 @@
      Hill-Hill (Einzel, ohne 14/1, Endstand W:W-1 ab W=3): hm gespielt | hw gewonnen | hc gewonnen nach 2 Punkten Rueckstand (braucht das Punkte-Protokoll)
      Aktivitaet (alle bestaetigten Matches, Einzel und Doppel, Tage nach Wiener Zeit): aw Wochen in Folge gespielt | ad verschiedene Spieltage | ac Rueckkehr nach 30+ Tagen Pause
      Erkundung (Lokale, supabase/2026-10-27c_explorer_badges.sql): ex freigegebene Lokale, die der Spieler eingetragen hat
+     Erkundung, Pruefen: cf Lokale anderer Spieler bestaetigt (supabase/2026-10-27d_location_confirmations.sql)
      Doppel: dm Doppel gespielt | dw Doppel-Siege | ds Doppel-Siege in Folge | dp verschiedene Partner
    Gezaehlt wird wie bei allen Erfolgen: nur bestaetigte Matches ohne Gast-Beteiligung; je Disziplin und "Alle" nur Einzel,
    "Doppel" nur Doppel (ein Doppelmatch zaehlt fuer alle vier mit dem Ergebnis der eigenen Seite).
@@ -98,6 +99,12 @@ const EXPLORER = [
   ["ex", 25, "🪧", "Wegweiser", "Signpost"], ["ex", 50, "🏙️", "Stadtführer", "City Guide"],
 ];
 
+// Erkundung, Pruefen: Lokale anderer Spieler bestaetigen (zwei Bestaetigungen geben ein Lokal frei)
+const CONFIRM = [
+  ["cf", 1, "✅", "Gegencheck", "Double Check"], ["cf", 5, "🔎", "Augenzeuge", "Eyewitness"], ["cf", 10, "🧐", "Genau genommen", "Strictly Speaking"],
+  ["cf", 25, "🕵️", "Ortsprüfer", "Site Inspector"], ["cf", 50, "🔏", "Siegelbewahrer", "Keeper of the Seal"],
+];
+
 // Hill-Hill: beide Seiten stehen einen Punkt vor dem Ziel (Endstand W:W-1, ab W = 3, nicht 14/1)
 const HILL = [
   ["hm", 1, "🏕️", "Basislager", "Base Camp"], ["hm", 5, "🪜", "Aufstieg", "Ascent"], ["hm", 10, "🪨", "Nervenfels", "Rock of Nerves"], ["hm", 25, "⛑️", "Bergführer", "Mountain Guide"],
@@ -133,6 +140,8 @@ const DESC = {
   ad: (n) => [`An ${n} verschiedenen Tagen gespielt`, `Played on ${n} different days`],
   ex: (n) => [n === 1 ? "Ein Lokal eingetragen (freigegeben)" : `${n} Lokale eingetragen (freigegeben)`,
     n === 1 ? "Added a venue (approved)" : `Added ${n} venues (approved)`],
+  cf: (n) => [n === 1 ? "Ein Lokal eines anderen Spielers bestätigt" : `${n} Lokale anderer Spieler bestätigt`,
+    n === 1 ? "Confirmed another player's venue" : `Confirmed ${n} venues of other players`],
   ac: (n) => [n === 1 ? "Nach mindestens 30 Tagen Pause wieder gespielt" : `${n}-mal nach mindestens 30 Tagen Pause wieder gespielt`,
     n === 1 ? "Came back to play after a break of 30+ days" : `Came back ${n} times after a break of 30+ days`],
   hm: (n) => [n === 1 ? "1 Hill-Hill-Match gespielt (beide einen Punkt vor dem Ziel)" : `${n} Hill-Hill-Matches gespielt`,
@@ -172,6 +181,7 @@ export const BADGES = (() => {
   extra(HILL, SUBS.hill, "dh");
   extra(ACTIVITY, SUBS.activity, "da");
   extra(EXPLORER, SUBS.explorer, "de");
+  extra(CONFIRM, SUBS.explorer, "dc");
   return out;
 })();
 

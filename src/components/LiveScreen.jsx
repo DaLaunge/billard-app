@@ -10,6 +10,7 @@ import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
 import DayPicker from "./widgets/DayPicker";
 import LocationPicker from "./widgets/LocationPicker";
+import LocationReview from "./widgets/LocationReview";
 import { useLocations } from "../lib/locationStore";
 import { useCardLayout } from "../lib/useCardLayout";
 import { deckIds, foldedDeck, withoutFolded } from "../lib/cardLayout";
@@ -267,6 +268,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
       {/* Keine linke Profil-Spalte mehr: am PC steht die Kugel ohnehin dauerhaft oben links in der Seitenleiste (AppDrawer). */}
       <div className="live-col middle">{renderCards(visibleOrder)}</div>
       </div>
+      <LocationReview me={me} players={players} toast={toast} />
       <ShowAllCardsButton hiddenCount={cards.hiddenCount} onShowAll={cards.showAll} />
       <ImprintFooter />
     </div>

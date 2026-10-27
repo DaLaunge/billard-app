@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { MapPin, Plus, Pencil, Navigation, X, Search } from "lucide-react";
+import { MapPin, Plus, Pencil, X, Search } from "lucide-react";
 import { t } from "../../lib/i18n";
-import { useLocations, routeUrl } from "../../lib/locationStore";
+import { useLocations } from "../../lib/locationStore";
+import RouteButton from "./RouteButton";
 import LocationForm from "./LocationForm";
 
 /* Lokal TIPPEN und AUSWAEHLEN: Der Name wird getippt, passende Lokale erscheinen darunter zum Antippen. Gibt es das Lokal
@@ -50,7 +51,7 @@ export default function LocationPicker({ value, onChange, toast, me }) {
           {sel.address && <span className="rank-meta">{sel.address}</span>}
           {sel.status === "pending" && <span className="rank-meta">{t("wartet auf Freigabe – nur für dich sichtbar")}</span>}
         </div>
-        <a className="icon-btn small" href={routeUrl(sel)} target="_blank" rel="noreferrer" aria-label={t("Route in Google Maps")} title={t("Route in Google Maps")}><Navigation size={16} /></a>
+        <RouteButton place={sel} />
         <button type="button" className="icon-btn small" onClick={() => (mode ? setMode(null) : openForm("edit"))} aria-label={t("Standort korrigieren")} title={t("Standort korrigieren")}><Pencil size={15} /></button>
         <button type="button" className="icon-btn small" onClick={() => { setMode(null); onChange(null); }} aria-label={t("Anderes Lokal")} title={t("Anderes Lokal")}><X size={16} /></button>
       </div>

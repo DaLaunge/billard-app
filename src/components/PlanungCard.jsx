@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Calendar, Check, X, Pencil, MapPin, Navigation } from "lucide-react";
-import { useLocations, routeUrl } from "../lib/locationStore";
+import { Calendar, Check, X, Pencil, MapPin } from "lucide-react";
+import { useLocations } from "../lib/locationStore";
+import RouteButton from "./widgets/RouteButton";
 import LocationPicker from "./widgets/LocationPicker";
 import { t } from "../lib/i18n";
 import { initials, fmtDate } from "../lib/format";
@@ -30,7 +31,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
         </div>
         <span className="plan-pill"><Calendar size={12} /> {fmtDate(planning.planned_date)}</span>
       </button>
-      {place && <div className="ping-loc"><MapPin size={16} /> {place.name}<a className="route-link" href={routeUrl(place)} target="_blank" rel="noreferrer" title={place.address || ""}><Navigation size={14} /> {t("Route")}</a></div>}
+      {place && <div className="ping-loc"><MapPin size={16} /> {place.name}<RouteButton place={place} className="route-link" size={14}> {t("Route")}</RouteButton></div>}
       {planning.message && <p className="ping-msg">"<EmojiText>{planning.message}</EmojiText>"</p>}
 
       {planning.replies?.length > 0 && (

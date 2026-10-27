@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { MapPin, Swords, Check, X, Navigation } from "lucide-react";
-import { useLocations, routeUrl } from "../lib/locationStore";
+import { MapPin, Swords, Check, X } from "lucide-react";
+import { useLocations } from "../lib/locationStore";
+import RouteButton from "./widgets/RouteButton";
 import { t } from "../lib/i18n";
 import { initials, timeAgo, timeLeft } from "../lib/format";
 import Ball from "./Ball";
@@ -25,7 +26,7 @@ export default function PingCard({ ping, me, colorOf, badgeOf, photoOf, onReply,
         </div>
         <span className="live-pill"><span className="live-dot" /> LIVE</span>
       </button>
-      <div className="ping-loc"><MapPin size={16} /> {ping.location}{place && <a className="route-link" href={routeUrl(place)} target="_blank" rel="noreferrer" title={place.address || ""}><Navigation size={14} /> {t("Route")}</a>}</div>
+      <div className="ping-loc"><MapPin size={16} /> {ping.location}{place && <RouteButton place={place} className="route-link" size={14}> {t("Route")}</RouteButton>}</div>
       {ping.message && <p className="ping-msg">"<EmojiText>{ping.message}</EmojiText>"</p>}
 
       {ping.replies?.length > 0 && (

@@ -12,11 +12,12 @@ export function useProfileExtras(nickname, matches, players, challenges, achieve
   const playerObj = players.find((p) => p.nickname === nickname);
   // Erkundung: freigegebene Lokale, die der Spieler eingetragen hat (null, solange es die Tabelle noch nicht gibt)
   const explorer = locs.available ? locs.list.filter((l) => l.created_by === playerObj?.id && l.status === "approved").length : null;
+  const confirmed = locs.available ? locs.confirms.filter((c) => c.player_id === playerObj?.id).length : null;
   const baseExtras = useMemo(
     () => computeAchievementExtras(nickname, matches, players, challenges),
     [matches, players, nickname, challenges]
   );
-  const liveExtras = useMemo(() => ({ ...baseExtras, explorer }), [baseExtras, explorer]);
+  const liveExtras = useMemo(() => ({ ...baseExtras, explorer, confirmed }), [baseExtras, explorer, confirmed]);
   const extendedExtras = useMemo(() => ({
     ...liveExtras,
     joinedAt: playerObj?.created_at ?? null,

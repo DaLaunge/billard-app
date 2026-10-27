@@ -3567,3 +3567,19 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .loc-warn { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: var(--surface-btn); color: var(--warn); font-size: calc(13px * var(--fs, 1)); }
 .loc-linkbtn { align-self: flex-start; background: none; border: 0; padding: 2px 0; color: var(--ivory-dim); font: inherit; font-size: calc(12px * var(--fs, 1)); text-decoration: underline; cursor: pointer; }
 .loc-sel-ico { color: var(--accent); flex: none; }
+
+/* Route-Knopf mit Karten-App-Auswahl */
+.route-btn { position: relative; display: inline-flex; align-items: center; gap: 2px; vertical-align: middle; }
+button.route-link { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; margin-left: 10px; color: var(--accent); display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+.route-more { background: none; border: 0; padding: 2px; color: var(--ivory-dim); cursor: pointer; display: inline-flex; border-radius: 6px; }
+.route-menu-wrap { position: absolute; top: 100%; right: 0; z-index: 30; min-width: 190px; margin-top: 4px; }
+.route-menu { display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 12px; background: var(--felt-2); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); }
+.route-menu-title { font-size: calc(11px * var(--fs, 1)); color: var(--ivory-dim); padding: 4px 8px; text-transform: uppercase; letter-spacing: .04em; }
+.route-opt { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; padding: 8px 10px; border-radius: 8px; border: 0; background: var(--surface-btn); color: var(--ivory); font: inherit; cursor: pointer; }
+.route-opt:hover { background: var(--accent-soft); color: var(--accent); }
+
+/* Lokale bestaetigen */
+.loc-review-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.loc-review-count { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; }
+.loc-review-done { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+.loc-review .stat-block-head { display: flex; align-items: center; gap: 8px; }

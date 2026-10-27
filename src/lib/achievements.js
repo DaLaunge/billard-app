@@ -168,6 +168,7 @@ function familyProgress(b, e) {
     xw: [x?.w, t("Sieg(e) in der schwächsten Disziplin")], xm: [x?.m, t("Match(es) in der schwächsten Disziplin")], xn: [x?.n, t("Zu-Null-Sieg(e) in der schwächsten Disziplin")],
     dm: [g?.m, t("Doppel")], dw: [g?.w, t("Doppel-Sieg(e)")], ds: [g?.s, t("Doppel-Sieg(e) in Folge")], dp: [g?.p, t("verschiedene Partner")],
     ex: [e.explorer, t("Lokal(e) eingetragen")],
+    cf: [e.confirmed, t("Lokal(e) bestätigt")],
     aw: [a?.aw, t("Woche(n) in Folge")], ad: [a?.ad, t("Spieltag(e)")], ac: [a?.ac, t("Rückkehr(en) nach Pause")],
     hm: [h?.m, t("Hill-Hill-Match(es)")], hw: [h?.w, t("Hill-Hill-Sieg(e)")], hc: [h?.c, t("Hill-Hill-Sieg(e) nach Rückstand")],
   };
