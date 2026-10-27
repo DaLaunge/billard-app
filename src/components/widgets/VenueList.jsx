@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, Navigation } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, Radar } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
@@ -313,7 +313,7 @@ export default function VenueList({ me, pings = [], plannings = [], challengesFr
         <button type="button" className={"ping-btn" + (pinging ? " pinging" : "")} onClick={doPing} aria-label={t("Wer spielt in meiner Nähe?")}>
           <span className="ping-orb">
             <i className="ping-ring" /><i className="ping-ring r2" /><i className="ping-ring r3" />
-            <Navigation size={22} />
+            <Radar size={30} />
           </span>
           <span className="ping-txt">
             <b>{t("Wer spielt in meiner Nähe?")}</b>

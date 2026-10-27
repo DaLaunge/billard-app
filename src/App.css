@@ -3653,3 +3653,8 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
   @keyframes ping-pop { 0% { transform: scale(1); } 40% { transform: scale(.88); } 100% { transform: scale(1); } }
 }
+
+/* Ping-Knopf zentriert */
+.ping-btn { flex-direction: column; justify-content: center; text-align: center; gap: 10px; padding: 18px 14px; }
+.ping-txt { align-items: center; }
+.ping-orb { width: 72px; height: 72px; }
