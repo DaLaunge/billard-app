@@ -10,7 +10,7 @@ import RouteButton from "./RouteButton";
 import LocationForm from "./LocationForm";
 import LocationPicker from "./LocationPicker";
 import PingButton from "./PingButton";
-import { getPingRadiusKm, santaDistanceKm } from "../../lib/pingRadius";
+import { getPingRadiusKm, santaDistanceKm, fmtRadius } from "../../lib/pingRadius";
 import DayPicker from "./DayPicker";
 
 /* "Wer spielt wo": alle Lokale mit Suche. Pro Lokal steht, wer gerade live dort ist und welche Planungen es dort gibt;
@@ -366,7 +366,7 @@ export function PingBlock() {
           <div className="collapsible-inner">
             <div className="ping-result">
               {(nearLive.length > 0 || santaKm != null)
-                ? <><p className="q venue-sec">{t("Live im Umkreis von {km} km", { km: radiusKm })}</p><div className="venue-list">
+                ? <><p className="q venue-sec">{t("Live im Umkreis von {r}", { r: fmtRadius(radiusKm) })}</p><div className="venue-list">
                   {santaKm != null && (
                     <div className="venue-row is-live santa-row">
                       <Emoji e="🎅" /> <b>{t("Weihnachtsmann")}</b>
@@ -376,7 +376,7 @@ export function PingBlock() {
                   )}
                   {nearLive.map((x) => entry(x, x.dist))}
                 </div></>
-                : <p className="hint center">{t("Im Umkreis von {km} km ist gerade niemand live – sei du der Erste!", { km: radiusKm })}</p>}
+                : <p className="hint center">{t("Im Umkreis von {r} ist gerade niemand live – sei du der Erste!", { r: fmtRadius(radiusKm) })}</p>}
             </div>
           </div>
         </div>

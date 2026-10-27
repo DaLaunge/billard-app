@@ -1,42 +1,58 @@
 import { useState } from "react";
 import { t } from "../../lib/i18n";
 import { useLocations, distanceM } from "../../lib/locationStore";
-import { PING_RADIUS_OPTIONS, getPingRadiusKm, setPingRadiusKm, normName, santaDistanceKm } from "../../lib/pingRadius";
-import Emoji from "../Emoji";
+import {
+  getPingRadiusKm, setPingRadiusKm, normName, santaDistanceKm, sliderToKm, kmToSlider, fmtRadius,
+  PING_RADIUS_MIN, PING_RADIUS_MAX, PING_RADIUS_SLIDER_MAX,
+} from "../../lib/pingRadius";
 import PingButton from "./PingButton";
 import InfoButton from "./InfoButton";
+import Emoji from "../Emoji";
 
-/* Einstellung "Ping-Radius": derselbe Radar-Knopf wie auf dem Live-Bildschirm (antippbar) plus die Radiuswahl. Ein Tipp pingt
-   mit dem gewaehlten Radius und zeigt, wie viele Spieler dort gerade live sind. Gilt nur auf diesem Geraet, Standard 5 km. */
+/* Einstellung "Ping-Radius": derselbe Radar-Knopf wie auf dem Live-Bildschirm (antippbar), ein Schieberegler von 100 m bis 50 km
+   und ein Eingabefeld fuer genaue (auch groessere) Werte. Ein Tipp auf den Radar pingt mit dem gewaehlten Radius und zeigt, wie viele
+   Spieler dort gerade live sind. Gilt nur auf diesem Geraet, Standard 5 km. */
 export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSanta, santaKnown }) {
   const { list } = useLocations();
   const [km, setKm] = useState(getPingRadiusKm);
+  const [txt, setTxt] = useState(() => String(getPingRadiusKm()).replace(".", ","));
   const [pinging, setPinging] = useState(false);
   const [found, setFound] = useState(null);
   const [pos, setPos] = useState(null);
 
-  const countAt = (pos, radius) => {
+  const countAt = (here, radius) => {
     const ids = new Set();
     pings.forEach((p) => {
       if (p.player_id === meId) return;
       const v = list.find((l) => normName(l.name) === normName(p.location));
-      if (v && v.lat != null && distanceM(pos, v) <= radius * 1000) ids.add(p.player_id);
+      if (v && v.lat != null && distanceM(here, v) <= radius * 1000) ids.add(p.player_id);
     });
-    return ids.size + (santaDistanceKm(pos, radius) != null ? 1 : 0); // + Weihnachtsmann (Easteregg)
+    return ids.size + (santaDistanceKm(here, radius) != null ? 1 : 0); // + Weihnachtsmann (Easteregg)
+  };
+  const apply = (v, fromInput) => {
+    setKm(v); setPingRadiusKm(v);
+    if (!fromInput) setTxt(String(v).replace(".", ","));
+    if (pos) { setFound(countAt(pos, v)); if (!santaKnown && santaDistanceKm(pos, v) != null) onFoundSanta?.(); }
+  };
+  const onInput = (e) => {
+    const raw = e.target.value;
+    setTxt(raw);
+    const v = Number(raw.replace(",", "."));
+    if (Number.isFinite(v) && v >= PING_RADIUS_MIN && v <= PING_RADIUS_MAX) apply(Math.round(v * 10) / 10, true);
   };
   const ping = () => {
     setPinging(true);
     const stop = setTimeout(() => setPinging(false), 1900);
     if (!navigator.geolocation) { clearTimeout(stop); setPinging(false); toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
     navigator.geolocation.getCurrentPosition(
-      (p) => { const here = { lat: p.coords.latitude, lng: p.coords.longitude }; setPos(here); setFound(countAt(here, km)); if (!santaKnown && santaDistanceKm(here, km) != null) onFoundSanta?.(); },
+      (p) => {
+        const here = { lat: p.coords.latitude, lng: p.coords.longitude };
+        setPos(here); setFound(countAt(here, km));
+        if (!santaKnown && santaDistanceKm(here, km) != null) onFoundSanta?.();
+      },
       () => { clearTimeout(stop); setPinging(false); toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); },
       { timeout: 8000, maximumAge: 60000 },
     );
-  };
-  const choose = (k) => {
-    setKm(k); setPingRadiusKm(k);
-    if (pos) { setFound(countAt(pos, k)); if (!santaKnown && santaDistanceKm(pos, k) != null) onFoundSanta?.(); }
   };
 
   return (
@@ -44,22 +60,28 @@ export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSant
       <div className="ping-setting-head">
         <b>{t("Ping-Radius")}</b>
         <InfoButton title={t("Ping-Radius")}>
-          {t("So weit sucht der Ping auf dem Live-Bildschirm nach Spielern, die gerade live sind. Tippe auf den Radar, um mit dem gewählten Radius zu testen, wie viele Spieler gerade in deiner Nähe live sind. Gilt nur auf diesem Gerät.")}
+          {t("So weit sucht der Ping auf dem Live-Bildschirm nach Spielern, die gerade live sind. Der Regler reicht von 100 m bis 50 km, im Feld daneben kannst du den Wert genau eingeben. Tippe auf den Radar, um mit dem gewählten Radius zu testen, wie viele Spieler gerade in deiner Nähe live sind. Gilt nur auf diesem Gerät.")}
         </InfoButton>
       </div>
       <PingButton compact pinging={pinging} onClick={ping} />
-      <div className="chips small ping-radius-chips">
-        {PING_RADIUS_OPTIONS.map((k) => (
-          <button key={k} type="button" className={"chip" + (km === k ? " active" : "")} onClick={() => choose(k)}>{k.toLocaleString()} km</button>
-        ))}
+      <div className="ping-radius-row">
+        <input type="range" className="ping-slider" min={0} max={100} step={0.5} value={kmToSlider(km)}
+          onChange={(e) => apply(sliderToKm(Number(e.target.value)))} aria-label={t("Ping-Radius")}
+          aria-valuetext={fmtRadius(km)} />
+        <label className="ping-km-field">
+          <input type="text" inputMode="decimal" value={txt} onChange={onInput}
+            onBlur={() => setTxt(String(km).replace(".", ","))} aria-label={t("Radius in km")} />
+          <span>km</span>
+        </label>
       </div>
+      <div className="ping-radius-scale"><span>100 m</span><b>{fmtRadius(km)}</b><span>{PING_RADIUS_SLIDER_MAX} km</span></div>
       {pos && santaDistanceKm(pos, km) != null && (
         <p className="ping-santa"><Emoji e="🎅" /> {t("Der Weihnachtsmann ist auch live – im Nordpol-Workshop, {d} km entfernt!", { d: santaDistanceKm(pos, km) })}</p>
       )}
       <p className="ping-found">
         {found == null
           ? t("Tippe auf den Radar, um zu sehen, wie viele Spieler in deinem Radius live sind.")
-          : t("{n} Spieler im Umkreis von {km} km live", { n: found, km })}
+          : t("{n} Spieler im Umkreis von {r} live", { n: found, r: fmtRadius(km) })}
       </p>
     </div>
   );
