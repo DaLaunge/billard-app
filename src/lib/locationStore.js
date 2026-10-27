@@ -63,3 +63,13 @@ export async function searchAddress(q) {
   const rows = await res.json();
   return rows.map((r) => ({ label: r.display_name, name: r.name || "", lat: parseFloat(r.lat), lng: parseFloat(r.lon) }));
 }
+
+// Koordinaten -> Adresse (Nominatim), fuer den Klick auf die Karte; null bei Fehler
+export async function reverseAddress(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=de&zoom=18&lat=${lat}&lon=${lng}`, { headers: { Accept: "application/json" } });
+    if (!res.ok) return null;
+    const r = await res.json();
+    return r.display_name ? r.display_name.split(", ").slice(0, 4).join(", ") : null;
+  } catch { return null; }
+}

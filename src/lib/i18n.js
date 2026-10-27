@@ -1211,6 +1211,8 @@ const TRANSLATIONS = {
     "mit": "with",
     "Mehr anzeigen": "Show more",
     "Anderes Datum": "Other date",
+    "Karte: Standort antippen": "Map: tap to set the location",
+    "Karte antippen, um den Standort zu setzen – der Marker lässt sich ziehen.": "Tap the map to set the location – the marker can be dragged.",
     "Adresssuche gerade nicht erreichbar.": "Address search is not available right now.",
     "Dieses Gerät kann den Standort nicht bestimmen.": "This device cannot determine its location.",
     "Standort nicht verfügbar – Zugriff erlauben oder Adresse suchen.": "Location unavailable – allow access or search an address.",

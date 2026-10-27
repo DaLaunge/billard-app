@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Search, LocateFixed, Check, X, ExternalLink, MapPin } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
-import { loadLocations, useLocations, distanceM, parseCoords, searchAddress, mapUrl } from "../../lib/locationStore";
+import { loadLocations, useLocations, distanceM, parseCoords, searchAddress, reverseAddress, mapUrl } from "../../lib/locationStore";
+
+const LocationMap = lazy(() => import("./LocationMap"));
 
 /* Standort anlegen oder korrigieren. Niemand muss Koordinaten tippen: Adresse suchen (OpenStreetMap), "Mein Standort"
    (GPS) oder Koordinaten aus Google Maps einfuegen. Liegt schon ein Standort im Umkreis von 100 m, wird er stattdessen
@@ -39,6 +41,12 @@ export default function LocationForm({ initial, onSaved, onCancel, toast }) {
       () => { toast(t("Standort nicht verfügbar – Zugriff erlauben oder Adresse suchen.")); setBusy(false); },
       { enableHighAccuracy: true, timeout: 12000 },
     );
+  };
+  // Tippen/Ziehen auf der Karte: Position uebernehmen und die Adresse dazu nachschlagen
+  const onMapPick = async (p) => {
+    setPos(p); setCoordText("");
+    const a = await reverseAddress(p.lat, p.lng);
+    if (a) setAddress(a);
   };
   const onCoords = (v) => { setCoordText(v); const c = parseCoords(v); if (c) setPos(c); };
 
@@ -77,6 +85,10 @@ export default function LocationForm({ initial, onSaved, onCancel, toast }) {
           ))}
         </div>
       )}
+      <Suspense fallback={<div className="loc-map" />}>
+        <LocationMap pos={pos} onPick={onMapPick} />
+      </Suspense>
+      <p className="hint" style={{ margin: 0 }}>{t("Karte antippen, um den Standort zu setzen – der Marker lässt sich ziehen.")}</p>
       <div className="search-row">
         <input placeholder={t("oder Koordinaten aus Google Maps einfügen: 48.2082, 16.3738")} value={coordText} onChange={(e) => onCoords(e.target.value)} />
       </div>
