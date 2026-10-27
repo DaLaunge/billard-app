@@ -15,7 +15,7 @@ const readTrack = (id) => { try { return JSON.parse(localStorage.getItem(trackKe
 /* Dashboard fuer einen Gast OHNE Konto (Turnier-Einladung). Alles laeuft ueber das Token (supabase/2026-10-29b_guest_tournament.sql):
    Anmeldung zuruecknehmen (nur vor dem Start), "Du bist dran"-Hinweis, die eigene Partie mitzaehlen, melden und bestaetigen (auch Gast gegen Gast).
    Nach dem Turnierstart laesst sich an der Anmeldung nichts mehr aendern. Der Stand wird alle paar Sekunden abgefragt, solange die Seite sichtbar ist. */
-export default function GuestTournamentScreen({ session, onLogin, onForget }) {
+export default function GuestTournamentScreen({ session, onLogin, onForget, onSession }) {
   const { token, tournamentId, nickname } = session;
   const [st, setSt] = useState(undefined);        // undefined = laedt, null = Zugang ungueltig
   const [err, setErr] = useState("");
@@ -68,9 +68,10 @@ export default function GuestTournamentScreen({ session, onLogin, onForget }) {
   const withdraw = () => call("guest_withdraw", {});
   const rejoin = async () => {
     setBusy(true); setErr("");
-    const { error } = await supabase.rpc("tournament_join_guest", { p_tournament_id: tournamentId, p_nickname: nickname });
+    const { data, error } = await supabase.rpc("tournament_join_guest", { p_tournament_id: tournamentId, p_nickname: nickname });
     setBusy(false);
-    if (error) setErr(error.message); else load();
+    if (error) { setErr(error.message); return; }
+    onSession?.({ ...session, token: data.token });   // der Server vergibt beim Wieder-Anmelden ein neues Token
   };
   const finish = () => call("guest_report_match", { p_tournament_match_id: ready.id, p_my_score: score.a, p_opp_score: score.b }, () => {
     try { localStorage.removeItem(trackKey(ready.id)); } catch { /* */ }

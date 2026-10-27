@@ -1668,8 +1668,8 @@ export default function App() {
                   onDone={() => { clearWsInvite(); setWsInvite(null); }} />
               : guestSess
                 ? (guestSess.kind === "ws"
-                    ? <GuestWsScreen session={guestSess} onLogin={() => setTurnierLogin(true)} onForget={() => { clearGuestSession(); setGuestSess(null); }} />
-                    : <GuestTournamentScreen session={guestSess} onLogin={() => setTurnierLogin(true)} onForget={() => { clearGuestSession(); setGuestSess(null); }} />)
+                    ? <GuestWsScreen session={guestSess} onSession={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }} onLogin={() => setTurnierLogin(true)} onForget={() => { clearGuestSession(); setGuestSess(null); }} />
+                    : <GuestTournamentScreen session={guestSess} onSession={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }} onLogin={() => setTurnierLogin(true)} onForget={() => { clearGuestSession(); setGuestSess(null); }} />)
                 : <LoginScreen />)}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}

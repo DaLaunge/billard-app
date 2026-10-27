@@ -11,7 +11,7 @@ const POLL_MS = 8000;
 /* Dashboard fuer einen Gast OHNE Konto in einer Winner-Stays-Runde (supabase/2026-10-30b_winner_stays_invite.sql): mein Platz in der
    Warteschlange, "Du bist dran" sobald ich am Tisch stehe, Abmelden solange ich warte. Ergebnisse tragen die Spieler am Tisch (Mitglieder)
    oder die Leitung ein. Der Stand wird alle paar Sekunden abgefragt, solange die Seite sichtbar ist. */
-export default function GuestWsScreen({ session, onLogin, onForget }) {
+export default function GuestWsScreen({ session, onLogin, onForget, onSession }) {
   const { token, tournamentId: sessionId } = session;
   const [st, setSt] = useState(undefined);
   const [err, setErr] = useState("");
@@ -45,9 +45,10 @@ export default function GuestWsScreen({ session, onLogin, onForget }) {
   };
   const rejoin = async () => {
     setBusy(true); setErr("");
-    const { error } = await supabase.rpc("winner_stays_join_guest", { p_session_id: sessionId, p_nickname: session.nickname });
+    const { data, error } = await supabase.rpc("winner_stays_join_guest", { p_session_id: sessionId, p_nickname: session.nickname });
     setBusy(false);
-    if (error) setErr(error.message); else load();
+    if (error) { setErr(error.message); return; }
+    onSession?.({ ...session, token: data.token });   // der Server vergibt beim Wieder-Anmelden ein neues Token
   };
   const register = async () => {
     const { data } = await supabase.rpc("winner_stays_invite_info", { p_session_id: sessionId });
