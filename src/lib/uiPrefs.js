@@ -55,6 +55,18 @@ export function storeMatchFly(on) {
   try { localStorage.setItem(MATCH_FLY_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
 
+/* Uhrzeit in Listen (Letzte Matches, Turnier-Spielverlauf): Standard AUS, dort steht nur das Datum - die Uhrzeit
+   steht im Protokoll. Das Protokoll, PDFs, Chat- und Admin-Zeiten zeigen sie immer. */
+const SHOW_TIMES_KEY = "showTimes";
+
+export function getShowTimes() {
+  try { return localStorage.getItem(SHOW_TIMES_KEY) === "1"; } catch { return false; }
+}
+
+export function storeShowTimes(on) {
+  try { localStorage.setItem(SHOW_TIMES_KEY, on ? "1" : "0"); } catch { /* ignore */ }
+}
+
 /* Popup "Match wartet auf deine Bestaetigung" (App.jsx, showPendingPopup).
    Standard ist AN - nur ein ausdrueckliches "aus" wird gespeichert. Pro Geraet,
    unabhaengig von den Benachrichtigungen; die Bestaetigung im Profil bleibt

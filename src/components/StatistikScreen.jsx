@@ -8,7 +8,7 @@ import { computeStats } from "../lib/stats";
 import { computeAchievementExtras } from "../lib/achievements";
 import { loadMatchCounters } from "../lib/counterCache";
 import { computeFunRecords } from "../lib/funStats";
-import { initials, fmtDate, fmtDateTime, fmtDuration, isDoubles, mSide, sideNames, fmtRating } from "../lib/format";
+import { initials, fmtDate, fmtListDateTime, fmtDuration, isDoubles, mSide, sideNames, fmtRating } from "../lib/format";
 import { computeSpeedStats, matchDurationMs, matchPlayTimeMs } from "../lib/runLog";
 import { DISC_LABEL, LIST_COUNT_OPTIONS, DEFAULT_LIST_COUNT, normalizeListCount, activeDisciplines } from "../lib/constants";
 import { STAT_CARD_SCREEN, deckIds, foldedDeck, withoutFolded } from "../lib/cardLayout";
@@ -342,7 +342,7 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
 
       {visibleMatches.map((m) => (
         <div key={m.id} className="match-row reveal">
-          <span className="m-date m-datetime">{fmtDateTime(m.played_at)}</span>
+          <span className="m-date m-datetime">{fmtListDateTime(m.played_at)}</span>
           <span className="m-txt">
             {sideNames(m, 1).map((n, i) => (
               <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button><NickClubTag nickname={n} /></span>

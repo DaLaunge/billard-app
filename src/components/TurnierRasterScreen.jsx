@@ -4,7 +4,7 @@ import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule
 import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { initials, fmtDuration, fmtDateTime } from "../lib/format";
+import { initials, fmtDuration, fmtListDateTime } from "../lib/format";
 import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
 import PlayerMultiPicker from "./PlayerMultiPicker";
@@ -784,7 +784,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
             const sc = tmScores(tm);
             return (
               <div key={tm.id} className="stat-row turnier-standings-row">
-                <span className="m-date m-datetime">{fmtDateTime(tm.match.played_at)}</span>
+                <span className="m-date m-datetime">{fmtListDateTime(tm.match.played_at)}</span>
                 <Ball nick={n1} color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={24} />
                 <span className="stat-name">
                   {n1} <b style={won1 ? { color: "var(--win)" } : undefined}>{sc.s1}</b>

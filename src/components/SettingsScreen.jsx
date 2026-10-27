@@ -11,6 +11,7 @@ import MyFeedbackTickets from "./MyFeedbackTickets";
 import ChangelogRow from "./widgets/ChangelogRow";
 import InfoButton from "./widgets/InfoButton";
 import MatchFlySwitch from "./widgets/MatchFlySwitch";
+import ShowTimesSwitch from "./widgets/ShowTimesSwitch";
 import PendingPopupSwitch from "./widgets/PendingPopupSwitch";
 import FiltersOpenSwitch from "./widgets/FiltersOpenSwitch";
 import ListPrefs from "./widgets/ListPrefs";
@@ -367,6 +368,7 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
             </div>
             <PingRadiusSetting pings={pings} meId={meRow?.id} toast={toast} onFoundSanta={onFoundSanta} santaKnown={santaKnown} />
             <MatchFlySwitch />
+            <ShowTimesSwitch />
             <PendingPopupSwitch on={pendingPopup} onChange={onSetPendingPopup} />
             <FiltersOpenSwitch />
             <ListPrefs />

@@ -1461,6 +1461,8 @@ const TRANSLATIONS = {
     "Tippe auf eine Spaltenüberschrift, um danach zu sortieren.": "Tap a column heading to sort by it.",
     "Zählt nicht fürs Rating": "Doesn't count toward the rating",
     "Rating-Punkte": "Rating points",
+    "Uhrzeit in Listen anzeigen": "Show time in lists",
+    "Zeigt in Listen wie „Letzte Matches“ und im Turnier-Spielverlauf zusätzlich zum Datum die Uhrzeit. Ausgeschaltet steht dort nur das Datum – die genaue Zeit findest du immer im Protokoll des Matches. Gilt nur auf diesem Gerät.": "Shows the time in lists such as \"Recent matches\" and the tournament match log in addition to the date. When off, only the date is shown there – the exact time is always in the match protocol. Applies to this device only.",
     "Unentschieden": "Draw",
     "Vorher": "Before",
     "Nachher": "After",
