@@ -3,7 +3,7 @@ import { t } from "../../lib/i18n";
 import { getFiltersOpen, storeFiltersOpen } from "../../lib/uiPrefs";
 import InfoButton from "./InfoButton";
 
-/* Schalter "Filter immer anzeigen" (Profil bearbeiten -> Dieses Geraet).
+/* Schalter "Filter immer anzeigen" (Profil bearbeiten -> App-Verhalten).
    Bestimmt nur den Anfangszustand der Trichter-Felder (useFunnel in
    FilterFunnel.jsx); ein- und ausklappen geht weiter per Trichter. */
 export default function FiltersOpenSwitch() {

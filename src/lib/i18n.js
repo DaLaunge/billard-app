@@ -332,7 +332,7 @@ const TRANSLATIONS = {
     "Du": "You",
     "Match": "Match",
     "Allgemein": "General",
-    "Dieses Gerät": "This device",
+    "App-Verhalten": "App behavior",
     "Konto & Hilfe": "Account & help",
     "So sehen dich die anderen. Ohne Foto zeigt die Kugel deine Initialen in der gewählten Farbe; \"Auto\" wählt die Farbe selbst und zeigt wieder deine eigene Kugel statt eines Erfolgs.": "This is how others see you. Without a photo the ball shows your initials in the chosen color; \"Auto\" picks the colour itself and shows your own ball again instead of an achievement.",
     "Anteil gewonnener Matches (Siege ÷ Spiele) in der aktuell gewählten Auswahl aus Disziplin und Einzel/Doppel. Um verlässlich zu sein, zählt die Quote erst ab 10 Spielen in dieser Auswahl.": "Share of matches won (wins ÷ games) in the current selection of discipline and singles/doubles. To be reliable, the rate only counts from 10 games in this selection.",

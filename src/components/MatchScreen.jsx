@@ -238,7 +238,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Rueckflug zur Kachel - beim Entfernen verschiebt sich die Liste, das Ziel waere
   // schon beim Start veraltet gewesen und die Kugel neben die Kachel gehuepft.
   const vanishSlot = (key) => vanishBall(document.querySelector(`.vs-slot[data-slot="${key}"] .ball`));
-  // Die Kugel-Animation wird NUR in den Einstellungen (Dieses Geraet) ein-/ausgeschaltet, Standard an (uiPrefs.js getMatchFly) -
+  // Die Kugel-Animation wird NUR in den Einstellungen (App-Verhalten) ein-/ausgeschaltet, Standard an (uiPrefs.js getMatchFly) -
   // im Match-Bildschirm gibt es dafuer keinen Schalter.
   const pickPlayer = (p, tile) => {
     if (mode === "single") {

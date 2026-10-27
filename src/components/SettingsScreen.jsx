@@ -26,7 +26,7 @@ import { START_TABS } from "../lib/menuPrefs";
 import ImprintFooter from "./widgets/ImprintFooter";
 
 /* EINSTELLUNGEN als eigener Bildschirm (Tab "einstellungen", 417.5; vorher ein Zustand von ProfilScreen). Kapitel: Profil, Aussehen, Allgemein,
-   Dieses Geraet, Konto & Hilfe (lib/useChapters.jsx). Alle Auswahlen wirken sofort und werden sofort gespeichert. */
+   App-Verhalten, Konto & Hilfe (lib/useChapters.jsx). Alle Auswahlen wirken sofort und werden sofort gespeichert. */
 export default function SettingsScreen({ nickname, players, meRow, photoOf, toast, lang, onLang, onSaveProfile, onSelectBadge, onSetTheme, onSetStartTab,
   onResetCardLayout, onSetCardLayout, onResetMenu, onOpenAdmin, onLogout, onStartTutorial, updateInterval, onSetUpdateInterval, keepAwake, onSetKeepAwake,
   hideTabbar, onSetHideTabbar, pings, onFoundSanta, santaKnown, notifyMode, onSetNotifyMode, pendingPopup, onSetPendingPopup, onSubmitFeedback, onDeleteAccount }) {
@@ -46,7 +46,7 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
     { id: "profil", label: t("Profil") },
     { id: "aussehen", label: t("Aussehen") },
     { id: "allgemein", label: t("Allgemein") },
-    { id: "geraet", label: t("Dieses Gerät") },
+    { id: "geraet", label: t("App-Verhalten") },
     { id: "konto", label: t("Konto & Hilfe") },
   ]);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -337,7 +337,7 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
 
           <Chap id="geraet" c={editChap}>
           <section className="stat-block">
-            <div className="stat-block-head"><h3><Smartphone size={17} /> {t("Dieses Gerät")}</h3></div>
+            <div className="stat-block-head"><h3><Smartphone size={17} /> {t("App-Verhalten")}</h3></div>
             {/* Standard ist an - waehrend eines Matches liegt das Handy meist
                 unberuehrt am Tisch und soll sich nicht dauernd sperren. Wer das
                 nicht will (Akku), schaltet es hier ab; die Einstellung gilt

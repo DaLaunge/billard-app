@@ -27,7 +27,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 import TournamentFlag from "./TournamentFlag";
 import SortableCard from "./widgets/SortableCard";
 import SegmentBar from "./widgets/SegmentBar";
-import { getListMode } from "../lib/uiPrefs";
+import { getListMode, getShowTimes } from "../lib/uiPrefs";
 import CardMenuButton from "./widgets/CardMenuButton";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardDeck from "./widgets/CardDeck";
@@ -341,8 +341,11 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
       </p>
 
       {visibleMatches.map((m) => (
-        <div key={m.id} className="match-row reveal">
-          <span className="m-date m-datetime">{fmtListDateTime(m.played_at)}</span>
+        // Gleiche Spalten wie die Historie unter "Meine Zahlen" (.mh-row): Datum, Disziplin-Kugel, Begegnung, Aktionen.
+        // Die Klasse bleibt konstant (reveal), die Datumsbreite kommt ueber eine CSS-Variable.
+        <div key={m.id} className="match-row mm-row reveal" style={{ "--mm-date": getShowTimes() ? "9.6em" : "6em" }}>
+          <span className="mh-date">{fmtListDateTime(m.played_at)}</span>
+          <span className="mh-disc"><DiscBall disc={m.discipline} size={16} /></span>
           <span className="m-txt">
             {sideNames(m, 1).map((n, i) => (
               <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button><NickClubTag nickname={n} /></span>
@@ -361,19 +364,20 @@ function MatchHistoryBlock({ matches, players, me, onOpenProfile, onOpenProtokol
               <span key={n}>{i > 0 && " & "}<button className="name-link" onClick={() => onOpenProfile(n)}>{n}</button><NickClubTag nickname={n} /></span>
             ))}
           </span>
-          <span className="m-disc">{t(m.discipline)}</span>
-          <TournamentFlag match={m} />
-          {/* Nutzer-Feedback: der "?"-Notiz-Button (siehe MatchProtokollScreen.jsx)
-              war unerreichbar, weil dieser Link zur Protokoll-Ansicht bisher nur
-              bei VORHANDENEM run_log erschien - genau dort, wo eine
-              Turnierleitungs-Schnelleingabe (also KEIN run_log) am ehesten eine
-              Notiz braucht, kam man gar nicht erst hin. Bei Turniermatches
-              deshalb auch ohne run_log anzeigen. */}
-          {(m.run_log?.length > 0 || m.tournament_id) && (
-            <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
-              <FileText size={15} />
-            </button>
-          )}
+          <span className="mm-actions">
+            <TournamentFlag match={m} />
+            {/* Nutzer-Feedback: der "?"-Notiz-Button (siehe MatchProtokollScreen.jsx)
+                war unerreichbar, weil dieser Link zur Protokoll-Ansicht bisher nur
+                bei VORHANDENEM run_log erschien - genau dort, wo eine
+                Turnierleitungs-Schnelleingabe (also KEIN run_log) am ehesten eine
+                Notiz braucht, kam man gar nicht erst hin. Bei Turniermatches
+                deshalb auch ohne run_log anzeigen. */}
+            {(m.run_log?.length > 0 || m.tournament_id) && (
+              <button className="m-download" onClick={() => onOpenProtokoll(m)} aria-label={t("Protokoll ansehen")} title={t("Protokoll ansehen")}>
+                <FileText size={15} />
+              </button>
+            )}
+          </span>
         </div>
       ))}
       {filteredMatches.length > visibleMatches.length && (

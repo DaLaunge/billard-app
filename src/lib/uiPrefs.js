@@ -44,7 +44,7 @@ export function storeFiltersOpen(on) {
    Kachel in den freien Platz der Aufstellung, beim Entfernen zurueck (lib/flyBall.js).
    Standard ist AN - nur ein ausdrueckliches "aus" wird gespeichert, darum der
    Vergleich gegen "0" (wie bei getKeepAwake()). Einstellbar unter Profil ->
-   Profil bearbeiten -> Dieses Geraet. */
+   Profil bearbeiten -> App-Verhalten. */
 const MATCH_FLY_KEY = "matchFlyAnim";
 
 export function getMatchFly() {
@@ -81,7 +81,7 @@ export function storePendingPopup(on) {
   try { localStorage.setItem(PENDING_POPUP_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
 
-/* Listen und Kapitel (Nutzer-Wunsch 2026-10-18), pro Geraet unter Profil -> Einstellungen -> Dieses Geraet:
+/* Listen und Kapitel (Nutzer-Wunsch 2026-10-18), pro Geraet unter Profil -> Einstellungen -> App-Verhalten:
    - listMode: "chapters" (Standard, "Tab-Freak") = wie frueher, die Kapitel-Buttons oben schalten je ein Kapitel um;
      "stacked" ("Doomscroller") = alle Kapitel als EINE lange Liste untereinander.
    - stickyHeads (Standard an): Kapitelkoepfe bleiben beim Scrollen oben stehen. Nur ein ausdrueckliches "aus" wird gespeichert;

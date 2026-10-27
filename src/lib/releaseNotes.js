@@ -19,8 +19,8 @@ const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
   { version: "427.2", icon: "🕐",
-    items: ["In „Letzte Matches“ und im Turnier-Spielverlauf steht jetzt nur noch das Datum. Die Uhrzeit kannst du in den Einstellungen unter „Dieses Gerät“ wieder einschalten."],
-    en: ["“Recent matches” and the tournament match log now show only the date. You can turn the time back on in Settings under “This device”."] },
+    items: ["In „Letzte Matches“ und im Turnier-Spielverlauf steht jetzt nur noch das Datum. Die Uhrzeit kannst du in den Einstellungen unter „App-Verhalten“ wieder einschalten."],
+    en: ["“Recent matches” and the tournament match log now show only the date. You can turn the time back on in Settings under “App behavior”."] },
   { version: "427", icon: "🔗",
     items: [
       "Turniere haben einen Einladungslink mit QR-Code (solange die Anmeldung offen ist): Mitglieder sind damit sofort angemeldet, Neue melden sich an oder spielen nur mit ihrem Namen als Gast mit. Gäste sehen, wann sie dran sind, zählen ihr Match mit und melden und bestätigen es selbst.",

@@ -3,7 +3,7 @@ import { t } from "../../lib/i18n";
 import { getShowTimes, storeShowTimes } from "../../lib/uiPrefs";
 import InfoButton from "./InfoButton";
 
-/* Schalter "Uhrzeit in Listen anzeigen" (Einstellungen -> Dieses Geraet). Haelt seinen Zustand selbst, weil er nur in
+/* Schalter "Uhrzeit in Listen anzeigen" (Einstellungen -> App-Verhalten). Haelt seinen Zustand selbst, weil er nur in
    localStorage lebt (lib/uiPrefs.js); die Listen lesen ihn beim Rendern. */
 export default function ShowTimesSwitch() {
   const [on, setOn] = useState(getShowTimes);

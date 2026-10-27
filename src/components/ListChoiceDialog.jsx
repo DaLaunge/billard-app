@@ -4,7 +4,7 @@ import ListModeOption from "./widgets/ListModeOption";
 
 /* Einmalige Auswahl "Wie liest du Listen?" (App.jsx): beim ersten Start auf einem Geraet und direkt nach "Alle Einstellungen
    zuruecksetzen". Tab-Freak (Kapitel als Buttons) ist der Standard und die empfohlene Wahl - wer das Fenster schliesst, bekommt ihn.
-   Spaeter jederzeit unter Einstellungen -> Dieses Geraet aenderbar. */
+   Spaeter jederzeit unter Einstellungen -> App-Verhalten aenderbar. */
 export default function ListChoiceDialog({ onChoose }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onChoose("chapters"); };
