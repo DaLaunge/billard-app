@@ -9,7 +9,7 @@ const KEY = "pingRadiusKm";
 export function getPingRadiusKm() {
   try {
     const v = Number(localStorage.getItem(KEY));
-    return Number.isFinite(v) && v >= PING_RADIUS_MIN && v <= PING_RADIUS_MAX ? v : PING_RADIUS_DEFAULT;
+    return Number.isFinite(v) && v >= PING_RADIUS_MIN && v <= PING_RADIUS_MAX ? snapKm(v) : PING_RADIUS_DEFAULT;
   } catch { return PING_RADIUS_DEFAULT; }
 }
 
@@ -19,12 +19,13 @@ export function setPingRadiusKm(km) {
 
 // Schieberegler 0..100 <-> Kilometer, logarithmisch (100 m .. 50 km), gerundet auf sinnvolle Schritte
 const RATIO = PING_RADIUS_SLIDER_MAX / PING_RADIUS_MIN;
-export const snapKm = (v) => (v < 1 ? Math.round(v * 10) / 10 : v < 10 ? Math.round(v * 2) / 2 : Math.round(v));
+// unter 1 km in 100-m-Schritten (0,1 km), ab 1 km in ganzen Kilometern - keine Kommazahlen bei Kilometern
+export const snapKm = (v) => (v < 1 ? Math.max(0.1, Math.round(v * 10) / 10) : Math.max(1, Math.round(v)));
 export const sliderToKm = (p) => Math.min(PING_RADIUS_SLIDER_MAX, Math.max(PING_RADIUS_MIN, snapKm(PING_RADIUS_MIN * Math.pow(RATIO, p / 100))));
 export const kmToSlider = (km) => (km >= PING_RADIUS_SLIDER_MAX ? 100 : Math.max(0, Math.min(100, (Math.log(km / PING_RADIUS_MIN) / Math.log(RATIO)) * 100)));
 
 // "500 m" / "5 km" / "4.650 km"
-export const fmtRadius = (km) => (km < 1 ? `${Math.round(km * 1000)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(km)} km`);
+export const fmtRadius = (km) => (km < 1 ? `${Math.round(km * 1000)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(km))} km`);
 
 // Easteregg: reicht der Radius bis zum Nordpol, ist dort der Weihnachtsmann live (Entfernung in km, sonst null)
 export function santaDistanceKm(pos, radiusKm) {

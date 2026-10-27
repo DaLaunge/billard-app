@@ -2,7 +2,7 @@ import { useState } from "react";
 import { t } from "../../lib/i18n";
 import { useLocations, distanceM } from "../../lib/locationStore";
 import {
-  getPingRadiusKm, setPingRadiusKm, normName, santaDistanceKm, sliderToKm, kmToSlider, fmtRadius,
+  getPingRadiusKm, setPingRadiusKm, normName, santaDistanceKm, sliderToKm, kmToSlider, fmtRadius, snapKm,
   PING_RADIUS_MIN, PING_RADIUS_MAX, PING_RADIUS_SLIDER_MAX,
 } from "../../lib/pingRadius";
 import PingButton from "./PingButton";
@@ -46,8 +46,8 @@ export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSant
     const u = m[2] || unit;
     const num = Number(m[1].replace(",", "."));
     if (m[2]) setUnit(u);
-    const v = Math.round((u === "m" ? num / 1000 : num) * 10) / 10;
-    if (Number.isFinite(v) && v >= PING_RADIUS_MIN && v <= PING_RADIUS_MAX) apply(v, true);
+    const v = snapKm(u === "m" ? num / 1000 : num);
+    if (Number.isFinite(num) && num > 0 && v >= PING_RADIUS_MIN && v <= PING_RADIUS_MAX) apply(v, true);
   };
   const ping = () => {
     setPinging(true);

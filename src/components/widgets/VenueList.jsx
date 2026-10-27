@@ -10,7 +10,7 @@ import RouteButton from "./RouteButton";
 import LocationForm from "./LocationForm";
 import LocationPicker from "./LocationPicker";
 import PingButton from "./PingButton";
-import { getPingRadiusKm, santaDistanceKm, fmtRadius } from "../../lib/pingRadius";
+import { getPingRadiusKm, santaDistanceKm, fmtRadius, snapKm } from "../../lib/pingRadius";
 import DayPicker from "./DayPicker";
 
 /* "Wer spielt wo": alle Lokale mit Suche. Pro Lokal steht, wer gerade live dort ist und welche Planungen es dort gibt;
@@ -323,9 +323,20 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
   // Live-Spieler im Ping-Radius (Einstellung, Standard 5 km; nur Lokale mit Koordinaten), nach Entfernung
   const radiusKm = getPingRadiusKm();
   const santaKm = santaDistanceKm(pos, radiusKm); // Easteregg: der Weihnachtsmann am Nordpol
-  const nearLive = pos ? [...pings].map((item) => ({ kind: "ping", item, venue: venueOfPing(item) }))
-    .filter((x) => x.venue.lat != null).map((x) => ({ ...x, dist: distanceM(pos, x.venue) })).filter((x) => x.dist <= radiusKm * 1000)
-    .sort((a, b) => a.dist - b.dist).slice(0, 10) : [];
+  const withDist = pos ? [...pings].map((item) => ({ kind: "ping", item, venue: venueOfPing(item) }))
+    .filter((x) => x.venue.lat != null).map((x) => ({ ...x, dist: distanceM(pos, x.venue) })).sort((a, b) => a.dist - b.dist) : [];
+  // Niemand im Radius? Dann wird der Suchradius schrittweise vergroessert (x2, x4, ... bis 50 km), aber nur, solange noch niemand gefunden wurde.
+  let usedKm = radiusKm;
+  if (pos && !withDist.some((x) => x.dist <= radiusKm * 1000)) {
+    const cap = Math.max(50, radiusKm);
+    for (let r = radiusKm * 2; ; r *= 2) {
+      const step = snapKm(Math.min(r, cap));
+      if (withDist.some((x) => x.dist <= step * 1000)) { usedKm = step; break; }
+      if (step >= cap) break;
+    }
+  }
+  const nearLive = withDist.filter((x) => x.dist <= usedKm * 1000).slice(0, 10);
+  const widened = usedKm > radiusKm && nearLive.length > 0;
 
   // Easteregg: Weihnachtsmann gefunden -> verstecktes Achievement (einmalig)
   useEffect(() => { if (pinged && santaKm != null && !santaKnown) onFoundSanta?.(); }, [pinged, santaKm, santaKnown]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -348,7 +359,7 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
   };
 
   const value = {
-    me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, radiusKm, santaKm, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
+    me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, radiusKm, usedKm, widened, santaKm, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
     canAdd, nq, setNewName, setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done,
     usable, confirm, myPing, askPos, vq, setVq, nvq, addName, planItems, hits, challengedIds, challengeTo, colorOf, badgeOf, photoOf,
   };
@@ -357,7 +368,7 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
 
 /* Der grosse Ping-Knopf samt Ergebnis: steht ganz oben auf dem Live-Bildschirm, ueber den Duellen */
 export function PingBlock() {
-  const { pinging, pinged, doPing, nearLive, entry, radiusKm, santaKm } = useContext(VenueCtx);
+  const { pinging, pinged, doPing, nearLive, entry, radiusKm, usedKm, widened, santaKm } = useContext(VenueCtx);
   return (
     <>
       <div className="ping-box">
@@ -366,7 +377,9 @@ export function PingBlock() {
           <div className="collapsible-inner">
             <div className="ping-result">
               {(nearLive.length > 0 || santaKm != null)
-                ? <><p className="q venue-sec">{t("Live im Umkreis von {r}", { r: fmtRadius(radiusKm) })}</p><div className="venue-list">
+                ? <>
+                  {widened && <p className="hint center">{t("Im Umkreis von {r} war niemand live – ich habe die Suche auf {r2} erweitert.", { r: fmtRadius(radiusKm), r2: fmtRadius(usedKm) })}</p>}
+                  <p className="q venue-sec">{t("Live im Umkreis von {r}", { r: fmtRadius(usedKm) })}</p><div className="venue-list">
                   {santaKm != null && (
                     <div className="venue-row is-live santa-row">
                       <Emoji e="🎅" /> <b>{t("Weihnachtsmann")}</b>
