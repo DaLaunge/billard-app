@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronRight, Plus, Search, Trophy, X } from "lucide-react";
+import { ChevronRight, Dices, Plus, Search, Trophy, X } from "lucide-react";
+import { suggestNames, randomName } from "../lib/turnierNames";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
@@ -48,6 +49,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
   const [query, setQuery] = useState(""); // Suche nach Name
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
+  const [place, setPlace] = useState(() => { try { return localStorage.getItem("turnierPlace") || ""; } catch { return ""; } });
   const [format, setFormat] = useState("ko"); // "ko" | "double_ko" | "round_robin" | "winner_stays"
   const [discipline, setDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
   const [tableMode, setTableMode] = useState("range");
@@ -211,7 +213,19 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               ))}
             </div>
 
+            {/* Name: Ort (optional, wird gemerkt) + Wuerfel fuer einen kreativen Zufallsnamen + Vorschlaege zum Antippen */}
+            <FieldLabel label={t("Name")}
+              actions={<button type="button" className="icon-btn small" onClick={() => setName(randomName({ place, exclude: name }))}
+                aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={15} /></button>} />
             <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
+            <FieldLabel label={t("Ort (optional)")} info={t("Wird gemerkt und in den Namensvorschlägen verwendet, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel oben würfelt einen kreativen Namen.")} />
+            <input type="text" placeholder={t("z. B. Köö 7")} value={place} maxLength={30}
+              onChange={(e) => { setPlace(e.target.value); try { localStorage.setItem("turnierPlace", e.target.value); } catch { /* */ } }} />
+            <div className="chips small">
+              {suggestNames({ place, discipline, format }).map((s) => (
+                <button key={s} type="button" className={"chip" + (name === s ? " active" : "")} onClick={() => setName(s)}>{s}</button>
+              ))}
+            </div>
 
             {/* Format als Kacheln mit Struktur-Zeichnung statt als Textchips
                 (Nutzer-Feedback: Erklaerungen lieber visuell). "Doppel-K.O."
