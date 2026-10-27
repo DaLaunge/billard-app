@@ -15,7 +15,11 @@ import Emoji from "../Emoji";
 export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSanta, santaKnown }) {
   const { list } = useLocations();
   const [km, setKm] = useState(getPingRadiusKm);
-  const [txt, setTxt] = useState(() => String(getPingRadiusKm()).replace(".", ","));
+  // Feld: unter 1 km in Metern ("500" + "m"), ab 1 km in Kilometern; Eingaben duerfen die Einheit tragen ("750 m", "2 km")
+  const unitOf = (v) => (v < 1 ? "m" : "km");
+  const shown = (v) => String(unitOf(v) === "m" ? Math.round(v * 1000) : v).replace(".", ",");
+  const [unit, setUnit] = useState(() => unitOf(getPingRadiusKm()));
+  const [txt, setTxt] = useState(() => shown(getPingRadiusKm()));
   const [pinging, setPinging] = useState(false);
   // Ergebnis des LETZTEN Pings (Anzahl, Radius, Weihnachtsmann): aendert sich nur durch einen Klick auf den Radar, nie durch den Regler
   const [result, setResult] = useState(null);
@@ -32,13 +36,18 @@ export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSant
   // Radius aendern speichert nur den Wert - die Anzeige unten bleibt, bis man wieder auf den Radar tippt
   const apply = (v, fromInput) => {
     setKm(v); setPingRadiusKm(v);
-    if (!fromInput) setTxt(String(v).replace(".", ","));
+    if (!fromInput) { setTxt(shown(v)); setUnit(unitOf(v)); }
   };
   const onInput = (e) => {
     const raw = e.target.value;
     setTxt(raw);
-    const v = Number(raw.replace(",", "."));
-    if (Number.isFinite(v) && v >= PING_RADIUS_MIN && v <= PING_RADIUS_MAX) apply(Math.round(v * 10) / 10, true);
+    const m = raw.trim().toLowerCase().match(/^([\d.,]+)\s*(km|m)?$/);
+    if (!m) return;
+    const u = m[2] || unit;
+    const num = Number(m[1].replace(",", "."));
+    if (m[2]) setUnit(u);
+    const v = Math.round((u === "m" ? num / 1000 : num) * 10) / 10;
+    if (Number.isFinite(v) && v >= PING_RADIUS_MIN && v <= PING_RADIUS_MAX) apply(v, true);
   };
   const ping = () => {
     setPinging(true);
@@ -71,8 +80,8 @@ export default function PingRadiusSetting({ pings = [], meId, toast, onFoundSant
           aria-valuetext={fmtRadius(km)} />
         <label className="ping-km-field">
           <input type="text" inputMode="decimal" value={txt} onChange={onInput}
-            onBlur={() => setTxt(String(km).replace(".", ","))} aria-label={t("Radius in km")} />
-          <span>km</span>
+            onBlur={() => { setTxt(shown(km)); setUnit(unitOf(km)); }} aria-label={unit === "m" ? t("Radius in m") : t("Radius in km")} />
+          <span>{unit}</span>
         </label>
       </div>
       <div className="ping-radius-scale"><span>100 m</span><b>{fmtRadius(km)}</b><span>{PING_RADIUS_SLIDER_MAX} km</span></div>
