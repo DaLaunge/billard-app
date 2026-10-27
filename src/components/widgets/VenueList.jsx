@@ -394,24 +394,34 @@ export default function VenueList() {
   return (
     <>
       {liveItems.length > 0 && (
-        <>
-          <div className="deck-sub-head"><Radio size={14} /> {t("Jetzt live")}<span className="deck-tab-count">{liveItems.length}</span></div>
+        <section className="stat-block">
+          <div className="stat-block-head">
+            <h3><Radio size={17} /> <span className="stat-block-title-text">{t("Jetzt live")}</span></h3>
+            <div className="stat-block-head-actions"><span className="deck-tab-count">{liveItems.length}</span></div>
+          </div>
           <div className="venue-list">{liveItems.map((x) => entry(x))}</div>
-        </>
+        </section>
       )}
       {chapters.map((c) => (
-        <div key={c.date} className="venue-chap">
-          <div className="deck-sub-head"><Calendar size={14} /> {dayLabel(c.date)}<span className="deck-tab-count">{c.items.length}</span></div>
+        <section key={c.date} className="stat-block">
+          <div className="stat-block-head">
+            <h3><Calendar size={17} /> <span className="stat-block-title-text">{dayLabel(c.date)}</span></h3>
+            <div className="stat-block-head-actions"><span className="deck-tab-count">{c.items.length}</span></div>
+          </div>
           <div className="venue-list">{c.items.map((x) => entry(x))}</div>
-        </div>
+        </section>
       ))}
       {feed.length === 0 && list.length > 0 && <p className="hint center">{t("Gerade ist nichts live oder geplant – sei der Erste: Such dir unten ein Lokal aus.")}</p>}
 
-      <div className="deck-sub-head"><MapPin size={14} /> {pos ? t("Lokale in deiner Nähe") : t("Lokale")}
-        <button type="button" className={"icon-btn small venue-add-btn" + (adding ? " primary" : "")} aria-expanded={adding}
-          onClick={() => { if (adding) { setAdding(false); return; } setNewName(""); setFormKey((k) => k + 1); setAdding(true); }}
-          title={t("Lokal gezielt angeben")} aria-label={t("Lokal gezielt angeben")}><Plus size={15} /></button>
-      </div>
+      <section className="stat-block">
+        <div className="stat-block-head">
+          <h3><MapPin size={17} /> <span className="stat-block-title-text">{pos ? t("Lokale in deiner Nähe") : t("Lokale")}</span></h3>
+          <div className="stat-block-head-actions">
+            <button type="button" className={"icon-btn small" + (adding ? " primary" : "")} aria-expanded={adding}
+              onClick={() => { if (adding) { setAdding(false); return; } setNewName(""); setFormKey((k) => k + 1); setAdding(true); }}
+              title={t("Lokal gezielt angeben")} aria-label={t("Lokal gezielt angeben")}><Plus size={15} /></button>
+          </div>
+        </div>
       {canAdd && (
         <button type="button" className="chip-btn venue-add" onClick={() => { setNewName(q.trim()); setFormKey((k) => k + 1); setAdding(true); }}>
           <Plus size={14} /> {nq.length >= 2 ? t("„{name}“ als neues Lokal anlegen", { name: q.trim() }) : t("Erstes Lokal anlegen")}
@@ -481,6 +491,7 @@ export default function VenueList() {
         })}
       </div>
       {venues.length > SHOWN && <p className="hint center">{t("{n} weitere – Suche eingrenzen.", { n: venues.length - SHOWN })}</p>}
+      </section>
     </>
   );
 }
