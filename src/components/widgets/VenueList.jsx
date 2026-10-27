@@ -215,6 +215,7 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
   const { list, confirms, planLoc } = useLocations();
   const [busy, setBusy] = useState(null);
   const [q, setQ] = useState("");
+  const [vq, setVq] = useState(""); // Suche nur in der Orte-Karte
   const [sel, setSel] = useState(null); // aufgeklapptes Lokal
   const [form, setForm] = useState(null); // "live" | "plan" fuer das aufgeklappte Lokal
   // Umgebung: Standort nur auf Wunsch (Knopf), danach wird die Wahl auf diesem Geraet gemerkt
@@ -262,6 +263,7 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
 
   const today = new Date().toISOString().slice(0, 10);
   const nq = norm(q);
+  const nvq = norm(vq);
   const venueOfPing = (p) => list.find((l) => norm(l.name) === norm(p.location)) || { id: "loose:" + p.location, name: p.location, loose: true };
   const venueOfPlan = (p) => list.find((l) => l.id === planLoc[p.id]) || null;
   const pass = (v, nick) => !nq || norm(`${v?.name || ""} ${v?.address || ""} ${nick}`).includes(nq);
@@ -282,11 +284,12 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
     [...live, ...plan].forEach((e) => { ids.add(e.player_id); (e.replies || []).forEach((r) => ids.add(r.player_id)); });
     const dist = pos && l.lat != null ? distanceM(pos, l) : null;
     return { l, live, plan, players: ids.size, dist };
-  }).filter(({ l }) => !nq || norm(`${l.name} ${l.address || ""}`).includes(nq))
+  }).filter(({ l }) => (!nq || norm(`${l.name} ${l.address || ""}`).includes(nq)) && (!nvq || norm(`${l.name} ${l.address || ""}`).includes(nvq)))
     .sort((a, b) => (pos ? ((a.dist ?? 1e12) - (b.dist ?? 1e12)) : (b.live.length - a.live.length) || (b.plan.length - a.plan.length)) || a.l.name.localeCompare(b.l.name));
   const rows = venues.slice(0, SHOWN);
-  const exact = list.some((l) => norm(l.name) === nq);
-  const canAdd = !adding && ((nq.length >= 2 && !exact) || list.length === 0);
+  const addName = (vq || q).trim();
+  const exact = list.some((l) => norm(l.name) === norm(addName));
+  const canAdd = !adding && ((norm(addName).length >= 2 && !exact) || list.length === 0);
 
   // Duell direkt aus der Liste: die Nachricht sagt gleich, wo man spielt bzw. wo der andere gerade ist
   const challenge = (item) => {
@@ -339,7 +342,7 @@ export function VenueProvider({ children, players = [], me, pings = [], planning
   const value = {
     me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
     canAdd, nq, setNewName, setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done,
-    usable, confirm, myPing, askPos, hits, challengedIds, challengeTo, colorOf, badgeOf, photoOf,
+    usable, confirm, myPing, askPos, vq, setVq, nvq, addName, planItems, hits, challengedIds, challengeTo, colorOf, badgeOf, photoOf,
   };
   return <VenueCtx.Provider value={value}>{children}</VenueCtx.Provider>;
 }
@@ -387,111 +390,134 @@ export function PingBlock() {
   );
 }
 
-/* Die Liste im Reiter "Live & Planung": Suche, Aktivitaeten, Lokale */
+/* Aufklappbare Karte (Live, Planungen, Orte): Kopf mit Symbol, Titel, Zaehler; der Zustand wird je Geraet gemerkt */
+function Fold({ id, icon, title, count, defaultOpen, forceOpen, children }) {
+  const key = "liveFold:" + id;
+  const [open, setOpen] = useState(() => { try { const v = localStorage.getItem(key); return v == null ? defaultOpen : v === "1"; } catch { return defaultOpen; } });
+  const toggle = () => { setOpen(!open); try { localStorage.setItem(key, open ? "0" : "1"); } catch { /* Privatmodus */ } };
+  const shown = open || forceOpen;
+  return (
+    <section className="stat-block">
+      <div className="stat-block-head">
+        <button type="button" className="duel-toggle as-btn" onClick={toggle} aria-expanded={shown} title={shown ? t("Zuklappen") : t("Aufklappen")}>
+          <h3>{icon} <span className="stat-block-title-text">{title}</span>
+            {count != null && <span className="deck-tab-count">{count}</span>}
+          </h3>
+          <ChevronDown size={16} className={"duel-chev" + (shown ? " open" : "")} />
+        </button>
+      </div>
+      <div className={"collapsible" + (shown ? " open" : "")} inert={shown ? undefined : ""}>
+        <div className="collapsible-inner">{children}</div>
+      </div>
+    </section>
+  );
+}
+
+/* Die Liste unter Suche und Schnellaktionen: Live, Planungen (je Tag ein Kapitel) und Orte - alle drei einklappbar */
 export default function VenueList() {
-  const { me, toast, onClose, onCreate, onCreatePlanning, q, liveItems, chapters, dayLabel, entry, feed, list, pos, canAdd, nq, setNewName,
+  const { me, toast, onClose, onCreate, onCreatePlanning, q, setQ, vq, setVq, nvq, addName, liveItems, chapters, planItems, dayLabel, entry, feed, list, pos, canAdd, nq, setNewName,
     setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done, usable, confirm, myPing } = useContext(VenueCtx);
+  const openForm = () => { setNewName(norm(addName).length >= 2 ? addName : ""); setFormKey((k) => k + 1); setAdding(true); };
   return (
     <>
       {liveItems.length > 0 && (
-        <section className="stat-block">
-          <div className="stat-block-head">
-            <h3><Radio size={17} /> <span className="stat-block-title-text">{t("Jetzt live")}</span></h3>
-            <div className="stat-block-head-actions"><span className="deck-tab-count">{liveItems.length}</span></div>
-          </div>
+        <Fold id="live" icon={<Radio size={17} />} title={t("Jetzt live")} count={liveItems.length} defaultOpen>
           <div className="venue-list">{liveItems.map((x) => entry(x))}</div>
-        </section>
+        </Fold>
       )}
-      {chapters.map((c) => (
-        <section key={c.date} className="stat-block">
-          <div className="stat-block-head">
-            <h3><Calendar size={17} /> <span className="stat-block-title-text">{dayLabel(c.date)}</span></h3>
-            <div className="stat-block-head-actions"><span className="deck-tab-count">{c.items.length}</span></div>
-          </div>
-          <div className="venue-list">{c.items.map((x) => entry(x))}</div>
-        </section>
-      ))}
+      {planItems.length > 0 && (
+        <Fold id="plan" icon={<Calendar size={17} />} title={t("Planungen")} count={planItems.length} defaultOpen>
+          {chapters.map((c) => (
+            <div key={c.date} className="venue-chap">
+              <div className="deck-sub-head">{dayLabel(c.date)}<span className="deck-tab-count">{c.items.length}</span></div>
+              <div className="venue-list">{c.items.map((x) => entry(x))}</div>
+            </div>
+          ))}
+        </Fold>
+      )}
       {feed.length === 0 && list.length > 0 && <p className="hint center">{t("Gerade ist nichts live oder geplant – sei der Erste: Such dir unten ein Lokal aus.")}</p>}
 
-      <section className="stat-block">
-        <div className="stat-block-head">
-          <h3><MapPin size={17} /> <span className="stat-block-title-text">{pos ? t("Lokale in deiner Nähe") : t("Lokale")}</span></h3>
-          <div className="stat-block-head-actions">
-            <button type="button" className={"icon-btn small" + (adding ? " primary" : "")} aria-expanded={adding}
-              onClick={() => { if (adding) { setAdding(false); return; } setNewName(""); setFormKey((k) => k + 1); setAdding(true); }}
-              title={t("Lokal gezielt angeben")} aria-label={t("Lokal gezielt angeben")}><Plus size={15} /></button>
+      <Fold id="orte" icon={<MapPin size={17} />} title={pos ? t("Orte in deiner Nähe") : t("Orte")} count={list.length} defaultOpen={false} forceOpen={nq.length >= 2}>
+        <div className="venue-toolbar">
+          <div className="search-row">
+            <Search size={16} className="mail-ico" />
+            <input placeholder={t("Ort suchen …")} value={vq} maxLength={60} onChange={(e) => setVq(e.target.value)} />
+          </div>
+          <button type="button" className={"venue-new" + (adding ? " on" : "")} aria-expanded={adding} onClick={() => (adding ? setAdding(false) : openForm())}>
+            <Plus size={16} /> {t("Neuer Ort")}
+          </button>
+        </div>
+        {canAdd && norm(addName).length >= 2 && (
+          <button type="button" className="chip-btn venue-add" onClick={openForm}>
+            <Plus size={14} /> {t("„{name}“ als neues Lokal anlegen", { name: addName })}
+          </button>
+        )}
+        <div className={"collapsible" + (adding ? " open" : "")} inert={adding ? undefined : ""}>
+          <div className="collapsible-inner">
+            <div className="loc-panel">
+              {mounted && (
+                <LocationForm key={formKey} fixedName={newName.length >= 2 ? newName : undefined} toast={toast}
+                  onCancel={() => setAdding(false)}
+                  onSaved={(id) => { setAdding(false); setQ(""); setVq(""); if (typeof id === "string") { setSel(id); setForm(null); } }} />
+              )}
+            </div>
           </div>
         </div>
-      {canAdd && (
-        <button type="button" className="chip-btn venue-add" onClick={() => { setNewName(q.trim()); setFormKey((k) => k + 1); setAdding(true); }}>
-          <Plus size={14} /> {nq.length >= 2 ? t("„{name}“ als neues Lokal anlegen", { name: q.trim() }) : t("Erstes Lokal anlegen")}
-        </button>
-      )}
-      <div className={"collapsible" + (adding ? " open" : "")} inert={adding ? undefined : ""}>
-        <div className="collapsible-inner">
-          <div className="loc-panel">
-            {mounted && (
-              <LocationForm key={formKey} fixedName={newName.length >= 2 ? newName : undefined} toast={toast}
-                onCancel={() => setAdding(false)}
-                onSaved={(id) => { setAdding(false); setQ(""); if (typeof id === "string") { setSel(id); setForm(null); } }} />
-            )}
-          </div>
-        </div>
-      </div>
-      {list.length > 0 && venues.length === 0 && !canAdd && !adding && <p className="hint center">{t("Kein Lokal gefunden.")}</p>}
-      <div className="venue-list">
-        {rows.map(({ l, live, plan, players, dist }) => {
-          const open = sel === l.id;
-          const mineHere = live.some((p) => p.player_id === me?.id);
-          const pending = l.status === "pending" && l.created_by !== me?.id;
-          const can = usable(l);
-          const pickForm = (k) => { setSel(l.id); setForm(form === k && open ? null : k); };
-          return (
-            <div key={l.id} className={"venue-row" + (open ? " is-open" : "")}>
-              <div className="venue-top">
-                <div className="venue-pick">
-                  <b><MapPin size={14} /> {l.name}{l.status === "pending" ? " ⏳" : ""}</b>
-                  {l.address && <span className="rank-meta">{l.address}</span>}
-                  <span className="rank-meta">
-                    {dist != null && <>{fmtDist(dist)} · </>}
-                    {players > 0 ? t("{n} Spieler gemeldet", { n: players }) : t("noch niemand gemeldet")}
-                    {live.length > 0 && <> · <span className="venue-livetag">{t("{n} live", { n: live.length })}</span></>}
-                    {plan.length > 0 && <> · {t("{n} geplant", { n: plan.length })}</>}
-                  </span>
-                  {l.status === "pending" && <span className="rank-meta">{count(l.id)}/{NEEDED} {t("bestätigt")}</span>}
+        {list.length > 0 && venues.length === 0 && !adding && <p className="hint center">{t("Kein Lokal gefunden.")}</p>}
+        {list.length === 0 && !adding && <p className="hint center">{t("Noch kein Lokal eingetragen – leg das erste mit „Neuer Ort“ an.")}</p>}
+        <div className="venue-list">
+          {rows.map(({ l, live, plan, players, dist }) => {
+            const open = sel === l.id;
+            const mineHere = live.some((p) => p.player_id === me?.id);
+            const pending = l.status === "pending" && l.created_by !== me?.id;
+            const can = usable(l);
+            const pickForm = (k) => { setSel(l.id); setForm(form === k && open ? null : k); };
+            return (
+              <div key={l.id} className={"venue-row" + (open ? " is-open" : "")}>
+                <div className="venue-top">
+                  <div className="venue-pick">
+                    <b><MapPin size={14} /> {l.name}{l.status === "pending" ? " ⏳" : ""}</b>
+                    {l.address && <span className="rank-meta">{l.address}</span>}
+                    <span className="rank-meta">
+                      {dist != null && <>{fmtDist(dist)} · </>}
+                      {players > 0 ? t("{n} Spieler gemeldet", { n: players }) : t("noch niemand gemeldet")}
+                      {live.length > 0 && <> · <span className="venue-livetag">{t("{n} live", { n: live.length })}</span></>}
+                      {plan.length > 0 && <> · {t("{n} geplant", { n: plan.length })}</>}
+                    </span>
+                    {l.status === "pending" && <span className="rank-meta">{count(l.id)}/{NEEDED} {t("bestätigt")}</span>}
+                  </div>
+                  <div className="venue-icons">
+                    {pending && (done(l.id)
+                      ? <span className="icon-btn small venue-done" title={t("Bestätigt")} aria-label={t("Bestätigt")}><Check size={15} /></span>
+                      : <button type="button" className="icon-btn small primary" disabled={busy === l.id} onClick={() => confirm(l)} title={t("Stimmt")} aria-label={t("Stimmt")}><Check size={15} /></button>)}
+                    {can && (mineHere ? (
+                      <button type="button" className="icon-btn small" onClick={onClose} title={t("Live beenden")} aria-label={t("Live beenden")}><X size={15} /></button>
+                    ) : !myPing && (
+                      <button type="button" className={"icon-btn small" + (open && form === "live" ? " primary" : "")} onClick={() => pickForm("live")}
+                        title={t("Hier live gehen")} aria-label={t("Hier live gehen")} aria-expanded={open && form === "live"}><Radio size={15} /></button>
+                    ))}
+                    {can && (
+                      <button type="button" className={"icon-btn small" + (open && form === "plan" ? " primary" : "")} onClick={() => pickForm("plan")}
+                        title={t("Hier planen")} aria-label={t("Hier planen")} aria-expanded={open && form === "plan"}><Calendar size={15} /></button>
+                    )}
+                    <RouteButton place={l} size={15} />
+                  </div>
                 </div>
-                <div className="venue-icons">
-                  {pending && (done(l.id)
-                    ? <span className="icon-btn small venue-done" title={t("Bestätigt")} aria-label={t("Bestätigt")}><Check size={15} /></span>
-                    : <button type="button" className="icon-btn small primary" disabled={busy === l.id} onClick={() => confirm(l)} title={t("Stimmt")} aria-label={t("Stimmt")}><Check size={15} /></button>)}
-                  {can && (mineHere ? (
-                    <button type="button" className="icon-btn small" onClick={onClose} title={t("Live beenden")} aria-label={t("Live beenden")}><X size={15} /></button>
-                  ) : !myPing && (
-                    <button type="button" className={"icon-btn small" + (open && form === "live" ? " primary" : "")} onClick={() => pickForm("live")}
-                      title={t("Hier live gehen")} aria-label={t("Hier live gehen")} aria-expanded={open && form === "live"}><Radio size={15} /></button>
-                  ))}
-                  {can && (
-                    <button type="button" className={"icon-btn small" + (open && form === "plan" ? " primary" : "")} onClick={() => pickForm("plan")}
-                      title={t("Hier planen")} aria-label={t("Hier planen")} aria-expanded={open && form === "plan"}><Calendar size={15} /></button>
-                  )}
-                  <RouteButton place={l} size={15} />
-                </div>
-              </div>
 
-              <div className={"collapsible" + (open && form ? " open" : "")} inert={open && form ? undefined : ""}>
-                <div className="collapsible-inner">
-                  <div className="venue-body">
-                    {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours }) => onCreate(venue.name, msg, hours)} onDone={() => setForm(null)} /></Unfold>}
-                    {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setForm(null)} /></Unfold>}
+                <div className={"collapsible" + (open && form ? " open" : "")} inert={open && form ? undefined : ""}>
+                  <div className="collapsible-inner">
+                    <div className="venue-body">
+                      {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours }) => onCreate(venue.name, msg, hours)} onDone={() => setForm(null)} /></Unfold>}
+                      {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setForm(null)} /></Unfold>}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-      {venues.length > SHOWN && <p className="hint center">{t("{n} weitere – Suche eingrenzen.", { n: venues.length - SHOWN })}</p>}
-      </section>
+            );
+          })}
+        </div>
+        {venues.length > SHOWN && <p className="hint center">{t("{n} weitere – Suche eingrenzen.", { n: venues.length - SHOWN })}</p>}
+      </Fold>
     </>
   );
 }

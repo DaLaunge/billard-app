@@ -3760,3 +3760,10 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .challenge-place .loc-picker, .challenge-place .loc-sel { width: 100%; }
 
 .venue-add-btn { margin-left: auto; }
+
+/* Orte-Karte: Ortssuche + auffaelliger "Neuer Ort"-Knopf */
+.venue-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.venue-toolbar .search-row { flex: 1; min-width: 0; margin: 0; }
+.venue-new { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 12px; border: 1.5px solid transparent; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.venue-new.on { border-color: var(--accent-line); background: var(--accent-mid); color: var(--ivory); }
+.venue-chap + .venue-chap { margin-top: 4px; }
