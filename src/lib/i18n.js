@@ -1270,6 +1270,7 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "Im Umkreis von {r} war niemand live – auch nach Erweiterung bis {r2} nicht. Sei du der Erste!": "Nobody was live within {r} – not even after widening to {r2}. Be the first!",
     "Im Umkreis von {r} war niemand live – ich habe die Suche auf {r2} erweitert.": "Nobody was live within {r} – I widened the search to {r2}.",
     "So weit sucht der Ping auf dem Live-Bildschirm nach Spielern, die gerade live sind. Der Regler reicht von 100 m bis 50 km, im Feld daneben kannst du den Wert genau eingeben. Tippe auf den Radar, um mit dem gewählten Radius zu testen, wie viele Spieler gerade in deiner Nähe live sind. Gilt nur auf diesem Gerät.": "This is how far the Ping on the Live screen looks for players who are live right now. The slider goes from 100 m to 50 km; type an exact value in the field next to it. Tap the radar to test how many players are live near you with the chosen radius. Applies to this device only.",
     "Radius in km": "Radius in km",

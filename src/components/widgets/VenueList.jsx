@@ -339,6 +339,7 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
   }
   const nearLive = withDist.filter((x) => x.dist <= usedKm * 1000).slice(0, 10);
   const widened = usedKm > radiusKm && nearLive.length > 0;
+  const searchedMax = !!pos && radiusKm < AUTO_MAX_KM && nearLive.length === 0; // auch bis 50 km war niemand live
 
   // Easteregg: Weihnachtsmann gefunden -> verstecktes Achievement (einmalig)
   useEffect(() => { if (pinged && santaKm != null && !santaKnown) onFoundSanta?.(); }, [pinged, santaKm, santaKnown]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -361,7 +362,7 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
   };
 
   const value = {
-    me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, radiusKm, usedKm, widened, santaKm, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
+    me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, radiusKm, usedKm, widened, searchedMax, santaKm, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
     canAdd, nq, setNewName, setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done,
     usable, confirm, myPing, askPos, vq, setVq, nvq, addName, planItems, hits, challengedIds, challengeTo, colorOf, badgeOf, photoOf,
   };
@@ -370,7 +371,7 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
 
 /* Der grosse Ping-Knopf samt Ergebnis: steht ganz oben auf dem Live-Bildschirm, ueber den Duellen */
 export function PingBlock() {
-  const { pinging, pinged, doPing, nearLive, entry, radiusKm, usedKm, widened, santaKm } = useContext(VenueCtx);
+  const { pinging, pinged, doPing, nearLive, entry, radiusKm, usedKm, widened, searchedMax, santaKm } = useContext(VenueCtx);
   return (
     <>
       <div className="ping-box">
@@ -391,7 +392,9 @@ export function PingBlock() {
                   )}
                   {nearLive.map((x) => entry(x, x.dist))}
                 </div></>
-                : <p className="hint center">{t("Im Umkreis von {r} ist gerade niemand live – sei du der Erste!", { r: fmtRadius(radiusKm) })}</p>}
+                : <p className="hint center">{searchedMax
+                  ? t("Im Umkreis von {r} war niemand live – auch nach Erweiterung bis {r2} nicht. Sei du der Erste!", { r: fmtRadius(radiusKm), r2: fmtRadius(50) })
+                  : t("Im Umkreis von {r} ist gerade niemand live – sei du der Erste!", { r: fmtRadius(radiusKm) })}</p>}
             </div>
           </div>
         </div>
