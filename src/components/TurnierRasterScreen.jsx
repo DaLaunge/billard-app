@@ -86,6 +86,11 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // fuers Turnier normal, fliessen aber nicht ins Rating (rebuild_elo()
   // schliesst is_guest aus).
   const [addQuery, setAddQuery] = useState("");
+  const playersRef = useRef(players);
+  const onReloadRef = useRef(onReload);
+  const reloadedFor = useRef("");
+  playersRef.current = players;
+  onReloadRef.current = onReload;
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
@@ -99,6 +104,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     setTour(tr || null);
     setTms(matches || []);
     setRoster(ros || []);
+    // Per Einladungslink angemeldete Gaeste sind neue players-Zeilen, die die App-Spielerliste noch nicht kennt: ohne Namen blieben sie in der
+    // Anmeldeliste unsichtbar (obwohl gezaehlt). Dann die Spielerliste der App neu laden - hoechstens einmal je unbekannter Gruppe.
+    const known = new Set(playersRef.current.map((p) => p.id));
+    const unknown = [...(ros || []).map((r) => r.player_id), ...(matches || []).flatMap((m) => [m.player1_id, m.player2_id])]
+      .filter((id) => id && !known.has(id)).sort().join(",");
+    if (unknown && unknown !== reloadedFor.current) { reloadedFor.current = unknown; onReloadRef.current?.(); }
     if (tr?.status === "finished") {
       const { data: fs } = await supabase.rpc("tournament_final_standings", { p_tournament_id: tournamentId });
       setFinalStandings(fs || null);
