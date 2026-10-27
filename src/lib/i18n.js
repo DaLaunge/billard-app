@@ -1270,6 +1270,8 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "„{name}“ als Ort verwenden": "Use “{name}” as place",
+    "Dort gibt es schon ein Lokal: {name}.": "There is already a venue there: {name}.",
     "Nachricht (optional)": "Message (optional)",
     "Hinweis (optional), z. B. 'Bin flexibel'": "Note (optional), e.g. 'I am flexible'",
     "Eintragen": "Add",

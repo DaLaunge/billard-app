@@ -10,7 +10,7 @@ import LocationForm from "./LocationForm";
    Routen-Knopf und einen Stift zum Korrigieren; das X hebt die Auswahl auf. */
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 
-export default function LocationPicker({ value, onChange, toast, me }) {
+export default function LocationPicker({ value, onChange, toast, me, onUseText }) {
   const { list } = useLocations();
   const [mode, setMode] = useState(null); // null | "new" | "edit"
   const [q, setQ] = useState("");
@@ -61,7 +61,14 @@ export default function LocationPicker({ value, onChange, toast, me }) {
   }
 
   const nq = norm(q);
-  const matches = (nq ? visible.filter((l) => norm(l.name).includes(nq)) : visible).slice(0, 6);
+  // Treffer ueber Name UND Adresse: wer eine Adresse tippt, die zu einem bekannten Lokal gehoert, bekommt das Lokal angeboten
+  const matches = (nq ? visible.filter((l) => norm(`${l.name} ${l.address || ""}`).includes(nq)) : visible).slice(0, 6);
+  // Enter = schnellster Weg: erster Treffer, sonst (live) den Text als Ort verwenden
+  const onEnter = () => {
+    if (nq.length < 2) return;
+    if (matches[0] && (exact || matches.length === 1)) { onChange(matches[0].id); setQ(""); return; }
+    if (onUseText) { onUseText(q.trim()); setQ(""); }
+  };
   const exact = visible.some((l) => norm(l.name) === nq);
   const open = focus || nq.length > 0;
   return (
@@ -69,7 +76,7 @@ export default function LocationPicker({ value, onChange, toast, me }) {
       <div className="search-row">
         <Search size={16} className="mail-ico" />
         <input placeholder={t("Lokal suchen oder eingeben, z. B. Billardcafe Mitte")} value={q} maxLength={60}
-          onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)} onChange={(e) => setQ(e.target.value)} />
+          onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") onEnter(); }} />
       </div>
       <div className={"collapsible" + (open && !mode ? " open" : "")} inert={open && !mode ? undefined : ""}>
        <div className="collapsible-inner">
@@ -79,6 +86,11 @@ export default function LocationPicker({ value, onChange, toast, me }) {
               <MapPin size={13} /> <b>{l.name}</b>{l.address ? <span className="rank-meta"> · {l.address}</span> : null}{l.status === "pending" ? " ⏳" : ""}
             </button>
           ))}
+          {nq.length >= 2 && !exact && onUseText && (
+            <button type="button" className="loc-result loc-new" onClick={() => { onUseText(q.trim()); setQ(""); }}>
+              <MapPin size={14} /> {t("„{name}“ als Ort verwenden", { name: q.trim() })}
+            </button>
+          )}
           {nq.length >= 2 && !exact && (
             <button type="button" className="loc-result loc-new" onClick={() => openForm("new")}>
               <Plus size={14} /> {t("„{name}“ als neues Lokal anlegen", { name: q.trim() })}

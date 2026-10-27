@@ -163,6 +163,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
   const [here, setHere] = useState(null); // eigene Position { lat, lng }
   const [addr, setAddr] = useState(null); // Adresse zur eigenen Position (Nominatim), "" = keine gefunden
+  const [placeText, setPlaceText] = useState(""); // frei getippter Ort ("Ort verwenden"), ohne Lokal
   const [own, setOwn] = useState(false); // live mit dem eigenen Standort, ohne Lokal (z. B. privater Tisch)
   const [locating, setLocating] = useState(false);
   const [acc, setAcc] = useState(null); // GPS-Genauigkeit in Metern
@@ -182,11 +183,24 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     if (found.length === 1) { setLocId(found[0].l.id); setOwn(false); }
     else if (found.length === 0) { setLocId(null); setOwn(true); }
   };
+  // "Ort verwenden": der getippte Text wird als Ort genommen, ohne Lokal. Die App sucht dazu eine Position; gehoert sie zu einem bekannten
+  // Lokal (bis 100 m), wird stattdessen gleich dieses Lokal gewaehlt.
+  const useText = async (text) => {
+    setPlaceText(text); setOwn(true); setLocId(null); setAcc(null);
+    let hit = null;
+    try { hit = (await searchAddress(text))[0] || null; } catch { /* ohne Position weiter */ }
+    if (!hit) { setHere(null); setAddr(text); return; }
+    const p = { lat: hit.lat, lng: hit.lng };
+    const known = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
+      .map((l) => ({ l, d: distanceM(p, l) })).filter((x) => x.d <= 100).sort((a, b) => a.d - b.d)[0];
+    if (known) { setLocId(known.l.id); setOwn(false); setPlaceText(""); toast?.(t("Dort gibt es schon ein Lokal: {name}.", { name: known.l.name })); return; }
+    setHere(p); setAddr(hit.label.split(", ").slice(0, 4).join(", "));
+  };
   const findMe = () => {
     if (!navigator.geolocation) { toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (p) => { setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
+      (p) => { setPlaceText(""); setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
       () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib eine Adresse ein oder wähle den Ort auf der Karte.")); setShowAddr(true); },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
@@ -196,8 +210,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     if (q.length < 3) return;
     try { setResults(await searchAddress(q)); } catch { toast?.(t("Adresssuche gerade nicht erreichbar.")); setResults([]); }
   };
-  const pickAddr = (r) => { setAcc(null); applyPos({ lat: r.lat, lng: r.lng }, r.label.split(", ").slice(0, 4).join(", ")); setResults(null); setShowMap(true); };
-  const onMapPick = (p) => { setAcc(null); applyPos(p); };
+  const pickAddr = (r) => { setPlaceText(""); setAcc(null); applyPos({ lat: r.lat, lng: r.lng }, r.label.split(", ").slice(0, 4).join(", ")); setResults(null); setShowMap(true); };
+  const onMapPick = (p) => { setPlaceText(""); setAcc(null); applyPos(p); };
   const venue = list.find((l) => l.id === locId) || null;
   return (
     <div className="venue-form">
@@ -210,7 +224,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           <button type="button" className={"chip-btn" + (showAddr ? " sel" : "")} onClick={() => setShowAddr((v) => !v)}><Search size={14} /> {t("Adresse")}</button>
           <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
           <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
-            {!here ? t("noch kein Standort")
+            {placeText && !here ? placeText
+              : !here ? t("noch kein Standort")
               : addr === null ? t("Adresse wird gesucht …")
               : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}
           </span>
@@ -255,8 +270,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {live && acc != null && acc > 100 && (
         <p className="hint">{t("Genauigkeit ca. {m} m – bei Bedarf auf der Karte korrigieren.", { m: acc })}</p>
       )}
-      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) setOwn(false); }} toast={toast} me={me} />
-      {live && !venue && !(own && here) && (
+      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setOwn(false); setPlaceText(""); } }} toast={toast} me={me} onUseText={live ? useText : undefined} />
+      {live && !venue && !(own && (here || placeText)) && (
         <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“, gib eine Adresse ein oder wähle ein Lokal.")}</p>
       )}
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
@@ -276,7 +291,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
         </div>
         <button type="button" className="icon-btn" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
         <button type="button" className="venue-go" disabled={!live && !date}
-          onClick={() => { onSubmit({ date, msg, hours, locId, venue, here: own && !venue ? here : null }); onDone(); }}>
+          onClick={() => { onSubmit({ date, msg, hours, locId, venue, here: own && !venue ? here : null, placeText: own && !venue ? placeText : "" }); onDone(); }}>
           {live ? <Radio size={16} /> : <Calendar size={16} />} {label || (live ? t("Live gehen") : t("Eintragen"))}
         </button>
       </div>
@@ -621,7 +636,7 @@ export default function VenueList() {
                 <div className={"collapsible" + (open && form ? " open" : "")} inert={open && form ? undefined : ""}>
                   <div className="collapsible-inner">
                     <div className="venue-body">
-                      {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours, here }) => onCreate(venue ? venue.name : here ? t("Mein Standort") : t("Ort offen"), msg, hours, venue ? null : here)} onDone={() => setForm(null)} /></Unfold>}
+                      {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours, here, placeText }) => onCreate(venue ? venue.name : (placeText || (here ? t("Mein Standort") : t("Ort offen"))), msg, hours, venue ? null : here)} onDone={() => setForm(null)} /></Unfold>}
                       {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setForm(null)} /></Unfold>}
                     </div>
                   </div>
@@ -684,7 +699,7 @@ export function VenueQuick() {
       </div>
       <div className={"collapsible" + (open ? " open" : "")} inert={open ? undefined : ""}>
         <div className="collapsible-inner">
-          {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours, here }) => onCreate(venue ? venue.name : here ? t("Mein Standort") : t("Ort offen"), msg, hours, venue ? null : here)} onDone={() => setOpen(null)} />}
+          {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours, here, placeText }) => onCreate(venue ? venue.name : (placeText || (here ? t("Mein Standort") : t("Ort offen"))), msg, hours, venue ? null : here)} onDone={() => setOpen(null)} />}
           {open === "plan" && <VenueMask kind="plan" onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setOpen(null)} />}
         </div>
       </div>
