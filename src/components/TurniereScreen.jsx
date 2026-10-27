@@ -234,6 +234,11 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={18} /></button>
               <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
+            <div className="chips small">
+              {suggestNames({ place, discipline, format, taken: takenNames }).map((s) => (
+                <button key={s} type="button" className={"chip" + (name === s ? " active" : "")} onClick={() => setName(s)}>{s}</button>
+              ))}
+            </div>
             <FieldLabel label={t("Ort (optional)")} info={t("Wie bei „Live gehen“: ein Lokal auswählen oder einen Ort eintippen. Der Ort steht dann im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel links würfelt einen kreativen Namen.")} />
             <LocationPicker value={placeLocId} toast={toast} me={me} placeholder={t("Lokal oder Ort suchen oder eingeben")}
               onChange={(id) => { setPlaceLocId(id); if (id) { setPlaceText(""); } else { setPlaceText(""); } }}
@@ -245,11 +250,6 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 <button type="button" className="icon-btn small" onClick={() => setPlaceText("")} aria-label={t("Anderes Lokal")} title={t("Anderes Lokal")}><X size={16} /></button>
               </div>
             )}
-            <div className="chips small">
-              {suggestNames({ place, discipline, format, taken: takenNames }).map((s) => (
-                <button key={s} type="button" className={"chip" + (name === s ? " active" : "")} onClick={() => setName(s)}>{s}</button>
-              ))}
-            </div>
 
             {/* Format als Kacheln mit Struktur-Zeichnung statt als Textchips
                 (Nutzer-Feedback: Erklaerungen lieber visuell). "Doppel-K.O."
