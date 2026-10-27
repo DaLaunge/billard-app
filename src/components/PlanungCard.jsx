@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { Calendar, Check, X } from "lucide-react";
+import { Calendar, Check, X, Pencil } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials, fmtDate } from "../lib/format";
 import Ball from "./Ball";
+import DayPicker from "./widgets/DayPicker";
 import Emoji from "./Emoji";
 import { EmojiText } from "./Emoji";
 
-export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, onReply, onUnreply, onDelete, onOpenProfile }) {
+export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, onReply, onUnreply, onDelete, onUpdate, onOpenProfile }) {
   const myReply = planning.replies?.find((r) => r.player_id === me.id);
   const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
   const mine = planning.player_id === me.id;
+  const [editing, setEditing] = useState(false);
+  const [eDate, setEDate] = useState(planning.planned_date);
+  const [eMsg, setEMsg] = useState(planning.message || "");
 
   return (
     <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
@@ -38,10 +42,33 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
         </div>
       )}
 
-      {mine && (
-        <button className="btn ghost" onClick={() => onDelete(planning.id)}>
-          <X size={15} /> {t("Planung löschen")}
-        </button>
+      {mine && editing && (
+        <div className="reply-form">
+          <DayPicker value={eDate} onChange={setEDate} />
+          <div className="search-row" style={{ marginBottom: 8 }}>
+            <Pencil size={16} className="mail-ico" />
+            <input placeholder={t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")} value={eMsg}
+              maxLength={120} onChange={(e) => setEMsg(e.target.value)} />
+          </div>
+          <div className="confirm-actions">
+            <button className="chip-btn ok" disabled={!eDate} onClick={() => { onUpdate(planning.id, eDate, eMsg); setEditing(false); }}>
+              <Check size={15} /> {t("Speichern")}
+            </button>
+            <button className="chip-btn no" onClick={() => setEditing(false)}><X size={15} /> {t("Abbrechen")}</button>
+          </div>
+        </div>
+      )}
+      {mine && !editing && (
+        <div className="sp-controls">
+          {onUpdate && (
+            <button className="btn ghost" onClick={() => { setEDate(planning.planned_date); setEMsg(planning.message || ""); setEditing(true); }}>
+              <Pencil size={15} /> {t("Planung ändern")}
+            </button>
+          )}
+          <button className="btn ghost" onClick={() => onDelete(planning.id)}>
+            <X size={15} /> {t("Planung löschen")}
+          </button>
+        </div>
       )}
 
       {!mine && !myReply && !open && (

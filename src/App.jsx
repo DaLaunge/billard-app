@@ -1470,6 +1470,12 @@ export default function App() {
     else toast(t("Planung eingetragen!"));
     loadData();
   };
+  const updatePlanning = async (id, date, msg) => {
+    const { error } = await supabase.rpc("update_planning", { p_planning_id: id, p_planned_date: date, p_message: msg.trim() || null });
+    if (error) toast(t("Fehler: ") + error.message);
+    else toast(t("Planung geändert."));
+    loadData();
+  };
   const deletePlanning = async (id) => {
     const { error } = await supabase.rpc("close_planning", { p_planning_id: id });
     if (error) toast(t("Fehler: ") + error.message);
@@ -1786,7 +1792,7 @@ export default function App() {
                   colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                   onCreate={createPing} onClose={closePing} onOpenProfile={openProfile}
                   onReply={replyPing} onUnreply={unreplyPing}
-                  onCreatePlanning={createPlanning} onDeletePlanning={deletePlanning}
+                  onCreatePlanning={createPlanning} onDeletePlanning={deletePlanning} onUpdatePlanning={updatePlanning}
                   onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}

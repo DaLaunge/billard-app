@@ -3510,3 +3510,17 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 @media (max-width: 430px) { .stat-filterbar .nearby-sep { display: none; } .stat-filterbar .disc-picks.compact { gap: 2px; } }
 .deck-split { display: flex; flex-direction: column; gap: var(--card-gap); }
 .deck-split > .stat-block { margin-bottom: 0; }
+
+/* Tagesauswahl (Planung): 14 Tage als Kacheln mit Wochentag, gewaehltes Datum ausgeschrieben darunter. */
+.day-picker { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.day-row { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: thin; }
+.day-chip { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 52px;
+  padding: 6px 4px; border-radius: 12px; font: inherit; color: var(--ivory); cursor: pointer; }
+.day-chip b { font-size: calc(17px * var(--fs, 1)); line-height: 1.1; }
+.day-wd, .day-mon { font-size: calc(11px * var(--fs, 1)); color: var(--ivory-dim); text-transform: uppercase; letter-spacing: .03em; }
+.day-chip.sel { background: var(--accent); border-color: var(--accent); color: var(--accent-ink, #000); }
+.day-chip.sel .day-wd, .day-chip.sel .day-mon { color: inherit; }
+.day-full { font-weight: 700; color: var(--accent); font-size: calc(14px * var(--fs, 1)); }
+.day-more { position: relative; display: flex; }
+.day-more .day-chip { min-height: 100%; }
+.day-more input { position: absolute; inset: 0; opacity: 0; pointer-events: none; width: 100%; }

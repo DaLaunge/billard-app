@@ -8,6 +8,7 @@ import ImprintFooter from "./widgets/ImprintFooter";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
+import DayPicker from "./widgets/DayPicker";
 import { useCardLayout } from "../lib/useCardLayout";
 import { deckIds, foldedDeck, withoutFolded } from "../lib/cardLayout";
 
@@ -29,7 +30,7 @@ const writeLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* Pr
 
 export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
-  onCreatePlanning, onDeletePlanning, onReplyPlanning, onUnreplyPlanning,
+  onCreatePlanning, onDeletePlanning, onUpdatePlanning, onReplyPlanning, onUnreplyPlanning,
   onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout, toast }) {
   const myPing = pings.find((p) => p.player_id === me.id);
   const others = pings.filter((p) => p.player_id !== me.id);
@@ -46,10 +47,6 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   const otherPlannings = plannings.filter((p) => p.player_id !== me.id);
   const [planDate, setPlanDate] = useState("");
   const [planMsg, setPlanMsg] = useState("");
-  const todayISO = new Date().toISOString().slice(0, 10);
-  const maxPlanDate = new Date();
-  maxPlanDate.setDate(maxPlanDate.getDate() + 120);
-  const maxPlanISO = maxPlanDate.toISOString().slice(0, 10);
 
   const openChallenges = (challenges || []).filter((c) => c.status === "open" && new Date(c.expires_at) > new Date());
   const challengesToMe = openChallenges.filter((c) => c.challenged_id === me.id);
@@ -172,11 +169,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
             <p className="hint" style={{ marginTop: 0 }}>
               {t("Wann bist du voraussichtlich verfuegbar? Andere koennen dir dann direkt eine Nachricht schicken - spart laestiges Hin-und-Her bei der Terminfindung.")}
             </p>
-            <div className="search-row">
-              <Calendar size={16} className="mail-ico" />
-              <input type="date" value={planDate} min={todayISO} max={maxPlanISO} aria-label={t("Datum")}
-                onChange={(e) => setPlanDate(e.target.value)} />
-            </div>
+            <DayPicker value={planDate} onChange={setPlanDate} />
             <div className="search-row">
               <Pencil size={16} className="mail-ico" />
               <input placeholder={t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")} value={planMsg}
@@ -200,7 +193,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
         {myPlannings.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Meine Planungen:")}</p>}
         {myPlannings.map((p) => (
           <PlanungCard key={p.id} planning={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onOpenProfile={onOpenProfile} onDelete={onDeletePlanning} />
+            onOpenProfile={onOpenProfile} onDelete={onDeletePlanning} onUpdate={onUpdatePlanning} />
         ))}
 
         {otherPlannings.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Weitere Planungen:")}</p>}
