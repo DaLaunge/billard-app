@@ -1,4 +1,4 @@
-export const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
+﻿export const DEFAULT_DISCIPLINES = ["8 Ball", "9 Ball", "10 Ball", "14/1 Endlos"];
 /* Heyball (WPA Rules of Heyball, 2025-08-16) ist seit 2026-10-10 eine feste Disziplin neben den vier anderen
    (zuerst gab es einen Admin-Schalter, er wurde am selben Tag wieder entfernt). DEFAULT_DISCIPLINES bleibt die Liste
    der vier aelteren; activeDisciplines() ist alles, was man bei Match, Turnier, Filtern und Regelkunde waehlen kann. */
@@ -31,12 +31,12 @@ export function normalizeListCount(v) {
 // Jeder Push auf test zaehlt dagegen "<letzte Prod-Nummer>.<Minor>", also 391.0,
 // 391.1, ... bis zur Freigabe; danach steht Prod auf 392 und test beginnt bei
 // 392.0. Als STRING, damit "391.10" nicht zu 391.1 wird.
-export const APP_VERSION = "424.28";
+export const APP_VERSION = "424.29";
 
 /* Erfolgs-Katalog wird zur Laufzeit aus der Datenbank geladen (Tabelle
    badge_catalog). BADGE_INFO ist eine modulweite Map, die die App beim
-   Start befüllt – so kennt auch die (zustandslose) Ball-Komponente die
-   Emojis. Der kleine Fallback greift nur, falls der Katalog noch lädt. */
+   Start befÃ¼llt â€“ so kennt auch die (zustandslose) Ball-Komponente die
+   Emojis. Der kleine Fallback greift nur, falls der Katalog noch lÃ¤dt. */
 export const BADGE_INFO = {};
-export const BADGE_FALLBACK = { emoji: "🏅", name: "Erfolg", description: "" };
+export const BADGE_FALLBACK = { emoji: "ðŸ…", name: "Erfolg", description: "" };
 export const badgeInfo = (key) => BADGE_INFO[key] || BADGE_FALLBACK;

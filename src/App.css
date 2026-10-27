@@ -3650,7 +3650,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   .ping-btn.pinging .ping-ring.r3 { animation-delay: .6s; }
   .ping-btn.pinging .ping-orb { animation: ping-pop .5s ease-out; }
   @keyframes ping-idle { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.5); opacity: 0; } }
-  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.1); opacity: 0; } }
+  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 70% { opacity: .18; } 100% { transform: scale(3.1); opacity: 0; } }
   @keyframes ping-pop { 0% { transform: scale(1); } 40% { transform: scale(.88); } 100% { transform: scale(1); } }
 }
 
@@ -3713,3 +3713,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   @keyframes ping-bob { 0%, 100% { transform: translateY(0); opacity: .75; } 50% { transform: translateY(-4px); opacity: 1; } }
   @keyframes ping-hop { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-16px) scale(1.35); text-shadow: 0 0 18px var(--accent); } 100% { transform: translateY(0) scale(1); } }
 }
+
+/* Ping steht frei, ohne Karte: kein Hintergrund/Rand, Ringe duerfen ueber den Knopf hinauslaufen (verblassen vor dem Rand) */
+.ping-box { position: relative; z-index: 2; }
+.ping-btn { background: none; border: 0; box-shadow: none; overflow: visible; min-height: 190px; padding: 0; }
