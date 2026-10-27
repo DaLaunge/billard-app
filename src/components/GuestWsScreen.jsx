@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Trophy, Check, X, UserPlus, LogOut, Users } from "lucide-react";
+import { Trophy, Check, X, UserPlus, LogOut, Users, Minus, Plus, Flag } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -18,6 +18,28 @@ export default function GuestWsScreen({ session, onLogin, onForget, onSession })
   const [busy, setBusy] = useState(false);
   const [popup, setPopup] = useState(false);
   const wasAtTable = useRef(false);
+  // Spiel mitzaehlen und melden (nur am Tisch). Der Zaehler gilt je Spiel: Schluessel = Runde + bisherige Spiele dieses Gastes.
+  const [score, setScore] = useState({ a: 0, b: 0 });
+  const [ask, setAsk] = useState(false);
+  const trackKey = st ? `guest_ws_track:${sessionId}:${(st.wins || 0) + (st.losses || 0)}` : null;
+  useEffect(() => {
+    if (!trackKey) return;
+    try { setScore(JSON.parse(localStorage.getItem(trackKey) || "null") || { a: 0, b: 0 }); } catch { setScore({ a: 0, b: 0 }); }
+    setAsk(false);
+  }, [trackKey]);
+  const bump = (who, d) => setScore((v) => {
+    const n = { ...v, [who]: Math.max(0, v[who] + d) };
+    try { if (trackKey) localStorage.setItem(trackKey, JSON.stringify(n)); } catch { /* */ }
+    return n;
+  });
+  const report = async () => {
+    setBusy(true); setErr("");
+    const { error } = await supabase.rpc("guest_ws_report_game", { p_token: token, p_my_score: score.a, p_opp_score: score.b });
+    setBusy(false);
+    if (error) { setErr(error.message); return; }
+    try { if (trackKey) localStorage.removeItem(trackKey); } catch { /* */ }
+    setAsk(false); setScore({ a: 0, b: 0 }); load();
+  };
   const link = (() => { const u = new URL("/", window.location.origin); u.searchParams.set("ws", sessionId); return u.toString(); })();
 
   const load = useCallback(async () => {
@@ -94,7 +116,30 @@ export default function GuestWsScreen({ session, onLogin, onForget, onSession })
         </p>
         {!running && <p className="hint center">{t("Diese Runde ist beendet.")}</p>}
         {running && st.in_queue && st.at_table && (
-          <p className="hint center"><b>{t("Du stehst am Tisch")}</b> – {t("gegen {name}", { name: st.opponent || "?" })}. {t("Die Spieler am Tisch oder die Leitung tragen das Ergebnis ein.")}</p>
+          <>
+            <p className="hint center"><b>{t("Du stehst am Tisch")}</b> – {t("gegen {name}", { name: st.opponent || "?" })}.</p>
+            <div className="score-row">
+              {[["a", st.me], ["b", st.opponent || "?"]].map(([who, name]) => (
+                <div className="score-col" key={who}>
+                  <b style={{ fontSize: 13 }}>{name}</b>
+                  <div className="score-num">{score[who]}</div>
+                  <div className="chips" style={{ justifyContent: "center" }}>
+                    <button className="round-btn" onClick={() => bump(who, -1)} aria-label="-1"><Minus size={20} /></button>
+                    <button className="round-btn" onClick={() => bump(who, 1)} aria-label="+1"><Plus size={20} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {!ask ? (
+              <button className="btn primary" disabled={score.a === score.b} onClick={() => setAsk(true)}><Flag size={16} /> {t("Spiel beenden")}</button>
+            ) : (
+              <>
+                <p className="hint center">{t("Ergebnis {a} : {b} jetzt melden?", { a: score.a, b: score.b })}</p>
+                <button className="btn primary" disabled={busy} onClick={report}><Check size={16} /> {t("Ja, melden")}</button>
+                <button className="btn ghost" onClick={() => setAsk(false)}>{t("Noch nicht")}</button>
+              </>
+            )}
+          </>
         )}
         {running && waiting && (
           <p className="hint center">{t("Du bist an Platz {n} der Warteschlange.", { n: st.position - 1 })} {t("Lass diese Seite offen – du siehst hier, wann du dran bist.")}</p>

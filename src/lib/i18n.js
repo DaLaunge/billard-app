@@ -893,6 +893,7 @@ const TRANSLATIONS = {
     "Du bist zum Turnier „{name}“ eingeladen:": "You are invited to the tournament “{name}”:",
     "Du bist für das Turnier angemeldet.": "You are registered for the tournament.",
     "Du bist im Turnier.": "You are in the tournament.",
+    "Spiel beenden": "Finish game",
     "Bei dieser Runde kannst du dich nicht per Link einreihen (Doppel oder beendet).": "You cannot join this round via link (doubles or finished).",
     "Du bist in der Warteschlange.": "You are in the queue.",
     "Du stehst am Tisch": "You are at the table",
