@@ -1211,6 +1211,8 @@ const TRANSLATIONS = {
     "mit": "with",
     "Mehr anzeigen": "Show more",
     "Anderes Datum": "Other date",
+    "Erkundung": "Exploration",
+    "Lokal(e) eingetragen": "venue(s) added",
     "Name des Lokals, z. B. Billardcafe Mitte": "Name of the venue, e.g. Billiard Cafe Central",
     "Wo liegt das Lokal?": "Where is the venue?",
     "Adresse": "Address",

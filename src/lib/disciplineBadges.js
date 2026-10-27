@@ -7,6 +7,7 @@
      in JEDER Disziplin (kleinster Wert ueber alle fuenf): xw Siege | xm Matches | xn zu null
      Hill-Hill (Einzel, ohne 14/1, Endstand W:W-1 ab W=3): hm gespielt | hw gewonnen | hc gewonnen nach 2 Punkten Rueckstand (braucht das Punkte-Protokoll)
      Aktivitaet (alle bestaetigten Matches, Einzel und Doppel, Tage nach Wiener Zeit): aw Wochen in Folge gespielt | ad verschiedene Spieltage | ac Rueckkehr nach 30+ Tagen Pause
+     Erkundung (Lokale, supabase/2026-10-27c_explorer_badges.sql): ex freigegebene Lokale, die der Spieler eingetragen hat
      Doppel: dm Doppel gespielt | dw Doppel-Siege | ds Doppel-Siege in Folge | dp verschiedene Partner
    Gezaehlt wird wie bei allen Erfolgen: nur bestaetigte Matches ohne Gast-Beteiligung; je Disziplin und "Alle" nur Einzel,
    "Doppel" nur Doppel (ein Doppelmatch zaehlt fuer alle vier mit dem Ergebnis der eigenen Seite).
@@ -91,6 +92,12 @@ const DOUBLES = [
   ["dp", 5, "💃", "Tanzpartner", "Dance Partner"], ["dp", 10, "💑", "Die ganze Tanzschule", "The Whole Dance School"],
 ];
 
+// Erkundung: Lokale eintragen (zaehlt, sobald ein Lokal freigegeben ist - Admin oder spaeter Bestaetigung durch andere Spieler)
+const EXPLORER = [
+  ["ex", 1, "🔦", "Erkunder", "Explorer"], ["ex", 5, "🔭", "Späher", "Scout"], ["ex", 10, "📌", "Pin-Setzer", "Pin Dropper"],
+  ["ex", 25, "🪧", "Wegweiser", "Signpost"], ["ex", 50, "🏙️", "Stadtführer", "City Guide"],
+];
+
 // Hill-Hill: beide Seiten stehen einen Punkt vor dem Ziel (Endstand W:W-1, ab W = 3, nicht 14/1)
 const HILL = [
   ["hm", 1, "🏕️", "Basislager", "Base Camp"], ["hm", 5, "🪜", "Aufstieg", "Ascent"], ["hm", 10, "🪨", "Nervenfels", "Rock of Nerves"], ["hm", 25, "⛑️", "Bergführer", "Mountain Guide"],
@@ -124,6 +131,8 @@ const DESC = {
   ds: (n) => [`${n} Doppel-Siege in Folge`, `${n} doubles wins in a row`],
   aw: (n) => [`${n} Wochen in Folge gespielt`, `Played ${n} weeks in a row`],
   ad: (n) => [`An ${n} verschiedenen Tagen gespielt`, `Played on ${n} different days`],
+  ex: (n) => [n === 1 ? "Ein Lokal eingetragen (freigegeben)" : `${n} Lokale eingetragen (freigegeben)`,
+    n === 1 ? "Added a venue (approved)" : `Added ${n} venues (approved)`],
   ac: (n) => [n === 1 ? "Nach mindestens 30 Tagen Pause wieder gespielt" : `${n}-mal nach mindestens 30 Tagen Pause wieder gespielt`,
     n === 1 ? "Came back to play after a break of 30+ days" : `Came back ${n} times after a break of 30+ days`],
   hm: (n) => [n === 1 ? "1 Hill-Hill-Match gespielt (beide einen Punkt vor dem Ziel)" : `${n} Hill-Hill-Matches gespielt`,
@@ -134,7 +143,7 @@ const DESC = {
   dp: (n) => [`Doppel mit ${n} verschiedenen Partnern gespielt`, `Played doubles with ${n} different partners`],
 };
 
-const SUBS = { cross: "Alle Disziplinen", doubles: "Doppel", hill: "Hill-Hill", activity: "Aktivität" };
+const SUBS = { cross: "Alle Disziplinen", doubles: "Doppel", hill: "Hill-Hill", activity: "Aktivität", explorer: "Erkundung" };
 
 /* Alle neuen Erfolge als flache Liste. sort: ab 1000 (hinter dem bisherigen Katalog), Reihenfolge = Block, Familie, Stufe. */
 export const BADGES = (() => {
@@ -162,6 +171,7 @@ export const BADGES = (() => {
   extra(DOUBLES, SUBS.doubles, "dd");
   extra(HILL, SUBS.hill, "dh");
   extra(ACTIVITY, SUBS.activity, "da");
+  extra(EXPLORER, SUBS.explorer, "de");
   return out;
 })();
 

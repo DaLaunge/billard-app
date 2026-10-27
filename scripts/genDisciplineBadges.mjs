@@ -3,8 +3,10 @@
 import { writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { BADGES, DISCIPLINES, OLD_HEYBALL, OLD_ALL, CATEGORY, ALL_SUFFIX } from "../src/lib/disciplineBadges.js";
+import { BADGES as ALL_BADGES, DISCIPLINES, OLD_HEYBALL, OLD_ALL, CATEGORY, ALL_SUFFIX } from "../src/lib/disciplineBadges.js";
 
+// Erkundungs-Erfolge (Familie ex) gehoeren zur eigenen Migration (scripts/genExplorerBadges.mjs): sie brauchen die Tabelle locations
+const BADGES = ALL_BADGES.filter((b) => b.family !== "ex");
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const q = (s) => (s == null ? "null" : "'" + String(s).replace(/'/g, "''") + "'");
 
