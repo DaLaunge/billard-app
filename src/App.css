@@ -3741,3 +3741,6 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 
 .quick { margin-top: 8px; }
 .screen > .venue-list { margin-top: 8px; }
+
+.venue-warn { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--warn); }
+.venue-place.open { color: var(--warn); }

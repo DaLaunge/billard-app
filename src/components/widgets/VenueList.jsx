@@ -47,6 +47,7 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
       <div className="venue-line">
         {person(nick, 24)}
         {ping && <span className="live-pill small"><span className="live-dot" /> LIVE <span className="rank-meta">{timeLeft(item.expires_at)}</span></span>}
+        {!place && !ping && <span className="venue-place open"><MapPin size={13} /> {t("Ort noch auszumachen")}</span>}
         {place && (
           <span className="venue-place"><MapPin size={13} /> <b>{place.name}</b>{dist != null && <> · {fmtDist(dist)}</>}
             {place.lat != null && <RouteButton place={place} size={14} />}
@@ -123,8 +124,8 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
               </div>
             )}
             {mine && !ping && editing && (
-              <PlanForm initial={{ date: item.planned_date, msg: item.message || "" }} label={t("Speichern")}
-                onSubmit={(d, m) => onUpdate(item.id, d, m, null)} onDone={() => setEditing(false)} />
+              <VenueMask kind="plan" initial={{ date: item.planned_date, msg: item.message || "", locId: place?.id || null }} label={t("Speichern")}
+                onSubmit={({ date, msg: m, locId }) => onUpdate(item.id, date, m, locId)} onDone={() => setEditing(false)} />
             )}
           </div>
         </div>
@@ -144,46 +145,46 @@ function Unfold({ children }) {
   );
 }
 
-function LiveForm({ venue, onCreate, onDone }) {
-  const [msg, setMsg] = useState("");
-  const [hours, setHours] = useState(3);
-  return (
-    <div className="venue-form">
-      <div className="search-row">
-        <Pencil size={16} className="mail-ico" />
-        <input placeholder={t("Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'")} value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
-      </div>
-      <div className="chips small">
-        {[1, 2, 3, 6].map((h) => (
-          <button key={h} type="button" className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>{t("{n} Std", { n: h })}</button>
-        ))}
-      </div>
-      <div className="sp-controls">
-        <button type="button" className="btn ghost" onClick={onDone}>{t("Abbrechen")}</button>
-        <button type="button" className="btn primary" onClick={() => { onCreate(venue.name, msg, hours); onDone(); }}>
-          <Radio size={17} /> {t("Live gehen")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function PlanForm({ initial, label, onSubmit, onDone, withVenue, me, toast }) {
+/* EINE Maske fuer "Online gehen" und "Planung": Ort waehlen oder eingeben (LocationPicker), Nachricht, dazu bei Live die Dauer,
+   bei der Planung der Kalender. Bei Live ist der Ort Pflicht (mit bekanntem Standort ist das naechste Lokal vorgewaehlt),
+   bei der Planung optional - dann steht der Hinweis, dass man sich den Ort noch ausmachen muss. */
+function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
+  const { me, toast, list, pos, askPos } = useContext(VenueCtx);
+  const live = kind === "live";
   const [date, setDate] = useState(initial?.date || "");
   const [msg, setMsg] = useState(initial?.msg || "");
-  const [locId, setLocId] = useState(null);
+  const [hours, setHours] = useState(3);
+  const [locId, setLocId] = useState(venueId || initial?.locId || null);
+  useEffect(() => { if (live && !venueId && !pos) askPos(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!live || locId || !pos) return;
+    const best = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
+      .map((l) => ({ id: l.id, d: distanceM(pos, l) })).sort((a, b) => a.d - b.d)[0];
+    if (best) setLocId(best.id);
+  }, [pos]); // eslint-disable-line react-hooks/exhaustive-deps
+  const venue = list.find((l) => l.id === locId) || null;
   return (
     <div className="venue-form">
-      <DayPicker value={date} onChange={setDate} />
-      {withVenue && <LocationPicker value={locId} onChange={setLocId} toast={toast} me={me} />}
+      {!live && <DayPicker value={date} onChange={setDate} />}
+      <LocationPicker value={locId} onChange={setLocId} toast={toast} me={me} />
+      {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
+      {live && (
+        <div className="chips small">
+          {[1, 2, 3, 6].map((h) => (
+            <button key={h} type="button" className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>{t("{n} Std", { n: h })}</button>
+          ))}
+        </div>
+      )}
       <div className="search-row">
         <Pencil size={16} className="mail-ico" />
-        <input placeholder={t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")} value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
+        <input placeholder={live ? t("Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'") : t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")}
+          value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
       </div>
       <div className="sp-controls">
         <button type="button" className="btn ghost" onClick={onDone}>{t("Abbrechen")}</button>
-        <button type="button" className="btn primary" disabled={!date} onClick={() => { onSubmit(date, msg, locId); onDone(); }}>
-          <Calendar size={17} /> {label || t("Planung eintragen")}
+        <button type="button" className="btn primary" disabled={live ? !venue : !date}
+          onClick={() => { onSubmit({ date, msg, hours, locId, venue }); onDone(); }}>
+          {live ? <Radio size={17} /> : <Calendar size={17} />} {label || (live ? t("Live gehen") : t("Planung eintragen"))}
         </button>
       </div>
     </div>
@@ -464,8 +465,8 @@ export default function VenueList() {
               <div className={"collapsible" + (open && form ? " open" : "")} inert={open && form ? undefined : ""}>
                 <div className="collapsible-inner">
                   <div className="venue-body">
-                    {open && form === "live" && <Unfold><LiveForm venue={l} onCreate={onCreate} onDone={() => setForm(null)} /></Unfold>}
-                    {open && form === "plan" && <Unfold><PlanForm onSubmit={(d, m) => onCreatePlanning(d, m, l.id)} onDone={() => setForm(null)} /></Unfold>}
+                    {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours }) => onCreate(venue.name, msg, hours)} onDone={() => setForm(null)} /></Unfold>}
+                    {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setForm(null)} /></Unfold>}
                   </div>
                 </div>
               </div>
@@ -511,15 +512,11 @@ export function VenueSearch() {
   );
 }
 
-/* Zwei Schnellaktionen: "Online gehen" (zwei Tipps: Knopf, Lokal) und "Planung erstellen" (Ort ist optional) */
+/* Zwei Schnellaktionen: "Online gehen" und "Planung erstellen" - beide oeffnen dieselbe Maske (VenueMask) */
 export function VenueQuick() {
-  const { me, toast, myPing, onClose, onCreate, onCreatePlanning, pos, askPos, list, usable } = useContext(VenueCtx);
+  const { myPing, onClose, onCreate, onCreatePlanning } = useContext(VenueCtx);
   const [open, setOpen] = useState(null); // null | "live" | "plan"
-  const [hours, setHours] = useState(3);
-  const near = list.filter((l) => usable(l) && l.lat != null)
-    .map((l) => ({ l, d: pos ? distanceM(pos, l) : null }))
-    .sort((a, b) => ((a.d ?? 1e12) - (b.d ?? 1e12)) || a.l.name.localeCompare(b.l.name)).slice(0, 6);
-  const toggle = (k) => { const n = open === k ? null : k; setOpen(n); if (n === "live" && !pos) askPos(true); };
+  const toggle = (k) => setOpen(open === k ? null : k);
   return (
     <div className="quick">
       <div className="quick-row">
@@ -528,30 +525,10 @@ export function VenueQuick() {
           : <button type="button" className={"quick-btn live" + (open === "live" ? " on" : "")} onClick={() => toggle("live")} aria-expanded={open === "live"}><Radio size={16} /> {t("Online gehen")}</button>}
         <button type="button" className={"quick-btn" + (open === "plan" ? " on" : "")} onClick={() => toggle("plan")} aria-expanded={open === "plan"}><Calendar size={16} /> {t("Planung erstellen")}</button>
       </div>
-      <div className={"collapsible" + (open === "live" && !myPing ? " open" : "")} inert={open === "live" && !myPing ? undefined : ""}>
+      <div className={"collapsible" + (open ? " open" : "")} inert={open ? undefined : ""}>
         <div className="collapsible-inner">
-          <div className="venue-form quick-panel">
-            <div className="chips small">
-              {[1, 2, 3, 6].map((h) => (
-                <button key={h} type="button" className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>{t("{n} Std", { n: h })}</button>
-              ))}
-            </div>
-            <p className="q venue-sec">{pos ? t("Wo bist du? (nächste Lokale)") : t("Wo bist du?")}</p>
-            <div className="quick-chips">
-              {near.map(({ l, d }) => (
-                <button key={l.id} type="button" className="chip-btn" onClick={() => { onCreate(l.name, "", hours); setOpen(null); }}>
-                  <MapPin size={14} /> {l.name}{d != null && <span className="rank-meta"> · {fmtDist(d)}</span>}
-                </button>
-              ))}
-            </div>
-            {near.length === 0 && <p className="hint">{t("Noch kein Lokal mit Standort – such oben nach einem Lokal oder lege es an.")}</p>}
-            <p className="hint">{t("Anderes Lokal? Oben suchen und dort „Hier live gehen“ wählen.")}</p>
-          </div>
-        </div>
-      </div>
-      <div className={"collapsible" + (open === "plan" ? " open" : "")} inert={open === "plan" ? undefined : ""}>
-        <div className="collapsible-inner">
-          {open === "plan" && <PlanForm withVenue me={me} toast={toast} onSubmit={(d, m, locId) => onCreatePlanning(d, m, locId)} onDone={() => setOpen(null)} />}
+          {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours }) => onCreate(venue.name, msg, hours)} onDone={() => setOpen(null)} />}
+          {open === "plan" && <VenueMask kind="plan" onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setOpen(null)} />}
         </div>
       </div>
     </div>
