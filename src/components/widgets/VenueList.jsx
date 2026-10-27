@@ -1,9 +1,9 @@
-import { useState, useEffect, createContext, useContext } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, MessageSquare, ChevronDown } from "lucide-react";
+import { useState, useEffect, createContext, useContext, lazy, Suspense } from "react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2, MessageSquare, ChevronDown, Map as MapIcon } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
-import { useLocations, loadLocations, distanceM, reverseAddress } from "../../lib/locationStore";
+import { useLocations, loadLocations, distanceM, reverseAddress, searchAddress } from "../../lib/locationStore";
 import Ball from "../Ball";
 import Emoji, { EmojiText } from "../Emoji";
 import RouteButton from "./RouteButton";
@@ -147,6 +147,8 @@ function Unfold({ children }) {
   );
 }
 
+const LocationMap = lazy(() => import("./LocationMap"));
+
 /* EINE Maske fuer "Online gehen" und "Planung": Ort waehlen oder eingeben (LocationPicker), Nachricht, dazu bei Live die Dauer,
    bei der Planung der Kalender. Bei Live ist der Ort Pflicht (mit bekanntem Standort ist das naechste Lokal vorgewaehlt),
    bei der Planung optional - dann steht der Hinweis, dass man sich den Ort noch ausmachen muss. */
@@ -163,26 +165,39 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [addr, setAddr] = useState(null); // Adresse zur eigenen Position (Nominatim), "" = keine gefunden
   const [own, setOwn] = useState(false); // live mit dem eigenen Standort, ohne Lokal (z. B. privater Tisch)
   const [locating, setLocating] = useState(false);
+  const [acc, setAcc] = useState(null); // GPS-Genauigkeit in Metern
+  const [showAddr, setShowAddr] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [aq, setAq] = useState("");
+  const [results, setResults] = useState(null);
+  // Position setzen (GPS, Adresse oder Karte): bekannte Lokale bis 300 m anbieten, genau eines vorwaehlen, sonst nur der Standort.
+  // Ein Lokal ist NIE Pflicht - der Standort allein genuegt (z. B. privater Tisch).
+  const applyPos = (p, address) => {
+    setHere(p);
+    if (address !== undefined) setAddr(address);
+    else { setAddr(null); reverseAddress(p.lat, p.lng).then((a) => setAddr(a || "")); }
+    const found = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
+      .map((l) => ({ l, d: distanceM(p, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
+    setNear(found);
+    if (found.length === 1) { setLocId(found[0].l.id); setOwn(false); }
+    else if (found.length === 0) { setLocId(null); setOwn(true); }
+  };
   const findMe = () => {
     if (!navigator.geolocation) { toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (p) => {
-        const me2 = { lat: p.coords.latitude, lng: p.coords.longitude };
-        setHere(me2);
-        setAddr(null);
-        reverseAddress(me2.lat, me2.lng).then((a) => setAddr(a || ""));
-        const found = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
-          .map((l) => ({ l, d: distanceM(me2, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
-        setNear(found);
-        if (found.length === 1) { setLocId(found[0].l.id); setOwn(false); } // genau ein Treffer: gleich vorwaehlen
-        else if (found.length === 0) { setLocId(null); setOwn(true); }    // kein Lokal: mit dem eigenen Standort live gehen
-        setLocating(false);
-      },
-      () => { setLocating(false); toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); },
-      { timeout: 8000, maximumAge: 30000 },
+      (p) => { setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
+      () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib eine Adresse ein oder wähle den Ort auf der Karte.")); setShowAddr(true); },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
   };
+  const searchAddr = async () => {
+    const q = aq.trim();
+    if (q.length < 3) return;
+    try { setResults(await searchAddress(q)); } catch { toast?.(t("Adresssuche gerade nicht erreichbar.")); setResults([]); }
+  };
+  const pickAddr = (r) => { setAcc(null); applyPos({ lat: r.lat, lng: r.lng }, r.label.split(", ").slice(0, 4).join(", ")); setResults(null); setShowMap(true); };
+  const onMapPick = (p) => { setAcc(null); applyPos(p); };
   const venue = list.find((l) => l.id === locId) || null;
   return (
     <div className="venue-form">
@@ -192,6 +207,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
             <LocateFixed size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
           </button>
+          <button type="button" className={"chip-btn" + (showAddr ? " sel" : "")} onClick={() => setShowAddr((v) => !v)}><Search size={14} /> {t("Adresse")}</button>
+          <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
           <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
             {!here ? t("noch kein Standort")
               : addr === null ? t("Adresse wird gesucht …")
@@ -210,9 +227,37 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           )}
         </div>
       )}
+      {live && showAddr && (
+        <>
+          <div className="search-row">
+            <Search size={16} className="mail-ico" />
+            <input autoFocus placeholder={t("Adresse, z. B. Praterstraße 1, Wien")} value={aq} maxLength={200}
+              onChange={(e) => setAq(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") searchAddr(); }} />
+            <button type="button" className="icon-btn small" onClick={searchAddr} disabled={aq.trim().length < 3}
+              aria-label={t("Adresse suchen")} title={t("Adresse suchen")}><Search size={16} /></button>
+          </div>
+          {results && (
+            <div className="loc-results">
+              {results.length === 0 && <p className="hint">{t("Nichts gefunden – Adresse genauer eingeben oder auf der Karte wählen.")}</p>}
+              {results.map((r, i) => <button key={i} type="button" className="loc-result" onClick={() => pickAddr(r)}>{r.label}</button>)}
+            </div>
+          )}
+        </>
+      )}
+      {live && showMap && (
+        <>
+          <Suspense fallback={<div className="loc-map" />}>
+            <LocationMap pos={here} onPick={onMapPick} />
+          </Suspense>
+          <p className="hint" style={{ margin: 0 }}>{t("Karte antippen, um den Standort zu setzen – der Marker lässt sich ziehen.")}</p>
+        </>
+      )}
+      {live && acc != null && acc > 100 && (
+        <p className="hint">{t("Genauigkeit ca. {m} m – bei Bedarf auf der Karte korrigieren.", { m: acc })}</p>
+      )}
       <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) setOwn(false); }} toast={toast} me={me} />
       {live && !venue && !(own && here) && (
-        <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“ oder wähle ein Lokal.")}</p>
+        <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“, gib eine Adresse ein oder wähle ein Lokal.")}</p>
       )}
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
       {live && (
