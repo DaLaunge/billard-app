@@ -3614,3 +3614,10 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .venue-person.as-btn { background: none; border: 0; box-shadow: none; color: inherit; font: inherit; width: auto; max-width: 100%; padding: 2px 0; cursor: pointer; }
 .venue-people { gap: 0; }
 .venue-actions + .venue-actions { margin-top: -2px; }
+
+.venue-sec { margin: 6px 0 0; }
+.venue-sec-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.venue-where { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: calc(13px * var(--fs, 1)); color: var(--ivory-dim); }
+.venue-where b { color: var(--ivory); }
+.venue-count { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.venue-livetag { color: var(--accent); font-weight: 600; }

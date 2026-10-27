@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
-import { useLocations, loadLocations } from "../../lib/locationStore";
+import { useLocations, loadLocations, distanceM } from "../../lib/locationStore";
 import Ball from "../Ball";
 import Emoji, { EmojiText } from "../Emoji";
 import RouteButton from "./RouteButton";
@@ -21,7 +21,7 @@ const REACTIONS = ["👍", "🎱", "❤️"];
 
 /* Ein Live-Eintrag oder eine Planung samt Zusagen: wer zugesagt hat, kleine Reaktionen darauf (👍 🎱 ❤️) und - fuer alle
    anderen - der Knopf zum Zusagen (mit oder ohne Nachricht) bzw. Zurueckziehen. */
-function Entry({ kind, item, me, colorOf, badgeOf, photoOf, onOpenProfile, onReply, onUnreply, reacts, onReact }) {
+function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile, onReply, onUnreply, reacts, onReact }) {
   const [open, setOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const mine = item.player_id === me?.id;
@@ -39,6 +39,10 @@ function Entry({ kind, item, me, colorOf, badgeOf, photoOf, onOpenProfile, onRep
             : <span className="plan-pill small"><Calendar size={11} /> {fmtDate(item.planned_date)}</span>}
         </span>
       </button>
+      <div className="venue-where">
+        {place && <><MapPin size={13} /> <b>{place.name}</b>{place.lat != null && <RouteButton place={place} size={14} />}</>}
+        <span className="venue-count" title={t("Spieler gemeldet")}><Users size={12} /> {new Set([item.player_id, ...(item.replies || []).map((r) => r.player_id)]).size}</span>
+      </div>
       {item.message && <p className="venue-msg">"<EmojiText>{item.message}</EmojiText>"</p>}
       {item.replies?.map((r) => {
         const here = reacts.filter((x) => x.kind === kind && x.reply_id === r.id);
@@ -148,6 +152,11 @@ function PlanForm({ venue, onCreatePlanning, onDone }) {
   );
 }
 
+const NEAR_KEY = "venueNear";
+const readLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const writeLocal = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* Privatmodus */ } };
+const fmtDist = (m) => (m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(m / 1000)} km`);
+
 export default function VenueList({ me, pings = [], plannings = [], colorOf, badgeOf, photoOf, onOpenProfile,
   onCreate, onClose, onCreatePlanning, onReply, onUnreply, onReplyPlanning, onUnreplyPlanning, canLive = true, canPlan = true, toast }) {
   // Reaktionen auf Zusagen (supabase/2026-10-27e_reply_reactions.sql); fehlt die Tabelle, gibt es einfach keine Knoepfe
@@ -165,6 +174,17 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
   const [busy, setBusy] = useState(null);
   const [q, setQ] = useState("");
   const [form, setForm] = useState(null); // { id, kind: "live" | "plan" }
+  // Umgebung: Standort nur auf Wunsch (Knopf), danach wird die Wahl auf diesem Geraet gemerkt
+  const [pos, setPos] = useState(null);
+  const askPos = (quiet) => {
+    if (!navigator.geolocation) { if (!quiet) toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setPos({ lat: p.coords.latitude, lng: p.coords.longitude }); writeLocal(NEAR_KEY, "1"); },
+      () => { if (!quiet) toast?.(t("Standort nicht verfügbar – bitte in den Browser-Einstellungen freigeben.")); },
+      { timeout: 8000, maximumAge: 300000 },
+    );
+  };
+  useEffect(() => { if (readLocal(NEAR_KEY) === "1") askPos(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Neues Lokal: Formular klappt unter der Suche auf (Name aus der Suche, wenn getippt; sonst eigenes Namensfeld)
   const [adding, setAdding] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -188,28 +208,64 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
     loadLocations(true);
   };
 
-  // Lokale + Live-Eintraege, deren Ort (Freitext aus der Zeit vor dem Katalog) zu keinem Lokal passt
   const today = new Date().toISOString().slice(0, 10);
-  const liveAt = (l) => pings.filter((p) => norm(p.location) === norm(l.name));
-  const planAtVenue = (l) => plannings.filter((p) => planLoc[p.id] === l.id && String(p.planned_date) >= today)
-    .sort((a, b) => String(a.planned_date).localeCompare(String(b.planned_date)));
-  const known = new Set(list.map((l) => norm(l.name)));
-  const loose = [...new Set(pings.map((p) => p.location).filter((n) => n && !known.has(norm(n))))]
-    .map((name) => ({ id: "loose:" + name, name, loose: true, status: "approved" }));
-
-  const all = [...list, ...loose].map((l) => ({ l, live: liveAt(l), plan: l.loose ? [] : planAtVenue(l) }));
   const nq = norm(q);
-  const found = all
-    .filter(({ l }) => !nq || norm(`${l.name} ${l.address || ""}`).includes(nq))
-    .sort((a, b) => (b.live.length - a.live.length) || (b.plan.length - a.plan.length) || a.l.name.localeCompare(b.l.name));
-  const rows = found.slice(0, SHOWN);
-  const nothing = all.length === 0;
+  const venueOfPing = (p) => list.find((l) => norm(l.name) === norm(p.location)) || { id: "loose:" + p.location, name: p.location, loose: true };
+  const venueOfPlan = (p) => list.find((l) => l.id === planLoc[p.id]) || null;
+  const pass = (v, nick) => !nq || norm(`${v?.name || ""} ${v?.address || ""} ${nick}`).includes(nq);
+
+  // Aktivitaeten: zuerst alles, was gerade LIVE ist (neueste oben), danach die Planungen nach Datum
+  const liveItems = [...pings].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .map((item) => ({ kind: "ping", item, venue: venueOfPing(item) })).filter((x) => pass(x.venue, x.item.player.nickname));
+  const planItems = plannings.filter((p) => String(p.planned_date) >= today)
+    .sort((a, b) => String(a.planned_date).localeCompare(String(b.planned_date)) || String(a.created_at).localeCompare(String(b.created_at)))
+    .map((item) => ({ kind: "planning", item, venue: venueOfPlan(item) })).filter((x) => pass(x.venue, x.item.player.nickname));
+  const feed = [...liveItems, ...planItems];
+
+  // Lokale: nach Entfernung (wenn der Standort bekannt ist), sonst alphabetisch; je Lokal die Zahl der gemeldeten Spieler
+  const known = new Set(list.map((l) => norm(l.name)));
+  const venues = list.map((l) => {
+    const live = pings.filter((p) => norm(p.location) === norm(l.name));
+    const plan = plannings.filter((p) => planLoc[p.id] === l.id && String(p.planned_date) >= today);
+    const ids = new Set();
+    [...live, ...plan].forEach((e) => { ids.add(e.player_id); (e.replies || []).forEach((r) => ids.add(r.player_id)); });
+    const dist = pos && l.lat != null ? distanceM(pos, l) : null;
+    return { l, live, plan, players: ids.size, dist };
+  }).filter(({ l }) => !nq || norm(`${l.name} ${l.address || ""}`).includes(nq))
+    .sort((a, b) => (pos ? ((a.dist ?? 1e12) - (b.dist ?? 1e12)) : (b.live.length - a.live.length) || (b.plan.length - a.plan.length)) || a.l.name.localeCompare(b.l.name));
+  const rows = venues.slice(0, SHOWN);
+  const nothing = list.length === 0 && feed.length === 0;
+  void known;
+
+  const entry = (x) => (
+    <div key={x.kind + x.item.id} className={"venue-row" + (x.kind === "ping" ? " is-live" : "")}>
+      <Entry kind={x.kind} item={x.item} place={x.venue} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
+        onReply={x.kind === "ping" ? onReply : onReplyPlanning} onUnreply={x.kind === "ping" ? onUnreply : onUnreplyPlanning}
+        reacts={reacts} onReact={reactOk ? react : null} />
+      {x.kind === "ping" && x.item.player_id === me?.id && (
+        <div className="venue-actions"><button type="button" className="chip-btn no" onClick={onClose}><X size={14} /> {t("Live beenden")}</button></div>
+      )}
+    </div>
+  );
 
   return (
     <>
       <div className="search-row">
         <Search size={16} className="mail-ico" />
-        <input placeholder={t("Lokal suchen …")} value={q} maxLength={60} onChange={(e) => setQ(e.target.value)} />
+        <input placeholder={t("Lokal oder Spieler suchen …")} value={q} maxLength={60} onChange={(e) => setQ(e.target.value)} />
+      </div>
+
+      {feed.length > 0 && <p className="q venue-sec">{t("Aktuell und geplant")}</p>}
+      {liveItems.length > 0 && <div className="venue-list">{liveItems.map(entry)}</div>}
+      {planItems.length > 0 && <div className="venue-list">{planItems.map(entry)}</div>}
+      {feed.length === 0 && !nothing && <p className="hint center">{t("Gerade ist nichts live oder geplant – sei der Erste: Such dir unten ein Lokal aus.")}</p>}
+
+      <div className="venue-sec-row">
+        <p className="q venue-sec">{pos ? t("Lokale in deiner Nähe") : t("Lokale")}</p>
+        <button type="button" className={"chip-btn" + (pos ? " sel" : "")} aria-pressed={!!pos}
+          onClick={() => { if (pos) { setPos(null); writeLocal(NEAR_KEY, null); } else askPos(false); }}>
+          <LocateFixed size={14} /> {t("In meiner Nähe")}
+        </button>
       </div>
       <button type="button" className="btn ghost small" onClick={() => { if (!adding) setFormKey((k) => k + 1); setAdding((v) => !v); }} aria-expanded={adding}>
         <Plus size={15} /> {t("Neues Lokal anlegen")}
@@ -225,36 +281,28 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
         </div>
       </div>
       {nothing && <p className="hint center">{t("Noch kein Lokal eingetragen – leg das erste bei „Live“ oder „Planung“ an.")}</p>}
-      {!nothing && found.length === 0 && <p className="hint center">{t("Kein Lokal gefunden.")}</p>}
+      {list.length > 0 && venues.length === 0 && <p className="hint center">{t("Kein Lokal gefunden.")}</p>}
       <div className="venue-list">
-        {rows.map(({ l, live, plan }) => {
+        {rows.map(({ l, live, plan, players, dist }) => {
           const open = form?.id === l.id ? form.kind : null;
           const toggle = (kind) => setForm(open === kind ? null : { id: l.id, kind });
           const mineHere = live.some((p) => p.player_id === me?.id);
           return (
-            <div key={l.id} className={"venue-row" + (live.length ? " is-live" : "")}>
+            <div key={l.id} className="venue-row">
               <div className="venue-top">
                 <div className="loc-sel-txt">
                   <b><MapPin size={14} /> {l.name}{l.status === "pending" ? " ⏳" : ""}</b>
                   {l.address && <span className="rank-meta">{l.address}</span>}
+                  <span className="rank-meta">
+                    {dist != null && <>{fmtDist(dist)} · </>}
+                    {players > 0 ? t("{n} Spieler gemeldet", { n: players }) : t("noch niemand gemeldet")}
+                    {live.length > 0 && <> · <span className="venue-livetag">{t("{n} live", { n: live.length })}</span></>}
+                    {plan.length > 0 && <> · {t("{n} geplant", { n: plan.length })}</>}
+                  </span>
                   {l.status === "pending" && <span className="rank-meta">{count(l.id)}/{NEEDED} {t("bestätigt")}</span>}
                 </div>
-                {!l.loose && <RouteButton place={l} size={15} />}
+                <RouteButton place={l} size={15} />
               </div>
-
-              {(live.length > 0 || plan.length > 0) && (
-                <div className="venue-people">
-                  {live.map((p) => (
-                    <Entry key={"l" + p.id} kind="ping" item={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                      onOpenProfile={onOpenProfile} onReply={onReply} onUnreply={onUnreply} reacts={reacts} onReact={reactOk ? react : null} />
-                  ))}
-                  {plan.slice(0, 4).map((p) => (
-                    <Entry key={"p" + p.id} kind="planning" item={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                      onOpenProfile={onOpenProfile} onReply={onReplyPlanning} onUnreply={onUnreplyPlanning} reacts={reacts} onReact={reactOk ? react : null} />
-                  ))}
-                  {plan.length > 4 && <span className="rank-meta">{t("{n} weitere Planungen", { n: plan.length - 4 })}</span>}
-                </div>
-              )}
 
               {l.status === "pending" && l.created_by !== me?.id && (
                 <div className="venue-actions">
@@ -264,7 +312,7 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
                 </div>
               )}
 
-              {!l.loose && usable(l) && (
+              {usable(l) && (
                 <div className="venue-actions">
                   {mineHere ? (
                     <button type="button" className="chip-btn no" onClick={onClose}><X size={14} /> {t("Live beenden")}</button>
@@ -287,7 +335,7 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
           );
         })}
       </div>
-      {found.length > SHOWN && <p className="hint center">{t("{n} weitere – Suche eingrenzen.", { n: found.length - SHOWN })}</p>}
+      {venues.length > SHOWN && <p className="hint center">{t("{n} weitere – Suche eingrenzen.", { n: venues.length - SHOWN })}</p>}
     </>
   );
 }
