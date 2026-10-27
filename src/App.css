@@ -3720,3 +3720,24 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 
 .venue-place { overflow: visible; max-width: none; white-space: normal; color: var(--ivory); }
 .venue-place b { font-weight: 600; }
+
+/* Schnellaktionen unter der Suche */
+.quick { display: flex; flex-direction: column; gap: 8px; }
+.quick-row { display: flex; gap: 8px; }
+.quick-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border-radius: 12px; border: 1.5px solid transparent; background: var(--surface-btn); color: var(--ivory); font: inherit; font-weight: 600; cursor: pointer; }
+.quick-btn.live { background: var(--accent); color: var(--accent-ink); }
+.quick-btn.on { border-color: var(--accent); }
+.quick-panel { padding-top: 2px; }
+.quick-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick .collapsible { margin-bottom: 0; }
+.quick > .collapsible:not(.open) { margin-top: -8px; }
+/* Spieler-Treffer der Suche */
+.venue-hit { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.venue-hit.as-btn { border: 1.5px solid transparent; background: var(--surface-btn); }
+.venue-hit.as-btn:hover { border-color: var(--accent-line); }
+.venue-hit-end { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; color: var(--accent); font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+
+.venue-row.venue-hit { flex-direction: row; align-items: center; justify-content: flex-start; flex-wrap: nowrap; }
+
+.quick { margin-top: 8px; }
+.screen > .venue-list { margin-top: 8px; }

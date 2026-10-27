@@ -8,6 +8,7 @@ import Ball from "../Ball";
 import Emoji, { EmojiText } from "../Emoji";
 import RouteButton from "./RouteButton";
 import LocationForm from "./LocationForm";
+import LocationPicker from "./LocationPicker";
 import DayPicker from "./DayPicker";
 
 /* "Wer spielt wo": alle Lokale mit Suche. Pro Lokal steht, wer gerade live dort ist und welche Planungen es dort gibt;
@@ -167,19 +168,21 @@ function LiveForm({ venue, onCreate, onDone }) {
   );
 }
 
-function PlanForm({ initial, label, onSubmit, onDone }) {
+function PlanForm({ initial, label, onSubmit, onDone, withVenue, me, toast }) {
   const [date, setDate] = useState(initial?.date || "");
   const [msg, setMsg] = useState(initial?.msg || "");
+  const [locId, setLocId] = useState(null);
   return (
     <div className="venue-form">
       <DayPicker value={date} onChange={setDate} />
+      {withVenue && <LocationPicker value={locId} onChange={setLocId} toast={toast} me={me} />}
       <div className="search-row">
         <Pencil size={16} className="mail-ico" />
         <input placeholder={t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")} value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
       </div>
       <div className="sp-controls">
         <button type="button" className="btn ghost" onClick={onDone}>{t("Abbrechen")}</button>
-        <button type="button" className="btn primary" disabled={!date} onClick={() => { onSubmit(date, msg); onDone(); }}>
+        <button type="button" className="btn primary" disabled={!date} onClick={() => { onSubmit(date, msg, locId); onDone(); }}>
           <Calendar size={17} /> {label || t("Planung eintragen")}
         </button>
       </div>
@@ -195,7 +198,7 @@ const writeLocal = (k, v) => { try { if (v === null) localStorage.removeItem(k);
    der Ping-Knopf (PingBlock, ganz oben auf dem Bildschirm) und die Liste (VenueList, im Reiter) lesen sie aus dem Kontext. */
 const VenueCtx = createContext(null);
 
-export function VenueProvider({ children, me, pings = [], plannings = [], challengesFromMe = [], colorOf, badgeOf, photoOf, onOpenProfile,
+export function VenueProvider({ children, players = [], me, pings = [], plannings = [], challengesFromMe = [], colorOf, badgeOf, photoOf, onOpenProfile,
   onCreate, onClose, onCreatePlanning, onUpdatePlanning, onDeletePlanning, onReply, onUnreply, onReplyPlanning, onUnreplyPlanning, onChallenge, toast }) {
   // Reaktionen auf Zusagen (supabase/2026-10-27e_reply_reactions.sql); fehlt die Tabelle, gibt es einfach keine Knoepfe
   const [reacts, setReacts] = useState([]);
@@ -293,6 +296,12 @@ export function VenueProvider({ children, me, pings = [], plannings = [], challe
     onChallenge(item.player_id, msg.slice(0, 120));
   };
 
+  // Spielersuche: Treffer lassen sich mit einem Tipp zum Duell herausfordern
+  const hits = nq.length >= 2
+    ? players.filter((p) => p.id !== me?.id && !p.is_guest && !p.is_ghost && !p.blocked && norm(p.nickname).includes(nq)).slice(0, 6) : [];
+  const challengedIds = new Set(challengesFromMe.map((c) => c.challenged_id));
+  const challengeTo = (p) => onChallenge?.(p.id, myPing ? `Ich bin live: ${myPing.location} – Duell?` : "Duell?");
+
   const entry = (x, dist) => (
     <div key={x.kind + x.item.id} className={"venue-row" + (x.kind === "ping" ? " is-live" : "")}>
       <Entry kind={x.kind} item={x.item} place={x.venue} dist={dist} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
@@ -319,14 +328,15 @@ export function VenueProvider({ children, me, pings = [], plannings = [], challe
   const dayLabel = (d) => {
     const dt = new Date(d + "T12:00:00");
     const diff = Math.round((new Date(d + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
-    const base = dt.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
-    return diff === 0 ? `${t("Heute")} · ${base}` : diff === 1 ? `${t("Morgen")} · ${base}` : base;
+    if (diff === 0) return t("Heute");
+    if (diff === 1) return t("Morgen");
+    return dt.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   };
 
   const value = {
     me, toast, onClose, onCreate, onCreatePlanning, pinging, pinged, doPing, nearLive, entry, q, setQ, liveItems, chapters, dayLabel, feed, list, pos,
     canAdd, nq, setNewName, setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done,
-    usable, confirm, myPing,
+    usable, confirm, myPing, askPos, hits, challengedIds, challengeTo, colorOf, badgeOf, photoOf,
   };
   return <VenueCtx.Provider value={value}>{children}</VenueCtx.Provider>;
 }
@@ -376,15 +386,10 @@ export function PingBlock() {
 
 /* Die Liste im Reiter "Live & Planung": Suche, Aktivitaeten, Lokale */
 export default function VenueList() {
-  const { me, toast, onClose, onCreate, onCreatePlanning, q, setQ, liveItems, chapters, dayLabel, entry, feed, list, pos, canAdd, nq, setNewName,
+  const { me, toast, onClose, onCreate, onCreatePlanning, q, liveItems, chapters, dayLabel, entry, feed, list, pos, canAdd, nq, setNewName,
     setFormKey, setAdding, adding, mounted, newName, formKey, setSel, setForm, venues, rows, sel, form, busy, count, done, usable, confirm, myPing } = useContext(VenueCtx);
   return (
     <>
-      <div className="search-row">
-        <Search size={16} className="mail-ico" />
-        <input placeholder={t("Lokal oder Spieler suchen …")} value={q} maxLength={60} onChange={(e) => setQ(e.target.value)} />
-      </div>
-
       {liveItems.length > 0 && (
         <>
           <div className="deck-sub-head"><Radio size={14} /> {t("Jetzt live")}<span className="deck-tab-count">{liveItems.length}</span></div>
@@ -470,5 +475,85 @@ export default function VenueList() {
       </div>
       {venues.length > SHOWN && <p className="hint center">{t("{n} weitere – Suche eingrenzen.", { n: venues.length - SHOWN })}</p>}
     </>
+  );
+}
+
+/* Suche direkt unter dem Ping: findet Spieler (ein Tipp bietet sofort ein Duell an) und filtert Lokale und Eintraege */
+export function VenueSearch() {
+  const { q, setQ, hits, challengedIds, challengeTo, colorOf, badgeOf, photoOf } = useContext(VenueCtx);
+  return (
+    <>
+      <div className="search-row">
+        <Search size={16} className="mail-ico" />
+        <input placeholder={t("Spieler oder Lokal suchen …")} value={q} maxLength={60} onChange={(e) => setQ(e.target.value)} />
+      </div>
+      {hits.length > 0 && (
+        <div className="venue-list">
+          {hits.map((p) => (
+            challengedIds.has(p.id)
+              ? (
+                <div key={p.id} className="venue-row venue-hit done">
+                  <Ball nick={p.nickname} color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={26} />
+                  <b>{p.nickname}</b>
+                  <span className="rank-meta venue-hit-end"><Swords size={13} /> {t("Duell angefragt")}</span>
+                </div>
+              ) : (
+                <button key={p.id} type="button" className="venue-row venue-hit as-btn" onClick={() => challengeTo(p)}>
+                  <Ball nick={p.nickname} color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={26} />
+                  <b>{p.nickname}</b>
+                  <span className="venue-hit-end"><Swords size={15} /> {t("Duell anbieten")}</span>
+                </button>
+              )
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* Zwei Schnellaktionen: "Online gehen" (zwei Tipps: Knopf, Lokal) und "Planung erstellen" (Ort ist optional) */
+export function VenueQuick() {
+  const { me, toast, myPing, onClose, onCreate, onCreatePlanning, pos, askPos, list, usable } = useContext(VenueCtx);
+  const [open, setOpen] = useState(null); // null | "live" | "plan"
+  const [hours, setHours] = useState(3);
+  const near = list.filter((l) => usable(l) && l.lat != null)
+    .map((l) => ({ l, d: pos ? distanceM(pos, l) : null }))
+    .sort((a, b) => ((a.d ?? 1e12) - (b.d ?? 1e12)) || a.l.name.localeCompare(b.l.name)).slice(0, 6);
+  const toggle = (k) => { const n = open === k ? null : k; setOpen(n); if (n === "live" && !pos) askPos(true); };
+  return (
+    <div className="quick">
+      <div className="quick-row">
+        {myPing
+          ? <button type="button" className="quick-btn on" onClick={onClose}><X size={16} /> {t("Offline gehen")}</button>
+          : <button type="button" className={"quick-btn live" + (open === "live" ? " on" : "")} onClick={() => toggle("live")} aria-expanded={open === "live"}><Radio size={16} /> {t("Online gehen")}</button>}
+        <button type="button" className={"quick-btn" + (open === "plan" ? " on" : "")} onClick={() => toggle("plan")} aria-expanded={open === "plan"}><Calendar size={16} /> {t("Planung erstellen")}</button>
+      </div>
+      <div className={"collapsible" + (open === "live" && !myPing ? " open" : "")} inert={open === "live" && !myPing ? undefined : ""}>
+        <div className="collapsible-inner">
+          <div className="venue-form quick-panel">
+            <div className="chips small">
+              {[1, 2, 3, 6].map((h) => (
+                <button key={h} type="button" className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>{t("{n} Std", { n: h })}</button>
+              ))}
+            </div>
+            <p className="q venue-sec">{pos ? t("Wo bist du? (nächste Lokale)") : t("Wo bist du?")}</p>
+            <div className="quick-chips">
+              {near.map(({ l, d }) => (
+                <button key={l.id} type="button" className="chip-btn" onClick={() => { onCreate(l.name, "", hours); setOpen(null); }}>
+                  <MapPin size={14} /> {l.name}{d != null && <span className="rank-meta"> · {fmtDist(d)}</span>}
+                </button>
+              ))}
+            </div>
+            {near.length === 0 && <p className="hint">{t("Noch kein Lokal mit Standort – such oben nach einem Lokal oder lege es an.")}</p>}
+            <p className="hint">{t("Anderes Lokal? Oben suchen und dort „Hier live gehen“ wählen.")}</p>
+          </div>
+        </div>
+      </div>
+      <div className={"collapsible" + (open === "plan" ? " open" : "")} inert={open === "plan" ? undefined : ""}>
+        <div className="collapsible-inner">
+          {open === "plan" && <PlanForm withVenue me={me} toast={toast} onSubmit={(d, m, locId) => onCreatePlanning(d, m, locId)} onDone={() => setOpen(null)} />}
+        </div>
+      </div>
+    </div>
   );
 }
