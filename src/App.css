@@ -3744,3 +3744,13 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 
 .venue-warn { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--warn); }
 .venue-place.open { color: var(--warn); }
+
+/* Duelle: eingeklappt, Zaehler im Kopf */
+.duel-toggle.as-btn { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; width: auto; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.duel-toggle h3 { margin: 0; display: inline-flex; align-items: center; gap: 8px; }
+.duel-count { background: var(--accent); color: var(--accent-ink); }
+.duel-sub { margin-left: auto; white-space: nowrap; }
+.duel-chev { flex: none; transition: transform .2s; }
+.duel-chev.open { transform: rotate(180deg); }
+
+.duel-card { margin-top: 8px; }

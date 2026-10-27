@@ -1270,6 +1270,8 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "{n} an dich": "{n} to you",
+    "{n} von dir": "{n} from you",
     "Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.": "No venue given – you still have to agree on a place.",
     "Ort noch auszumachen": "Venue still to be agreed",
     "Spieler oder Lokal suchen …": "Search player or venue …",

@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
-import { Swords } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Swords, ChevronDown } from "lucide-react";
 import { t } from "../lib/i18n";
 import ChallengeCard from "./ChallengeCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
-import CardDeck from "./widgets/CardDeck";
+import CardMenuButton from "./widgets/CardMenuButton";
 import VenueList, { VenueProvider, PingBlock, VenueSearch, VenueQuick } from "./widgets/VenueList";
 import LocationReview from "./widgets/LocationReview";
 import { useCardLayout } from "../lib/useCardLayout";
@@ -53,6 +53,8 @@ export default function LiveScreen({ me, pings, plannings, challenges, players,
   // Sichtbarkeit der Duell-Karte (Einstellungen -> Karten, oder im Kartenmenue hier)
   const cards = useCardLayout("live", me.card_layout, onSetCardLayout, toast);
 
+  const [duelOpen, setDuelOpen] = useState(false); // Duelle sind standardmaessig eingeklappt, der Zaehler im Kopf zeigt, wie viele es sind
+
   const duelleBody = (
     <>
       {challengesToMe.length > 0 && <p className="q">{t("Herausforderungen an dich")}</p>}
@@ -86,9 +88,26 @@ export default function LiveScreen({ me, pings, plannings, challenges, players,
 
         {showDuelle && (
           <CardSlot order={10}>
-            <CardDeck icon={<Swords size={17} />} title={t("Duelle")}
-              tabs={[{ id: "duelle", tab: t("Duelle"), title: t("Duelle"), icon: <Swords size={15} />, count: openChallenges.length, render: () => duelleBody }]}
-              activeId="duelle" onActive={() => {}} onHide={() => cards.hideCard("duelle")} />
+            <section className="stat-block duel-card">
+              <div className="stat-block-head">
+                <button type="button" className="duel-toggle as-btn" onClick={() => setDuelOpen((v) => !v)} aria-expanded={duelOpen}
+                  title={duelOpen ? t("Zuklappen") : t("Aufklappen")}>
+                  <h3><Swords size={17} /> <span className="stat-block-title-text">{t("Duelle")}</span>
+                    <span className="deck-tab-count duel-count">{openChallenges.length}</span>
+                  </h3>
+                  <span className="rank-meta duel-sub">
+                    {challengesToMe.length > 0 && t("{n} an dich", { n: challengesToMe.length })}
+                    {challengesToMe.length > 0 && challengesFromMe.length > 0 && " · "}
+                    {challengesFromMe.length > 0 && t("{n} von dir", { n: challengesFromMe.length })}
+                  </span>
+                  <ChevronDown size={16} className={"duel-chev" + (duelOpen ? " open" : "")} />
+                </button>
+                <div className="stat-block-head-actions"><CardMenuButton onHide={() => cards.hideCard("duelle")} /></div>
+              </div>
+              <div className={"collapsible" + (duelOpen ? " open" : "")} inert={duelOpen ? undefined : ""}>
+                <div className="collapsible-inner">{duelleBody}</div>
+              </div>
+            </section>
           </CardSlot>
         )}
 
