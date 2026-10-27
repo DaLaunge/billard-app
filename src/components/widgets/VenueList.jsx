@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, LocateFixed, Trash2 } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
@@ -21,8 +21,10 @@ const REACTIONS = ["👍", "🎱", "❤️"];
 
 /* Ein Live-Eintrag oder eine Planung samt Zusagen: wer zugesagt hat, kleine Reaktionen darauf (👍 🎱 ❤️) und - fuer alle
    anderen - der Knopf zum Zusagen (mit oder ohne Nachricht) bzw. Zurueckziehen. */
-function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile, onReply, onUnreply, reacts, onReact }) {
+function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile, onReply, onUnreply, reacts, onReact,
+  onChallenge, challenged, onUpdate, onDelete }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState("");
   const mine = item.player_id === me?.id;
   const myReply = item.replies?.find((r) => r.player_id === me?.id);
@@ -93,6 +95,23 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
           <button type="button" className="chip-btn no" onClick={() => onUnreply(item.id)}><X size={14} /> {t("Zusage zurueckziehen")}</button>
         </div>
       )}
+      {!mine && onChallenge && (
+        <div className="venue-actions">
+          {challenged
+            ? <span className="rank-meta"><Swords size={13} /> {t("Duell angefragt")}</span>
+            : <button type="button" className="chip-btn" onClick={() => onChallenge(item)} title={t("Zum Duell herausfordern")}><Swords size={14} /> {t("Duell")}</button>}
+        </div>
+      )}
+      {mine && !ping && !editing && (
+        <div className="venue-actions">
+          {onUpdate && <button type="button" className="chip-btn" onClick={() => setEditing(true)}><Pencil size={14} /> {t("Ändern")}</button>}
+          {onDelete && <button type="button" className="chip-btn no" onClick={() => onDelete(item.id)}><Trash2 size={14} /> {t("Löschen")}</button>}
+        </div>
+      )}
+      {mine && !ping && editing && (
+        <PlanForm initial={{ date: item.planned_date, msg: item.message || "" }} label={t("Speichern")}
+          onSubmit={(d, m) => onUpdate(item.id, d, m, null)} onDone={() => setEditing(false)} />
+      )}
     </div>
   );
 }
@@ -132,9 +151,9 @@ function LiveForm({ venue, onCreate, onDone }) {
   );
 }
 
-function PlanForm({ venue, onCreatePlanning, onDone }) {
-  const [date, setDate] = useState("");
-  const [msg, setMsg] = useState("");
+function PlanForm({ initial, label, onSubmit, onDone }) {
+  const [date, setDate] = useState(initial?.date || "");
+  const [msg, setMsg] = useState(initial?.msg || "");
   return (
     <div className="venue-form">
       <DayPicker value={date} onChange={setDate} />
@@ -144,8 +163,8 @@ function PlanForm({ venue, onCreatePlanning, onDone }) {
       </div>
       <div className="sp-controls">
         <button type="button" className="btn ghost" onClick={onDone}>{t("Abbrechen")}</button>
-        <button type="button" className="btn primary" disabled={!date} onClick={() => { onCreatePlanning(date, msg, venue.id); onDone(); }}>
-          <Calendar size={17} /> {t("Planung eintragen")}
+        <button type="button" className="btn primary" disabled={!date} onClick={() => { onSubmit(date, msg); onDone(); }}>
+          <Calendar size={17} /> {label || t("Planung eintragen")}
         </button>
       </div>
     </div>
@@ -157,8 +176,8 @@ const readLocal = (k) => { try { return localStorage.getItem(k); } catch { retur
 const writeLocal = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* Privatmodus */ } };
 const fmtDist = (m) => (m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(m / 1000)} km`);
 
-export default function VenueList({ me, pings = [], plannings = [], colorOf, badgeOf, photoOf, onOpenProfile,
-  onCreate, onClose, onCreatePlanning, onReply, onUnreply, onReplyPlanning, onUnreplyPlanning, canLive = true, canPlan = true, toast }) {
+export default function VenueList({ me, pings = [], plannings = [], challengesFromMe = [], colorOf, badgeOf, photoOf, onOpenProfile,
+  onCreate, onClose, onCreatePlanning, onUpdatePlanning, onDeletePlanning, onReply, onUnreply, onReplyPlanning, onUnreplyPlanning, onChallenge, toast }) {
   // Reaktionen auf Zusagen (supabase/2026-10-27e_reply_reactions.sql); fehlt die Tabelle, gibt es einfach keine Knoepfe
   const [reacts, setReacts] = useState([]);
   const [reactOk, setReactOk] = useState(false);
@@ -173,7 +192,8 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
   const { list, confirms, planLoc } = useLocations();
   const [busy, setBusy] = useState(null);
   const [q, setQ] = useState("");
-  const [form, setForm] = useState(null); // { id, kind: "live" | "plan" }
+  const [sel, setSel] = useState(null); // aufgeklapptes Lokal
+  const [form, setForm] = useState(null); // "live" | "plan" fuer das aufgeklappte Lokal
   // Umgebung: Standort nur auf Wunsch (Knopf), danach wird die Wahl auf diesem Geraet gemerkt
   const [pos, setPos] = useState(null);
   const askPos = (quiet) => {
@@ -185,10 +205,11 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
     );
   };
   useEffect(() => { if (readLocal(NEAR_KEY) === "1") askPos(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  // Neues Lokal: Formular klappt unter der Suche auf (Name aus der Suche, wenn getippt; sonst eigenes Namensfeld)
+  // Neues Lokal: erst anbieten, wenn jemand nach einem Lokal sucht, das es (noch) nicht gibt; das Formular klappt darunter auf
   const [adding, setAdding] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const [newName, setNewName] = useState("");
   useEffect(() => {
     if (adding) { setMounted(true); return undefined; }
     const id = setTimeout(() => setMounted(false), 350);
@@ -223,7 +244,6 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
   const feed = [...liveItems, ...planItems];
 
   // Lokale: nach Entfernung (wenn der Standort bekannt ist), sonst alphabetisch; je Lokal die Zahl der gemeldeten Spieler
-  const known = new Set(list.map((l) => norm(l.name)));
   const venues = list.map((l) => {
     const live = pings.filter((p) => norm(p.location) === norm(l.name));
     const plan = plannings.filter((p) => planLoc[p.id] === l.id && String(p.planned_date) >= today);
@@ -234,14 +254,25 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
   }).filter(({ l }) => !nq || norm(`${l.name} ${l.address || ""}`).includes(nq))
     .sort((a, b) => (pos ? ((a.dist ?? 1e12) - (b.dist ?? 1e12)) : (b.live.length - a.live.length) || (b.plan.length - a.plan.length)) || a.l.name.localeCompare(b.l.name));
   const rows = venues.slice(0, SHOWN);
-  const nothing = list.length === 0 && feed.length === 0;
-  void known;
+  const exact = list.some((l) => norm(l.name) === nq);
+  const canAdd = !adding && ((nq.length >= 2 && !exact) || list.length === 0);
+
+  // Duell direkt aus der Liste: die Nachricht sagt gleich, wo man spielt bzw. wo der andere gerade ist
+  const challenge = (item) => {
+    const place = item.location || venueOfPlan(item)?.name;
+    const msg = myPing ? `Ich bin live: ${myPing.location} – Duell?`
+      : item.location ? `Du bist live bei ${item.location} – Duell?`
+      : `Duell am ${fmtDate(item.planned_date)}${place ? ` (${place})` : ""}?`;
+    onChallenge(item.player_id, msg.slice(0, 120));
+  };
 
   const entry = (x) => (
     <div key={x.kind + x.item.id} className={"venue-row" + (x.kind === "ping" ? " is-live" : "")}>
       <Entry kind={x.kind} item={x.item} place={x.venue} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile}
         onReply={x.kind === "ping" ? onReply : onReplyPlanning} onUnreply={x.kind === "ping" ? onUnreply : onUnreplyPlanning}
-        reacts={reacts} onReact={reactOk ? react : null} />
+        reacts={reacts} onReact={reactOk ? react : null}
+        onChallenge={onChallenge ? challenge : null} challenged={challengesFromMe.some((c) => c.challenged_id === x.item.player_id)}
+        onUpdate={onUpdatePlanning} onDelete={onDeletePlanning} />
       {x.kind === "ping" && x.item.player_id === me?.id && (
         <div className="venue-actions"><button type="button" className="chip-btn no" onClick={onClose}><X size={14} /> {t("Live beenden")}</button></div>
       )}
@@ -258,7 +289,7 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
       {feed.length > 0 && <p className="q venue-sec">{t("Aktuell und geplant")}</p>}
       {liveItems.length > 0 && <div className="venue-list">{liveItems.map(entry)}</div>}
       {planItems.length > 0 && <div className="venue-list">{planItems.map(entry)}</div>}
-      {feed.length === 0 && !nothing && <p className="hint center">{t("Gerade ist nichts live oder geplant – sei der Erste: Such dir unten ein Lokal aus.")}</p>}
+      {feed.length === 0 && list.length > 0 && <p className="hint center">{t("Gerade ist nichts live oder geplant – sei der Erste: Such dir unten ein Lokal aus.")}</p>}
 
       <div className="venue-sec-row">
         <p className="q venue-sec">{pos ? t("Lokale in deiner Nähe") : t("Lokale")}</p>
@@ -267,30 +298,31 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
           <LocateFixed size={14} /> {t("In meiner Nähe")}
         </button>
       </div>
-      <button type="button" className="btn ghost small" onClick={() => { if (!adding) setFormKey((k) => k + 1); setAdding((v) => !v); }} aria-expanded={adding}>
-        <Plus size={15} /> {t("Neues Lokal anlegen")}
-      </button>
+      {canAdd && (
+        <button type="button" className="chip-btn venue-add" onClick={() => { setNewName(q.trim()); setFormKey((k) => k + 1); setAdding(true); }}>
+          <Plus size={14} /> {nq.length >= 2 ? t("„{name}“ als neues Lokal anlegen", { name: q.trim() }) : t("Erstes Lokal anlegen")}
+        </button>
+      )}
       <div className={"collapsible" + (adding ? " open" : "")} inert={adding ? undefined : ""}>
         <div className="collapsible-inner">
           <div className="loc-panel">
             {mounted && (
-              <LocationForm key={formKey} fixedName={nq.length >= 2 ? q.trim() : undefined} toast={toast}
-                onCancel={() => setAdding(false)} onSaved={() => { setAdding(false); setQ(""); }} />
+              <LocationForm key={formKey} fixedName={newName.length >= 2 ? newName : undefined} toast={toast}
+                onCancel={() => setAdding(false)}
+                onSaved={(id) => { setAdding(false); setQ(""); if (typeof id === "string") { setSel(id); setForm(null); } }} />
             )}
           </div>
         </div>
       </div>
-      {nothing && <p className="hint center">{t("Noch kein Lokal eingetragen – leg das erste bei „Live“ oder „Planung“ an.")}</p>}
-      {list.length > 0 && venues.length === 0 && <p className="hint center">{t("Kein Lokal gefunden.")}</p>}
+      {list.length > 0 && venues.length === 0 && !canAdd && !adding && <p className="hint center">{t("Kein Lokal gefunden.")}</p>}
       <div className="venue-list">
         {rows.map(({ l, live, plan, players, dist }) => {
-          const open = form?.id === l.id ? form.kind : null;
-          const toggle = (kind) => setForm(open === kind ? null : { id: l.id, kind });
+          const open = sel === l.id;
           const mineHere = live.some((p) => p.player_id === me?.id);
           return (
-            <div key={l.id} className="venue-row">
+            <div key={l.id} className={"venue-row" + (open ? " is-open" : "")}>
               <div className="venue-top">
-                <div className="loc-sel-txt">
+                <button type="button" className="venue-pick as-btn" aria-expanded={open} onClick={() => { setSel(open ? null : l.id); setForm(null); }}>
                   <b><MapPin size={14} /> {l.name}{l.status === "pending" ? " ⏳" : ""}</b>
                   {l.address && <span className="rank-meta">{l.address}</span>}
                   <span className="rank-meta">
@@ -300,37 +332,39 @@ export default function VenueList({ me, pings = [], plannings = [], colorOf, bad
                     {plan.length > 0 && <> · {t("{n} geplant", { n: plan.length })}</>}
                   </span>
                   {l.status === "pending" && <span className="rank-meta">{count(l.id)}/{NEEDED} {t("bestätigt")}</span>}
-                </div>
+                </button>
                 <RouteButton place={l} size={15} />
               </div>
 
-              {l.status === "pending" && l.created_by !== me?.id && (
-                <div className="venue-actions">
-                  {done(l.id)
-                    ? <span className="loc-review-done"><Check size={14} /> {t("Bestätigt")}</span>
-                    : <button type="button" className="chip-btn ok" disabled={busy === l.id} onClick={() => confirm(l)}><Check size={14} /> {t("Stimmt")}</button>}
+              <div className={"collapsible" + (open ? " open" : "")} inert={open ? undefined : ""}>
+                <div className="collapsible-inner">
+                  <div className="venue-body">
+                    {l.status === "pending" && l.created_by !== me?.id && (
+                      <div className="venue-actions">
+                        {done(l.id)
+                          ? <span className="loc-review-done"><Check size={14} /> {t("Bestätigt")}</span>
+                          : <button type="button" className="chip-btn ok" disabled={busy === l.id} onClick={() => confirm(l)}><Check size={14} /> {t("Stimmt")}</button>}
+                      </div>
+                    )}
+                    {usable(l) && (
+                      <div className="venue-actions">
+                        {mineHere ? (
+                          <button type="button" className="chip-btn no" onClick={onClose}><X size={14} /> {t("Live beenden")}</button>
+                        ) : !myPing && (
+                          <button type="button" className={"chip-btn" + (form === "live" ? " sel" : "")} onClick={() => setForm(form === "live" ? null : "live")} aria-expanded={form === "live"}>
+                            <Radio size={14} /> {t("Hier live gehen")}
+                          </button>
+                        )}
+                        <button type="button" className={"chip-btn" + (form === "plan" ? " sel" : "")} onClick={() => setForm(form === "plan" ? null : "plan")} aria-expanded={form === "plan"}>
+                          <Calendar size={14} /> {t("Hier planen")}
+                        </button>
+                      </div>
+                    )}
+                    {open && form === "live" && <Unfold><LiveForm venue={l} onCreate={onCreate} onDone={() => setForm(null)} /></Unfold>}
+                    {open && form === "plan" && <Unfold><PlanForm onSubmit={(d, m) => onCreatePlanning(d, m, l.id)} onDone={() => setForm(null)} /></Unfold>}
+                  </div>
                 </div>
-              )}
-
-              {usable(l) && (
-                <div className="venue-actions">
-                  {mineHere ? (
-                    <button type="button" className="chip-btn no" onClick={onClose}><X size={14} /> {t("Live beenden")}</button>
-                  ) : canLive && !myPing && (
-                    <button type="button" className={"chip-btn" + (open === "live" ? " sel" : "")} onClick={() => toggle("live")} aria-expanded={open === "live"}>
-                      <Radio size={14} /> {t("Hier live gehen")}
-                    </button>
-                  )}
-                  {canPlan && (
-                    <button type="button" className={"chip-btn" + (open === "plan" ? " sel" : "")} onClick={() => toggle("plan")} aria-expanded={open === "plan"}>
-                      <Calendar size={14} /> {t("Hier planen")}
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {open === "live" && <Unfold><LiveForm venue={l} onCreate={onCreate} onDone={() => setForm(null)} /></Unfold>}
-              {open === "plan" && <Unfold><PlanForm venue={l} onCreatePlanning={onCreatePlanning} onDone={() => setForm(null)} /></Unfold>}
+              </div>
             </div>
           );
         })}

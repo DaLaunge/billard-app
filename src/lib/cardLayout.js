@@ -127,12 +127,10 @@ export const CARD_SCREENS = [
     // stehen deshalb in derselben Standard-Spalte - sonst haengt ihr Platz
     // davon ab, welcher Teil gerade der erste sichtbare ist.
     decks: [
-      { id: "mitspieler", label: "Mitspieler finden", ids: ["duelle", "pings", "planung", "orte"] },
+      { id: "mitspieler", label: "Mitspieler finden", ids: ["duelle", "orte"] },
     ],
     cards: [
       { id: "duelle", label: "Duelle", col: "middle" },
-      { id: "pings", label: "Live", col: "middle" },
-      { id: "planung", label: "Planung", col: "middle" },
       { id: "orte", label: "Orte", col: "middle" },
     ],
   },

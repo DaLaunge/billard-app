@@ -1,18 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Radio, MapPin, Pencil, X, Swords, Calendar, Users, Plus } from "lucide-react";
+import { Radio, Swords, Users } from "lucide-react";
 import { t } from "../lib/i18n";
-import PingCard from "./PingCard";
-import PlanungCard from "./PlanungCard";
 import ChallengeCard from "./ChallengeCard";
 import ImprintFooter from "./widgets/ImprintFooter";
 import ShowAllCardsButton from "./widgets/ShowAllCardsButton";
 import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
-import DayPicker from "./widgets/DayPicker";
-import LocationPicker from "./widgets/LocationPicker";
 import VenueList from "./widgets/VenueList";
 import LocationReview from "./widgets/LocationReview";
-import { useLocations } from "../lib/locationStore";
 import { useCardLayout } from "../lib/useCardLayout";
 import { deckIds, foldedDeck, withoutFolded } from "../lib/cardLayout";
 
@@ -35,27 +30,7 @@ const writeLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* Pr
 export default function LiveScreen({ me, pings, plannings, challenges, matches, rangliste, players, catalog, earnedBadges,
   colorOf, badgeOf, photoOf, onCreate, onClose, onReply, onUnreply,
   onCreatePlanning, onDeletePlanning, onUpdatePlanning, onReplyPlanning, onUnreplyPlanning,
-  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout, toast }) {
-  const myPing = pings.find((p) => p.player_id === me.id);
-  const others = pings.filter((p) => p.player_id !== me.id);
-  const [loc, setLoc] = useState("");
-  const locs = useLocations();
-  const [pingLocId, setPingLocId] = useState(null);
-  const [planLocId, setPlanLocId] = useState(null);
-  const pingLoc = locs.list.find((l) => l.id === pingLocId);
-  const [msg, setMsg] = useState("");
-  const [hours, setHours] = useState(3);
-  // Die beiden Formulare standen frueher dauerhaft offen und fuellten den
-  // halben Bildschirm, obwohl man sie selten braucht - jetzt hinter einem
-  // Knopf, damit oben steht, wofuer man herkommt: wer gerade da ist.
-  const [pingForm, setPingForm] = useState(false);
-  const [planForm, setPlanForm] = useState(false);
-
-  const myPlannings = plannings.filter((p) => p.player_id === me.id);
-  const otherPlannings = plannings.filter((p) => p.player_id !== me.id);
-  const [planDate, setPlanDate] = useState("");
-  const [planMsg, setPlanMsg] = useState("");
-
+  onDeclineChallenge, onCancelChallenge, onEditChallengeMessage, onReplyToChallenge, onOpenProfile, onInvite, onSetCardLayout, onCreateChallenge, toast }) {
   const openChallenges = (challenges || []).filter((c) => c.status === "open" && new Date(c.expires_at) > new Date());
   const challengesToMe = openChallenges.filter((c) => c.challenged_id === me.id);
   const challengesFromMe = openChallenges.filter((c) => c.challenger_id === me.id);
@@ -94,7 +69,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   // Karten), das Ausblenden zusaetzlich direkt im Kartenmenue hier.
   const cards = useCardLayout("live", me.card_layout, onSetCardLayout, toast);
 
-  const counts = { duelle: openChallenges.length, pings: pings.length, planung: plannings.length };
+  const counts = { duelle: openChallenges.length, orte: pings.length + plannings.length };
 
 
   // Inhalte der drei Teile - Rahmen, Titel und Kartenmenue kommen von der
@@ -119,124 +94,18 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
         )}
       </>
     ),
-    pings: (
-      <>
-        {myPing ? (
-          <>
-            <PingCard ping={myPing} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onReply={onReply} onUnreply={onUnreply} />
-            <button className="btn ghost small" onClick={onClose}><X size={15} /> {t("Live-Eintrag beenden")}</button>
-          </>
-        ) : pingForm ? (
-          <>
-            {locs.available ? (
-              <LocationPicker value={pingLocId} onChange={setPingLocId} toast={toast} me={me} />
-            ) : (
-              <div className="search-row">
-                <MapPin size={16} className="mail-ico" />
-                <input autoFocus placeholder={t("Wo bist du? z. B. Schwedenplatz")} value={loc}
-                  maxLength={60} onChange={(e) => setLoc(e.target.value)} />
-              </div>
-            )}
-            <div className="search-row">
-              <Pencil size={16} className="mail-ico" />
-              <input placeholder={t("Nachricht (optional), z. B. 'Wer hat Lust auf 9 Ball?'")} value={msg}
-                maxLength={120} onChange={(e) => setMsg(e.target.value)} />
-            </div>
-            <div className="chips small" style={{ marginBottom: 6 }}>
-              {[1, 2, 3, 6].map((h) => (
-                <button key={h} className={"chip" + (hours === h ? " active" : "")} onClick={() => setHours(h)}>
-                  {t("{n} Std", { n: h })}
-                </button>
-              ))}
-            </div>
-            <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setPingForm(false)}>{t("Abbrechen")}</button>
-              <button className="btn primary" disabled={locs.available ? !pingLoc : loc.trim().length < 2}
-                onClick={() => { onCreate(locs.available ? pingLoc.name : loc, msg, hours); setLoc(""); setPingLocId(null); setMsg(""); setPingForm(false); }}>
-                <Radio size={17} /> {t("Live gehen")}
-              </button>
-            </div>
-            <p className="hint">{t("Dein Eintrag verschwindet nach der gewaehlten Zeit von selbst.")}</p>
-          </>
-        ) : (
-          <button className="btn primary" onClick={() => setPingForm(true)}>
-            <Radio size={17} /> {t("Ich bin am Tisch")}
-          </button>
-        )}
-
-        {others.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Gerade aktiv:")}</p>}
-        {others.map((p) => (
-          <PingCard key={p.id} ping={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} onOpenProfile={onOpenProfile} onReply={onReply} onUnreply={onUnreply} />
-        ))}
-        {others.length === 0 && !myPing && (
-          <p className="hint center">
-            {t("Gerade ist niemand live. Sei du der Erste - dein Eintrag erscheint hier fuer alle sichtbar.")}
-          </p>
-        )}
-      </>
-    ),
-    planung: (
-      <>
-        {planForm ? (
-          <>
-            <p className="hint" style={{ marginTop: 0 }}>
-              {t("Wann bist du voraussichtlich verfuegbar? Andere koennen dir dann direkt eine Nachricht schicken - spart laestiges Hin-und-Her bei der Terminfindung.")}
-            </p>
-            <DayPicker value={planDate} onChange={setPlanDate} />
-            {locs.available && <LocationPicker value={planLocId} onChange={setPlanLocId} optional toast={toast} me={me} />}
-            <div className="search-row">
-              <Pencil size={16} className="mail-ico" />
-              <input placeholder={t("Hinweis (optional), z. B. 'Bin flexibel, meldet euch'")} value={planMsg}
-                maxLength={120} onChange={(e) => setPlanMsg(e.target.value)} />
-            </div>
-            <div className="sp-controls">
-              <button className="btn ghost" onClick={() => setPlanForm(false)}>{t("Abbrechen")}</button>
-              <button className="btn primary" disabled={!planDate}
-                onClick={() => { onCreatePlanning(planDate, planMsg, planLocId); setPlanLocId(null); setPlanDate(""); setPlanMsg(""); setPlanForm(false); }}>
-                <Calendar size={17} /> {t("Planung eintragen")}
-              </button>
-            </div>
-            <p className="hint">{t("Deine Planung verschwindet automatisch nach dem gewaehlten Tag.")}</p>
-          </>
-        ) : (
-          <button className="btn primary" onClick={() => setPlanForm(true)}>
-            <Plus size={17} /> {t("Termin eintragen")}
-          </button>
-        )}
-
-        {myPlannings.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Meine Planungen:")}</p>}
-        {myPlannings.map((p) => (
-          <PlanungCard key={p.id} planning={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onOpenProfile={onOpenProfile} onDelete={onDeletePlanning} onUpdate={onUpdatePlanning} toast={toast} />
-        ))}
-
-        {otherPlannings.length > 0 && <p className="q" style={{ marginTop: 16 }}>{t("Weitere Planungen:")}</p>}
-        {otherPlannings.map((p) => (
-          <PlanungCard key={p.id} planning={p} me={me} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-            onOpenProfile={onOpenProfile} onReply={onReplyPlanning} onUnreply={onUnreplyPlanning} />
-        ))}
-        {plannings.length === 0 && (
-          <p className="hint center">
-            {t("Noch keine Planungen. Leg die erste an - dein Eintrag ist fuer alle sichtbar.")}
-          </p>
-        )}
-      </>
-    ),
   };
 
   const TAB_META = {
     duelle: { tab: t("Duelle"), title: t("Duelle"), icon: <Swords size={15} /> },
-    pings: { tab: t("Live"), title: t("Live"), icon: <Radio size={15} /> },
-    planung: { tab: t("Planung"), title: t("Planung"), icon: <Calendar size={15} /> },
-    orte: { tab: t("Orte"), title: t("Orte"), icon: <MapPin size={15} /> },
+    orte: { tab: t("Live & Planung"), title: t("Live & Planung"), icon: <Radio size={15} /> },
   };
 
   const { parts, anchor } = foldedDeck(cards.visibleOrder, LIVE_DECK_IDS);
   bodyById.orte = (
-    <VenueList me={me} toast={toast} pings={pings} plannings={plannings} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-      onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning}
-      onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning}
-      canLive={parts.includes("pings")} canPlan={parts.includes("planung")} />
+    <VenueList me={me} toast={toast} pings={pings} plannings={plannings} challengesFromMe={challengesFromMe} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+      onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning} onUpdatePlanning={onUpdatePlanning} onDeletePlanning={onDeletePlanning}
+      onReply={onReply} onUnreply={onUnreply} onReplyPlanning={onReplyPlanning} onUnreplyPlanning={onUnreplyPlanning} onChallenge={onCreateChallenge} />
   );
   // Offener Reiter: die letzte Wahl dieses Geraets, sonst der erste Teil, in
   // dem ueberhaupt etwas steht - das erspart auf einem vollen Bildschirm den
@@ -247,7 +116,7 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   const [deckTab, setDeckTab] = useState(() => readLocal(DECK_TAB_KEY));
   const activeId = parts.includes(deckTab)
     ? deckTab
-    : (parts.find((id) => counts[id] > 0) || (parts.includes("pings") ? "pings" : parts[0]));
+    : (parts.find((id) => counts[id] > 0) || (parts.includes("orte") ? "orte" : parts[0]));
   // Einklappen ersetzt das fruehere Zuklappen je Bereich - dieselbe Geste,
   // nur einmal statt dreimal, und wie dort nur auf diesem Geraet gemerkt.
 

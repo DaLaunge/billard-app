@@ -1799,7 +1799,7 @@ export default function App() {
                   onReplyPlanning={replyPlanning} onUnreplyPlanning={unreplyPlanning}
                   onDeclineChallenge={declineChallenge} onCancelChallenge={cancelChallenge}
                   onEditChallengeMessage={editChallengeMessage} onReplyToChallenge={replyToChallenge}
-                  onSetCardLayout={setCardLayout} toast={toast}
+                  onSetCardLayout={setCardLayout} onCreateChallenge={createChallenge} toast={toast}
                   onInvite={() => navPush({ tab: "invite" })} />
               )}
               {tab === "match" && (() => {
