@@ -10,6 +10,7 @@ import CardSlot from "./widgets/CardSlot";
 import CardDeck from "./widgets/CardDeck";
 import DayPicker from "./widgets/DayPicker";
 import LocationPicker from "./widgets/LocationPicker";
+import VenueList from "./widgets/VenueList";
 import LocationReview from "./widgets/LocationReview";
 import { useLocations } from "../lib/locationStore";
 import { useCardLayout } from "../lib/useCardLayout";
@@ -94,6 +95,11 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
   const cards = useCardLayout("live", me.card_layout, onSetCardLayout, toast);
 
   const counts = { duelle: openChallenges.length, pings: pings.length, planung: plannings.length };
+
+  // Weg 1: ueber den Ort (Reiter "Orte") - Formular mit dem Lokal vorbelegt oeffnen
+  const pick = (id) => { setDeckTab(id); writeLocal(DECK_TAB_KEY, id); };
+  const liveAt = (locId) => { setPingLocId(locId); setPingForm(true); pick("pings"); };
+  const planAt = (locId) => { setPlanLocId(locId); setPlanForm(true); pick("planung"); };
 
   // Inhalte der drei Teile - Rahmen, Titel und Kartenmenue kommen von der
   // gemeinsamen Deck-Karte.
@@ -226,9 +232,14 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
     duelle: { tab: t("Duelle"), title: t("Duelle"), icon: <Swords size={15} /> },
     pings: { tab: t("Live"), title: t("Live"), icon: <Radio size={15} /> },
     planung: { tab: t("Planung"), title: t("Planung"), icon: <Calendar size={15} /> },
+    orte: { tab: t("Orte"), title: t("Orte"), icon: <MapPin size={15} /> },
   };
 
   const { parts, anchor } = foldedDeck(cards.visibleOrder, LIVE_DECK_IDS);
+  bodyById.orte = (
+    <VenueList me={me} liveBusy={!!myPing}
+      onLive={parts.includes("pings") ? liveAt : null} onPlan={parts.includes("planung") ? planAt : null} />
+  );
   // Offener Reiter: die letzte Wahl dieses Geraets, sonst der erste Teil, in
   // dem ueberhaupt etwas steht - das erspart auf einem vollen Bildschirm den
   // ersten Klick. Ist NICHTS eingetragen, gewinnt "Live": das ist der

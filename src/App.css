@@ -3583,3 +3583,9 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .loc-review-count { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: calc(12px * var(--fs, 1)); color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; }
 .loc-review-done { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
 .loc-review .stat-block-head { display: flex; align-items: center; gap: 8px; }
+
+/* Orte-Liste (Live) */
+.venue-list { display: flex; flex-direction: column; gap: 6px; }
+.venue-row { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 12px; background: var(--felt-2); border: 1px solid var(--line); flex-wrap: wrap; }
+.venue-row .loc-sel-txt { flex: 1 1 140px; min-width: 0; }
+.venue-row .chip-btn { display: inline-flex; align-items: center; gap: 4px; }
