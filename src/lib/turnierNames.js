@@ -33,8 +33,16 @@ const L = () => (getLang() === "en" ? "en" : "de");
 const clean = (s) => s.replace(/\s+/g, " ").trim();
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-/* Feste Auswahl (ohne Zufall): die Reihenfolge bleibt beim Tippen im Ortsfeld stabil. */
-export function suggestNames({ place = "", discipline = "", format = "ko", date = new Date() } = {}) {
+const norm = (x) => x.trim().toLowerCase();
+// Haengt " 2", " 3" ... an, bis der Name frei ist (taken = Set kleingeschriebener Namen bestehender Turniere)
+export function uniqueName(base, taken) {
+  if (!taken || !taken.has(norm(base))) return base;
+  for (let i = 2; i < 100; i++) if (!taken.has(norm(`${base} ${i}`))) return `${base} ${i}`;
+  return base;
+}
+
+/* Feste Auswahl (ohne Zufall): die Reihenfolge bleibt beim Tippen im Ortsfeld stabil. Bereits vergebene Namen werden nummeriert. */
+export function suggestNames({ place = "", discipline = "", format = "ko", date = new Date(), taken } = {}) {
   const lang = L();
   const p = place.trim();
   const day = DAYS[lang][date.getDay()];
@@ -46,17 +54,19 @@ export function suggestNames({ place = "", discipline = "", format = "ko", date 
   const f = (de ? fmtDe : fmtEn)[format] || "";
   const list = [
     de ? `${p} ${day}sturnier KW${kw}` : `${p} ${day} Tournament W${kw}`,
-    de ? `${p} ${discipline} Open ${month}` : `${p} ${discipline} Open ${month}`,
+    `${p} ${discipline} Open ${month}`,
     de ? `${p} ${f} KW${kw}` : `${p} ${f} W${kw}`,
     de ? `${p} ${day}s-Cup` : `${p} ${day} Cup`,
   ];
-  return [...new Set(list.map(clean).filter((s) => s.length > 3))];
+  return [...new Set(list.map(clean).filter((x) => x.length > 3).map((x) => uniqueName(x, taken)))];
 }
 
-/* Ein kreativer Zufallsname, auf Wunsch mit Ort davor ("Koeoe 7 · Kreidestaub-Cup"). */
-export function randomName({ place = "", exclude = "" } = {}) {
+/* Ein kreativer Zufallsname, auf Wunsch mit Ort davor ("Koeoe 7 · Kreidestaub-Cup"). Bevorzugt einen Namen, den es noch nicht gibt
+   und der nicht der aktuelle ist; sind alle vergeben, wird nummeriert. */
+export function randomName({ place = "", exclude = "", taken } = {}) {
   const lang = L();
-  let n = pick(CREATIVE[lang]);
-  for (let i = 0; i < 5 && n === exclude; i++) n = pick(CREATIVE[lang]);
-  return place.trim() ? `${place.trim()} · ${n}` : n;
+  const full = (n) => (place.trim() ? `${place.trim()} · ${n}` : n);
+  const free = CREATIVE[lang].filter((n) => !(taken && taken.has(norm(full(n)))) && norm(full(n)) !== norm(exclude));
+  if (free.length) return full(pick(free));
+  return uniqueName(full(pick(CREATIVE[lang])), taken);
 }

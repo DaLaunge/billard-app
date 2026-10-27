@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronRight, Dices, Plus, Search, Trophy, X } from "lucide-react";
+import { ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
+import LocationPicker from "./widgets/LocationPicker";
+import { useLocations } from "../lib/locationStore";
 import { suggestNames, randomName } from "../lib/turnierNames";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -39,7 +41,7 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t(
 // getoente Flaeche, beendet/abgebrochen = neutral.
 const statusTone = (s) => (s === "setup" ? "open" : s === "finished" || s === "cancelled" ? "done" : "live");
 
-export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerStays }) {
+export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinnerStays }) {
   const [tournaments, setTournaments] = useState(null);
   const [wsSessions, setWsSessions] = useState(null);
   // Default "running" statt "all" (Nutzer-Feedback) - beim Oeffnen der
@@ -49,7 +51,19 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
   const [query, setQuery] = useState(""); // Suche nach Name
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
-  const [place, setPlace] = useState(() => { try { return localStorage.getItem("turnierPlace") || ""; } catch { return ""; } });
+  // Ort wie bei "Live gehen": ein Lokal aus dem Katalog (LocationPicker) oder ein getippter Ort; im Namen steht dessen Text. Wird gemerkt.
+  const { list: locList } = useLocations();
+  const [placeLocId, setPlaceLocId] = useState(() => { try { return localStorage.getItem("turnierPlaceLoc") || null; } catch { return null; } });
+  const [placeText, setPlaceText] = useState(() => { try { return localStorage.getItem("turnierPlace") || ""; } catch { return ""; } });
+  const place = locList.find((l) => l.id === placeLocId)?.name || placeText;
+  useEffect(() => { try { localStorage.setItem("turnierPlaceLoc", placeLocId || ""); localStorage.setItem("turnierPlace", placeText); } catch { /* */ } }, [placeLocId, placeText]);
+  // Namen bestehender Turniere (klein geschrieben): Zufallsnamen und Vorschlaege vermeiden sie
+  const takenNames = useMemo(() => new Set([...(tournaments || []), ...(wsSessions || [])].map((x) => (x.name || "").trim().toLowerCase())), [tournaments, wsSessions]);
+  // Beim Oeffnen des Formulars gleich einen freien Zufallsnamen vorschlagen (nur wenn das Feld leer ist)
+  useEffect(() => {
+    if (showForm && !name && tournaments != null && wsSessions != null) setName(randomName({ place, taken: takenNames }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showForm, tournaments, wsSessions]);
   const [format, setFormat] = useState("ko"); // "ko" | "double_ko" | "round_robin" | "winner_stays"
   const [discipline, setDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
   const [tableMode, setTableMode] = useState("range");
@@ -214,15 +228,25 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
             </div>
 
             {/* Name: Ort (optional, wird gemerkt) + Wuerfel fuer einen kreativen Zufallsnamen + Vorschlaege zum Antippen */}
-            <FieldLabel label={t("Name")}
-              actions={<button type="button" className="icon-btn small" onClick={() => setName(randomName({ place, exclude: name }))}
-                aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={15} /></button>} />
-            <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
-            <FieldLabel label={t("Ort (optional)")} info={t("Wird gemerkt und in den Namensvorschlägen verwendet, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel oben würfelt einen kreativen Namen.")} />
-            <input type="text" placeholder={t("z. B. Köö 7")} value={place} maxLength={30}
-              onChange={(e) => { setPlace(e.target.value); try { localStorage.setItem("turnierPlace", e.target.value); } catch { /* */ } }} />
+            <FieldLabel label={t("Name")} />
+            <div className="name-row">
+              <button type="button" className="icon-btn" onClick={() => setName(randomName({ place, exclude: name, taken: takenNames }))}
+                aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={18} /></button>
+              <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <FieldLabel label={t("Ort (optional)")} info={t("Wie bei „Live gehen“: ein Lokal auswählen oder einen Ort eintippen. Der Ort steht dann im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel links würfelt einen kreativen Namen.")} />
+            <LocationPicker value={placeLocId} toast={toast} me={me} placeholder={t("Lokal oder Ort suchen oder eingeben")}
+              onChange={(id) => { setPlaceLocId(id); if (id) { setPlaceText(""); } else { setPlaceText(""); } }}
+              onUseText={(txt) => { setPlaceLocId(null); setPlaceText(txt); }} />
+            {placeText && !placeLocId && (
+              <div className="loc-sel">
+                <MapPin size={18} className="loc-sel-ico" />
+                <div className="loc-sel-txt"><b>{placeText}</b></div>
+                <button type="button" className="icon-btn small" onClick={() => setPlaceText("")} aria-label={t("Anderes Lokal")} title={t("Anderes Lokal")}><X size={16} /></button>
+              </div>
+            )}
             <div className="chips small">
-              {suggestNames({ place, discipline, format }).map((s) => (
+              {suggestNames({ place, discipline, format, taken: takenNames }).map((s) => (
                 <button key={s} type="button" className={"chip" + (name === s ? " active" : "")} onClick={() => setName(s)}>{s}</button>
               ))}
             </div>

@@ -895,6 +895,8 @@ const TRANSLATIONS = {
     "Du bist im Turnier.": "You are in the tournament.",
     "Zufallsname": "Random name",
     "Ort (optional)": "Place (optional)",
+    "Wie bei „Live gehen“: ein Lokal auswählen oder einen Ort eintippen. Der Ort steht dann im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel links würfelt einen kreativen Namen.": "As in “Go live”: pick a venue or type a place. The place then appears in the name, e.g. “Café 7 Friday Tournament W12”. The dice on the left rolls a creative name.",
+    "Lokal oder Ort suchen oder eingeben": "Search or enter a venue or place",
     "z. B. Köö 7": "e.g. Café 7",
     "Wird gemerkt und in den Namensvorschlägen verwendet, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel oben würfelt einen kreativen Namen.": "Remembered and used in the name suggestions, e.g. “Café 7 Friday Tournament W12”. The dice above rolls a creative name.",
     "Die Anmeldungen haben sich geändert: jetzt {n} Teilnehmer. Bitte die Liste prüfen und nochmal starten.": "The registrations have changed: now {n} participants. Please check the list and start again.",

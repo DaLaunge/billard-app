@@ -3817,3 +3817,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .venue-bottom .search-row { flex: 1 1 180px; min-width: 0; margin: 0; }
 .venue-go { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 12px; border: 1.5px solid transparent; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
 .venue-go:disabled { opacity: .45; cursor: default; }
+
+/* Neues Turnier: Wuerfel links neben dem Namensfeld (Zufallsname) */
+.name-row { display: flex; align-items: center; gap: 8px; }
+.name-row input { flex: 1; min-width: 0; }
