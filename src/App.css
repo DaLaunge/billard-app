@@ -3589,3 +3589,15 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .venue-row { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 12px; background: var(--felt-2); border: 1px solid var(--line); flex-wrap: wrap; }
 .venue-row .loc-sel-txt { flex: 1 1 140px; min-width: 0; }
 .venue-row .chip-btn { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Orte: wer spielt wo */
+.venue-row { flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 8px; }
+.venue-row.is-live { border-color: var(--accent-line); background: var(--accent-soft); }
+.venue-top { display: flex; align-items: center; gap: 6px; }
+.venue-top .loc-sel-txt { flex: 1 1 auto; }
+.venue-people { display: flex; flex-direction: column; gap: 4px; }
+.venue-person { display: flex; align-items: center; gap: 8px; text-align: left; padding: 2px 0; }
+.venue-person span { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.venue-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.venue-form { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.live-pill.small, .plan-pill.small { font-size: calc(10px * var(--fs, 1)); padding: 1px 6px; }

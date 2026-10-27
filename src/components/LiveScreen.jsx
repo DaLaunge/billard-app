@@ -96,10 +96,6 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
 
   const counts = { duelle: openChallenges.length, pings: pings.length, planung: plannings.length };
 
-  // Weg 1: ueber den Ort (Reiter "Orte") - Formular mit dem Lokal vorbelegt oeffnen
-  const pick = (id) => { setDeckTab(id); writeLocal(DECK_TAB_KEY, id); };
-  const liveAt = (locId) => { setPingLocId(locId); setPingForm(true); pick("pings"); };
-  const planAt = (locId) => { setPlanLocId(locId); setPlanForm(true); pick("planung"); };
 
   // Inhalte der drei Teile - Rahmen, Titel und Kartenmenue kommen von der
   // gemeinsamen Deck-Karte.
@@ -237,8 +233,9 @@ export default function LiveScreen({ me, pings, plannings, challenges, matches, 
 
   const { parts, anchor } = foldedDeck(cards.visibleOrder, LIVE_DECK_IDS);
   bodyById.orte = (
-    <VenueList me={me} toast={toast} liveBusy={!!myPing}
-      onLive={parts.includes("pings") ? liveAt : null} onPlan={parts.includes("planung") ? planAt : null} />
+    <VenueList me={me} toast={toast} pings={pings} plannings={plannings} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
+      onOpenProfile={onOpenProfile} onCreate={onCreate} onClose={onClose} onCreatePlanning={onCreatePlanning}
+      canLive={parts.includes("pings")} canPlan={parts.includes("planung")} />
   );
   // Offener Reiter: die letzte Wahl dieses Geraets, sonst der erste Teil, in
   // dem ueberhaupt etwas steht - das erspart auf einem vollen Bildschirm den
