@@ -1257,12 +1257,30 @@ export default function App() {
     // Der Wert bleibt gespeichert, bis das Turnier wirklich offen ist (naechster Effekt): ein Neuladen durch ein wartendes Update oder die
     // Startseiten-Weiche wuerde die Navigation sonst verschlucken (der erste Scan landete dann auf einem Hauptmenue). Anmelden ist idempotent.
     turnierJoinBusy.current = true;
-    supabase.rpc("tournament_register", { p_tournament_id: id }).then(({ error }) => {
+    (async () => {
+      const { error } = await supabase.rpc("tournament_register", { p_tournament_id: id });
+      // Anmeldung nicht mehr moeglich (Turnier laeuft schon)? Wer dabei ist, kommt trotzdem hinein; sonst Fehler zeigen.
+      let isIn = !error;
+      if (error) {
+        const { data: rows } = await supabase.from("tournament_players").select("player_id").eq("tournament_id", id).eq("player_id", player.id);
+        isIn = (rows?.length ?? 0) > 0;
+      }
       turnierJoinBusy.current = false;
-      if (error) { clearTurnierInvite(); toast(error.message); return; }
-      toast(t("Du bist für das Turnier angemeldet."));
+      if (!isIn) { clearTurnierInvite(); toast(error?.message || t("Dieses Turnier wurde nicht gefunden.")); return; }
+      // Hat man gerade eine Partie am Tisch, geht es direkt dorthin, sonst ins Turnier.
+      const { data: tms } = await supabase.from("tournament_matches")
+        .select("id, table_number, player1_id, player2_id, tournament:tournaments!tournament_matches_tournament_id_fkey(discipline, status)")
+        .eq("tournament_id", id).eq("is_bye", false).is("match_id", null).not("table_number", "is", null)
+        .or(`player1_id.eq.${player.id},player2_id.eq.${player.id}`);
+      const mine = (tms ?? []).find((tm) => tm.player1_id && tm.player2_id && tm.tournament?.status === "running");
+      if (mine) {
+        navPush({ tab: "match", matchTournamentCtx: { tournamentMatchId: mine.id, discipline: mine.tournament?.discipline, player1Id: mine.player1_id, player2Id: mine.player2_id } });
+        clearTurnierInvite();
+        return;
+      }
+      toast(error ? t("Du bist im Turnier.") : t("Du bist für das Turnier angemeldet."));
       navPush({ tab: "turnierdetail", tournamentId: id });
-    });
+    })();
   }, [player, toast, navPush]);
   useEffect(() => {
     const id = getTurnierInvite();

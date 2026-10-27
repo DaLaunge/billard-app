@@ -892,6 +892,7 @@ const TRANSLATIONS = {
     "Neu: anmelden oder Gast": "New: sign up or guest",
     "Du bist zum Turnier „{name}“ eingeladen:": "You are invited to the tournament “{name}”:",
     "Du bist für das Turnier angemeldet.": "You are registered for the tournament.",
+    "Du bist im Turnier.": "You are in the tournament.",
     "Code:": "Code:",
     "Code wird erstellt …": "Creating code …",
     "Kopieren nicht möglich – Link markieren und kopieren.": "Copy failed – select and copy the link.",
