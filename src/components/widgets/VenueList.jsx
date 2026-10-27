@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { MapPin, Search, Radio, Calendar, Plus } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check } from "lucide-react";
 import { t } from "../../lib/i18n";
-import { useLocations } from "../../lib/locationStore";
+import { supabase } from "../../supabase";
+import { useLocations, loadLocations } from "../../lib/locationStore";
 import RouteButton from "./RouteButton";
 import LocationForm from "./LocationForm";
 
@@ -12,7 +13,8 @@ const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-
 const SHOWN = 30;
 
 export default function VenueList({ me, onLive, onPlan, liveBusy, toast }) {
-  const { list } = useLocations();
+  const { list, confirms } = useLocations();
+  const [busy, setBusy] = useState(null);
   const [q, setQ] = useState("");
   // Neues Lokal: Formular klappt unter der Suche auf (Name aus der Suche, wenn getippt; sonst eigenes Namensfeld)
   const [adding, setAdding] = useState(false);
@@ -23,12 +25,23 @@ export default function VenueList({ me, onLive, onPlan, liveBusy, toast }) {
     const id = setTimeout(() => setMounted(false), 350);
     return () => clearTimeout(id);
   }, [adding]);
+  // Noch offene Lokale anderer sieht man hier zum Bestaetigen (zwei Bestaetigungen geben sie frei)
   const visible = list
-    .filter((l) => l.status === "approved" || l.created_by === me?.id || me?.role === "admin")
     .sort((a, b) => a.name.localeCompare(b.name));
   const nq = norm(q);
   const found = nq ? visible.filter((l) => norm(`${l.name} ${l.address || ""}`).includes(nq)) : visible;
   const rows = found.slice(0, SHOWN);
+  const count = (id) => confirms.filter((c) => c.location_id === id).length;
+  const done = (id) => confirms.some((c) => c.location_id === id && c.player_id === me?.id);
+  const usable = (l) => l.status === "approved" || l.created_by === me?.id || me?.role === "admin";
+  const confirm = async (l) => {
+    setBusy(l.id);
+    const { data, error } = await supabase.rpc("confirm_location", { p_id: l.id });
+    setBusy(null);
+    if (error) { toast?.(t("Fehler: ") + error.message); return; }
+    toast?.(data >= 2 ? t("Danke! „{name}“ ist jetzt freigegeben.", { name: l.name }) : t("Danke fürs Bestätigen!"));
+    loadLocations(true);
+  };
 
   return (
     <>
@@ -57,14 +70,18 @@ export default function VenueList({ me, onLive, onPlan, liveBusy, toast }) {
             <div className="loc-sel-txt">
               <b><MapPin size={14} /> {l.name}{l.status === "pending" ? " ⏳" : ""}</b>
               {l.address && <span className="rank-meta">{l.address}</span>}
+              {l.status === "pending" && <span className="rank-meta">{count(l.id)}/2 {t("bestätigt")}</span>}
             </div>
             <RouteButton place={l} size={15} />
-            {onLive && !liveBusy && (
+            {l.status === "pending" && l.created_by !== me?.id && (done(l.id)
+              ? <span className="loc-review-done"><Check size={14} /> {t("Bestätigt")}</span>
+              : <button type="button" className="chip-btn ok" disabled={busy === l.id} onClick={() => confirm(l)}><Check size={14} /> {t("Stimmt")}</button>)}
+            {usable(l) && onLive && !liveBusy && (
               <button type="button" className="chip-btn" onClick={() => onLive(l.id)} title={t("Hier live gehen")} aria-label={t("Hier live gehen")}>
                 <Radio size={14} /> {t("Live")}
               </button>
             )}
-            {onPlan && (
+            {usable(l) && onPlan && (
               <button type="button" className="chip-btn" onClick={() => onPlan(l.id)} title={t("Hier einen Termin planen")} aria-label={t("Hier einen Termin planen")}>
                 <Calendar size={14} /> {t("Planung")}
               </button>
