@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs, clearRef, getClubCode, clearClubCode } from "./lib/session";
+import { getVs, clearVs, clearRef, getClubCode, clearClubCode, getTurnierInvite, clearTurnierInvite } from "./lib/session";
 import { setClubData, setClubLoader, reloadClubs, useClubData, roleIn } from "./lib/clubStore";
 import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
@@ -36,6 +36,7 @@ import { getPendingPopup, storePendingPopup } from "./lib/uiPrefs";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
+import TurnierInviteScreen from "./components/TurnierInviteScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
 import NicknameScreen from "./components/NicknameScreen";
 import LiveScreen from "./components/LiveScreen";
@@ -162,6 +163,9 @@ async function persistNavAndUpdate(navState, updateSW, { immediate = false } = {
 export default function App() {
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(false);
+  // Turnier-Einladung ohne Konto: Wahl "Anmelden / Gast" (TurnierInviteScreen); turnierLogin = hat "Anmelden" gewaehlt
+  const [turnierInvite, setTurnierInvite] = useState(() => getTurnierInvite());
+  const [turnierLogin, setTurnierLogin] = useState(false);
   const [player, setPlayer] = useState(null);
   const [loadErr, setLoadErr] = useState(false);
   const [playerChecked, setPlayerChecked] = useState(false);
@@ -1245,6 +1249,17 @@ export default function App() {
       else { toast(t("Du bist dem Club „{name}“ beigetreten.", { name: data?.name || "" })); reloadClubs(); }
     });
   }, [player]);
+  // Turnier-Einladung /?turnier=ID: wer angemeldet ist (auch frisch registriert), wird sofort fuer das Turnier angemeldet und landet dort.
+  useEffect(() => {
+    const id = getTurnierInvite();
+    if (!id || !player || player.must_change_password) return;
+    clearTurnierInvite();
+    supabase.rpc("tournament_register", { p_tournament_id: id }).then(({ error }) => {
+      if (error) { toast(error.message); return; }
+      toast(t("Du bist für das Turnier angemeldet."));
+      navPush({ tab: "turnierdetail", tournamentId: id });
+    });
+  }, [player, toast, navPush]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1594,7 +1609,10 @@ export default function App() {
   return (
     <div className="stage">
       <div className={"phone" + (session && player && !player.must_change_password ? " app" : "")}>
-        {!session && <LoginScreen />}
+        {!session && (turnierInvite && !turnierLogin
+          ? <TurnierInviteScreen tournamentId={turnierInvite} onLogin={() => setTurnierLogin(true)}
+              onDone={() => { clearTurnierInvite(); setTurnierInvite(null); }} />
+          : <LoginScreen />)}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
 

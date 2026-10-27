@@ -54,6 +54,36 @@ export const clearRef = () => {
   try { sessionStorage.removeItem(REF_KEY); } catch { /* */ }
 };
 
+// Fuer die Turnier-Einladung (Anmelden): den Code der Turnierleitung als Werbe-Code merken, damit sie als Werber gutgeschrieben wird.
+export const setRef = (code) => { if (code) storeRef(String(code).trim()); };
+
+/* Turnier-Einladung aus der URL (?turnier=ID): localStorage wie ?ref= (der Magic-Link oeffnet oft einen neuen Tab), 7 Tage gueltig.
+   Ohne Konto zeigt App.jsx die Wahl "Anmelden oder als Gast"; mit Konto meldet es sofort an (tournament_register) und loescht den Wert. */
+const TURNIER_KEY = "turnier_join";
+function captureTurnier() {
+  try {
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("turnier");
+    if (id) {
+      localStorage.setItem(TURNIER_KEY, JSON.stringify({ id: id.trim(), at: Date.now() }));
+      url.searchParams.delete("turnier");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
+  } catch { /* ignore */ }
+}
+captureTurnier();
+export const getTurnierInvite = () => {
+  try {
+    const raw = localStorage.getItem(TURNIER_KEY);
+    if (!raw) return null;
+    const { id, at } = JSON.parse(raw);
+    if (id && Date.now() - at < 7 * 24 * 60 * 60 * 1000) return id;
+    localStorage.removeItem(TURNIER_KEY);
+  } catch { /* ignore */ }
+  return null;
+};
+export const clearTurnierInvite = () => { try { localStorage.removeItem(TURNIER_KEY); } catch { /* */ } };
+
 /* Schnellmatch-Code aus der URL (?vs=PLAYER_ID) einmalig sichern. */
 function captureVs() {
   try {

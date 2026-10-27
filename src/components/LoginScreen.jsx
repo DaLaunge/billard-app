@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, X, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { getRef } from "../lib/session";
+import { getRef, getTurnierInvite } from "../lib/session";
 import { isIos, isStandalone } from "../lib/notifications";
 import Ball from "./Ball";
 import LegalModal from "./LegalModal";
@@ -31,9 +31,11 @@ export default function LoginScreen() {
     // die Adresse mit Parameter nicht (Redirect-Allowlist), faellt es auf die
     // Site-URL zurueck; dann greift wie bisher der lokal gespeicherte Code.
     const ref = getRef();
-    const redirect = ref
-      ? `${window.location.origin}/?ref=${encodeURIComponent(ref)}`
-      : window.location.origin;
+    const turnier = getTurnierInvite();
+    const ru = new URL("/", window.location.origin);
+    if (ref) ru.searchParams.set("ref", ref);
+    if (turnier) ru.searchParams.set("turnier", turnier);   // Turnier-Einladung ueberlebt den Browserwechsel
+    const redirect = ru.search ? ru.toString() : window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: { emailRedirectTo: redirect },

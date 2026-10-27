@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "426.10", icon: "🔗",
+    items: ["Turniere haben jetzt einen Einladungslink mit QR-Code: Mitglieder sind damit sofort angemeldet, Neue melden sich an oder spielen nur mit Namen als Gast mit."],
+    en: ["Tournaments now have an invitation link with a QR code: members are registered at once, new people sign up or join as a guest with just a name."] },
   { version: "421.1", icon: "🧮",
     items: ["Jedes Match-Protokoll zeigt jetzt eine kleine Tabelle: wer wie viele Rating-Punkte gewonnen oder verloren hat – und warum."],
     en: ["Every match protocol now shows a small table: who won or lost how many rating points – and why."] },

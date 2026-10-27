@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DiscBall from "./widgets/DiscBall";
 import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
+import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, QrCode, Share2, Copy, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtDateTime } from "../lib/format";
@@ -72,6 +73,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // addPlayers/removePlayer unten sowie
   // tournament_organizer_add_players()/_remove_player()).
   const [showAddPlayers, setShowAddPlayers] = useState(true);
+  const [showQr, setShowQr] = useState(false);
   const [addSelected, setAddSelected] = useState([]);
   const toggleAddSelected = (id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   // Gast-Person ohne App/Login (Nutzer-Feedback: "wenn jemand die App nicht
@@ -455,6 +457,15 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   }
 
   const isOrganizer = me.id === tour.organizer_id || me.role === "admin";
+  const inviteLink = (() => { const u = new URL("/", window.location.origin); u.searchParams.set("turnier", tour.id); return u.toString(); })();
+  const shareInvite = async () => {
+    if (!navigator.share) { copyInvite(); return; }
+    try { await navigator.share({ title: tour.name, text: t("Du bist zum Turnier „{name}“ eingeladen:", { name: tour.name }), url: inviteLink }); } catch { /* abgebrochen */ }
+  };
+  const copyInvite = async () => {
+    try { await navigator.clipboard.writeText(inviteLink); toast(t("Link kopiert!")); }
+    catch { toast(t("Kopieren nicht möglich – Link markieren und kopieren.")); }
+  };
   // Nutzer-Feedback: die Turnierleitung war bisher nirgends sichtbar - man
   // musste erst selbst Organisator/Admin sein, um es an den eigenen
   // Rechten (isOrganizer) zu erahnen. tour.organizer_id ist ueber select("*")
@@ -492,7 +503,31 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         </div>
 
         <section className="stat-block">
-          <div className="stat-block-head"><h3><Users size={17} /> {t("Angemeldet")} ({(roster || []).length})</h3></div>
+          <div className="stat-block-head">
+            <h3><Users size={17} /> {t("Angemeldet")} ({(roster || []).length})</h3>
+            <div className="stat-block-head-actions">
+              <button type="button" className={"icon-btn small" + (showQr ? " primary" : "")} onClick={() => setShowQr((v) => !v)}
+                aria-expanded={showQr} aria-label={t("Einladungslink / QR-Code")} title={t("Einladungslink / QR-Code")}>
+                <QrCode size={15} />
+              </button>
+            </div>
+          </div>
+          {/* Einladung zum Turnier: wer scannt und angemeldet ist, ist sofort dabei; sonst Wahl Anmelden oder Gast (TurnierInviteScreen). */}
+          <div className={"collapsible" + (showQr ? " open" : "")} inert={showQr ? undefined : ""}>
+            <div className="collapsible-inner">
+              <div className="qr-box" style={{ marginTop: 8 }}>
+                <QRCodeSVG value={inviteLink} size={190} level="M" bgColor="#F2EDE0" fgColor="#0A2B21" includeMargin />
+              </div>
+              <div className="qr-uses" style={{ marginTop: 8 }}>
+                <span><UserCheck size={14} /> {t("Mitglied: sofort dabei")}</span>
+                <span><UserPlus size={14} /> {t("Neu: anmelden oder Gast")}</span>
+              </div>
+              <div className="chips small" style={{ justifyContent: "center", marginTop: 8 }}>
+                <button type="button" className="icon-btn small" onClick={shareInvite} aria-label={t("Einladung teilen")} title={t("Einladung teilen")}><Share2 size={15} /></button>
+                <button type="button" className="icon-btn small" onClick={copyInvite} aria-label={t("Link kopieren")} title={t("Link kopieren")}><Copy size={15} /></button>
+              </div>
+            </div>
+          </div>
           {(roster || []).length === 0 ? (
             <p className="hint">{t("Noch niemand angemeldet.")}</p>
           ) : (
