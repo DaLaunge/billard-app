@@ -32,6 +32,13 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [entries, setEntries] = useState(null);
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
+  // Kurzer Hinweis "Eingetragen" (Haken) nach dem Speichern eines Spiels.
+  const [justSaved, setJustSaved] = useState(false);
+  useEffect(() => {
+    if (!justSaved) return undefined;
+    const id = setTimeout(() => setJustSaved(false), 2600);
+    return () => clearTimeout(id);
+  }, [justSaved]);
 
   // Verbindungsfehler duerfen den angezeigten Stand NIE leeren (Nutzer-Feedback:
   // "das Turnier kommt in einen nicht definierten Zustand, wenn man das Handy
@@ -205,6 +212,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     if (error && !arrived) { toast(t("Fehler: ") + (error.message || "")); return; }
     if (arrived) toast(t("Ergebnis ist angekommen."));
     setSA(0); setSB(0);
+    setJustSaved(true);
     await load();
     onReload && onReload();
   };
@@ -472,6 +480,17 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               </div>
             ))}
           </div>
+          {/* Eintragen = ein runder Haken direkt unter den Ergebnissen (statt eines breiten Knopfs am Bildschirmrand); danach
+              erscheint kurz und leise "Eingetragen". */}
+          {canReport && (
+            <div className="ws-ok-row">
+              <button type="button" className="icon-btn primary ws-ok" disabled={busy || sA === sB} onClick={reportGame}
+                aria-label={t("Eintragen")} title={t("Eintragen")}>
+                <Check size={22} />
+              </button>
+              {justSaved && <span className="saved-hint" role="status"><Check size={15} /> {t("Eingetragen")}</span>}
+            </div>
+          )}
           {canReport && sA === sB && sA + sB > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
           {canSkip && (
             <div className="chips small" style={{ marginBottom: 10 }}>
@@ -612,13 +631,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         </section>
       )}
 
-      {canReport && (
-        <div className="sticky-cta ws-cta">
-          <button className="btn primary" disabled={busy || sA === sB} onClick={reportGame}>
-            <Check size={18} /> {t("Eintragen")}
-          </button>
-        </div>
-      )}
       </div>
       <ImprintFooter />
     </div>

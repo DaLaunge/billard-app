@@ -3852,3 +3852,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   .saved-hint svg { animation: check-pop .45s ease-out both; }
   @keyframes saved-hint { 0% { opacity: 0; transform: translateY(3px); } 12% { opacity: 1; transform: none; } 78% { opacity: 1; } 100% { opacity: 0; } }
 }
+
+/* Winner Stays: runder Haken zum Eintragen direkt unter den Ergebnissen. */
+.ws-ok-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 4px 0 12px; min-height: 48px; }
+.ws-ok-row .ws-ok { width: 48px; height: 48px; }
