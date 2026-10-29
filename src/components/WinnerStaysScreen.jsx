@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, SkipForward, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -33,12 +33,48 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
   // Kurzer Hinweis "Eingetragen" (Haken) nach dem Speichern eines Spiels.
-  const [justSaved, setJustSaved] = useState(false);
+  const [justSaved, setJustSaved] = useState(null);   // Text wie "Raphi ist neuer Verteidiger" oder null
   useEffect(() => {
     if (!justSaved) return undefined;
-    const id = setTimeout(() => setJustSaved(false), 2600);
+    const id = setTimeout(() => setJustSaved(null), 3600);
     return () => clearTimeout(id);
   }, [justSaved]);
+
+  // Avatare wandern an ihren neuen Platz (FLIP): ein Herausforderer, der gewinnt, zieht auf den Verteidiger-Platz, der
+  // Verlierer geht ans Ende der Warteschlange, der Naechste rueckt an den Tisch. Gemessen wird relativ zum Bildschirm-
+  // Container (nicht zum Fenster), damit Scrollen dazwischen keine falsche Bewegung ausloest; verglichen wird die
+  // Belegung (Teilnehmer + Platz), nicht die Pixel - gleiche Belegung = nie eine Animation.
+  const rootRef = useRef(null);
+  const flipPrev = useRef(null);
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) { flipPrev.current = null; return; }
+    const els = [...root.querySelectorAll("[data-eid]")];
+    const origin = root.getBoundingClientRect();
+    const rects = {};
+    els.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      rects[el.dataset.eid] = { x: r.left - origin.left, y: r.top - origin.top, w: r.width || 1, el };
+    });
+    const key = els.map((el) => `${el.dataset.eid}:${el.dataset.slot}`).join("|");
+    const prev = flipPrev.current;
+    const calm = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prev && prev.key !== key && !calm) {
+      els.forEach((el) => {
+        const p = prev.rects[el.dataset.eid];
+        const n = rects[el.dataset.eid];
+        if (!p || !n) return;
+        const dx = p.x - n.x, dy = p.y - n.y, sc = p.w / n.w;
+        if (Math.abs(dx) < 2 && Math.abs(dy) < 2 && Math.abs(sc - 1) < 0.02) return;
+        const from = `translate(${dx}px, ${dy}px) scale(${sc})`;
+        el.animate(
+          [{ transform: from, transformOrigin: "0 0", zIndex: 30 }, { transform: "none", transformOrigin: "0 0", zIndex: 30 }],
+          { duration: 850, easing: "cubic-bezier(.22, .8, .3, 1)" }
+        );
+      });
+    }
+    flipPrev.current = { key, rects: Object.fromEntries(Object.entries(rects).map(([k, v]) => [k, { x: v.x, y: v.y, w: v.w }])) };
+  });
 
   // Verbindungsfehler duerfen den angezeigten Stand NIE leeren (Nutzer-Feedback:
   // "das Turnier kommt in einen nicht definierten Zustand, wenn man das Handy
@@ -211,8 +247,10 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     setBusy(false);
     if (error && !arrived) { toast(t("Fehler: ") + (error.message || "")); return; }
     if (arrived) toast(t("Ergebnis ist angekommen."));
+    // Wer jetzt verteidigt: der Sieger bleibt/wird Verteidiger - das sagt der Hinweis, die Bewegung der Avatare zeigt es.
+    const winnerEntry = sA > sB ? posA : posB;
+    setJustSaved(winnerEntry ? t(sA > sB ? "{name} bleibt Verteidiger" : "{name} ist neuer Verteidiger", { name: entryName(winnerEntry) }) : t("Eingetragen"));
     setSA(0); setSB(0);
-    setJustSaved(true);
     await load();
     onReload && onReload();
   };
@@ -388,7 +426,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   return (
-    <div className="screen">
+    <div className="screen" ref={rootRef}>
       <div className="turnier-layout">
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
@@ -463,7 +501,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
             {[[posA, sA, setSA, t("Verteidigt")], [posB, sB, setSB, t("Herausforderer")]].map(([e, val, setVal, role]) => (
               <div key={e.id} className={"score-col" + (e.is_paused ? " is-paused" : "")}>
                 <span className="ws-role">{role}</span>
-                <div className="sc-avatars">{renderEntryAvatars(e, 56)}</div>
+                <div className="sc-avatars" data-eid={e.id} data-slot={e.queue_position === 0 ? "A" : "B"}>{renderEntryAvatars(e, 56)}</div>
                 <span className="score-name">{entryName(e)}</span>
                 {statLine(e, rankOf(e), true)}
                 {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
@@ -479,18 +517,16 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                 {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { compact: true })}
               </div>
             ))}
-          </div>
-          {/* Eintragen = ein runder Haken direkt unter den Ergebnissen (statt eines breiten Knopfs am Bildschirmrand); danach
-              erscheint kurz und leise "Eingetragen". */}
-          {canReport && (
-            <div className="ws-ok-row">
-              <button type="button" className="icon-btn primary ws-ok" disabled={busy || sA === sB} onClick={reportGame}
+            {/* Der Haken sitzt genau zwischen den beiden Ergebnis-Karten, auf Hoehe der Zahlen. */}
+            {canReport && (
+              <button type="button" className={"icon-btn primary ws-ok" + (sA !== sB ? " ready" : "")} disabled={busy || sA === sB} onClick={reportGame}
                 aria-label={t("Eintragen")} title={t("Eintragen")}>
-                <Check size={22} />
+                <Check size={28} />
               </button>
-              {justSaved && <span className="saved-hint" role="status"><Check size={15} /> {t("Eingetragen")}</span>}
-            </div>
-          )}
+            )}
+          </div>
+          {/* Bestaetigung des Ergebnisses: ein Hinweis, WER jetzt verteidigt - die Avatare wandern dabei an ihren neuen Platz. */}
+          {justSaved && <p className="ws-saved-line" role="status"><span className="saved-hint"><Check size={15} /> {justSaved}</span></p>}
           {canReport && sA === sB && sA + sB > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
           {canSkip && (
             <div className="chips small" style={{ marginBottom: 10 }}>
@@ -509,7 +545,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
             {waiting.map((e, i) => (
               <div key={e.id} className={"ws-queue-row" + (e.is_paused ? " is-paused" : "") + (e.id === myEntry?.id ? " is-me" : "")}>
                 <span className="ws-queue-no">{i + 1}.</span>
-                {renderEntryAvatars(e, 34)}
+                <span className="ws-queue-av" data-eid={e.id} data-slot={"Q" + i}>{renderEntryAvatars(e, 34)}</span>
                 <span className="ws-queue-main">
                   <span className="ws-queue-name">{entryName(e)}</span>
                   {statLine(e, rankOf(e))}

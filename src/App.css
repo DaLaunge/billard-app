@@ -3853,6 +3853,18 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   @keyframes saved-hint { 0% { opacity: 0; transform: translateY(3px); } 12% { opacity: 1; transform: none; } 78% { opacity: 1; } 100% { opacity: 0; } }
 }
 
-/* Winner Stays: runder Haken zum Eintragen direkt unter den Ergebnissen. */
-.ws-ok-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 4px 0 12px; min-height: 48px; }
-.ws-ok-row .ws-ok { width: 48px; height: 48px; }
+/* Winner Stays: der Haken zum Eintragen sitzt in der Mitte zwischen den beiden Ergebnis-Karten (auf Hoehe der Zahlen). */
+.ws-score-row { position: relative; }
+.ws-score-row .ws-ok { position: absolute; left: 50%; top: 53%; transform: translate(-50%, -50%); width: 60px; height: 60px; z-index: 5;
+  box-shadow: 0 0 0 6px var(--felt), 0 6px 16px rgba(0, 0, 0, .35); }
+.ws-score-row .ws-ok:disabled { opacity: .55; box-shadow: 0 0 0 6px var(--felt); }
+.ws-ok-row { display: none; }
+.ws-saved-line { display: flex; justify-content: center; margin: 0 0 12px; }
+.ws-saved-line .saved-hint { font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
+.ws-queue-av { display: inline-flex; position: relative; }
+[data-eid] { position: relative; }
+@media (prefers-reduced-motion: no-preference) {
+  /* Haken ist bereit (Ergebnis nicht unentschieden): ein ganz leiser Ring zeigt, dass jetzt eingetragen werden kann. */
+  .ws-score-row .ws-ok.ready { animation: ok-ready 2.4s ease-out infinite; }
+  @keyframes ok-ready { 0% { box-shadow: 0 0 0 6px var(--felt), 0 0 0 6px var(--accent-line); } 70%, 100% { box-shadow: 0 0 0 6px var(--felt), 0 0 0 18px transparent; } }
+}
