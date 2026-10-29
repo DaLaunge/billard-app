@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ShieldAlert, Pencil, Minus, Plus, UserX } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ShieldAlert, Pencil, Minus, Plus, UserX, Check } from "lucide-react";
 import { t } from "../lib/i18n";
 import ConfirmRoundButtons from "./widgets/ConfirmRoundButtons";
 
@@ -100,6 +100,13 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, r
   const [noShowPicking, setNoShowPicking] = useState(false);
   const [absent1, setAbsent1] = useState(false);
   const [absent2, setAbsent2] = useState(false);
+  // Kurzer, ruhiger Hinweis "eingetragen" (Haken), nachdem die Turnierleitung ein Ergebnis gespeichert hat.
+  const [justSaved, setJustSaved] = useState(false);
+  useEffect(() => {
+    if (!justSaved) return undefined;
+    const id = setTimeout(() => setJustSaved(false), 2600);
+    return () => clearTimeout(id);
+  }, [justSaved]);
   const { confirmed, waitingForTable, canReport, canOrganizerReport, canConfirm, canForce, canEdit, canMarkNoShow } = turnierActions(tm, me, isOrganizer, tourStatus, resultsLocked, format);
   const manuallyEntered = tm.match?.reported_by && tm.match.reported_by === tm.match.confirmed_by;
 
@@ -126,14 +133,22 @@ export default function TurnierMatchActions({ tm, me, isOrganizer, tourStatus, r
           {t("Melden")}
         </button>
       )}
+      {justSaved && (
+        <span className="saved-hint" role="status" title={t("Eingetragen")}>
+          <Check size={15} /> {t("Eingetragen")}
+        </span>
+      )}
       {canOrganizerReport && (
         <div className="turnier-quick-score">
           <ScoreStepper value={os1} onChange={setOs1} />
           <span>:</span>
           <ScoreStepper value={os2} onChange={setOs2} />
-          <button className="btn primary" disabled={busyId === tm.id || os1 === os2}
-            onClick={() => onOrganizerReport(tm, os1, os2, () => { setOs1(0); setOs2(0); })}>
-            {t("Eintragen")}
+          {/* Nur ein Haken statt eines Textknopfs: er sitzt in der Zeile direkt neben dem Ergebnis, statt als
+              eigener Knopf darunter zu haengen. Name in title/aria-label. */}
+          <button type="button" className="icon-btn primary quick-ok" disabled={busyId === tm.id || os1 === os2}
+            aria-label={t("Eintragen")} title={t("Eintragen")}
+            onClick={() => onOrganizerReport(tm, os1, os2, () => { setOs1(0); setOs2(0); setJustSaved(true); })}>
+            <Check size={18} />
           </button>
         </div>
       )}

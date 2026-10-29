@@ -3842,3 +3842,13 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .mm-row { display: grid; grid-template-columns: var(--mm-date, 6em) 18px minmax(0, 1fr) auto; align-items: center; column-gap: 8px; }
 .mm-row .m-txt { min-width: 0; line-height: 1.3; }
 .mm-actions { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Turnier: Haken zum Eintragen sitzt direkt neben dem Ergebnis; danach ein kurzer, leiser Hinweis "Eingetragen". */
+.turnier-quick-score .quick-ok { width: 34px; height: 34px; }
+.saved-hint { display: inline-flex; align-items: center; gap: 5px; color: var(--win); font-size: calc(12.5px * var(--fs, 1)); }
+@media (prefers-reduced-motion: no-preference) {
+  /* Ruhezustand sichtbar; die Animation blendet sanft ein, haelt und blendet wieder aus (Timer entfernt das Element). */
+  .saved-hint { animation: saved-hint 2.6s ease both; }
+  .saved-hint svg { animation: check-pop .45s ease-out both; }
+  @keyframes saved-hint { 0% { opacity: 0; transform: translateY(3px); } 12% { opacity: 1; transform: none; } 78% { opacity: 1; } 100% { opacity: 0; } }
+}
