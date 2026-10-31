@@ -223,3 +223,30 @@ export async function exportTurnierProtocolPdf({ tour, timeline, nameOf }) {
   pdf.finish();
   await savePdf(pdf.doc, tournamentFileName(tour, "Spielprotokoll"));
 }
+
+// Winner Stays nach dem Ende: Ergebnis (Rangliste) und Protokoll aller Spiele in einem PDF.
+// ranked = Teilnehmer in Ergebnis-Reihenfolge, games = alle Spiele (aelteste zuerst), nameOf(entry) = Anzeigename.
+export async function exportWinnerStaysPdf({ session, ranked, games, nameOfEntry }) {
+  const pdf = await newPdf();
+  pdf.title(session.name);
+  pdf.meta(`${t("Winner Stays")} · ${t(session.is_doubles ? "Doppel" : "Einzel")} · ${t(session.discipline)} · ${fmtDate(session.finished_at || session.created_at)}`);
+  pdf.gap(1);
+  pdf.heading(t("Ergebnis"));
+  pdf.table({
+    cols: [{ label: t("Platz"), w: 1, align: "center" }, { label: t("Name"), w: 6 }, { label: t("Siege"), w: 1.5, align: "center" }, { label: t("Niederlagen"), w: 2, align: "center" }],
+    rows: ranked.map((e, i) => [{ text: `${i + 1}.`, bold: i < 3 }, { text: nameOfEntry(e), bold: i === 0 }, e.wins, e.losses]),
+    fontSize: 9, rowH: 5.8,
+  });
+  pdf.heading(t("Protokoll"));
+  if (!games.length) {
+    pdf.text(t("Es wurde kein Spiel gespielt."), { size: 9, color: [110, 110, 110] });
+  } else {
+    pdf.table({
+      cols: [{ label: t("Nr."), w: 1, align: "center" }, { label: t("Zeit"), w: 2.6 }, { label: t("Partie"), w: 6 }, { label: t("Ergebnis"), w: 1.5, align: "center" }],
+      rows: games.map((g) => [g.game_no, fmtDateTime(g.played_at), `${nameOfEntry(g.a) || "?"} – ${nameOfEntry(g.b) || "?"}`, { text: `${g.score_a}:${g.score_b}`, bold: true }]),
+      fontSize: 9, rowH: 5.8,
+    });
+  }
+  pdf.finish();
+  await savePdf(pdf.doc, tournamentFileName(session, "Ergebnis_und_Protokoll"));
+}

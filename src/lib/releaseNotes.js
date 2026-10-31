@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "427.31", icon: "📄",
+    items: ["Ist ein Winner-Stays-Turnier beendet, zeigt es nur noch das Ergebnis und das Protokoll aller Spiele – ohne Zähler. Beides gibt es auch als PDF zum Herunterladen."],
+    en: ["Once a Winner Stays tournament has ended it shows only the result and the log of all games – no counter any more. Both are also available as a PDF download."] },
   { version: "427.2", icon: "🕐",
     items: ["In „Letzte Matches“ und im Turnier-Spielverlauf steht jetzt nur noch das Datum. Die Uhrzeit kannst du in den Einstellungen unter „App-Verhalten“ wieder einschalten."],
     en: ["“Recent matches” and the tournament match log now show only the date. You can turn the time back on in Settings under “App behavior”."] },

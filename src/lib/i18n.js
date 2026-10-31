@@ -1324,6 +1324,8 @@ const TRANSLATIONS = {
     "Standort korrigieren": "Correct location",
     "Route": "Route",
     "Orte": "Venues",
+    "Es wurde kein Spiel gespielt.": "No game was played.",
+    "Nr.": "No.",
     "Löschen": "Delete",
     "Zuklappen": "Collapse",
     "Aufklappen": "Expand",

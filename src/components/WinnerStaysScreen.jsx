@@ -1,8 +1,8 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
+import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, Loader2, ScrollText } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { initials } from "../lib/format";
+import { initials, fmtDateTime } from "../lib/format";
 import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
@@ -19,6 +19,7 @@ import DiscBall from "./widgets/DiscBall";
 import PlaceLink from "./widgets/PlaceLink";
 import TurnierQrButton from "./widgets/TurnierQr";
 import Emoji from "./Emoji";
+import { exportWinnerStaysPdf } from "./turnierBerichtPdf";
 
 const POLL_MS = 8000;
 
@@ -35,6 +36,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [entries, setEntries] = useState(null);
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   // Kurzer Hinweis (Haken) nach dem Speichern eines Spiels.
   const [justSaved, setJustSaved] = useState(null);   // Text wie "Raphi ist neuer Verteidiger" oder null
   useEffect(() => {
@@ -91,6 +93,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [offline, setOffline] = useState(false);
   const [gone, setGone] = useState(false);
   const reqRef = useRef(0);
+  // Ist die Runde beendet, aendert sich nichts mehr: kein Abfragen im Hintergrund (spart Datenvolumen), und das Protokoll holt ALLE Spiele.
+  const finishedRef = useRef(false);
+  const GAME_COLS = "id, game_no, entry_a_id, entry_b_id, score_a, score_b, winner_entry_id, played_at";
   const load = useCallback(async () => {
     const my = ++reqRef.current;
     let r;
@@ -103,7 +108,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           .select("*, player1:players!winner_stays_entries_player1_id_fkey(nickname), player2:players!winner_stays_entries_player2_id_fkey(nickname)")
           .eq("session_id", sessionId).order("queue_position"),
         supabase.from("winner_stays_games")
-          .select("id, game_no, entry_a_id, entry_b_id, score_a, score_b, winner_entry_id, played_at")
+          .select(GAME_COLS)
           .eq("session_id", sessionId).order("game_no", { ascending: false }).limit(20),
       ]);
     } catch { r = null; }
@@ -113,19 +118,26 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     setOffline(false);
     if (!sess) { setGone(true); return null; }
     setGone(false);
+    finishedRef.current = sess.status === "finished";
+    let list = gms || [];
+    if (sess.status === "finished") {
+      const all = await supabase.from("winner_stays_games").select(GAME_COLS).eq("session_id", sessionId).order("game_no", { ascending: false }).limit(2000);
+      if (my !== reqRef.current) return null;
+      if (!all.error && all.data) list = all.data;
+    }
     setSession(sess);
     setEntries(ents || []);
-    setGames(gms || []);
-    return gms || [];
+    setGames(list);
+    return list;
   }, [sessionId]);
 
   useEffect(() => {
     load();
     // Im Hintergrund nicht abfragen (spart Datenvolumen, und gesperrte Handys
     // fuehren Timer ohnehin unzuverlaessig aus); beim Zurueckkommen sofort.
-    const tick = () => { if (!document.hidden) load(); };
+    const tick = () => { if (!document.hidden && !finishedRef.current) load(); };
     const id = setInterval(tick, POLL_MS);
-    const back = () => { if (!document.hidden) load(); };
+    const back = () => { if (!document.hidden && !finishedRef.current) load(); };
     document.addEventListener("visibilitychange", back);
     window.addEventListener("online", back);
     window.addEventListener("focus", back);
@@ -239,6 +251,19 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
   const entryName = (e) => (e?.player2_id ? `${e.player1?.nickname} & ${e.player2?.nickname}` : e?.player1?.nickname);
   const entryById = (id) => entries.find((e) => e.id === id);
+  const finished = session.status === "finished";
+  // Ergebnis + Protokoll als PDF (jsPDF wird erst hier nachgeladen)
+  const downloadPdf = async () => {
+    setPdfBusy(true);
+    try {
+      const chrono = [...games].sort((a, b) => a.game_no - b.game_no).map((g) => ({ ...g, a: entryById(g.entry_a_id), b: entryById(g.entry_b_id) }));
+      await exportWinnerStaysPdf({ session, ranked, games: chrono, nameOfEntry: entryName });
+    } catch (e) {
+      console.warn("PDF-Export fehlgeschlagen", e);
+      toast(t("PDF konnte nicht erstellt werden."));
+    }
+    setPdfBusy(false);
+  };
 
   const reportGame = async () => {
     if (sA === sB) { toast(t("Unentschieden gibt es beim Billard nicht.")); return false; }
@@ -491,7 +516,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         </section>
       )}
 
-      {(!posA || !posB) ? (
+      {finished ? null : (!posA || !posB) ? (
         <section className="stat-block">
           <p className="hint" style={{ margin: 0 }}>{t("Noch nicht genug Teilnehmer - mindestens zwei nötig, um zu spielen.")}</p>
         </section>
@@ -555,7 +580,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
       {/* Live-Stand und Warteschlange nebeneinander im Goldenen Schnitt (1,618 : 1), am Handy untereinander - beide in voller Breite. */}
       <div className="ws-lower">
-      {waiting.length > 0 && (
+      {!finished && waiting.length > 0 && (
         <section className="stat-block ws-queue-card">
           <div className="stat-block-head"><h3><Repeat size={17} /> {t("Warteschlange")}</h3></div>
           <div className="ws-queue">
@@ -593,7 +618,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       )}
 
       <section className="stat-block ws-rank-card">
-        <div className="stat-block-head"><h3><Crown size={17} /> {t("Live-Rangliste")}</h3></div>
+        <div className="stat-block-head"><h3><Crown size={17} /> {finished ? t("Ergebnis") : t("Live-Rangliste")}</h3></div>
         {ranked.length === 0 ? (
           <p className="hint">{t("Noch keine Teilnehmer.")}</p>
         ) : (
@@ -614,8 +639,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                     {renderEntryAvatars(e, 28)}
                     <span className="stat-name">
                       {entryName(e)}
-                      {e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
-                      {e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
+                      {!finished && e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
+                      {!finished && e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
                     </span>
                   </span>
                   <span className={"ws-rank-num" + alt}>{e.wins}</span>
@@ -629,10 +654,18 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       </section>
       </div>
 
-      {games.length > 0 && (
-        <section className="stat-block">
-          <div className="stat-block-head"><h3><Repeat size={17} /> {t("Verlauf")}</h3></div>
-          {games.map((g) => {
+      {(games.length > 0 || finished) && (
+        <section className="stat-block ws-protocol">
+          <div className="stat-block-head">
+            <h3>{finished ? <ScrollText size={17} /> : <Repeat size={17} />} {finished ? t("Protokoll") : t("Verlauf")}</h3>
+            {finished && (
+              <button type="button" className="btn ghost" onClick={downloadPdf} disabled={pdfBusy}>
+                {pdfBusy ? <Loader2 size={15} className="spin" /> : <FileDown size={15} />} {t("Als PDF herunterladen")}
+              </button>
+            )}
+          </div>
+          {finished && games.length === 0 && <p className="hint">{t("Es wurde kein Spiel gespielt.")}</p>}
+          {(finished ? [...games].sort((x, y) => x.game_no - y.game_no) : games).map((g) => {
             const ea = entryById(g.entry_a_id), eb = entryById(g.entry_b_id);
             const wonA = g.winner_entry_id === g.entry_a_id;
             return (
@@ -642,6 +675,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   <b style={wonA ? { color: "var(--win)" } : undefined}>{ea ? entryName(ea) : "?"}</b>
                   {" "}{g.score_a}:{g.score_b}{" "}
                   <b style={!wonA ? { color: "var(--win)" } : undefined}>{eb ? entryName(eb) : "?"}</b>
+                  {finished && g.played_at && <span className="rank-meta"> · {fmtDateTime(g.played_at)}</span>}
                 </span>
               </div>
             );
