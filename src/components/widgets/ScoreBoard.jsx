@@ -48,6 +48,9 @@ const nameFont = (label, colW, boardW) => {
   return Math.floor(Math.max(12, Math.min(base, colW / (chars * 0.62))));
 };
 
+// Rollenzeile ("HERAUSFORDERER", 14 Grossbuchstaben mit Sperrung): soll in der Spalte in EINER Zeile bleiben, statt mitten im Wort umzubrechen.
+const roleFont = (colW, boardW) => (!colW || !boardW ? undefined : Math.floor(Math.max(8, Math.min(wsUnit(boardW) * 0.8, colW / 10.2))));
+
 export default function ScoreBoard({ sides, counters = true, hasBreak = false, note = null, action, emptyAction = null, className = "" }) {
   // Die Avatargroesse richtet sich nach der Breite der TAFEL (nicht des Fensters): am PC steht links noch das Menue, am Tablet ist die App
   // schmaler als das Fenster. person(size) bekommt sie als Zahl.
@@ -86,7 +89,7 @@ export default function ScoreBoard({ sides, counters = true, hasBreak = false, n
           const k = i === 0 ? "a" : "b";
           return (
             <Fragment key={s.id}>
-              <div className={"ws-b-person p" + k + (s.paused ? " is-paused" : "")} style={{ "--nfs": nameFont(s.label, colW[i], wRef.current) ? nameFont(s.label, colW[i], wRef.current) + "px" : undefined }}>{typeof s.person === "function" ? s.person(avatar) : s.person}</div>
+              <div className={"ws-b-person p" + k + (s.paused ? " is-paused" : "")} style={{ "--nfs": nameFont(s.label, colW[i], wRef.current) ? nameFont(s.label, colW[i], wRef.current) + "px" : undefined, "--rfs": roleFont(colW[i], wRef.current) ? roleFont(colW[i], wRef.current) + "px" : undefined }}>{typeof s.person === "function" ? s.person(avatar) : s.person}</div>
               {hasBreak && s.breakMark}
               {counters && (
                 <div className={"ws-b-cap c" + k} role="group" aria-label={s.label}>
