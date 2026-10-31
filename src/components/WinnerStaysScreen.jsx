@@ -413,12 +413,12 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // gefuellt: "Dabei" gruen, "Pause" gelb (--warn). compact = unter der Person
   // am Tisch, icon = nur Symbol in der Warteschlangen-Zeile (Pause/Play, nie
   // eine Tasse).
-  const pauseSwitch = (entry, { compact, icon } = {}) => {
+  const pauseSwitch = (entry, { small, icon } = {}) => {
     const paused = !!entry.is_paused;
     // Ein runder Knopf wie bei einem Musikplayer: gruen mit Play = dabei, rot mit Pause = pausiert. Antippen wechselt.
     const label = paused ? t("Pausiert - antippen: wieder dabei") : t("Dabei - antippen: Pause setzen");
     return (
-      <button type="button" className={"ws-pp" + (paused ? " paused" : " playing") + (compact ? " in-card" : "") + (icon ? " in-queue" : "")}
+      <button type="button" className={"ws-pp" + (paused ? " paused" : " playing") + (small ? " small" : "") + (icon ? " in-queue" : "")}
         disabled={busy} onClick={() => togglePaused(entry)} aria-pressed={!paused} aria-label={label} title={label}>
         {paused ? <Pause size={20} /> : <Play size={20} />}
       </button>
@@ -497,34 +497,53 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               "Neues Match" (MatchScreen, Schritt 2). Nutzer-Feedback 2026-10-10:
               die erste Fassung mit extragrossen Tippflaechen war "zu gross" -
               die Matcheingabe soll in jedem Modus gleich aussehen. */}
-          <div className="score-row ws-score-row">
-            {[[posA, sA, setSA, t("Verteidigt")], [posB, sB, setSB, t("Herausforderer")]].map(([e, val, setVal, role]) => (
-              <div key={e.id} className={"score-col" + (e.is_paused ? " is-paused" : "")}>
-                <span className="ws-role">{role}</span>
-                <div className="sc-avatars" data-eid={e.id} data-slot={e.queue_position === 0 ? "A" : "B"}>{renderEntryAvatars(e, 56)}</div>
-                <span className="score-name">{entryName(e)}</span>
-                {statLine(e, rankOf(e), true)}
-                {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
-                {canReport && (
+          {/* Scoreboard (Nutzer-Wahl 2026-10-31): der Spielstand ist die Hauptsache - links und rechts Person, in der Mitte
+              die Zahlen gross, darunter -/+ mit dem Haken dazwischen. Rang, S/N und Pause stehen als kleine Zeile darunter. */}
+          <section className="stat-block ws-board">
+            <div className="ws-board-top">
+              {[[posA, "A", t("Verteidigt")], [posB, "B", t("Herausforderer")]].map(([e, slot, role], idx) => (
+                <div key={e.id} className={"ws-board-side" + (idx === 1 ? " right" : "") + (e.is_paused ? " is-paused" : "")}>
+                  <span className="ws-role">{role}</span>
+                  <div className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, 56)}</div>
+                  <span className="score-name">{entryName(e)}</span>
+                  {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
+                </div>
+              ))}
+              <div className="ws-board-score" aria-live="polite">
+                {canReport ? (
                   <>
-                    <div className="score-num" key={val}>{val}</div>
-                    <div className="score-btns">
-                      <button className="round-btn" disabled={val === 0} onClick={() => setVal((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
-                      <button className="round-btn plus" onClick={() => setVal((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
-                    </div>
+                    <span className="score-num" key={"a" + sA}>{sA}</span>
+                    <span className="ws-board-colon">:</span>
+                    <span className="score-num" key={"b" + sB}>{sB}</span>
                   </>
-                )}
-                {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { compact: true })}
+                ) : <span className="ws-board-colon">vs</span>}
               </div>
-            ))}
-            {/* Der Haken sitzt genau zwischen den beiden Ergebnis-Karten, auf Hoehe der Zahlen. */}
+            </div>
             {canReport && (
-              <button type="button" className={"icon-btn primary ws-ok" + (sA !== sB ? " ready" : "")} disabled={busy || sA === sB} onClick={reportGame}
-                aria-label={t("Eintragen")} title={t("Eintragen")}>
-                <Check size={28} />
-              </button>
+              <div className="ws-board-ctrl">
+                <div className="score-btns">
+                  <button className="round-btn" disabled={sA === 0} onClick={() => setSA((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
+                  <button className="round-btn plus" onClick={() => setSA((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
+                </div>
+                <button type="button" className={"icon-btn primary ws-ok" + (sA !== sB ? " ready" : "")} disabled={busy || sA === sB} onClick={reportGame}
+                  aria-label={t("Eintragen")} title={t("Eintragen")}>
+                  <Check size={28} />
+                </button>
+                <div className="score-btns">
+                  <button className="round-btn" disabled={sB === 0} onClick={() => setSB((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
+                  <button className="round-btn plus" onClick={() => setSB((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
+                </div>
+              </div>
             )}
-          </div>
+            <div className="ws-board-info">
+              {[posA, posB].map((e, idx) => (
+                <div key={e.id} className={"ws-board-info-side" + (idx === 1 ? " right" : "")}>
+                  {statLine(e, rankOf(e), true)}
+                  {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { small: true })}
+                </div>
+              ))}
+            </div>
+          </section>
           {/* Bestaetigung des Ergebnisses: ein Hinweis, WER jetzt verteidigt - die Avatare wandern dabei an ihren neuen Platz. */}
           {justSaved && <p className="ws-saved-line" role="status"><span className="saved-hint"><Check size={15} /> {justSaved}</span></p>}
           {canReport && sA === sB && sA + sB > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
