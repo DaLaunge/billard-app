@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, SkipForward, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
+import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
@@ -28,6 +28,14 @@ const POLL_MS = 8000;
 // aktuellen Stand und bietet die Eingabemaske). Voellig anderes Datenmodell
 // als TurnierRasterScreen.jsx (keine Bracket-Struktur), deshalb ein
 // eigener, viel einfacherer Screen statt einer Erweiterung dort.
+// Goldener Schnitt (phi = 1,618): eine Grundeinheit u waechst mit der Breite, alle Groessen der Tafel sind Potenzen von phi
+// (Statistik u, Name phi*u, Avatar phi^4*u, Spielstand phi^6*u) - die gleiche Formel steckt als --ws-u in der CSS.
+const PHI = 1.618;
+const wsUnit = (w) => Math.min(18, Math.max(11, 7 + 0.009 * w));
+function goldenAvatar() {
+  if (typeof window === "undefined") return 56;
+  return Math.round(wsUnit(window.innerWidth) * PHI ** 4);
+}
 export default function WinnerStaysScreen({ sessionId, me, players, matches, toast, colorOf, badgeOf, photoOf, onReload, onBack, keepAwake, onSetKeepAwake }) {
   const [session, setSession] = useState(null);
   const [entries, setEntries] = useState(null);
@@ -35,9 +43,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [busy, setBusy] = useState(false);
   // Kurzer Hinweis "Eingetragen" (Haken) nach dem Speichern eines Spiels.
   // Avatargroesse der Tafel nach Bildschirmbreite: je mehr Platz, desto groesser (der Spielstand soll auch von weiter weg gut erkennbar sein).
-  const [boardAvatar, setBoardAvatar] = useState(() => (typeof window === "undefined" ? 52 : window.innerWidth >= 1100 ? 120 : window.innerWidth >= 640 ? 88 : 52));
+  const [boardAvatar, setBoardAvatar] = useState(() => goldenAvatar());
   useEffect(() => {
-    const onResize = () => setBoardAvatar(window.innerWidth >= 1100 ? 120 : window.innerWidth >= 640 ? 88 : 52);
+    const onResize = () => setBoardAvatar(goldenAvatar());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -227,7 +235,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // "ueberspringen"-Button macht nur Sinn ab mehr als 3 Teilnehmern (siehe
   // winner_stays_skip_next() - sonst kaeme die uebersprungene Person sofort
   // wieder dran).
-  const canSkip = canManageQueue && posA && posB && entries.length > 3;
   // Nutzer-Feedback: "Es kann jederzeit einer der Spieler ausfallen. Diese
   // Moeglichkeit sollte jeder haben." - Selbstbedienung, unabhaengig von
   // Position (auch am Tisch), siehe winner_stays_set_paused().
@@ -270,14 +277,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // ist oder ein dringendes Telefonat fuehren muss" - schickt den
   // Herausforderer ohne Wertung ans Ende der Warteschlange (kein Rack,
   // keine Statistik-Aenderung, siehe winner_stays_skip_next()).
-  const skipNext = async () => {
-    setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_skip_next", { p_session_id: sessionId });
-    setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Übersprungen."));
-    await load();
-  };
 
   // Nutzer-Feedback: "Ein 'Aussetzen' Button. Es kann jederzeit einer der
   // Spieler ausfallen. Diese Moeglichkeit sollte jeder haben." - erst als
@@ -458,17 +457,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <PlaceLink locationId={session.location_id} text={session.location_text} />
       </div>
 
-      {isOrganizer && (
-        <div className="tour-toolbar">
-          {session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
-          {canDelete && (
-            <button className="btn ghost small tour-tool" disabled={busy} onClick={deleteSession}>
-              <Trash2 size={15} /> {t("Turnier löschen")}
-            </button>
-          )}
-        </div>
-      )}
-
       {offline && (
         <p className="ws-offline" role="status"><WifiOff size={15} /> {t("Verbindung unterbrochen – Stand wird neu geladen.")}</p>
       )}
@@ -556,17 +544,22 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                 </div>
               );
             })()}
+            {/* Fusszeile der Tafel: die Werkzeuge der Turnierleitung gehoeren zur Tafel, nicht daneben - sonst wirken sie einsam. */}
+            {isOrganizer && (
+              <div className="ws-b-foot">
+                {session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
+                {canDelete && (
+                  <button type="button" className="icon-btn ws-b-del" disabled={busy} onClick={deleteSession}
+                    aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
+            )}
           </section>
           {/* Bestaetigung des Ergebnisses: ein Hinweis, WER jetzt verteidigt - die Avatare wandern dabei an ihren neuen Platz. */}
           {justSaved && <p className="ws-saved-line" role="status"><span className="saved-hint"><Check size={15} /> {justSaved}</span></p>}
           {canReport && sA === sB && sA + sB > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
-          {canSkip && (
-            <div className="tour-toolbar center">
-              <button className="btn ghost small tour-tool" disabled={busy} onClick={skipNext} title={t("Herausforderer überspringen, wenn die Person gerade nicht verfügbar ist.")}>
-                <SkipForward size={15} /> {t("Überspringen")}
-              </button>
-            </div>
-          )}
         </>
       )}
 

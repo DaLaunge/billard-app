@@ -694,8 +694,9 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
             </button>
           )}
           {canDeleteTournament && (
-            <button className="btn ghost small tour-tool" disabled={busyId === "delete"} onClick={deleteTournament}>
-              <Trash2 size={15} /> {t("Turnier löschen")}
+            <button type="button" className="icon-btn ws-b-del" disabled={busyId === "delete"} onClick={deleteTournament}
+              aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
+              <Trash2 size={18} />
             </button>
           )}
         </div>
