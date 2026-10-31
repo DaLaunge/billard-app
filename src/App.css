@@ -3949,3 +3949,12 @@ span.ws-b-av { cursor: default; }
 
 .ws-break-tag { transition: opacity .3s ease; }
 .ws-break-tag.off { opacity: 0; pointer-events: none; }
+
+/* Kopfzeile der Turniermodi: Name in einer Zeile, darunter die Knoepfe nebeneinander, alle gleich gross (44 x 44). */
+.screen-head.with-back:has(.head-actions) { flex-wrap: wrap; }
+.screen-head.with-back:has(.head-actions) h2 { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.head-actions { flex: 0 0 100%; order: 5; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.head-actions > button, .head-actions > .icon-btn { width: 44px; height: 44px; margin: 0; border-radius: 12px; padding: 0; display: grid; place-items: center; flex: 0 0 auto; }
+.head-actions .keepawake-btn { margin: 0; }
+.head-actions .end-flag, .head-actions .ws-b-del { background: var(--surface-btn); color: var(--ivory); border: 1.5px solid transparent; }
+.head-actions .end-flag:hover:not(:disabled), .head-actions .ws-b-del:hover:not(:disabled) { color: var(--accent); border-color: var(--btn-border, var(--line)); }

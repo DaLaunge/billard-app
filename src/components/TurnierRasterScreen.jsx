@@ -662,18 +662,16 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{tour.name}</h2>
-        {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
-        {isOrganizer && (tour.status === "running" || canDeleteTournament) && (
-          <div className="ws-head-tools">
-            {tour.status === "running" && <EndTournamentButton disabled={busyId === "end"} onClick={endEarly} />}
-            {canDeleteTournament && (
-              <button type="button" className="icon-btn ws-b-del" disabled={busyId === "delete"} onClick={deleteTournament}
-                aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
-                <Trash2 size={18} />
-              </button>
-            )}
-          </div>
-        )}
+        <div className="head-actions">
+          {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
+          {isOrganizer && tour.status === "running" && <EndTournamentButton disabled={busyId === "end"} onClick={endEarly} />}
+          {isOrganizer && canDeleteTournament && (
+            <button type="button" className="icon-btn ws-b-del" disabled={busyId === "delete"} onClick={deleteTournament}
+              aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
+              <Trash2 size={20} />
+            </button>
+          )}
+        </div>
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
         {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {tour.status === "finished" ? t("beendet") : t("läuft")}

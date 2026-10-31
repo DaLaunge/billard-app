@@ -454,19 +454,18 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{session.name}</h2>
-        {session.status === "running" && !session.is_doubles && <TurnierQrButton tour={session} toast={toast} size={24} className="icon-btn tqr-top" kind="ws" />}
-        <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
-        {isOrganizer && (
-          <div className="ws-head-tools">
-            {session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
-            {canDelete && (
-              <button type="button" className="icon-btn ws-b-del" disabled={busy} onClick={deleteSession}
-                aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
-                <Trash2 size={18} />
-              </button>
-            )}
-          </div>
-        )}
+        {/* Name in EINER Zeile, die Knoepfe darunter nebeneinander und gleich gross (.head-actions). */}
+        <div className="head-actions">
+          {session.status === "running" && !session.is_doubles && <TurnierQrButton tour={session} toast={toast} size={22} className="icon-btn tqr-top" kind="ws" />}
+          <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
+          {isOrganizer && session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
+          {isOrganizer && canDelete && (
+            <button type="button" className="icon-btn ws-b-del" disabled={busy} onClick={deleteSession}
+              aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
+              <Trash2 size={20} />
+            </button>
+          )}
+        </div>
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
         {t(session.is_doubles ? "Doppel" : "Einzel")} · <DiscBall disc={session.discipline} size={15} />
