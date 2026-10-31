@@ -3880,7 +3880,8 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
    Formel wie wsUnit() in WinnerStaysScreen.jsx); Groessen sind Potenzen von phi = 1,618 (Statistik u, Name phi*u, Avatar phi^4*u, Spielstand
    phi^5*u). Handy hochkant: zwei Personen, Spielstand, Zaehler, Haken. Ab 640px: Person | Spielstand | Person als flacher Streifen, darunter
    Zaehler und Haken. Darunter (.ws-lower) Live-Stand und Warteschlange in voller Breite. */
-.ws-board { --ws-u: clamp(11px, calc(7px + .9vw), 18px);
+.ws-board-wrap { container-type: inline-size; container-name: wsb; width: 100%; }
+.ws-board { --ws-u: clamp(11px, calc(7px + 1.25cqw), 18px);
   display: grid; gap: calc(1.618 * var(--ws-u)) var(--ws-u); align-items: center; width: 100%;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas: "pa pb" "score score" "ca cb" "ok ok"; }
@@ -3895,7 +3896,7 @@ span.ws-b-av { cursor: default; }
 .ws-b-person .score-name { overflow-wrap: break-word; font-size: calc(var(--ws-u) * 1.618); font-weight: 700; }
 .ws-b-person .ws-role { font-size: calc(var(--ws-u) * .8); }
 .ws-quiet { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px calc(var(--ws-u) * .8); font-size: var(--ws-u); color: var(--ivory-dim); opacity: .8; }
-.ws-b-score { position: relative; padding-bottom: calc(var(--ws-u) * 2.4); grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; --base: min(calc(var(--ws-u) * 11.09), 21vw); font-size: calc(var(--base) * var(--sc, 1)); }
+.ws-b-score { position: relative; padding-bottom: calc(var(--ws-u) * 2.4); grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; --base: min(calc(var(--ws-u) * 11.09), 21cqw); font-size: calc(var(--base) * var(--sc, 1)); }
 .ws-b-score .score-num { font-size: 1em; width: calc(var(--d, 2) * .62em); line-height: 1; font-variant-numeric: tabular-nums; }
 .ws-b-score .sc-a { text-align: right; }
 .ws-b-score .sc-b { text-align: left; }
@@ -3915,8 +3916,10 @@ span.ws-b-av { cursor: default; }
 .et-short { display: none; }
 @media (max-width: 520px) { .et-full { display: none; } .et-short { display: inline; } }
 /* Ab 640px (und flaches Querformat): Person | Spielstand | Person - Name bleibt UNTER dem Avatar (nie daneben, damit nichts ueberlappt) */
-@media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
-  .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr) minmax(0, 1fr); grid-template-areas: "pa score pb" "ca ok cb"; padding: calc(var(--ws-u) * 1.618); }
+/* Breite Tafel (Container-Abfrage: es zaehlt die Breite der Tafel, nicht des Fensters - am PC steht links noch das Menue) */
+@container wsb (min-width: 560px) {
+  /* Mitte in drei Teile: Zaehler | Haken | Zaehler - die Zaehler sitzen direkt neben dem Haken, der Spielstand liegt ueber allen dreien */
+  .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, .809fr) auto minmax(0, .809fr) minmax(0, 1fr); grid-template-areas: "pa score score score pb" ". ca ok cb ."; padding: calc(var(--ws-u) * 1.618); }
   /* Der Spielstand richtet sich nach der Breite SEINER Spalte (Container-Einheit cqw der Tafel), nicht nach dem Fenster: so passt er mit zwei
      reservierten Stellen immer hinein und drueckt die Personen nie schmal. */
   .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 12.5cqw); }
@@ -3978,9 +3981,27 @@ span.ws-b-av { cursor: default; }
 .ws-break-mark .bci-stick { flex: 1 1 auto; width: 100%; min-height: 8px; background: currentColor; clip-path: polygon(41% 0, 59% 0, 76% 100%, 24% 100%); position: relative; }
 .ws-break-mark .bci-stick::after { content: ""; position: absolute; left: 0; right: 0; top: 72%; height: 6%; background: var(--felt); opacity: .5; }
 .ws-break-mark.off { opacity: 0; }
-@media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
-  .ws-board.has-break { grid-template-columns: var(--gw) minmax(0, 1fr) minmax(0, 1.618fr) minmax(0, 1fr) var(--gw);
-    grid-template-areas: "ml pa score pb mr" "ml ca ok cb mr"; }
+/* Breite Tafel (Container-Abfrage: es zaehlt die Breite der Tafel, nicht des Fensters - am PC steht links noch das Menue) */
+@container wsb (min-width: 560px) {
+  .ws-board.has-break { grid-template-columns: var(--gw) minmax(0, 1fr) minmax(0, .809fr) auto minmax(0, .809fr) minmax(0, 1fr) var(--gw);
+    grid-template-areas: "ml pa score score score pb mr" "ml . ca ok cb . mr"; }
 }
 
-.ws-board { container-type: inline-size; }
+
+/* Personen oben buendig (auch wenn ein Name mehrzeilig ist, sitzen alle Avatare auf gleicher Hoehe) */
+.ws-b-person { align-self: start; }
+
+/* Handy quer (flaches Querformat): Kopfzeile in einer Reihe, Rolle und Statistik entfallen, der Spielstand richtet sich nach der Hoehe - die
+   Tafel mit Haken soll ohne Scrollen auf den Bildschirm passen. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .screen-head.with-back:has(.head-actions) { flex-wrap: nowrap; }
+  .head-actions { flex: 0 0 auto; order: 0; flex-wrap: nowrap; }
+  .head-actions > button, .head-actions > .icon-btn { width: 40px; height: 40px; }
+  .ws-b-person .ws-role, .ws-b-person .ws-quiet { display: none; }
+  .ws-b-person .score-name { font-size: calc(var(--ws-u) * 1.2); }
+  .ws-board { gap: 6px 8px; padding: 10px calc(var(--ws-u) * 1.2); }
+  .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 30vh, 12.5cqw); padding-bottom: calc(var(--ws-u) * 1.8); }
+  .ws-b-note { height: calc(var(--ws-u) * 1.8); }
+  .ws-b-cap button { min-height: 40px; }
+  .ws-board .ws-b-ok.ws-ok { width: 46px; height: 46px; }
+}

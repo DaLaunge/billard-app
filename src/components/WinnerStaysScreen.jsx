@@ -32,24 +32,35 @@ const POLL_MS = 8000;
 // Goldener Schnitt (phi = 1,618): eine Grundeinheit u waechst mit der Breite, alle Groessen der Tafel sind Potenzen von phi
 // (Statistik u, Name phi*u, Avatar phi^4*u, Spielstand phi^6*u) - die gleiche Formel steckt als --ws-u in der CSS.
 const PHI = 1.618;
-const wsUnit = (w) => Math.min(18, Math.max(11, 7 + 0.009 * w));
-function goldenAvatar() {
-  if (typeof window === "undefined") return 56;
-  return Math.round(wsUnit(window.innerWidth) * PHI ** 4);
-}
+// Gleiche Formel wie --ws-u in der CSS: clamp(11px, 7px + 1,25 % der Tafelbreite, 18px).
+const wsUnit = (w) => Math.min(18, Math.max(11, 7 + 0.0125 * w));
+// Im flachen Querformat (Handy quer) wird der Avatar zusaetzlich nach der Hoehe begrenzt, damit die Tafel samt Haken ohne Scrollen passt.
+const avatarFor = (boardWidth, winH) => {
+  const base = Math.round(wsUnit(boardWidth) * PHI ** 4);
+  return winH && winH < 520 ? Math.min(base, Math.round(winH * 0.13)) : base;
+};
 export default function WinnerStaysScreen({ sessionId, me, players, matches, toast, colorOf, badgeOf, photoOf, onReload, onBack, keepAwake, onSetKeepAwake }) {
   const [session, setSession] = useState(null);
   const [entries, setEntries] = useState(null);
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
-  // Kurzer Hinweis "Eingetragen" (Haken) nach dem Speichern eines Spiels.
-  // Avatargroesse der Tafel nach Bildschirmbreite: je mehr Platz, desto groesser (der Spielstand soll auch von weiter weg gut erkennbar sein).
-  const [boardAvatar, setBoardAvatar] = useState(() => goldenAvatar());
+  // Die Avatargroesse richtet sich nach der Breite der TAFEL (nicht des Fensters): am PC steht links noch das Menue, am Tablet ist die App schmaler als das Fenster.
+  const [boardAvatar, setBoardAvatar] = useState(56);
+  const roRef = useRef(null);
+  const boardWRef = useRef(0);
+  const wrapRef = useCallback((node) => {
+    if (roRef.current) { roRef.current.disconnect(); roRef.current = null; }
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => { boardWRef.current = e.contentRect.width; setBoardAvatar(avatarFor(boardWRef.current, window.innerHeight)); });
+    ro.observe(node);
+    roRef.current = ro;
+  }, []);
   useEffect(() => {
-    const onResize = () => setBoardAvatar(goldenAvatar());
+    const onResize = () => { if (boardWRef.current) setBoardAvatar(avatarFor(boardWRef.current, window.innerHeight)); };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+  // Kurzer Hinweis (Haken) nach dem Speichern eines Spiels.
   const [justSaved, setJustSaved] = useState(null);   // Text wie "Raphi ist neuer Verteidiger" oder null
   useEffect(() => {
     if (!justSaved) return undefined;
@@ -519,6 +530,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           {/* Scoreboard B1 (Nutzer-Wahl 2026-11-01, aeltere Vorgaben fuer diese Eingabe gelten nicht mehr): Person und Spielstand
               sind das Erste, was man sieht; Zaehler und Haken sind logisch angeordnet, aber leise. Hochformat: zwei Personen oben,
               die Zahlen gross in der Mitte, darunter die Zaehler und der Haken als breite Leiste. Querformat/PC: drei Spalten. */}
+          <div className="ws-board-wrap" ref={wrapRef}>
           <section className={"stat-block ws-board" + (breakSide != null ? " has-break" : "")}>
             {[[posA, "A", "a", sA, t("Verteidigt")], [posB, "B", "b", sB, t("Herausforderer")]].map(([e, slot, k, val, role], sideIdx) => (
               <Fragment key={e.id}>
@@ -588,6 +600,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               </button>
             )}
           </section>
+          </div>
         </>
       )}
 
