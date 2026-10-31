@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
+import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, SkipForward, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -33,6 +33,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
   // Kurzer Hinweis "Eingetragen" (Haken) nach dem Speichern eines Spiels.
+  const [detailFor, setDetailFor] = useState(null);   // Eintrag, dessen Rang/Pause unter der Tafel aufgeklappt ist
   const [justSaved, setJustSaved] = useState(null);   // Text wie "Raphi ist neuer Verteidiger" oder null
   useEffect(() => {
     if (!justSaved) return undefined;
@@ -497,52 +498,60 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               "Neues Match" (MatchScreen, Schritt 2). Nutzer-Feedback 2026-10-10:
               die erste Fassung mit extragrossen Tippflaechen war "zu gross" -
               die Matcheingabe soll in jedem Modus gleich aussehen. */}
-          {/* Scoreboard (Nutzer-Wahl 2026-10-31): der Spielstand ist die Hauptsache - links und rechts Person, in der Mitte
-              die Zahlen gross, darunter -/+ mit dem Haken dazwischen. Rang, S/N und Pause stehen als kleine Zeile darunter. */}
+          {/* Scoreboard B1 (Nutzer-Wahl 2026-11-01, aeltere Vorgaben fuer diese Eingabe gelten nicht mehr): Person und Spielstand
+              sind das Erste, was man sieht; Zaehler und Haken sind logisch angeordnet, aber leise. Hochformat: zwei Personen oben,
+              die Zahlen gross in der Mitte, darunter die Zaehler und der Haken als breite Leiste. Querformat/PC: drei Spalten. */}
           <section className="stat-block ws-board">
-            <div className="ws-board-top">
-              {[[posA, "A", t("Verteidigt")], [posB, "B", t("Herausforderer")]].map(([e, slot, role], idx) => (
-                <div key={e.id} className={"ws-board-side" + (idx === 1 ? " right" : "") + (e.is_paused ? " is-paused" : "")}>
+            {[[posA, "A", "a", sA, setSA, t("Verteidigt")], [posB, "B", "b", sB, setSB, t("Herausforderer")]].map(([e, slot, k, val, setVal, role]) => (
+              <Fragment key={e.id}>
+                <button type="button" className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "") + (detailFor === e.id ? " open" : "")}
+                  onClick={() => setDetailFor((d) => (d === e.id ? null : e.id))} aria-expanded={detailFor === e.id}
+                  title={t("Antippen für Rang und Pause")}>
                   <span className="ws-role">{role}</span>
-                  <div className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, 56)}</div>
+                  <span className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, 52)}</span>
                   <span className="score-name">{entryName(e)}</span>
+                  {/* Statistik leise: Siege, Niederlagen, Serie - da, aber ohne Aufmerksamkeit zu ziehen. */}
+                  <span className="ws-quiet">
+                    <span>{e.wins} {t("S")}</span><span>{e.losses} {t("N")}</span>
+                    {e.streak > 1 && <span><Emoji e="🔥" /> {e.streak}</span>}
+                  </span>
                   {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
-                </div>
-              ))}
-              <div className="ws-board-score" aria-live="polite">
-                {canReport ? (
-                  <>
-                    <span className="score-num" key={"a" + sA}>{sA}</span>
-                    <span className="ws-board-colon">:</span>
-                    <span className="score-num" key={"b" + sB}>{sB}</span>
-                  </>
-                ) : <span className="ws-board-colon">vs</span>}
-              </div>
+                </button>
+                {canReport && (
+                  <div className={"ws-b-cap c" + k} role="group" aria-label={entryName(e)}>
+                    <button type="button" disabled={val === 0} onClick={() => setVal((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
+                    <button type="button" onClick={() => setVal((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
+                  </div>
+                )}
+              </Fragment>
+            ))}
+            <div className="ws-b-score" aria-live="polite">
+              {canReport ? (
+                <>
+                  <span className="score-num" key={"a" + sA}>{sA}</span>
+                  <span className="ws-b-colon">:</span>
+                  <span className="score-num" key={"b" + sB}>{sB}</span>
+                </>
+              ) : <span className="ws-b-colon">vs</span>}
             </div>
             {canReport && (
-              <div className="ws-board-ctrl">
-                <div className="score-btns">
-                  <button className="round-btn" disabled={sA === 0} onClick={() => setSA((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
-                  <button className="round-btn plus" onClick={() => setSA((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
-                </div>
-                <button type="button" className={"icon-btn primary ws-ok" + (sA !== sB ? " ready" : "")} disabled={busy || sA === sB} onClick={reportGame}
-                  aria-label={t("Eintragen")} title={t("Eintragen")}>
-                  <Check size={28} />
-                </button>
-                <div className="score-btns">
-                  <button className="round-btn" disabled={sB === 0} onClick={() => setSB((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
-                  <button className="round-btn plus" onClick={() => setSB((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
-                </div>
-              </div>
+              <button type="button" className={"icon-btn primary ws-ok ws-b-ok" + (sA !== sB ? " ready" : "")} disabled={busy || sA === sB} onClick={reportGame}
+                aria-label={t("Eintragen")} title={t("Eintragen")}>
+                <Check size={26} />
+              </button>
             )}
-            <div className="ws-board-info">
-              {[posA, posB].map((e, idx) => (
-                <div key={e.id} className={"ws-board-info-side" + (idx === 1 ? " right" : "")}>
-                  {statLine(e, rankOf(e), true)}
-                  {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { small: true })}
+            {(() => {
+              const de = detailFor && [posA, posB].find((x) => x.id === detailFor);
+              if (!de) return null;
+              return (
+                <div className="ws-b-detail">
+                  <span><b>{entryName(de)}</b> · {t("Platz {n}", { n: rankOf(de) })}</span>
+                  {canTogglePaused(de) && de.id !== myEntry?.id && (
+                    <span className="ws-b-detail-pause">{de.is_paused ? t("pausiert") : t("dabei")} {pauseSwitch(de, { small: true })}</span>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </section>
           {/* Bestaetigung des Ergebnisses: ein Hinweis, WER jetzt verteidigt - die Avatare wandern dabei an ihren neuen Platz. */}
           {justSaved && <p className="ws-saved-line" role="status"><span className="saved-hint"><Check size={15} /> {justSaved}</span></p>}

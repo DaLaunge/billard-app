@@ -3876,20 +3876,43 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .ws-pp.in-queue { width: 40px; height: 40px; }
 .ws-me-top .ws-pp { margin-left: auto; }
 
-/* Winner Stays: Scoreboard - Spielstand gross in der Mitte, Personen links/rechts, Haken zwischen den Zaehlern. */
-.ws-board { display: flex; flex-direction: column; gap: 14px; }
-.ws-board-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
-.ws-board-top .ws-board-score { grid-column: 2; grid-row: 1; }
-.ws-board-side { grid-row: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-width: 0; }
-.ws-board-side:first-child { grid-column: 1; }
-.ws-board-side.right { grid-column: 3; }
-.ws-board-side .score-name { overflow-wrap: anywhere; }
-.ws-board-side.is-paused .sc-avatars { filter: grayscale(.6); opacity: .75; }
-.ws-board-score { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.ws-board-score .score-num { font-size: calc(54px * var(--fs, 1)); min-width: .65em; text-align: center; }
-.ws-board-colon { font-size: calc(28px * var(--fs, 1)); color: var(--ivory-dim); font-weight: 700; }
-.ws-board-ctrl { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.ws-board-ctrl .ws-ok { width: 56px; height: 56px; }
-.ws-board-ctrl .ws-ok:disabled { opacity: .55; }
-.ws-board-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
-.ws-board-info-side { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+/* Winner Stays: Scoreboard B1. Hochformat: [Person][Person] / Spielstand / [Zaehler][Zaehler] / Haken. Querformat und PC: drei Spalten
+   [Person | Spielstand | Person] mit den Zaehlern darunter und dem Haken in der Mitte. Der Spielstand waechst mit dem Platz. */
+.ws-board { display: grid; gap: 10px 8px; align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "pa pb" "score score" "ca cb" "ok ok" "dt dt";
+  min-height: min(68dvh, 560px); grid-template-rows: auto 1fr auto auto auto; }
+.ws-b-person { grid-area: pa; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0;
+  background: transparent; border: none; color: inherit; font: inherit; cursor: pointer; padding: 6px 4px; border-radius: 14px; }
+.ws-b-person.pb { grid-area: pb; }
+.ws-b-person:hover, .ws-b-person.open { background: var(--surface-btn); }
+.ws-b-person .score-name { overflow-wrap: anywhere; font-size: calc(15px * var(--fs, 1)); }
+.ws-b-person.is-paused .sc-avatars { filter: grayscale(.6); opacity: .7; }
+.ws-quiet { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px 9px; font-size: calc(12px * var(--fs, 1)); color: var(--ivory-dim); opacity: .8; }
+.ws-b-score { grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; align-self: stretch;
+  font-size: clamp(80px, 27vw, 150px); }
+.ws-b-score .score-num { font-size: 1em; min-width: .62em; text-align: center; line-height: 1; }
+.ws-b-colon { font-size: .3em; color: var(--ivory-dim); font-weight: 700; }
+.ws-b-cap { grid-area: ca; display: flex; border: 1.5px solid var(--btn-border, var(--line)); border-radius: 999px; overflow: hidden; }
+.ws-b-cap.cb { grid-area: cb; }
+.ws-b-cap button { flex: 1; min-height: 46px; border: none; background: transparent; color: var(--ivory-dim); display: grid; place-items: center; cursor: pointer; }
+.ws-b-cap button + button { border-left: 1.5px solid var(--btn-border, var(--line)); color: var(--ivory); }
+.ws-b-cap button:active:not(:disabled) { background: var(--surface-btn); }
+.ws-b-cap button:disabled { opacity: .35; cursor: default; }
+.ws-b-ok.ws-ok { grid-area: ok; width: 100%; height: 50px; border-radius: 999px; }
+.ws-b-ok.ws-ok:disabled { opacity: .5; }
+.ws-b-detail { grid-area: dt; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px;
+  border-top: 1px solid var(--line); font-size: calc(13px * var(--fs, 1)); color: var(--ivory-dim); }
+.ws-b-detail-pause { display: inline-flex; align-items: center; gap: 8px; }
+/* Querformat und PC: drei Spalten */
+@media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
+  .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
+    grid-template-areas: "pa score pb" "ca ok cb" "dt dt dt"; grid-template-rows: 1fr auto auto; min-height: min(56dvh, 440px); max-width: 880px; margin-inline: auto; width: 100%; }
+  .ws-b-score { font-size: clamp(90px, 12vw, 150px); }
+  .ws-b-ok.ws-ok { width: 56px; height: 56px; border-radius: 50%; justify-self: center; }
+  .ws-b-person { justify-content: center; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .ws-board { min-height: 0; }
+  .ws-b-score { font-size: clamp(64px, 30vh, 120px); }
+}
