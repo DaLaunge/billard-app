@@ -3928,3 +3928,8 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   .ws-b-ok.ws-ok svg { width: 38px; height: 38px; }
   .ws-board { gap: 16px 14px; }
 }
+
+/* Turnierleitung: kleine, ruhige Werkzeugleiste (Turnier beenden / loeschen ...) statt breiter Knoepfe - in allen Turniermodi gleich. */
+.tour-toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0 0 10px; }
+.tour-toolbar.center { justify-content: center; }
+.btn.tour-tool { width: auto; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; font-size: calc(13px * var(--fs, 1)); }

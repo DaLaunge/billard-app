@@ -10,6 +10,7 @@ import Ball from "./Ball";
 import PlayerMultiPicker from "./PlayerMultiPicker";
 import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
+import EndTournamentButton from "./widgets/EndTournamentButton";
 import TurnierBerichtScreen from "./TurnierBerichtScreen";
 import { exportTurnierProtocolPdf } from "./turnierBerichtPdf";
 import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout";
@@ -680,24 +681,20 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
       </div>
 
       {isOrganizer && (tour.status === "running" || canDeleteTournament || canConfirmResults) && (
-        <div className="chips small" style={{ marginBottom: 10 }}>
-          {tour.status === "running" && (
-            <button className="btn ghost" disabled={busyId === "end"} onClick={endEarly}>
-              <Flag size={15} /> {t("Turnier vorzeitig beenden")}
-            </button>
-          )}
+        <div className="tour-toolbar">
+          {tour.status === "running" && <EndTournamentButton disabled={busyId === "end"} onClick={endEarly} />}
           {tour.status === "running" && canDeleteTournament && (
-            <button className="btn ghost" disabled={busyId === "cancelStart"} onClick={cancelStart}>
+            <button className="btn ghost small tour-tool" disabled={busyId === "cancelStart"} onClick={cancelStart}>
               <Users size={15} /> {t("Start rückgängig machen")}
             </button>
           )}
           {canConfirmResults && (
-            <button className="btn ghost" disabled={busyId === "confirmResults"} onClick={confirmResults}>
+            <button className="btn ghost small tour-tool" disabled={busyId === "confirmResults"} onClick={confirmResults}>
               <ShieldCheck size={15} /> {t("Turnier bestätigen")}
             </button>
           )}
           {canDeleteTournament && (
-            <button className="btn ghost" disabled={busyId === "delete"} onClick={deleteTournament}>
+            <button className="btn ghost small tour-tool" disabled={busyId === "delete"} onClick={deleteTournament}>
               <Trash2 size={15} /> {t("Turnier löschen")}
             </button>
           )}

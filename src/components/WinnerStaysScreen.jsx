@@ -8,6 +8,7 @@ import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
 import PlayerMultiPicker from "./PlayerMultiPicker";
 import ImprintFooter from "./widgets/ImprintFooter";
+import EndTournamentButton from "./widgets/EndTournamentButton";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
@@ -374,22 +375,22 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   const finishSession = async () => {
-    if (!(await appConfirm(t("Diese Runde jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert.")))) return;
+    if (!(await appConfirm(t("Das Turnier jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert.")))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_finish_session", { p_session_id: sessionId });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Runde beendet."));
+    toast(t("Turnier beendet."));
     await load();
   };
 
   const deleteSession = async () => {
-    if (!(await appConfirm(t("Diese Runde wirklich löschen?")))) return;
+    if (!(await appConfirm(t("Dieses Turnier wirklich löschen?")))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_delete_session", { p_session_id: sessionId });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Runde gelöscht."));
+    toast(t("Turnier gelöscht."));
     onBack();
   };
 
@@ -458,15 +459,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       </div>
 
       {isOrganizer && (
-        <div className="chips small" style={{ marginBottom: 10 }}>
-          {session.status === "running" && (
-            <button className="btn ghost" disabled={busy} onClick={finishSession}>
-              <Flag size={15} /> {t("Runde beenden")}
-            </button>
-          )}
+        <div className="tour-toolbar">
+          {session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
           {canDelete && (
-            <button className="btn ghost" disabled={busy} onClick={deleteSession}>
-              <Trash2 size={15} /> {t("Runde löschen")}
+            <button className="btn ghost small tour-tool" disabled={busy} onClick={deleteSession}>
+              <Trash2 size={15} /> {t("Turnier löschen")}
             </button>
           )}
         </div>
@@ -564,8 +561,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           {justSaved && <p className="ws-saved-line" role="status"><span className="saved-hint"><Check size={15} /> {justSaved}</span></p>}
           {canReport && sA === sB && sA + sB > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
           {canSkip && (
-            <div className="chips small" style={{ marginBottom: 10 }}>
-              <button className="btn ghost" disabled={busy} onClick={skipNext} title={t("Herausforderer überspringen, wenn die Person gerade nicht verfügbar ist.")}>
+            <div className="tour-toolbar center">
+              <button className="btn ghost small tour-tool" disabled={busy} onClick={skipNext} title={t("Herausforderer überspringen, wenn die Person gerade nicht verfügbar ist.")}>
                 <SkipForward size={15} /> {t("Überspringen")}
               </button>
             </div>
