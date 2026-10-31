@@ -1,3 +1,4 @@
+import ScoreBoard from "./widgets/ScoreBoard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Trophy, Check, X, Minus, Plus, UserPlus, LogOut, Users, Flag } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -111,25 +112,19 @@ export default function GuestTournamentScreen({ session, onLogin, onForget, onSe
           <p className="app-sub"><DiscBall disc={tour.discipline} size={16} /> · {t("Tisch")} {ready.table_number}</p>
         </div>
         <div className="login-card">
-          <div className="score-row">
-            {[["a", st.me.nickname], ["b", ready.opponent]].map(([who, name]) => (
-              <div className="score-col" key={who}>
-                <Ball nick={name} color={who === "a" ? "#2B5DA8" : "#C0392B"} label={(name[0] || "?").toUpperCase()} size={40} />
-                <b style={{ fontSize: 13 }}>{name}</b>
-                <div className="score-num">{score[who]}</div>
-                <div className="chips" style={{ justifyContent: "center" }}>
-                  <button className="round-btn" onClick={() => bump(who, -1)} aria-label="-1"><Minus size={20} /></button>
-                  <button className="round-btn" onClick={() => bump(who, 1)} aria-label="+1"><Plus size={20} /></button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ScoreBoard sides={[["a", st.me.nickname], ["b", ready.opponent]].map(([who, name]) => ({
+              id: who, score: score[who], label: name, onBump: (d) => bump(who, d),
+              person: (size) => (
+                <>
+                  <span className="ws-b-av"><span className="sc-avatars"><Ball nick={name} color={who === "a" ? "#2B5DA8" : "#C0392B"} label={(name[0] || "?").toUpperCase()} size={size} /></span></span>
+                  <span className="ws-b-text"><span className="score-name">{name}</span></span>
+                </>
+              ),
+            }))}
+            action={{ onClick: () => setFinishAsk(true), label: t("Beenden") }} />
           {err && <p className="nick-status err"><X size={14} /> {err}</p>}
           {!finishAsk ? (
-            <>
-              <button className="btn primary" disabled={score.a === score.b} onClick={() => setFinishAsk(true)}><Flag size={16} /> {t("Beenden")}</button>
-              <button className="btn ghost" onClick={() => setTracking(false)}>{t("Zurück")}</button>
-            </>
+            <button className="btn ghost" onClick={() => setTracking(false)}>{t("Zurück")}</button>
           ) : (
             <>
               <p className="hint center">{t("Ergebnis {a} : {b} jetzt melden?", { a: score.a, b: score.b })}</p>

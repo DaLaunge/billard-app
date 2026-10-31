@@ -1,3 +1,4 @@
+import ScoreBoard from "./widgets/ScoreBoard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Trophy, Check, X, UserPlus, LogOut, Users, Minus, Plus, Flag } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -118,21 +119,17 @@ export default function GuestWsScreen({ session, onLogin, onForget, onSession })
         {running && st.in_queue && st.at_table && (
           <>
             <p className="hint center"><b>{t("Du stehst am Tisch")}</b> – {t("gegen {name}", { name: st.opponent || "?" })}.</p>
-            <div className="score-row">
-              {[["a", st.me], ["b", st.opponent || "?"]].map(([who, name]) => (
-                <div className="score-col" key={who}>
-                  <b style={{ fontSize: 13 }}>{name}</b>
-                  <div className="score-num">{score[who]}</div>
-                  <div className="chips" style={{ justifyContent: "center" }}>
-                    <button className="round-btn" onClick={() => bump(who, -1)} aria-label="-1"><Minus size={20} /></button>
-                    <button className="round-btn" onClick={() => bump(who, 1)} aria-label="+1"><Plus size={20} /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {!ask ? (
-              <button className="btn primary" disabled={score.a === score.b} onClick={() => setAsk(true)}><Flag size={16} /> {t("Spiel beenden")}</button>
-            ) : (
+            <ScoreBoard sides={[["a", st.me], ["b", st.opponent || "?"]].map(([who, name], i) => ({
+                id: who, score: score[who], label: name, onBump: (d) => bump(who, d),
+                person: (size) => (
+                  <>
+                    <span className="ws-b-av"><span className="sc-avatars"><Ball nick={name} color={who === "a" ? "#2B5DA8" : "#C0392B"} label={(name[0] || "?").toUpperCase()} size={size} /></span></span>
+                    <span className="ws-b-text"><span className="score-name">{name}</span></span>
+                  </>
+                ),
+              }))}
+              action={{ onClick: () => setAsk(true), label: t("Spiel beenden") }} />
+            {ask && (
               <>
                 <p className="hint center">{t("Ergebnis {a} : {b} jetzt melden?", { a: score.a, b: score.b })}</p>
                 <button className="btn primary" disabled={busy} onClick={report}><Check size={16} /> {t("Ja, melden")}</button>
