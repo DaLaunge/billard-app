@@ -3912,20 +3912,18 @@ span.ws-b-av { cursor: default; }
 .ws-head-tools { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
 .et-short { display: none; }
 @media (max-width: 520px) { .et-full { display: none; } .et-short { display: inline; } }
-/* Ab 640px (und flaches Querformat): Person | Spielstand | Person */
+/* Ab 640px (und flaches Querformat): Person | Spielstand | Person - Name bleibt UNTER dem Avatar (nie daneben, damit nichts ueberlappt) */
 @media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
   .ws-board { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "pa score pb" "ca ok cb"; padding: calc(var(--ws-u) * 1.618); }
-  .ws-b-person { flex-direction: row; text-align: left; justify-content: flex-start; gap: calc(var(--ws-u) * 1.618); }
-  .ws-b-person.pb { flex-direction: row-reverse; text-align: right; }
-  .ws-b-person .ws-b-text { align-items: flex-start; }
-  .ws-b-person.pb .ws-b-text { align-items: flex-end; }
-  .ws-b-person .ws-quiet { justify-content: flex-start; }
-  .ws-b-person.pb .ws-quiet { justify-content: flex-end; }
   .ws-b-score { font-size: min(calc(var(--ws-u) * 11.09), 15vw); padding-inline: calc(var(--ws-u) * 2); }
-  .ws-b-cap { width: min(100%, calc(var(--ws-u) * 16)); justify-self: start; }
-  .ws-b-cap.cb { justify-self: end; }
+  /* Zaehler naeher zur Mitte: links der Verteidiger rechtsbuendig, rechts der Herausforderer linksbuendig - direkt neben dem Haken */
+  .ws-b-cap { width: min(100%, calc(var(--ws-u) * 13)); justify-self: end; }
+  .ws-b-cap.cb { justify-self: start; }
   .ws-b-ok.ws-ok { width: calc(var(--ws-u) * 4.236); height: calc(var(--ws-u) * 4.236); border-radius: 50%; justify-self: center; }
 }
+.ws-b-person .score-name, .ws-b-person .ws-quiet, .ws-b-person .ws-role { max-width: 100%; text-wrap: balance; overflow-wrap: anywhere; hyphens: auto; }
+.ws-break-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: calc(var(--ws-u) * .9); font-weight: 700;
+  background: var(--accent-soft, var(--surface-btn)); color: var(--accent); border: 1px solid var(--accent-line, transparent); white-space: nowrap; }
 /* Live-Stand und Warteschlange: voll breit; ab 900px im Verhaeltnis 1,618 : 1 (Stand links, Warteschlange rechts), am Handy Warteschlange zuerst */
 .ws-lower { display: grid; gap: var(--card-gap, 12px); }
 .ws-lower > .stat-block { margin-bottom: 0; }

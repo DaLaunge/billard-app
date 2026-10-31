@@ -1787,6 +1787,7 @@ const TRANSLATIONS = {
     "Runde beendet.": "Round ended.",
     "Runde gelöscht.": "Round deleted.",
     "Turnier beenden": "End tournament",
+    "Diese Person stößt das nächste Rack an": "This player breaks the next rack",
     "Das ganze Turnier beenden": "End the whole tournament",
     "Das Turnier jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert.": "End the tournament now? A rated match with a protocol will now be saved for each pairing.",
     "Dieses Turnier wirklich löschen?": "Really delete this tournament?",

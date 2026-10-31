@@ -10,7 +10,7 @@ import PlayerMultiPicker from "./PlayerMultiPicker";
 import ImprintFooter from "./widgets/ImprintFooter";
 import EndTournamentButton from "./widgets/EndTournamentButton";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
-import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
+import { BreakPill, BreakGlyph, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
@@ -154,6 +154,16 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // aktuelle Tisch-Paarung aendert (neue Runde nach Eintragen).
   const [sA, setSA] = useState(0);
   const [sB, setSB] = useState(0);
+  // Reihenfolge der Punkte in dieser Partie ([a, b, ts] je Aenderung): daraus ergibt sich bei Winner-Break, wer das letzte Rack
+  // gewonnen hat und damit das naechste anstoesst (nextBreaker in widgets/BreakRule.jsx).
+  const [rackLog, setRackLog] = useState([]);
+  const bumpScore = (side, d) => {
+    const na = side === "a" ? Math.max(0, sA + d) : sA;
+    const nb = side === "b" ? Math.max(0, sB + d) : sB;
+    if (na === sA && nb === sB) return;
+    setSA(na); setSB(nb);
+    setRackLog((l) => [...l, [na, nb, Date.now()]]);
+  };
   // Spielstand der laufenden Partie gegen ein unfreiwilliges Neuladen sichern
   // (siehe lib/matchDraft.js). Gebunden an die Nummer des letzten gemeldeten
   // Spiels: wurde seither eins gemeldet (auch von einem anderen Geraet), ist der
@@ -175,7 +185,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const prevGameNoRef = useRef(null);
   useEffect(() => {
     if (!wsRestoredRef.current) return;
-    if (prevGameNoRef.current !== null && prevGameNoRef.current !== lastGameNo) { setSA(0); setSB(0); }
+    if (prevGameNoRef.current !== null && prevGameNoRef.current !== lastGameNo) { setSA(0); setSB(0); setRackLog([]); }
     prevGameNoRef.current = lastGameNo;
   }, [session, lastGameNo]);
   const [showAdd, setShowAdd] = useState(false);
@@ -265,7 +275,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     // Wer jetzt verteidigt: der Sieger bleibt/wird Verteidiger - das sagt der Hinweis, die Bewegung der Avatare zeigt es.
     const winnerEntry = sA > sB ? posA : posB;
     setJustSaved(winnerEntry ? t(sA > sB ? "{name} bleibt Verteidiger" : "{name} ist neuer Verteidiger", { name: entryName(winnerEntry) }) : t("Eingetragen"));
-    setSA(0); setSB(0);
+    setSA(0); setSB(0); setRackLog([]);
     await load();
     onReload && onReload();
     return true;
@@ -432,6 +442,12 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     );
   };
 
+  // Wer stoesst das naechste Rack an (0 = Verteidiger, 1 = Herausforderer)? Winner-Break: der Sieger des letzten Racks, im ersten Rack der
+  // Verteidiger (= Sieger der letzten Partie). Wechselbreak: abwechselnd, im ersten Rack der Herausforderer. Beim 14/1 gibt es das nicht.
+  const breakRule = normalizeBreakRule(session.break_rule);
+  const breakSide = breakApplies(session.discipline) && posA && posB && session.status === "running"
+    ? nextBreaker(breakRule, breakRule === "winner" ? 0 : 1, [sA, sB], rackLog) : null;
+
   return (
     <div className="screen" ref={rootRef}>
       <div className="turnier-layout">
@@ -504,7 +520,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               sind das Erste, was man sieht; Zaehler und Haken sind logisch angeordnet, aber leise. Hochformat: zwei Personen oben,
               die Zahlen gross in der Mitte, darunter die Zaehler und der Haken als breite Leiste. Querformat/PC: drei Spalten. */}
           <section className="stat-block ws-board">
-            {[[posA, "A", "a", sA, setSA, t("Verteidigt")], [posB, "B", "b", sB, setSB, t("Herausforderer")]].map(([e, slot, k, val, setVal, role]) => (
+            {[[posA, "A", "a", sA, t("Verteidigt")], [posB, "B", "b", sB, t("Herausforderer")]].map(([e, slot, k, val, role], sideIdx) => (
               <Fragment key={e.id}>
                 <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "")}>
                   {/* Der Ring um den Avatar IST die Pause-Anzeige: gruen = dabei, rot = pausiert. Antippen wechselt (mit Rueckfrage,
@@ -529,12 +545,15 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                       {e.streak > 1 && <span><Emoji e="🔥" /> {e.streak}</span>}
                     </span>
                     {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
+                    {breakSide === sideIdx && (
+                      <span className="ws-break-tag" title={t("Diese Person stößt das nächste Rack an")}><BreakGlyph width={26} /> {t("Anstoß")}</span>
+                    )}
                   </span>
                 </div>
                 {canReport && (
                   <div className={"ws-b-cap c" + k} role="group" aria-label={entryName(e)}>
-                    <button type="button" disabled={val === 0} onClick={() => setVal((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
-                    <button type="button" onClick={() => setVal((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
+                    <button type="button" disabled={val === 0} onClick={() => bumpScore(k, -1)} aria-label="minus"><Minus size={20} /></button>
+                    <button type="button" onClick={() => bumpScore(k, 1)} aria-label="plus"><Plus size={20} /></button>
                   </div>
                 )}
               </Fragment>
