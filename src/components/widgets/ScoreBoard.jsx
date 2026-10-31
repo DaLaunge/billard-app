@@ -24,17 +24,50 @@ const avatarFor = (boardWidth, winH) => {
   return winH && winH < 520 ? Math.min(base, Math.round(winH * 0.13)) : base;
 };
 
+// Weiche Umbruchstellen in Namen vor Grossbuchstaben ("TestClaudeAdmin" -> "TestClaude / Admin"): so bricht ein langer Name an einer
+// sinnvollen Stelle um statt mitten im Wort. Nur fuer die Anzeige (aria-label u. a. bleiben der echte Name).
+export const softName = (s) => String(s ?? "").replace(/([a-zäöüß])([A-ZÄÖÜ])/g, "$1\u200B$2");
+
+// Namensgroesse: so gross wie moeglich, aber der Name soll in HOECHSTENS zwei Zeilen in die Spalte der Person passen (sonst staende ein Name in
+// drei Zeilen oder ragte in die Nachbarspalte). Untergrenze 12px, erst darunter bricht er weiter um. colW = Breite der Personenspalte in px.
+// Zwei Zeilen: die Stuecke (an Leerzeichen und weichen Umbruechen getrennt) werden so auf zwei Zeilen verteilt, dass die laengere Zeile kuerzest ist.
+const widestOfTwoLines = (parts) => {
+  const lens = parts.map((w) => w.length);
+  if (lens.length < 2) return lens[0] || 4;
+  let best = Infinity;
+  for (let i = 1; i < lens.length; i += 1) {
+    const l1 = lens.slice(0, i).reduce((x, y) => x + y, 0), l2 = lens.slice(i).reduce((x, y) => x + y, 0);
+    best = Math.min(best, Math.max(l1, l2));
+  }
+  return Math.max(best, ...lens);
+};
+const nameFont = (label, colW, boardW) => {
+  if (!colW || !boardW) return undefined;
+  const chars = Math.max(4, widestOfTwoLines(softName(label).split(/[\s\u200B]+/).filter(Boolean)));
+  const base = wsUnit(boardW) * PHI;
+  return Math.floor(Math.max(12, Math.min(base, colW / (chars * 0.62))));
+};
+
 export default function ScoreBoard({ sides, counters = true, hasBreak = false, note = null, action, emptyAction = null, className = "" }) {
   // Die Avatargroesse richtet sich nach der Breite der TAFEL (nicht des Fensters): am PC steht links noch das Menue, am Tablet ist die App
   // schmaler als das Fenster. person(size) bekommt sie als Zahl.
   const [avatar, setAvatar] = useState(56);
+  const [colW, setColW] = useState([0, 0]); // Breite der beiden Personenspalten (px)
   const roRef = useRef(null);
   const wRef = useRef(0);
   const wrapRef = useCallback((node) => {
     if (roRef.current) { roRef.current.disconnect(); roRef.current = null; }
     if (!node || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(([e]) => { wRef.current = e.contentRect.width; setAvatar(avatarFor(wRef.current, window.innerHeight)); });
+    const ro = new ResizeObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.target === node) { wRef.current = e.contentRect.width; setAvatar(avatarFor(wRef.current, window.innerHeight)); return; }
+        const i = e.target.classList.contains("pb") ? 1 : 0;
+        const w = Math.round(e.contentRect.width);
+        setColW((c) => (c[i] === w ? c : (i ? [c[0], w] : [w, c[1]])));
+      });
+    });
     ro.observe(node);
+    node.querySelectorAll(".ws-b-person").forEach((el) => ro.observe(el));
     roRef.current = ro;
   }, []);
   useEffect(() => {
@@ -53,7 +86,7 @@ export default function ScoreBoard({ sides, counters = true, hasBreak = false, n
           const k = i === 0 ? "a" : "b";
           return (
             <Fragment key={s.id}>
-              <div className={"ws-b-person p" + k + (s.paused ? " is-paused" : "")}>{typeof s.person === "function" ? s.person(avatar) : s.person}</div>
+              <div className={"ws-b-person p" + k + (s.paused ? " is-paused" : "")} style={{ "--nfs": nameFont(s.label, colW[i], wRef.current) ? nameFont(s.label, colW[i], wRef.current) + "px" : undefined }}>{typeof s.person === "function" ? s.person(avatar) : s.person}</div>
               {hasBreak && s.breakMark}
               {counters && (
                 <div className={"ws-b-cap c" + k} role="group" aria-label={s.label}>

@@ -29,7 +29,7 @@ import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCo
 import { rpcRetry } from "../lib/rpcRetry";
 import { flyIn, vanishBall, flyEnabled } from "../lib/flyBall";
 import Emoji from "./Emoji";
-import ScoreBoard from "./widgets/ScoreBoard";
+import ScoreBoard, { softName } from "./widgets/ScoreBoard";
 import BreakCueIcon from "./widgets/BreakCueIcon";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
@@ -964,7 +964,7 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                         ))}
                       </span></span>
                       <span className="ws-b-text">
-                        <span className="score-name">{name}</span>
+                        <span className="score-name">{softName(name)}</span>
                         {disc === "8 Ball" && !isGhost && (
                           <button type="button" className={"group-pick" + (solidSide == null ? " unset" : "")} onClick={() => pickGroup(idx)}
                             title={t("Volle oder Halbe")} aria-label={`${name}: ${solidSide == null ? t("Volle oder Halbe") : solidSide === idx ? t("Volle") : t("Halbe")}`}>

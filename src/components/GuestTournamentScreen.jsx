@@ -1,4 +1,4 @@
-import ScoreBoard from "./widgets/ScoreBoard";
+import ScoreBoard, { softName } from "./widgets/ScoreBoard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Trophy, Check, X, Minus, Plus, UserPlus, LogOut, Users, Flag } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -117,7 +117,7 @@ export default function GuestTournamentScreen({ session, onLogin, onForget, onSe
               person: (size) => (
                 <>
                   <span className="ws-b-av"><span className="sc-avatars"><Ball nick={name} color={who === "a" ? "#2B5DA8" : "#C0392B"} label={(name[0] || "?").toUpperCase()} size={size} /></span></span>
-                  <span className="ws-b-text"><span className="score-name">{name}</span></span>
+                  <span className="ws-b-text"><span className="score-name">{softName(name)}</span></span>
                 </>
               ),
             }))}

@@ -9,7 +9,7 @@ import PlayerPicker from "./PlayerPicker";
 import PlayerMultiPicker from "./PlayerMultiPicker";
 import ImprintFooter from "./widgets/ImprintFooter";
 import EndTournamentButton from "./widgets/EndTournamentButton";
-import ScoreBoard from "./widgets/ScoreBoard";
+import ScoreBoard, { softName } from "./widgets/ScoreBoard";
 import BreakCueIcon from "./widgets/BreakCueIcon";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import { BreakPill, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
@@ -550,7 +550,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   )}
                   <span className="ws-b-text">
                     <span className="ws-role">{role}</span>
-                    <span className="score-name">{entryName(e)}</span>
+                    <span className="score-name">{softName(entryName(e))}</span>
                     {/* Statistik leise: Siege, Niederlagen, Serie - da, aber ohne Aufmerksamkeit zu ziehen. */}
                     <span className="ws-quiet">
                       <span>{e.wins} {t("S")}</span><span>{e.losses} {t("N")}</span>
