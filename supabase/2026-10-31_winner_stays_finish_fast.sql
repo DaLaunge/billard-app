@@ -28,7 +28,8 @@ begin
     p1 uuid, p1b uuid, p2 uuid, p2b uuid,
     score1 int, score2 int, played_at timestamptz, reporter uuid, run_log jsonb
   ) on commit drop;
-  delete from _ws_agg;
+  -- Supabase lehnt ein DELETE ohne WHERE ab ("DELETE requires a WHERE clause") - deshalb ausdruecklich "where true".
+  delete from _ws_agg where true;
 
   -- Alle Paarungen auf einmal berechnen (statt Schleife mit je einem Match-INSERT).
   insert into _ws_agg (side1_id, side2_id, match_id, p1, p1b, p2, p2b, score1, score2, played_at, reporter, run_log)
