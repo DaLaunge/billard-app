@@ -3895,7 +3895,7 @@ span.ws-b-av { cursor: default; }
 .ws-b-person .score-name { overflow-wrap: anywhere; font-size: calc(var(--ws-u) * 1.618); font-weight: 700; }
 .ws-b-person .ws-role { font-size: calc(var(--ws-u) * .8); }
 .ws-quiet { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px calc(var(--ws-u) * .8); font-size: var(--ws-u); color: var(--ivory-dim); opacity: .8; }
-.ws-b-score { grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; font-size: min(calc(var(--ws-u) * 11.09), 24vw); }
+.ws-b-score { position: relative; padding-bottom: calc(var(--ws-u) * 2.4); grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; font-size: min(calc(var(--ws-u) * 11.09), 24vw); }
 .ws-b-score .score-num { font-size: 1em; min-width: .62em; text-align: center; line-height: 1; }
 .ws-b-colon { font-size: .3em; color: var(--ivory-dim); font-weight: 700; }
 .ws-b-cap { grid-area: ca; display: flex; border: 1.5px solid var(--btn-border, var(--line)); border-radius: 999px; overflow: hidden; }
@@ -3940,3 +3940,9 @@ span.ws-b-av { cursor: default; }
 .btn.tour-end { width: auto; display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 999px; font-size: calc(15px * var(--fs, 1));
   font-weight: 700; color: var(--ivory); border: 1.5px solid var(--btn-border, var(--line)); background: var(--surface-btn); }
 .btn.tour-end:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+/* Hinweis unter dem Spielstand: reservierter Streifen (padding-bottom oben), absolut gesetzt - kein Springen der Karten. */
+.ws-b-note { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--ws-u) * 2.4); display: flex; align-items: center; justify-content: center;
+  font-size: calc(var(--ws-u) * 1.2); text-align: center; pointer-events: none; }
+.ws-b-note .saved-hint { font-size: inherit; font-weight: 600; }
+.ws-b-tie { color: var(--ivory-dim); }

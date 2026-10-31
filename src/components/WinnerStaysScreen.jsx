@@ -566,6 +566,12 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   <span className="score-num" key={"b" + sB}>{sB}</span>
                 </>
               ) : <span className="ws-b-colon">vs</span>}
+              {/* Hinweis unter den Zahlen in einem festen, immer reservierten Streifen: er blendet nur ein und aus und verschiebt nichts. */}
+              <span className="ws-b-note" role="status" aria-live="polite">
+                {justSaved
+                  ? <span className="saved-hint"><Check size={15} /> {justSaved}</span>
+                  : (canReport && sA === sB && sA + sB > 0 ? <span className="ws-b-tie">{t("Unentschieden gibt's beim Billard nicht ;-)")}</span> : null)}
+              </span>
             </div>
             {canReport && (
               <button type="button" className={"icon-btn primary ws-ok ws-b-ok" + (sA !== sB ? " ready" : "")} disabled={busy || sA === sB} onClick={reportGame}
@@ -574,9 +580,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               </button>
             )}
           </section>
-          {/* Bestaetigung des Ergebnisses: ein Hinweis, WER jetzt verteidigt - die Avatare wandern dabei an ihren neuen Platz. */}
-          {justSaved && <p className="ws-saved-line" role="status"><span className="saved-hint"><Check size={15} /> {justSaved}</span></p>}
-          {canReport && sA === sB && sA + sB > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
         </>
       )}
 
