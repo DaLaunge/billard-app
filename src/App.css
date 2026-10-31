@@ -3892,7 +3892,7 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 span.ws-b-av { cursor: default; }
 .ws-b-av:disabled { cursor: default; }
 .ws-b-text { display: flex; flex-direction: column; align-items: inherit; gap: calc(var(--ws-u) * .382); min-width: 0; }
-.ws-b-person .score-name { overflow-wrap: anywhere; font-size: calc(var(--ws-u) * 1.618); font-weight: 700; }
+.ws-b-person .score-name { overflow-wrap: break-word; font-size: calc(var(--ws-u) * 1.618); font-weight: 700; }
 .ws-b-person .ws-role { font-size: calc(var(--ws-u) * .8); }
 .ws-quiet { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px calc(var(--ws-u) * .8); font-size: var(--ws-u); color: var(--ivory-dim); opacity: .8; }
 .ws-b-score { position: relative; padding-bottom: calc(var(--ws-u) * 2.4); grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; --base: min(calc(var(--ws-u) * 11.09), 21vw); font-size: calc(var(--base) * var(--sc, 1)); }
@@ -3916,14 +3916,16 @@ span.ws-b-av { cursor: default; }
 @media (max-width: 520px) { .et-full { display: none; } .et-short { display: inline; } }
 /* Ab 640px (und flaches Querformat): Person | Spielstand | Person - Name bleibt UNTER dem Avatar (nie daneben, damit nichts ueberlappt) */
 @media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
-  .ws-board { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "pa score pb" "ca ok cb"; padding: calc(var(--ws-u) * 1.618); }
-  .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 15vw); padding-inline: calc(var(--ws-u) * 2); }
+  .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr) minmax(0, 1fr); grid-template-areas: "pa score pb" "ca ok cb"; padding: calc(var(--ws-u) * 1.618); }
+  /* Der Spielstand richtet sich nach der Breite SEINER Spalte (Container-Einheit cqw der Tafel), nicht nach dem Fenster: so passt er mit zwei
+     reservierten Stellen immer hinein und drueckt die Personen nie schmal. */
+  .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 12.5cqw); }
   /* Zaehler naeher zur Mitte: links der Verteidiger rechtsbuendig, rechts der Herausforderer linksbuendig - direkt neben dem Haken */
   .ws-b-cap { width: min(100%, calc(var(--ws-u) * 13)); justify-self: end; }
   .ws-b-cap.cb { justify-self: start; }
   .ws-b-ok.ws-ok { width: calc(var(--ws-u) * 4.236); height: calc(var(--ws-u) * 4.236); border-radius: 50%; justify-self: center; }
 }
-.ws-b-person .score-name, .ws-b-person .ws-quiet, .ws-b-person .ws-role { max-width: 100%; text-wrap: balance; overflow-wrap: anywhere; hyphens: auto; }
+.ws-b-person .score-name, .ws-b-person .ws-quiet, .ws-b-person .ws-role { max-width: 100%; text-wrap: balance; overflow-wrap: break-word; hyphens: manual; }
 .ws-break-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: calc(var(--ws-u) * .9); font-weight: 700;
   background: var(--accent-soft, var(--surface-btn)); color: var(--accent); border: 1px solid var(--accent-line, transparent); white-space: nowrap; }
 /* Live-Stand und Warteschlange: voll breit; ab 900px gleich breit nebeneinander (Stand links, Warteschlange rechts), am Handy Warteschlange zuerst */
@@ -3977,6 +3979,8 @@ span.ws-b-av { cursor: default; }
 .ws-break-mark .bci-stick::after { content: ""; position: absolute; left: 0; right: 0; top: 72%; height: 6%; background: var(--felt); opacity: .5; }
 .ws-break-mark.off { opacity: 0; }
 @media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
-  .ws-board.has-break { grid-template-columns: var(--gw) minmax(0, 1fr) auto minmax(0, 1fr) var(--gw);
+  .ws-board.has-break { grid-template-columns: var(--gw) minmax(0, 1fr) minmax(0, 1.618fr) minmax(0, 1fr) var(--gw);
     grid-template-areas: "ml pa score pb mr" "ml ca ok cb mr"; }
 }
+
+.ws-board { container-type: inline-size; }
