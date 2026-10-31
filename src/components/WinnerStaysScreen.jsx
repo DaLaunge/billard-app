@@ -522,7 +522,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           <section className="stat-block ws-board">
             {[[posA, "A", "a", sA, t("Verteidigt")], [posB, "B", "b", sB, t("Herausforderer")]].map(([e, slot, k, val, role], sideIdx) => (
               <Fragment key={e.id}>
-                <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "")} style={{ "--av": boardAvatar + "px" }}>
+                <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "") + (breakSide != null ? " has-break" : "")} style={{ "--av": boardAvatar + "px" }}>
                   {/* Anstoss: nur ein Symbol (Queue trifft Kugel), seitlich neben dem Avatar, absolut gesetzt - nimmt keinen Platz weg, nichts springt. */}
                   {breakSide != null && (
                     <span className={"ws-break-mark" + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}

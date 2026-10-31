@@ -3959,10 +3959,15 @@ span.ws-b-av { cursor: default; }
 .head-actions .end-flag, .head-actions .ws-b-del { background: var(--surface-btn); color: var(--ivory); border: 1.5px solid transparent; }
 .head-actions .end-flag:hover:not(:disabled), .head-actions .ws-b-del:hover:not(:disabled) { color: var(--accent); border-color: var(--btn-border, var(--line)); }
 
-/* Anstoss-Symbol: senkrecht seitlich am Avatar (aussen: links beim Verteidiger, rechts beim Herausforderer), in der Hoehe des Avatars. */
+/* Anstoss-Symbol: senkrecht ueber die GANZE Karte, aussen (links beim Verteidiger, rechts beim Herausforderer). Kugel oben, der Queue kommt von
+   unten - aus Sicht der Person sieht es aus, als muesste sie anstossen. Die Spalte haelt links/rechts Platz frei, damit Namen nie darunter laufen. */
 .ws-b-person { position: relative; }
-.ws-break-mark { position: absolute; top: 0; height: var(--av, 56px); display: flex; align-items: center; color: var(--accent); transition: opacity .3s ease; pointer-events: none; }
+.ws-b-person.has-break { padding-inline: calc(var(--av, 56px) * .38 + 8px); }
+.ws-break-mark { position: absolute; top: 0; bottom: 0; width: calc(var(--av, 56px) * .38); display: flex; color: var(--accent); transition: opacity .3s ease; pointer-events: none; }
 .ws-b-person.pa .ws-break-mark { left: 0; }
 .ws-b-person.pb .ws-break-mark { right: 0; }
-.ws-break-mark .break-cue-icon { height: calc(var(--av, 56px) * .95); width: auto; }
+.ws-break-mark .break-cue-icon { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; }
+.ws-break-mark .break-cue-icon svg { width: 100%; height: auto; flex: 0 0 auto; display: block; }
+.ws-break-mark .bci-stick { flex: 1 1 auto; width: 100%; min-height: 8px; background: currentColor; clip-path: polygon(41% 0, 59% 0, 76% 100%, 24% 100%); position: relative; }
+.ws-break-mark .bci-stick::after { content: ""; position: absolute; left: 0; right: 0; top: 72%; height: 6%; background: var(--felt); opacity: .5; }
 .ws-break-mark.off { opacity: 0; }
