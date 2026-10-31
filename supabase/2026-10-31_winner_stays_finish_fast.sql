@@ -6,8 +6,9 @@
 -- Anweisung die komplette Rating-Neuberechnung (~1 s) ausloest - bei 10 Paarungen also ~20 Neuberechnungen.
 --
 -- Jetzt: die Paarungen werden in einer Temp-Tabelle gesammelt, danach gibt es GENAU EIN INSERT und EIN DELETE auf matches,
--- also nur zwei Neuberechnungen, egal wie viele Paarungen es sind. Ergebnis (Matches, run_log, match_id der Spiele) ist
--- unveraendert. In Test und Produktion ausfuehren (zuerst Test).
+-- also nur zwei Neuberechnungen, egal wie viele Paarungen es sind. Ergebnis (Matches inkl. winner_stays_session_id, run_log
+-- mit der Dauer je Rack als 4. Wert, match_id der Spiele) ist unveraendert gegenueber der alten Fassung. In Test und
+-- Produktion ausfuehren (zuerst Test). Idempotent.
 
 create or replace function public.winner_stays_aggregate_session(p_session_id uuid)
 returns void
@@ -39,7 +40,11 @@ begin
                       and least(g.entry_a_id, g.entry_b_id) = pr.side1_id
                       and greatest(g.entry_a_id, g.entry_b_id) = pr.side2_id
                     order by g.game_no desc limit 1), v_sess.organizer_id),
-         (select jsonb_agg(jsonb_build_array(r.s1_running, r.s2_running, extract(epoch from r.played_at) * 1000) order by r.game_no)
+         (select jsonb_agg(
+                   case when sd.duration_ms is not null
+                     then jsonb_build_array(r.s1_running, r.s2_running, extract(epoch from r.played_at) * 1000, sd.duration_ms)
+                     else jsonb_build_array(r.s1_running, r.s2_running, extract(epoch from r.played_at) * 1000)
+                   end order by r.game_no)
             from (
               select g.game_no, g.played_at,
                 sum(case when g.entry_a_id = pr.side1_id then g.score_a else g.score_b end) over (order by g.game_no) as s1_running,
@@ -48,7 +53,14 @@ begin
               where g.session_id = p_session_id
                 and least(g.entry_a_id, g.entry_b_id) = pr.side1_id
                 and greatest(g.entry_a_id, g.entry_b_id) = pr.side2_id
-            ) r)
+            ) r
+            -- Dauer je Rack aus der SESSION-WEITEN Reihenfolge (nicht aus der nach Paarung gefilterten) - wie in der alten Fassung
+            left join (
+              select game_no,
+                extract(epoch from (played_at - lag(played_at) over (order by game_no))) * 1000 as duration_ms
+              from winner_stays_games
+              where session_id = p_session_id
+            ) sd on sd.game_no = r.game_no)
   from (
     select least(entry_a_id, entry_b_id) as side1_id, greatest(entry_a_id, entry_b_id) as side2_id
     from winner_stays_games
@@ -72,9 +84,9 @@ begin
 
   -- EIN INSERT = eine Rating-Neuberechnung.
   insert into matches (id, player1_id, player1b_id, player2_id, player2b_id, score1, score2, discipline,
-                       reported_by, confirmed, confirmed_by, played_at, run_log)
+                       reported_by, confirmed, confirmed_by, played_at, run_log, winner_stays_session_id)
   select match_id, p1, p1b, p2, p2b, score1, score2, v_sess.discipline,
-         reporter, true, reporter, played_at, run_log
+         reporter, true, reporter, played_at, run_log, p_session_id
   from _ws_agg;
 
   update winner_stays_games g set match_id = a.match_id
