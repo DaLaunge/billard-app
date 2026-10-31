@@ -229,7 +229,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const entryById = (id) => entries.find((e) => e.id === id);
 
   const reportGame = async () => {
-    if (sA === sB) { toast(t("Unentschieden gibt es beim Billard nicht.")); return; }
+    if (sA === sB) { toast(t("Unentschieden gibt es beim Billard nicht.")); return false; }
     const before = lastGameNo;
     setBusy(true);
     let error = null;
@@ -245,7 +245,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       arrived = !!gms && (gms[0]?.game_no ?? 0) > before;
     }
     setBusy(false);
-    if (error && !arrived) { toast(t("Fehler: ") + (error.message || "")); return; }
+    if (error && !arrived) { toast(t("Fehler: ") + (error.message || "")); return false; }
     if (arrived) toast(t("Ergebnis ist angekommen."));
     // Wer jetzt verteidigt: der Sieger bleibt/wird Verteidiger - das sagt der Hinweis, die Bewegung der Avatare zeigt es.
     const winnerEntry = sA > sB ? posA : posB;
@@ -253,6 +253,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     setSA(0); setSB(0);
     await load();
     onReload && onReload();
+    return true;
   };
 
   // Nutzer-Feedback: "damit gewaehrleistet ist, dass der Tisch so gut als
@@ -278,6 +279,15 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // uebersprungen, sobald sie an der Reihe waeren (winner_stays_skip_paused
   // in der DB), bis sie sich selbst wieder aktiv melden.
   const togglePaused = async (entry) => {
+    // Pause waehrend ein Ergebnis feststeht: das Spiel waere sonst mitten in der Rotation verloren - es wird deshalb
+    // zuerst gespeichert. Das wird ausdruecklich gesagt, weil es auch ein Fehlklick gewesen sein kann.
+    if (!entry.is_paused && entry.queue_position <= 1 && canReport && sA !== sB) {
+      const winner = sA > sB ? posA : posB;
+      const ok = await appConfirm(t("Es steht {a}:{b} – {name} hat gewonnen. Wenn du jetzt pausierst, wird dieses Ergebnis gespeichert. Fortfahren?",
+        { a: sA, b: sB, name: entryName(winner) }));
+      if (!ok) return;
+      if (!(await reportGame())) return;
+    }
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_set_paused", { p_session_id: sessionId, p_entry_id: entry.id, p_paused: !entry.is_paused });
     setBusy(false);

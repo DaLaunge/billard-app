@@ -1462,6 +1462,7 @@ const TRANSLATIONS = {
     "Zählt nicht fürs Rating": "Doesn't count toward the rating",
     "Rating-Punkte": "Rating points",
     "Eingetragen": "Entered",
+    "Es steht {a}:{b} – {name} hat gewonnen. Wenn du jetzt pausierst, wird dieses Ergebnis gespeichert. Fortfahren?": "It's {a}:{b} – {name} has won. If you pause now, this result will be saved. Continue?",
     "Pausiert - antippen: wieder dabei": "Paused - tap to rejoin",
     "Dabei - antippen: Pause setzen": "Playing - tap to pause",
     "{name} bleibt Verteidiger": "{name} stays as defender",
