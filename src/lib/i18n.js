@@ -1462,6 +1462,8 @@ const TRANSLATIONS = {
     "Zählt nicht fürs Rating": "Doesn't count toward the rating",
     "Rating-Punkte": "Rating points",
     "Eingetragen": "Entered",
+    "Pausiert - antippen: wieder dabei": "Paused - tap to rejoin",
+    "Dabei - antippen: Pause setzen": "Playing - tap to pause",
     "{name} bleibt Verteidiger": "{name} stays as defender",
     "{name} ist neuer Verteidiger": "{name} is the new defender",
     "Uhrzeit in Listen anzeigen": "Show time in lists",

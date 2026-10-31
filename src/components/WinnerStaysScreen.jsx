@@ -404,24 +404,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // am Tisch, icon = nur Symbol in der Warteschlangen-Zeile (Pause/Play, nie
   // eine Tasse).
   const pauseSwitch = (entry, { compact, icon } = {}) => {
-    const on = !!entry.is_paused;
-    if (icon) {
-      return (
-        <button type="button" className={"ws-act ws-act-pause" + (on ? " on" : "")} disabled={busy} onClick={() => togglePaused(entry)}
-          aria-label={on ? t("Wieder dabei") : t("Pause setzen")} title={on ? t("Wieder dabei") : t("Pause setzen")}>
-          {on ? <Play size={18} /> : <Pause size={18} />} <span>{on ? t("Wieder dabei") : t("Pause")}</span>
-        </button>
-      );
-    }
+    const paused = !!entry.is_paused;
+    // Ein runder Knopf wie bei einem Musikplayer: gruen mit Play = dabei, rot mit Pause = pausiert. Antippen wechselt.
+    const label = paused ? t("Pausiert - antippen: wieder dabei") : t("Dabei - antippen: Pause setzen");
     return (
-      <div className={"ws-pause-switch" + (compact ? " compact" : "")} role="group" aria-label={t("Pause")}>
-        <button type="button" className={"in" + (!on ? " active" : "")} aria-pressed={!on} disabled={busy} onClick={() => on && togglePaused(entry)}>
-          <Play size={16} /> {t("Dabei")}
-        </button>
-        <button type="button" className={"out" + (on ? " active" : "")} aria-pressed={on} disabled={busy} onClick={() => !on && togglePaused(entry)}>
-          <Pause size={16} /> {t("Pause")}
-        </button>
-      </div>
+      <button type="button" className={"ws-pp" + (paused ? " paused" : " playing") + (compact ? " in-card" : "") + (icon ? " in-queue" : "")}
+        disabled={busy} onClick={() => togglePaused(entry)} aria-pressed={!paused} aria-label={label} title={label}>
+        {paused ? <Pause size={20} /> : <Play size={20} />}
+      </button>
     );
   };
 
@@ -481,8 +471,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               </b>
               {statLine(myEntry, rankOf(myEntry))}
             </div>
+            {pauseSwitch(myEntry)}
           </div>
-          {pauseSwitch(myEntry)}
         </section>
       )}
 
