@@ -3861,7 +3861,10 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 [data-eid] { position: relative; }
 @media (prefers-reduced-motion: no-preference) {
   /* Haken ist bereit (Ergebnis nicht unentschieden): ein ganz leiser Ring zeigt, dass jetzt eingetragen werden kann. */
-  .ws-board .ws-ok.ready { animation: ok-ready 2.4s ease-out infinite; }
+  .ws-board .ws-ok.ready { animation: ok-pop .32s ease-out, ok-ready 2.4s ease-out infinite; }
+  /* Fahne <-> Haken: der Knopf wird beim Wechsel neu eingehaengt (key) und federt einmal kurz ein. */
+  .ws-board .ws-b-ok.flag, .ws-board .ws-b-ok:not(.ready) { animation: ok-pop .32s ease-out; }
+  @keyframes ok-pop { 0% { transform: scale(.86); opacity: .4; } 60% { transform: scale(1.04); opacity: 1; } 100% { transform: none; } }
   @keyframes ok-ready { 0% { box-shadow: 0 0 0 6px var(--felt), 0 0 0 6px var(--accent-line); } 70%, 100% { box-shadow: 0 0 0 6px var(--felt), 0 0 0 18px transparent; } }
 }
 
@@ -3911,6 +3914,7 @@ span.ws-b-av { cursor: default; }
 .ws-b-ok.ws-ok { grid-area: ok; width: 100%; height: calc(var(--ws-u) * 3.236); border-radius: 999px; }
 .ws-b-ok.ws-ok svg { width: calc(var(--ws-u) * 1.618); height: calc(var(--ws-u) * 1.618); }
 .ws-b-ok.ws-ok:disabled { opacity: .5; }
+.ws-b-ok.ws-ok.flag svg { width: calc(var(--ws-u) * 2.2); height: calc(var(--ws-u) * 2.2); }
 .ws-b-del { color: var(--ivory-dim); }
 .ws-head-tools { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
 .et-short { display: none; }
@@ -3981,6 +3985,8 @@ span.ws-b-av { cursor: default; }
 .ws-break-mark .bci-stick { flex: 1 1 auto; width: 100%; min-height: 8px; background: currentColor; clip-path: polygon(41% 0, 59% 0, 76% 100%, 24% 100%); position: relative; }
 .ws-break-mark .bci-stick::after { content: ""; position: absolute; left: 0; right: 0; top: 72%; height: 6%; background: var(--felt); opacity: .5; }
 .ws-break-mark.off { opacity: 0; }
+.ws-break-mark.pick { pointer-events: auto; opacity: .3; cursor: pointer; background: none; border: 0; padding: 0; transition: opacity .2s ease; }
+.ws-break-mark.pick:hover, .ws-break-mark.pick:focus-visible { opacity: .65; }
 /* Breite Tafel (Container-Abfrage: es zaehlt die Breite der Tafel, nicht des Fensters - am PC steht links noch das Menue) */
 @container wsb (min-width: 560px) {
   .ws-board.has-break { grid-template-columns: var(--gw) minmax(0, 1fr) minmax(0, .809fr) auto minmax(0, .809fr) minmax(0, 1fr) var(--gw);

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "changes=$(git -C \"C:/Users/stefa/OneDrive/Dokumente/GitHub/billard-app\" status --porcelain 2>/dev/null | grep -v '^??'); if [ -n \"$changes\" ]; then printf '{\"decision\":\"block\",\"reason\":\"Uncommitted changes to tracked files in billard-app. Per CLAUDE.md workflow: commit + push to the test branch (or finish the current git operation, e.g. a merge to main) before ending this turn.\"}'; else printf '{}'; fi",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

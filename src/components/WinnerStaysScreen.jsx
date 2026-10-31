@@ -9,6 +9,7 @@ import PlayerPicker from "./PlayerPicker";
 import PlayerMultiPicker from "./PlayerMultiPicker";
 import ImprintFooter from "./widgets/ImprintFooter";
 import EndTournamentButton from "./widgets/EndTournamentButton";
+import ScoreBoard from "./widgets/ScoreBoard";
 import BreakCueIcon from "./widgets/BreakCueIcon";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import { BreakPill, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
@@ -29,37 +30,11 @@ const POLL_MS = 8000;
 // aktuellen Stand und bietet die Eingabemaske). Voellig anderes Datenmodell
 // als TurnierRasterScreen.jsx (keine Bracket-Struktur), deshalb ein
 // eigener, viel einfacherer Screen statt einer Erweiterung dort.
-// Goldener Schnitt (phi = 1,618): eine Grundeinheit u waechst mit der Breite, alle Groessen der Tafel sind Potenzen von phi
-// (Statistik u, Name phi*u, Avatar phi^4*u, Spielstand phi^6*u) - die gleiche Formel steckt als --ws-u in der CSS.
-const PHI = 1.618;
-// Gleiche Formel wie --ws-u in der CSS: clamp(11px, 7px + 1,25 % der Tafelbreite, 18px).
-const wsUnit = (w) => Math.min(18, Math.max(11, 7 + 0.0125 * w));
-// Im flachen Querformat (Handy quer) wird der Avatar zusaetzlich nach der Hoehe begrenzt, damit die Tafel samt Haken ohne Scrollen passt.
-const avatarFor = (boardWidth, winH) => {
-  const base = Math.round(wsUnit(boardWidth) * PHI ** 4);
-  return winH && winH < 520 ? Math.min(base, Math.round(winH * 0.13)) : base;
-};
 export default function WinnerStaysScreen({ sessionId, me, players, matches, toast, colorOf, badgeOf, photoOf, onReload, onBack, keepAwake, onSetKeepAwake }) {
   const [session, setSession] = useState(null);
   const [entries, setEntries] = useState(null);
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
-  // Die Avatargroesse richtet sich nach der Breite der TAFEL (nicht des Fensters): am PC steht links noch das Menue, am Tablet ist die App schmaler als das Fenster.
-  const [boardAvatar, setBoardAvatar] = useState(56);
-  const roRef = useRef(null);
-  const boardWRef = useRef(0);
-  const wrapRef = useCallback((node) => {
-    if (roRef.current) { roRef.current.disconnect(); roRef.current = null; }
-    if (!node || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(([e]) => { boardWRef.current = e.contentRect.width; setBoardAvatar(avatarFor(boardWRef.current, window.innerHeight)); });
-    ro.observe(node);
-    roRef.current = ro;
-  }, []);
-  useEffect(() => {
-    const onResize = () => { if (boardWRef.current) setBoardAvatar(avatarFor(boardWRef.current, window.innerHeight)); };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
   // Kurzer Hinweis (Haken) nach dem Speichern eines Spiels.
   const [justSaved, setJustSaved] = useState(null);   // Text wie "Raphi ist neuer Verteidiger" oder null
   useEffect(() => {
@@ -530,11 +505,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           {/* Scoreboard B1 (Nutzer-Wahl 2026-11-01, aeltere Vorgaben fuer diese Eingabe gelten nicht mehr): Person und Spielstand
               sind das Erste, was man sieht; Zaehler und Haken sind logisch angeordnet, aber leise. Hochformat: zwei Personen oben,
               die Zahlen gross in der Mitte, darunter die Zaehler und der Haken als breite Leiste. Querformat/PC: drei Spalten. */}
-          <div className="ws-board-wrap" ref={wrapRef}>
-          <section className={"stat-block ws-board" + (breakSide != null ? " has-break" : "")}>
-            {[[posA, "A", "a", sA, t("Verteidigt")], [posB, "B", "b", sB, t("Herausforderer")]].map(([e, slot, k, val, role], sideIdx) => (
-              <Fragment key={e.id}>
-                <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "")}>
+          <ScoreBoard hasBreak={breakSide != null} counters={canReport}
+            sides={[[posA, "A", "a", sA, t("Verteidigt")], [posB, "B", "b", sB, t("Herausforderer")]].map(([e, slot, k, val, role], sideIdx) => ({
+              id: e.id, score: val, paused: e.is_paused, label: entryName(e), onBump: (d) => bumpScore(k, d),
+              person: (boardAvatar) => (
+                <>
                   {/* Der Ring um den Avatar IST die Pause-Anzeige: gruen = dabei, rot = pausiert. Antippen wechselt (mit Rueckfrage,
                       wenn gerade ein Ergebnis feststeht, siehe togglePaused). */}
                   {canTogglePaused(e) ? (
@@ -558,49 +533,23 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                     </span>
                     {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
                   </span>
-                </div>
-                {/* Anstoss: Queue trifft Kugel, senkrecht in einer eigenen Randspalte der Tafel - von den Personen bis zu den Zaehlern. Die Spalte
-                    bleibt auch ungenutzt (Etikett unsichtbar) stehen, damit beim Wechsel nichts springt. */}
-                {breakSide != null && (
-                  <span className={"ws-break-mark m" + k + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
-                    title={t("Diese Person stößt das nächste Rack an")} role="img" aria-label={t("Diese Person stößt das nächste Rack an")}>
-                    <BreakCueIcon />
-                  </span>
-                )}
-                {canReport && (
-                  <div className={"ws-b-cap c" + k} role="group" aria-label={entryName(e)}>
-                    <button type="button" disabled={val === 0} onClick={() => bumpScore(k, -1)} aria-label="minus"><Minus size={20} /></button>
-                    <button type="button" onClick={() => bumpScore(k, 1)} aria-label="plus"><Plus size={20} /></button>
-                  </div>
-                )}
-              </Fragment>
-            ))}
-            {/* Beide Zahlen haben eine feste Breite fuer mindestens zwei Stellen (--d): die linke waechst nach links, die rechte nach rechts, der
-                Doppelpunkt bleibt in der Mitte der Karte. Ab drei Stellen wird die Schrift kleiner (--sc), nie springt etwas. */}
-            <div className="ws-b-score" aria-live="polite"
-              style={{ "--d": Math.max(2, String(sA).length, String(sB).length), "--sc": Math.max(String(sA).length, String(sB).length) > 2 ? 2 / Math.max(String(sA).length, String(sB).length) : 1 }}>
-              {canReport ? (
-                <>
-                  <span className="score-num sc-a" key={"a" + sA}>{sA}</span>
-                  <span className="ws-b-colon">:</span>
-                  <span className="score-num sc-b" key={"b" + sB}>{sB}</span>
                 </>
-              ) : <span className="ws-b-colon">vs</span>}
-              {/* Hinweis unter den Zahlen in einem festen, immer reservierten Streifen: er blendet nur ein und aus und verschiebt nichts. */}
-              <span className="ws-b-note" role="status" aria-live="polite">
-                {justSaved
-                  ? <span className="saved-hint"><Check size={15} /> {justSaved}</span>
-                  : (canReport && sA === sB && sA + sB > 0 ? <span className="ws-b-tie">{t("Unentschieden gibt's beim Billard nicht ;-)")}</span> : null)}
-              </span>
-            </div>
-            {canReport && (
-              <button type="button" className={"icon-btn primary ws-ok ws-b-ok" + (sA !== sB ? " ready" : "")} disabled={busy || sA === sB} onClick={reportGame}
-                aria-label={t("Eintragen")} title={t("Eintragen")}>
-                <Check size={26} />
-              </button>
-            )}
-          </section>
-          </div>
+              ),
+              /* Anstoss: Queue trifft Kugel, senkrecht in einer eigenen Randspalte der Tafel - von den Personen bis zu den Zaehlern. Die
+                 Spalte bleibt auch ungenutzt (Etikett unsichtbar) stehen, damit beim Wechsel nichts springt. */
+              breakMark: (
+                <span className={"ws-break-mark m" + k + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
+                  title={t("Diese Person stößt das nächste Rack an")} role="img" aria-label={t("Diese Person stößt das nächste Rack an")}>
+                  <BreakCueIcon />
+                </span>
+              ),
+            }))}
+            note={justSaved
+              ? <span className="saved-hint"><Check size={15} /> {justSaved}</span>
+              : (canReport && sA === sB && sA + sB > 0 ? <span className="ws-b-tie">{t("Unentschieden gibt's beim Billard nicht ;-)")}</span> : null)}
+            action={{ onClick: reportGame, busy }}
+            /* Bei 0:0 steht statt des Hakens die Fahne - nur fuer den, der das Turnier beenden darf; alle anderen sehen den gesperrten Haken. */
+            emptyAction={isOrganizer && session.status === "running" ? { onClick: finishSession, label: t("Turnier beenden"), disabled: busy } : null} />
         </>
       )}
 

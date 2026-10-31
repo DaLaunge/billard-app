@@ -944,51 +944,49 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               }} />
           ) : (
             <>
-              <div className="score-row">
-                {(mode === "double"
+              {/* Der Zaehler ist dasselbe Modul wie bei Winner Stays (widgets/ScoreBoard): Person oben, Spielstand gross in der Mitte,
+                  Kapseln - | + und der Haken. Hier fuehrt der Haken zur Pruefung (Schritt 3); bei Gleichstand ist er gesperrt. */}
+              <ScoreBoard hasBreak={showBreak}
+                sides={(mode === "double"
                   ? [{ members: [me, partner], name: teamA, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
                      { members: [opp, opp2], name: teamB, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
                   : [{ members: [me], name: me.nickname, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
                      { members: [opp], name: opp.nickname, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
-                ).map(({ members, name, v, set }, idx) => (
-                  <div key={name} className="score-col">
-                    {showBreak && (breakNow === idx
-                      ? <span className="break-slot on" key={"b" + breakNow + breakRule} title={t("{name} stößt an", { name })}><BreakGlyph width={26} /></span>
-                      : canPickBreak && (
-                        <button type="button" className="break-slot off" title={t("{name} stößt an", { name })}
-                          aria-label={t("{name} stößt an", { name })} onClick={() => pickBreaker(idx)}><BreakGlyph width={26} /></button>
-                      ))}
-                    <div className="sc-avatars">
-                      {members.map((pl) => (
-                        <Ball key={pl.id} nick={pl.nickname} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={56} />
-                      ))}
-                    </div>
-                    <span className="score-name">{name}</span>
-                    <div className="score-num" key={v}>{v}</div>
-                    <div className="score-btns">
-                      <button className="round-btn" onClick={() => set(Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
-                      <button className="round-btn plus" onClick={() => set(v + 1)} aria-label="plus"><Plus size={20} /></button>
-                    </div>
-                    {disc === "8 Ball" && !isGhost && (
-                      <button type="button" className={"group-pick" + (solidSide == null ? " unset" : "")} onClick={() => pickGroup(idx)}
-                        title={t("Volle oder Halbe")} aria-label={`${name}: ${solidSide == null ? t("Volle oder Halbe") : solidSide === idx ? t("Volle") : t("Halbe")}`}>
-                        <span className="pool-ball" style={{ ...poolBallStyle(solidSide === 1 - idx ? 11 : 3), width: 20, height: 20, opacity: solidSide == null ? 0.35 : 1 }} />
-                        {solidSide == null ? "?" : solidSide === idx ? t("Volle") : t("Halbe")}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                ).map(({ members, name, v, set }, idx) => ({
+                  id: "side" + idx, score: v, label: name, onBump: (d) => set(Math.max(0, v + d)),
+                  person: (size) => (
+                    <>
+                      <span className="ws-b-av"><span className="sc-avatars">
+                        {members.map((pl) => (
+                          <Ball key={pl.id} nick={pl.nickname} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={members.length > 1 ? Math.round(size * 0.72) : size} />
+                        ))}
+                      </span></span>
+                      <span className="ws-b-text">
+                        <span className="score-name">{name}</span>
+                        {disc === "8 Ball" && !isGhost && (
+                          <button type="button" className={"group-pick" + (solidSide == null ? " unset" : "")} onClick={() => pickGroup(idx)}
+                            title={t("Volle oder Halbe")} aria-label={`${name}: ${solidSide == null ? t("Volle oder Halbe") : solidSide === idx ? t("Volle") : t("Halbe")}`}>
+                            <span className="pool-ball" style={{ ...poolBallStyle(solidSide === 1 - idx ? 11 : 3), width: 20, height: 20, opacity: solidSide == null ? 0.35 : 1 }} />
+                            {solidSide == null ? "?" : solidSide === idx ? t("Volle") : t("Halbe")}
+                          </button>
+                        )}
+                      </span>
+                    </>
+                  ),
+                  // Anstoss: wer ihn hat, zeigt die Queue-Grafik; wer ihn noch uebernehmen darf, hat sie blass als Knopf.
+                  breakMark: breakNow === idx ? (
+                    <span className={"ws-break-mark m" + (idx === 0 ? "a" : "b")} key={"b" + breakNow + breakRule} title={t("{name} stößt an", { name })}><BreakCueIcon /></span>
+                  ) : canPickBreak ? (
+                    <button type="button" className={"ws-break-mark pick m" + (idx === 0 ? "a" : "b")} title={t("{name} stößt an", { name })}
+                      aria-label={t("{name} stößt an", { name })} onClick={() => pickBreaker(idx)}><BreakCueIcon /></button>
+                  ) : <span className={"ws-break-mark off m" + (idx === 0 ? "a" : "b")} aria-hidden="true"><BreakCueIcon /></span>,
+                }))}
+                note={s1 === s2 && total > 0 ? <span className="ws-b-tie">{t("Unentschieden gibt's beim Billard nicht ;-)")}</span> : null}
+                action={{ onClick: () => setStep(3), label: t("Beenden") }} />
               {/* Optionale Zusatzzaehler (Fluke/Runout/Scratch/Foul), zugeklappt.
                   Hier, waehrend des Spiels, nicht erst am Ende. */}
               {/* Ghost-Training: nur die eigene Seite, dazu Long Pot/Bandenstoss/Kombination/Karambol */}
               <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} warnings={warnings()} single={isGhost} />
-              <div className="sticky-cta">
-                <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
-                  {t("Beenden")} <ArrowRight size={18} />
-                </button>
-              </div>
-              {s1 === s2 && total > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
             </>
           )}
           <PointPreview dsc={disc} />
