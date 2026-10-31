@@ -600,42 +600,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         </section>
       )}
 
-      {isOrganizer && session.status === "running" && (
-        <section className="stat-block">
-          <div className="stat-block-head">
-            <h3><UserPlus size={17} /> {t("Teilnehmer")}</h3>
-            <button className="btn ghost" onClick={() => setShowAdd((s) => !s)}>
-              {showAdd ? <><X size={15} /> {t("Abbrechen")}</> : <><UserPlus size={15} /> {t("Hinzufügen")}</>}
-            </button>
-          </div>
-          {showAdd && (
-            session.is_doubles ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
-                  value={teamP1} exclude={[...existingPlayerIds, teamP2].filter(Boolean)}
-                  onSelect={setTeamP1} placeholder={t("Erste Person")} />
-                <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
-                  value={teamP2} exclude={[...existingPlayerIds, teamP1].filter(Boolean)}
-                  onSelect={setTeamP2} placeholder={t("Zweite Person")} />
-                <button className="btn primary" disabled={busy || !teamP1 || !teamP2} onClick={addTeam}>
-                  <Check size={15} /> {t("Team hinzufügen")}
-                </button>
-              </div>
-            ) : (
-              <div>
-                <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
-                  onToggle={(id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} exclude={existingPlayerIds}
-                  onCreateGuest={addGuest} />
-                <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || addSelected.length === 0} onClick={addSingles}>
-                  <Check size={15} /> {t("{n} Teilnehmer hinzufügen", { n: addSelected.length })}
-                </button>
-              </div>
-            )
-          )}
-        </section>
-      )}
-
       <section className="stat-block ws-rank-card">
         <div className="stat-block-head"><h3><Crown size={17} /> {t("Live-Rangliste")}</h3></div>
         {ranked.length === 0 ? (
@@ -690,6 +654,43 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               </div>
             );
           })}
+        </section>
+      )}
+
+      {/* Teilnehmer hinzufuegen: seltener gebraucht, steht deshalb ganz unten - wichtig sind Tafel, Live-Stand und Warteschlange. */}
+      {isOrganizer && session.status === "running" && (
+        <section className="stat-block">
+          <div className="stat-block-head">
+            <h3><UserPlus size={17} /> {t("Teilnehmer")}</h3>
+            <button className="btn ghost" onClick={() => setShowAdd((s) => !s)}>
+              {showAdd ? <><X size={15} /> {t("Abbrechen")}</> : <><UserPlus size={15} /> {t("Hinzufügen")}</>}
+            </button>
+          </div>
+          {showAdd && (
+            session.is_doubles ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
+                  value={teamP1} exclude={[...existingPlayerIds, teamP2].filter(Boolean)}
+                  onSelect={setTeamP1} placeholder={t("Erste Person")} />
+                <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
+                  value={teamP2} exclude={[...existingPlayerIds, teamP1].filter(Boolean)}
+                  onSelect={setTeamP2} placeholder={t("Zweite Person")} />
+                <button className="btn primary" disabled={busy || !teamP1 || !teamP2} onClick={addTeam}>
+                  <Check size={15} /> {t("Team hinzufügen")}
+                </button>
+              </div>
+            ) : (
+              <div>
+                <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
+                  onToggle={(id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
+                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} exclude={existingPlayerIds}
+                  onCreateGuest={addGuest} />
+                <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || addSelected.length === 0} onClick={addSingles}>
+                  <Check size={15} /> {t("{n} Teilnehmer hinzufügen", { n: addSelected.length })}
+                </button>
+              </div>
+            )
+          )}
         </section>
       )}
 
