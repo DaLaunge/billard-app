@@ -545,8 +545,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                       {e.streak > 1 && <span><Emoji e="🔥" /> {e.streak}</span>}
                     </span>
                     {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
-                    {breakSide === sideIdx && (
-                      <span className="ws-break-tag" title={t("Diese Person stößt das nächste Rack an")}><BreakGlyph width={26} /> {t("Anstoß")}</span>
+                    {/* Das Etikett ist bei BEIDEN Personen immer da (bei der anderen nur unsichtbar): so behalten beide Spalten dieselbe Hoehe und
+                        nichts springt, wenn der Anstoss wechselt. */}
+                    {breakSide != null && (
+                      <span className={"ws-break-tag" + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
+                        title={t("Diese Person stößt das nächste Rack an")}><BreakGlyph width={26} /> {t("Anstoß")}</span>
                     )}
                   </span>
                 </div>

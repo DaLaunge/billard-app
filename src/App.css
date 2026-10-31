@@ -3946,3 +3946,6 @@ span.ws-b-av { cursor: default; }
   font-size: calc(var(--ws-u) * 1.2); text-align: center; pointer-events: none; }
 .ws-b-note .saved-hint { font-size: inherit; font-weight: 600; }
 .ws-b-tie { color: var(--ivory-dim); }
+
+.ws-break-tag { transition: opacity .3s ease; }
+.ws-break-tag.off { opacity: 0; pointer-events: none; }
