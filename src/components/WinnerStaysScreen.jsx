@@ -519,17 +519,10 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           {/* Scoreboard B1 (Nutzer-Wahl 2026-11-01, aeltere Vorgaben fuer diese Eingabe gelten nicht mehr): Person und Spielstand
               sind das Erste, was man sieht; Zaehler und Haken sind logisch angeordnet, aber leise. Hochformat: zwei Personen oben,
               die Zahlen gross in der Mitte, darunter die Zaehler und der Haken als breite Leiste. Querformat/PC: drei Spalten. */}
-          <section className="stat-block ws-board">
+          <section className={"stat-block ws-board" + (breakSide != null ? " has-break" : "")}>
             {[[posA, "A", "a", sA, t("Verteidigt")], [posB, "B", "b", sB, t("Herausforderer")]].map(([e, slot, k, val, role], sideIdx) => (
               <Fragment key={e.id}>
-                <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "") + (breakSide != null ? " has-break" : "")} style={{ "--av": boardAvatar + "px" }}>
-                  {/* Anstoss: nur ein Symbol (Queue trifft Kugel), seitlich neben dem Avatar, absolut gesetzt - nimmt keinen Platz weg, nichts springt. */}
-                  {breakSide != null && (
-                    <span className={"ws-break-mark" + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
-                      title={t("Diese Person stößt das nächste Rack an")} role="img" aria-label={t("Diese Person stößt das nächste Rack an")}>
-                      <BreakCueIcon />
-                    </span>
-                  )}
+                <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "")}>
                   {/* Der Ring um den Avatar IST die Pause-Anzeige: gruen = dabei, rot = pausiert. Antippen wechselt (mit Rueckfrage,
                       wenn gerade ein Ergebnis feststeht, siehe togglePaused). */}
                   {canTogglePaused(e) ? (
@@ -554,6 +547,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                     {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
                   </span>
                 </div>
+                {/* Anstoss: Queue trifft Kugel, senkrecht in einer eigenen Randspalte der Tafel - von den Personen bis zu den Zaehlern. Die Spalte
+                    bleibt auch ungenutzt (Etikett unsichtbar) stehen, damit beim Wechsel nichts springt. */}
+                {breakSide != null && (
+                  <span className={"ws-break-mark m" + k + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
+                    title={t("Diese Person stößt das nächste Rack an")} role="img" aria-label={t("Diese Person stößt das nächste Rack an")}>
+                    <BreakCueIcon />
+                  </span>
+                )}
                 {canReport && (
                   <div className={"ws-b-cap c" + k} role="group" aria-label={entryName(e)}>
                     <button type="button" disabled={val === 0} onClick={() => bumpScore(k, -1)} aria-label="minus"><Minus size={20} /></button>
