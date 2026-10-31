@@ -6,6 +6,7 @@ import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { setRef } from "../lib/session";
 import DiscBall from "./widgets/DiscBall";
+import Ball from "./Ball";
 
 const POLL_MS = 8000;
 

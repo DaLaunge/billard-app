@@ -29,6 +29,8 @@ import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCo
 import { rpcRetry } from "../lib/rpcRetry";
 import { flyIn, vanishBall, flyEnabled } from "../lib/flyBall";
 import Emoji from "./Emoji";
+import ScoreBoard from "./widgets/ScoreBoard";
+import BreakCueIcon from "./widgets/BreakCueIcon";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
