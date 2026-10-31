@@ -3895,8 +3895,10 @@ span.ws-b-av { cursor: default; }
 .ws-b-person .score-name { overflow-wrap: anywhere; font-size: calc(var(--ws-u) * 1.618); font-weight: 700; }
 .ws-b-person .ws-role { font-size: calc(var(--ws-u) * .8); }
 .ws-quiet { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px calc(var(--ws-u) * .8); font-size: var(--ws-u); color: var(--ivory-dim); opacity: .8; }
-.ws-b-score { position: relative; padding-bottom: calc(var(--ws-u) * 2.4); grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; font-size: min(calc(var(--ws-u) * 11.09), 24vw); }
-.ws-b-score .score-num { font-size: 1em; min-width: .62em; text-align: center; line-height: 1; }
+.ws-b-score { position: relative; padding-bottom: calc(var(--ws-u) * 2.4); grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; --base: min(calc(var(--ws-u) * 11.09), 21vw); font-size: calc(var(--base) * var(--sc, 1)); }
+.ws-b-score .score-num { font-size: 1em; width: calc(var(--d, 2) * .62em); line-height: 1; font-variant-numeric: tabular-nums; }
+.ws-b-score .sc-a { text-align: right; }
+.ws-b-score .sc-b { text-align: left; }
 .ws-b-colon { font-size: .3em; color: var(--ivory-dim); font-weight: 700; }
 .ws-b-cap { grid-area: ca; display: flex; border: 1.5px solid var(--btn-border, var(--line)); border-radius: 999px; overflow: hidden; }
 .ws-b-cap.cb { grid-area: cb; }
@@ -3915,7 +3917,7 @@ span.ws-b-av { cursor: default; }
 /* Ab 640px (und flaches Querformat): Person | Spielstand | Person - Name bleibt UNTER dem Avatar (nie daneben, damit nichts ueberlappt) */
 @media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
   .ws-board { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "pa score pb" "ca ok cb"; padding: calc(var(--ws-u) * 1.618); }
-  .ws-b-score { font-size: min(calc(var(--ws-u) * 11.09), 15vw); padding-inline: calc(var(--ws-u) * 2); }
+  .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 15vw); padding-inline: calc(var(--ws-u) * 2); }
   /* Zaehler naeher zur Mitte: links der Verteidiger rechtsbuendig, rechts der Herausforderer linksbuendig - direkt neben dem Haken */
   .ws-b-cap { width: min(100%, calc(var(--ws-u) * 13)); justify-self: end; }
   .ws-b-cap.cb { justify-self: start; }

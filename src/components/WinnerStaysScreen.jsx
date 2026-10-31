@@ -563,12 +563,15 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                 )}
               </Fragment>
             ))}
-            <div className="ws-b-score" aria-live="polite">
+            {/* Beide Zahlen haben eine feste Breite fuer mindestens zwei Stellen (--d): die linke waechst nach links, die rechte nach rechts, der
+                Doppelpunkt bleibt in der Mitte der Karte. Ab drei Stellen wird die Schrift kleiner (--sc), nie springt etwas. */}
+            <div className="ws-b-score" aria-live="polite"
+              style={{ "--d": Math.max(2, String(sA).length, String(sB).length), "--sc": Math.max(String(sA).length, String(sB).length) > 2 ? 2 / Math.max(String(sA).length, String(sB).length) : 1 }}>
               {canReport ? (
                 <>
-                  <span className="score-num" key={"a" + sA}>{sA}</span>
+                  <span className="score-num sc-a" key={"a" + sA}>{sA}</span>
                   <span className="ws-b-colon">:</span>
-                  <span className="score-num" key={"b" + sB}>{sB}</span>
+                  <span className="score-num sc-b" key={"b" + sB}>{sB}</span>
                 </>
               ) : <span className="ws-b-colon">vs</span>}
               {/* Hinweis unter den Zahlen in einem festen, immer reservierten Streifen: er blendet nur ein und aus und verschiebt nichts. */}
