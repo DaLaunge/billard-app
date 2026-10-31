@@ -9,8 +9,9 @@ import PlayerPicker from "./PlayerPicker";
 import PlayerMultiPicker from "./PlayerMultiPicker";
 import ImprintFooter from "./widgets/ImprintFooter";
 import EndTournamentButton from "./widgets/EndTournamentButton";
+import BreakCueIcon from "./widgets/BreakCueIcon";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
-import { BreakPill, BreakGlyph, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
+import { BreakPill, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
@@ -521,7 +522,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           <section className="stat-block ws-board">
             {[[posA, "A", "a", sA, t("Verteidigt")], [posB, "B", "b", sB, t("Herausforderer")]].map(([e, slot, k, val, role], sideIdx) => (
               <Fragment key={e.id}>
-                <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "")}>
+                <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "")} style={{ "--av": boardAvatar + "px" }}>
+                  {/* Anstoss: nur ein Symbol (Queue trifft Kugel), seitlich neben dem Avatar, absolut gesetzt - nimmt keinen Platz weg, nichts springt. */}
+                  {breakSide != null && (
+                    <span className={"ws-break-mark" + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
+                      title={t("Diese Person stößt das nächste Rack an")} role="img" aria-label={t("Diese Person stößt das nächste Rack an")}>
+                      <BreakCueIcon />
+                    </span>
+                  )}
                   {/* Der Ring um den Avatar IST die Pause-Anzeige: gruen = dabei, rot = pausiert. Antippen wechselt (mit Rueckfrage,
                       wenn gerade ein Ergebnis feststeht, siehe togglePaused). */}
                   {canTogglePaused(e) ? (
@@ -544,12 +552,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                       {e.streak > 1 && <span><Emoji e="🔥" /> {e.streak}</span>}
                     </span>
                     {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
-                    {/* Das Etikett ist bei BEIDEN Personen immer da (bei der anderen nur unsichtbar): so behalten beide Spalten dieselbe Hoehe und
-                        nichts springt, wenn der Anstoss wechselt. */}
-                    {breakSide != null && (
-                      <span className={"ws-break-tag" + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
-                        title={t("Diese Person stößt das nächste Rack an")}><BreakGlyph width={26} /> {t("Anstoß")}</span>
-                    )}
                   </span>
                 </div>
                 {canReport && (

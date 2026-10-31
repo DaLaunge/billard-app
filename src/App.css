@@ -3958,3 +3958,11 @@ span.ws-b-av { cursor: default; }
 .head-actions .keepawake-btn { margin: 0; }
 .head-actions .end-flag, .head-actions .ws-b-del { background: var(--surface-btn); color: var(--ivory); border: 1.5px solid transparent; }
 .head-actions .end-flag:hover:not(:disabled), .head-actions .ws-b-del:hover:not(:disabled) { color: var(--accent); border-color: var(--btn-border, var(--line)); }
+
+/* Anstoss-Symbol: senkrecht seitlich am Avatar (aussen: links beim Verteidiger, rechts beim Herausforderer), in der Hoehe des Avatars. */
+.ws-b-person { position: relative; }
+.ws-break-mark { position: absolute; top: 0; height: var(--av, 56px); display: flex; align-items: center; color: var(--accent); transition: opacity .3s ease; pointer-events: none; }
+.ws-b-person.pa .ws-break-mark { left: 0; }
+.ws-b-person.pb .ws-break-mark { right: 0; }
+.ws-break-mark .break-cue-icon { height: calc(var(--av, 56px) * .95); width: auto; }
+.ws-break-mark.off { opacity: 0; }
