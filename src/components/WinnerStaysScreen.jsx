@@ -49,7 +49,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-  const [detailFor, setDetailFor] = useState(null);   // Eintrag, dessen Rang/Pause unter der Tafel aufgeklappt ist
   const [justSaved, setJustSaved] = useState(null);   // Text wie "Raphi ist neuer Verteidiger" oder null
   useEffect(() => {
     if (!justSaved) return undefined;
@@ -441,6 +440,17 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <h2>{session.name}</h2>
         {session.status === "running" && !session.is_doubles && <TurnierQrButton tour={session} toast={toast} size={24} className="icon-btn tqr-top" kind="ws" />}
         <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
+        {isOrganizer && (
+          <div className="ws-head-tools">
+            {session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
+            {canDelete && (
+              <button type="button" className="icon-btn ws-b-del" disabled={busy} onClick={deleteSession}
+                aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
+                <Trash2 size={18} />
+              </button>
+            )}
+          </div>
+        )}
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
         {t(session.is_doubles ? "Doppel" : "Einzel")} · <DiscBall disc={session.discipline} size={15} />
@@ -496,19 +506,31 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           <section className="stat-block ws-board">
             {[[posA, "A", "a", sA, setSA, t("Verteidigt")], [posB, "B", "b", sB, setSB, t("Herausforderer")]].map(([e, slot, k, val, setVal, role]) => (
               <Fragment key={e.id}>
-                <button type="button" className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "") + (detailFor === e.id ? " open" : "")}
-                  onClick={() => setDetailFor((d) => (d === e.id ? null : e.id))} aria-expanded={detailFor === e.id}
-                  title={t("Antippen für Rang und Pause")}>
-                  <span className="ws-role">{role}</span>
-                  <span className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, boardAvatar)}</span>
-                  <span className="score-name">{entryName(e)}</span>
-                  {/* Statistik leise: Siege, Niederlagen, Serie - da, aber ohne Aufmerksamkeit zu ziehen. */}
-                  <span className="ws-quiet">
-                    <span>{e.wins} {t("S")}</span><span>{e.losses} {t("N")}</span>
-                    {e.streak > 1 && <span><Emoji e="🔥" /> {e.streak}</span>}
+                <div className={"ws-b-person p" + k + (e.is_paused ? " is-paused" : "")}>
+                  {/* Der Ring um den Avatar IST die Pause-Anzeige: gruen = dabei, rot = pausiert. Antippen wechselt (mit Rueckfrage,
+                      wenn gerade ein Ergebnis feststeht, siehe togglePaused). */}
+                  {canTogglePaused(e) ? (
+                    <button type="button" className={"ws-b-av ring " + (e.is_paused ? "off" : "on")} disabled={busy} onClick={() => togglePaused(e)}
+                      aria-pressed={!e.is_paused} aria-label={e.is_paused ? t("Pausiert - antippen: wieder dabei") : t("Dabei - antippen: Pause setzen")}
+                      title={e.is_paused ? t("Pausiert - antippen: wieder dabei") : t("Dabei - antippen: Pause setzen")}>
+                      <span className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, boardAvatar)}</span>
+                    </button>
+                  ) : (
+                    <span className={"ws-b-av ring " + (e.is_paused ? "off" : "on")}>
+                      <span className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, boardAvatar)}</span>
+                    </span>
+                  )}
+                  <span className="ws-b-text">
+                    <span className="ws-role">{role}</span>
+                    <span className="score-name">{entryName(e)}</span>
+                    {/* Statistik leise: Siege, Niederlagen, Serie - da, aber ohne Aufmerksamkeit zu ziehen. */}
+                    <span className="ws-quiet">
+                      <span>{e.wins} {t("S")}</span><span>{e.losses} {t("N")}</span>
+                      {e.streak > 1 && <span><Emoji e="🔥" /> {e.streak}</span>}
+                    </span>
+                    {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
                   </span>
-                  {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
-                </button>
+                </div>
                 {canReport && (
                   <div className={"ws-b-cap c" + k} role="group" aria-label={entryName(e)}>
                     <button type="button" disabled={val === 0} onClick={() => setVal((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
@@ -532,30 +554,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                 <Check size={26} />
               </button>
             )}
-            {(() => {
-              const de = detailFor && [posA, posB].find((x) => x.id === detailFor);
-              if (!de) return null;
-              return (
-                <div className="ws-b-detail">
-                  <span><b>{entryName(de)}</b> · {t("Platz {n}", { n: rankOf(de) })}</span>
-                  {canTogglePaused(de) && de.id !== myEntry?.id && (
-                    <span className="ws-b-detail-pause">{de.is_paused ? t("pausiert") : t("dabei")} {pauseSwitch(de, { small: true })}</span>
-                  )}
-                </div>
-              );
-            })()}
-            {/* Fusszeile der Tafel: die Werkzeuge der Turnierleitung gehoeren zur Tafel, nicht daneben - sonst wirken sie einsam. */}
-            {isOrganizer && (
-              <div className="ws-b-foot">
-                {session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
-                {canDelete && (
-                  <button type="button" className="icon-btn ws-b-del" disabled={busy} onClick={deleteSession}
-                    aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
-                    <Trash2 size={18} />
-                  </button>
-                )}
-              </div>
-            )}
           </section>
           {/* Bestaetigung des Ergebnisses: ein Hinweis, WER jetzt verteidigt - die Avatare wandern dabei an ihren neuen Platz. */}
           {justSaved && <p className="ws-saved-line" role="status"><span className="saved-hint"><Check size={15} /> {justSaved}</span></p>}
@@ -563,8 +561,10 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         </>
       )}
 
+      {/* Live-Stand und Warteschlange nebeneinander im Goldenen Schnitt (1,618 : 1), am Handy untereinander - beide in voller Breite. */}
+      <div className="ws-lower">
       {waiting.length > 0 && (
-        <section className="stat-block">
+        <section className="stat-block ws-queue-card">
           <div className="stat-block-head"><h3><Repeat size={17} /> {t("Warteschlange")}</h3></div>
           <div className="ws-queue">
             {waiting.map((e, i) => (
@@ -636,7 +636,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         </section>
       )}
 
-      <section className="stat-block">
+      <section className="stat-block ws-rank-card">
         <div className="stat-block-head"><h3><Crown size={17} /> {t("Live-Rangliste")}</h3></div>
         {ranked.length === 0 ? (
           <p className="hint">{t("Noch keine Teilnehmer.")}</p>
@@ -671,6 +671,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           </div>
         )}
       </section>
+      </div>
 
       {games.length > 0 && (
         <section className="stat-block">

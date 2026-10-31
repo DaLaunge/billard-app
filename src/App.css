@@ -3876,24 +3876,26 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .ws-pp.in-queue { width: 40px; height: 40px; }
 .ws-me-top .ws-pp { margin-left: auto; }
 
-/* Winner Stays: Scoreboard B1 im Goldenen Schnitt. Grundeinheit --ws-u (waechst mit der Breite, gleiche Formel wie wsUnit() in
-   WinnerStaysScreen.jsx); alle Groessen sind Potenzen von phi = 1,618: Statistik u, Name phi*u, Avatar phi^4*u, Spielstand phi^6*u,
-   Abstaende phi*u. Querformat/PC: Spalten 1 : 3,236 : 1 (Spielstand = 0,618 der Breite); Hochformat: zwei Personen, Spielstand, Zaehler. */
+/* Winner Stays: Scoreboard "Tisch und Liste" (Nutzer-Wahl 2026-11-02), Goldener Schnitt. Grundeinheit --ws-u waechst mit der Breite (gleiche
+   Formel wie wsUnit() in WinnerStaysScreen.jsx); Groessen sind Potenzen von phi = 1,618 (Statistik u, Name phi*u, Avatar phi^4*u, Spielstand
+   phi^5*u). Handy hochkant: zwei Personen, Spielstand, Zaehler, Haken. Ab 640px: Person | Spielstand | Person als flacher Streifen, darunter
+   Zaehler und Haken. Darunter (.ws-lower) Live-Stand und Warteschlange in voller Breite. */
 .ws-board { --ws-u: clamp(11px, calc(7px + .9vw), 18px);
   display: grid; gap: calc(1.618 * var(--ws-u)) var(--ws-u); align-items: center; width: 100%;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "pa pb" "score score" "ca cb" "ok ok" "dt dt" "ft ft";
-  grid-template-rows: auto 1fr auto auto auto auto; min-height: min(68dvh, 600px); }
-.ws-b-person { grid-area: pa; display: flex; flex-direction: column; align-items: center; gap: calc(var(--ws-u) * .382); text-align: center; min-width: 0;
-  background: transparent; border: none; color: inherit; font: inherit; cursor: pointer; padding: calc(var(--ws-u) * .618); border-radius: 14px; }
+  grid-template-areas: "pa pb" "score score" "ca cb" "ok ok"; }
+.ws-b-person { grid-area: pa; display: flex; flex-direction: column; align-items: center; gap: calc(var(--ws-u) * .618); text-align: center; min-width: 0; }
 .ws-b-person.pb { grid-area: pb; }
-.ws-b-person:hover, .ws-b-person.open { background: var(--surface-btn); }
+.ws-b-av { display: inline-flex; border-radius: 999px; padding: 3px; border: none; background: none; cursor: pointer; flex: 0 0 auto;
+  box-shadow: 0 0 0 3px var(--win); transition: box-shadow .25s ease, opacity .25s ease; }
+.ws-b-av.off { box-shadow: 0 0 0 3px var(--loss); opacity: .7; }
+span.ws-b-av { cursor: default; }
+.ws-b-av:disabled { cursor: default; }
+.ws-b-text { display: flex; flex-direction: column; align-items: inherit; gap: calc(var(--ws-u) * .382); min-width: 0; }
 .ws-b-person .score-name { overflow-wrap: anywhere; font-size: calc(var(--ws-u) * 1.618); font-weight: 700; }
 .ws-b-person .ws-role { font-size: calc(var(--ws-u) * .8); }
-.ws-b-person.is-paused .sc-avatars { filter: grayscale(.6); opacity: .7; }
 .ws-quiet { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px calc(var(--ws-u) * .8); font-size: var(--ws-u); color: var(--ivory-dim); opacity: .8; }
-.ws-b-score { grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; align-self: stretch;
-  font-size: min(calc(var(--ws-u) * 17.944), 27vw, 40dvh); }
+.ws-b-score { grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; font-size: min(calc(var(--ws-u) * 11.09), 24vw); }
 .ws-b-score .score-num { font-size: 1em; min-width: .62em; text-align: center; line-height: 1; }
 .ws-b-colon { font-size: .3em; color: var(--ivory-dim); font-weight: 700; }
 .ws-b-cap { grid-area: ca; display: flex; border: 1.5px solid var(--btn-border, var(--line)); border-radius: 999px; overflow: hidden; }
@@ -3906,29 +3908,36 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .ws-b-ok.ws-ok { grid-area: ok; width: 100%; height: calc(var(--ws-u) * 3.236); border-radius: 999px; }
 .ws-b-ok.ws-ok svg { width: calc(var(--ws-u) * 1.618); height: calc(var(--ws-u) * 1.618); }
 .ws-b-ok.ws-ok:disabled { opacity: .5; }
-.ws-b-detail { grid-area: dt; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-top: var(--ws-u);
-  border-top: 1px solid var(--line); font-size: calc(var(--ws-u) * 1.2); color: var(--ivory-dim); }
-.ws-b-detail-pause { display: inline-flex; align-items: center; gap: 8px; }
-.ws-b-foot { grid-area: ft; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: calc(var(--ws-u) * 1.618);
-  border-top: 1px solid var(--line); }
-.ws-b-foot:empty { display: none; }
 .ws-b-del { color: var(--ivory-dim); }
-/* Querformat und PC: drei Spalten 1 : 3,236 : 1 */
+.ws-head-tools { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.et-short { display: none; }
+@media (max-width: 520px) { .et-full { display: none; } .et-short { display: inline; } }
+/* Ab 640px (und flaches Querformat): Person | Spielstand | Person */
 @media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
-  .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, 3.236fr) minmax(0, 1fr);
-    grid-template-areas: "pa score pb" "ca ok cb" "dt dt dt" "ft ft ft"; grid-template-rows: 1fr auto auto auto; min-height: min(72dvh, 640px); }
+  .ws-board { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "pa score pb" "ca ok cb"; padding: calc(var(--ws-u) * 1.618); }
+  .ws-b-person { flex-direction: row; text-align: left; justify-content: flex-start; gap: calc(var(--ws-u) * 1.618); }
+  .ws-b-person.pb { flex-direction: row-reverse; text-align: right; }
+  .ws-b-person .ws-b-text { align-items: flex-start; }
+  .ws-b-person.pb .ws-b-text { align-items: flex-end; }
+  .ws-b-person .ws-quiet { justify-content: flex-start; }
+  .ws-b-person.pb .ws-quiet { justify-content: flex-end; }
+  .ws-b-score { font-size: min(calc(var(--ws-u) * 11.09), 15vw); padding-inline: calc(var(--ws-u) * 2); }
+  .ws-b-cap { width: min(100%, calc(var(--ws-u) * 16)); justify-self: start; }
+  .ws-b-cap.cb { justify-self: end; }
   .ws-b-ok.ws-ok { width: calc(var(--ws-u) * 4.236); height: calc(var(--ws-u) * 4.236); border-radius: 50%; justify-self: center; }
-  .ws-b-person { justify-content: center; }
 }
-@media (orientation: landscape) and (max-height: 520px) {
-  .ws-board { min-height: 0; }
+/* Live-Stand und Warteschlange: voll breit; ab 900px im Verhaeltnis 1,618 : 1 (Stand links, Warteschlange rechts), am Handy Warteschlange zuerst */
+.ws-lower { display: grid; gap: var(--card-gap, 12px); }
+.ws-lower > .stat-block { margin-bottom: 0; }
+.ws-lower > .ws-queue-card { order: 1; }
+.ws-lower > .ws-rank-card { order: 2; }
+@media (min-width: 900px) {
+  .ws-lower { grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); align-items: start; }
+  .ws-lower > .ws-rank-card { order: 1; }
+  .ws-lower > .ws-queue-card { order: 2; }
+  .ws-lower > :only-child { grid-column: 1 / -1; }
 }
-
-/* Turnierleitung: kleine, ruhige Werkzeugleiste (Turnier beenden / loeschen ...) statt breiter Knoepfe - in allen Turniermodi gleich. */
-.tour-toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0 0 10px; }
-.tour-toolbar.center { justify-content: center; }
-.btn.tour-tool { width: auto; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; font-size: calc(13px * var(--fs, 1)); }
-
+.tour-toolbar:empty { display: none; }
 /* "Turnier beenden": in jedem Turniermodus derselbe Knopf - Symbol und Text, gut sichtbar, aber nicht vollbreit. */
 .btn.tour-end { width: auto; display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 999px; font-size: calc(15px * var(--fs, 1));
   font-weight: 700; color: var(--ivory); border: 1.5px solid var(--btn-border, var(--line)); background: var(--surface-btn); }

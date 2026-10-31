@@ -8,7 +8,7 @@ export default function EndTournamentButton({ onClick, disabled }) {
   return (
     <button type="button" className="btn ghost tour-end" disabled={disabled} onClick={onClick}
       title={t("Das ganze Turnier beenden")}>
-      <Flag size={18} /> {t("Turnier beenden")}
+      <Flag size={18} /> <span className="et-full">{t("Turnier beenden")}</span><span className="et-short">{t("Beenden")}</span>
     </button>
   );
 }
