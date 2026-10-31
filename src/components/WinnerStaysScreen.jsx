@@ -33,6 +33,13 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
   // Kurzer Hinweis "Eingetragen" (Haken) nach dem Speichern eines Spiels.
+  // Avatargroesse der Tafel nach Bildschirmbreite: je mehr Platz, desto groesser (der Spielstand soll auch von weiter weg gut erkennbar sein).
+  const [boardAvatar, setBoardAvatar] = useState(() => (typeof window === "undefined" ? 52 : window.innerWidth >= 1100 ? 120 : window.innerWidth >= 640 ? 88 : 52));
+  useEffect(() => {
+    const onResize = () => setBoardAvatar(window.innerWidth >= 1100 ? 120 : window.innerWidth >= 640 ? 88 : 52);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [detailFor, setDetailFor] = useState(null);   // Eintrag, dessen Rang/Pause unter der Tafel aufgeklappt ist
   const [justSaved, setJustSaved] = useState(null);   // Text wie "Raphi ist neuer Verteidiger" oder null
   useEffect(() => {
@@ -508,7 +515,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   onClick={() => setDetailFor((d) => (d === e.id ? null : e.id))} aria-expanded={detailFor === e.id}
                   title={t("Antippen für Rang und Pause")}>
                   <span className="ws-role">{role}</span>
-                  <span className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, 52)}</span>
+                  <span className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, boardAvatar)}</span>
                   <span className="score-name">{entryName(e)}</span>
                   {/* Statistik leise: Siege, Niederlagen, Serie - da, aber ohne Aufmerksamkeit zu ziehen. */}
                   <span className="ws-quiet">

@@ -3907,12 +3907,24 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 /* Querformat und PC: drei Spalten */
 @media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
   .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
-    grid-template-areas: "pa score pb" "ca ok cb" "dt dt dt"; grid-template-rows: 1fr auto auto; min-height: min(56dvh, 440px); max-width: 880px; margin-inline: auto; width: 100%; }
-  .ws-b-score { font-size: clamp(90px, 12vw, 150px); }
+    grid-template-areas: "pa score pb" "ca ok cb" "dt dt dt"; grid-template-rows: 1fr auto auto; min-height: min(72dvh, 640px); width: 100%; }
+  .ws-b-score { font-size: clamp(110px, min(17vw, 36vh), 340px); }
   .ws-b-ok.ws-ok { width: 56px; height: 56px; border-radius: 50%; justify-self: center; }
   .ws-b-person { justify-content: center; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
   .ws-board { min-height: 0; }
   .ws-b-score { font-size: clamp(64px, 30vh, 120px); }
+}
+
+/* Grosse Bildschirme: alles in der Tafel wird mitgroesser, damit der Stand auch aus der Entfernung lesbar ist. */
+@media (min-width: 900px) {
+  .ws-b-person .score-name { font-size: calc(24px * var(--fs, 1)); }
+  .ws-b-person .ws-role { font-size: calc(13px * var(--fs, 1)); }
+  .ws-quiet { font-size: calc(16px * var(--fs, 1)); gap: 2px 14px; }
+  .ws-b-cap button { min-height: 60px; }
+  .ws-b-cap button svg { width: 28px; height: 28px; }
+  .ws-b-ok.ws-ok { width: 76px; height: 76px; }
+  .ws-b-ok.ws-ok svg { width: 38px; height: 38px; }
+  .ws-board { gap: 16px 14px; }
 }
