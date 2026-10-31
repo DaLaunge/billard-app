@@ -3924,13 +3924,13 @@ span.ws-b-av { cursor: default; }
 .ws-b-person .score-name, .ws-b-person .ws-quiet, .ws-b-person .ws-role { max-width: 100%; text-wrap: balance; overflow-wrap: anywhere; hyphens: auto; }
 .ws-break-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: calc(var(--ws-u) * .9); font-weight: 700;
   background: var(--accent-soft, var(--surface-btn)); color: var(--accent); border: 1px solid var(--accent-line, transparent); white-space: nowrap; }
-/* Live-Stand und Warteschlange: voll breit; ab 900px im Verhaeltnis 1,618 : 1 (Stand links, Warteschlange rechts), am Handy Warteschlange zuerst */
+/* Live-Stand und Warteschlange: voll breit; ab 900px gleich breit nebeneinander (Stand links, Warteschlange rechts), am Handy Warteschlange zuerst */
 .ws-lower { display: grid; gap: var(--card-gap, 12px); }
 .ws-lower > .stat-block { margin-bottom: 0; }
 .ws-lower > .ws-queue-card { order: 1; }
 .ws-lower > .ws-rank-card { order: 2; }
 @media (min-width: 900px) {
-  .ws-lower { grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); align-items: start; }
+  .ws-lower { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
   .ws-lower > .ws-rank-card { order: 1; }
   .ws-lower > .ws-queue-card { order: 2; }
   .ws-lower > :only-child { grid-column: 1 / -1; }
