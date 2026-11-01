@@ -1,6 +1,6 @@
 # Testkatalog Break & Rank
 
-Stand: 2026-11-01, Version 427.54, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
+Stand: 2026-11-01, Version 427.55, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
 Ziel: Alles läuft **vollautomatisch** (Browser-Pane, JavaScript im Seitenkontext, keine Handgriffe).
 **Ausgenommen (braucht Nutzerhandlung):** Speichern/Teilen von PDFs und CSV in eine Datei, System-Teilen-Menü, Push-Berechtigung, Kamera/QR-Scan. Der PDF-Bau selbst wird nur als Blob (Typ + Größe) geprüft.
 
@@ -56,6 +56,7 @@ Menüs: Statistik, Turniere, Live, Identität, Meine Erfolge, Meine Zahlen, Eins
 | T-14 | Turniergrafik: passt sich beim Öffnen automatisch in Breite und Höhe ein (kein Scrollen), Knopf „An Bildschirm anpassen“ nach manuellem Zoom/100 %, auch nach Maximieren und Größenänderung (1280, 1024, 375) | ✅ 427.52 |
 | T-15 | Turnier mit Baum startet immer in der Grafik (auch wenn es in der Anmeldung noch keinen Baum gab); eigene Wahl „Liste“/„Teilnehmer“ bleibt | ✅ 427.52 |
 | T-16 | Turnier beenden (Raster-Formate): EIN Flaggen-Knopf, EIN Klick: Rückfrage mit Hinweis „keine Änderungen und Korrekturen mehr möglich“, beendet und sperrt in einem Zug; Knopf danach weg (Turnier das von selbst endet: derselbe Knopf sperrt nur noch); Zoomgruppe ohne „Zurücksetzen“ | ✅ 427.54 |
+| T-17 | Turniergrafik: Kopfzeile mit Knöpfen hat 12 px Abstand zum Baum; Tisch-Labels liegen vollständig im Rahmen (auch oberste Box im einfachen K.o.) und überdecken keine Box | ✅ 427.55 |
 | T-11 | Kopfzeile: Info + Turnierleitung eine Zeile, Umbruch nur bei Platzmangel, Glühbirne | ✅ |
 | T-12 | Gast über Turnier-QR (`?turnier=`), Gast-Screens | ⏭️ Fremd-Login/QR nötig |
 

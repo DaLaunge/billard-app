@@ -2175,7 +2175,7 @@ button.id-card-head { cursor: pointer; }
    min-width:0 + Ellipsis auf der Ueberschrift als letzte Absicherung, falls
    selbst die eigene Spalte auf sehr schmalen Geraeten noch zu knapp ist. */
 .turnier-graph-header { display: grid; grid-template-columns: 1fr auto 1fr;
-  align-items: center; min-height: 34px; gap: 8px; }
+  align-items: center; min-height: 34px; gap: 8px; margin-bottom: 12px; }
 /* Explizite Spaltenzuweisung noetig: auf Touch-Geraeten faellt die mittlere
    Spalte (Zoom-Buttons) per display:none komplett aus dem Grid-Fluss, ohne
    grid-column wuerde die automatische Platzierung turnier-graph-header-end
