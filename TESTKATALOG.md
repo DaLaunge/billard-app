@@ -1,6 +1,6 @@
 # Testkatalog Break & Rank
 
-Stand: 2026-11-01, Version 427.63, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
+Stand: 2026-11-01, Version 428, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
 Ziel: Alles läuft **vollautomatisch** (Browser-Pane, JavaScript im Seitenkontext, keine Handgriffe).
 **Ausgenommen (braucht Nutzerhandlung):** Speichern/Teilen von PDFs und CSV in eine Datei, System-Teilen-Menü, Push-Berechtigung, Kamera/QR-Scan. Der PDF-Bau selbst wird nur als Blob (Typ + Größe) geprüft.
 
