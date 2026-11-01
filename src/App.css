@@ -4053,3 +4053,6 @@ span.ws-b-av { cursor: default; }
 /* Format-Zeichnung in der Info-Zeile der Turnierkoepfe (alle Modi gleich) */
 .info-ico-format .fmt-glyph { width: 34px; height: 21px; }
 .turnier-list-row-ref { display: inline-flex; align-items: center; gap: 6px; }
+/* Queue des Anstoss-Habenden als Knopf (Anstoss noch tauschbar): antippen gibt ihn der anderen Seite */
+.ws-break-mark.swap { pointer-events: auto; cursor: pointer; background: none; border: 0; padding: 0; }
+.ws-break-mark.swap:hover, .ws-break-mark.swap:focus-visible { opacity: .75; }

@@ -580,7 +580,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               breakMark: (
                 <span className={"ws-break-mark m" + k + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
                   title={t("Diese Person stößt das nächste Rack an")} role="img" aria-label={t("Diese Person stößt das nächste Rack an")}>
-                  <BreakCueIcon />
+                  {breakSide === sideIdx && <BreakCueIcon />}
                 </span>
               ),
             }))}

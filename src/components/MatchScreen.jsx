@@ -975,13 +975,17 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                       </span>
                     </>
                   ),
-                  // Anstoss: wer ihn hat, zeigt die Queue-Grafik; wer ihn noch uebernehmen darf, hat sie blass als Knopf.
+                  // Anstoss: NUR wer ihn hat, zeigt die Queue-Grafik (Nutzer 2026-11-01), die andere Seite bleibt leer (die Spalte bleibt stehen,
+                  // damit nichts springt). Darf der Anstoss noch getauscht werden, ist die Queue selbst der Knopf: Antippen gibt ihn der anderen Seite.
                   breakMark: breakNow === idx ? (
-                    <span className={"ws-break-mark m" + (idx === 0 ? "a" : "b")} key={"b" + breakNow + breakRule} title={t("{name} stößt an", { name })}><BreakCueIcon /></span>
-                  ) : canPickBreak ? (
-                    <button type="button" className={"ws-break-mark pick m" + (idx === 0 ? "a" : "b")} title={t("{name} stößt an", { name })}
-                      aria-label={t("{name} stößt an", { name })} onClick={() => pickBreaker(idx)}><BreakCueIcon /></button>
-                  ) : <span className={"ws-break-mark off m" + (idx === 0 ? "a" : "b")} aria-hidden="true"><BreakCueIcon /></span>,
+                    canPickBreak ? (
+                      <button type="button" className={"ws-break-mark swap m" + (idx === 0 ? "a" : "b")} key={"b" + breakNow + breakRule}
+                        title={t("{name} stößt an – antippen zum Wechseln", { name })} aria-label={t("{name} stößt an – antippen zum Wechseln", { name })}
+                        onClick={() => pickBreaker(1 - idx)}><BreakCueIcon /></button>
+                    ) : (
+                      <span className={"ws-break-mark m" + (idx === 0 ? "a" : "b")} key={"b" + breakNow + breakRule} title={t("{name} stößt an", { name })}><BreakCueIcon /></span>
+                    )
+                  ) : <span className={"ws-break-mark off m" + (idx === 0 ? "a" : "b")} aria-hidden="true" />,
                 }))}
                 note={s1 === s2 && total > 0 ? <span className="ws-b-tie">{t("Unentschieden gibt's beim Billard nicht ;-)")}</span> : null}
                 action={{ onClick: () => setStep(3), label: t("Beenden") }} />
