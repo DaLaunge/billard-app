@@ -3973,6 +3973,13 @@ span.ws-b-av { cursor: default; }
 .head-actions > button:hover:not(:disabled), .head-actions > .icon-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--btn-border, var(--line)); }
 .head-actions > button.on, .head-actions > .icon-btn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 .head-actions > button:disabled { opacity: .4; }
+/* Bildschirm bleibt an: die Gluehbirne leuchtet wirklich (gefuellt + Schein), aus = durchgestrichen und ruhig. */
+.head-actions .keepawake-btn.on { box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent); }
+.head-actions .keepawake-btn.on svg { fill: color-mix(in srgb, var(--accent) 35%, transparent); filter: drop-shadow(0 0 4px var(--accent)); }
+/* Turnierinfos (Modus, Disziplin, Status, Turnierleitung) sitzen in der Kopfzeile direkt unter dem Namen, die Knoepfe darunter. */
+.head-info { flex: 0 0 100%; order: 4; min-width: 0; }
+.head-info .hint { margin: 0 0 4px; }
+.head-info .turnier-organizer-line { margin: 0 0 6px; }
 
 /* Spieler-hinzufuegen-Panel der Turniere: klappt unter der Leiste auf; Suche zuerst, darunter wenige Vorschlaege. */
 .tool-panel-card { margin-bottom: 0; }
@@ -4013,7 +4020,6 @@ span.ws-b-av { cursor: default; }
 /* Handy quer (flaches Querformat): Kopfzeile in einer Reihe, Rolle und Statistik entfallen, der Spielstand richtet sich nach der Hoehe - die
    Tafel mit Haken soll ohne Scrollen auf den Bildschirm passen. */
 @media (orientation: landscape) and (max-height: 520px) {
-  .screen-head.with-back:has(.head-actions) { flex-wrap: nowrap; }
   .head-actions { flex: 0 0 auto; order: 0; flex-wrap: nowrap; }
   .head-actions > button, .head-actions > .icon-btn { width: 40px; height: 40px; }
   .ws-b-person .ws-role, .ws-b-person .ws-quiet { display: none; }

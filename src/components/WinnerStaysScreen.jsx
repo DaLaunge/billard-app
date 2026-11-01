@@ -470,13 +470,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         {/* Name in EINER Zeile, die Knoepfe darunter nebeneinander und gleich gross (.head-actions). */}
         <TurnierToolbar>
           {session.status === "running" && !session.is_doubles && <TurnierQrButton tour={session} toast={toast} size={20} className="icon-btn" kind="ws" />}
-          <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
           {isOrganizer && session.status === "running" && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAdd} onClick={() => setShowAdd((s) => !s)} />}
+          <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
           {isOrganizer && session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
           {isOrganizer && canDelete && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busy} onClick={deleteSession} />}
         </TurnierToolbar>
-      </header>
-      <p className="hint" style={{ marginTop: -6 }}>
+        {/* Turnierinfos direkt unter dem Namen (order 4), die Knoepfe folgen darunter */}
+        <div className="head-info">
+      <p className="hint">
         {t(session.is_doubles ? "Doppel" : "Einzel")} · <DiscBall disc={session.discipline} size={15} />
         {session.table_number != null && ` · ${t("Tisch")} ${session.table_number}`}
         {" · "}{session.status === "finished" ? t("beendet") : t("läuft")}
@@ -490,6 +491,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <b>{session.organizer?.nickname || "?"}</b>
         <PlaceLink locationId={session.location_id} text={session.location_text} />
       </div>
+        </div>
+      </header>
 
       {isOrganizer && session.status === "running" && (
         <ToolPanel open={showAdd}>

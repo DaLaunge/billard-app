@@ -492,13 +492,13 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <h2>{tour.name}</h2>
           <TurnierToolbar>
             <TurnierQrButton tour={tour} toast={toast} size={20} className="icon-btn" />
-            {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
             {isOrganizer && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAddPlayers} onClick={() => setShowAddPlayers((s) => !s)} />}
+            {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
             {isOrganizer && <ToolBtn icon={Play} label={t("Turnier starten")} disabled={busyId === "start" || missingPlayers > 0} onClick={startTournament} />}
             {isOrganizer && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busyId === "delete"} onClick={deleteTournament} />}
           </TurnierToolbar>
-        </header>
-        <p className="hint" style={{ marginTop: -6 }}>
+          <div className="head-info">
+        <p className="hint">
           {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {t("Anmeldung offen")}
           {breakApplies(tour.discipline) && (
             <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer ? toggleBreakRule : undefined} /></>
@@ -510,6 +510,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <b>{organizerName || "?"}</b>
           <PlaceLink locationId={tour.location_id} text={tour.location_text} />
         </div>
+          </div>
+        </header>
 
         {isOrganizer && (
           <ToolPanel open={showAddPlayers}>
@@ -626,8 +628,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           {tour.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => setShowReport(true)} />}
           {isOrganizer && canDeleteTournament && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busyId === "delete"} onClick={deleteTournament} />}
         </TurnierToolbar>
-      </header>
-      <p className="hint" style={{ marginTop: -6 }}>
+        <div className="head-info">
+      <p className="hint">
         {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {tour.status === "finished" ? t("beendet") : t("läuft")}
         {tour.status === "finished" && (resultsLocked
           ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
@@ -642,6 +644,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         <b>{organizerName || "?"}</b>
         <PlaceLink locationId={tour.location_id} text={tour.location_text} />
       </div>
+        </div>
+      </header>
 
       {finalStandingsGrouped && (
         <section className="stat-block">
