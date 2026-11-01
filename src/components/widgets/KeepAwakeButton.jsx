@@ -11,7 +11,7 @@ import { wakeLockSupported } from "../../lib/wakeLock";
    Knopf nicht: ein Schalter, der sichtbar nichts bewirkt, ist schlechter als
    gar keiner. */
 /* Leuchtende Birne im Comic-Stil: die Lucide-Birne plus kurze, abgerundete Strahlen in wechselnder Laenge (wie hingekritzelt).
-   Alles in currentColor, damit Thema und Akzentfarbe gelten; die Strahlen flackern leise (Bewegung reduzieren = ruhig). */
+   Alles in currentColor, damit Thema und Akzentfarbe gelten; bewusst ohne Animation (lenkt in der Turnieransicht ab). */
 function GlowBulb() {
   return (
     <svg className="glow-bulb" width="36" height="36" viewBox="-6 -6 36 36" fill="none" stroke="currentColor"

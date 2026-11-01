@@ -3977,10 +3977,6 @@ span.ws-b-av { cursor: default; }
 .head-actions .keepawake-btn.on { box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent); }
 .head-actions .keepawake-btn.on svg { filter: drop-shadow(0 0 3px var(--accent)); overflow: visible; }
 .keepawake-btn .kw-bulb { fill: color-mix(in srgb, var(--accent) 40%, transparent); }
-@media (prefers-reduced-motion: no-preference) {
-  .keepawake-btn.on .kw-rays { animation: kw-flicker 1.8s ease-in-out infinite; transform-origin: 12px 9px; }
-  @keyframes kw-flicker { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.92); } }
-}
 /* Turnierinfos (Modus, Disziplin, Status, Turnierleitung) sitzen in der Kopfzeile direkt unter dem Namen, die Knoepfe darunter. */
 .head-info { flex: 0 0 100%; order: 4; min-width: 0; }
 .head-info .hint { margin: 0 0 4px; }
