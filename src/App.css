@@ -2799,10 +2799,8 @@ button.break-slot { cursor: pointer; }
 .app-drawer-dots { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 12px; }
 .app-drawer-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
 .app-drawer-dot.sel { border-color: var(--ivory); }
+/* Karten laufen auf allen Handy-Screens gleich breit (Seitenrand 12px, kein Ausbruch nach aussen) - Nutzer 2026-11-01: "alles einheitlich". */
 @media (max-width: 899px) {
-  .screen > .stat-block, .screen .sortable-card > .stat-block, .screen [class*="-layout"] > .stat-block,
-  .screen [class*="-split"] > .stat-block, .screen [class*="-col"] > .stat-block, .screen .card-slot > .stat-block:not(.numbers-stacked) {
-    margin-inline: -8px; padding: 13px 10px; border-radius: 20px; --cp-x: 10px; }
   .stat-block .stat-block { margin-inline: 0; }
   .stat-block.is-maximized { margin-inline: 0; border-radius: 0; }
 }
@@ -3937,7 +3935,7 @@ span.ws-b-av { cursor: default; }
 .ws-break-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: calc(var(--ws-u) * .9); font-weight: 700;
   background: var(--accent-soft, var(--surface-btn)); color: var(--accent); border: 1px solid var(--accent-line, transparent); white-space: nowrap; }
 /* Live-Stand und Warteschlange: voll breit; ab 900px gleich breit nebeneinander (Stand links, Warteschlange rechts), am Handy Warteschlange zuerst */
-.ws-lower { display: grid; gap: var(--card-gap, 12px); }
+.ws-lower { display: grid; gap: var(--card-gap, 12px); margin-bottom: var(--card-gap, 12px); }
 .ws-lower > .stat-block { margin-bottom: 0; }
 .ws-lower > .ws-queue-card { order: 1; }
 .ws-lower > .ws-rank-card { order: 2; }
