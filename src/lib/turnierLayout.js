@@ -61,7 +61,8 @@ export function computeTurnierLayout(matches) {
   const finalMultiRound = finalMaxRound > 1;
   const stackedOrder = ["main", "winners", "losers"].filter((b) => matches.some((m) => m.bracket === b))
     .concat(finalMultiRound ? ["final"] : []);
-  const labelOffset = (stackedOrder.length > 1 || hasFinal) ? LABEL_H : 20;   // auch ohne Abschnittsnamen Platz fuer das Tisch-Label der obersten Box
+  // Abschnittsname (Gewinnerbaum, Finale ...) UND darunter das Tisch-Label der obersten Box brauchen je eigenen Platz, sonst liegen sie uebereinander
+  const labelOffset = (stackedOrder.length > 1 || hasFinal) ? LABEL_H + 20 : 20;   // auch ohne Abschnittsnamen Platz fuer das Tisch-Label der obersten Box
   const pos = {};
   const sections = [];
   const sectionTopByBracket = {};

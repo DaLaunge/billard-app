@@ -1,6 +1,6 @@
 # Testkatalog Break & Rank
 
-Stand: 2026-11-01, Version 427.59, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
+Stand: 2026-11-01, Version 427.60, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
 Ziel: Alles läuft **vollautomatisch** (Browser-Pane, JavaScript im Seitenkontext, keine Handgriffe).
 **Ausgenommen (braucht Nutzerhandlung):** Speichern/Teilen von PDFs und CSV in eine Datei, System-Teilen-Menü, Push-Berechtigung, Kamera/QR-Scan. Der PDF-Bau selbst wird nur als Blob (Typ + Größe) geprüft.
 
@@ -61,6 +61,7 @@ Menüs: Statistik, Turniere, Live, Identität, Meine Erfolge, Meine Zahlen, Eins
 | T-19 | Kopfzeilen-Konsistenz über alle Modi und Zustände (K.o., Doppel-K.o., Jeder gegen jeden, Winner Stays Einzel/Doppel × Anmeldung/laufend/beendet/gesperrt) in 4 Größen (1280, 1024, 375, 812×375): feste Reihenfolge Bildschirm-an → QR → Spieler hinzufügen → Start/Start rückgängig/Beenden → Bericht → Löschen; Bildschirm-an-Knopf in jedem Screen an derselben Stelle; Info-Zeile nur aus Symbolen (Format, Disziplin, Modus, Status, Schloss/Stift, Turnierleitung) und einzeilig; kein Überstand | ✅ 427.59 |
 | T-20 | Panels QR und Spieler hinzufügen: gleiche Reihenfolge, unabhängig auf-/zuklappbar, in Anmeldung und Winner Stays | ✅ 427.59 |
 | T-21 | Winner Stays beendet: Bericht-Knopf in der Kopfzeile springt zum Protokoll; Turnierliste: Turnierleitung als Pfeifen-Symbol | ✅ 427.59 |
+| T-22 | Turniergrafik: Abschnittsnamen (Gewinnerbaum, Verliererbaum, Finale) und Tisch-Labels überlappen sich nicht untereinander und keine Box (gemessen an K.o., Doppel-K.o. mit 4 und 8 Spielern) | ✅ 427.60 |
 | T-11 | Kopfzeile: Info + Turnierleitung eine Zeile, Umbruch nur bei Platzmangel, Glühbirne | ✅ |
 | T-12 | Gast über Turnier-QR (`?turnier=`), Gast-Screens | ⏭️ Fremd-Login/QR nötig |
 
