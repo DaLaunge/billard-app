@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs, clearRef, getClubCode, clearClubCode } from "./lib/session";
+import { getVs, clearVs, clearRef, getClubCode, clearClubCode, getTurnierInvite, clearTurnierInvite, getGuestSession, setGuestSession, clearGuestSession, getWsInvite, clearWsInvite } from "./lib/session";
 import { setClubData, setClubLoader, reloadClubs, useClubData, roleIn } from "./lib/clubStore";
 import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
@@ -36,6 +36,9 @@ import { getPendingPopup, storePendingPopup } from "./lib/uiPrefs";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
+import TurnierInviteScreen from "./components/TurnierInviteScreen";
+import GuestTournamentScreen from "./components/GuestTournamentScreen";
+import GuestWsScreen from "./components/GuestWsScreen";
 import ForcePasswordScreen from "./components/ForcePasswordScreen";
 import NicknameScreen from "./components/NicknameScreen";
 import LiveScreen from "./components/LiveScreen";
@@ -162,6 +165,12 @@ async function persistNavAndUpdate(navState, updateSW, { immediate = false } = {
 export default function App() {
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(false);
+  // Turnier-Einladung ohne Konto: Wahl "Anmelden / Gast" (TurnierInviteScreen); turnierLogin = hat "Anmelden" gewaehlt
+  const [turnierInvite, setTurnierInvite] = useState(() => getTurnierInvite());
+  const [turnierLogin, setTurnierLogin] = useState(false);
+  const [wsInvite, setWsInvite] = useState(() => getWsInvite());   // Winner-Stays-Einladung ohne Konto
+  const [guestSess, setGuestSess] = useState(() => getGuestSession());   // Gast ohne Konto: Token fuer sein Turnier-Dashboard
+  const turnierJoinBusy = useRef(false);
   const [player, setPlayer] = useState(null);
   const [loadErr, setLoadErr] = useState(false);
   const [playerChecked, setPlayerChecked] = useState(false);
@@ -1215,7 +1224,7 @@ export default function App() {
   // (?ref=) unnoetig gemerkt - er soll weder am Login als "eingeladen" noch
   // spaeter irgendwo gutgeschrieben werden. Ein Neuer hat noch keinen
   // "player", dessen Code bleibt also bis zur Registrierung erhalten.
-  useEffect(() => { if (player) clearRef(); }, [player]);
+  useEffect(() => { if (player) { clearRef(); clearGuestSession(); } }, [player]);
   // Clubs (supabase/2026-10-19b_clubs.sql): Clubs, Mitglieder und Hauptclub je Spieler. Fehlt die Tabelle noch, bleibt der
   // Speicher leer und alle Club-Stellen der App erscheinen gar nicht. Spieler OHNE Club sind der Normalfall.
   const loadClubs = useCallback(async () => {
@@ -1245,6 +1254,60 @@ export default function App() {
       else { toast(t("Du bist dem Club „{name}“ beigetreten.", { name: data?.name || "" })); reloadClubs(); }
     });
   }, [player]);
+  // Turnier-Einladung /?turnier=ID: wer angemeldet ist (auch frisch registriert), wird sofort fuer das Turnier angemeldet und landet dort.
+  useEffect(() => {
+    const id = getTurnierInvite();
+    if (!id || !player || player.must_change_password || turnierJoinBusy.current) return;
+    // Der Wert bleibt gespeichert, bis das Turnier wirklich offen ist (naechster Effekt): ein Neuladen durch ein wartendes Update oder die
+    // Startseiten-Weiche wuerde die Navigation sonst verschlucken (der erste Scan landete dann auf einem Hauptmenue). Anmelden ist idempotent.
+    turnierJoinBusy.current = true;
+    (async () => {
+      const { error } = await supabase.rpc("tournament_register", { p_tournament_id: id });
+      // Anmeldung nicht mehr moeglich (Turnier laeuft schon)? Wer dabei ist, kommt trotzdem hinein; sonst Fehler zeigen.
+      let isIn = !error;
+      if (error) {
+        const { data: rows } = await supabase.from("tournament_players").select("player_id").eq("tournament_id", id).eq("player_id", player.id);
+        isIn = (rows?.length ?? 0) > 0;
+      }
+      turnierJoinBusy.current = false;
+      if (!isIn) { clearTurnierInvite(); toast(error?.message || t("Dieses Turnier wurde nicht gefunden.")); return; }
+      // Hat man gerade eine Partie am Tisch, geht es direkt dorthin, sonst ins Turnier.
+      const { data: tms } = await supabase.from("tournament_matches")
+        .select("id, table_number, player1_id, player2_id, tournament:tournaments!tournament_matches_tournament_id_fkey(discipline, status)")
+        .eq("tournament_id", id).eq("is_bye", false).is("match_id", null).not("table_number", "is", null)
+        .or(`player1_id.eq.${player.id},player2_id.eq.${player.id}`);
+      const mine = (tms ?? []).find((tm) => tm.player1_id && tm.player2_id && tm.tournament?.status === "running");
+      if (mine) {
+        navPush({ tab: "match", matchTournamentCtx: { tournamentMatchId: mine.id, discipline: mine.tournament?.discipline, player1Id: mine.player1_id, player2Id: mine.player2_id } });
+        clearTurnierInvite();
+        return;
+      }
+      toast(error ? t("Du bist im Turnier.") : t("Du bist für das Turnier angemeldet."));
+      navPush({ tab: "turnierdetail", tournamentId: id });
+    })();
+  }, [player, toast, navPush]);
+  useEffect(() => {
+    const id = getTurnierInvite();
+    if (id && tab === "turnierdetail" && tournamentId === id) clearTurnierInvite();
+  }, [tab, tournamentId]);
+  // Winner-Stays-Einladung /?ws=ID: Angemeldete reihen sich (auch nach dem Start der Runde) selbst ein und landen dort
+  const wsJoinBusy = useRef(false);
+  useEffect(() => {
+    const id = getWsInvite();
+    if (!id || !player || player.must_change_password || wsJoinBusy.current) return;
+    wsJoinBusy.current = true;
+    (async () => {
+      const { error } = await supabase.rpc("winner_stays_join_self", { p_session_id: id });
+      wsJoinBusy.current = false;
+      if (error) { clearWsInvite(); toast(error.message); return; }
+      toast(t("Du bist in der Warteschlange."));
+      navPush({ tab: "winnerstays", winnerStaysId: id });
+    })();
+  }, [player, toast, navPush]);
+  useEffect(() => {
+    const id = getWsInvite();
+    if (id && tab === "winnerstays" && winnerStaysId === id) clearWsInvite();
+  }, [tab, winnerStaysId]);
   useEffect(() => {
     const vs = getVs();
     if (!vs || !player || players.length === 0) return;
@@ -1448,9 +1511,11 @@ export default function App() {
     return true;
   };
 
-  const createPing = async (loc, msg, hours) => {
+  const createPing = async (loc, msg, hours, coords) => {
     const { error } = await supabase.rpc("create_ping", {
       p_location: loc.trim(), p_message: msg.trim() || null, p_hours: hours,
+      // eigener Standort ohne Lokal (supabase/2026-10-28d_ping_position.sql)
+      ...(coords ? { p_lat: coords.lat, p_lng: coords.lng } : {}),
     });
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Du bist jetzt live!"));
@@ -1592,7 +1657,20 @@ export default function App() {
   return (
     <div className="stage">
       <div className={"phone" + (session && player && !player.must_change_password ? " app" : "")}>
-        {!session && <LoginScreen />}
+        {!session && (turnierLogin ? <LoginScreen />
+          : turnierInvite && !(guestSess && guestSess.kind !== "ws" && guestSess.tournamentId === turnierInvite)
+            ? <TurnierInviteScreen tournamentId={turnierInvite} onLogin={() => setTurnierLogin(true)}
+                onGuest={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }}
+                onDone={() => { clearTurnierInvite(); setTurnierInvite(null); }} />
+            : wsInvite && !(guestSess && guestSess.kind === "ws" && guestSess.tournamentId === wsInvite)
+              ? <TurnierInviteScreen kind="ws" tournamentId={wsInvite} onLogin={() => setTurnierLogin(true)}
+                  onGuest={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }}
+                  onDone={() => { clearWsInvite(); setWsInvite(null); }} />
+              : guestSess
+                ? (guestSess.kind === "ws"
+                    ? <GuestWsScreen session={guestSess} onSession={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }} onLogin={() => setTurnierLogin(true)} onForget={() => { clearGuestSession(); setGuestSess(null); }} />
+                    : <GuestTournamentScreen session={guestSess} onSession={(g) => { setGuestSession(g); setGuestSess(getGuestSession()); }} onLogin={() => setTurnierLogin(true)} onForget={() => { clearGuestSession(); setGuestSess(null); }} />)
+                : <LoginScreen />)}
 
         {session && !playerChecked && !loadErr && <div className="center-load">{t("Lade Profil ...")}</div>}
 
@@ -1933,7 +2011,7 @@ export default function App() {
                 <InviteScreen me={player} onBack={() => window.history.back()} toast={toast} />
               )}
               {tab === "turnier" && (
-                <TurniereScreen toast={toast}
+                <TurniereScreen toast={toast} me={player}
                   onOpenTournament={(id) => navPush({ tab: "turnierdetail", tournamentId: id })}
                   onOpenWinnerStays={(id) => navPush({ tab: "winnerstays", winnerStaysId: id })} />
               )}

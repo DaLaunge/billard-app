@@ -54,6 +54,78 @@ export const clearRef = () => {
   try { sessionStorage.removeItem(REF_KEY); } catch { /* */ }
 };
 
+// Fuer die Turnier-Einladung (Anmelden): den Code der Turnierleitung als Werbe-Code merken, damit sie als Werber gutgeschrieben wird.
+export const setRef = (code) => { if (code) storeRef(String(code).trim()); };
+
+/* Turnier-Einladung aus der URL (?turnier=ID): localStorage wie ?ref= (der Magic-Link oeffnet oft einen neuen Tab), 7 Tage gueltig.
+   Ohne Konto zeigt App.jsx die Wahl "Anmelden oder als Gast"; mit Konto meldet es sofort an (tournament_register) und loescht den Wert. */
+const TURNIER_KEY = "turnier_join";
+function captureTurnier() {
+  try {
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("turnier");
+    if (id) {
+      localStorage.setItem(TURNIER_KEY, JSON.stringify({ id: id.trim(), at: Date.now() }));
+      url.searchParams.delete("turnier");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
+  } catch { /* ignore */ }
+}
+captureTurnier();
+export const getTurnierInvite = () => {
+  try {
+    const raw = localStorage.getItem(TURNIER_KEY);
+    if (!raw) return null;
+    const { id, at } = JSON.parse(raw);
+    if (id && Date.now() - at < 7 * 24 * 60 * 60 * 1000) return id;
+    localStorage.removeItem(TURNIER_KEY);
+  } catch { /* ignore */ }
+  return null;
+};
+export const clearTurnierInvite = () => { try { localStorage.removeItem(TURNIER_KEY); } catch { /* */ } };
+
+/* Winner-Stays-Einladung aus der URL (?ws=ID): wie ?turnier= (localStorage, 7 Tage). */
+const WS_KEY = "ws_join";
+function captureWs() {
+  try {
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("ws");
+    if (id) {
+      localStorage.setItem(WS_KEY, JSON.stringify({ id: id.trim(), at: Date.now() }));
+      url.searchParams.delete("ws");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
+  } catch { /* ignore */ }
+}
+captureWs();
+export const getWsInvite = () => {
+  try {
+    const raw = localStorage.getItem(WS_KEY);
+    if (!raw) return null;
+    const { id, at } = JSON.parse(raw);
+    if (id && Date.now() - at < 7 * 24 * 60 * 60 * 1000) return id;
+    localStorage.removeItem(WS_KEY);
+  } catch { /* ignore */ }
+  return null;
+};
+export const clearWsInvite = () => { try { localStorage.removeItem(WS_KEY); } catch { /* */ } };
+
+/* Gast im Turnier OHNE Konto: das geheime Zeichen (Token) aus tournament_join_guest bleibt in localStorage dieses Browsers
+   (supabase/2026-10-29b_guest_tournament.sql). Damit oeffnet die App beim naechsten Start wieder das Gast-Dashboard. */
+const GUEST_KEY = "guest_tournament";
+export const getGuestSession = () => {
+  try {
+    const raw = localStorage.getItem(GUEST_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (v?.token && Date.now() - (v.at || 0) < 14 * 24 * 60 * 60 * 1000) return v;
+    localStorage.removeItem(GUEST_KEY);
+  } catch { /* ignore */ }
+  return null;
+};
+export const setGuestSession = (v) => { try { localStorage.setItem(GUEST_KEY, JSON.stringify({ ...v, at: Date.now() })); } catch { /* */ } };
+export const clearGuestSession = () => { try { localStorage.removeItem(GUEST_KEY); } catch { /* */ } };
+
 /* Schnellmatch-Code aus der URL (?vs=PLAYER_ID) einmalig sichern. */
 function captureVs() {
   try {

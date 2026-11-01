@@ -44,7 +44,7 @@ export function storeFiltersOpen(on) {
    Kachel in den freien Platz der Aufstellung, beim Entfernen zurueck (lib/flyBall.js).
    Standard ist AN - nur ein ausdrueckliches "aus" wird gespeichert, darum der
    Vergleich gegen "0" (wie bei getKeepAwake()). Einstellbar unter Profil ->
-   Profil bearbeiten -> Dieses Geraet. */
+   Profil bearbeiten -> App-Verhalten. */
 const MATCH_FLY_KEY = "matchFlyAnim";
 
 export function getMatchFly() {
@@ -53,6 +53,18 @@ export function getMatchFly() {
 
 export function storeMatchFly(on) {
   try { localStorage.setItem(MATCH_FLY_KEY, on ? "1" : "0"); } catch { /* ignore */ }
+}
+
+/* Uhrzeit in Listen (Letzte Matches, Turnier-Spielverlauf): Standard AUS, dort steht nur das Datum - die Uhrzeit
+   steht im Protokoll. Das Protokoll, PDFs, Chat- und Admin-Zeiten zeigen sie immer. */
+const SHOW_TIMES_KEY = "showTimes";
+
+export function getShowTimes() {
+  try { return localStorage.getItem(SHOW_TIMES_KEY) === "1"; } catch { return false; }
+}
+
+export function storeShowTimes(on) {
+  try { localStorage.setItem(SHOW_TIMES_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
 
 /* Popup "Match wartet auf deine Bestaetigung" (App.jsx, showPendingPopup).
@@ -69,7 +81,7 @@ export function storePendingPopup(on) {
   try { localStorage.setItem(PENDING_POPUP_KEY, on ? "1" : "0"); } catch { /* ignore */ }
 }
 
-/* Listen und Kapitel (Nutzer-Wunsch 2026-10-18), pro Geraet unter Profil -> Einstellungen -> Dieses Geraet:
+/* Listen und Kapitel (Nutzer-Wunsch 2026-10-18), pro Geraet unter Profil -> Einstellungen -> App-Verhalten:
    - listMode: "chapters" (Standard, "Tab-Freak") = wie frueher, die Kapitel-Buttons oben schalten je ein Kapitel um;
      "stacked" ("Doomscroller") = alle Kapitel als EINE lange Liste untereinander.
    - stickyHeads (Standard an): Kapitelkoepfe bleiben beim Scrollen oben stehen. Nur ein ausdrueckliches "aus" wird gespeichert;

@@ -1978,7 +1978,8 @@ button.id-card-head { cursor: pointer; }
 .turnier-list-row-meta { color: var(--ivory-dim); font-size: calc(13px * var(--fs, 1)); }
 .turnier-list-row-chevron { color: var(--ivory-dim); flex-shrink: 0; }
 
-.turnier-brackets { display: flex; flex-direction: column; gap: 18px; }
+.turnier-brackets { display: flex; flex-direction: column; gap: var(--card-gap, 12px); margin-bottom: var(--card-gap, 12px); }
+.turnier-brackets > .stat-block { margin-bottom: 0; }
 .turnier-rounds { display: flex; gap: 14px; overflow-x: auto; padding: 4px 4px 14px;
   scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
 .turnier-round-col { flex: 0 0 82vw; max-width: 340px; scroll-snap-align: start;
@@ -2174,7 +2175,7 @@ button.id-card-head { cursor: pointer; }
    min-width:0 + Ellipsis auf der Ueberschrift als letzte Absicherung, falls
    selbst die eigene Spalte auf sehr schmalen Geraeten noch zu knapp ist. */
 .turnier-graph-header { display: grid; grid-template-columns: 1fr auto 1fr;
-  align-items: center; min-height: 34px; gap: 8px; }
+  align-items: center; min-height: 34px; gap: 8px; margin-bottom: 12px; }
 /* Explizite Spaltenzuweisung noetig: auf Touch-Geraeten faellt die mittlere
    Spalte (Zoom-Buttons) per display:none komplett aus dem Grid-Fluss, ohne
    grid-column wuerde die automatische Platzierung turnier-graph-header-end
@@ -2219,7 +2220,9 @@ button.id-card-head { cursor: pointer; }
    stehen dadurch als EINE Gruppe rechts zusammen statt eines mittig
    stehenden Einzelbuttons, der optisch verloren wirkte (Nutzer-Feedback).
    Kopfzeile zeigt "Turnierbaum --- [Zoom zuruecksetzen][Minimieren]". */
-@media (pointer: coarse) {
+/* Nach Breite statt nach Zeigerart (pointer: coarse): Geraete mit Touchscreen UND Maus (Windows-Laptops) meldeten "coarse" und verloren
+   die Zoom-Knoepfe am PC (Nutzer-Feedback 2026-11-01). Nur auf schmalen Bildschirmen ersetzt der Einpassen-Knopf rechts die Gruppe. */
+@media (max-width: 640px) {
   .turnier-graph-zoom-controls { display: none; }
   .turnier-graph-header-end .turnier-graph-mobile-reset-btn { display: grid; }
 }
@@ -2710,15 +2713,15 @@ button.break-slot { cursor: pointer; }
 .ws-pause-switch.compact button { min-height: 42px; font-size: calc(14px * var(--fs, 1)); }
 
 .ws-paused-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px;
-  background: var(--warn); color: #2b2200; font-size: calc(12px * var(--fs, 1)); font-weight: 800; white-space: nowrap; }
+  background: var(--loss); color: #fff; font-size: calc(12px * var(--fs, 1)); font-weight: 800; white-space: nowrap; }
 
 .ws-score-row .score-col { min-width: 0; text-align: center; }
-.ws-score-row .score-col.is-paused { box-shadow: inset 0 0 0 2px var(--warn); }
+.ws-score-row .score-col.is-paused { box-shadow: inset 0 0 0 2px var(--loss); }
 .ws-score-row .score-name { overflow-wrap: anywhere; }
 .ws-role { font-size: calc(11px * var(--fs, 1)); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ivory-dim); }
-@media (min-width: 900px) { .ws-score-row .score-name { font-size: calc(17px * var(--fs, 1)); } }
+@media (min-width: 900px) { .ws-board .score-name { font-size: calc(17px * var(--fs, 1)); } }
 @media (prefers-reduced-motion: no-preference) {
-  .ws-score-row .score-num { animation: score-bump .22s ease-out; }
+  .ws-board .score-num { animation: score-bump .22s ease-out; }
 }
 
 .ws-queue { display: flex; flex-direction: column; gap: 8px; }
@@ -2726,7 +2729,7 @@ button.break-slot { cursor: pointer; }
 .ws-queue-row.is-me { box-shadow: inset 0 0 0 2px var(--accent-line, var(--accent)); }
 .ws-queue-row.is-paused { box-shadow: inset 3px 0 0 var(--warn); }
 .ws-queue-no { font-weight: 800; color: var(--ivory-dim); min-width: 22px; }
-.ws-queue-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ws-queue-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 7.5em; }
 .ws-queue-name { font-weight: 700; overflow-wrap: anywhere; line-height: 1.2; }
 .ws-queue-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; flex-shrink: 0; }
 .ws-queue-move { display: flex; gap: 4px; }
@@ -2799,10 +2802,8 @@ button.break-slot { cursor: pointer; }
 .app-drawer-dots { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 12px; }
 .app-drawer-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
 .app-drawer-dot.sel { border-color: var(--ivory); }
+/* Karten laufen auf allen Handy-Screens gleich breit (Seitenrand 12px, kein Ausbruch nach aussen) - Nutzer 2026-11-01: "alles einheitlich". */
 @media (max-width: 899px) {
-  .screen > .stat-block, .screen .sortable-card > .stat-block, .screen [class*="-layout"] > .stat-block,
-  .screen [class*="-split"] > .stat-block, .screen [class*="-col"] > .stat-block, .screen .card-slot > .stat-block:not(.numbers-stacked) {
-    margin-inline: -8px; padding: 13px 10px; border-radius: 20px; --cp-x: 10px; }
   .stat-block .stat-block { margin-inline: 0; }
   .stat-block.is-maximized { margin-inline: 0; border-radius: 0; }
 }
@@ -3426,7 +3427,7 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 
 /* Match-Historie (Meine Zahlen): feste Spalten, damit Datum, Kugel, S/N, Ausgang und Punkte
    in jeder Zeile an derselben Stelle stehen. */
-.mh-row { display: grid; grid-template-columns: 5.4em 18px 1.2em 3.2em minmax(0, 1fr) auto; align-items: center; column-gap: 8px; }
+.mh-row { display: grid; grid-template-columns: 6em 18px 1.2em 3.2em minmax(0, 1fr) auto; align-items: center; column-gap: 8px; }
 .mh-date { color: var(--ivory-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mh-disc { display: inline-flex; justify-content: center; }
 .mh-res { font-weight: 700; text-align: center; }
@@ -3795,3 +3796,263 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 /* Routen-Menue am Body (Portal): nie von einer Karte abgeschnitten */
 .route-pop { position: fixed; z-index: 10000; min-width: 190px; }
 .route-pop .route-menu { display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 12px; background: var(--felt-2); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); }
+
+.venue-here { align-self: flex-start; }
+
+.venue-here-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.venue-here-row .venue-here { flex: none; }
+.venue-here-txt { min-width: 0; overflow-wrap: anywhere; }
+.venue-here-txt.has { color: var(--ivory); }
+
+.venue-here-row { flex-wrap: wrap; row-gap: 6px; }
+.venue-here-txt { flex: 1 1 140px; }
+
+/* Platz sparen: Tageskacheln einzeilig, untere Zeile der Maske (Dauer, Nachricht, Abbrechen, Absenden) in einer Zeile */
+.day-picker.compact { gap: 4px; margin-bottom: 2px; }
+.day-picker.compact .day-chip { flex-direction: row; gap: 4px; min-width: 0; padding: 6px 9px; }
+.day-picker.compact .day-chip b { font-size: calc(15px * var(--fs, 1)); }
+.day-picker.compact .day-wd, .day-picker.compact .day-mon { font-size: calc(11px * var(--fs, 1)); }
+.day-picker.compact .day-more .day-chip { min-height: 0; padding: 6px 9px; }
+.venue-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.venue-bottom .chips { margin: 0; }
+.venue-bottom .search-row { flex: 1 1 180px; min-width: 0; margin: 0; }
+.venue-go { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 12px; border: 1.5px solid transparent; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.venue-go:disabled { opacity: .45; cursor: default; }
+
+/* Neues Turnier: Wuerfel links neben dem Namensfeld (Zufallsname) */
+.name-row { display: flex; align-items: center; gap: 8px; }
+.name-row input { flex: 1; min-width: 0; }
+
+/* Ort an Turnieren: Kartenstift + Name, anklickbar (PlaceLink) */
+.place-link { display: inline-flex; align-items: center; margin-left: 10px; }
+.turnier-list-row-main .place-link { margin-left: 0; }
+.place-link .route-link { margin-left: 0; }
+.place-link a.route-link { text-decoration: none; }
+
+/* Kartenstift (Route-Knopf) steht LINKS vom Ortsnamen, ohne eigenen Abstand */
+.route-link.route-left, button.route-link.route-left { margin-left: 0; }
+.venue-place .route-btn { margin-right: 2px; }
+
+/* Turnier-QR: grosser Knopf oben im Turnier, kleiner an jeder Zeile der Uebersicht, Fenster mit grossem Code */
+.tqr-row { flex: 0 0 auto; width: 40px; height: 40px; }
+.tqr-card { position: relative; text-align: center; }
+.tqr-close { position: absolute; top: 8px; right: 8px; }
+
+/* "Letzte Matches" (Statistik): gleiche Spalten wie die Historie unter "Meine Zahlen" (.mh-row). */
+.mm-row { display: grid; grid-template-columns: var(--mm-date, 6em) 18px minmax(0, 1fr) auto; align-items: center; column-gap: 8px; }
+.mm-row .m-txt { min-width: 0; line-height: 1.3; }
+.mm-actions { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Turnier: Haken zum Eintragen sitzt direkt neben dem Ergebnis; danach ein kurzer, leiser Hinweis "Eingetragen". */
+.turnier-quick-score .quick-ok { width: 34px; height: 34px; }
+.saved-hint { display: inline-flex; align-items: center; gap: 5px; color: var(--win); font-size: calc(12.5px * var(--fs, 1)); }
+@media (prefers-reduced-motion: no-preference) {
+  /* Ruhezustand sichtbar; die Animation blendet sanft ein, haelt und blendet wieder aus (Timer entfernt das Element). */
+  .saved-hint { animation: saved-hint 2.6s ease both; }
+  .saved-hint svg { animation: check-pop .45s ease-out both; }
+  @keyframes saved-hint { 0% { opacity: 0; transform: translateY(3px); } 12% { opacity: 1; transform: none; } 78% { opacity: 1; } 100% { opacity: 0; } }
+}
+
+/* Winner Stays: der Haken zum Eintragen sitzt in der Mitte zwischen den beiden Ergebnis-Karten (auf Hoehe der Zahlen). */
+.ws-ok-row { display: none; }
+.ws-saved-line { display: flex; justify-content: center; margin: 0 0 12px; }
+.ws-saved-line .saved-hint { font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
+.ws-queue-av { display: inline-flex; position: relative; }
+[data-eid] { position: relative; }
+@media (prefers-reduced-motion: no-preference) {
+  /* Haken ist bereit (Ergebnis nicht unentschieden): ein ganz leiser Ring zeigt, dass jetzt eingetragen werden kann. */
+  .ws-board .ws-ok.ready { animation: ok-pop .32s ease-out, ok-ready 2.4s ease-out infinite; }
+  /* Fahne <-> Haken: der Knopf wird beim Wechsel neu eingehaengt (key) und federt einmal kurz ein. */
+  .ws-board .ws-b-ok.flag, .ws-board .ws-b-ok:not(.ready) { animation: ok-pop .32s ease-out; }
+  @keyframes ok-pop { 0% { transform: scale(.86); opacity: .4; } 60% { transform: scale(1.04); opacity: 1; } 100% { transform: none; } }
+  @keyframes ok-ready { 0% { box-shadow: 0 0 0 6px var(--felt), 0 0 0 6px var(--accent-line); } 70%, 100% { box-shadow: 0 0 0 6px var(--felt), 0 0 0 18px transparent; } }
+}
+
+/* Winner Stays: Dabei/Pause als ein runder Knopf wie beim Musikplayer - gruen + Play = dabei, rot + Pause = pausiert. */
+.ws-pp { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%; border: none; display: grid; place-items: center; cursor: pointer;
+  transition: background-color .25s ease, transform .15s ease; }
+.ws-pp.playing { background: var(--win); color: #0c2415; }
+.ws-pp.paused { background: var(--loss); color: #fff; }
+.ws-pp:active:not(:disabled) { transform: scale(.93); }
+.ws-pp:disabled { opacity: .6; cursor: default; }
+.ws-pp.small { width: 34px; height: 34px; }
+.ws-pp.in-queue { width: 40px; height: 40px; }
+.ws-me-top .ws-pp { margin-left: auto; }
+
+/* Winner Stays: Scoreboard "Tisch und Liste" (Nutzer-Wahl 2026-11-02), Goldener Schnitt. Grundeinheit --ws-u waechst mit der Breite (gleiche
+   Formel wie wsUnit() in WinnerStaysScreen.jsx); Groessen sind Potenzen von phi = 1,618 (Statistik u, Name phi*u, Avatar phi^4*u, Spielstand
+   phi^5*u). Handy hochkant: zwei Personen, Spielstand, Zaehler, Haken. Ab 640px: Person | Spielstand | Person als flacher Streifen, darunter
+   Zaehler und Haken. Darunter (.ws-lower) Live-Stand und Warteschlange in voller Breite. */
+.ws-board-wrap { container-type: inline-size; container-name: wsb; width: 100%; }
+.ws-board { --ws-u: clamp(11px, calc(7px + 1.25cqw), 18px);
+  display: grid; gap: calc(1.618 * var(--ws-u)) var(--ws-u); align-items: center; width: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "pa pb" "score score" "ca cb" "ok ok"; }
+.ws-b-person { grid-area: pa; display: flex; flex-direction: column; align-items: center; gap: calc(var(--ws-u) * .618); text-align: center; min-width: 0; }
+.ws-b-person.pb { grid-area: pb; }
+.ws-b-av { display: inline-flex; border-radius: 999px; padding: 3px; border: none; background: none; cursor: pointer; flex: 0 0 auto;
+  box-shadow: 0 0 0 3px var(--win); transition: box-shadow .25s ease, opacity .25s ease; }
+.ws-b-av.off { box-shadow: 0 0 0 3px var(--loss); opacity: .7; }
+span.ws-b-av { cursor: default; }
+.ws-b-av:disabled { cursor: default; }
+.ws-b-text { display: flex; flex-direction: column; align-items: inherit; gap: calc(var(--ws-u) * .382); min-width: 0; }
+.ws-b-person .score-name { overflow-wrap: anywhere; font-size: var(--nfs, calc(var(--ws-u) * 1.618)); font-weight: 700; }
+.ws-b-person .ws-role { font-size: var(--rfs, calc(var(--ws-u) * .8)); white-space: nowrap; }
+.ws-quiet { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px calc(var(--ws-u) * .8); font-size: var(--ws-u); color: var(--ivory-dim); opacity: .8; }
+.ws-b-score { position: relative; padding-bottom: calc(var(--ws-u) * 2.4); grid-area: score; display: flex; align-items: center; justify-content: center; gap: .12em; --base: min(calc(var(--ws-u) * 11.09), 21cqw); font-size: calc(var(--base) * var(--sc, 1)); }
+.ws-b-score .score-num { font-size: 1em; width: calc(var(--d, 2) * .62em); line-height: 1; font-variant-numeric: tabular-nums; }
+.ws-b-score .sc-a { text-align: right; }
+.ws-b-score .sc-b { text-align: left; }
+.ws-b-colon { font-size: .3em; color: var(--ivory-dim); font-weight: 700; }
+.ws-b-cap { grid-area: ca; display: flex; border: 1.5px solid var(--btn-border, var(--line)); border-radius: 999px; overflow: hidden; }
+.ws-b-cap.cb { grid-area: cb; }
+.ws-b-cap button { flex: 1; min-width: 44px; min-height: max(44px, calc(var(--ws-u) * 3.236)); border: none; background: transparent; color: var(--ivory-dim); display: grid; place-items: center; cursor: pointer; }
+.ws-b-cap button svg { width: calc(var(--ws-u) * 1.618); height: calc(var(--ws-u) * 1.618); }
+.ws-b-cap button + button { border-left: 1.5px solid var(--btn-border, var(--line)); color: var(--ivory); }
+.ws-b-cap button:active:not(:disabled) { background: var(--surface-btn); }
+.ws-b-cap button:disabled { opacity: .35; cursor: default; }
+.ws-b-ok.ws-ok { grid-area: ok; width: 100%; height: calc(var(--ws-u) * 3.236); border-radius: 999px; }
+.ws-b-ok.ws-ok svg { width: calc(var(--ws-u) * 1.618); height: calc(var(--ws-u) * 1.618); }
+.ws-b-ok.ws-ok:disabled { opacity: .5; }
+.ws-b-ok.ws-ok.flag svg { width: calc(var(--ws-u) * 2.2); height: calc(var(--ws-u) * 2.2); }
+.ws-b-del { color: var(--ivory-dim); }
+.ws-head-tools { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.et-short { display: none; }
+@media (max-width: 520px) { .et-full { display: none; } .et-short { display: inline; } }
+/* Ab 640px (und flaches Querformat): Person | Spielstand | Person - Name bleibt UNTER dem Avatar (nie daneben, damit nichts ueberlappt) */
+/* Breite Tafel (Container-Abfrage: es zaehlt die Breite der Tafel, nicht des Fensters - am PC steht links noch das Menue) */
+@container wsb (min-width: 560px) {
+  /* Mitte in drei Teile: Zaehler | Haken | Zaehler - die Zaehler sitzen direkt neben dem Haken, der Spielstand liegt ueber allen dreien */
+  .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, .809fr) auto minmax(0, .809fr) minmax(0, 1fr); grid-template-areas: "pa score score score pb" "ca . ok . cb"; padding: calc(var(--ws-u) * 1.618); }
+  /* Der Spielstand richtet sich nach der Breite SEINER Spalte (Container-Einheit cqw der Tafel), nicht nach dem Fenster: so passt er mit zwei
+     reservierten Stellen immer hinein und drueckt die Personen nie schmal. */
+  .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 12.5cqw); }
+  /* Zaehler zentriert UNTER dem Avatar ihrer Person (Nutzer 2026-11-01), der Haken bleibt in der Mitte; Hoehe/Breite bleiben gross genug zum Tippen */
+  .ws-b-cap { width: min(100%, calc(var(--ws-u) * 13)); justify-self: center; }
+  .ws-b-cap.cb { justify-self: center; }
+  .ws-b-ok.ws-ok { width: calc(var(--ws-u) * 4.236); height: calc(var(--ws-u) * 4.236); border-radius: 50%; justify-self: center; }
+}
+.ws-b-person .score-name, .ws-b-person .ws-quiet { max-width: 100%; text-wrap: balance; overflow-wrap: anywhere; hyphens: manual; }
+/* Rolle: nie mitten im Wort umbrechen ("text-wrap" setzt sonst nowrap ausser Kraft) */
+.ws-b-person .ws-role { max-width: 100%; text-wrap: nowrap; white-space: nowrap; }
+.ws-break-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: calc(var(--ws-u) * .9); font-weight: 700;
+  background: var(--accent-soft, var(--surface-btn)); color: var(--accent); border: 1px solid var(--accent-line, transparent); white-space: nowrap; }
+/* Live-Stand und Warteschlange: voll breit; ab 900px gleich breit nebeneinander (Stand links, Warteschlange rechts), am Handy Warteschlange zuerst */
+.ws-lower { display: grid; gap: var(--card-gap, 12px); margin-bottom: var(--card-gap, 12px); }
+.ws-lower > .stat-block { margin-bottom: 0; }
+.ws-lower > .ws-queue-card { order: 1; }
+.ws-lower > .ws-rank-card { order: 2; }
+@media (min-width: 900px) {
+  .ws-lower { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .ws-lower > .ws-rank-card { order: 1; }
+  .ws-lower > .ws-queue-card { order: 2; }
+  .ws-lower > :only-child { grid-column: 1 / -1; }
+}
+/* "Turnier beenden": in jedem Turniermodus derselbe Knopf - Symbol und Text, gut sichtbar, aber nicht vollbreit. */
+.btn.tour-end { width: auto; display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 999px; font-size: calc(15px * var(--fs, 1));
+  font-weight: 700; color: var(--ivory); border: 1.5px solid var(--btn-border, var(--line)); background: var(--surface-btn); }
+.btn.tour-end:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+/* Hinweis unter dem Spielstand: reservierter Streifen (padding-bottom oben), absolut gesetzt - kein Springen der Karten. */
+.ws-b-note { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--ws-u) * 2.4); display: flex; align-items: center; justify-content: center;
+  font-size: calc(var(--ws-u) * 1.2); text-align: center; pointer-events: none; }
+.ws-b-note .saved-hint { font-size: inherit; font-weight: 600; }
+.ws-b-tie { color: var(--ivory-dim); }
+
+.ws-break-tag { transition: opacity .3s ease; }
+.ws-break-tag.off { opacity: 0; pointer-events: none; }
+
+/* Kopfzeile der Turniermodi: Name in einer Zeile, darunter die Knoepfe nebeneinander, alle gleich gross (44 x 44). */
+.screen-head.with-back:has(.head-actions) { flex-wrap: wrap; }
+/* Lange Turniernamen brechen auf zwei Zeilen um statt abgeschnitten zu werden. */
+.screen-head.with-back:has(.head-actions) h2 { flex: 1 1 0; min-width: 0; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.head-actions { flex: 0 0 100%; order: 5; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.head-actions > button, .head-actions > .icon-btn { width: 44px; height: 44px; margin: 0; border-radius: 12px; padding: 0; display: grid; place-items: center; flex: 0 0 auto; }
+/* EINE Optik fuer alle Knoepfe der Leiste (QR, Bildschirm an, Spieler, Start/Ende, Loeschen ...): Flaeche statt Rahmen, Akzent bei Hover und wenn
+   der Knopf etwas offen haelt (.on / aria-pressed). */
+.head-actions .keepawake-btn { margin: 0; }
+.head-actions > button, .head-actions > .icon-btn { background: var(--surface-btn); color: var(--ivory); border: 1.5px solid transparent; }
+.head-actions > button:hover:not(:disabled), .head-actions > .icon-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--btn-border, var(--line)); }
+.head-actions > button.on, .head-actions > .icon-btn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.head-actions > button:disabled { opacity: .4; }
+/* Bildschirm bleibt an: die Gluehbirne leuchtet wirklich (gefuellt + Schein), aus = durchgestrichen und ruhig. */
+.head-actions .keepawake-btn.on { box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent); }
+.head-actions .keepawake-btn.on svg { filter: drop-shadow(0 0 3px var(--accent)); overflow: visible; }
+.keepawake-btn .kw-bulb { fill: color-mix(in srgb, var(--accent) 40%, transparent); }
+/* Turnierinfos (Modus, Disziplin, Status, Turnierleitung) sitzen in der Kopfzeile direkt unter dem Namen, die Knoepfe darunter. */
+.head-info { flex: 0 0 100%; order: 4; min-width: 0; }
+.head-info .hint { margin: 0 0 4px; }
+.head-info .turnier-organizer-line { margin: 0 0 6px; }
+
+/* Spieler-hinzufuegen-Panel der Turniere: klappt unter der Leiste auf; Suche zuerst, darunter wenige Vorschlaege. */
+.tool-panel-card { margin-bottom: 0; }
+.tool-panel { margin-bottom: 0; }
+.tool-panel.open { margin-bottom: var(--card-gap, 12px); }
+.quick-add { display: flex; flex-direction: column; gap: 10px; }
+.quick-add-label { margin: 0; }
+.quick-add-grid { max-height: none; }
+.quick-add-go, .quick-add-guest { align-self: flex-start; width: auto; }
+
+/* Anstoss-Symbol: senkrecht in zwei Randspalten der Tafel (links beim Verteidiger, rechts beim Herausforderer), von den Personen bis zu den
+   Zaehlern. Kugel oben, der Queue kommt von unten. Die Randspalten sind nur da, solange es einen Anstoss gibt (.has-break), und bleiben
+   dann auch fuer die Person ohne Anstoss stehen (Symbol nur unsichtbar) - so springt beim Wechsel nichts und Namen laufen nie darunter. */
+.ws-board.has-break { --gw: calc(var(--ws-u) * 2.2);
+  grid-template-columns: var(--gw) minmax(0, 1fr) minmax(0, 1fr) var(--gw);
+  grid-template-areas: "ml pa pb mr" "ml score score mr" "ml ca cb mr" "ok ok ok ok"; }
+.ws-board.has-break .ws-b-ok.ws-ok { grid-area: ok; }
+.ws-break-mark { align-self: stretch; display: flex; color: var(--accent); transition: opacity .3s ease; pointer-events: none; min-height: 0; }
+.ws-break-mark.ma { grid-area: ml; justify-self: start; width: var(--gw); }
+.ws-break-mark.mb { grid-area: mr; justify-self: end; width: var(--gw); }
+.ws-break-mark .break-cue-icon { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; }
+.ws-break-mark .break-cue-icon svg { width: 100%; height: auto; flex: 0 0 auto; display: block; }
+.ws-break-mark .bci-stick { flex: 1 1 auto; width: 100%; min-height: 8px; background: currentColor; clip-path: polygon(41% 0, 59% 0, 76% 100%, 24% 100%); position: relative; }
+.ws-break-mark .bci-stick::after { content: ""; position: absolute; left: 0; right: 0; top: 72%; height: 6%; background: var(--felt); opacity: .5; }
+.ws-break-mark.off { opacity: 0; }
+.ws-break-mark.pick { pointer-events: auto; opacity: .3; cursor: pointer; background: none; border: 0; padding: 0; transition: opacity .2s ease; }
+.ws-break-mark.pick:hover, .ws-break-mark.pick:focus-visible { opacity: .65; }
+/* Breite Tafel (Container-Abfrage: es zaehlt die Breite der Tafel, nicht des Fensters - am PC steht links noch das Menue) */
+@container wsb (min-width: 560px) {
+  .ws-board.has-break { grid-template-columns: var(--gw) minmax(0, 1fr) minmax(0, .809fr) auto minmax(0, .809fr) minmax(0, 1fr) var(--gw);
+    grid-template-areas: "ml pa score score score pb mr" "ml ca . ok . cb mr"; }
+}
+
+
+/* Personen oben buendig (auch wenn ein Name mehrzeilig ist, sitzen alle Avatare auf gleicher Hoehe) */
+.ws-b-person { align-self: start; }
+
+/* Handy quer (flaches Querformat): Kopfzeile in einer Reihe, Rolle und Statistik entfallen, der Spielstand richtet sich nach der Hoehe - die
+   Tafel mit Haken soll ohne Scrollen auf den Bildschirm passen. */
+@media (orientation: landscape) and (max-height: 520px) {
+  /* Feste Breite fuer bis zu 5 Knoepfe, linksbuendig darin: der Bildschirm-an-Knopf steht in jedem Turnierscreen am selben Platz (Nutzer 2026-11-01) */
+  .head-actions { flex: 0 0 auto; order: 0; flex-wrap: nowrap; width: calc(5 * 40px + 4 * 10px); justify-content: flex-start; }
+  .head-actions > button, .head-actions > .icon-btn { width: 40px; height: 40px; }
+  .ws-b-person .ws-role, .ws-b-person .ws-quiet { display: none; }
+  .ws-b-person .score-name { font-size: calc(var(--ws-u) * 1.2); }
+  .ws-board { gap: 6px 8px; padding: 10px calc(var(--ws-u) * 1.2); }
+  .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 30vh, 12.5cqw); padding-bottom: calc(var(--ws-u) * 1.8); }
+  .ws-b-note { height: calc(var(--ws-u) * 1.8); }
+  .ws-b-cap button { min-height: 44px; }
+  .ws-board .ws-b-ok.ws-ok { width: 46px; height: 46px; }
+}
+
+/* QR-Code als aufklappbares Panel der Turnier-Kopfzeile (bleibt offen, waehrend Matches eingetragen werden) */
+.tqr-panel { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.info-ico { display: inline-flex; align-items: center; vertical-align: middle; color: var(--ivory-dim); }
+.info-ico.status-running { color: var(--win); }
+.head-info .hint { display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; }
+/* Infos in EINER Zeile (Modus · Disziplin · Status · Break, danach die Turnierleitung); erst wenn der Platz fehlt, bricht die Leitung um. */
+.head-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.head-info .hint, .head-info .turnier-organizer-line { margin: 0 0 6px; flex: 0 1 auto; min-width: 0; }
+
+/* Team-Auswahl (Winner Stays Doppel): die zwei gewaehlten Personen als Paar, solange noch keine zwei gewaehlt sind als leerer Platz */
+.quick-add-team { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.quick-add-team-slot { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: 14px; min-height: 36px; }
+.quick-add-team-slot.empty { padding: 4px 12px; background: transparent; border-style: dashed; color: var(--ivory-dim, inherit); opacity: .7; }
+.quick-add-team-slot + .quick-add-team-slot::before { content: "&"; margin-right: 2px; opacity: .6; }
+
+/* Format-Zeichnung in der Info-Zeile der Turnierkoepfe (alle Modi gleich) */
+.info-ico-format .fmt-glyph { width: 34px; height: 21px; }
+.turnier-list-row-ref { display: inline-flex; align-items: center; gap: 6px; }
+/* Queue des Anstoss-Habenden als Knopf (Anstoss noch tauschbar): antippen gibt ihn der anderen Seite */
+.ws-break-mark.swap { pointer-events: auto; cursor: pointer; background: none; border: 0; padding: 0; }
+.ws-break-mark.swap:hover, .ws-break-mark.swap:focus-visible { opacity: .75; }

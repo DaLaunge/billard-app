@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, FileDown, Loader2, Trophy, ScrollText, GitBranch } from "lucide-react";
 import { t } from "../lib/i18n";
-import { initials, fmtDate, fmtDateTime, fmtDuration } from "../lib/format";
+import { initials, fmtDate, fmtDateTime, fmtListDateTime, fmtDuration } from "../lib/format";
 import { computeTurnierLayout, bracketLabel, formatLabel, BOX_W, BOX_H, FINAL_BOX_W, FINAL_BOX_H } from "../lib/turnierLayout";
 import { tmScores } from "./TurnierMatchActions";
 import Ball from "./Ball";
@@ -246,7 +246,7 @@ export default function TurnierBerichtScreen({ tour, tms, finalStandings, nameOf
                     const naTitle = manualEntry ? t("Nur bei Live-Mitzählen über \"Melden\" verfügbar, nicht bei Turnierleitungs-Schnelleingabe.") : undefined;
                     return (
                       <tr key={tm.id}>
-                        <td>{fmtDateTime(tm.match.played_at)}</td>
+                        <td>{fmtListDateTime(tm.match.played_at)}</td>
                         <td>{n1} – {n2}</td>
                         <td>{sc.s1}:{sc.s2}</td>
                         <td title={hr.length ? undefined : naTitle}>{hr.length ? hr.join(" / ") : (manualEntry ? t("n/a") : "–")}</td>

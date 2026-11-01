@@ -1,19 +1,26 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, SkipForward, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw } from "lucide-react";
+import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
+import { ChevronLeft, QrCode, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, FileText, Loader2, ScrollText } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { initials } from "../lib/format";
+import { initials, fmtDateTime } from "../lib/format";
 import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
-import PlayerPicker from "./PlayerPicker";
-import PlayerMultiPicker from "./PlayerMultiPicker";
+import { TurnierToolbar, ToolBtn, ToolPanel, QuickAddPlayers } from "./widgets/TurnierToolbar";
 import ImprintFooter from "./widgets/ImprintFooter";
+import EndTournamentButton from "./widgets/EndTournamentButton";
+import ScoreBoard, { softName } from "./widgets/ScoreBoard";
+import BreakCueIcon from "./widgets/BreakCueIcon";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
-import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
+import { BreakPill, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
 import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
+import PlaceLink from "./widgets/PlaceLink";
+import { TurnierQrPanel } from "./widgets/TurnierQr";
+import { RefereeIcon, StatusIcon, FormatInfoIcon } from "./widgets/TurnierInfoIcons";
+import { ModeGlyph } from "./widgets/ModePick";
 import Emoji from "./Emoji";
+import { exportWinnerStaysPdf } from "./turnierBerichtPdf";
 
 const POLL_MS = 8000;
 
@@ -30,6 +37,50 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [entries, setEntries] = useState(null);
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  // Kurzer Hinweis (Haken) nach dem Speichern eines Spiels.
+  const [justSaved, setJustSaved] = useState(null);   // Text wie "Raphi ist neuer Verteidiger" oder null
+  useEffect(() => {
+    if (!justSaved) return undefined;
+    const id = setTimeout(() => setJustSaved(null), 3600);
+    return () => clearTimeout(id);
+  }, [justSaved]);
+
+  // Avatare wandern an ihren neuen Platz (FLIP): ein Herausforderer, der gewinnt, zieht auf den Verteidiger-Platz, der
+  // Verlierer geht ans Ende der Warteschlange, der Naechste rueckt an den Tisch. Gemessen wird relativ zum Bildschirm-
+  // Container (nicht zum Fenster), damit Scrollen dazwischen keine falsche Bewegung ausloest; verglichen wird die
+  // Belegung (Teilnehmer + Platz), nicht die Pixel - gleiche Belegung = nie eine Animation.
+  const rootRef = useRef(null);
+  const flipPrev = useRef(null);
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) { flipPrev.current = null; return; }
+    const els = [...root.querySelectorAll("[data-eid]")];
+    const origin = root.getBoundingClientRect();
+    const rects = {};
+    els.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      rects[el.dataset.eid] = { x: r.left - origin.left, y: r.top - origin.top, w: r.width || 1, el };
+    });
+    const key = els.map((el) => `${el.dataset.eid}:${el.dataset.slot}`).join("|");
+    const prev = flipPrev.current;
+    const calm = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prev && prev.key !== key && !calm) {
+      els.forEach((el) => {
+        const p = prev.rects[el.dataset.eid];
+        const n = rects[el.dataset.eid];
+        if (!p || !n) return;
+        const dx = p.x - n.x, dy = p.y - n.y, sc = p.w / n.w;
+        if (Math.abs(dx) < 2 && Math.abs(dy) < 2 && Math.abs(sc - 1) < 0.02) return;
+        const from = `translate(${dx}px, ${dy}px) scale(${sc})`;
+        el.animate(
+          [{ transform: from, transformOrigin: "0 0", zIndex: 30 }, { transform: "none", transformOrigin: "0 0", zIndex: 30 }],
+          { duration: 850, easing: "cubic-bezier(.22, .8, .3, 1)" }
+        );
+      });
+    }
+    flipPrev.current = { key, rects: Object.fromEntries(Object.entries(rects).map(([k, v]) => [k, { x: v.x, y: v.y, w: v.w }])) };
+  });
 
   // Verbindungsfehler duerfen den angezeigten Stand NIE leeren (Nutzer-Feedback:
   // "das Turnier kommt in einen nicht definierten Zustand, wenn man das Handy
@@ -43,6 +94,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const [offline, setOffline] = useState(false);
   const [gone, setGone] = useState(false);
   const reqRef = useRef(0);
+  // Ist die Runde beendet, aendert sich nichts mehr: kein Abfragen im Hintergrund (spart Datenvolumen), und das Protokoll holt ALLE Spiele.
+  const finishedRef = useRef(false);
+  const GAME_COLS = "id, game_no, entry_a_id, entry_b_id, score_a, score_b, winner_entry_id, played_at";
   const load = useCallback(async () => {
     const my = ++reqRef.current;
     let r;
@@ -55,7 +109,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           .select("*, player1:players!winner_stays_entries_player1_id_fkey(nickname), player2:players!winner_stays_entries_player2_id_fkey(nickname)")
           .eq("session_id", sessionId).order("queue_position"),
         supabase.from("winner_stays_games")
-          .select("id, game_no, entry_a_id, entry_b_id, score_a, score_b, winner_entry_id, played_at")
+          .select(GAME_COLS)
           .eq("session_id", sessionId).order("game_no", { ascending: false }).limit(20),
       ]);
     } catch { r = null; }
@@ -65,19 +119,26 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     setOffline(false);
     if (!sess) { setGone(true); return null; }
     setGone(false);
+    finishedRef.current = sess.status === "finished";
+    let list = gms || [];
+    if (sess.status === "finished") {
+      const all = await supabase.from("winner_stays_games").select(GAME_COLS).eq("session_id", sessionId).order("game_no", { ascending: false }).limit(2000);
+      if (my !== reqRef.current) return null;
+      if (!all.error && all.data) list = all.data;
+    }
     setSession(sess);
     setEntries(ents || []);
-    setGames(gms || []);
-    return gms || [];
+    setGames(list);
+    return list;
   }, [sessionId]);
 
   useEffect(() => {
     load();
     // Im Hintergrund nicht abfragen (spart Datenvolumen, und gesperrte Handys
     // fuehren Timer ohnehin unzuverlaessig aus); beim Zurueckkommen sofort.
-    const tick = () => { if (!document.hidden) load(); };
+    const tick = () => { if (!document.hidden && !finishedRef.current) load(); };
     const id = setInterval(tick, POLL_MS);
-    const back = () => { if (!document.hidden) load(); };
+    const back = () => { if (!document.hidden && !finishedRef.current) load(); };
     document.addEventListener("visibilitychange", back);
     window.addEventListener("online", back);
     window.addEventListener("focus", back);
@@ -93,6 +154,16 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // aktuelle Tisch-Paarung aendert (neue Runde nach Eintragen).
   const [sA, setSA] = useState(0);
   const [sB, setSB] = useState(0);
+  // Reihenfolge der Punkte in dieser Partie ([a, b, ts] je Aenderung): daraus ergibt sich bei Winner-Break, wer das letzte Rack
+  // gewonnen hat und damit das naechste anstoesst (nextBreaker in widgets/BreakRule.jsx).
+  const [rackLog, setRackLog] = useState([]);
+  const bumpScore = (side, d) => {
+    const na = side === "a" ? Math.max(0, sA + d) : sA;
+    const nb = side === "b" ? Math.max(0, sB + d) : sB;
+    if (na === sA && nb === sB) return;
+    setSA(na); setSB(nb);
+    setRackLog((l) => [...l, [na, nb, Date.now()]]);
+  };
   // Spielstand der laufenden Partie gegen ein unfreiwilliges Neuladen sichern
   // (siehe lib/matchDraft.js). Gebunden an die Nummer des letzten gemeldeten
   // Spiels: wurde seither eins gemeldet (auch von einem anderen Geraet), ist der
@@ -114,13 +185,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const prevGameNoRef = useRef(null);
   useEffect(() => {
     if (!wsRestoredRef.current) return;
-    if (prevGameNoRef.current !== null && prevGameNoRef.current !== lastGameNo) { setSA(0); setSB(0); }
+    if (prevGameNoRef.current !== null && prevGameNoRef.current !== lastGameNo) { setSA(0); setSB(0); setRackLog([]); }
     prevGameNoRef.current = lastGameNo;
   }, [session, lastGameNo]);
   const [showAdd, setShowAdd] = useState(false);
-  const [addSelected, setAddSelected] = useState([]);
-  const [teamP1, setTeamP1] = useState(null);
-  const [teamP2, setTeamP2] = useState(null);
+  const [showQr, setShowQr] = useState(false);
   // Nutzer-Feedback: nach dem Anlegen einer Runde ist der leere Zwischen-
   // Screen ("Hinzufügen" erst extra antippen) unnoetig - beim allerersten
   // Laden ohne Teilnehmer gleich direkt die Auswahl aufklappen. Nur EINMAL
@@ -173,7 +242,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // "ueberspringen"-Button macht nur Sinn ab mehr als 3 Teilnehmern (siehe
   // winner_stays_skip_next() - sonst kaeme die uebersprungene Person sofort
   // wieder dran).
-  const canSkip = canManageQueue && posA && posB && entries.length > 3;
   // Nutzer-Feedback: "Es kann jederzeit einer der Spieler ausfallen. Diese
   // Moeglichkeit sollte jeder haben." - Selbstbedienung, unabhaengig von
   // Position (auch am Tisch), siehe winner_stays_set_paused().
@@ -182,9 +250,22 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
   const entryName = (e) => (e?.player2_id ? `${e.player1?.nickname} & ${e.player2?.nickname}` : e?.player1?.nickname);
   const entryById = (id) => entries.find((e) => e.id === id);
+  const finished = session.status === "finished";
+  // Ergebnis + Protokoll als PDF (jsPDF wird erst hier nachgeladen)
+  const downloadPdf = async () => {
+    setPdfBusy(true);
+    try {
+      const chrono = [...games].sort((a, b) => a.game_no - b.game_no).map((g) => ({ ...g, a: entryById(g.entry_a_id), b: entryById(g.entry_b_id) }));
+      await exportWinnerStaysPdf({ session, ranked, games: chrono, nameOfEntry: entryName });
+    } catch (e) {
+      console.warn("PDF-Export fehlgeschlagen", e);
+      toast(t("PDF konnte nicht erstellt werden."));
+    }
+    setPdfBusy(false);
+  };
 
   const reportGame = async () => {
-    if (sA === sB) { toast(t("Unentschieden gibt es beim Billard nicht.")); return; }
+    if (sA === sB) { toast(t("Unentschieden gibt es beim Billard nicht.")); return false; }
     const before = lastGameNo;
     setBusy(true);
     let error = null;
@@ -200,11 +281,15 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       arrived = !!gms && (gms[0]?.game_no ?? 0) > before;
     }
     setBusy(false);
-    if (error && !arrived) { toast(t("Fehler: ") + (error.message || "")); return; }
+    if (error && !arrived) { toast(t("Fehler: ") + (error.message || "")); return false; }
     if (arrived) toast(t("Ergebnis ist angekommen."));
-    setSA(0); setSB(0);
+    // Wer jetzt verteidigt: der Sieger bleibt/wird Verteidiger - das sagt der Hinweis, die Bewegung der Avatare zeigt es.
+    const winnerEntry = sA > sB ? posA : posB;
+    setJustSaved(winnerEntry ? t(sA > sB ? "{name} bleibt Verteidiger" : "{name} ist neuer Verteidiger", { name: entryName(winnerEntry) }) : t("Eingetragen"));
+    setSA(0); setSB(0); setRackLog([]);
     await load();
     onReload && onReload();
+    return true;
   };
 
   // Nutzer-Feedback: "damit gewaehrleistet ist, dass der Tisch so gut als
@@ -212,14 +297,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // ist oder ein dringendes Telefonat fuehren muss" - schickt den
   // Herausforderer ohne Wertung ans Ende der Warteschlange (kein Rack,
   // keine Statistik-Aenderung, siehe winner_stays_skip_next()).
-  const skipNext = async () => {
-    setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_skip_next", { p_session_id: sessionId });
-    setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Übersprungen."));
-    await load();
-  };
 
   // Nutzer-Feedback: "Ein 'Aussetzen' Button. Es kann jederzeit einer der
   // Spieler ausfallen. Diese Moeglichkeit sollte jeder haben." - erst als
@@ -230,6 +307,15 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // uebersprungen, sobald sie an der Reihe waeren (winner_stays_skip_paused
   // in der DB), bis sie sich selbst wieder aktiv melden.
   const togglePaused = async (entry) => {
+    // Pause waehrend ein Ergebnis feststeht: das Spiel waere sonst mitten in der Rotation verloren - es wird deshalb
+    // zuerst gespeichert. Das wird ausdruecklich gesagt, weil es auch ein Fehlklick gewesen sein kann.
+    if (!entry.is_paused && entry.queue_position <= 1 && canReport && sA !== sB) {
+      const winner = sA > sB ? posA : posB;
+      const ok = await appConfirm(t("Es steht {a}:{b} – {name} hat gewonnen. Wenn du jetzt pausierst, wird dieses Ergebnis gespeichert. Fortfahren?",
+        { a: sA, b: sB, name: entryName(winner) }));
+      if (!ok) return;
+      if (!(await reportGame())) return;
+    }
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_set_paused", { p_session_id: sessionId, p_entry_id: entry.id, p_paused: !entry.is_paused });
     setBusy(false);
@@ -238,15 +324,16 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     await load();
   };
 
-  const addSingles = async () => {
-    if (addSelected.length === 0) return;
+  const addSingles = async (ids) => {
+    if (!ids || ids.length === 0) return false;
     setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_add_entries", { p_session_id: sessionId, p_player_ids: addSelected });
+    const { error } = await supabase.rpc("winner_stays_add_entries", { p_session_id: sessionId, p_player_ids: ids });
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     toast(t("Teilnehmer hinzugefügt."));
-    setAddSelected([]); setShowAdd(false);
+    setShowAdd(false);
     await load();
+    return true;
   };
 
   // Nutzer-Feedback: "hier sollte bereits ein Gast-User vorgeschlagen
@@ -260,21 +347,24 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_add_guest", { p_session_id: sessionId, p_nickname: name });
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     toast(t("Gast hinzugefügt."));
     await load();
     onReload && onReload();
+    return true;
   };
 
-  const addTeam = async () => {
-    if (!teamP1 || !teamP2) return;
+  // ids = die zwei gewaehlten Personen aus QuickAddPlayers (team); true bei Erfolg, damit die Auswahl geleert wird.
+  const addTeam = async (ids) => {
+    if (!ids || ids.length !== 2) return false;
     setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_add_team", { p_session_id: sessionId, p_player1_id: teamP1, p_player2_id: teamP2 });
+    const { error } = await supabase.rpc("winner_stays_add_team", { p_session_id: sessionId, p_player1_id: ids[0], p_player2_id: ids[1] });
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     toast(t("Team hinzugefügt."));
-    setTeamP1(null); setTeamP2(null); setShowAdd(false);
+    setShowAdd(false);
     await load();
+    return true;
   };
 
   // Nutzer-Feedback: Warteschlange soll umsortierbar sein - Pfeil-Buttons
@@ -308,22 +398,22 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   const finishSession = async () => {
-    if (!(await appConfirm(t("Diese Runde jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert.")))) return;
+    if (!(await appConfirm(t("Das Turnier jetzt beenden? Für jede Zweier-Paarung wird jetzt ein gewertetes Match mit Protokoll gespeichert.")))) return;
     setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_finish_session", { p_session_id: sessionId });
+    const { error } = await rpcRetry("winner_stays_finish_session", { p_session_id: sessionId });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Runde beendet."));
+    toast(t("Turnier beendet."));
     await load();
   };
 
   const deleteSession = async () => {
-    if (!(await appConfirm(t("Diese Runde wirklich löschen?")))) return;
+    if (!(await appConfirm(t("Dieses Turnier wirklich löschen?")))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_delete_session", { p_session_id: sessionId });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Runde gelöscht."));
+    toast(t("Turnier gelöscht."));
     onBack();
   };
 
@@ -355,63 +445,68 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // gefuellt: "Dabei" gruen, "Pause" gelb (--warn). compact = unter der Person
   // am Tisch, icon = nur Symbol in der Warteschlangen-Zeile (Pause/Play, nie
   // eine Tasse).
-  const pauseSwitch = (entry, { compact, icon } = {}) => {
-    const on = !!entry.is_paused;
-    if (icon) {
-      return (
-        <button type="button" className={"ws-act ws-act-pause" + (on ? " on" : "")} disabled={busy} onClick={() => togglePaused(entry)}
-          aria-label={on ? t("Wieder dabei") : t("Pause setzen")} title={on ? t("Wieder dabei") : t("Pause setzen")}>
-          {on ? <Play size={18} /> : <Pause size={18} />} <span>{on ? t("Wieder dabei") : t("Pause")}</span>
-        </button>
-      );
-    }
+  const pauseSwitch = (entry, { small, icon } = {}) => {
+    const paused = !!entry.is_paused;
+    // Ein runder Knopf wie bei einem Musikplayer: gruen mit Play = dabei, rot mit Pause = pausiert. Antippen wechselt.
+    const label = paused ? t("Pausiert - antippen: wieder dabei") : t("Dabei - antippen: Pause setzen");
     return (
-      <div className={"ws-pause-switch" + (compact ? " compact" : "")} role="group" aria-label={t("Pause")}>
-        <button type="button" className={"in" + (!on ? " active" : "")} aria-pressed={!on} disabled={busy} onClick={() => on && togglePaused(entry)}>
-          <Play size={16} /> {t("Dabei")}
-        </button>
-        <button type="button" className={"out" + (on ? " active" : "")} aria-pressed={on} disabled={busy} onClick={() => !on && togglePaused(entry)}>
-          <Pause size={16} /> {t("Pause")}
-        </button>
-      </div>
+      <button type="button" className={"ws-pp" + (paused ? " paused" : " playing") + (small ? " small" : "") + (icon ? " in-queue" : "")}
+        disabled={busy} onClick={() => togglePaused(entry)} aria-pressed={!paused} aria-label={label} title={label}>
+        {paused ? <Pause size={20} /> : <Play size={20} />}
+      </button>
     );
   };
 
+  // Wer stoesst das naechste Rack an (0 = Verteidiger, 1 = Herausforderer)? Winner-Break: der Sieger des letzten Racks, im ersten Rack der
+  // Verteidiger (= Sieger der letzten Partie). Wechselbreak: abwechselnd, im ersten Rack der Herausforderer. Beim 14/1 gibt es das nicht.
+  const breakRule = normalizeBreakRule(session.break_rule);
+  const breakSide = breakApplies(session.discipline) && posA && posB && session.status === "running"
+    ? nextBreaker(breakRule, breakRule === "winner" ? 0 : 1, [sA, sB], rackLog) : null;
+
   return (
-    <div className="screen">
+    <div className="screen" ref={rootRef}>
       <div className="turnier-layout">
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{session.name}</h2>
-        <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
-      </header>
-      <p className="hint" style={{ marginTop: -6 }}>
-        {t(session.is_doubles ? "Doppel" : "Einzel")} · <DiscBall disc={session.discipline} size={15} />
+        {/* Name in EINER Zeile, die Knoepfe darunter nebeneinander und gleich gross (.head-actions). */}
+        <TurnierToolbar>
+          <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
+          {session.status === "running" && !session.is_doubles && <ToolBtn icon={QrCode} label={t("Einladungslink / QR-Code")} active={showQr} onClick={() => setShowQr((s) => !s)} />}
+          {isOrganizer && session.status === "running" && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAdd} onClick={() => setShowAdd((s) => !s)} />}
+          {isOrganizer && session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
+          {session.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => document.getElementById("ws-protocol")?.scrollIntoView({ behavior: "smooth", block: "start" })} />}
+          {isOrganizer && canDelete && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busy} onClick={deleteSession} />}
+        </TurnierToolbar>
+        {/* Turnierinfos direkt unter dem Namen (order 4), die Knoepfe folgen darunter */}
+        <div className="head-info">
+      <p className="hint">
+        <FormatInfoIcon format="winner_stays" /> · <span className="info-ico" title={t(session.is_doubles ? "Doppel" : "Einzel")} role="img" aria-label={t(session.is_doubles ? "Doppel" : "Einzel")}><ModeGlyph mode={session.is_doubles ? "double" : "single"} size={22} /></span> · <DiscBall disc={session.discipline} size={15} />
         {session.table_number != null && ` · ${t("Tisch")} ${session.table_number}`}
-        {" · "}{session.status === "finished" ? t("beendet") : t("läuft")}
+        {" · "}<StatusIcon status={session.status === "finished" ? "finished" : "running"} />
         {breakApplies(session.discipline) && (
           <> · <BreakPill rule={session.break_rule} onClick={isOrganizer && session.status !== "finished" ? toggleBreakRule : undefined} /></>
         )}
       </p>
       <div className="turnier-organizer-line">
-        <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
+        <RefereeIcon />
         <Ball nick={session.organizer?.nickname} color={colorOf(session.organizer?.nickname)} label={initials(session.organizer?.nickname)} badge={badgeOf(session.organizer?.nickname)} photo={photoOf(session.organizer?.nickname)} size={22} />
         <b>{session.organizer?.nickname || "?"}</b>
+        <PlaceLink locationId={session.location_id} text={session.location_text} />
       </div>
-
-      {isOrganizer && (
-        <div className="chips small" style={{ marginBottom: 10 }}>
-          {session.status === "running" && (
-            <button className="btn ghost" disabled={busy} onClick={finishSession}>
-              <Flag size={15} /> {t("Runde beenden")}
-            </button>
-          )}
-          {canDelete && (
-            <button className="btn ghost" disabled={busy} onClick={deleteSession}>
-              <Trash2 size={15} /> {t("Runde löschen")}
-            </button>
-          )}
         </div>
+      </header>
+
+      {session.status === "running" && !session.is_doubles && (
+        <ToolPanel open={showQr}><TurnierQrPanel tour={session} toast={toast} kind="ws" /></ToolPanel>
+      )}
+
+      {isOrganizer && session.status === "running" && (
+        <ToolPanel open={showAdd}>
+          <QuickAddPlayers players={players} matches={matches} me={me} exclude={existingPlayerIds}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} busy={busy}
+            team={session.is_doubles} onAdd={session.is_doubles ? addTeam : addSingles} onAddGuest={session.is_doubles ? undefined : addGuest} />
+        </ToolPanel>
       )}
 
       {offline && (
@@ -431,12 +526,12 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               </b>
               {statLine(myEntry, rankOf(myEntry))}
             </div>
+            {pauseSwitch(myEntry)}
           </div>
-          {pauseSwitch(myEntry)}
         </section>
       )}
 
-      {(!posA || !posB) ? (
+      {finished ? null : (!posA || !posB) ? (
         <section className="stat-block">
           <p className="hint" style={{ margin: 0 }}>{t("Noch nicht genug Teilnehmer - mindestens zwei nötig, um zu spielen.")}</p>
         </section>
@@ -447,46 +542,67 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               "Neues Match" (MatchScreen, Schritt 2). Nutzer-Feedback 2026-10-10:
               die erste Fassung mit extragrossen Tippflaechen war "zu gross" -
               die Matcheingabe soll in jedem Modus gleich aussehen. */}
-          <div className="score-row ws-score-row">
-            {[[posA, sA, setSA, t("Verteidigt")], [posB, sB, setSB, t("Herausforderer")]].map(([e, val, setVal, role]) => (
-              <div key={e.id} className={"score-col" + (e.is_paused ? " is-paused" : "")}>
-                <span className="ws-role">{role}</span>
-                <div className="sc-avatars">{renderEntryAvatars(e, 56)}</div>
-                <span className="score-name">{entryName(e)}</span>
-                {statLine(e, rankOf(e), true)}
-                {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
-                {canReport && (
-                  <>
-                    <div className="score-num" key={val}>{val}</div>
-                    <div className="score-btns">
-                      <button className="round-btn" disabled={val === 0} onClick={() => setVal((v) => Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
-                      <button className="round-btn plus" onClick={() => setVal((v) => v + 1)} aria-label="plus"><Plus size={20} /></button>
-                    </div>
-                  </>
-                )}
-                {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { compact: true })}
-              </div>
-            ))}
-          </div>
-          {canReport && sA === sB && sA + sB > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
-          {canSkip && (
-            <div className="chips small" style={{ marginBottom: 10 }}>
-              <button className="btn ghost" disabled={busy} onClick={skipNext} title={t("Herausforderer überspringen, wenn die Person gerade nicht verfügbar ist.")}>
-                <SkipForward size={15} /> {t("Überspringen")}
-              </button>
-            </div>
-          )}
+          {/* Scoreboard B1 (Nutzer-Wahl 2026-11-01, aeltere Vorgaben fuer diese Eingabe gelten nicht mehr): Person und Spielstand
+              sind das Erste, was man sieht; Zaehler und Haken sind logisch angeordnet, aber leise. Hochformat: zwei Personen oben,
+              die Zahlen gross in der Mitte, darunter die Zaehler und der Haken als breite Leiste. Querformat/PC: drei Spalten. */}
+          <ScoreBoard hasBreak={breakSide != null} counters={canReport}
+            sides={[[posA, "A", "a", sA, t("Verteidigt")], [posB, "B", "b", sB, t("Herausforderer")]].map(([e, slot, k, val, role], sideIdx) => ({
+              id: e.id, score: val, paused: e.is_paused, label: entryName(e), onBump: (d) => bumpScore(k, d),
+              person: (boardAvatar) => (
+                <>
+                  {/* Der Ring um den Avatar IST die Pause-Anzeige: gruen = dabei, rot = pausiert. Antippen wechselt (mit Rueckfrage,
+                      wenn gerade ein Ergebnis feststeht, siehe togglePaused). */}
+                  {canTogglePaused(e) ? (
+                    <button type="button" className={"ws-b-av ring " + (e.is_paused ? "off" : "on")} disabled={busy} onClick={() => togglePaused(e)}
+                      aria-pressed={!e.is_paused} aria-label={e.is_paused ? t("Pausiert - antippen: wieder dabei") : t("Dabei - antippen: Pause setzen")}
+                      title={e.is_paused ? t("Pausiert - antippen: wieder dabei") : t("Dabei - antippen: Pause setzen")}>
+                      <span className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, boardAvatar)}</span>
+                    </button>
+                  ) : (
+                    <span className={"ws-b-av ring " + (e.is_paused ? "off" : "on")}>
+                      <span className="sc-avatars" data-eid={e.id} data-slot={slot}>{renderEntryAvatars(e, boardAvatar)}</span>
+                    </span>
+                  )}
+                  <span className="ws-b-text">
+                    <span className="ws-role">{role}</span>
+                    <span className="score-name">{softName(entryName(e))}</span>
+                    {/* Statistik leise: Siege, Niederlagen, Serie - da, aber ohne Aufmerksamkeit zu ziehen. */}
+                    <span className="ws-quiet">
+                      <span>{e.wins} {t("S")}</span><span>{e.losses} {t("N")}</span>
+                      {e.streak > 1 && <span><Emoji e="🔥" /> {e.streak}</span>}
+                    </span>
+                    {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
+                  </span>
+                </>
+              ),
+              /* Anstoss: Queue trifft Kugel, senkrecht in einer eigenen Randspalte der Tafel - von den Personen bis zu den Zaehlern. Die
+                 Spalte bleibt auch ungenutzt (Etikett unsichtbar) stehen, damit beim Wechsel nichts springt. */
+              breakMark: (
+                <span className={"ws-break-mark m" + k + (breakSide === sideIdx ? "" : " off")} aria-hidden={breakSide !== sideIdx}
+                  title={t("Diese Person stößt das nächste Rack an")} role="img" aria-label={t("Diese Person stößt das nächste Rack an")}>
+                  {breakSide === sideIdx && <BreakCueIcon />}
+                </span>
+              ),
+            }))}
+            note={justSaved
+              ? <span className="saved-hint"><Check size={15} /> {justSaved}</span>
+              : (canReport && sA === sB && sA + sB > 0 ? <span className="ws-b-tie">{t("Unentschieden gibt's beim Billard nicht ;-)")}</span> : null)}
+            action={{ onClick: reportGame, busy }}
+            /* Bei 0:0 steht statt des Hakens die Fahne - nur fuer den, der das Turnier beenden darf; alle anderen sehen den gesperrten Haken. */
+            emptyAction={isOrganizer && session.status === "running" ? { onClick: finishSession, label: t("Turnier beenden"), disabled: busy } : null} />
         </>
       )}
 
-      {waiting.length > 0 && (
-        <section className="stat-block">
+      {/* Live-Stand und Warteschlange nebeneinander im Goldenen Schnitt (1,618 : 1), am Handy untereinander - beide in voller Breite. */}
+      <div className="ws-lower">
+      {!finished && waiting.length > 0 && (
+        <section className="stat-block ws-queue-card">
           <div className="stat-block-head"><h3><Repeat size={17} /> {t("Warteschlange")}</h3></div>
           <div className="ws-queue">
             {waiting.map((e, i) => (
               <div key={e.id} className={"ws-queue-row" + (e.is_paused ? " is-paused" : "") + (e.id === myEntry?.id ? " is-me" : "")}>
                 <span className="ws-queue-no">{i + 1}.</span>
-                {renderEntryAvatars(e, 34)}
+                <span className="ws-queue-av" data-eid={e.id} data-slot={"Q" + i}>{renderEntryAvatars(e, 34)}</span>
                 <span className="ws-queue-main">
                   <span className="ws-queue-name">{entryName(e)}</span>
                   {statLine(e, rankOf(e))}
@@ -516,44 +632,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         </section>
       )}
 
-      {isOrganizer && session.status === "running" && (
-        <section className="stat-block">
-          <div className="stat-block-head">
-            <h3><UserPlus size={17} /> {t("Teilnehmer")}</h3>
-            <button className="btn ghost" onClick={() => setShowAdd((s) => !s)}>
-              {showAdd ? <><X size={15} /> {t("Abbrechen")}</> : <><UserPlus size={15} /> {t("Hinzufügen")}</>}
-            </button>
-          </div>
-          {showAdd && (
-            session.is_doubles ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
-                  value={teamP1} exclude={[...existingPlayerIds, teamP2].filter(Boolean)}
-                  onSelect={setTeamP1} placeholder={t("Erste Person")} />
-                <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
-                  value={teamP2} exclude={[...existingPlayerIds, teamP1].filter(Boolean)}
-                  onSelect={setTeamP2} placeholder={t("Zweite Person")} />
-                <button className="btn primary" disabled={busy || !teamP1 || !teamP2} onClick={addTeam}>
-                  <Check size={15} /> {t("Team hinzufügen")}
-                </button>
-              </div>
-            ) : (
-              <div>
-                <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
-                  onToggle={(id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} exclude={existingPlayerIds}
-                  onCreateGuest={addGuest} />
-                <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || addSelected.length === 0} onClick={addSingles}>
-                  <Check size={15} /> {t("{n} Teilnehmer hinzufügen", { n: addSelected.length })}
-                </button>
-              </div>
-            )
-          )}
-        </section>
-      )}
-
-      <section className="stat-block">
-        <div className="stat-block-head"><h3><Crown size={17} /> {t("Live-Rangliste")}</h3></div>
+      <section className="stat-block ws-rank-card">
+        <div className="stat-block-head"><h3><Crown size={17} /> {finished ? t("Ergebnis") : t("Live-Rangliste")}</h3></div>
         {ranked.length === 0 ? (
           <p className="hint">{t("Noch keine Teilnehmer.")}</p>
         ) : (
@@ -574,8 +654,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                     {renderEntryAvatars(e, 28)}
                     <span className="stat-name">
                       {entryName(e)}
-                      {e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
-                      {e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
+                      {!finished && e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
+                      {!finished && e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
                     </span>
                   </span>
                   <span className={"ws-rank-num" + alt}>{e.wins}</span>
@@ -587,11 +667,20 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           </div>
         )}
       </section>
+      </div>
 
-      {games.length > 0 && (
-        <section className="stat-block">
-          <div className="stat-block-head"><h3><Repeat size={17} /> {t("Verlauf")}</h3></div>
-          {games.map((g) => {
+      {(games.length > 0 || finished) && (
+        <section className="stat-block ws-protocol" id="ws-protocol">
+          <div className="stat-block-head">
+            <h3>{finished ? <ScrollText size={17} /> : <Repeat size={17} />} {finished ? t("Protokoll") : t("Verlauf")}</h3>
+            {finished && (
+              <button type="button" className="btn ghost" onClick={downloadPdf} disabled={pdfBusy}>
+                {pdfBusy ? <Loader2 size={15} className="spin" /> : <FileDown size={15} />} {t("Als PDF herunterladen")}
+              </button>
+            )}
+          </div>
+          {finished && games.length === 0 && <p className="hint">{t("Es wurde kein Spiel gespielt.")}</p>}
+          {(finished ? [...games].sort((x, y) => x.game_no - y.game_no) : games).map((g) => {
             const ea = entryById(g.entry_a_id), eb = entryById(g.entry_b_id);
             const wonA = g.winner_entry_id === g.entry_a_id;
             return (
@@ -601,6 +690,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   <b style={wonA ? { color: "var(--win)" } : undefined}>{ea ? entryName(ea) : "?"}</b>
                   {" "}{g.score_a}:{g.score_b}{" "}
                   <b style={!wonA ? { color: "var(--win)" } : undefined}>{eb ? entryName(eb) : "?"}</b>
+                  {finished && g.played_at && <span className="rank-meta"> · {fmtDateTime(g.played_at)}</span>}
                 </span>
               </div>
             );
@@ -608,13 +698,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         </section>
       )}
 
-      {canReport && (
-        <div className="sticky-cta ws-cta">
-          <button className="btn primary" disabled={busy || sA === sB} onClick={reportGame}>
-            <Check size={18} /> {t("Eintragen")}
-          </button>
-        </div>
-      )}
       </div>
       <ImprintFooter />
     </div>

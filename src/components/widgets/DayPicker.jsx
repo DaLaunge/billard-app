@@ -8,7 +8,7 @@ import { t, getLang } from "../../lib/i18n";
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const parse = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 
-export default function DayPicker({ value, onChange, days = 14, maxDays = 120 }) {
+export default function DayPicker({ value, onChange, days = 14, maxDays = 120, compact = false }) {
   const loc = getLang() === "en" ? "en-US" : "de-AT";
   const inputRef = useRef(null);
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -18,7 +18,7 @@ export default function DayPicker({ value, onChange, days = 14, maxDays = 120 })
   const full = value ? parse(value).toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "";
   const openNative = () => { const el = inputRef.current; if (!el) return; try { el.showPicker(); } catch { el.focus(); el.click(); } };
   return (
-    <div className="day-picker">
+    <div className={"day-picker" + (compact ? " compact" : "")}>
       <div className="day-row">
         {list.map((d) => {
           const v = iso(d);
@@ -27,7 +27,8 @@ export default function DayPicker({ value, onChange, days = 14, maxDays = 120 })
               onClick={() => onChange(v)}>
               <span className="day-wd">{wd(d)}</span>
               <b>{d.getDate()}</b>
-              <span className="day-mon">{d.toLocaleDateString(loc, { month: "short" }).replace(".", "")}</span>
+              {/* kompakt: der Monat steht nur beim ersten Tag und beim Monatswechsel */}
+              {(!compact || d === list[0] || d.getDate() === 1) && <span className="day-mon">{d.toLocaleDateString(loc, { month: "short" }).replace(".", "")}</span>}
             </button>
           );
         })}

@@ -19,7 +19,7 @@ export const FINAL_GAP = COL_GAP * 1.7;
 // Kleinere Werte halten den Baum kompakter, ohne dass Boxen/Linien enger
 // werden als sie selbst sind - die Kollisionsaufloesung verhindert
 // weiterhin jede Ueberlappung.
-export const ROW_GAP = 14;
+export const ROW_GAP = 24;   // 14 + Platz fuer das Tisch-Label ueber jeder Box (sonst ueberdeckte es den Rand der Box darueber)
 export const SECTION_GAP = 26;
 export const LABEL_H = 26;
 
@@ -61,7 +61,8 @@ export function computeTurnierLayout(matches) {
   const finalMultiRound = finalMaxRound > 1;
   const stackedOrder = ["main", "winners", "losers"].filter((b) => matches.some((m) => m.bracket === b))
     .concat(finalMultiRound ? ["final"] : []);
-  const labelOffset = (stackedOrder.length > 1 || hasFinal) ? LABEL_H : 0;
+  // Abschnittsname (Gewinnerbaum, Finale ...) UND darunter das Tisch-Label der obersten Box brauchen je eigenen Platz, sonst liegen sie uebereinander
+  const labelOffset = (stackedOrder.length > 1 || hasFinal) ? LABEL_H + 20 : 20;   // auch ohne Abschnittsnamen Platz fuer das Tisch-Label der obersten Box
   const pos = {};
   const sections = [];
   const sectionTopByBracket = {};

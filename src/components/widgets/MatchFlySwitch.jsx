@@ -3,7 +3,7 @@ import { t } from "../../lib/i18n";
 import { getMatchFly, storeMatchFly } from "../../lib/uiPrefs";
 import InfoButton from "./InfoButton";
 
-/* Schalter "Kugel springt in die Aufstellung" (Profil bearbeiten -> Dieses Geraet).
+/* Schalter "Kugel springt in die Aufstellung" (Profil bearbeiten -> App-Verhalten).
    Haelt seinen Zustand selbst, weil er nur in localStorage lebt (lib/uiPrefs.js)
    und kein anderer Bildschirm ihn lebend braucht - das Match liest ihn bei jedem
    Flug neu. */

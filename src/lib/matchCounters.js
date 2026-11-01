@@ -82,7 +82,10 @@ export function counterWarnings({ counters, foulLog, scores, disc, names, t }) {
 export async function saveMatchCounters(matchId, counters) {
   if (!matchId || !hasCounters(counters)) return;
   try {
-    const { error } = await rpcRetry("set_match_counters", { p_match_id: matchId, p_counters: counters });
+    // Nur Zaehler > 0 senden: eine Datenbank ohne die Ghost-Migration (2026-10-25) kennt die neuen Schluessel nicht
+    // und lehnt sonst die ganze Anfrage ab, auch wenn sie alle null sind - dann gingen selbst Fluke & Co. verloren.
+    const used = Object.fromEntries(ALL_KEYS.filter((k) => (counters[k]?.[0] || 0) + (counters[k]?.[1] || 0) > 0).map((k) => [k, counters[k]]));
+    const { error } = await rpcRetry("set_match_counters", { p_match_id: matchId, p_counters: used });
     if (error) console.warn("Zusatzzaehler nicht gespeichert:", error.message);
   } catch (e) { console.warn("Zusatzzaehler nicht gespeichert:", e?.message || e); }
 }

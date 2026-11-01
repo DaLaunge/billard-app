@@ -1,21 +1,25 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DiscBall from "./widgets/DiscBall";
 import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText } from "lucide-react";
+import { ChevronLeft, QrCode, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, Lock, FileText, Play, Undo2 } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { initials, fmtDuration, fmtDateTime } from "../lib/format";
+import { initials, fmtDuration, fmtListDateTime } from "../lib/format";
 import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
-import PlayerMultiPicker from "./PlayerMultiPicker";
+import { TurnierToolbar, ToolBtn, ToolPanel, QuickAddPlayers } from "./widgets/TurnierToolbar";
 import TurnierGraph from "./TurnierGraph";
 import TurnierMatchActions, { tmScores } from "./TurnierMatchActions";
+import EndTournamentButton from "./widgets/EndTournamentButton";
 import TurnierBerichtScreen from "./TurnierBerichtScreen";
 import { exportTurnierProtocolPdf } from "./turnierBerichtPdf";
 import { bracketLabel, formatLabel, finalRoundLabel } from "../lib/turnierLayout";
 import { rpcRetry } from "../lib/rpcRetry";
 import Emoji from "./Emoji";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
+import PlaceLink from "./widgets/PlaceLink";
+import { TurnierQrPanel } from "./widgets/TurnierQr";
+import { RefereeIcon, StatusIcon, FormatInfoIcon, ResultsLockIcon } from "./widgets/TurnierInfoIcons";
 import ImprintFooter from "./widgets/ImprintFooter";
 
 const POLL_MS = 8000;
@@ -31,7 +35,10 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [viewMode, setViewMode] = useState("graph"); // list | graph | players - Grafik ist die Standardansicht (Nutzer-Feedback), Jeder-gegen-jeden ohne Playoff hat aber keinen Baum, siehe Fallback-Effekt unten
+  // list | graph | players. null = Automatik: Grafik ist die Standardansicht (Nutzer-Feedback), solange es einen Baum gibt (Jeder-gegen-jeden ohne
+  // Playoff hat keinen, dann Liste). Erst eine eigene Wahl (Chip) legt die Ansicht fest - sonst blieb ein Turnier, das in der Anmeldung noch
+  // keinen Baum hatte, nach dem Start dauerhaft auf "Liste".
+  const [pickedView, setViewMode] = useState(null);
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
   // Maximieren-Modus fuer die Liste/Grafik-Ansicht des Turnierrasters (nicht
   // fuer Teilnehmer) - rein CSS-basiert (position:fixed ueber die ganze
@@ -72,18 +79,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // addPlayers/removePlayer unten sowie
   // tournament_organizer_add_players()/_remove_player()).
   const [showAddPlayers, setShowAddPlayers] = useState(true);
-  const [addSelected, setAddSelected] = useState([]);
-  const toggleAddSelected = (id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-  // Gast-Person ohne App/Login (Nutzer-Feedback: "wenn jemand die App nicht
-  // benutzen will") - kein eigenes Namensfeld mehr, sondern derselbe Weg wie
-  // im normalen Match-Screen (siehe MatchScreen.jsx): die Suche im
-  // PlayerMultiPicker oben IST die Namenseingabe. Findet sie kein echtes
-  // Mitglied, erscheint darunter eine Karte, die den Suchbegriff als
-  // Gast-Namen vorschlaegt (tournament_organizer_add_guest() erledigt
-  // Anlegen + Anmeldung in einem Schritt). Ergebnisse gegen Gaeste zaehlen
-  // fuers Turnier normal, fliessen aber nicht ins Rating (rebuild_elo()
-  // schliesst is_guest aus).
-  const [addQuery, setAddQuery] = useState("");
+  const [showQr, setShowQr] = useState(false);
+  const playersRef = useRef(players);
+  const onReloadRef = useRef(onReload);
+  const reloadedFor = useRef("");
+  playersRef.current = players;
+  onReloadRef.current = onReload;
 
   const load = useCallback(async () => {
     const [{ data: tr }, { data: matches }, { data: ros }] = await Promise.all([
@@ -97,6 +98,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     setTour(tr || null);
     setTms(matches || []);
     setRoster(ros || []);
+    // Per Einladungslink angemeldete Gaeste sind neue players-Zeilen, die die App-Spielerliste noch nicht kennt: ohne Namen blieben sie in der
+    // Anmeldeliste unsichtbar (obwohl gezaehlt). Dann die Spielerliste der App neu laden - hoechstens einmal je unbekannter Gruppe.
+    const known = new Set(playersRef.current.map((p) => p.id));
+    const unknown = [...(ros || []).map((r) => r.player_id), ...(matches || []).flatMap((m) => [m.player1_id, m.player2_id])]
+      .filter((id) => id && !known.has(id)).sort().join(",");
+    if (unknown && unknown !== reloadedFor.current) { reloadedFor.current = unknown; onReloadRef.current?.(); }
     if (tr?.status === "finished") {
       const { data: fs } = await supabase.rpc("tournament_final_standings", { p_tournament_id: tournamentId });
       setFinalStandings(fs || null);
@@ -111,22 +118,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     return () => clearInterval(id);
   }, [load]);
 
-  // Grafik ist die Standardansicht (Nutzer-Feedback) - bei Jeder-gegen-jeden
-  // OHNE Playoff gibt es aber keinen Baum; erst sobald tms geladen ist,
-  // koennen wir das wissen, deshalb hier statt direkt im useState-Default.
-  // Bewusst nur "abwaerts" (graph -> list), niemals umgekehrt - falls waehrend
-  // des Betrachtens nachtraeglich ein Playoff-Baum entsteht, bleibt eine
-  // manuell gewaehlte Ansicht unangetastet.
-  useEffect(() => {
-    if (!tms || !tour) return;
-    // Bei normalem K.O. laeuft der Baum komplett unter bracket='main'
-    // (generate_ko_bracket() nennt ihn nur bei Doppel-K.O. 'winners') - ohne
-    // die format-Abfrage wuerde ein frisch gestartetes K.O.-Turnier hier
-    // sofort wieder auf "Liste" zurueckfallen (siehe hasTreeSections unten).
-    const hasTree = tour.format === "ko" || tms.some((tm) => tm.bracket !== "main");
-    if (viewMode === "graph" && !hasTree) setViewMode("list");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tms, tour]);
+  // viewMode wird weiter unten aus pickedView und hasTreeSections abgeleitet.
 
   const nameOf = useCallback((id) => players.find((p) => p.id === id)?.nickname || null, [players]);
 
@@ -306,27 +298,25 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     if (onReload) onReload();
   };
 
-  const endEarly = async () => {
-    if (!(await appConfirm(t("Turnier jetzt vorzeitig beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste.")))) return;
+  // EIN Knopf "Turnier beenden" (Nutzer 2026-11-01: er braucht es nur einmal): beendet das Turnier UND sperrt die Ergebnisse. Laeuft ein
+  // Turnier von selbst zu Ende (letztes Spiel gespielt), steht derselbe Knopf noch da und sperrt nur noch. Die Rueckfrage sagt,
+  // dass danach nichts mehr geaendert werden kann.
+  const NO_CHANGES = "Danach sind keine Änderungen und keine Ergebnis-Korrekturen mehr möglich.";
+  const endTournament = async () => {
+    const running = tour.status === "running";
+    const q = running
+      ? t("Turnier jetzt beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste.") + " " + t(NO_CHANGES)
+      : t("Turnier endgültig beenden?") + " " + t(NO_CHANGES);
+    if (!(await appConfirm(q))) return;
     setBusyId("end");
-    const { error } = await supabase.rpc("tournament_end_early", { p_tournament_id: tournamentId });
+    if (running) {
+      const { error } = await supabase.rpc("tournament_end_early", { p_tournament_id: tournamentId });
+      if (error) { setBusyId(null); toast(t("Fehler: ") + error.message); return; }
+    }
+    const { error: e2 } = await supabase.rpc("tournament_confirm_results", { p_tournament_id: tournamentId });
     setBusyId(null);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Turnier beendet."));
-    await load();
-  };
-
-  // Schranke (Nutzer-Feedback): erst mit dieser expliziten Bestaetigung durch
-  // Turnierleitung/Admin werden Ergebnis-Korrekturen gesperrt (siehe
-  // resultsLocked/tournament_confirm_results) - bis dahin bleiben Tippfehler
-  // jederzeit korrigierbar.
-  const confirmResults = async () => {
-    if (!(await appConfirm(t("Turnier endgültig bestätigen? Danach sind keine Ergebnis-Korrekturen mehr möglich.")))) return;
-    setBusyId("confirmResults");
-    const { error } = await supabase.rpc("tournament_confirm_results", { p_tournament_id: tournamentId });
-    setBusyId(null);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Turnier bestätigt - Korrekturen sind jetzt gesperrt."));
+    if (e2) { toast(t("Fehler: ") + e2.message); await load(); return; }
+    toast(t("Turnier beendet - Korrekturen sind jetzt gesperrt."));
     await load();
   };
 
@@ -361,32 +351,34 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     await load();
   };
 
-  const addPlayers = async () => {
+  // Beide liefern true bei Erfolg (QuickAddPlayers leert erst dann seine Auswahl). Das Panel bleibt nach einem Gast offen, damit man
+  // weitere Personen nachlegen kann; nach "Hinzufuegen" klappt es zu.
+  const addPlayers = async (ids) => {
+    if (!ids || ids.length === 0) return false;
     setBusyId("addPlayers");
     const { error } = await supabase.rpc("tournament_organizer_add_players", {
-      p_tournament_id: tournamentId, p_player_ids: addSelected,
+      p_tournament_id: tournamentId, p_player_ids: ids,
     });
     setBusyId(null);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     toast(t("Spieler hinzugefügt."));
-    setAddSelected([]);
     setShowAddPlayers(false);
     await load();
+    return true;
   };
 
-  const addGuest = async () => {
-    const nick = addQuery.trim();
-    if (!nick) return;
+  const addGuest = async (nick) => {
+    if (!nick) return false;
     setBusyId("addGuest");
     const { error } = await supabase.rpc("tournament_organizer_add_guest", {
       p_tournament_id: tournamentId, p_nickname: nick,
     });
     setBusyId(null);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     toast(t("Gast hinzugefügt."));
-    setAddQuery("");
     await load();
     if (onReload) await onReload();
+    return true;
   };
 
   const removePlayer = async (playerId) => {
@@ -410,7 +402,23 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
   const startTournament = async () => {
     if (missingPlayers > 0) { toast(t("Es fehlen noch {n} Spieler zum Start.", { n: missingPlayers })); return; }
-    if (!(await appConfirm(t("Turnier jetzt starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost.")))) return;
+    // Vor dem Start immer den aktuellen Stand der Anmeldungen holen: Per Einladungslink melden sich Leute auch waehrend die Liste offen ist
+    // an oder ab. Hat sich seit der Anzeige etwas geaendert, wird NICHT gestartet - die Turnierleitung sieht erst die neue Liste.
+    setBusyId("start");
+    const { data: fresh, error: freshErr } = await supabase.from("tournament_players").select("player_id").eq("tournament_id", tournamentId);
+    if (freshErr) { setBusyId(null); toast(t("Fehler: ") + freshErr.message); return; }
+    const before = new Set((roster || []).map((r) => r.player_id));
+    const now = new Set((fresh || []).map((r) => r.player_id));
+    const changed = before.size !== now.size || [...now].some((id) => !before.has(id));
+    if (changed) {
+      setBusyId(null);
+      await load();
+      if (onReload) await onReload();
+      toast(t("Die Anmeldungen haben sich geändert: jetzt {n} Teilnehmer. Bitte die Liste prüfen und nochmal starten.", { n: now.size }));
+      return;
+    }
+    setBusyId(null);
+    if (!(await appConfirm(t("Turnier jetzt mit {n} Teilnehmern starten? Der Turnierbaum wird aus den aktuell angemeldeten Spielern ausgelost – danach sind keine Änderungen an der Anmeldung mehr möglich.", { n: now.size })))) return;
     setBusyId("start");
     const { error } = await supabase.rpc("tournament_start", { p_tournament_id: tournamentId });
     setBusyId(null);
@@ -463,36 +471,56 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
 
   if (tour.status === "setup") {
     const isRegistered = (roster || []).some((r) => r.player_id === me.id);
-    // Gleiche Logik wie PlayerMultiPickers eigener "candidates"-Filter (ohne
-    // die exclude-Liste extra durchzureichen reicht ein simpler roster-Check
-    // hier) - nur um zu wissen, ob die Suche dort gerade ins Leere laeuft.
     const rosterIds = (roster || []).map((r) => r.player_id);
-    const addQueryHasRealMatch = players.some((p) =>
-      !p.is_ghost && !p.is_guest && !p.blocked && !rosterIds.includes(p.id)
-      && p.nickname.toLowerCase().includes(addQuery.trim().toLowerCase())
-    );
     return (
       <div className="screen">
         <div className="turnier-layout">
         <header className="screen-head with-back">
           <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
           <h2>{tour.name}</h2>
-          {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
-        </header>
-        <p className="hint" style={{ marginTop: -6 }}>
-          {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {t("Anmeldung offen")}
+          <TurnierToolbar>
+            {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
+            <ToolBtn icon={QrCode} label={t("Einladungslink / QR-Code")} active={showQr} onClick={() => setShowQr((s) => !s)} />
+            {isOrganizer && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAddPlayers} onClick={() => setShowAddPlayers((s) => !s)} />}
+            {isOrganizer && <ToolBtn icon={Play} label={t("Turnier starten")} disabled={busyId === "start" || missingPlayers > 0} onClick={startTournament} />}
+            {isOrganizer && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busyId === "delete"} onClick={deleteTournament} />}
+          </TurnierToolbar>
+          <div className="head-info">
+        <p className="hint">
+          <FormatInfoIcon format={tour.format} /> · <DiscBall disc={tour.discipline} size={15} /> · <StatusIcon status="setup" />
           {breakApplies(tour.discipline) && (
             <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer ? toggleBreakRule : undefined} /></>
           )}
         </p>
         <div className="turnier-organizer-line">
-          <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
+          <RefereeIcon />
           <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
           <b>{organizerName || "?"}</b>
+          <PlaceLink locationId={tour.location_id} text={tour.location_text} />
         </div>
+          </div>
+        </header>
+
+        <ToolPanel open={showQr}><TurnierQrPanel tour={tour} toast={toast} /></ToolPanel>
+
+        {isOrganizer && (
+          <ToolPanel open={showAddPlayers}>
+            <QuickAddPlayers players={players} matches={matches} me={me} exclude={rosterIds}
+              colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} busy={busyId === "addPlayers" || busyId === "addGuest"}
+              onAdd={addPlayers} onAddGuest={addGuest} />
+          </ToolPanel>
+        )}
+
+        {isOrganizer && missingPlayers > 0 && (
+          <p className="ghost-sub" style={{ margin: "0 0 10px" }}>
+            {t("Für dieses Format braucht es mindestens {n} Spieler - es fehlen noch {m}. Spieler hinzufügen oder das Turnier löschen.", { n: minStartPlayers, m: missingPlayers })}
+          </p>
+        )}
 
         <section className="stat-block">
-          <div className="stat-block-head"><h3><Users size={17} /> {t("Angemeldet")} ({(roster || []).length})</h3></div>
+          <div className="stat-block-head">
+            <h3><Users size={17} /> {t("Angemeldet")} ({(roster || []).length})</h3>
+          </div>
           {(roster || []).length === 0 ? (
             <p className="hint">{t("Noch niemand angemeldet.")}</p>
           ) : (
@@ -520,54 +548,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
             onClick={isRegistered ? unregister : register}>
             {isRegistered ? t("Abmelden§Turnier") : t("Anmelden§Turnier")}
           </button>
-
-          {isOrganizer && (
-            <>
-              <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setShowAddPlayers((s) => !s)}>
-                {showAddPlayers ? <><X size={15} /> {t("Ausblenden")}</> : <><UserPlus size={15} /> {t("Spieler hinzufügen")}</>}
-              </button>
-              {showAddPlayers && (
-                <div style={{ marginTop: 10 }}>
-                  <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
-                    onToggle={toggleAddSelected} colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
-                    exclude={(roster || []).map((r) => r.player_id)} onQueryChange={setAddQuery}
-                    placeholder={t("Spieler suchen oder Gast eingeben …")} />
-                  <button className="btn primary" style={{ marginTop: 10 }}
-                    disabled={addSelected.length === 0 || busyId === "addPlayers"} onClick={addPlayers}>
-                    <Check size={15} /> {t("{n} Spieler hinzufügen", { n: addSelected.length })}
-                  </button>
-                  {addQuery.trim() && !addQueryHasRealMatch && (
-                    <div className="guest-empty-card" style={{ marginTop: 10, marginBottom: 0 }}>
-                      <div className="ghost-info">
-                        <span className="ghost-name"><Emoji e="🤔" /> {t('Niemand namens "{q}" gefunden', { q: addQuery.trim() })}</span>
-                        <span className="ghost-sub">{t("Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.")}</span>
-                      </div>
-                      <button className="btn primary" disabled={busyId === "addGuest"} onClick={addGuest}>
-                        <UserPlus size={16} /> {t('"{q}" als Gast hinzufügen', { q: addQuery.trim() })}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
         </section>
 
-        {isOrganizer && (
-          <div className="chips small" style={{ marginBottom: 10 }}>
-            {missingPlayers > 0 && (
-              <div className="ghost-sub" style={{ width: "100%", marginBottom: 6 }}>
-                {t("Für dieses Format braucht es mindestens {n} Spieler - es fehlen noch {m}. Spieler hinzufügen oder das Turnier löschen.", { n: minStartPlayers, m: missingPlayers })}
-              </div>
-            )}
-            <button className="btn primary" disabled={busyId === "start" || missingPlayers > 0} onClick={startTournament}>
-              <Flag size={15} /> {t("Turnier starten")}
-            </button>
-            <button className="btn ghost" disabled={busyId === "delete"} onClick={deleteTournament}>
-              <Trash2 size={15} /> {t("Turnier löschen")}
-            </button>
-          </div>
-        )}
         </div>
       </div>
     );
@@ -590,6 +572,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // eine Grafik-Ansicht bekommen, da 'main' sonst nur die flache
   // Jeder-gegen-jeden-Tabelle ohne Baumstruktur ist (Nutzer-Feedback).
   const hasTreeSections = tour.format === "ko" || bracketOrder.some((b) => b !== "main");
+  const viewMode = pickedView === "graph" && !hasTreeSections ? "list" : (pickedView || (hasTreeSections ? "graph" : "list"));
 
   const renderMatch = (tm) => {
     const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);
@@ -628,55 +611,29 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
       <header className="screen-head with-back">
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{tour.name}</h2>
-        {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
-      </header>
-      <p className="hint" style={{ marginTop: -6 }}>
-        {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {tour.status === "finished" ? t("beendet") : t("läuft")}
-        {tour.status === "finished" && (resultsLocked
-          ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
-          : <> · {t("Korrekturen noch möglich")}</>)}
+        <TurnierToolbar>
+          {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
+          {isOrganizer && tour.status === "running" && canDeleteTournament && <ToolBtn icon={Undo2} label={t("Start rückgängig machen")} disabled={busyId === "cancelStart"} onClick={cancelStart} />}
+          {isOrganizer && (tour.status === "running" || canConfirmResults) && <EndTournamentButton disabled={busyId === "end"} onClick={endTournament} />}
+          {tour.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => setShowReport(true)} />}
+          {isOrganizer && canDeleteTournament && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busyId === "delete"} onClick={deleteTournament} />}
+        </TurnierToolbar>
+        <div className="head-info">
+      <p className="hint">
+        <FormatInfoIcon format={tour.format} /> · <DiscBall disc={tour.discipline} size={15} /> · <StatusIcon status={tour.status === "finished" ? "finished" : "running"} />
+        {tour.status === "finished" && <> · <ResultsLockIcon locked={resultsLocked} /></>}
         {breakApplies(tour.discipline) && (
           <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer && tour.status !== "finished" ? toggleBreakRule : undefined} /></>
         )}
       </p>
       <div className="turnier-organizer-line">
-        <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
+        <RefereeIcon />
         <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
         <b>{organizerName || "?"}</b>
+        <PlaceLink locationId={tour.location_id} text={tour.location_text} />
       </div>
-
-      {isOrganizer && (tour.status === "running" || canDeleteTournament || canConfirmResults) && (
-        <div className="chips small" style={{ marginBottom: 10 }}>
-          {tour.status === "running" && (
-            <button className="btn ghost" disabled={busyId === "end"} onClick={endEarly}>
-              <Flag size={15} /> {t("Turnier vorzeitig beenden")}
-            </button>
-          )}
-          {tour.status === "running" && canDeleteTournament && (
-            <button className="btn ghost" disabled={busyId === "cancelStart"} onClick={cancelStart}>
-              <Users size={15} /> {t("Start rückgängig machen")}
-            </button>
-          )}
-          {canConfirmResults && (
-            <button className="btn ghost" disabled={busyId === "confirmResults"} onClick={confirmResults}>
-              <ShieldCheck size={15} /> {t("Turnier bestätigen")}
-            </button>
-          )}
-          {canDeleteTournament && (
-            <button className="btn ghost" disabled={busyId === "delete"} onClick={deleteTournament}>
-              <Trash2 size={15} /> {t("Turnier löschen")}
-            </button>
-          )}
         </div>
-      )}
-
-      {tour.status === "finished" && (
-        <div className="chips small" style={{ marginBottom: 10 }}>
-          <button className="btn ghost" onClick={() => setShowReport(true)}>
-            <FileText size={15} /> {t("Kompletter Turnierbericht")}
-          </button>
-        </div>
-      )}
+      </header>
 
       {finalStandingsGrouped && (
         <section className="stat-block">
@@ -750,7 +707,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
             const sc = tmScores(tm);
             return (
               <div key={tm.id} className="stat-row turnier-standings-row">
-                <span className="m-date m-datetime">{fmtDateTime(tm.match.played_at)}</span>
+                <span className="m-date m-datetime">{fmtListDateTime(tm.match.played_at)}</span>
                 <Ball nick={n1} color={colorOf(n1)} label={initials(n1)} badge={badgeOf(n1)} photo={photoOf(n1)} size={24} />
                 <span className="stat-name">
                   {n1} <b style={won1 ? { color: "var(--win)" } : undefined}>{sc.s1}</b>

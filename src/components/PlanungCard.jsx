@@ -31,7 +31,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
         </div>
         <span className="plan-pill"><Calendar size={12} /> {fmtDate(planning.planned_date)}</span>
       </button>
-      {place && <div className="ping-loc"><MapPin size={16} /> {place.name}<RouteButton place={place} className="route-link" size={14}> {t("Route")}</RouteButton></div>}
+      {place && <div className="ping-loc"><RouteButton place={place} className="route-link route-left" size={16} /> {place.name}</div>}
       {planning.message && <p className="ping-msg">"<EmojiText>{planning.message}</EmojiText>"</p>}
 
       {planning.replies?.length > 0 && (

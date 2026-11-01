@@ -1,7 +1,7 @@
 import { t } from "../../lib/i18n";
 import InfoButton from "./InfoButton";
 
-/* Schalter "Popup bei offener Bestaetigung" (Profil bearbeiten -> Dieses Geraet).
+/* Schalter "Popup bei offener Bestaetigung" (Profil bearbeiten -> App-Verhalten).
    Der Zustand lebt in App.jsx (pendingPopupOn), weil das Popup dort haengt. */
 export default function PendingPopupSwitch({ on, onChange }) {
   const label = t("Popup bei offener Bestätigung");

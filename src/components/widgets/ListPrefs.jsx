@@ -4,7 +4,7 @@ import { getListMode, storeListMode, getStickyHeads, storeStickyHeads } from "..
 import InfoButton from "./InfoButton";
 import ListModeOption from "./ListModeOption";
 
-/* Einstellungen "Listen und Kapitel" (Profil -> Einstellungen -> Dieses Geraet, lib/uiPrefs.js):
+/* Einstellungen "Listen und Kapitel" (Profil -> Einstellungen -> App-Verhalten, lib/uiPrefs.js):
    Ansicht (Doomscroller = eine lange Liste ohne Buttons / Tab-Freak = Kapitel-Buttons oben, ein Klick zeigt das Kapitel) und, nur beim Doomscroller, das Anpinnen der Kapitelkoepfe.
    Die Bildschirme lesen die Werte beim Aufbau, die Einstellung gilt also ab dem naechsten Oeffnen. */
 export default function ListPrefs() {

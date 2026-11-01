@@ -18,6 +18,25 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "427.31", icon: "📄",
+    items: ["Ist ein Winner-Stays-Turnier beendet, zeigt es nur noch das Ergebnis und das Protokoll aller Spiele – ohne Zähler. Beides gibt es auch als PDF zum Herunterladen."],
+    en: ["Once a Winner Stays tournament has ended it shows only the result and the log of all games – no counter any more. Both are also available as a PDF download."] },
+  { version: "427.2", icon: "🕐",
+    items: ["In „Letzte Matches“ und im Turnier-Spielverlauf steht jetzt nur noch das Datum. Die Uhrzeit kannst du in den Einstellungen unter „App-Verhalten“ wieder einschalten."],
+    en: ["“Recent matches” and the tournament match log now show only the date. You can turn the time back on in Settings under “App behavior”."] },
+  { version: "427", icon: "🔗",
+    items: [
+      "Turniere haben einen Einladungslink mit QR-Code (solange die Anmeldung offen ist): Mitglieder sind damit sofort angemeldet, Neue melden sich an oder spielen nur mit ihrem Namen als Gast mit. Gäste sehen, wann sie dran sind, zählen ihr Match mit und melden und bestätigen es selbst.",
+      "Auch Winner Stays hat einen QR-Code: Mitglieder und Gäste reihen sich damit jederzeit selbst in die Warteschlange ein, Gäste am Tisch melden ihr Spiel selbst.",
+      "Neues Turnier: Namensvorschläge, ein Würfel für Zufallsnamen und ein Ort (Lokal oder Text). Der Ort ist in der Übersicht und im Turnier anklickbar und öffnet die Route.",
+      "Orte tragen überall den Kartenstift, im Live-Screen steht er als Route-Knopf links vom Ortsnamen.",
+    ],
+    en: [
+      "Tournaments have an invitation link with a QR code (while registration is open): members are registered at once, new people sign up or join as a guest with just their name. Guests see when they are up, track their match and report and confirm it themselves.",
+      "Winner Stays has a QR code too: members and guests join the queue themselves at any time, guests at the table report their game themselves.",
+      "New tournament: name suggestions, a dice for random names and a place (venue or text). The place is clickable in the overview and in the tournament and opens the route.",
+      "Places carry the map pin everywhere; in the Live screen it is the route button to the left of the place name.",
+    ] },
   { version: "421.1", icon: "🧮",
     items: ["Jedes Match-Protokoll zeigt jetzt eine kleine Tabelle: wer wie viele Rating-Punkte gewonnen oder verloren hat – und warum."],
     en: ["Every match protocol now shows a small table: who won or lost how many rating points – and why."] },

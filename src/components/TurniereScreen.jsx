@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronRight, Plus, Search, Trophy, X } from "lucide-react";
+import { ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
+import LocationPicker from "./widgets/LocationPicker";
+import PlaceLink from "./widgets/PlaceLink";
+import TurnierQrButton from "./widgets/TurnierQr";
+import { useLocations } from "../lib/locationStore";
+import { suggestNames, randomName } from "../lib/turnierNames";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
@@ -10,6 +15,7 @@ import { ModeTiles } from "./widgets/ModePick";
 import DiscBall, { DiscPick } from "./widgets/DiscBall";
 import { BreakSwitch, DEFAULT_BREAK_RULE, breakApplies } from "./widgets/BreakRule";
 import { FORMAT_GLYPH } from "./widgets/FormatGlyph";
+import { RefereeIcon } from "./widgets/TurnierInfoIcons";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 
 const formatLabel = (item) =>
@@ -38,7 +44,7 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t(
 // getoente Flaeche, beendet/abgebrochen = neutral.
 const statusTone = (s) => (s === "setup" ? "open" : s === "finished" || s === "cancelled" ? "done" : "live");
 
-export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerStays }) {
+export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinnerStays }) {
   const [tournaments, setTournaments] = useState(null);
   const [wsSessions, setWsSessions] = useState(null);
   // Default "running" statt "all" (Nutzer-Feedback) - beim Oeffnen der
@@ -48,6 +54,19 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
   const [query, setQuery] = useState(""); // Suche nach Name
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
+  // Ort wie bei "Live gehen": ein Lokal aus dem Katalog (LocationPicker) oder ein getippter Ort; im Namen steht dessen Text. Wird gemerkt.
+  const { list: locList } = useLocations();
+  const [placeLocId, setPlaceLocId] = useState(() => { try { return localStorage.getItem("turnierPlaceLoc") || null; } catch { return null; } });
+  const [placeText, setPlaceText] = useState(() => { try { return localStorage.getItem("turnierPlace") || ""; } catch { return ""; } });
+  const place = locList.find((l) => l.id === placeLocId)?.name || placeText;
+  useEffect(() => { try { localStorage.setItem("turnierPlaceLoc", placeLocId || ""); localStorage.setItem("turnierPlace", placeText); } catch { /* */ } }, [placeLocId, placeText]);
+  // Namen bestehender Turniere (klein geschrieben): Zufallsnamen und Vorschlaege vermeiden sie
+  const takenNames = useMemo(() => new Set([...(tournaments || []), ...(wsSessions || [])].map((x) => (x.name || "").trim().toLowerCase())), [tournaments, wsSessions]);
+  // Beim Oeffnen des Formulars gleich einen freien Zufallsnamen vorschlagen (nur wenn das Feld leer ist)
+  useEffect(() => {
+    if (showForm && !name && tournaments != null && wsSessions != null) setName(randomName({ place, taken: takenNames }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showForm, tournaments, wsSessions]);
   const [format, setFormat] = useState("ko"); // "ko" | "double_ko" | "round_robin" | "winner_stays"
   const [discipline, setDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
   const [tableMode, setTableMode] = useState("range");
@@ -74,14 +93,17 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
     // Screen laedt sonst keine Spielerliste, ein Join spart eine zusaetzliche
     // Anfrage/Prop-Kette.
     const { data, error } = await supabase.from("tournaments")
-      .select("id, name, format, discipline, status, created_at, organizer:players!tournaments_organizer_id_fkey(nickname)")
-      .order("created_at", { ascending: false });
+      .select("id, name, format, discipline, status, created_at, location_id, location_text, organizer:players!tournaments_organizer_id_fkey(nickname)")
+      .order("created_at", { ascending: false })
+      // Spalten Ort fehlen vor der Migration 2026-10-30: dann ohne sie laden
+      .then((r) => (r.error ? supabase.from("tournaments").select("id, name, format, discipline, status, created_at, organizer:players!tournaments_organizer_id_fkey(nickname)").order("created_at", { ascending: false }) : r));
     if (!error) setTournaments(data || []);
   };
   const loadWs = async () => {
     const { data, error } = await supabase.from("winner_stays_sessions")
-      .select("id, name, discipline, is_doubles, table_number, status, created_at, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
-      .order("created_at", { ascending: false });
+      .select("id, name, discipline, is_doubles, table_number, status, created_at, location_id, location_text, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
+      .order("created_at", { ascending: false })
+      .then((r) => (r.error ? supabase.from("winner_stays_sessions").select("id, name, discipline, is_doubles, table_number, status, created_at, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)").order("created_at", { ascending: false }) : r));
     if (!error) setWsSessions(data || []);
   };
   useEffect(() => { load(); loadWs(); }, []);
@@ -133,6 +155,12 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
     if (error) toast(t("Fehler: ") + error.message);
   };
 
+  // Ort (Lokal aus dem Katalog oder getippter Text) am neuen Turnier speichern; fehlt die Migration, bleibt es still (der Name enthaelt den Ort ohnehin)
+  const saveLocation = async (kind, id) => {
+    if (!placeLocId && !placeText.trim()) return;
+    const { error } = await supabase.rpc("set_tournament_location", { p_kind: kind, p_id: id, p_location_id: placeLocId, p_text: placeText.trim() || null });
+    if (error) console.warn("Ort konnte nicht gespeichert werden:", error.message);
+  };
   const create = async () => {
     if (!name.trim()) { toast(t("Turniername fehlt.")); return; }
 
@@ -147,6 +175,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
       setBusy(false);
       if (error) { toast(t("Fehler: ") + error.message); return; }
       await applyBreakRule("winner_stays", data.id);
+      await saveLocation("winner_stays", data.id);
       toast(t("Winner-Stays-Runde erstellt."));
       resetForm();
       await loadWs();
@@ -165,6 +194,7 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await applyBreakRule("tournament", data.id);
+    await saveLocation("tournament", data.id);
     toast(t("Turnier erstellt – Anmeldung ist jetzt offen."));
     resetForm();
     await load();
@@ -211,7 +241,29 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
               ))}
             </div>
 
-            <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
+            {/* Name: Ort (optional, wird gemerkt) + Wuerfel fuer einen kreativen Zufallsnamen + Vorschlaege zum Antippen */}
+            <FieldLabel label={t("Name")} />
+            <div className="name-row">
+              <button type="button" className="icon-btn" onClick={() => setName(randomName({ place, exclude: name, taken: takenNames }))}
+                aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={18} /></button>
+              <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="chips small">
+              {suggestNames({ place, discipline, format, taken: takenNames }).map((s) => (
+                <button key={s} type="button" className={"chip" + (name === s ? " active" : "")} onClick={() => setName(s)}>{s}</button>
+              ))}
+            </div>
+            <FieldLabel label={t("Ort (optional)")} info={t("Wie bei „Live gehen“: ein Lokal auswählen oder einen Ort eintippen. Der Ort steht dann im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel links würfelt einen kreativen Namen.")} />
+            <LocationPicker value={placeLocId} toast={toast} me={me} placeholder={t("Lokal oder Ort suchen oder eingeben")}
+              onChange={(id) => { setPlaceLocId(id); if (id) { setPlaceText(""); } else { setPlaceText(""); } }}
+              onUseText={(txt) => { setPlaceLocId(null); setPlaceText(txt); }} />
+            {placeText && !placeLocId && (
+              <div className="loc-sel">
+                <MapPin size={18} className="loc-sel-ico" />
+                <div className="loc-sel-txt"><b>{placeText}</b></div>
+                <button type="button" className="icon-btn small" onClick={() => setPlaceText("")} aria-label={t("Anderes Lokal")} title={t("Anderes Lokal")}><X size={16} /></button>
+              </div>
+            )}
 
             {/* Format als Kacheln mit Struktur-Zeichnung statt als Textchips
                 (Nutzer-Feedback: Erklaerungen lieber visuell). "Doppel-K.O."
@@ -329,8 +381,9 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
             // Wort zu lesen. Der Name steht weiterhin daneben.
             const Glyph = FORMAT_GLYPH[it._kind === "winnerstays" ? "winner_stays" : it.format] || FORMAT_GLYPH.ko;
             return (
-              <button key={it.id} className="turnier-list-row reveal"
-                onClick={() => it._kind === "winnerstays" ? onOpenWinnerStays(it.id) : onOpenTournament(it.id)}>
+              <div key={it.id} className="turnier-list-row reveal" role="button" tabIndex={0}
+                onClick={() => it._kind === "winnerstays" ? onOpenWinnerStays(it.id) : onOpenTournament(it.id)}
+                onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); e.currentTarget.click(); } }}>
                 <span className="turnier-list-row-glyph" title={formatLabel(it)}><Glyph /></span>
                 <span className="turnier-list-row-main">
                   <span className="turnier-list-row-title">
@@ -342,10 +395,16 @@ export default function TurniereScreen({ toast, onOpenTournament, onOpenWinnerSt
                     {it._kind === "winnerstays" && it.table_number != null && ` · ${t("Tisch")} ${it.table_number}`}
                     {" · "}{fmtDate(it.created_at)}
                   </span>
-                  <span className="turnier-list-row-meta">{t("Turnierleitung")}: {it.organizer?.nickname || "?"}</span>
+                  <span className="turnier-list-row-meta turnier-list-row-ref"><RefereeIcon size={16} /> {it.organizer?.nickname || "?"}</span>
+                  <PlaceLink locationId={it.location_id} text={it.location_text} className="place-link turnier-list-row-meta" />
                 </span>
+                {/* Turnier: nur solange die Anmeldung offen ist (nach dem Start ist es zu spaet). Winner Stays: solange die Runde laeuft
+                    (Einzel; bei einem Doppel braucht ein Team zwei Personen) */}
+                {((it._kind !== "winnerstays" && it.status === "setup") || (it._kind === "winnerstays" && it.status === "running" && !it.is_doubles)) && (
+                  <TurnierQrButton tour={it} toast={toast} size={20} className="icon-btn tqr-row" kind={it._kind === "winnerstays" ? "ws" : "tournament"} />
+                )}
                 <ChevronRight size={20} className="turnier-list-row-chevron" />
-              </button>
+              </div>
             );
           });
         })()}

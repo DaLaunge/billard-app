@@ -2,6 +2,7 @@
    HELFER
    ============================================================ */
 import { t, getLang } from "./i18n";
+import { getShowTimes } from "./uiPrefs";
 
 export const BALL_PALETTE = ["#E8B321", "#2B5DA8", "#C0392B", "#6C4AB0", "#E07B2F", "#2E7D4F", "#8B3A2E", "#B0578D"];
 export const hashColor = (name = "") => {
@@ -37,6 +38,8 @@ export const fmtDateTime = (d) => {
   const mm = String(x.getMinutes()).padStart(2, "0");
   return `${fmtDate(x)} ${hh}:${mm}`;
 };
+// Datum + Uhrzeit fuer LISTEN: die Uhrzeit nur, wenn das Geraet sie eingeschaltet hat (uiPrefs getShowTimes).
+export const fmtListDateTime = (d) => (getShowTimes() ? fmtDateTime(d) : fmtDate(d));
 export const fmtTime = (ms) => {
   if (typeof ms !== "number") return "-";
   const d = new Date(ms);

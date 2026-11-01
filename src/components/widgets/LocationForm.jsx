@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from "react";
-import { Search, LocateFixed, Check, X, ExternalLink, MapPin, Map as MapIcon, AlertTriangle } from "lucide-react";
+import { Search, Check, X, ExternalLink, MapPin, Map as MapIcon, AlertTriangle } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { loadLocations, useLocations, distanceM, parseCoords, searchAddress, reverseAddress, mapUrl } from "../../lib/locationStore";
@@ -81,7 +81,7 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
 
       <p className="loc-q">{t("Wo liegt das Lokal?")}</p>
       <div className="loc-how">
-        <button type="button" className={"chip" + (pos && !showAddr ? " active" : "")} onClick={gps} disabled={busy}><LocateFixed size={14} /> {t("Mein Standort")}</button>
+        <button type="button" className={"chip" + (pos && !showAddr ? " active" : "")} onClick={gps} disabled={busy}><MapPin size={14} /> {t("Mein Standort")}</button>
         <button type="button" className={"chip" + (showAddr ? " active" : "")} onClick={() => setShowAddr((v) => !v)}><Search size={14} /> {t("Adresse")}</button>
         <button type="button" className={"chip" + (showMap ? " active" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
       </div>
@@ -121,7 +121,7 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
       {pos && (
         <p className="hint loc-pos">
           <Check size={14} /> {address || `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`}{" "}
-          <a href={mapUrl(pos.lat, pos.lng)} target="_blank" rel="noreferrer"><ExternalLink size={13} /> {t("Auf der Karte prüfen")}</a>
+          <a href={mapUrl(pos.lat, pos.lng)} target="_blank" rel="noreferrer"><MapPin size={13} /> {t("Auf der Karte prüfen")}</a>
         </p>
       )}
       {nearby && (

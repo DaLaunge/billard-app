@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import NickClubTag from "./widgets/NickClubTag";
-import { ChevronLeft, Check, X, Minus, Plus, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star, Sparkles } from "lucide-react";
+import { ChevronLeft, Check, X, Minus, Plus, Search, QrCode, ArrowRight, Swords, Clock, UserPlus, Share2, Copy, History, TrendingUp, ArrowDownAZ, ArrowUpDown, Star } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
@@ -28,8 +28,9 @@ import { BreakGlyph, BreakPill, BreakSwitch, breakApplies, normalizeBreakRule, n
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
 import { rpcRetry } from "../lib/rpcRetry";
 import { flyIn, vanishBall, flyEnabled } from "../lib/flyBall";
-import { getMatchFly, storeMatchFly } from "../lib/uiPrefs";
 import Emoji from "./Emoji";
+import ScoreBoard, { softName } from "./widgets/ScoreBoard";
+import BreakCueIcon from "./widgets/BreakCueIcon";
 
 export default function MatchScreen({ me, players, matches, disciplines, ratingOf, onDone, onCancel, onReload, toast, colorOf, badgeOf, photoOf, initialOpp, onChallenge, onOpenProtokoll, tournamentCtx, keepAwake, onSetKeepAwake, resumeDraft }) {
   // Fortgesetztes Match nach einem unfreiwilligen Neuladen (siehe lib/matchDraft.js):
@@ -239,10 +240,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
   // Rueckflug zur Kachel - beim Entfernen verschiebt sich die Liste, das Ziel waere
   // schon beim Start veraltet gewesen und die Kugel neben die Kachel gehuepft.
   const vanishSlot = (key) => vanishBall(document.querySelector(`.vs-slot[data-slot="${key}"] .ball`));
-  // Kugel-Animation ein/aus (Geraeteeinstellung, siehe uiPrefs.js; auch unter Profil
-  // bearbeiten -> Dieses Geraet). Hier ein Schalter direkt im Optionsfeld der Liste.
-  const [flyOn, setFlyOn] = useState(getMatchFly);
-  const toggleFly = () => { const v = !flyOn; setFlyOn(v); storeMatchFly(v); };
+  // Die Kugel-Animation wird NUR in den Einstellungen (App-Verhalten) ein-/ausgeschaltet, Standard an (uiPrefs.js getMatchFly) -
+  // im Match-Bildschirm gibt es dafuer keinen Schalter.
   const pickPlayer = (p, tile) => {
     if (mode === "single") {
       if (opp?.id === p.id) { vanishSlot("opp"); setOpp(null); return; }
@@ -775,12 +774,6 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
                       </button>
                     ))}
                   </div>
-                  <div className="chips small" style={{ marginTop: 8 }}>
-                    <button className={"chip" + (flyOn ? " active" : "")} aria-pressed={flyOn} onClick={toggleFly}
-                      title={t("Kugel springt in die Aufstellung")}>
-                      <Sparkles size={14} style={{ marginRight: 4, verticalAlign: -2 }} />{t("Kugel-Animation")}
-                    </button>
-                  </div>
                   {allMatchingOpponents.length > DEFAULT_LIST_COUNT && (
                     <div className="chips small" style={{ marginTop: 8 }}>
                       {LIST_COUNT_OPTIONS.map((c) => (
@@ -953,51 +946,53 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
               }} />
           ) : (
             <>
-              <div className="score-row">
-                {(mode === "double"
+              {/* Der Zaehler ist dasselbe Modul wie bei Winner Stays (widgets/ScoreBoard): Person oben, Spielstand gross in der Mitte,
+                  Kapseln - | + und der Haken. Hier fuehrt der Haken zur Pruefung (Schritt 3); bei Gleichstand ist er gesperrt. */}
+              <ScoreBoard hasBreak={showBreak}
+                sides={(mode === "double"
                   ? [{ members: [me, partner], name: teamA, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
                      { members: [opp, opp2], name: teamB, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
                   : [{ members: [me], name: me.nickname, v: s1, set: (nv) => { setS1(nv); setScoreLog((l) => [...l, [nv, s2, Date.now()]]); } },
                      { members: [opp], name: opp.nickname, v: s2, set: (nv) => { setS2(nv); setScoreLog((l) => [...l, [s1, nv, Date.now()]]); } }]
-                ).map(({ members, name, v, set }, idx) => (
-                  <div key={name} className="score-col">
-                    {showBreak && (breakNow === idx
-                      ? <span className="break-slot on" key={"b" + breakNow + breakRule} title={t("{name} stößt an", { name })}><BreakGlyph width={26} /></span>
-                      : canPickBreak && (
-                        <button type="button" className="break-slot off" title={t("{name} stößt an", { name })}
-                          aria-label={t("{name} stößt an", { name })} onClick={() => pickBreaker(idx)}><BreakGlyph width={26} /></button>
-                      ))}
-                    <div className="sc-avatars">
-                      {members.map((pl) => (
-                        <Ball key={pl.id} nick={pl.nickname} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={56} />
-                      ))}
-                    </div>
-                    <span className="score-name">{name}</span>
-                    <div className="score-num" key={v}>{v}</div>
-                    <div className="score-btns">
-                      <button className="round-btn" onClick={() => set(Math.max(0, v - 1))} aria-label="minus"><Minus size={20} /></button>
-                      <button className="round-btn plus" onClick={() => set(v + 1)} aria-label="plus"><Plus size={20} /></button>
-                    </div>
-                    {disc === "8 Ball" && !isGhost && (
-                      <button type="button" className={"group-pick" + (solidSide == null ? " unset" : "")} onClick={() => pickGroup(idx)}
-                        title={t("Volle oder Halbe")} aria-label={`${name}: ${solidSide == null ? t("Volle oder Halbe") : solidSide === idx ? t("Volle") : t("Halbe")}`}>
-                        <span className="pool-ball" style={{ ...poolBallStyle(solidSide === 1 - idx ? 11 : 3), width: 20, height: 20, opacity: solidSide == null ? 0.35 : 1 }} />
-                        {solidSide == null ? "?" : solidSide === idx ? t("Volle") : t("Halbe")}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                ).map(({ members, name, v, set }, idx) => ({
+                  id: "side" + idx, score: v, label: name, onBump: (d) => set(Math.max(0, v + d)),
+                  person: (size) => (
+                    <>
+                      <span className="ws-b-av"><span className="sc-avatars">
+                        {members.map((pl) => (
+                          <Ball key={pl.id} nick={pl.nickname} color={colorOf(pl.nickname)} label={initials(pl.nickname)} badge={badgeOf(pl.nickname)} photo={photoOf(pl.nickname)} size={members.length > 1 ? Math.round(size * 0.72) : size} />
+                        ))}
+                      </span></span>
+                      <span className="ws-b-text">
+                        <span className="score-name">{softName(name)}</span>
+                        {disc === "8 Ball" && !isGhost && (
+                          <button type="button" className={"group-pick" + (solidSide == null ? " unset" : "")} onClick={() => pickGroup(idx)}
+                            title={t("Volle oder Halbe")} aria-label={`${name}: ${solidSide == null ? t("Volle oder Halbe") : solidSide === idx ? t("Volle") : t("Halbe")}`}>
+                            <span className="pool-ball" style={{ ...poolBallStyle(solidSide === 1 - idx ? 11 : 3), width: 20, height: 20, opacity: solidSide == null ? 0.35 : 1 }} />
+                            {solidSide == null ? "?" : solidSide === idx ? t("Volle") : t("Halbe")}
+                          </button>
+                        )}
+                      </span>
+                    </>
+                  ),
+                  // Anstoss: NUR wer ihn hat, zeigt die Queue-Grafik (Nutzer 2026-11-01), die andere Seite bleibt leer (die Spalte bleibt stehen,
+                  // damit nichts springt). Darf der Anstoss noch getauscht werden, ist die Queue selbst der Knopf: Antippen gibt ihn der anderen Seite.
+                  breakMark: breakNow === idx ? (
+                    canPickBreak ? (
+                      <button type="button" className={"ws-break-mark swap m" + (idx === 0 ? "a" : "b")} key={"b" + breakNow + breakRule}
+                        title={t("{name} stößt an – antippen zum Wechseln", { name })} aria-label={t("{name} stößt an – antippen zum Wechseln", { name })}
+                        onClick={() => pickBreaker(1 - idx)}><BreakCueIcon /></button>
+                    ) : (
+                      <span className={"ws-break-mark m" + (idx === 0 ? "a" : "b")} key={"b" + breakNow + breakRule} title={t("{name} stößt an", { name })}><BreakCueIcon /></span>
+                    )
+                  ) : <span className={"ws-break-mark off m" + (idx === 0 ? "a" : "b")} aria-hidden="true" />,
+                }))}
+                note={s1 === s2 && total > 0 ? <span className="ws-b-tie">{t("Unentschieden gibt's beim Billard nicht ;-)")}</span> : null}
+                action={{ onClick: () => setStep(3), label: t("Beenden") }} />
               {/* Optionale Zusatzzaehler (Fluke/Runout/Scratch/Foul), zugeklappt.
                   Hier, waehrend des Spiels, nicht erst am Ende. */}
               {/* Ghost-Training: nur die eigene Seite, dazu Long Pot/Bandenstoss/Kombination/Karambol */}
               <ExtraCounters value={counters} onBump={bump} names={[teamA, teamB]} warnings={warnings()} single={isGhost} />
-              <div className="sticky-cta">
-                <button className="btn primary" disabled={total === 0 || s1 === s2} onClick={() => setStep(3)}>
-                  {t("Beenden")} <ArrowRight size={18} />
-                </button>
-              </div>
-              {s1 === s2 && total > 0 && <p className="hint center">{t("Unentschieden gibt's beim Billard nicht ;-)")}</p>}
             </>
           )}
           <PointPreview dsc={disc} />
