@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, Loader2, ScrollText } from "lucide-react";
+import { ChevronLeft, QrCode, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, Loader2, ScrollText } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDateTime } from "../lib/format";
@@ -17,7 +17,7 @@ import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
 import PlaceLink from "./widgets/PlaceLink";
-import TurnierQrButton from "./widgets/TurnierQr";
+import { TurnierQrPanel } from "./widgets/TurnierQr";
 import Emoji from "./Emoji";
 import { exportWinnerStaysPdf } from "./turnierBerichtPdf";
 
@@ -188,6 +188,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     prevGameNoRef.current = lastGameNo;
   }, [session, lastGameNo]);
   const [showAdd, setShowAdd] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const [teamP1, setTeamP1] = useState(null);
   const [teamP2, setTeamP2] = useState(null);
   // Nutzer-Feedback: nach dem Anlegen einer Runde ist der leere Zwischen-
@@ -469,7 +470,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <h2>{session.name}</h2>
         {/* Name in EINER Zeile, die Knoepfe darunter nebeneinander und gleich gross (.head-actions). */}
         <TurnierToolbar>
-          {session.status === "running" && !session.is_doubles && <TurnierQrButton tour={session} toast={toast} size={20} className="icon-btn" kind="ws" />}
+          {session.status === "running" && !session.is_doubles && <ToolBtn icon={QrCode} label={t("Einladungslink / QR-Code")} active={showQr} onClick={() => setShowQr((s) => !s)} />}
           {isOrganizer && session.status === "running" && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAdd} onClick={() => setShowAdd((s) => !s)} />}
           <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
           {isOrganizer && session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
@@ -493,6 +494,10 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       </div>
         </div>
       </header>
+
+      {session.status === "running" && !session.is_doubles && (
+        <ToolPanel open={showQr}><TurnierQrPanel tour={session} toast={toast} kind="ws" /></ToolPanel>
+      )}
 
       {isOrganizer && session.status === "running" && (
         <ToolPanel open={showAdd}>

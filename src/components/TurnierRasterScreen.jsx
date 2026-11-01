@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DiscBall from "./widgets/DiscBall";
 import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
-import { ChevronLeft, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText, Play, Undo2 } from "lucide-react";
+import { ChevronLeft, QrCode, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText, Play, Undo2 } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtListDateTime } from "../lib/format";
@@ -18,7 +18,7 @@ import { rpcRetry } from "../lib/rpcRetry";
 import Emoji from "./Emoji";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import PlaceLink from "./widgets/PlaceLink";
-import TurnierQrButton from "./widgets/TurnierQr";
+import { TurnierQrPanel } from "./widgets/TurnierQr";
 import ImprintFooter from "./widgets/ImprintFooter";
 
 const POLL_MS = 8000;
@@ -75,6 +75,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // addPlayers/removePlayer unten sowie
   // tournament_organizer_add_players()/_remove_player()).
   const [showAddPlayers, setShowAddPlayers] = useState(true);
+  const [showQr, setShowQr] = useState(false);
   const playersRef = useRef(players);
   const onReloadRef = useRef(onReload);
   const reloadedFor = useRef("");
@@ -491,7 +492,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
           <h2>{tour.name}</h2>
           <TurnierToolbar>
-            <TurnierQrButton tour={tour} toast={toast} size={20} className="icon-btn" />
+            <ToolBtn icon={QrCode} label={t("Einladungslink / QR-Code")} active={showQr} onClick={() => setShowQr((s) => !s)} />
             {isOrganizer && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAddPlayers} onClick={() => setShowAddPlayers((s) => !s)} />}
             {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
             {isOrganizer && <ToolBtn icon={Play} label={t("Turnier starten")} disabled={busyId === "start" || missingPlayers > 0} onClick={startTournament} />}
@@ -512,6 +513,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         </div>
           </div>
         </header>
+
+        <ToolPanel open={showQr}><TurnierQrPanel tour={tour} toast={toast} /></ToolPanel>
 
         {isOrganizer && (
           <ToolPanel open={showAddPlayers}>

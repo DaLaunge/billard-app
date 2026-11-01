@@ -9,8 +9,7 @@ import { t } from "../../lib/i18n";
    Turnier gross oben und in der Turnieruebersicht an jeder Zeile (dort mit stopPropagation: die Zeile soll sich nicht oeffnen). */
 export const turnierLink = (id, kind = "tournament") => { const u = new URL("/", window.location.origin); u.searchParams.set(kind === "ws" ? "ws" : "turnier", id); return u.toString(); };
 
-export default function TurnierQrButton({ tour, toast, size = 18, className = "icon-btn", kind = "tournament" }) {
-  const [open, setOpen] = useState(false);
+function useQrActions(tour, toast, kind) {
   const link = turnierLink(tour.id, kind);
   const copy = async () => {
     try { await navigator.clipboard.writeText(link); toast(t("Link kopiert!")); }
@@ -20,6 +19,30 @@ export default function TurnierQrButton({ tour, toast, size = 18, className = "i
     if (!navigator.share) { copy(); return; }
     try { await navigator.share({ title: tour.name, text: t("Du bist zum Turnier „{name}“ eingeladen:", { name: tour.name }), url: link }); } catch { /* abgebrochen */ }
   };
+  return { link, copy, share };
+}
+
+/* Der QR-Code als Inhalt eines aufklappbaren Panels (ToolPanel in der Turnier-Kopfzeile): bleibt offen, waehrend am Tisch ein Match eingetragen wird. */
+export function TurnierQrPanel({ tour, toast, kind = "tournament" }) {
+  const { link, copy, share } = useQrActions(tour, toast, kind);
+  return (
+    <div className="tqr-panel">
+      <div className="qr-box"><QRCodeSVG value={link} size={220} level="M" bgColor="#F2EDE0" fgColor="#0A2B21" includeMargin /></div>
+      <div className="qr-uses">
+        <span><UserCheck size={14} /> {t("Mitglied: sofort dabei")}</span>
+        <span><UserPlus size={14} /> {t("Neu: anmelden oder Gast")}</span>
+      </div>
+      <div className="chips small" style={{ justifyContent: "center" }}>
+        <button type="button" className="icon-btn" onClick={share} aria-label={t("Einladung teilen")} title={t("Einladung teilen")}><Share2 size={18} /></button>
+        <button type="button" className="icon-btn" onClick={copy} aria-label={t("Link kopieren")} title={t("Link kopieren")}><Copy size={18} /></button>
+      </div>
+    </div>
+  );
+}
+
+export default function TurnierQrButton({ tour, toast, size = 18, className = "icon-btn", kind = "tournament" }) {
+  const [open, setOpen] = useState(false);
+  const { link, copy, share } = useQrActions(tour, toast, kind);
   return (
     <>
       <button type="button" className={className} title={t("Einladungslink / QR-Code")} aria-label={t("Einladungslink / QR-Code")}

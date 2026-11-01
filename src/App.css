@@ -4031,3 +4031,6 @@ span.ws-b-av { cursor: default; }
   .ws-b-cap button { min-height: 40px; }
   .ws-board .ws-b-ok.ws-ok { width: 46px; height: 46px; }
 }
+
+/* QR-Code als aufklappbares Panel der Turnier-Kopfzeile (bleibt offen, waehrend Matches eingetragen werden) */
+.tqr-panel { display: flex; flex-direction: column; align-items: center; gap: 10px; }
