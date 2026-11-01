@@ -263,7 +263,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
     const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const top = Math.max(0, el.getBoundingClientRect().top);
     const maxH = isMaximized ? window.innerHeight - top - 12 : Math.min(window.innerHeight * 0.65, window.innerHeight - top - 12);
-    const availW = el.clientWidth - padX, availH = Math.max(120, maxH) - padY;
+    const availW = el.clientWidth - padX - 8, availH = Math.max(120, maxH) - padY;
     const z = Math.min(availW / layout.totalWidth, availH / layout.totalHeight, 1.5);
     setZoom(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +z.toFixed(2))));
     el.scrollTo({ left: 0, top: 0 });
