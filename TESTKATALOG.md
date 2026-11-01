@@ -1,6 +1,6 @@
 # Testkatalog Break & Rank
 
-Stand: 2026-11-01, Version 427.62, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
+Stand: 2026-11-01, Version 427.63, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
 Ziel: Alles läuft **vollautomatisch** (Browser-Pane, JavaScript im Seitenkontext, keine Handgriffe).
 **Ausgenommen (braucht Nutzerhandlung):** Speichern/Teilen von PDFs und CSV in eine Datei, System-Teilen-Menü, Push-Berechtigung, Kamera/QR-Scan. Der PDF-Bau selbst wird nur als Blob (Typ + Größe) geprüft.
 
@@ -38,6 +38,7 @@ Menüs: Statistik, Turniere, Live, Identität, Meine Erfolge, Meine Zahlen, Eins
 | M-07 | Siegchance im Zähler vs. Erwartung im Prüfschritt (60 % / 65 %) | ⚠️ zwei verschiedene Rechnungen (Disziplin- vs. Gesamt-Rating), erklärbar |
 | M-08 | Turnier-Match über „Melden“ (feste Disziplin), speichern, „Jetzt direkt bestätigen“ | ✅ „Bestätigt!“ |
 | M-10 | Anstoß-Queue im Zähler: nur bei der Seite mit Anstoß sichtbar, die andere Seite leer; solange tauschbar ist die Queue ein Knopf (Antippen gibt den Anstoß der anderen Seite); Winner Stays ebenso | ✅ 427.62 |
+| M-11 | Zähler (Winner Stays, Neues Match): die Plus/Minus-Kapseln sitzen mittig unter dem Avatar ihrer Person (Mittelpunkte gleich bei 1280, 812×375, 375), Tasten mindestens 44 px hoch/breit, Haken bleibt in der Mitte, kein Überstand | ✅ 427.63 |
 | M-09 | Ghost-Match, Gast anlegen, QR-Panel, Sortierung/Anzahl, Ballanimation | ⏭️ nicht in diesem Lauf (Kamera/Handgriffe) bzw. früher geprüft |
 
 ## 3. Turniere

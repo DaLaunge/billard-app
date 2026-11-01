@@ -3906,7 +3906,7 @@ span.ws-b-av { cursor: default; }
 .ws-b-colon { font-size: .3em; color: var(--ivory-dim); font-weight: 700; }
 .ws-b-cap { grid-area: ca; display: flex; border: 1.5px solid var(--btn-border, var(--line)); border-radius: 999px; overflow: hidden; }
 .ws-b-cap.cb { grid-area: cb; }
-.ws-b-cap button { flex: 1; min-height: calc(var(--ws-u) * 3.236); border: none; background: transparent; color: var(--ivory-dim); display: grid; place-items: center; cursor: pointer; }
+.ws-b-cap button { flex: 1; min-width: 44px; min-height: max(44px, calc(var(--ws-u) * 3.236)); border: none; background: transparent; color: var(--ivory-dim); display: grid; place-items: center; cursor: pointer; }
 .ws-b-cap button svg { width: calc(var(--ws-u) * 1.618); height: calc(var(--ws-u) * 1.618); }
 .ws-b-cap button + button { border-left: 1.5px solid var(--btn-border, var(--line)); color: var(--ivory); }
 .ws-b-cap button:active:not(:disabled) { background: var(--surface-btn); }
@@ -3923,13 +3923,13 @@ span.ws-b-av { cursor: default; }
 /* Breite Tafel (Container-Abfrage: es zaehlt die Breite der Tafel, nicht des Fensters - am PC steht links noch das Menue) */
 @container wsb (min-width: 560px) {
   /* Mitte in drei Teile: Zaehler | Haken | Zaehler - die Zaehler sitzen direkt neben dem Haken, der Spielstand liegt ueber allen dreien */
-  .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, .809fr) auto minmax(0, .809fr) minmax(0, 1fr); grid-template-areas: "pa score score score pb" ". ca ok cb ."; padding: calc(var(--ws-u) * 1.618); }
+  .ws-board { grid-template-columns: minmax(0, 1fr) minmax(0, .809fr) auto minmax(0, .809fr) minmax(0, 1fr); grid-template-areas: "pa score score score pb" "ca . ok . cb"; padding: calc(var(--ws-u) * 1.618); }
   /* Der Spielstand richtet sich nach der Breite SEINER Spalte (Container-Einheit cqw der Tafel), nicht nach dem Fenster: so passt er mit zwei
      reservierten Stellen immer hinein und drueckt die Personen nie schmal. */
   .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 12.5cqw); }
-  /* Zaehler naeher zur Mitte: links der Verteidiger rechtsbuendig, rechts der Herausforderer linksbuendig - direkt neben dem Haken */
-  .ws-b-cap { width: min(100%, calc(var(--ws-u) * 13)); justify-self: end; }
-  .ws-b-cap.cb { justify-self: start; }
+  /* Zaehler zentriert UNTER dem Avatar ihrer Person (Nutzer 2026-11-01), der Haken bleibt in der Mitte; Hoehe/Breite bleiben gross genug zum Tippen */
+  .ws-b-cap { width: min(100%, calc(var(--ws-u) * 13)); justify-self: center; }
+  .ws-b-cap.cb { justify-self: center; }
   .ws-b-ok.ws-ok { width: calc(var(--ws-u) * 4.236); height: calc(var(--ws-u) * 4.236); border-radius: 50%; justify-self: center; }
 }
 .ws-b-person .score-name, .ws-b-person .ws-quiet { max-width: 100%; text-wrap: balance; overflow-wrap: anywhere; hyphens: manual; }
@@ -4013,7 +4013,7 @@ span.ws-b-av { cursor: default; }
 /* Breite Tafel (Container-Abfrage: es zaehlt die Breite der Tafel, nicht des Fensters - am PC steht links noch das Menue) */
 @container wsb (min-width: 560px) {
   .ws-board.has-break { grid-template-columns: var(--gw) minmax(0, 1fr) minmax(0, .809fr) auto minmax(0, .809fr) minmax(0, 1fr) var(--gw);
-    grid-template-areas: "ml pa score score score pb mr" "ml . ca ok cb . mr"; }
+    grid-template-areas: "ml pa score score score pb mr" "ml ca . ok . cb mr"; }
 }
 
 
@@ -4031,7 +4031,7 @@ span.ws-b-av { cursor: default; }
   .ws-board { gap: 6px 8px; padding: 10px calc(var(--ws-u) * 1.2); }
   .ws-b-score { --base: min(calc(var(--ws-u) * 11.09), 30vh, 12.5cqw); padding-bottom: calc(var(--ws-u) * 1.8); }
   .ws-b-note { height: calc(var(--ws-u) * 1.8); }
-  .ws-b-cap button { min-height: 40px; }
+  .ws-b-cap button { min-height: 44px; }
   .ws-board .ws-b-ok.ws-ok { width: 46px; height: 46px; }
 }
 
