@@ -298,26 +298,24 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     if (onReload) onReload();
   };
 
-  const endEarly = async () => {
-    if (!(await appConfirm(t("Turnier jetzt vorzeitig beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste.")))) return;
+  // EIN Knopf "Turnier beenden" (Nutzer 2026-11-01: er braucht es nur einmal): beendet das Turnier UND sperrt die Ergebnisse. Laeuft ein
+  // Turnier von selbst zu Ende (letztes Spiel gespielt), steht derselbe Knopf noch da und sperrt nur noch. Die Rueckfrage sagt,
+  // dass danach nichts mehr geaendert werden kann.
+  const NO_CHANGES = "Danach sind keine Änderungen und keine Ergebnis-Korrekturen mehr möglich.";
+  const endTournament = async () => {
+    const running = tour.status === "running";
+    const q = running
+      ? t("Turnier jetzt beenden? Bereits gespielte Partien bleiben als Turnierspiele in der Rangliste.") + " " + t(NO_CHANGES)
+      : t("Turnier endgültig beenden?") + " " + t(NO_CHANGES);
+    if (!(await appConfirm(q))) return;
     setBusyId("end");
-    const { error } = await supabase.rpc("tournament_end_early", { p_tournament_id: tournamentId });
+    if (running) {
+      const { error } = await supabase.rpc("tournament_end_early", { p_tournament_id: tournamentId });
+      if (error) { setBusyId(null); toast(t("Fehler: ") + error.message); return; }
+    }
+    const { error: e2 } = await supabase.rpc("tournament_confirm_results", { p_tournament_id: tournamentId });
     setBusyId(null);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Turnier beendet."));
-    await load();
-  };
-
-  // Schranke (Nutzer-Feedback): erst mit dieser expliziten Bestaetigung durch
-  // Turnierleitung/Admin werden Ergebnis-Korrekturen gesperrt (siehe
-  // resultsLocked/tournament_confirm_results) - bis dahin bleiben Tippfehler
-  // jederzeit korrigierbar.
-  const confirmResults = async () => {
-    if (!(await appConfirm(t("Turnier endgültig beenden? Danach sind keine Ergebnis-Korrekturen mehr möglich.")))) return;
-    setBusyId("confirmResults");
-    const { error } = await supabase.rpc("tournament_confirm_results", { p_tournament_id: tournamentId });
-    setBusyId(null);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (e2) { toast(t("Fehler: ") + e2.message); await load(); return; }
     toast(t("Turnier beendet - Korrekturen sind jetzt gesperrt."));
     await load();
   };
@@ -616,9 +614,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         <TurnierToolbar>
           {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
           {isOrganizer && tour.status === "running" && canDeleteTournament && <ToolBtn icon={Undo2} label={t("Start rückgängig machen")} disabled={busyId === "cancelStart"} onClick={cancelStart} />}
-          {isOrganizer && tour.status === "running" && <EndTournamentButton disabled={busyId === "end"} onClick={endEarly} />}
-          {/* Zweiter Schritt desselben Vorgangs (Ergebnisse sperren): derselbe Flaggen-Knopf wie "Turnier beenden", Nutzer 2026-11-01: "gleichbedeutend" */}
-          {canConfirmResults && <EndTournamentButton disabled={busyId === "confirmResults"} onClick={confirmResults} />}
+          {isOrganizer && (tour.status === "running" || canConfirmResults) && <EndTournamentButton disabled={busyId === "end"} onClick={endTournament} />}
           {tour.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => setShowReport(true)} />}
           {isOrganizer && canDeleteTournament && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busyId === "delete"} onClick={deleteTournament} />}
         </TurnierToolbar>
