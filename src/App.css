@@ -4037,3 +4037,6 @@ span.ws-b-av { cursor: default; }
 .info-ico { display: inline-flex; align-items: center; vertical-align: middle; color: var(--ivory-dim); }
 .info-ico.status-running { color: var(--win); }
 .head-info .hint { display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; }
+/* Infos in EINER Zeile (Modus · Disziplin · Status · Break, danach die Turnierleitung); erst wenn der Platz fehlt, bricht die Leitung um. */
+.head-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.head-info .hint, .head-info .turnier-organizer-line { margin: 0 0 6px; flex: 0 1 auto; min-width: 0; }
