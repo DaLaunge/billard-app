@@ -2220,7 +2220,9 @@ button.id-card-head { cursor: pointer; }
    stehen dadurch als EINE Gruppe rechts zusammen statt eines mittig
    stehenden Einzelbuttons, der optisch verloren wirkte (Nutzer-Feedback).
    Kopfzeile zeigt "Turnierbaum --- [Zoom zuruecksetzen][Minimieren]". */
-@media (pointer: coarse) {
+/* Nach Breite statt nach Zeigerart (pointer: coarse): Geraete mit Touchscreen UND Maus (Windows-Laptops) meldeten "coarse" und verloren
+   die Zoom-Knoepfe am PC (Nutzer-Feedback 2026-11-01). Nur auf schmalen Bildschirmen ersetzt der Einpassen-Knopf rechts die Gruppe. */
+@media (max-width: 640px) {
   .turnier-graph-zoom-controls { display: none; }
   .turnier-graph-header-end .turnier-graph-mobile-reset-btn { display: grid; }
 }
