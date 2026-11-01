@@ -19,6 +19,7 @@ import Emoji from "./Emoji";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import PlaceLink from "./widgets/PlaceLink";
 import { TurnierQrPanel } from "./widgets/TurnierQr";
+import { RefereeIcon, StatusIcon } from "./widgets/TurnierInfoIcons";
 import ImprintFooter from "./widgets/ImprintFooter";
 
 const POLL_MS = 8000;
@@ -500,13 +501,13 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           </TurnierToolbar>
           <div className="head-info">
         <p className="hint">
-          {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {t("Anmeldung offen")}
+          {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · <StatusIcon status="setup" />
           {breakApplies(tour.discipline) && (
             <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer ? toggleBreakRule : undefined} /></>
           )}
         </p>
         <div className="turnier-organizer-line">
-          <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
+          <RefereeIcon />
           <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
           <b>{organizerName || "?"}</b>
           <PlaceLink locationId={tour.location_id} text={tour.location_text} />
@@ -633,7 +634,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         </TurnierToolbar>
         <div className="head-info">
       <p className="hint">
-        {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · {tour.status === "finished" ? t("beendet") : t("läuft")}
+        {formatLabel(tour.format)} · <DiscBall disc={tour.discipline} size={15} /> · <StatusIcon status={tour.status === "finished" ? "finished" : "running"} />
         {tour.status === "finished" && (resultsLocked
           ? <> · <Lock size={12} style={{ verticalAlign: -1 }} /> {t("Ergebnisse bestätigt")}</>
           : <> · {t("Korrekturen noch möglich")}</>)}
@@ -642,7 +643,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         )}
       </p>
       <div className="turnier-organizer-line">
-        <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
+        <RefereeIcon />
         <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
         <b>{organizerName || "?"}</b>
         <PlaceLink locationId={tour.location_id} text={tour.location_text} />

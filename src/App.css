@@ -4034,3 +4034,6 @@ span.ws-b-av { cursor: default; }
 
 /* QR-Code als aufklappbares Panel der Turnier-Kopfzeile (bleibt offen, waehrend Matches eingetragen werden) */
 .tqr-panel { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.info-ico { display: inline-flex; align-items: center; vertical-align: middle; color: var(--ivory-dim); }
+.info-ico.status-running { color: var(--win); }
+.head-info .hint { display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; }

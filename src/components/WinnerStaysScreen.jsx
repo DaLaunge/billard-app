@@ -18,6 +18,8 @@ import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
 import PlaceLink from "./widgets/PlaceLink";
 import { TurnierQrPanel } from "./widgets/TurnierQr";
+import { RefereeIcon, StatusIcon } from "./widgets/TurnierInfoIcons";
+import { ModeGlyph } from "./widgets/ModePick";
 import Emoji from "./Emoji";
 import { exportWinnerStaysPdf } from "./turnierBerichtPdf";
 
@@ -479,15 +481,15 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         {/* Turnierinfos direkt unter dem Namen (order 4), die Knoepfe folgen darunter */}
         <div className="head-info">
       <p className="hint">
-        {t(session.is_doubles ? "Doppel" : "Einzel")} · <DiscBall disc={session.discipline} size={15} />
+        <span className="info-ico" title={t(session.is_doubles ? "Doppel" : "Einzel")} role="img" aria-label={t(session.is_doubles ? "Doppel" : "Einzel")}><ModeGlyph mode={session.is_doubles ? "double" : "single"} size={22} /></span> · <DiscBall disc={session.discipline} size={15} />
         {session.table_number != null && ` · ${t("Tisch")} ${session.table_number}`}
-        {" · "}{session.status === "finished" ? t("beendet") : t("läuft")}
+        {" · "}<StatusIcon status={session.status === "finished" ? "finished" : "running"} />
         {breakApplies(session.discipline) && (
           <> · <BreakPill rule={session.break_rule} onClick={isOrganizer && session.status !== "finished" ? toggleBreakRule : undefined} /></>
         )}
       </p>
       <div className="turnier-organizer-line">
-        <span className="hint" style={{ margin: 0 }}>{t("Turnierleitung")}:</span>
+        <RefereeIcon />
         <Ball nick={session.organizer?.nickname} color={colorOf(session.organizer?.nickname)} label={initials(session.organizer?.nickname)} badge={badgeOf(session.organizer?.nickname)} photo={photoOf(session.organizer?.nickname)} size={22} />
         <b>{session.organizer?.nickname || "?"}</b>
         <PlaceLink locationId={session.location_id} text={session.location_text} />
