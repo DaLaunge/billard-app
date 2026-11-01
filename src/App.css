@@ -3833,7 +3833,6 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .venue-place .route-btn { margin-right: 2px; }
 
 /* Turnier-QR: grosser Knopf oben im Turnier, kleiner an jeder Zeile der Uebersicht, Fenster mit grossem Code */
-.tqr-top { width: 44px; height: 44px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); flex: 0 0 auto; }
 .tqr-row { flex: 0 0 auto; width: 40px; height: 40px; }
 .tqr-card { position: relative; text-align: center; }
 .tqr-close { position: absolute; top: 8px; right: 8px; }
@@ -3948,7 +3947,6 @@ span.ws-b-av { cursor: default; }
   .ws-lower > .ws-queue-card { order: 2; }
   .ws-lower > :only-child { grid-column: 1 / -1; }
 }
-.tour-toolbar:empty { display: none; }
 /* "Turnier beenden": in jedem Turniermodus derselbe Knopf - Symbol und Text, gut sichtbar, aber nicht vollbreit. */
 .btn.tour-end { width: auto; display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 999px; font-size: calc(15px * var(--fs, 1));
   font-weight: 700; color: var(--ivory); border: 1.5px solid var(--btn-border, var(--line)); background: var(--surface-btn); }
@@ -3968,9 +3966,22 @@ span.ws-b-av { cursor: default; }
 .screen-head.with-back:has(.head-actions) h2 { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .head-actions { flex: 0 0 100%; order: 5; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .head-actions > button, .head-actions > .icon-btn { width: 44px; height: 44px; margin: 0; border-radius: 12px; padding: 0; display: grid; place-items: center; flex: 0 0 auto; }
+/* EINE Optik fuer alle Knoepfe der Leiste (QR, Bildschirm an, Spieler, Start/Ende, Loeschen ...): Flaeche statt Rahmen, Akzent bei Hover und wenn
+   der Knopf etwas offen haelt (.on / aria-pressed). */
 .head-actions .keepawake-btn { margin: 0; }
-.head-actions .end-flag, .head-actions .ws-b-del { background: var(--surface-btn); color: var(--ivory); border: 1.5px solid transparent; }
-.head-actions .end-flag:hover:not(:disabled), .head-actions .ws-b-del:hover:not(:disabled) { color: var(--accent); border-color: var(--btn-border, var(--line)); }
+.head-actions > button, .head-actions > .icon-btn { background: var(--surface-btn); color: var(--ivory); border: 1.5px solid transparent; }
+.head-actions > button:hover:not(:disabled), .head-actions > .icon-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--btn-border, var(--line)); }
+.head-actions > button.on, .head-actions > .icon-btn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.head-actions > button:disabled { opacity: .4; }
+
+/* Spieler-hinzufuegen-Panel der Turniere: klappt unter der Leiste auf; Suche zuerst, darunter wenige Vorschlaege. */
+.tool-panel-card { margin-bottom: 0; }
+.tool-panel { margin-bottom: 0; }
+.tool-panel.open { margin-bottom: var(--card-gap, 12px); }
+.quick-add { display: flex; flex-direction: column; gap: 10px; }
+.quick-add-label { margin: 0; }
+.quick-add-grid { max-height: none; }
+.quick-add-go, .quick-add-guest { align-self: flex-start; width: auto; }
 
 /* Anstoss-Symbol: senkrecht in zwei Randspalten der Tafel (links beim Verteidiger, rechts beim Herausforderer), von den Personen bis zu den
    Zaehlern. Kugel oben, der Queue kommt von unten. Die Randspalten sind nur da, solange es einen Anstoss gibt (.has-break), und bleiben

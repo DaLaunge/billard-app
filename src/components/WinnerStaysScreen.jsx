@@ -6,7 +6,7 @@ import { initials, fmtDateTime } from "../lib/format";
 import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
 import PlayerPicker from "./PlayerPicker";
-import PlayerMultiPicker from "./PlayerMultiPicker";
+import { TurnierToolbar, ToolBtn, ToolPanel, QuickAddPlayers } from "./widgets/TurnierToolbar";
 import ImprintFooter from "./widgets/ImprintFooter";
 import EndTournamentButton from "./widgets/EndTournamentButton";
 import ScoreBoard, { softName } from "./widgets/ScoreBoard";
@@ -188,7 +188,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     prevGameNoRef.current = lastGameNo;
   }, [session, lastGameNo]);
   const [showAdd, setShowAdd] = useState(false);
-  const [addSelected, setAddSelected] = useState([]);
   const [teamP1, setTeamP1] = useState(null);
   const [teamP2, setTeamP2] = useState(null);
   // Nutzer-Feedback: nach dem Anlegen einer Runde ist der leere Zwischen-
@@ -325,15 +324,16 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     await load();
   };
 
-  const addSingles = async () => {
-    if (addSelected.length === 0) return;
+  const addSingles = async (ids) => {
+    if (!ids || ids.length === 0) return false;
     setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_add_entries", { p_session_id: sessionId, p_player_ids: addSelected });
+    const { error } = await supabase.rpc("winner_stays_add_entries", { p_session_id: sessionId, p_player_ids: ids });
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     toast(t("Teilnehmer hinzugefügt."));
-    setAddSelected([]); setShowAdd(false);
+    setShowAdd(false);
     await load();
+    return true;
   };
 
   // Nutzer-Feedback: "hier sollte bereits ein Gast-User vorgeschlagen
@@ -347,10 +347,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_add_guest", { p_session_id: sessionId, p_nickname: name });
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     toast(t("Gast hinzugefügt."));
     await load();
     onReload && onReload();
+    return true;
   };
 
   const addTeam = async () => {
@@ -467,17 +468,13 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <button className="back-btn" onClick={onBack} aria-label={t("Zurueck")}><ChevronLeft size={22} /></button>
         <h2>{session.name}</h2>
         {/* Name in EINER Zeile, die Knoepfe darunter nebeneinander und gleich gross (.head-actions). */}
-        <div className="head-actions">
-          {session.status === "running" && !session.is_doubles && <TurnierQrButton tour={session} toast={toast} size={22} className="icon-btn tqr-top" kind="ws" />}
+        <TurnierToolbar>
+          {session.status === "running" && !session.is_doubles && <TurnierQrButton tour={session} toast={toast} size={20} className="icon-btn" kind="ws" />}
           <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
+          {isOrganizer && session.status === "running" && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAdd} onClick={() => setShowAdd((s) => !s)} />}
           {isOrganizer && session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
-          {isOrganizer && canDelete && (
-            <button type="button" className="icon-btn ws-b-del" disabled={busy} onClick={deleteSession}
-              aria-label={t("Turnier löschen")} title={t("Turnier löschen")}>
-              <Trash2 size={20} />
-            </button>
-          )}
-        </div>
+          {isOrganizer && canDelete && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busy} onClick={deleteSession} />}
+        </TurnierToolbar>
       </header>
       <p className="hint" style={{ marginTop: -6 }}>
         {t(session.is_doubles ? "Doppel" : "Einzel")} · <DiscBall disc={session.discipline} size={15} />
@@ -493,6 +490,27 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <b>{session.organizer?.nickname || "?"}</b>
         <PlaceLink locationId={session.location_id} text={session.location_text} />
       </div>
+
+      {isOrganizer && session.status === "running" && (
+        <ToolPanel open={showAdd}>
+          {session.is_doubles ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
+                value={teamP1} exclude={[...existingPlayerIds, teamP2].filter(Boolean)}
+                onSelect={setTeamP1} placeholder={t("Erste Person")} />
+              <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
+                value={teamP2} exclude={[...existingPlayerIds, teamP1].filter(Boolean)}
+                onSelect={setTeamP2} placeholder={t("Zweite Person")} />
+              <button className="btn primary" disabled={busy || !teamP1 || !teamP2} onClick={addTeam}>
+                <Check size={15} /> {t("Team hinzufügen")}
+              </button>
+            </div>
+          ) : (
+            <QuickAddPlayers players={players} matches={matches} me={me} exclude={existingPlayerIds}
+              colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} busy={busy} onAdd={addSingles} onAddGuest={addGuest} />
+          )}
+        </ToolPanel>
+      )}
 
       {offline && (
         <p className="ws-offline" role="status"><WifiOff size={15} /> {t("Verbindung unterbrochen – Stand wird neu geladen.")}</p>
@@ -680,43 +698,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               </div>
             );
           })}
-        </section>
-      )}
-
-      {/* Teilnehmer hinzufuegen: seltener gebraucht, steht deshalb ganz unten - wichtig sind Tafel, Live-Stand und Warteschlange. */}
-      {isOrganizer && session.status === "running" && (
-        <section className="stat-block">
-          <div className="stat-block-head">
-            <h3><UserPlus size={17} /> {t("Teilnehmer")}</h3>
-            <button className="btn ghost" onClick={() => setShowAdd((s) => !s)}>
-              {showAdd ? <><X size={15} /> {t("Abbrechen")}</> : <><UserPlus size={15} /> {t("Hinzufügen")}</>}
-            </button>
-          </div>
-          {showAdd && (
-            session.is_doubles ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
-                  value={teamP1} exclude={[...existingPlayerIds, teamP2].filter(Boolean)}
-                  onSelect={setTeamP1} placeholder={t("Erste Person")} />
-                <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
-                  value={teamP2} exclude={[...existingPlayerIds, teamP1].filter(Boolean)}
-                  onSelect={setTeamP2} placeholder={t("Zweite Person")} />
-                <button className="btn primary" disabled={busy || !teamP1 || !teamP2} onClick={addTeam}>
-                  <Check size={15} /> {t("Team hinzufügen")}
-                </button>
-              </div>
-            ) : (
-              <div>
-                <PlayerMultiPicker players={players} matches={matches} me={me} selected={addSelected}
-                  onToggle={(id) => setAddSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
-                  colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} exclude={existingPlayerIds}
-                  onCreateGuest={addGuest} />
-                <button className="btn primary" style={{ marginTop: 10 }} disabled={busy || addSelected.length === 0} onClick={addSingles}>
-                  <Check size={15} /> {t("{n} Teilnehmer hinzufügen", { n: addSelected.length })}
-                </button>
-              </div>
-            )
-          )}
         </section>
       )}
 
