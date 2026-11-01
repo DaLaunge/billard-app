@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { X, ZoomIn, ZoomOut, RotateCcw, Trophy, Minimize2, UserX, Check, Route } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, Scan, Trophy, Minimize2, UserX, Check, Route } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
@@ -32,6 +32,8 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
   const wrapRef = useRef(null);
+  // Hat die Person selbst gezoomt (Knopf, Pinch), fasst die Automatik die Zoomstufe nicht mehr an.
+  const userZoomedRef = useRef(false);
   const pinchRef = useRef(null);
   // Ziel-Scrollposition fuers Zoomen-um-einen-Punkt (siehe zoomAt/Layout-
   // Effekt unten) - ein Ref statt State, weil sie nur einmalig nach dem
@@ -144,6 +146,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
       const newZoom = clamp(newZoomRaw);
       const oldZoom = zoomRef.current;
       if (newZoom === oldZoom) return;
+      userZoomedRef.current = true;
       const rect = el.getBoundingClientRect();
       const viewportX = clientX - rect.left;
       const viewportY = clientY - rect.top;
@@ -247,7 +250,33 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
     if (p && el) el.scrollTo({ left: Math.max(0, (p.x - 40) * zoom), top: Math.max(0, (p.y - 60) * zoom), behavior: "smooth" });
   };
 
-  const zoomBy = (delta) => setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(z + delta).toFixed(2))));
+  const zoomBy = (delta) => { userZoomedRef.current = true; setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(z + delta).toFixed(2)))); };
+
+  // Passt den ganzen Baum auf einmal in den sichtbaren Bereich (Breite UND Hoehe) - Zoom + Scrollposition oben links.
+  // Die Hoehe ist die Bildschirmhoehe unter dem Beginn des Baums (maximiert: der ganze Rest), nie mehr als die 65vh des Rahmens.
+  const fitToScreen = (manual = true) => {
+    const el = wrapRef.current;
+    if (!el || !layout.totalWidth || !layout.totalHeight) return;
+    if (manual) userZoomedRef.current = false;   // ein Druck auf "Einpassen" gibt die Automatik wieder frei (z. B. nach dem Maximieren)
+    const cs = getComputedStyle(el);
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const top = Math.max(0, el.getBoundingClientRect().top);
+    const maxH = isMaximized ? window.innerHeight - top - 12 : Math.min(window.innerHeight * 0.65, window.innerHeight - top - 12);
+    const availW = el.clientWidth - padX, availH = Math.max(120, maxH) - padY;
+    const z = Math.min(availW / layout.totalWidth, availH / layout.totalHeight, 1.5);
+    setZoom(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +z.toFixed(2))));
+    el.scrollTo({ left: 0, top: 0 });
+  };
+  // Standard: der Baum startet eingepasst (und passt sich bei Groessenaenderung/Maximieren an), bis die Person selbst zoomt.
+  useLayoutEffect(() => {
+    if (userZoomedRef.current) return undefined;
+    fitToScreen(false);
+    const onResize = () => { if (!userZoomedRef.current) fitToScreen(false); };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout.totalWidth, layout.totalHeight, isMaximized]);
 
   const closeNoShow = () => { setNoShowOpen(false); setAbsent1(false); setAbsent2(false); };
   const submitNoShow = () => {
@@ -332,7 +361,8 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         <div className="turnier-graph-zoom-controls">
           <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={18} /></button>
           <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={18} /></button>
-          <button type="button" className="turnier-graph-zoom-reset-btn" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
+          <button type="button" className="turnier-graph-zoom-reset-btn" onClick={() => { userZoomedRef.current = true; setZoom(1); }} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
+          <button type="button" className="turnier-graph-zoom-btn turnier-graph-fit-btn" onClick={() => fitToScreen()} aria-label={t("An Bildschirm anpassen")} title={t("An Bildschirm anpassen")}><Scan size={18} /></button>
         </div>
         <div className="turnier-graph-header-end">
           {/* Erscheint nur, wenn die ausgewaehlte Box das ueberhaupt zulaesst
@@ -357,8 +387,11 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               steht dort neben statt anstelle der zentrierten PC-Variante,
               damit beide Buttons rechts als eine Gruppe zusammenstehen. */}
           <button type="button" className="turnier-graph-minimize-btn turnier-graph-mobile-reset-btn"
-            onClick={() => setZoom(1)} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}>
+            onClick={() => { userZoomedRef.current = true; setZoom(1); }} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}>
             <RotateCcw size={17} />
+          </button>
+          <button type="button" className="turnier-graph-minimize-btn turnier-graph-mobile-reset-btn" onClick={() => fitToScreen()} aria-label={t("An Bildschirm anpassen")} title={t("An Bildschirm anpassen")}>
+            <Scan size={17} />
           </button>
           {isMaximized && onToggleMaximize && (
             <button type="button" className="turnier-graph-minimize-btn" onClick={onToggleMaximize} aria-label={t("Minimieren")}>

@@ -35,7 +35,10 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   const [tms, setTms] = useState(null);
   const [roster, setRoster] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [viewMode, setViewMode] = useState("graph"); // list | graph | players - Grafik ist die Standardansicht (Nutzer-Feedback), Jeder-gegen-jeden ohne Playoff hat aber keinen Baum, siehe Fallback-Effekt unten
+  // list | graph | players. null = Automatik: Grafik ist die Standardansicht (Nutzer-Feedback), solange es einen Baum gibt (Jeder-gegen-jeden ohne
+  // Playoff hat keinen, dann Liste). Erst eine eigene Wahl (Chip) legt die Ansicht fest - sonst blieb ein Turnier, das in der Anmeldung noch
+  // keinen Baum hatte, nach dem Start dauerhaft auf "Liste".
+  const [pickedView, setViewMode] = useState(null);
   const [journeyPlayerId, setJourneyPlayerId] = useState(null);
   // Maximieren-Modus fuer die Liste/Grafik-Ansicht des Turnierrasters (nicht
   // fuer Teilnehmer) - rein CSS-basiert (position:fixed ueber die ganze
@@ -115,22 +118,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
     return () => clearInterval(id);
   }, [load]);
 
-  // Grafik ist die Standardansicht (Nutzer-Feedback) - bei Jeder-gegen-jeden
-  // OHNE Playoff gibt es aber keinen Baum; erst sobald tms geladen ist,
-  // koennen wir das wissen, deshalb hier statt direkt im useState-Default.
-  // Bewusst nur "abwaerts" (graph -> list), niemals umgekehrt - falls waehrend
-  // des Betrachtens nachtraeglich ein Playoff-Baum entsteht, bleibt eine
-  // manuell gewaehlte Ansicht unangetastet.
-  useEffect(() => {
-    if (!tms || !tour) return;
-    // Bei normalem K.O. laeuft der Baum komplett unter bracket='main'
-    // (generate_ko_bracket() nennt ihn nur bei Doppel-K.O. 'winners') - ohne
-    // die format-Abfrage wuerde ein frisch gestartetes K.O.-Turnier hier
-    // sofort wieder auf "Liste" zurueckfallen (siehe hasTreeSections unten).
-    const hasTree = tour.format === "ko" || tms.some((tm) => tm.bracket !== "main");
-    if (viewMode === "graph" && !hasTree) setViewMode("list");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tms, tour]);
+  // viewMode wird weiter unten aus pickedView und hasTreeSections abgeleitet.
 
   const nameOf = useCallback((id) => players.find((p) => p.id === id)?.nickname || null, [players]);
 
@@ -586,6 +574,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // eine Grafik-Ansicht bekommen, da 'main' sonst nur die flache
   // Jeder-gegen-jeden-Tabelle ohne Baumstruktur ist (Nutzer-Feedback).
   const hasTreeSections = tour.format === "ko" || bracketOrder.some((b) => b !== "main");
+  const viewMode = pickedView === "graph" && !hasTreeSections ? "list" : (pickedView || (hasTreeSections ? "graph" : "list"));
 
   const renderMatch = (tm) => {
     const n1 = nameOf(tm.player1_id), n2 = nameOf(tm.player2_id);

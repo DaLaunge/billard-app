@@ -1711,6 +1711,7 @@ const TRANSLATIONS = {
     "Minimieren": "Minimize",
     "Vergrößern": "Zoom in",
     "Zoom zurücksetzen": "Reset zoom",
+    "An Bildschirm anpassen": "Fit to screen",
     "Längste Wartezeiten": "Longest wait times",
     "Zeit zwischen feststehender Paarung und gemeldetem Ergebnis.": "Time between the pairing being set and the result being reported.",
     "+{n} weitere": "+{n} more",
