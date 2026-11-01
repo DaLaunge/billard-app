@@ -15,6 +15,7 @@ import { ModeTiles } from "./widgets/ModePick";
 import DiscBall, { DiscPick } from "./widgets/DiscBall";
 import { BreakSwitch, DEFAULT_BREAK_RULE, breakApplies } from "./widgets/BreakRule";
 import { FORMAT_GLYPH } from "./widgets/FormatGlyph";
+import { RefereeIcon } from "./widgets/TurnierInfoIcons";
 import { useRevealOnScroll } from "../lib/useRevealOnScroll";
 
 const formatLabel = (item) =>
@@ -394,7 +395,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                     {it._kind === "winnerstays" && it.table_number != null && ` · ${t("Tisch")} ${it.table_number}`}
                     {" · "}{fmtDate(it.created_at)}
                   </span>
-                  <span className="turnier-list-row-meta">{t("Turnierleitung")}: {it.organizer?.nickname || "?"}</span>
+                  <span className="turnier-list-row-meta turnier-list-row-ref"><RefereeIcon size={16} /> {it.organizer?.nickname || "?"}</span>
                   <PlaceLink locationId={it.location_id} text={it.location_text} className="place-link turnier-list-row-meta" />
                 </span>
                 {/* Turnier: nur solange die Anmeldung offen ist (nach dem Start ist es zu spaet). Winner Stays: solange die Runde laeuft

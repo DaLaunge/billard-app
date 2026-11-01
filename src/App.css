@@ -4023,7 +4023,8 @@ span.ws-b-av { cursor: default; }
 /* Handy quer (flaches Querformat): Kopfzeile in einer Reihe, Rolle und Statistik entfallen, der Spielstand richtet sich nach der Hoehe - die
    Tafel mit Haken soll ohne Scrollen auf den Bildschirm passen. */
 @media (orientation: landscape) and (max-height: 520px) {
-  .head-actions { flex: 0 0 auto; order: 0; flex-wrap: nowrap; }
+  /* Feste Breite fuer bis zu 5 Knoepfe, linksbuendig darin: der Bildschirm-an-Knopf steht in jedem Turnierscreen am selben Platz (Nutzer 2026-11-01) */
+  .head-actions { flex: 0 0 auto; order: 0; flex-wrap: nowrap; width: calc(5 * 40px + 4 * 10px); justify-content: flex-start; }
   .head-actions > button, .head-actions > .icon-btn { width: 40px; height: 40px; }
   .ws-b-person .ws-role, .ws-b-person .ws-quiet { display: none; }
   .ws-b-person .score-name { font-size: calc(var(--ws-u) * 1.2); }
@@ -4048,3 +4049,7 @@ span.ws-b-av { cursor: default; }
 .quick-add-team-slot { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: 14px; min-height: 36px; }
 .quick-add-team-slot.empty { padding: 4px 12px; background: transparent; border-style: dashed; color: var(--ivory-dim, inherit); opacity: .7; }
 .quick-add-team-slot + .quick-add-team-slot::before { content: "&"; margin-right: 2px; opacity: .6; }
+
+/* Format-Zeichnung in der Info-Zeile der Turnierkoepfe (alle Modi gleich) */
+.info-ico-format .fmt-glyph { width: 34px; height: 21px; }
+.turnier-list-row-ref { display: inline-flex; align-items: center; gap: 6px; }

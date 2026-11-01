@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import { ChevronLeft, QrCode, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, Loader2, ScrollText } from "lucide-react";
+import { ChevronLeft, QrCode, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, FileText, Loader2, ScrollText } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDateTime } from "../lib/format";
@@ -17,7 +17,7 @@ import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
 import PlaceLink from "./widgets/PlaceLink";
 import { TurnierQrPanel } from "./widgets/TurnierQr";
-import { RefereeIcon, StatusIcon } from "./widgets/TurnierInfoIcons";
+import { RefereeIcon, StatusIcon, FormatInfoIcon } from "./widgets/TurnierInfoIcons";
 import { ModeGlyph } from "./widgets/ModePick";
 import Emoji from "./Emoji";
 import { exportWinnerStaysPdf } from "./turnierBerichtPdf";
@@ -471,16 +471,17 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <h2>{session.name}</h2>
         {/* Name in EINER Zeile, die Knoepfe darunter nebeneinander und gleich gross (.head-actions). */}
         <TurnierToolbar>
+          <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
           {session.status === "running" && !session.is_doubles && <ToolBtn icon={QrCode} label={t("Einladungslink / QR-Code")} active={showQr} onClick={() => setShowQr((s) => !s)} />}
           {isOrganizer && session.status === "running" && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAdd} onClick={() => setShowAdd((s) => !s)} />}
-          <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
           {isOrganizer && session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
+          {session.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => document.getElementById("ws-protocol")?.scrollIntoView({ behavior: "smooth", block: "start" })} />}
           {isOrganizer && canDelete && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busy} onClick={deleteSession} />}
         </TurnierToolbar>
         {/* Turnierinfos direkt unter dem Namen (order 4), die Knoepfe folgen darunter */}
         <div className="head-info">
       <p className="hint">
-        <span className="info-ico" title={t(session.is_doubles ? "Doppel" : "Einzel")} role="img" aria-label={t(session.is_doubles ? "Doppel" : "Einzel")}><ModeGlyph mode={session.is_doubles ? "double" : "single"} size={22} /></span> · <DiscBall disc={session.discipline} size={15} />
+        <FormatInfoIcon format="winner_stays" /> · <span className="info-ico" title={t(session.is_doubles ? "Doppel" : "Einzel")} role="img" aria-label={t(session.is_doubles ? "Doppel" : "Einzel")}><ModeGlyph mode={session.is_doubles ? "double" : "single"} size={22} /></span> · <DiscBall disc={session.discipline} size={15} />
         {session.table_number != null && ` · ${t("Tisch")} ${session.table_number}`}
         {" · "}<StatusIcon status={session.status === "finished" ? "finished" : "running"} />
         {breakApplies(session.discipline) && (
@@ -669,7 +670,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       </div>
 
       {(games.length > 0 || finished) && (
-        <section className="stat-block ws-protocol">
+        <section className="stat-block ws-protocol" id="ws-protocol">
           <div className="stat-block-head">
             <h3>{finished ? <ScrollText size={17} /> : <Repeat size={17} />} {finished ? t("Protokoll") : t("Verlauf")}</h3>
             {finished && (

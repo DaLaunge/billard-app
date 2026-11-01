@@ -1,6 +1,6 @@
 # Testkatalog Break & Rank
 
-Stand: 2026-11-01, Version 427.56, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
+Stand: 2026-11-01, Version 427.59, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
 Ziel: Alles läuft **vollautomatisch** (Browser-Pane, JavaScript im Seitenkontext, keine Handgriffe).
 **Ausgenommen (braucht Nutzerhandlung):** Speichern/Teilen von PDFs und CSV in eine Datei, System-Teilen-Menü, Push-Berechtigung, Kamera/QR-Scan. Der PDF-Bau selbst wird nur als Blob (Typ + Größe) geprüft.
 
@@ -58,6 +58,9 @@ Menüs: Statistik, Turniere, Live, Identität, Meine Erfolge, Meine Zahlen, Eins
 | T-16 | Turnier beenden (Raster-Formate): EIN Flaggen-Knopf, EIN Klick: Rückfrage mit Hinweis „keine Änderungen und Korrekturen mehr möglich“, beendet und sperrt in einem Zug; Knopf danach weg (Turnier das von selbst endet: derselbe Knopf sperrt nur noch); Zoomgruppe ohne „Zurücksetzen“ | ✅ 427.54 |
 | T-17 | Turniergrafik: Kopfzeile mit Knöpfen hat 12 px Abstand zum Baum; Tisch-Labels liegen vollständig im Rahmen (auch oberste Box im einfachen K.o.) und überdecken keine Box | ✅ 427.55 |
 | T-18 | Zoom-Knöpfe der Turniergrafik erscheinen am PC auch auf Geräten, die „coarse pointer“ melden (Touch-Laptop); nur ≤ 640 px Breite ersetzt der Einpassen-Knopf rechts die Gruppe | ✅ 427.56 |
+| T-19 | Kopfzeilen-Konsistenz über alle Modi und Zustände (K.o., Doppel-K.o., Jeder gegen jeden, Winner Stays Einzel/Doppel × Anmeldung/laufend/beendet/gesperrt) in 4 Größen (1280, 1024, 375, 812×375): feste Reihenfolge Bildschirm-an → QR → Spieler hinzufügen → Start/Start rückgängig/Beenden → Bericht → Löschen; Bildschirm-an-Knopf in jedem Screen an derselben Stelle; Info-Zeile nur aus Symbolen (Format, Disziplin, Modus, Status, Schloss/Stift, Turnierleitung) und einzeilig; kein Überstand | ✅ 427.59 |
+| T-20 | Panels QR und Spieler hinzufügen: gleiche Reihenfolge, unabhängig auf-/zuklappbar, in Anmeldung und Winner Stays | ✅ 427.59 |
+| T-21 | Winner Stays beendet: Bericht-Knopf in der Kopfzeile springt zum Protokoll; Turnierliste: Turnierleitung als Pfeifen-Symbol | ✅ 427.59 |
 | T-11 | Kopfzeile: Info + Turnierleitung eine Zeile, Umbruch nur bei Platzmangel, Glühbirne | ✅ |
 | T-12 | Gast über Turnier-QR (`?turnier=`), Gast-Screens | ⏭️ Fremd-Login/QR nötig |
 
