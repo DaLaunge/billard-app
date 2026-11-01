@@ -4040,3 +4040,9 @@ span.ws-b-av { cursor: default; }
 /* Infos in EINER Zeile (Modus · Disziplin · Status · Break, danach die Turnierleitung); erst wenn der Platz fehlt, bricht die Leitung um. */
 .head-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
 .head-info .hint, .head-info .turnier-organizer-line { margin: 0 0 6px; flex: 0 1 auto; min-width: 0; }
+
+/* Team-Auswahl (Winner Stays Doppel): die zwei gewaehlten Personen als Paar, solange noch keine zwei gewaehlt sind als leerer Platz */
+.quick-add-team { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.quick-add-team-slot { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: 14px; min-height: 36px; }
+.quick-add-team-slot.empty { padding: 4px 12px; background: transparent; border-style: dashed; color: var(--ivory-dim, inherit); opacity: .7; }
+.quick-add-team-slot + .quick-add-team-slot::before { content: "&"; margin-right: 2px; opacity: .6; }

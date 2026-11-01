@@ -1,6 +1,6 @@
 # Testkatalog Break & Rank
 
-Stand: 2026-11-01, Version 427.49, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
+Stand: 2026-11-01, Version 427.50, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
 Ziel: Alles läuft **vollautomatisch** (Browser-Pane, JavaScript im Seitenkontext, keine Handgriffe).
 **Ausgenommen (braucht Nutzerhandlung):** Speichern/Teilen von PDFs und CSV in eine Datei, System-Teilen-Menü, Push-Berechtigung, Kamera/QR-Scan. Der PDF-Bau selbst wird nur als Blob (Typ + Größe) geprüft.
 
@@ -52,6 +52,7 @@ Menüs: Statistik, Turniere, Live, Identität, Meine Erfolge, Meine Zahlen, Eins
 | T-08 | Turnierbericht (kompakt, vollständig), PDF-Blob (application/pdf, 6,5 KB) | ✅ |
 | T-09 | PDF/CSV auf Datenträger speichern | ⏭️ braucht Nutzerhandlung |
 | T-10 | Winner Stays Einzel und Doppel (laufend/beendet), Pause, Hinzufügen, QR-Panel | ✅ (Lauf vor 427.48) |
+| T-13 | Winner Stays Doppel: Spieler hinzufügen → Avatar-Kacheln, zwei antippen bilden das Team (Paar-Vorschau, dritte Wahl ersetzt die älteste, Button erst bei genau 2 aktiv), „Team hinzufügen“, Warteschlange zeigt „Adrian & Din“ | ✅ 427.50 |
 | T-11 | Kopfzeile: Info + Turnierleitung eine Zeile, Umbruch nur bei Platzmangel, Glühbirne | ✅ |
 | T-12 | Gast über Turnier-QR (`?turnier=`), Gast-Screens | ⏭️ Fremd-Login/QR nötig |
 

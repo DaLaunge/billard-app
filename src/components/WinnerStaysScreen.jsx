@@ -5,7 +5,6 @@ import { t } from "../lib/i18n";
 import { initials, fmtDateTime } from "../lib/format";
 import { appConfirm } from "../lib/confirmDialog";
 import Ball from "./Ball";
-import PlayerPicker from "./PlayerPicker";
 import { TurnierToolbar, ToolBtn, ToolPanel, QuickAddPlayers } from "./widgets/TurnierToolbar";
 import ImprintFooter from "./widgets/ImprintFooter";
 import EndTournamentButton from "./widgets/EndTournamentButton";
@@ -191,8 +190,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   }, [session, lastGameNo]);
   const [showAdd, setShowAdd] = useState(false);
   const [showQr, setShowQr] = useState(false);
-  const [teamP1, setTeamP1] = useState(null);
-  const [teamP2, setTeamP2] = useState(null);
   // Nutzer-Feedback: nach dem Anlegen einer Runde ist der leere Zwischen-
   // Screen ("Hinzufügen" erst extra antippen) unnoetig - beim allerersten
   // Laden ohne Teilnehmer gleich direkt die Auswahl aufklappen. Nur EINMAL
@@ -357,15 +354,17 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     return true;
   };
 
-  const addTeam = async () => {
-    if (!teamP1 || !teamP2) return;
+  // ids = die zwei gewaehlten Personen aus QuickAddPlayers (team); true bei Erfolg, damit die Auswahl geleert wird.
+  const addTeam = async (ids) => {
+    if (!ids || ids.length !== 2) return false;
     setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_add_team", { p_session_id: sessionId, p_player1_id: teamP1, p_player2_id: teamP2 });
+    const { error } = await supabase.rpc("winner_stays_add_team", { p_session_id: sessionId, p_player1_id: ids[0], p_player2_id: ids[1] });
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (error) { toast(t("Fehler: ") + error.message); return false; }
     toast(t("Team hinzugefügt."));
-    setTeamP1(null); setTeamP2(null); setShowAdd(false);
+    setShowAdd(false);
     await load();
+    return true;
   };
 
   // Nutzer-Feedback: Warteschlange soll umsortierbar sein - Pfeil-Buttons
@@ -503,22 +502,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
       {isOrganizer && session.status === "running" && (
         <ToolPanel open={showAdd}>
-          {session.is_doubles ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
-                value={teamP1} exclude={[...existingPlayerIds, teamP2].filter(Boolean)}
-                onSelect={setTeamP1} placeholder={t("Erste Person")} />
-              <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
-                value={teamP2} exclude={[...existingPlayerIds, teamP1].filter(Boolean)}
-                onSelect={setTeamP2} placeholder={t("Zweite Person")} />
-              <button className="btn primary" disabled={busy || !teamP1 || !teamP2} onClick={addTeam}>
-                <Check size={15} /> {t("Team hinzufügen")}
-              </button>
-            </div>
-          ) : (
-            <QuickAddPlayers players={players} matches={matches} me={me} exclude={existingPlayerIds}
-              colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} busy={busy} onAdd={addSingles} onAddGuest={addGuest} />
-          )}
+          <QuickAddPlayers players={players} matches={matches} me={me} exclude={existingPlayerIds}
+            colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} busy={busy}
+            team={session.is_doubles} onAdd={session.is_doubles ? addTeam : addSingles} onAddGuest={session.is_doubles ? undefined : addGuest} />
         </ToolPanel>
       )}
 

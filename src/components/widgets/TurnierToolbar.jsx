@@ -36,7 +36,7 @@ export function ToolPanel({ open, children }) {
    nimmt zurueck). Gewaehlte bleiben sichtbar, auch wenn die Suche sie ausblendet. Findet die Suche kein Mitglied mit genau diesem Namen,
    steht der getippte Name als Gast zur Wahl (Personen ohne App). Enter waehlt den ersten Treffer. onAdd(ids) / onAddGuest(name) liefern
    true bei Erfolg; erst dann wird die Auswahl geleert. */
-export function QuickAddPlayers({ players, matches, me, exclude = [], colorOf, badgeOf, photoOf, busy, onAdd, onAddGuest, suggestions = 8 }) {
+export function QuickAddPlayers({ players, matches, me, exclude = [], colorOf, badgeOf, photoOf, busy, onAdd, onAddGuest, suggestions = 8, team = false }) {
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState([]);
   const freq = useMemo(() => recentOpponentFreq(matches, me), [matches, me]);
@@ -51,7 +51,8 @@ export function QuickAddPlayers({ players, matches, me, exclude = [], colorOf, b
   const pinned = sel.map((id) => pool.find((p) => p.id === id)).filter(Boolean);
   const list = [...pinned, ...shown.filter((p) => !sel.includes(p.id))];
   const showGuest = !!onAddGuest && !!q && !pool.some((p) => p.nickname.toLowerCase() === q);
-  const toggle = (id) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  // team: genau zwei Personen bilden ein Team - eine dritte Wahl ersetzt die aeltere, so bleibt die Auswahl immer ein Paar.
+  const toggle = (id) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : team ? [...s, id].slice(-2) : [...s, id]));
   const submit = async () => { if (sel.length && (await onAdd(sel))) { setSel([]); setQuery(""); } };
   const submitGuest = async () => { if (await onAddGuest(query.trim())) setQuery(""); };
   const onKey = (e) => {
@@ -87,8 +88,18 @@ export function QuickAddPlayers({ players, matches, me, exclude = [], colorOf, b
           <UserPlus size={15} /> {t("Gast \"{name}\" hinzufügen", { name: query.trim() })}
         </button>
       )}
-      <button type="button" className="btn primary quick-add-go" disabled={busy || sel.length === 0} onClick={submit}>
-        <Check size={15} /> {t("{n} Spieler hinzufügen", { n: sel.length })}
+      {team && (
+        <div className="quick-add-team" aria-live="polite">
+          {[0, 1].map((i) => {
+            const p = pinned[i];
+            return p
+              ? <span key={p.id} className="quick-add-team-slot"><Ball nick={p.nickname} color={colorOf(p.nickname)} label={initials(p.nickname)} badge={badgeOf(p.nickname)} photo={photoOf(p.nickname)} size={28} /><b>{p.nickname}</b></span>
+              : <span key={i} className="quick-add-team-slot empty">{i === 0 ? t("Erste Person") : t("Zweite Person")}</span>;
+          })}
+        </div>
+      )}
+      <button type="button" className="btn primary quick-add-go" disabled={busy || (team ? sel.length !== 2 : sel.length === 0)} onClick={submit}>
+        <Check size={15} /> {team ? t("Team hinzufügen") : t("{n} Spieler hinzufügen", { n: sel.length })}
       </button>
     </div>
   );
