@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { X, ZoomIn, ZoomOut, RotateCcw, Scan, Trophy, Minimize2, UserX, Check, Route } from "lucide-react";
+import { X, ZoomIn, ZoomOut, Scan, Trophy, Minimize2, UserX, Check, Route } from "lucide-react";
 import { t } from "../lib/i18n";
 import { initials } from "../lib/format";
 import Ball from "./Ball";
@@ -361,7 +361,6 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
         <div className="turnier-graph-zoom-controls">
           <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN} aria-label={t("Verkleinern")}><ZoomOut size={18} /></button>
           <button type="button" className="turnier-graph-zoom-btn" onClick={() => zoomBy(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX} aria-label={t("Vergrößern")}><ZoomIn size={18} /></button>
-          <button type="button" className="turnier-graph-zoom-reset-btn" onClick={() => { userZoomedRef.current = true; setZoom(1); }} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}><RotateCcw size={17} /></button>
           <button type="button" className="turnier-graph-zoom-btn turnier-graph-fit-btn" onClick={() => fitToScreen()} aria-label={t("An Bildschirm anpassen")} title={t("An Bildschirm anpassen")}><Scan size={18} /></button>
         </div>
         <div className="turnier-graph-header-end">
@@ -383,13 +382,7 @@ export default function TurnierGraph({ matches, nameOf, me, isOrganizer, tourSta
               <UserX size={18} />
             </button>
           )}
-          {/* Duplikat des Reset-Buttons NUR fuers Touch-Layout (siehe CSS) -
-              steht dort neben statt anstelle der zentrierten PC-Variante,
-              damit beide Buttons rechts als eine Gruppe zusammenstehen. */}
-          <button type="button" className="turnier-graph-minimize-btn turnier-graph-mobile-reset-btn"
-            onClick={() => { userZoomedRef.current = true; setZoom(1); }} disabled={zoom === 1} aria-label={t("Zoom zurücksetzen")}>
-            <RotateCcw size={17} />
-          </button>
+          {/* Einpassen auch im Touch-Layout rechts neben dem Minimieren-Knopf (am PC steht er in der zentrierten Zoom-Gruppe). */}
           <button type="button" className="turnier-graph-minimize-btn turnier-graph-mobile-reset-btn" onClick={() => fitToScreen()} aria-label={t("An Bildschirm anpassen")} title={t("An Bildschirm anpassen")}>
             <Scan size={17} />
           </button>

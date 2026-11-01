@@ -1,6 +1,6 @@
 # Testkatalog Break & Rank
 
-Stand: 2026-11-01, Version 427.52, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
+Stand: 2026-11-01, Version 427.53, Testprojekt (`hadamdvpnwslztsxmwdr`), Login `test@test.at` (Admin).
 Ziel: Alles läuft **vollautomatisch** (Browser-Pane, JavaScript im Seitenkontext, keine Handgriffe).
 **Ausgenommen (braucht Nutzerhandlung):** Speichern/Teilen von PDFs und CSV in eine Datei, System-Teilen-Menü, Push-Berechtigung, Kamera/QR-Scan. Der PDF-Bau selbst wird nur als Blob (Typ + Größe) geprüft.
 
@@ -55,6 +55,7 @@ Menüs: Statistik, Turniere, Live, Identität, Meine Erfolge, Meine Zahlen, Eins
 | T-13 | Winner Stays Doppel: Spieler hinzufügen → Avatar-Kacheln, zwei antippen bilden das Team (Paar-Vorschau, dritte Wahl ersetzt die älteste, Button erst bei genau 2 aktiv), „Team hinzufügen“, Warteschlange zeigt „Adrian & Din“ | ✅ 427.50 |
 | T-14 | Turniergrafik: passt sich beim Öffnen automatisch in Breite und Höhe ein (kein Scrollen), Knopf „An Bildschirm anpassen“ nach manuellem Zoom/100 %, auch nach Maximieren und Größenänderung (1280, 1024, 375) | ✅ 427.52 |
 | T-15 | Turnier mit Baum startet immer in der Grafik (auch wenn es in der Anmeldung noch keinen Baum gab); eigene Wahl „Liste“/„Teilnehmer“ bleibt | ✅ 427.52 |
+| T-16 | Beendetes Turnier: ein Flaggen-Knopf „Turnier beenden“ (statt Schild „Turnier bestätigen“), Rückfrage „endgültig beenden“, danach Korrekturen gesperrt, Knopf weg; Zoomgruppe ohne „Zurücksetzen“ | ✅ 427.53 |
 | T-11 | Kopfzeile: Info + Turnierleitung eine Zeile, Umbruch nur bei Platzmangel, Glühbirne | ✅ |
 | T-12 | Gast über Turnier-QR (`?turnier=`), Gast-Screens | ⏭️ Fremd-Login/QR nötig |
 

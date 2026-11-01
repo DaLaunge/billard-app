@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DiscBall from "./widgets/DiscBall";
 import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
-import { ChevronLeft, QrCode, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, ShieldCheck, Lock, FileText, Play, Undo2 } from "lucide-react";
+import { ChevronLeft, QrCode, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, Lock, FileText, Play, Undo2 } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtListDateTime } from "../lib/format";
@@ -313,12 +313,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // resultsLocked/tournament_confirm_results) - bis dahin bleiben Tippfehler
   // jederzeit korrigierbar.
   const confirmResults = async () => {
-    if (!(await appConfirm(t("Turnier endgültig bestätigen? Danach sind keine Ergebnis-Korrekturen mehr möglich.")))) return;
+    if (!(await appConfirm(t("Turnier endgültig beenden? Danach sind keine Ergebnis-Korrekturen mehr möglich.")))) return;
     setBusyId("confirmResults");
     const { error } = await supabase.rpc("tournament_confirm_results", { p_tournament_id: tournamentId });
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return; }
-    toast(t("Turnier bestätigt - Korrekturen sind jetzt gesperrt."));
+    toast(t("Turnier beendet - Korrekturen sind jetzt gesperrt."));
     await load();
   };
 
@@ -617,7 +617,8 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
           {isOrganizer && tour.status === "running" && canDeleteTournament && <ToolBtn icon={Undo2} label={t("Start rückgängig machen")} disabled={busyId === "cancelStart"} onClick={cancelStart} />}
           {isOrganizer && tour.status === "running" && <EndTournamentButton disabled={busyId === "end"} onClick={endEarly} />}
-          {canConfirmResults && <ToolBtn icon={ShieldCheck} label={t("Turnier bestätigen")} disabled={busyId === "confirmResults"} onClick={confirmResults} />}
+          {/* Zweiter Schritt desselben Vorgangs (Ergebnisse sperren): derselbe Flaggen-Knopf wie "Turnier beenden", Nutzer 2026-11-01: "gleichbedeutend" */}
+          {canConfirmResults && <EndTournamentButton disabled={busyId === "confirmResults"} onClick={confirmResults} />}
           {tour.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => setShowReport(true)} />}
           {isOrganizer && canDeleteTournament && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busyId === "delete"} onClick={deleteTournament} />}
         </TurnierToolbar>
