@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useState, useEffect, useRef, createContext, useContext, lazy, Suspense } from "react";
 import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Clock, Map as MapIcon } from "lucide-react";
 import { supabase } from "../../supabase";
@@ -223,7 +224,23 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setPlaceText(""); setHere(null); setAddr(null); setNear(null); } }} toast={toast} me={me} onUseText={live ? useText : undefined}
         placeholder={live ? t("Lokal oder Adresse suchen oder eingeben") : undefined} />
   );
-  return (
+  // Popup statt Einschub in die Liste: das Formular steht allein im Blick, nichts lenkt ab (Nutzer 429.9)
+  const title = live ? t("Online gehen") : initial ? t("Planung ändern") : t("Planung erstellen");
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const esc = (e) => { if (e.key === "Escape") onDone(); };
+    window.addEventListener("keydown", esc);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", esc); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return createPortal(
+    <div className="venue-modal-overlay" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="venue-modal">
+    <div className="venue-modal-head">
+      {live ? <Radio size={18} /> : <Calendar size={18} />}
+      <b>{title}</b>
+      <button type="button" className="icon-btn small" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
+    </div>
     <div className="venue-form">
       {!live && <DayPicker compact value={date} onChange={setDate} />}
       {!live && (
@@ -286,7 +303,6 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           <input placeholder={live ? t("Nachricht (optional)") : t("Hinweis (optional), z. B. 'Bin flexibel'")}
             value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
         </div>
-        <button type="button" className="icon-btn" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
         <button type="button" className="icon-btn primary venue-go" title={label || (live ? t("Live gehen") : t("Eintragen"))} aria-label={label || (live ? t("Live gehen") : t("Eintragen"))}
           onClick={async () => {
             // laeuft die Standortabfrage noch (gleich nach dem Oeffnen), kurz auf sie warten
@@ -295,10 +311,13 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
             onSubmit({ date: date || todayIso(), time: time || getPlanRemind().time, msg, hours, locId, venue, here: !venue ? pos : null, placeText: !venue ? placeText : "" });
             onDone();
           }}>
-          <Check size={20} />
+          <Check size={28} />
         </button>
       </div>
     </div>
+    </div>
+    </div>,
+    document.body,
   );
 }
 
