@@ -33,6 +33,8 @@ import { useStuckHeads } from "./lib/useStuckHeads";
 import { useSwipeNav } from "./lib/useSwipeNav";
 import ConfirmRoundButtons from "./components/widgets/ConfirmRoundButtons";
 import { getPendingPopup, storePendingPopup } from "./lib/uiPrefs";
+import { useLocations } from "./lib/locationStore";
+import { getPlanRemind, isPlanDue, isPlanSeen, markPlanSeen } from "./lib/planRemind";
 import { getNotifyMode, storeNotifyMode, enablePush, disablePush, syncPush, safeNav, readUrlNav, POPUP_KINDS } from "./lib/notifications";
 
 import LoginScreen from "./components/LoginScreen";
@@ -1461,6 +1463,36 @@ export default function App() {
     && !celebrate && !tourneyReady && !wsReady && !draftOffer
     && pendingForMe.some((m) => !pendingSeen.includes(m.id));
 
+  // "Planung wird live" (428.1): ist der Zeitpunkt einer eigenen (oder zugesagten) Planung erreicht - abzueglich des in den
+  // Einstellungen gewaehlten Vorlaufs -, fragt ein Popup, ob daraus eine Live-Anzeige werden soll. Pro Planung nur einmal.
+  const { list: locListR, planLoc: planLocR, planTime: planTimeR } = useLocations();
+  const [planDue, setPlanDue] = useState(null);
+  const [planTick, setPlanTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setPlanTick((n) => n + 1), 30000);
+    const vis = () => { if (document.visibilityState === "visible") setPlanTick((n) => n + 1); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", vis); };
+  }, []);
+  useEffect(() => {
+    if (!player || planDue) return;
+    const { lead, time: defTime } = getPlanRemind();
+    if (lead == null) return;
+    const hit = plannings.find((p) => {
+      if (p.player_id !== player.id && !p.replies?.some((r) => r.player_id === player.id)) return false;
+      const tm = planTimeR?.[p.id] || defTime;
+      return isPlanDue(p, tm, lead) && !isPlanSeen(p, tm);
+    });
+    if (hit) setPlanDue(hit);
+  }, [plannings, player, planDue, planTick, planTimeR]);
+  const dismissPlanDue = () => {
+    if (planDue) markPlanSeen(planDue, planTimeR?.[planDue.id] || getPlanRemind().time);
+    setPlanDue(null);
+  };
+  const iAmLive = !!player && pings.some((p) => p.player_id === player.id);
+  const showPlanDue = !!planDue && !!player && !newsItems && MAIN_TABS.includes(tab) && !mustUpdate && !tutorialRun
+    && !celebrate && !tourneyReady && !wsReady && !draftOffer && !showPendingPopup;
+
   const selectBadge = async (badgeKey) => {
     const { data, error } = await supabase.rpc("select_badge", { p_badge_key: badgeKey });
     if (error) { toast(t("Fehler: ") + error.message); return false; }
@@ -1539,15 +1571,15 @@ export default function App() {
     loadData();
   };
 
-  const createPlanning = async (date, msg, locId) => {
-    const { error } = await supabase.rpc("create_planning", { p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}) });
+  const createPlanning = async (date, msg, locId, time) => {
+    const { error } = await supabase.rpc("create_planning", { p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}), ...(time ? { p_planned_time: time } : {}) });
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Planung eingetragen!"));
     loadData();
     loadLocations(true);
   };
-  const updatePlanning = async (id, date, msg, locId) => {
-    const { error } = await supabase.rpc("update_planning", { p_planning_id: id, p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}) });
+  const updatePlanning = async (id, date, msg, locId, time) => {
+    const { error } = await supabase.rpc("update_planning", { p_planning_id: id, p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}), ...(time ? { p_planned_time: time } : {}) });
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Planung geändert."));
     loadData();
@@ -1757,6 +1789,33 @@ export default function App() {
                 kommt es wieder, solange das Match noch offen ist). Passt/Falsch
                 gehen direkt von hier. Wartet, bis ein anderes Popup (Erfolg,
                 "Du bist dran", Entwurf) weg ist, damit nichts uebereinander liegt. */}
+            {showPlanDue && (() => {
+              const place = locListR.find((l) => l.id === planLocR?.[planDue.id]);
+              const tm = planTimeR?.[planDue.id];
+              const own = planDue.player_id === player.id;
+              const goLive = () => {
+                const p = planDue;
+                dismissPlanDue();
+                if (place) createPing(place.name, p.message || "", 3, null);
+                else { navPush({ tab: "live" }); toast(t("Wähle in Live noch einen Ort, dann bist du sichtbar.")); }
+              };
+              return (
+                <div className="celebrate-overlay" onClick={dismissPlanDue}>
+                  <div className="celebrate-card pending-card" onClick={(e) => e.stopPropagation()}>
+                    <div className="plr-popup-ico" aria-hidden="true"><Emoji e="📅" /> → <Emoji e="🔴" /></div>
+                    <div className="celebrate-head">{own ? t("Deine Planung ist jetzt aktuell") : t("Eine Planung, bei der du interessiert bist, ist jetzt aktuell")}</div>
+                    <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>
+                      {own ? "" : `${planDue.player.nickname} · `}{fmtDate(planDue.planned_date)}{tm ? ` · ${tm}` : ""}{place ? ` · ${place.name}` : ""}
+                      {iAmLive ? " · " + t("Du bist schon live.") : ""}
+                    </p>
+                    <div className="confirm-actions">
+                      {!iAmLive && <button className="chip-btn ok" onClick={goLive}><Radio size={15} /> {t("Live gehen")}</button>}
+                      <button className="chip-btn no" onClick={dismissPlanDue}>{t("Nicht jetzt")}</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
             {showPendingPopup && (
               <div className="celebrate-overlay" onClick={dismissPending}>
                 <div className="celebrate-card pending-card" onClick={(e) => e.stopPropagation()}>

@@ -13,6 +13,7 @@ import InfoButton from "./widgets/InfoButton";
 import MatchFlySwitch from "./widgets/MatchFlySwitch";
 import ShowTimesSwitch from "./widgets/ShowTimesSwitch";
 import PendingPopupSwitch from "./widgets/PendingPopupSwitch";
+import PlanRemindSetting from "./widgets/PlanRemindSetting";
 import FiltersOpenSwitch from "./widgets/FiltersOpenSwitch";
 import ListPrefs from "./widgets/ListPrefs";
 import PingRadiusSetting from "./widgets/PingRadiusSetting";
@@ -370,6 +371,7 @@ export default function SettingsScreen({ nickname, players, meRow, photoOf, toas
             <MatchFlySwitch />
             <ShowTimesSwitch />
             <PendingPopupSwitch on={pendingPopup} onChange={onSetPendingPopup} />
+            <PlanRemindSetting />
             <FiltersOpenSwitch />
             <ListPrefs />
             {/* Updates: Schalter + Symbolknopf "jetzt suchen" in EINER Zeile

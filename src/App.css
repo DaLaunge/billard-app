@@ -4056,3 +4056,34 @@ span.ws-b-av { cursor: default; }
 /* Queue des Anstoss-Habenden als Knopf (Anstoss noch tauschbar): antippen gibt ihn der anderen Seite */
 .ws-break-mark.swap { pointer-events: auto; cursor: pointer; background: none; border: 0; padding: 0; }
 .ws-break-mark.swap:hover, .ws-break-mark.swap:focus-visible { opacity: .75; }
+
+/* ---- Einstellung "Planung wird live" (428.1) ---- */
+.plr-box { margin: 4px 0 10px; }
+.plr-demo { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 12px; margin: 2px 0 8px;
+  background: var(--surface-btn); border-radius: 12px; }
+.plr-bell { display: inline-flex; align-items: center; gap: 5px; color: var(--ivory-dim); font-size: calc(12.5px * var(--fs, 1)); }
+.plr-morph { display: inline-flex; align-items: center; gap: 8px; }
+.plr-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; font-weight: 700;
+  font-size: calc(13.5px * var(--fs, 1)); white-space: nowrap; }
+.plr-btn.plan { background: var(--felt-2); color: var(--ivory); border: 1.5px solid var(--accent-line); }
+.plr-btn.live { background: var(--accent); color: var(--accent-ink); border: 1.5px solid transparent; }
+.plr-arrow { color: var(--ivory-dim); }
+.plr-chips { margin-top: 4px; }
+.plr-custom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+.plr-custom input[type="number"] { width: 64px; }
+.plr-custom input, .plr-custom select { background: var(--surface-btn); color: var(--ivory); border: 1.5px solid transparent;
+  border-radius: 8px; padding: 6px 8px; font: inherit; }
+.plr-now { color: var(--accent); font-weight: 700; font-size: calc(12.5px * var(--fs, 1)); }
+.plr-popup-ico { font-size: 38px; text-align: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .plr-morph { display: grid; }
+  .plr-morph > * { grid-area: 1 / 1; justify-self: center; }
+  .plr-arrow { display: none; }
+  .plr-btn.plan { animation: plr-plan 4.8s ease-in-out infinite; }
+  .plr-btn.live { animation: plr-live 4.8s ease-in-out infinite; }
+  .plr-bell svg { animation: plr-ring 4.8s ease-in-out infinite; transform-origin: 50% 10%; }
+}
+@keyframes plr-plan { 0%, 38% { opacity: 1; transform: scale(1); } 48%, 90% { opacity: 0; transform: scale(.8); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes plr-live { 0%, 38% { opacity: 0; transform: scale(.8); } 48% { opacity: 1; transform: scale(1.12); box-shadow: 0 0 0 0 var(--accent); }
+  58% { transform: scale(1); box-shadow: 0 0 0 10px transparent; } 88% { opacity: 1; } 96%, 100% { opacity: 0; transform: scale(.8); } }
+@keyframes plr-ring { 0%, 36%, 56%, 100% { transform: rotate(0); } 40% { transform: rotate(18deg); } 44% { transform: rotate(-16deg); } 48% { transform: rotate(10deg); } 52% { transform: rotate(-6deg); } }
