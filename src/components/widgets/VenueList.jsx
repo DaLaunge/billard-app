@@ -22,6 +22,8 @@ const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-
 const SHOWN = 30;
 const NEEDED = 2;
 const fmtDist = (m) => (m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(m / 1000)} km`);
+/* Planung: wie viele kommen (Planer mitgezaehlt): 1 = "Alleine", dann "zu zweit", "zu dritt", "zu viert", ab 5 nur die Zahl */
+const groupLabel = (n) => (n <= 1 ? t("Alleine") : n === 2 ? t("zu zweit") : n === 3 ? t("zu dritt") : n === 4 ? t("zu viert") : n);
 const REACTIONS = ["👍", "🎱", "❤️"];
 
 /* Ein Live-Eintrag oder eine Planung samt Zusagen: wer zugesagt hat, kleine Reaktionen darauf (👍 🎱 ❤️) und - fuer alle
@@ -63,7 +65,7 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
         <span className="venue-line-end">
           <button type="button" className={"venue-count as-btn" + (show ? " on" : "")} onClick={() => setShow((v) => !v)} aria-expanded={show}
             title={t("Gemeldete Spieler")} aria-label={t("Gemeldete Spieler")}>
-            <Users size={12} /> {people}<ChevronDown size={12} className="venue-chev" />
+            <Users size={12} /> {ping ? people : groupLabel(people)}<ChevronDown size={12} className="venue-chev" />
           </button>
           {!mine && !myReply && (
             <>
