@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, createContext, useContext, lazy, Suspense } from "react";
 import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Clock, Map as MapIcon } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
@@ -178,14 +178,14 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [showMap, setShowMap] = useState(false);
   // Position setzen (GPS, Adresse oder Karte): bekannte Lokale bis 300 m anbieten, genau eines vorwaehlen, sonst nur der Standort.
   // Ein Lokal ist NIE Pflicht - der Standort allein genuegt (z. B. privater Tisch).
-  const applyPos = (p, address) => {
+  const applyPos = (p, address, keepVenue) => {
     setHere(p);
     if (address !== undefined) setAddr(address);
     else { setAddr(null); reverseAddress(p.lat, p.lng).then((a) => setAddr(a || "")); }
     const found = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
       .map((l) => ({ l, d: distanceM(p, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
     // kein Lokal wird heimlich vorgewaehlt: die Treffer stehen als Knoepfe da, der Standort gilt, bis man bewusst eins waehlt
-    setNear(found); setLocId(null);
+    setNear(found); if (!keepVenue) setLocId(null);
   };
   // Standort/getippten Ort wieder loswerden (dann kann bewusst neu gewaehlt werden)
   const clearOwn = () => { setHere(null); setPlaceText(""); setAddr(null); setNear(null); setAcc(null); setShowMap(false); };
@@ -202,15 +202,21 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     if (known) { setLocId(known.l.id); setPlaceText(""); toast?.(t("Dort gibt es schon ein Lokal: {name}.", { name: known.l.name })); return; }
     setHere(p); setAddr(hit.label.split(", ").slice(0, 4).join(", "));
   };
-  const findMe = () => {
+  // Standort abfragen; "auto" = beim Oeffnen des Live-Formulars (ein schon gewaehltes Lokal bleibt dann unangetastet).
+  // Ohne Freigabe erscheint der bekannte Hinweis, live gehen geht trotzdem ("Ort offen").
+  const locRef = useRef(null);
+  const findMe = (auto) => {
     if (!navigator.geolocation) { toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (p) => { setPlaceText(""); setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
-      () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib unten eine Adresse oder ein Lokal ein.")); },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
-    );
+    locRef.current = new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (p) => { setPlaceText(""); setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }, undefined, auto === true); setLocating(false); resolve({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+        () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib unten eine Adresse oder ein Lokal ein.")); resolve(null); },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
+      );
+    });
   };
+  useEffect(() => { if (live && !venueId && !initial) findMe(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const onMapPick = (p) => { setPlaceText(""); setAcc(null); applyPos(p); };
   const venue = list.find((l) => l.id === locId) || null;
   return (
@@ -224,7 +230,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       )}
       {live && (
         <div className="venue-here-row">
-          <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
+          <button type="button" className="chip-btn venue-here" onClick={() => findMe()} disabled={locating}>
             <MapPin size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
           </button>
           <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
@@ -278,7 +284,13 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
         </div>
         <button type="button" className="icon-btn" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
         <button type="button" className="icon-btn primary venue-go" title={label || (live ? t("Live gehen") : t("Eintragen"))} aria-label={label || (live ? t("Live gehen") : t("Eintragen"))}
-          onClick={() => { onSubmit({ date: date || todayIso(), time: time || getPlanRemind().time, msg, hours, locId, venue, here: !venue ? here : null, placeText: !venue ? placeText : "" }); onDone(); }}>
+          onClick={async () => {
+            // laeuft die Standortabfrage noch (gleich nach dem Oeffnen), kurz auf sie warten
+            let pos = here;
+            if (live && locating && locRef.current) pos = (await locRef.current) || here;
+            onSubmit({ date: date || todayIso(), time: time || getPlanRemind().time, msg, hours, locId, venue, here: !venue ? pos : null, placeText: !venue ? placeText : "" });
+            onDone();
+          }}>
           <Check size={20} />
         </button>
       </div>
