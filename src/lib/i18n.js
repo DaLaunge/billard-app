@@ -624,6 +624,7 @@ const TRANSLATIONS = {
     "Eine Planung, bei der du interessiert bist, ist jetzt aktuell": "A plan you are interested in is happening now",
     "Du bist schon live.": "You are already live.",
     "Nicht jetzt": "Not now",
+    "Anderer Ort": "Different place",
     "seit {time}": "since {time}",
     "Alleine": "Alone",
     "zu zweit": "two of us",

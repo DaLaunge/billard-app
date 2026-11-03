@@ -19,6 +19,7 @@ import { getPlanRemind } from "../../lib/planRemind";
    Wechsel in einen anderen Reiter, kein Hochscrollen. Lokale mit Betrieb stehen oben. Der andere Weg (erst Live/Planung,
    Lokal dort optional waehlen) bleibt in den Formularen der Reiter selbst. */
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const SHOWN = 30;
 const NEEDED = 2;
 const fmtDist = (m) => (m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(m / 1000)} km`);
@@ -157,12 +158,12 @@ function Unfold({ children }) {
 const LocationMap = lazy(() => import("./LocationMap"));
 
 /* EINE Maske fuer "Online gehen" und "Planung": Ort waehlen oder eingeben (LocationPicker), Nachricht, dazu bei Live die Dauer,
-   bei der Planung der Kalender. Bei Live ist der Ort Pflicht (mit bekanntem Standort ist das naechste Lokal vorgewaehlt),
-   bei der Planung optional - dann steht der Hinweis, dass man sich den Ort noch ausmachen muss. */
+   bei der Planung der Kalender. Alle Felder sind optional (Tag heute, Uhrzeit 18:00, Ort offen); ein Lokal wird nie heimlich vorgewaehlt,
+   bei der Planung steht dann - dann steht der Hinweis, dass man sich den Ort noch ausmachen muss. */
 function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const { me, toast, list } = useContext(VenueCtx);
   const live = kind === "live";
-  const [date, setDate] = useState(initial?.date || "");
+  const [date, setDate] = useState(initial?.date || todayIso()); // alles optional: der Tag ist heute vorgewaehlt
   const [msg, setMsg] = useState(initial?.msg || "");
   const [hours, setHours] = useState(3);
   const [time, setTime] = useState(initial?.time || getPlanRemind().time); // Uhrzeit der Planung: Pflicht, Standard 18:00 (Einstellung)
@@ -172,7 +173,6 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [here, setHere] = useState(null); // eigene Position { lat, lng }
   const [addr, setAddr] = useState(null); // Adresse zur eigenen Position (Nominatim), "" = keine gefunden
   const [placeText, setPlaceText] = useState(""); // frei getippter Ort ("Ort verwenden"), ohne Lokal
-  const [own, setOwn] = useState(false); // live mit dem eigenen Standort, ohne Lokal (z. B. privater Tisch)
   const [locating, setLocating] = useState(false);
   const [acc, setAcc] = useState(null); // GPS-Genauigkeit in Metern
   const [showMap, setShowMap] = useState(false);
@@ -184,21 +184,22 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     else { setAddr(null); reverseAddress(p.lat, p.lng).then((a) => setAddr(a || "")); }
     const found = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
       .map((l) => ({ l, d: distanceM(p, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
-    setNear(found);
-    if (found.length === 1) { setLocId(found[0].l.id); setOwn(false); }
-    else if (found.length === 0) { setLocId(null); setOwn(true); }
+    // kein Lokal wird heimlich vorgewaehlt: die Treffer stehen als Knoepfe da, der Standort gilt, bis man bewusst eins waehlt
+    setNear(found); setLocId(null);
   };
+  // Standort/getippten Ort wieder loswerden (dann kann bewusst neu gewaehlt werden)
+  const clearOwn = () => { setHere(null); setPlaceText(""); setAddr(null); setNear(null); setAcc(null); setShowMap(false); };
   // "Ort verwenden": der getippte Text wird als Ort genommen, ohne Lokal. Die App sucht dazu eine Position; gehoert sie zu einem bekannten
   // Lokal (bis 100 m), wird stattdessen gleich dieses Lokal gewaehlt.
   const useText = async (text) => {
-    setPlaceText(text); setOwn(true); setLocId(null); setAcc(null);
+    setPlaceText(text); setLocId(null); setAcc(null);
     let hit = null;
     try { hit = (await searchAddress(text))[0] || null; } catch { /* ohne Position weiter */ }
     if (!hit) { setHere(null); setAddr(text); return; }
     const p = { lat: hit.lat, lng: hit.lng };
     const known = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
       .map((l) => ({ l, d: distanceM(p, l) })).filter((x) => x.d <= 100).sort((a, b) => a.d - b.d)[0];
-    if (known) { setLocId(known.l.id); setOwn(false); setPlaceText(""); toast?.(t("Dort gibt es schon ein Lokal: {name}.", { name: known.l.name })); return; }
+    if (known) { setLocId(known.l.id); setPlaceText(""); toast?.(t("Dort gibt es schon ein Lokal: {name}.", { name: known.l.name })); return; }
     setHere(p); setAddr(hit.label.split(", ").slice(0, 4).join(", "));
   };
   const findMe = () => {
@@ -227,23 +228,21 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
             <MapPin size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
           </button>
           <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
-          <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
-            {placeText && !here ? placeText
-              : !here ? t("noch kein Standort")
-              : addr === null ? t("Adresse wird gesucht …")
-              : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}
-          </span>
           {near && near.map(({ l, d }) => (
-            <button key={l.id} type="button" className={"chip-btn" + (locId === l.id && !own ? " sel" : "")} onClick={() => { setLocId(l.id); setOwn(false); }}>
+            <button key={l.id} type="button" className={"chip-btn" + (locId === l.id ? " sel" : "")} onClick={() => setLocId(locId === l.id ? null : l.id)}>
               <MapPin size={14} /> {l.name}<span className="rank-meta"> · {fmtDist(d)}</span>
             </button>
           ))}
-          {near && (
-            <button type="button" className={"chip-btn" + (own ? " sel" : "")} onClick={() => { setOwn(true); setLocId(null); }}
-              title={t("Ohne Lokal live gehen, z. B. an einem privaten Tisch")}>
-              <MapPin size={14} /> {t("Nur mein Standort")}
-            </button>
-          )}
+        </div>
+      )}
+      {live && !venue && (here || placeText) && (
+        <div className="loc-sel">
+          <MapPin size={18} className="loc-sel-ico" />
+          <div className="loc-sel-txt">
+            <b>{placeText && !here ? placeText : t("Mein Standort")}</b>
+            <span className="rank-meta">{!here ? "" : addr === null ? t("Adresse wird gesucht …") : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}</span>
+          </div>
+          <button type="button" className="icon-btn small" onClick={clearOwn} aria-label={t("Anderer Ort")} title={t("Anderer Ort")}><X size={16} /></button>
         </div>
       )}
       {live && showMap && (
@@ -257,9 +256,9 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {live && acc != null && acc > 100 && (
         <p className="hint">{t("Genauigkeit ca. {m} m – bei Bedarf auf der Karte korrigieren.", { m: acc })}</p>
       )}
-      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setOwn(false); setPlaceText(""); } }} toast={toast} me={me} onUseText={live ? useText : undefined}
+      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setPlaceText(""); setHere(null); setAddr(null); setNear(null); } }} toast={toast} me={me} onUseText={live ? useText : undefined}
         placeholder={live ? t("Lokal oder Adresse suchen oder eingeben") : undefined} />
-      {live && !venue && !(own && (here || placeText)) && (
+      {live && !venue && !here && !placeText && (
         <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“ oder gib unten eine Adresse oder ein Lokal ein.")}</p>
       )}
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
@@ -278,9 +277,9 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
             value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
         </div>
         <button type="button" className="icon-btn" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
-        <button type="button" className="venue-go" disabled={!live && !date}
-          onClick={() => { onSubmit({ date, time: time || getPlanRemind().time, msg, hours, locId, venue, here: own && !venue ? here : null, placeText: own && !venue ? placeText : "" }); onDone(); }}>
-          {live ? <Radio size={16} /> : <Calendar size={16} />} {label || (live ? t("Live gehen") : t("Eintragen"))}
+        <button type="button" className="icon-btn primary venue-go" title={label || (live ? t("Live gehen") : t("Eintragen"))} aria-label={label || (live ? t("Live gehen") : t("Eintragen"))}
+          onClick={() => { onSubmit({ date: date || todayIso(), time: time || getPlanRemind().time, msg, hours, locId, venue, here: !venue ? here : null, placeText: !venue ? placeText : "" }); onDone(); }}>
+          <Check size={20} />
         </button>
       </div>
     </div>
