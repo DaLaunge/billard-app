@@ -18,7 +18,7 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
-  { version: "428.1", icon: "🔔",
+  { version: "429", icon: "🔔",
     items: ["Wird der Zeitpunkt einer Planung aktuell, fragt dich die App, ob du live gehen willst. Wie lange vorher, stellst du in den Einstellungen ein – wie bei Outlook-Erinnerungen oder mit eigener Zeit. Planungen können jetzt auch eine Uhrzeit haben."],
     en: ["When the time of a plan comes up, the app asks whether you want to go live. Set how long before in Settings – like Outlook reminders or with your own time. Plans can now have a time of day."] },
   { version: "427.31", icon: "📄",
