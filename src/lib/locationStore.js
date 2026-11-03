@@ -4,7 +4,7 @@ import { supabase } from "../supabase";
 /* Standort-Katalog (supabase/2026-10-27b_locations.sql), modulweit wie clubStore: Live (Ping, Planung), PingCard,
    PlanungCard und Verwaltung brauchen ihn. useLocations() laedt beim ersten Gebrauch (und hoechstens alle 60 s neu);
    fehlt die Tabelle noch, bleibt `available` false und die App faellt auf das alte Freitextfeld zurueck. */
-let data = { list: [], available: false, loaded: false, planLoc: {}, planTime: {}, confirms: [] };
+let data = { list: [], available: false, loaded: false, planLoc: {}, planTime: {}, planPos: {}, confirms: [] };
 let loadedAt = 0;
 let inflight = null;
 const subs = new Set();
@@ -19,14 +19,17 @@ export const loadLocations = (force = false) => {
     supabase.from("plannings").select("id, location_id").not("location_id", "is", null),
     supabase.from("location_confirmations").select("location_id, player_id"), // fehlt die Migration 27d: leer
     supabase.from("plannings").select("id, planned_time").not("planned_time", "is", null), // fehlt 2026-11-03_planning_time.sql: leer
+    supabase.from("plannings").select("id, place_text, lat, lng").not("place_text", "is", null), // fehlt 2026-11-03b_planning_position.sql: leer
   ])
-    .then(([{ data: rows, error }, { data: pl }, { data: cf }, { data: pt }]) => {
+    .then(([{ data: rows, error }, { data: pl }, { data: cf }, { data: pt }, { data: pp }]) => {
       loadedAt = Date.now();
       const planLoc = {};
       (pl || []).forEach((p) => { planLoc[p.id] = p.location_id; });
       const planTime = {}; // Planung -> "HH:MM"
       (pt || []).forEach((p) => { planTime[p.id] = String(p.planned_time).slice(0, 5); });
-      data = error ? { list: [], available: false, loaded: true, planLoc: {}, planTime: {}, confirms: [] } : { list: rows || [], available: true, loaded: true, planLoc, planTime, confirms: cf || [] };
+      const planPos = {}; // Planung -> { place_text, lat, lng } (eigener Ort ohne Lokal)
+      (pp || []).forEach((p) => { planPos[p.id] = p; });
+      data = error ? { list: [], available: false, loaded: true, planLoc: {}, planTime: {}, planPos: {}, confirms: [] } : { list: rows || [], available: true, loaded: true, planLoc, planTime, planPos, confirms: cf || [] };
       emit();
     })
     .catch(() => { /* offline: alter Stand bleibt */ })

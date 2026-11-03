@@ -1465,7 +1465,7 @@ export default function App() {
 
   // "Planung wird live" (428.1): ist der Zeitpunkt einer eigenen (oder zugesagten) Planung erreicht - abzueglich des in den
   // Einstellungen gewaehlten Vorlaufs -, fragt ein Popup, ob daraus eine Live-Anzeige werden soll. Pro Planung nur einmal.
-  const { list: locListR, planLoc: planLocR, planTime: planTimeR } = useLocations();
+  const { list: locListR, planLoc: planLocR, planTime: planTimeR, planPos: planPosR } = useLocations();
   const [planDue, setPlanDue] = useState(null);
   const [planTick, setPlanTick] = useState(0);
   useEffect(() => {
@@ -1571,15 +1571,23 @@ export default function App() {
     loadData();
   };
 
-  const createPlanning = async (date, msg, locId, time) => {
-    const { error } = await supabase.rpc("create_planning", { p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}), ...(time ? { p_planned_time: time } : {}) });
+  // eigener Ort ohne Lokal (supabase/2026-11-03b_planning_position.sql): nur senden, wenn gesetzt
+  const planPosArgs = (pos) => (pos?.text ? { p_place_text: pos.text, ...(pos.lat != null ? { p_lat: pos.lat, p_lng: pos.lng } : {}) } : {});
+  // Fehlt die Migration fuer den Ort (RPC kennt p_place_text nicht), wird ohne Ort gespeichert statt zu scheitern
+  const rpcPlanning = async (name, args, pos) => {
+    let r = await supabase.rpc(name, { ...args, ...planPosArgs(pos) });
+    if (r.error && pos?.text && /function|schema cache|p_place_text/i.test(r.error.message || "")) r = await supabase.rpc(name, args);
+    return r;
+  };
+  const createPlanning = async (date, msg, locId, time, pos) => {
+    const { error } = await rpcPlanning("create_planning", { p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}), ...(time ? { p_planned_time: time } : {}) }, pos);
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Planung eingetragen!"));
     loadData();
     loadLocations(true);
   };
-  const updatePlanning = async (id, date, msg, locId, time) => {
-    const { error } = await supabase.rpc("update_planning", { p_planning_id: id, p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}), ...(time ? { p_planned_time: time } : {}) });
+  const updatePlanning = async (id, date, msg, locId, time, pos) => {
+    const { error } = await rpcPlanning("update_planning", { p_planning_id: id, p_planned_date: date, p_message: msg.trim() || null, ...(locId ? { p_location_id: locId } : {}), ...(time ? { p_planned_time: time } : {}) }, pos);
     if (error) toast(t("Fehler: ") + error.message);
     else toast(t("Planung geändert."));
     loadData();
@@ -1798,7 +1806,9 @@ export default function App() {
               const goLive = () => {
                 const p = planDue;
                 dismissPlanDue();
+                const pp = planPosR?.[p.id];
                 if (place) { createPing(place.name, p.message || "", 3, null); if (own) deletePlanning(p.id, true); }
+                else if (pp) { createPing(pp.place_text, p.message || "", 3, pp.lat != null ? { lat: pp.lat, lng: pp.lng } : null); if (own) deletePlanning(p.id, true); }
                 else { navPush({ tab: "live" }); toast(t("Wähle in Live noch einen Ort, dann bist du sichtbar.")); }
               };
               const notLive = () => {
@@ -1812,7 +1822,7 @@ export default function App() {
                     <div className="plr-popup-ico" aria-hidden="true"><Emoji e="📅" /> → <Emoji e="🔴" /></div>
                     <div className="celebrate-head">{own ? t("Deine Planung ist jetzt aktuell") : t("Eine Planung, bei der du interessiert bist, ist jetzt aktuell")}</div>
                     <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>
-                      {own ? "" : `${planDue.player.nickname} · `}{fmtDate(planDue.planned_date)} · {tm}{place ? ` · ${place.name}` : ""}
+                      {own ? "" : `${planDue.player.nickname} · `}{fmtDate(planDue.planned_date)} · {tm}{place ? ` · ${place.name}` : planPosR?.[planDue.id] ? ` · ${planPosR[planDue.id].place_text}` : ""}
                       {iAmLive ? " · " + t("Du bist schon live.") : ""}
                     </p>
                     {own && <p className="hint" style={{ marginTop: -4, marginBottom: 12 }}>{t("Gehst du nicht live, wird die Planung gelöscht.")}</p>}
