@@ -4087,3 +4087,7 @@ span.ws-b-av { cursor: default; }
 @keyframes plr-live { 0%, 38% { opacity: 0; transform: scale(.8); } 48% { opacity: 1; transform: scale(1.12); box-shadow: 0 0 0 0 var(--accent); }
   58% { transform: scale(1); box-shadow: 0 0 0 10px transparent; } 88% { opacity: 1; } 96%, 100% { opacity: 0; transform: scale(.8); } }
 @keyframes plr-ring { 0%, 36%, 56%, 100% { transform: rotate(0); } 40% { transform: rotate(18deg); } 44% { transform: rotate(-16deg); } 48% { transform: rotate(10deg); } 52% { transform: rotate(-6deg); } }
+.time-picker { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px; background: var(--surface-btn); }
+.time-picker select { background: none; border: 0; color: var(--ivory); font: inherit; font-weight: 600; padding: 4px 2px; cursor: pointer; }
+.time-picker select option { background: var(--felt-2); color: var(--ivory); }
+.plan-time { display: inline-flex; align-items: center; gap: 4px; font-size: calc(12px * var(--fs, 1)); color: var(--accent); font-weight: 600; }

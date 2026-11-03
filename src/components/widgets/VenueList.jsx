@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext, lazy, Suspense } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Map as MapIcon } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Clock, Map as MapIcon } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, timeLeft } from "../../lib/format";
@@ -12,6 +12,8 @@ import LocationPicker from "./LocationPicker";
 import PingButton from "./PingButton";
 import { getPingRadiusKm, santaDistanceKm, fmtRadius, snapKm } from "../../lib/pingRadius";
 import DayPicker from "./DayPicker";
+import TimePicker from "./TimePicker";
+import { getPlanRemind } from "../../lib/planRemind";
 
 /* "Wer spielt wo": alle Lokale mit Suche. Pro Lokal steht, wer gerade live dort ist und welche Planungen es dort gibt;
    ausserdem lassen sich Live und Planung DIREKT unter dem Lokal eintragen (Formular klappt unter der Zeile auf) - kein
@@ -31,10 +33,12 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
   const [msgOpen, setMsgOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const [editing, setEditing] = useState(false);
+  const { planTime } = useLocations();
   const mine = item.player_id === me?.id;
   const myReply = item.replies?.find((r) => r.player_id === me?.id);
   const nick = item.player.nickname;
   const ping = kind === "ping";
+  const time = !ping ? planTime?.[item.id] : null;
   const replies = item.replies || [];
   const people = new Set([item.player_id, ...replies.map((r) => r.player_id)]).size;
   const word = ping ? t("Bin unterwegs") : t("Bin interessiert");
@@ -49,6 +53,7 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
       <div className="venue-line">
         {person(nick, 24)}
         {ping && <span className="live-pill small"><span className="live-dot" /> LIVE <span className="rank-meta">{timeLeft(item.expires_at)}</span></span>}
+        {time && <span className="plan-time"><Clock size={12} /> {time}</span>}
         {!place && !ping && <span className="venue-place open"><MapPin size={13} /> {t("Ort noch auszumachen")}</span>}
         {place && (
           <span className="venue-place">
@@ -127,8 +132,8 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
               </div>
             )}
             {mine && !ping && editing && (
-              <VenueMask kind="plan" initial={{ date: item.planned_date, msg: item.message || "", locId: place?.id || null }} label={t("Speichern")}
-                onSubmit={({ date, msg: m, locId }) => onUpdate(item.id, date, m, locId)} onDone={() => setEditing(false)} />
+              <VenueMask kind="plan" initial={{ date: item.planned_date, time: time || undefined, msg: item.message || "", locId: place?.id || null }} label={t("Speichern")}
+                onSubmit={({ date, msg: m, locId, time: tm }) => onUpdate(item.id, date, m, locId, tm)} onDone={() => setEditing(false)} />
             )}
           </div>
         </div>
@@ -159,7 +164,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [date, setDate] = useState(initial?.date || "");
   const [msg, setMsg] = useState(initial?.msg || "");
   const [hours, setHours] = useState(3);
-  const [time, setTime] = useState(initial?.time || ""); // optionale Uhrzeit der Planung
+  const [time, setTime] = useState(initial?.time || getPlanRemind().time); // Uhrzeit der Planung: Pflicht, Standard 18:00 (Einstellung)
   const [locId, setLocId] = useState(venueId || initial?.locId || null);
   // "Mein Standort": Standort abfragen und bekannte Billardlokale in der Naehe (bis 300 m) zum Auswaehlen anbieten
   const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
@@ -211,9 +216,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {!live && <DayPicker compact value={date} onChange={setDate} />}
       {!live && (
         <div className="plr-custom">
-          <span className="rank-meta">{t("Uhrzeit (optional)")}</span>
-          <input type="time" value={time} aria-label={t("Uhrzeit (optional)")} onChange={(e) => setTime(e.target.value)} />
-          {time && <button type="button" className="icon-btn small" onClick={() => setTime("")} title={t("Uhrzeit entfernen")} aria-label={t("Uhrzeit entfernen")}><X size={14} /></button>}
+          <span className="rank-meta">{t("Uhrzeit")}</span>
+          <TimePicker value={time} onChange={setTime} />
         </div>
       )}
       {live && (

@@ -1585,10 +1585,10 @@ export default function App() {
     loadData();
     loadLocations(true);
   };
-  const deletePlanning = async (id) => {
+  const deletePlanning = async (id, quiet) => {
     const { error } = await supabase.rpc("close_planning", { p_planning_id: id });
     if (error) toast(t("Fehler: ") + error.message);
-    else toast(t("Planung geloescht."));
+    else if (!quiet) toast(t("Planung geloescht."));
     loadData();
   };
   const replyPlanning = async (id, msg) => {
@@ -1791,26 +1791,34 @@ export default function App() {
                 "Du bist dran", Entwurf) weg ist, damit nichts uebereinander liegt. */}
             {showPlanDue && (() => {
               const place = locListR.find((l) => l.id === planLocR?.[planDue.id]);
-              const tm = planTimeR?.[planDue.id];
+              const tm = planTimeR?.[planDue.id] || getPlanRemind().time;
               const own = planDue.player_id === player.id;
+              // Live gehen macht aus der eigenen Planung die Live-Anzeige (die Planung wird geschlossen); wer NICHT live geht,
+              // dessen eigene Planung wird geloescht. Eine fremde Planung (nur zugesagt) bleibt, es wird nur nicht mehr gefragt.
               const goLive = () => {
                 const p = planDue;
                 dismissPlanDue();
-                if (place) createPing(place.name, p.message || "", 3, null);
+                if (place) { createPing(place.name, p.message || "", 3, null); if (own) deletePlanning(p.id, true); }
                 else { navPush({ tab: "live" }); toast(t("Wähle in Live noch einen Ort, dann bist du sichtbar.")); }
               };
+              const notLive = () => {
+                const p = planDue;
+                dismissPlanDue();
+                if (own) deletePlanning(p.id);
+              };
               return (
-                <div className="celebrate-overlay" onClick={dismissPlanDue}>
+                <div className="celebrate-overlay">
                   <div className="celebrate-card pending-card" onClick={(e) => e.stopPropagation()}>
                     <div className="plr-popup-ico" aria-hidden="true"><Emoji e="📅" /> → <Emoji e="🔴" /></div>
                     <div className="celebrate-head">{own ? t("Deine Planung ist jetzt aktuell") : t("Eine Planung, bei der du interessiert bist, ist jetzt aktuell")}</div>
                     <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>
-                      {own ? "" : `${planDue.player.nickname} · `}{fmtDate(planDue.planned_date)}{tm ? ` · ${tm}` : ""}{place ? ` · ${place.name}` : ""}
+                      {own ? "" : `${planDue.player.nickname} · `}{fmtDate(planDue.planned_date)} · {tm}{place ? ` · ${place.name}` : ""}
                       {iAmLive ? " · " + t("Du bist schon live.") : ""}
                     </p>
+                    {own && <p className="hint" style={{ marginTop: -4, marginBottom: 12 }}>{t("Gehst du nicht live, wird die Planung gelöscht.")}</p>}
                     <div className="confirm-actions">
                       {!iAmLive && <button className="chip-btn ok" onClick={goLive}><Radio size={15} /> {t("Live gehen")}</button>}
-                      <button className="chip-btn no" onClick={dismissPlanDue}>{t("Nicht jetzt")}</button>
+                      <button className="chip-btn no" onClick={notLive}>{own ? t("Planung löschen") : t("Nicht jetzt")}</button>
                     </div>
                   </div>
                 </div>
