@@ -12,7 +12,6 @@ import LocationPicker from "./LocationPicker";
 import PingButton from "./PingButton";
 import { getPingRadiusKm, santaDistanceKm, fmtRadius, snapKm } from "../../lib/pingRadius";
 import DayPicker from "./DayPicker";
-import TimePicker from "./TimePicker";
 import { getPlanRemind } from "../../lib/planRemind";
 
 /* "Wer spielt wo": alle Lokale mit Suche. Pro Lokal steht, wer gerade live dort ist und welche Planungen es dort gibt;
@@ -217,7 +216,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {!live && (
         <div className="plr-custom">
           <span className="rank-meta">{t("Uhrzeit")}</span>
-          <TimePicker value={time} onChange={setTime} />
+          <input type="time" required value={time} aria-label={t("Uhrzeit")} onChange={(e) => setTime(e.target.value)} />
         </div>
       )}
       {live && (
@@ -278,7 +277,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
         </div>
         <button type="button" className="icon-btn" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
         <button type="button" className="venue-go" disabled={!live && !date}
-          onClick={() => { onSubmit({ date, time, msg, hours, locId, venue, here: own && !venue ? here : null, placeText: own && !venue ? placeText : "" }); onDone(); }}>
+          onClick={() => { onSubmit({ date, time: time || getPlanRemind().time, msg, hours, locId, venue, here: own && !venue ? here : null, placeText: own && !venue ? placeText : "" }); onDone(); }}>
           {live ? <Radio size={16} /> : <Calendar size={16} />} {label || (live ? t("Live gehen") : t("Eintragen"))}
         </button>
       </div>

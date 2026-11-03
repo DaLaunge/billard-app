@@ -625,8 +625,6 @@ const TRANSLATIONS = {
     "Du bist schon live.": "You are already live.",
     "Nicht jetzt": "Not now",
     "Uhrzeit": "Time",
-    "Stunde": "Hour",
-    "Minute": "Minute",
     "Gehst du nicht live, wird die Planung gelöscht.": "If you don't go live, the plan is deleted.",
     "Wähle in Live noch einen Ort, dann bist du sichtbar.": "Pick a place in Live and you will be visible.",
     "Sobald jemand ein Match gegen dich einträgt, erscheint sofort ein Popup, in dem du es bestätigen oder zurückweisen kannst – oder mit „Später“ wegschiebst. Ausgeschaltet bestätigst du wie gewohnt im Profil. Gilt nur auf diesem Gerät.": "As soon as someone enters a match against you, a popup appears right away where you can confirm or reject it – or postpone it with “Later”. Switched off, you confirm in your profile as usual. Applies to this device only.",

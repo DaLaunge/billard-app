@@ -7,7 +7,6 @@ import { t } from "../lib/i18n";
 import { initials, fmtDate } from "../lib/format";
 import Ball from "./Ball";
 import DayPicker from "./widgets/DayPicker";
-import TimePicker from "./widgets/TimePicker";
 import { getPlanRemind } from "../lib/planRemind";
 import Emoji from "./Emoji";
 import { EmojiText } from "./Emoji";
@@ -58,7 +57,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
           <DayPicker value={eDate} onChange={setEDate} />
           <div className="plr-custom">
             <span className="rank-meta">{t("Uhrzeit")}</span>
-            <TimePicker value={eTime} onChange={setETime} />
+            <input type="time" required value={eTime} aria-label={t("Uhrzeit")} onChange={(e) => setETime(e.target.value)} />
           </div>
           {locList.length > 0 && <LocationPicker value={eLoc} onChange={setELoc} optional toast={toast} me={me} />}
           <div className="search-row" style={{ marginBottom: 8 }}>
@@ -67,7 +66,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
               maxLength={120} onChange={(e) => setEMsg(e.target.value)} />
           </div>
           <div className="confirm-actions">
-            <button className="chip-btn ok" disabled={!eDate} onClick={() => { onUpdate(planning.id, eDate, eMsg, eLoc, eTime); setEditing(false); }}>
+            <button className="chip-btn ok" disabled={!eDate} onClick={() => { onUpdate(planning.id, eDate, eMsg, eLoc, eTime || getPlanRemind().time); setEditing(false); }}>
               <Check size={15} /> {t("Speichern")}
             </button>
             <button className="chip-btn no" onClick={() => setEditing(false)}><X size={15} /> {t("Abbrechen")}</button>
