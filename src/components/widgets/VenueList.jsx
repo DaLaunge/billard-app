@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, lazy, Suspense } from "
 import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Clock, Map as MapIcon } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
-import { initials, fmtDate, timeLeft } from "../../lib/format";
+import { initials, fmtDate, fmtTime } from "../../lib/format";
 import { useLocations, loadLocations, distanceM, reverseAddress, searchAddress } from "../../lib/locationStore";
 import Ball from "../Ball";
 import Emoji, { EmojiText } from "../Emoji";
@@ -53,8 +53,8 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
     <div className="venue-entry">
       <div className="venue-line">
         {person(nick, 24)}
-        {ping && <span className="live-pill small"><span className="live-dot" /> LIVE <span className="rank-meta">{timeLeft(item.expires_at)}</span></span>}
-        {time && <span className="plan-time"><Clock size={12} /> {time}</span>}
+        {ping && <span className="live-pill small"><span className="live-dot" /> {t("seit {time}", { time: fmtTime(Date.parse(item.created_at)) })}</span>}
+        {time && <span className="plan-pill small"><Clock size={11} /> {time}</span>}
         {!place && !ping && <span className="venue-place open"><MapPin size={13} /> {t("Ort noch auszumachen")}</span>}
         {place && (
           <span className="venue-place">
@@ -65,7 +65,7 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
         <span className="venue-line-end">
           <button type="button" className={"venue-count as-btn" + (show ? " on" : "")} onClick={() => setShow((v) => !v)} aria-expanded={show}
             title={t("Gemeldete Spieler")} aria-label={t("Gemeldete Spieler")}>
-            <Users size={12} /> {ping ? people : groupLabel(people)}<ChevronDown size={12} className="venue-chev" />
+            <Users size={12} /> {groupLabel(people)}<ChevronDown size={12} className="venue-chev" />
           </button>
           {!mine && !myReply && (
             <>
