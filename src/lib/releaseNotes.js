@@ -18,6 +18,11 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "430", icon: "📍",
+    items: ["„Online gehen“ und „Planung erstellen“ öffnen als Popup mit großem Haken. Dein Standort wird automatisch übernommen, dazu gibt es Karte und Suche nach Lokal oder Adresse. Auch Planungen können einen eigenen Ort tragen.",
+      "Live-Einträge zeigen „seit <Uhrzeit>“, Planungen ihre Uhrzeit (vorgegeben 18:00) – beide mit der Gruppengröße (Alleine, zu zweit, zu dritt …)."],
+    en: ["“Go online” and “Create plan” open as a popup with a big check mark. Your location is picked up automatically, with a map and search by venue or address. Plans can also carry their own place.",
+      "Live entries show “since <time>”, plans show their time (preset 18:00) – both with the group size (Alone, two of us, three of us …)."] },
   { version: "429", icon: "🔔",
     items: ["Wird der Zeitpunkt einer Planung aktuell, fragt dich die App, ob du live gehen willst. Wie lange vorher, stellst du in den Einstellungen ein – wie bei Outlook-Erinnerungen oder mit eigener Zeit. Planungen können jetzt auch eine Uhrzeit haben."],
     en: ["When the time of a plan comes up, the app asks whether you want to go live. Set how long before in Settings – like Outlook reminders or with your own time. Plans can now have a time of day."] },
