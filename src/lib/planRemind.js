@@ -8,6 +8,7 @@ const SEEN_KEY = "planRemindSeen";
 export const DEFAULT_REMIND = { lead: 15, time: "18:00" };
 
 export const LEAD_OPTIONS = [0, 5, 10, 15, 30, 60, 120, 240, 480, 720, 1440, 2880, 10080];
+export const MAX_LEAD = 60 * 24 * 60; // 60 Tage
 export const LEAD_UNITS = [["min", 1], ["h", 60], ["d", 1440]];
 
 const okTime = (s) => typeof s === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
@@ -16,7 +17,7 @@ export function getPlanRemind() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY));
     if (!v) return DEFAULT_REMIND;
-    const lead = v.lead === null ? null : Number.isFinite(v.lead) && v.lead >= 0 && v.lead <= 60 * 24 * 60 ? Math.round(v.lead) : DEFAULT_REMIND.lead;
+    const lead = v.lead === null ? null : Number.isFinite(v.lead) && v.lead >= 0 && v.lead <= MAX_LEAD ? Math.round(v.lead) : DEFAULT_REMIND.lead;
     return { lead, time: okTime(v.time) ? v.time : DEFAULT_REMIND.time };
   } catch { return DEFAULT_REMIND; }
 }

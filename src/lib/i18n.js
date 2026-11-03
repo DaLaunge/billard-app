@@ -617,7 +617,7 @@ const TRANSLATIONS = {
     "Stunden": "Hours",
     "vorher": "before",
     "Erinnerung: Planung wird live": "Reminder: plan goes live",
-    "Wenn der Zeitpunkt einer deiner Planungen (oder einer, bei der du interessiert bist) näher rückt, fragt dich die App, ob daraus eine Live-Anzeige werden soll. Hier stellst du ein, wie lange vorher. Planungen ohne Uhrzeit gelten ab der Standard-Uhrzeit. Gilt nur auf diesem Gerät.": "When the time of one of your plans (or one you are interested in) gets close, the app asks whether it should become a live listing. Set here how long before. Plans without a time count from the default time. Applies to this device only.",
+    "Wenn der Zeitpunkt einer deiner Planungen (oder einer, bei der du interessiert bist) näher rückt, fragt dich die App, ob daraus eine Live-Anzeige werden soll. Der Regler reicht von „Aus“ bis eine Woche vorher, im Feld daneben kannst du eine eigene Zeit eingeben. Planungen ohne Uhrzeit gelten ab der Standard-Uhrzeit. Gilt nur auf diesem Gerät.": "When the time of one of your plans (or one you are interested in) gets close, the app asks whether it should become a live listing. The slider goes from “Off” to one week before; use the field next to it for a custom time. Plans without a time count from the default time. Applies to this device only.",
     "Planung ohne Uhrzeit gilt ab": "Plan without a time counts from",
     "Standard-Uhrzeit": "Default time",
     "Uhrzeit (optional)": "Time (optional)",

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Calendar, Radio, BellRing } from "lucide-react";
 import { t } from "../../lib/i18n";
-import { getPlanRemind, storePlanRemind, LEAD_OPTIONS, LEAD_UNITS, splitLead } from "../../lib/planRemind";
+import { getPlanRemind, storePlanRemind, LEAD_OPTIONS, LEAD_UNITS, MAX_LEAD, splitLead } from "../../lib/planRemind";
 import InfoButton from "./InfoButton";
 
 /* Lesbare Vorlaufzeit: 0 -> "Zum Start", 15 -> "15 Min", 120 -> "2 Std", 1440 -> "1 Tag" */
@@ -12,7 +12,6 @@ export function leadLabel(min) {
   if (u === "h") return t("{n} Std", { n });
   return t("{n} Min", { n });
 }
-const label1w = 10080;
 
 /* Kleine Animation: der Planungs-Knopf wird zum Live-Knopf (mit Glocke und Vorlaufzeit).
    Ruhezustand ohne Animation: beide Knoepfe nebeneinander mit Pfeil - es fehlt also nie Inhalt. */
@@ -29,46 +28,58 @@ function PlanLiveDemo({ lead }) {
   );
 }
 
-/* Einstellung "Planung -> Live": wann die App fragt, ob aus einer Planung eine Live-Anzeige werden soll (Pro Geraet). */
+/* Einstellung "Planung -> Live": wann die App fragt, ob aus einer Planung eine Live-Anzeige werden soll (pro Geraet).
+   Wie der Ping-Radius: ein Schieberegler ueber die Outlook-Stufen (Aus, Zum Start, 5 Min ... 1 Woche) und rechts daneben ein Feld
+   fuer eine eigene Zeit ("20", "20 min", "2 std", "1 tag"). */
+const STOPS = [null, ...LEAD_OPTIONS]; // Reglerstellung 0 = Aus
+const UNIT_TXT = { min: "min", h: "h", d: "d" };
+const nearestStop = (lead) => {
+  if (lead == null) return 0;
+  let best = 1;
+  LEAD_OPTIONS.forEach((m, i) => { if (Math.abs(m - lead) < Math.abs(LEAD_OPTIONS[best - 1] - lead)) best = i + 1; });
+  return best;
+};
+
 export default function PlanRemindSetting() {
   const [v, setV] = useState(getPlanRemind);
-  const [num, setNum] = useState("");
-  const [unit, setUnit] = useState("min");
+  const [unit, setUnit] = useState(() => (v.lead ? splitLead(v.lead)[1] : "min"));
+  const shown = (lead) => (lead == null ? "" : String(lead ? splitLead(lead)[0] : 0));
+  const [txt, setTxt] = useState(() => shown(v.lead));
   const save = (next) => { setV(next); storePlanRemind(next); };
   const title = t("Erinnerung: Planung wird live");
-  const custom = v.lead != null && !LEAD_OPTIONS.includes(v.lead);
-  const applyCustom = (n, u) => {
-    const x = Math.round(Number(n));
-    if (!Number.isFinite(x) || x < 0) return;
-    save({ ...v, lead: Math.min(x * LEAD_UNITS.find((q) => q[0] === u)[1], 60 * 24 * 60) });
+  const apply = (lead, fromInput) => {
+    save({ ...v, lead });
+    if (!fromInput) { setTxt(shown(lead)); setUnit(lead ? splitLead(lead)[1] : "min"); }
+  };
+  const onInput = (e) => {
+    const raw = e.target.value;
+    setTxt(raw);
+    const m = raw.trim().toLowerCase().match(/^(\d+)\s*(m|min|h|std|d|t|tag|tage)?$/);
+    if (!m) return;
+    const u = !m[2] ? unit : m[2][0] === "m" ? "min" : m[2][0] === "h" || m[2][0] === "s" ? "h" : "d";
+    if (m[2]) setUnit(u);
+    const lead = Number(m[1]) * LEAD_UNITS.find((q) => q[0] === u)[1];
+    if (lead <= MAX_LEAD) save({ ...v, lead });
   };
   return (
     <div className="plr-box">
       <div className="switch-row" style={{ marginBottom: 4 }}>
         <span className="settings-switch-label" style={{ flex: 1 }}>{title}</span>
         <InfoButton title={title}>
-          {t("Wenn der Zeitpunkt einer deiner Planungen (oder einer, bei der du interessiert bist) näher rückt, fragt dich die App, ob daraus eine Live-Anzeige werden soll. Hier stellst du ein, wie lange vorher. Planungen ohne Uhrzeit gelten ab der Standard-Uhrzeit. Gilt nur auf diesem Gerät.")}
+          {t("Wenn der Zeitpunkt einer deiner Planungen (oder einer, bei der du interessiert bist) näher rückt, fragt dich die App, ob daraus eine Live-Anzeige werden soll. Der Regler reicht von „Aus“ bis eine Woche vorher, im Feld daneben kannst du eine eigene Zeit eingeben. Planungen ohne Uhrzeit gelten ab der Standard-Uhrzeit. Gilt nur auf diesem Gerät.")}
         </InfoButton>
       </div>
       <PlanLiveDemo lead={v.lead} />
-      <div className="chips small plr-chips" role="group" aria-label={title}>
-        <button type="button" className={"chip" + (v.lead == null ? " active" : "")} onClick={() => save({ ...v, lead: null })}>{t("Aus")}</button>
-        {LEAD_OPTIONS.map((m) => (
-          <button key={m} type="button" className={"chip" + (v.lead === m ? " active" : "")} onClick={() => save({ ...v, lead: m })}>{m === label1w ? t("1 Woche") : leadLabel(m)}</button>
-        ))}
+      <div className="ping-radius-row">
+        <input type="range" className="ping-slider" min={0} max={STOPS.length - 1} step={1} value={nearestStop(v.lead)}
+          onChange={(e) => apply(STOPS[Number(e.target.value)])} aria-label={title} aria-valuetext={v.lead == null ? t("Aus") : leadLabel(v.lead)} />
+        <label className="ping-km-field">
+          <input type="text" inputMode="numeric" value={txt} placeholder="–" onChange={onInput}
+            onBlur={() => { setTxt(shown(v.lead)); if (v.lead != null) setUnit(v.lead ? splitLead(v.lead)[1] : "min"); }} aria-label={t("Eigene Zeit")} />
+          <span>{UNIT_TXT[unit]}</span>
+        </label>
       </div>
-      <div className="plr-custom">
-        <span className="rank-meta">{t("Eigene Zeit")}</span>
-        <input type="number" min="0" inputMode="numeric" placeholder={custom ? String(splitLead(v.lead)[0]) : "20"} value={num} aria-label={t("Eigene Zeit")}
-          onChange={(e) => { setNum(e.target.value); if (e.target.value !== "") applyCustom(e.target.value, unit); }} />
-        <select value={unit} aria-label={t("Einheit")} onChange={(e) => { setUnit(e.target.value); if (num !== "") applyCustom(num, e.target.value); }}>
-          <option value="min">{t("Minuten")}</option>
-          <option value="h">{t("Stunden")}</option>
-          <option value="d">{t("Tage")}</option>
-        </select>
-        <span className="rank-meta">{t("vorher")}</span>
-        {custom && <span className="plr-now">= {leadLabel(v.lead)}</span>}
-      </div>
+      <div className="ping-radius-scale"><span>{t("Aus")}</span><b>{v.lead == null ? t("Aus") : leadLabel(v.lead)}</b><span>{t("1 Woche")}</span></div>
       <div className="plr-custom">
         <span className="rank-meta">{t("Planung ohne Uhrzeit gilt ab")}</span>
         <input type="time" value={v.time} aria-label={t("Standard-Uhrzeit")} onChange={(e) => e.target.value && save({ ...v, time: e.target.value })} />
