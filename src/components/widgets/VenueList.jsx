@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useState, useEffect, useRef, createContext, useContext, lazy, Suspense } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Clock, Map as MapIcon } from "lucide-react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Clock, Bell, Map as MapIcon } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
 import { initials, fmtDate, fmtTime } from "../../lib/format";
@@ -13,7 +13,8 @@ import LocationPicker from "./LocationPicker";
 import PingButton from "./PingButton";
 import { getPingRadiusKm, santaDistanceKm, fmtRadius, snapKm } from "../../lib/pingRadius";
 import DayPicker from "./DayPicker";
-import { getPlanRemind } from "../../lib/planRemind";
+import { getPlanRemind, DEFAULT_REMIND } from "../../lib/planRemind";
+import { leadLabel } from "./PlanRemindSetting";
 
 /* "Wer spielt wo": alle Lokale mit Suche. Pro Lokal steht, wer gerade live dort ist und welche Planungen es dort gibt;
    ausserdem lassen sich Live und Planung DIREKT unter dem Lokal eintragen (Formular klappt unter der Zeile auf) - kein
@@ -167,7 +168,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [date, setDate] = useState(initial?.date || todayIso()); // alles optional: der Tag ist heute vorgewaehlt
   const [msg, setMsg] = useState(initial?.msg || "");
   const [hours, setHours] = useState(3);
-  const [time, setTime] = useState(initial?.time || getPlanRemind().time); // Uhrzeit der Planung: Pflicht, Standard 18:00 (Einstellung)
+  const [time, setTime] = useState(initial?.time || DEFAULT_REMIND.time); // Uhrzeit der Planung: Pflicht, vorgegeben 18:00
   const [locId, setLocId] = useState(venueId || initial?.locId || null);
   // "Mein Standort": Standort abfragen und bekannte Billardlokale in der Naehe (bis 300 m) zum Auswaehlen anbieten
   const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
@@ -243,12 +244,6 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     </div>
     <div className="venue-form">
       {!live && <DayPicker compact value={date} onChange={setDate} />}
-      {!live && (
-        <div className="plr-custom">
-          <span className="rank-meta">{t("Uhrzeit")}</span>
-          <input type="time" required value={time} aria-label={t("Uhrzeit")} onChange={(e) => setTime(e.target.value)} />
-        </div>
-      )}
       {live && (
         <div className="venue-here-row">
           <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
@@ -283,14 +278,29 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {live && acc != null && acc > 100 && (
         <p className="hint">{t("Genauigkeit ca. {m} m – bei Bedarf auf der Karte korrigieren.", { m: acc })}</p>
       )}
-      {!live && picker}
+      {!live && <div className="venue-here-row"><div className="venue-picker-inline">{picker}</div></div>}
 
       {live && !venue && !here && !placeText && (
         <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“ oder gib unten eine Adresse oder ein Lokal ein.")}</p>
       )}
       {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
+      {!live && (() => {
+        const lead = getPlanRemind().lead;
+        return (
+          <p className="hint"><Bell size={13} style={{ verticalAlign: "-2px" }} /> {lead == null
+            ? t("Die Benachrichtigung zum Start ist in den Einstellungen ausgeschaltet.")
+            : lead === 0 ? t("Die App benachrichtigt dich zum Start – so wie in den Einstellungen konfiguriert.")
+            : t("Die App benachrichtigt dich {lead} vor dem Start – so wie in den Einstellungen konfiguriert.", { lead: leadLabel(lead) })}</p>
+        );
+      })()}
       {/* unten alles in EINER (umbrechenden) Zeile: Dauer, Nachricht, Abbrechen, Absenden */}
       <div className="venue-bottom">
+        {!live && (
+          <label className="plan-time-field">
+            <Clock size={15} />
+            <input type="time" required value={time} aria-label={t("Uhrzeit")} onChange={(e) => setTime(e.target.value || DEFAULT_REMIND.time)} />
+          </label>
+        )}
         {live && (
           <div className="chips small">
             {[1, 2, 3, 6].map((h) => (
@@ -308,7 +318,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
             // laeuft die Standortabfrage noch (gleich nach dem Oeffnen), kurz auf sie warten
             let pos = here;
             if (live && locating && locRef.current) pos = (await locRef.current) || here;
-            onSubmit({ date: date || todayIso(), time: time || getPlanRemind().time, msg, hours, locId, venue, here: !venue ? pos : null, placeText: !venue ? placeText : "" });
+            onSubmit({ date: date || todayIso(), time: time || DEFAULT_REMIND.time, msg, hours, locId, venue, here: !venue ? pos : null, placeText: !venue ? placeText : "" });
             onDone();
           }}>
           <Check size={28} />

@@ -4109,3 +4109,9 @@ span.ws-b-av { cursor: default; }
 }
 @keyframes venue-modal-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes venue-modal-pop { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+/* Karte + Suchfeld in einer Linie: gleiche Hoehe, gleiche Oberkante (das Suchfeld ist wegen des zugeklappten Trefferbereichs hoeher als sichtbar) */
+.venue-modal .venue-here-row { align-items: flex-start; }
+.venue-modal .venue-here-row > .chip-btn { height: 38px; padding-top: 0; padding-bottom: 0; }
+.venue-modal .venue-here-row > .rank-meta { align-self: center; }
+.plan-time-field { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 12px; background: var(--surface-btn); color: var(--accent); }
+.plan-time-field input { background: none; border: 0; color: var(--ivory); font: inherit; font-weight: 600; outline: none; }

@@ -66,7 +66,7 @@ export default function PlanRemindSetting() {
       <div className="switch-row" style={{ marginBottom: 4 }}>
         <span className="settings-switch-label" style={{ flex: 1 }}>{title}</span>
         <InfoButton title={title}>
-          {t("Wenn der Zeitpunkt einer deiner Planungen (oder einer, bei der du interessiert bist) näher rückt, fragt dich die App, ob daraus eine Live-Anzeige werden soll. Der Regler reicht von „Aus“ bis eine Woche vorher, im Feld daneben kannst du eine eigene Zeit eingeben. Planungen ohne Uhrzeit gelten ab der Standard-Uhrzeit. Gilt nur auf diesem Gerät.")}
+          {t("Wenn der Zeitpunkt einer deiner Planungen (oder einer, bei der du interessiert bist) näher rückt, fragt dich die App, ob daraus eine Live-Anzeige werden soll. Der Regler reicht von „Aus“ bis eine Woche vorher, im Feld daneben kannst du eine eigene Zeit eingeben. Gilt nur auf diesem Gerät.")}
         </InfoButton>
       </div>
       <PlanLiveDemo lead={v.lead} />
@@ -80,10 +80,6 @@ export default function PlanRemindSetting() {
         </label>
       </div>
       <div className="ping-radius-scale"><span>{t("Aus")}</span><b>{v.lead == null ? t("Aus") : leadLabel(v.lead)}</b><span>{t("1 Woche")}</span></div>
-      <div className="plr-custom">
-        <span className="rank-meta">{t("Planung ohne Uhrzeit gilt ab")}</span>
-        <input type="time" value={v.time} aria-label={t("Standard-Uhrzeit")} onChange={(e) => e.target.value && save({ ...v, time: e.target.value })} />
-      </div>
     </div>
   );
 }
