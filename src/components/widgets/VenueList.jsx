@@ -219,6 +219,10 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   useEffect(() => { if (live && !venueId && !initial) findMe(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const onMapPick = (p) => { setPlaceText(""); setAcc(null); applyPos(p); };
   const venue = list.find((l) => l.id === locId) || null;
+  const picker = (
+    <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setPlaceText(""); setHere(null); setAddr(null); setNear(null); } }} toast={toast} me={me} onUseText={live ? useText : undefined}
+        placeholder={live ? t("Lokal oder Adresse suchen oder eingeben") : undefined} />
+  );
   return (
     <div className="venue-form">
       {!live && <DayPicker compact value={date} onChange={setDate} />}
@@ -230,10 +234,10 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       )}
       {live && (
         <div className="venue-here-row">
-          <button type="button" className="chip-btn venue-here" onClick={() => findMe()} disabled={locating}>
-            <MapPin size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
-          </button>
           <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
+          {/* Suchfeld rechts neben "Karte"; der Standort wird beim Oeffnen automatisch gesetzt (findMe(true)) */}
+          <div className="venue-picker-inline">{picker}</div>
+          {locating && !here && <span className="rank-meta">{t("Standort wird gesucht …")}</span>}
           {near && near.map(({ l, d }) => (
             <button key={l.id} type="button" className={"chip-btn" + (locId === l.id ? " sel" : "")} onClick={() => setLocId(locId === l.id ? null : l.id)}>
               <MapPin size={14} /> {l.name}<span className="rank-meta"> · {fmtDist(d)}</span>
@@ -262,8 +266,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
       {live && acc != null && acc > 100 && (
         <p className="hint">{t("Genauigkeit ca. {m} m – bei Bedarf auf der Karte korrigieren.", { m: acc })}</p>
       )}
-      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setPlaceText(""); setHere(null); setAddr(null); setNear(null); } }} toast={toast} me={me} onUseText={live ? useText : undefined}
-        placeholder={live ? t("Lokal oder Adresse suchen oder eingeben") : undefined} />
+      {!live && picker}
+
       {live && !venue && !here && !placeText && (
         <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“ oder gib unten eine Adresse oder ein Lokal ein.")}</p>
       )}
