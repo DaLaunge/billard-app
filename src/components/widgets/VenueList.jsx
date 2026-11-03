@@ -1,8 +1,9 @@
-import { useState, useEffect, createContext, useContext, lazy, Suspense } from "react";
-import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Map as MapIcon } from "lucide-react";
+import { createPortal } from "react-dom";
+import { useState, useEffect, useRef, createContext, useContext, lazy, Suspense } from "react";
+import { MapPin, Search, Radio, Calendar, Plus, Check, Pencil, X, Swords, Users, Trash2, MessageSquare, ChevronDown, Clock, Bell, Map as MapIcon } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t, getLang } from "../../lib/i18n";
-import { initials, fmtDate, timeLeft } from "../../lib/format";
+import { initials, fmtDate, fmtTime } from "../../lib/format";
 import { useLocations, loadLocations, distanceM, reverseAddress, searchAddress } from "../../lib/locationStore";
 import Ball from "../Ball";
 import Emoji, { EmojiText } from "../Emoji";
@@ -12,15 +13,20 @@ import LocationPicker from "./LocationPicker";
 import PingButton from "./PingButton";
 import { getPingRadiusKm, santaDistanceKm, fmtRadius, snapKm } from "../../lib/pingRadius";
 import DayPicker from "./DayPicker";
+import { getPlanRemind, DEFAULT_REMIND } from "../../lib/planRemind";
+import { leadLabel } from "./PlanRemindSetting";
 
 /* "Wer spielt wo": alle Lokale mit Suche. Pro Lokal steht, wer gerade live dort ist und welche Planungen es dort gibt;
    ausserdem lassen sich Live und Planung DIREKT unter dem Lokal eintragen (Formular klappt unter der Zeile auf) - kein
    Wechsel in einen anderen Reiter, kein Hochscrollen. Lokale mit Betrieb stehen oben. Der andere Weg (erst Live/Planung,
    Lokal dort optional waehlen) bleibt in den Formularen der Reiter selbst. */
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const SHOWN = 30;
 const NEEDED = 2;
 const fmtDist = (m) => (m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(m / 1000)} km`);
+/* Planung: wie viele kommen (Planer mitgezaehlt): 1 = "Alleine", dann "zu zweit", "zu dritt", "zu viert", ab 5 nur die Zahl */
+const groupLabel = (n) => (n <= 1 ? t("Alleine") : n === 2 ? t("zu zweit") : n === 3 ? t("zu dritt") : n === 4 ? t("zu viert") : n);
 const REACTIONS = ["👍", "🎱", "❤️"];
 
 /* Ein Live-Eintrag oder eine Planung samt Zusagen: wer zugesagt hat, kleine Reaktionen darauf (👍 🎱 ❤️) und - fuer alle
@@ -31,10 +37,12 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
   const [msgOpen, setMsgOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const [editing, setEditing] = useState(false);
+  const { planTime } = useLocations();
   const mine = item.player_id === me?.id;
   const myReply = item.replies?.find((r) => r.player_id === me?.id);
   const nick = item.player.nickname;
   const ping = kind === "ping";
+  const time = !ping ? planTime?.[item.id] : null;
   const replies = item.replies || [];
   const people = new Set([item.player_id, ...replies.map((r) => r.player_id)]).size;
   const word = ping ? t("Bin unterwegs") : t("Bin interessiert");
@@ -48,7 +56,8 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
     <div className="venue-entry">
       <div className="venue-line">
         {person(nick, 24)}
-        {ping && <span className="live-pill small"><span className="live-dot" /> LIVE <span className="rank-meta">{timeLeft(item.expires_at)}</span></span>}
+        {ping && <span className="live-pill small"><span className="live-dot" /> {t("seit {time}", { time: fmtTime(Date.parse(item.created_at)) })}</span>}
+        {time && <span className="plan-pill small"><Clock size={11} /> {time}</span>}
         {!place && !ping && <span className="venue-place open"><MapPin size={13} /> {t("Ort noch auszumachen")}</span>}
         {place && (
           <span className="venue-place">
@@ -59,7 +68,7 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
         <span className="venue-line-end">
           <button type="button" className={"venue-count as-btn" + (show ? " on" : "")} onClick={() => setShow((v) => !v)} aria-expanded={show}
             title={t("Gemeldete Spieler")} aria-label={t("Gemeldete Spieler")}>
-            <Users size={12} /> {people}<ChevronDown size={12} className="venue-chev" />
+            <Users size={12} /> {groupLabel(people)}<ChevronDown size={12} className="venue-chev" />
           </button>
           {!mine && !myReply && (
             <>
@@ -127,8 +136,8 @@ function Entry({ kind, item, place, me, colorOf, badgeOf, photoOf, onOpenProfile
               </div>
             )}
             {mine && !ping && editing && (
-              <VenueMask kind="plan" initial={{ date: item.planned_date, msg: item.message || "", locId: place?.id || null }} label={t("Speichern")}
-                onSubmit={({ date, msg: m, locId }) => onUpdate(item.id, date, m, locId)} onDone={() => setEditing(false)} />
+              <VenueMask kind="plan" initial={{ date: item.planned_date, time: time || undefined, msg: item.message || "", locId: place && !place.loose ? place.id : null, pos: place?.loose ? { name: place.name, lat: place.lat, lng: place.lng } : null }} label={t("Speichern")}
+                onSubmit={({ date, msg: m, locId, time: tm, pos }) => onUpdate(item.id, date, m, locId, tm, pos)} onDone={() => setEditing(false)} />
             )}
           </div>
         </div>
@@ -151,97 +160,114 @@ function Unfold({ children }) {
 const LocationMap = lazy(() => import("./LocationMap"));
 
 /* EINE Maske fuer "Online gehen" und "Planung": Ort waehlen oder eingeben (LocationPicker), Nachricht, dazu bei Live die Dauer,
-   bei der Planung der Kalender. Bei Live ist der Ort Pflicht (mit bekanntem Standort ist das naechste Lokal vorgewaehlt),
-   bei der Planung optional - dann steht der Hinweis, dass man sich den Ort noch ausmachen muss. */
+   bei der Planung der Kalender. Alle Felder sind optional (Tag heute, Uhrzeit 18:00, Ort offen); ein Lokal wird nie heimlich vorgewaehlt,
+   bei der Planung steht dann - dann steht der Hinweis, dass man sich den Ort noch ausmachen muss. */
 function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const { me, toast, list } = useContext(VenueCtx);
   const live = kind === "live";
-  const [date, setDate] = useState(initial?.date || "");
+  const [date, setDate] = useState(initial?.date || todayIso()); // alles optional: der Tag ist heute vorgewaehlt
   const [msg, setMsg] = useState(initial?.msg || "");
   const [hours, setHours] = useState(3);
-  const [time, setTime] = useState(initial?.time || ""); // optionale Uhrzeit der Planung
+  const [time, setTime] = useState(initial?.time || DEFAULT_REMIND.time); // Uhrzeit der Planung: Pflicht, vorgegeben 18:00
   const [locId, setLocId] = useState(venueId || initial?.locId || null);
   // "Mein Standort": Standort abfragen und bekannte Billardlokale in der Naehe (bis 300 m) zum Auswaehlen anbieten
   const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
-  const [here, setHere] = useState(null); // eigene Position { lat, lng }
-  const [addr, setAddr] = useState(null); // Adresse zur eigenen Position (Nominatim), "" = keine gefunden
-  const [placeText, setPlaceText] = useState(""); // frei getippter Ort ("Ort verwenden"), ohne Lokal
-  const [own, setOwn] = useState(false); // live mit dem eigenen Standort, ohne Lokal (z. B. privater Tisch)
+  const [here, setHere] = useState(initial?.pos?.lat != null ? { lat: initial.pos.lat, lng: initial.pos.lng } : null); // eigene Position { lat, lng }
+  const [addr, setAddr] = useState(initial?.pos?.lat != null ? initial.pos.name : null); // Adresse zur eigenen Position (Nominatim), "" = keine gefunden
+  const [placeText, setPlaceText] = useState(initial?.pos && initial.pos.lat == null ? initial.pos.name : ""); // frei getippter Ort ("Ort verwenden"), ohne Lokal
   const [locating, setLocating] = useState(false);
   const [acc, setAcc] = useState(null); // GPS-Genauigkeit in Metern
   const [showMap, setShowMap] = useState(false);
   // Position setzen (GPS, Adresse oder Karte): bekannte Lokale bis 300 m anbieten, genau eines vorwaehlen, sonst nur der Standort.
   // Ein Lokal ist NIE Pflicht - der Standort allein genuegt (z. B. privater Tisch).
-  const applyPos = (p, address) => {
+  const applyPos = (p, address, keepVenue) => {
     setHere(p);
     if (address !== undefined) setAddr(address);
     else { setAddr(null); reverseAddress(p.lat, p.lng).then((a) => setAddr(a || "")); }
     const found = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
       .map((l) => ({ l, d: distanceM(p, l) })).filter((x) => x.d <= 300).sort((a, b) => a.d - b.d);
-    setNear(found);
-    if (found.length === 1) { setLocId(found[0].l.id); setOwn(false); }
-    else if (found.length === 0) { setLocId(null); setOwn(true); }
+    // kein Lokal wird heimlich vorgewaehlt: die Treffer stehen als Knoepfe da, der Standort gilt, bis man bewusst eins waehlt
+    setNear(found); if (!keepVenue) setLocId(null);
   };
+  // Standort/getippten Ort wieder loswerden (dann kann bewusst neu gewaehlt werden)
+  const clearOwn = () => { setHere(null); setPlaceText(""); setAddr(null); setNear(null); setAcc(null); setShowMap(false); };
   // "Ort verwenden": der getippte Text wird als Ort genommen, ohne Lokal. Die App sucht dazu eine Position; gehoert sie zu einem bekannten
   // Lokal (bis 100 m), wird stattdessen gleich dieses Lokal gewaehlt.
   const useText = async (text) => {
-    setPlaceText(text); setOwn(true); setLocId(null); setAcc(null);
+    setPlaceText(text); setLocId(null); setAcc(null);
     let hit = null;
     try { hit = (await searchAddress(text))[0] || null; } catch { /* ohne Position weiter */ }
     if (!hit) { setHere(null); setAddr(text); return; }
     const p = { lat: hit.lat, lng: hit.lng };
     const known = list.filter((l) => l.lat != null && (l.status === "approved" || l.created_by === me?.id || me?.role === "admin"))
       .map((l) => ({ l, d: distanceM(p, l) })).filter((x) => x.d <= 100).sort((a, b) => a.d - b.d)[0];
-    if (known) { setLocId(known.l.id); setOwn(false); setPlaceText(""); toast?.(t("Dort gibt es schon ein Lokal: {name}.", { name: known.l.name })); return; }
+    if (known) { setLocId(known.l.id); setPlaceText(""); toast?.(t("Dort gibt es schon ein Lokal: {name}.", { name: known.l.name })); return; }
     setHere(p); setAddr(hit.label.split(", ").slice(0, 4).join(", "));
   };
-  const findMe = () => {
+  // Standort abfragen; "auto" = beim Oeffnen des Live-Formulars (ein schon gewaehltes Lokal bleibt dann unangetastet).
+  // Ohne Freigabe erscheint der bekannte Hinweis, live gehen geht trotzdem ("Ort offen").
+  const locRef = useRef(null);
+  const findMe = (auto) => {
     if (!navigator.geolocation) { toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (p) => { setPlaceText(""); setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
-      () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib unten eine Adresse oder ein Lokal ein.")); },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
-    );
+    locRef.current = new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (p) => { setPlaceText(""); setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }, undefined, auto === true); setLocating(false); resolve({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+        () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib unten eine Adresse oder ein Lokal ein.")); resolve(null); },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
+      );
+    });
   };
+  useEffect(() => { if (!venueId && !initial) findMe(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const onMapPick = (p) => { setPlaceText(""); setAcc(null); applyPos(p); };
   const venue = list.find((l) => l.id === locId) || null;
-  return (
+  const picker = (
+    <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setPlaceText(""); setHere(null); setAddr(null); setNear(null); } }} toast={toast} me={me} onUseText={useText}
+        placeholder={t("Lokal oder Adresse suchen oder eingeben")} />
+  );
+  // Popup statt Einschub in die Liste: das Formular steht allein im Blick, nichts lenkt ab (Nutzer 429.9)
+  const title = live ? t("Online gehen") : initial ? t("Planung ändern") : t("Planung erstellen");
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const esc = (e) => { if (e.key === "Escape") onDone(); };
+    window.addEventListener("keydown", esc);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", esc); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return createPortal(
+    <div className="venue-modal-overlay" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="venue-modal">
+    <div className="venue-modal-head">
+      {live ? <Radio size={18} /> : <Calendar size={18} />}
+      <b>{title}</b>
+      <button type="button" className="icon-btn small" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
+    </div>
     <div className="venue-form">
       {!live && <DayPicker compact value={date} onChange={setDate} />}
-      {!live && (
-        <div className="plr-custom">
-          <span className="rank-meta">{t("Uhrzeit (optional)")}</span>
-          <input type="time" value={time} aria-label={t("Uhrzeit (optional)")} onChange={(e) => setTime(e.target.value)} />
-          {time && <button type="button" className="icon-btn small" onClick={() => setTime("")} title={t("Uhrzeit entfernen")} aria-label={t("Uhrzeit entfernen")}><X size={14} /></button>}
-        </div>
-      )}
-      {live && (
+      {(
         <div className="venue-here-row">
-          <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
-            <MapPin size={14} /> {locating ? t("Standort wird gesucht …") : t("Mein Standort")}
-          </button>
           <button type="button" className={"chip-btn" + (showMap ? " sel" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
-          <span className={"venue-here-txt rank-meta" + (here ? " has" : "")}>
-            {placeText && !here ? placeText
-              : !here ? t("noch kein Standort")
-              : addr === null ? t("Adresse wird gesucht …")
-              : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}
-          </span>
+          {/* Suchfeld rechts neben "Karte"; der Standort wird beim Oeffnen automatisch gesetzt (findMe(true)) */}
+          <div className="venue-picker-inline">{picker}</div>
+          {locating && !here && <span className="rank-meta">{t("Standort wird gesucht …")}</span>}
           {near && near.map(({ l, d }) => (
-            <button key={l.id} type="button" className={"chip-btn" + (locId === l.id && !own ? " sel" : "")} onClick={() => { setLocId(l.id); setOwn(false); }}>
+            <button key={l.id} type="button" className={"chip-btn" + (locId === l.id ? " sel" : "")} onClick={() => setLocId(locId === l.id ? null : l.id)}>
               <MapPin size={14} /> {l.name}<span className="rank-meta"> · {fmtDist(d)}</span>
             </button>
           ))}
-          {near && (
-            <button type="button" className={"chip-btn" + (own ? " sel" : "")} onClick={() => { setOwn(true); setLocId(null); }}
-              title={t("Ohne Lokal live gehen, z. B. an einem privaten Tisch")}>
-              <MapPin size={14} /> {t("Nur mein Standort")}
-            </button>
-          )}
         </div>
       )}
-      {live && showMap && (
+      {!venue && (here || placeText) && (
+        <div className="loc-sel">
+          <MapPin size={18} className="loc-sel-ico" />
+          <div className="loc-sel-txt">
+            <b>{placeText && !here ? placeText : t("Mein Standort")}</b>
+            <span className="rank-meta">{!here ? "" : addr === null ? t("Adresse wird gesucht …") : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}</span>
+          </div>
+          <button type="button" className="icon-btn small" onClick={clearOwn} aria-label={t("Anderer Ort")} title={t("Anderer Ort")}><X size={16} /></button>
+        </div>
+      )}
+      {showMap && (
         <>
           <Suspense fallback={<div className="loc-map" />}>
             <LocationMap pos={here} onPick={onMapPick} />
@@ -249,17 +275,31 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           <p className="hint" style={{ margin: 0 }}>{t("Karte antippen, um den Standort zu setzen – der Marker lässt sich ziehen.")}</p>
         </>
       )}
-      {live && acc != null && acc > 100 && (
+      {acc != null && acc > 100 && (
         <p className="hint">{t("Genauigkeit ca. {m} m – bei Bedarf auf der Karte korrigieren.", { m: acc })}</p>
       )}
-      <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setOwn(false); setPlaceText(""); } }} toast={toast} me={me} onUseText={live ? useText : undefined}
-        placeholder={live ? t("Lokal oder Adresse suchen oder eingeben") : undefined} />
-      {live && !venue && !(own && (here || placeText)) && (
+
+      {live && !venue && !here && !placeText && (
         <p className="hint venue-warn"><MapPin size={13} /> {t("Ohne Standort oder Lokal kann dich niemand finden – tippe auf „Mein Standort“ oder gib unten eine Adresse oder ein Lokal ein.")}</p>
       )}
-      {!live && !locId && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
+      {!live && !venue && !here && !placeText && <p className="hint venue-warn"><MapPin size={13} /> {t("Kein Ort angegeben – ihr müsst euch den Ort noch ausmachen.")}</p>}
+      {!live && (() => {
+        const lead = getPlanRemind().lead;
+        return (
+          <p className="hint"><Bell size={13} style={{ verticalAlign: "-2px" }} /> {lead == null
+            ? t("Die Benachrichtigung zum Start ist in den Einstellungen ausgeschaltet.")
+            : lead === 0 ? t("Die App benachrichtigt dich zum Start – so wie in den Einstellungen konfiguriert.")
+            : t("Die App benachrichtigt dich {lead} vor dem Start – so wie in den Einstellungen konfiguriert.", { lead: leadLabel(lead) })}</p>
+        );
+      })()}
       {/* unten alles in EINER (umbrechenden) Zeile: Dauer, Nachricht, Abbrechen, Absenden */}
       <div className="venue-bottom">
+        {!live && (
+          <label className="plan-time-field">
+            <Clock size={15} />
+            <input type="time" required value={time} aria-label={t("Uhrzeit")} onChange={(e) => setTime(e.target.value || DEFAULT_REMIND.time)} />
+          </label>
+        )}
         {live && (
           <div className="chips small">
             {[1, 2, 3, 6].map((h) => (
@@ -272,13 +312,22 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
           <input placeholder={live ? t("Nachricht (optional)") : t("Hinweis (optional), z. B. 'Bin flexibel'")}
             value={msg} maxLength={120} onChange={(e) => setMsg(e.target.value)} />
         </div>
-        <button type="button" className="icon-btn" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
-        <button type="button" className="venue-go" disabled={!live && !date}
-          onClick={() => { onSubmit({ date, time, msg, hours, locId, venue, here: own && !venue ? here : null, placeText: own && !venue ? placeText : "" }); onDone(); }}>
-          {live ? <Radio size={16} /> : <Calendar size={16} />} {label || (live ? t("Live gehen") : t("Eintragen"))}
+        <button type="button" className="icon-btn primary venue-go" title={label || (live ? t("Live gehen") : t("Eintragen"))} aria-label={label || (live ? t("Live gehen") : t("Eintragen"))}
+          onClick={async () => {
+            // laeuft die Standortabfrage noch (gleich nach dem Oeffnen), kurz auf sie warten
+            let pos = here;
+            if (locating && locRef.current) pos = (await locRef.current) || here;
+            onSubmit({ date: date || todayIso(), time: time || DEFAULT_REMIND.time, msg, hours, locId, venue, here: !venue ? pos : null, placeText: !venue ? placeText : "",
+              pos: !venue && (pos || placeText) ? { text: placeText || (addr ? addr.split(", ").slice(0, 2).join(", ") : t("Mein Standort")), lat: pos?.lat ?? null, lng: pos?.lng ?? null } : null });
+            onDone();
+          }}>
+          <Check size={28} />
         </button>
       </div>
     </div>
+    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -303,7 +352,7 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
     if (error) toast?.(t("Fehler: ") + error.message);
     loadReacts();
   };
-  const { list, confirms, planLoc } = useLocations();
+  const { list, confirms, planLoc, planPos } = useLocations();
   // Positionen von Live-Eintraegen (eigener Standort ohne Lokal, supabase/2026-10-28d_ping_position.sql) - eigene Abfrage, tolerant
   const [pingPos, setPingPos] = useState({});
   const pingKey = pings.map((p) => p.id).join(",");
@@ -365,7 +414,8 @@ export function VenueProvider({ children, santaKnown, onFoundSanta, players = []
   const venueOfPing = (p) => list.find((l) => norm(l.name) === norm(p.location))
     || (pingPos[p.id] ? { id: "pos:" + p.id, name: p.location, lat: pingPos[p.id].lat, lng: pingPos[p.id].lng, loose: true }
       : { id: "loose:" + p.location, name: p.location, loose: true });
-  const venueOfPlan = (p) => list.find((l) => l.id === planLoc[p.id]) || null;
+  const venueOfPlan = (p) => list.find((l) => l.id === planLoc[p.id])
+    || (planPos[p.id] ? { id: "ppos:" + p.id, name: planPos[p.id].place_text, lat: planPos[p.id].lat, lng: planPos[p.id].lng, loose: true } : null);
   const pass = (v, nick) => !nq || norm(`${v?.name || ""} ${v?.address || ""} ${nick}`).includes(nq);
 
   // Aktivitaeten: zuerst alles, was gerade LIVE ist (neueste oben), danach die Planungen nach Datum
@@ -620,7 +670,7 @@ export default function VenueList() {
                   <div className="collapsible-inner">
                     <div className="venue-body">
                       {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours, here, placeText }) => onCreate(venue ? venue.name : (placeText || (here ? t("Mein Standort") : t("Ort offen"))), msg, hours, venue ? null : here)} onDone={() => setForm(null)} /></Unfold>}
-                      {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId, time }) => onCreatePlanning(date, msg, locId, time)} onDone={() => setForm(null)} /></Unfold>}
+                      {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId, time, pos }) => onCreatePlanning(date, msg, locId, time, pos)} onDone={() => setForm(null)} /></Unfold>}
                     </div>
                   </div>
                 </div>
@@ -683,7 +733,7 @@ export function VenueQuick() {
       <div className={"collapsible" + (open ? " open" : "")} inert={open ? undefined : ""}>
         <div className="collapsible-inner">
           {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours, here, placeText }) => onCreate(venue ? venue.name : (placeText || (here ? t("Mein Standort") : t("Ort offen"))), msg, hours, venue ? null : here)} onDone={() => setOpen(null)} />}
-          {open === "plan" && <VenueMask kind="plan" onSubmit={({ date, msg, locId, time }) => onCreatePlanning(date, msg, locId, time)} onDone={() => setOpen(null)} />}
+          {open === "plan" && <VenueMask kind="plan" onSubmit={({ date, msg, locId, time, pos }) => onCreatePlanning(date, msg, locId, time, pos)} onDone={() => setOpen(null)} />}
         </div>
       </div>
     </div>
