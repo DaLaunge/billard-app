@@ -4,7 +4,7 @@ import { supabase } from "../supabase";
 /* Standort-Katalog (supabase/2026-10-27b_locations.sql), modulweit wie clubStore: Live (Ping, Planung), PingCard,
    PlanungCard und Verwaltung brauchen ihn. useLocations() laedt beim ersten Gebrauch (und hoechstens alle 60 s neu);
    fehlt die Tabelle noch, bleibt `available` false und die App faellt auf das alte Freitextfeld zurueck. */
-let data = { list: [], available: false, loaded: false, planLoc: {}, confirms: [] };
+let data = { list: [], available: false, loaded: false, planLoc: {}, planTime: {}, confirms: [] };
 let loadedAt = 0;
 let inflight = null;
 const subs = new Set();
@@ -18,12 +18,15 @@ export const loadLocations = (force = false) => {
     supabase.from("locations").select("id, name, address, lat, lng, status, created_by, updated_by, updated_at").order("name"),
     supabase.from("plannings").select("id, location_id").not("location_id", "is", null),
     supabase.from("location_confirmations").select("location_id, player_id"), // fehlt die Migration 27d: leer
+    supabase.from("plannings").select("id, planned_time").not("planned_time", "is", null), // fehlt 2026-11-03_planning_time.sql: leer
   ])
-    .then(([{ data: rows, error }, { data: pl }, { data: cf }]) => {
+    .then(([{ data: rows, error }, { data: pl }, { data: cf }, { data: pt }]) => {
       loadedAt = Date.now();
       const planLoc = {};
       (pl || []).forEach((p) => { planLoc[p.id] = p.location_id; });
-      data = error ? { list: [], available: false, loaded: true, planLoc: {}, confirms: [] } : { list: rows || [], available: true, loaded: true, planLoc, confirms: cf || [] };
+      const planTime = {}; // Planung -> "HH:MM"
+      (pt || []).forEach((p) => { planTime[p.id] = String(p.planned_time).slice(0, 5); });
+      data = error ? { list: [], available: false, loaded: true, planLoc: {}, planTime: {}, confirms: [] } : { list: rows || [], available: true, loaded: true, planLoc, planTime, confirms: cf || [] };
       emit();
     })
     .catch(() => { /* offline: alter Stand bleibt */ })

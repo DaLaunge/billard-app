@@ -15,12 +15,14 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
   const [msg, setMsg] = useState("");
   const [open, setOpen] = useState(false);
   const mine = planning.player_id === me.id;
-  const { list: locList, planLoc } = useLocations();
+  const { list: locList, planLoc, planTime } = useLocations();
+  const pTime = planTime?.[planning.id] || "";
   const place = locList.find((l) => l.id === planLoc[planning.id]);
   const [eLoc, setELoc] = useState(null);
   const [editing, setEditing] = useState(false);
   const [eDate, setEDate] = useState(planning.planned_date);
   const [eMsg, setEMsg] = useState(planning.message || "");
+  const [eTime, setETime] = useState(pTime);
 
   return (
     <section className={"stat-block ping-card" + (mine ? " mine" : "")}>
@@ -29,7 +31,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
         <div className="ping-who">
           <b>{planning.player.nickname}</b>
         </div>
-        <span className="plan-pill"><Calendar size={12} /> {fmtDate(planning.planned_date)}</span>
+        <span className="plan-pill"><Calendar size={12} /> {fmtDate(planning.planned_date)}{pTime ? ` · ${pTime}` : ""}</span>
       </button>
       {place && <div className="ping-loc"><RouteButton place={place} className="route-link route-left" size={16} /> {place.name}</div>}
       {planning.message && <p className="ping-msg">"<EmojiText>{planning.message}</EmojiText>"</p>}
@@ -52,6 +54,11 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
       {mine && editing && (
         <div className="reply-form">
           <DayPicker value={eDate} onChange={setEDate} />
+          <div className="plr-custom">
+            <span className="rank-meta">{t("Uhrzeit (optional)")}</span>
+            <input type="time" value={eTime} aria-label={t("Uhrzeit (optional)")} onChange={(e) => setETime(e.target.value)} />
+            {eTime && <button type="button" className="icon-btn small" onClick={() => setETime("")} title={t("Uhrzeit entfernen")} aria-label={t("Uhrzeit entfernen")}><X size={14} /></button>}
+          </div>
           {locList.length > 0 && <LocationPicker value={eLoc} onChange={setELoc} optional toast={toast} me={me} />}
           <div className="search-row" style={{ marginBottom: 8 }}>
             <Pencil size={16} className="mail-ico" />
@@ -59,7 +66,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
               maxLength={120} onChange={(e) => setEMsg(e.target.value)} />
           </div>
           <div className="confirm-actions">
-            <button className="chip-btn ok" disabled={!eDate} onClick={() => { onUpdate(planning.id, eDate, eMsg, eLoc); setEditing(false); }}>
+            <button className="chip-btn ok" disabled={!eDate} onClick={() => { onUpdate(planning.id, eDate, eMsg, eLoc, eTime); setEditing(false); }}>
               <Check size={15} /> {t("Speichern")}
             </button>
             <button className="chip-btn no" onClick={() => setEditing(false)}><X size={15} /> {t("Abbrechen")}</button>
@@ -69,7 +76,7 @@ export default function PlanungCard({ planning, me, colorOf, badgeOf, photoOf, o
       {mine && !editing && (
         <div className="sp-controls">
           {onUpdate && (
-            <button className="btn ghost" onClick={() => { setEDate(planning.planned_date); setEMsg(planning.message || ""); setELoc(planLoc[planning.id] || null); setEditing(true); }}>
+            <button className="btn ghost" onClick={() => { setEDate(planning.planned_date); setEMsg(planning.message || ""); setELoc(planLoc[planning.id] || null); setETime(pTime); setEditing(true); }}>
               <Pencil size={15} /> {t("Planung ändern")}
             </button>
           )}

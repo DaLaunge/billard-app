@@ -159,6 +159,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [date, setDate] = useState(initial?.date || "");
   const [msg, setMsg] = useState(initial?.msg || "");
   const [hours, setHours] = useState(3);
+  const [time, setTime] = useState(initial?.time || ""); // optionale Uhrzeit der Planung
   const [locId, setLocId] = useState(venueId || initial?.locId || null);
   // "Mein Standort": Standort abfragen und bekannte Billardlokale in der Naehe (bis 300 m) zum Auswaehlen anbieten
   const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
@@ -208,6 +209,13 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   return (
     <div className="venue-form">
       {!live && <DayPicker compact value={date} onChange={setDate} />}
+      {!live && (
+        <div className="plr-custom">
+          <span className="rank-meta">{t("Uhrzeit (optional)")}</span>
+          <input type="time" value={time} aria-label={t("Uhrzeit (optional)")} onChange={(e) => setTime(e.target.value)} />
+          {time && <button type="button" className="icon-btn small" onClick={() => setTime("")} title={t("Uhrzeit entfernen")} aria-label={t("Uhrzeit entfernen")}><X size={14} /></button>}
+        </div>
+      )}
       {live && (
         <div className="venue-here-row">
           <button type="button" className="chip-btn venue-here" onClick={findMe} disabled={locating}>
@@ -266,7 +274,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
         </div>
         <button type="button" className="icon-btn" onClick={onDone} title={t("Abbrechen")} aria-label={t("Abbrechen")}><X size={16} /></button>
         <button type="button" className="venue-go" disabled={!live && !date}
-          onClick={() => { onSubmit({ date, msg, hours, locId, venue, here: own && !venue ? here : null, placeText: own && !venue ? placeText : "" }); onDone(); }}>
+          onClick={() => { onSubmit({ date, time, msg, hours, locId, venue, here: own && !venue ? here : null, placeText: own && !venue ? placeText : "" }); onDone(); }}>
           {live ? <Radio size={16} /> : <Calendar size={16} />} {label || (live ? t("Live gehen") : t("Eintragen"))}
         </button>
       </div>
@@ -612,7 +620,7 @@ export default function VenueList() {
                   <div className="collapsible-inner">
                     <div className="venue-body">
                       {open && form === "live" && <Unfold><VenueMask kind="live" venueId={l.id} onSubmit={({ venue, msg, hours, here, placeText }) => onCreate(venue ? venue.name : (placeText || (here ? t("Mein Standort") : t("Ort offen"))), msg, hours, venue ? null : here)} onDone={() => setForm(null)} /></Unfold>}
-                      {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setForm(null)} /></Unfold>}
+                      {open && form === "plan" && <Unfold><VenueMask kind="plan" venueId={l.id} onSubmit={({ date, msg, locId, time }) => onCreatePlanning(date, msg, locId, time)} onDone={() => setForm(null)} /></Unfold>}
                     </div>
                   </div>
                 </div>
@@ -675,7 +683,7 @@ export function VenueQuick() {
       <div className={"collapsible" + (open ? " open" : "")} inert={open ? undefined : ""}>
         <div className="collapsible-inner">
           {open === "live" && !myPing && <VenueMask kind="live" onSubmit={({ venue, msg, hours, here, placeText }) => onCreate(venue ? venue.name : (placeText || (here ? t("Mein Standort") : t("Ort offen"))), msg, hours, venue ? null : here)} onDone={() => setOpen(null)} />}
-          {open === "plan" && <VenueMask kind="plan" onSubmit={({ date, msg, locId }) => onCreatePlanning(date, msg, locId)} onDone={() => setOpen(null)} />}
+          {open === "plan" && <VenueMask kind="plan" onSubmit={({ date, msg, locId, time }) => onCreatePlanning(date, msg, locId, time)} onDone={() => setOpen(null)} />}
         </div>
       </div>
     </div>

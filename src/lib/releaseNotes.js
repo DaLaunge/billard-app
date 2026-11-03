@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "428.1", icon: "🔔",
+    items: ["Wird der Zeitpunkt einer Planung aktuell, fragt dich die App, ob du live gehen willst. Wie lange vorher, stellst du in den Einstellungen ein – wie bei Outlook-Erinnerungen oder mit eigener Zeit. Planungen können jetzt auch eine Uhrzeit haben."],
+    en: ["When the time of a plan comes up, the app asks whether you want to go live. Set how long before in Settings – like Outlook reminders or with your own time. Plans can now have a time of day."] },
   { version: "427.31", icon: "📄",
     items: ["Ist ein Winner-Stays-Turnier beendet, zeigt es nur noch das Ergebnis und das Protokoll aller Spiele – ohne Zähler. Beides gibt es auch als PDF zum Herunterladen."],
     en: ["Once a Winner Stays tournament has ended it shows only the result and the log of all games – no counter any more. Both are also available as a PDF download."] },
