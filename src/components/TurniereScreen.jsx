@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
-import BreakAnim from "./widgets/BreakAnim";
+import BreakAnim, { MiniBreak } from "./widgets/BreakAnim";
 import PlacePicker from "./widgets/PlacePicker";
 import Ball from "./Ball";
 import PlaceLink from "./widgets/PlaceLink";
@@ -266,7 +266,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       <section className="stat-block">
         <div className="stat-block-head">
           <h3><Trophy size={17} /> {t("Turniere")}</h3>
-          <button className="btn ghost" onClick={() => { setStep(1); setShowForm(true); }}><Plus size={15} /> {t("Neues Turnier")}</button>
+          <button className="btn ghost new-tourney-btn" onClick={() => { setStep(1); setShowForm(true); }}><MiniBreak /> {t("Neues Turnier")}</button>
         </div>
 
         {/* "Neues Turnier" ist ein eigenes Fenster (Wizard, Nutzer 2026-11-04): nichts aus der Liste lenkt ab, oben steht wo man ist

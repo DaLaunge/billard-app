@@ -4226,3 +4226,15 @@ span.ws-b-av { cursor: default; }
 @keyframes brk-ball { from { transform: translate(0, 0); } to { transform: translate(var(--dx), var(--dy)); } }
 @keyframes brk-msg { from { opacity: 0; transform: translateY(6px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes brk-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- Mini-Anstoss im "Neues Turnier"-Knopf (430.9) --- */
+.new-tourney-btn { gap: 8px; }
+.mini-break { flex: none; overflow: visible; }
+.mini-break .mb-ball { fill: currentColor; opacity: .85; }
+.mini-break .mb-cue { fill: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .mini-break .mb-cue { animation: mb-cue 3.6s ease-in-out infinite; }
+  .mini-break .mb-ball { animation: mb-ball 3.6s ease-out infinite; }
+}
+@keyframes mb-cue { 0% { transform: translateX(-9px); opacity: 0; } 8% { opacity: 1; } 22% { transform: translateX(0); } 40% { transform: translateX(-2px); } 70% { transform: translateX(-2px); opacity: 1; } 85%, 100% { transform: translateX(-9px); opacity: 0; } }
+@keyframes mb-ball { 0%, 21% { transform: none; } 36% { transform: translate(var(--mx), var(--my)); } 66% { transform: translate(var(--mx), var(--my)); } 82%, 100% { transform: none; } }

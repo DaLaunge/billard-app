@@ -43,3 +43,16 @@ export default function BreakAnim({ label }) {
     </div>
   );
 }
+
+/* Kleine Dauerschleife fuer den "Neues Turnier"-Knopf: Kugel rollt ins Dreieck, die Kugeln stieben kurz auseinander und sammeln sich wieder. */
+const MINI = [[16, 9], [19.2, 7.2], [19.2, 10.8], [22.4, 5.4], [22.4, 9], [22.4, 12.6]];
+export function MiniBreak({ size = 18 }) {
+  return (
+    <svg viewBox="0 0 28 18" width={size * 28 / 18} height={size} className="mini-break" aria-hidden="true" focusable="false">
+      {MINI.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="1.7" className="mb-ball" style={{ "--mx": (3 + (i % 3) * 1.6) + "px", "--my": ((i - 2.5) * 1.5) + "px" }} />
+      ))}
+      <circle cx="12.4" cy="9" r="1.9" className="mb-cue" />
+    </svg>
+  );
+}
