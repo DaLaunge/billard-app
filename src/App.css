@@ -4195,5 +4195,7 @@ span.ws-b-av { cursor: default; }
 .tw-body .planned-picker input[type="time"] { flex: 1 1 0; min-width: 0; padding-inline: 8px; }
 .tw-body .planned-picker .icon-btn { flex: none; align-self: center; }
 .place-picker { display: flex; flex-direction: column; gap: 8px; }
-.place-picker .venue-here-row { align-items: center; }
+.place-picker .venue-here-row { align-items: center; flex-wrap: nowrap; }
+.place-picker .search-row { margin-bottom: 0; }
+.place-picker .venue-here-row > .icon-btn { box-sizing: border-box; width: 38px; height: 38px; min-height: 38px; padding: 0; flex: none; }
 .place-picker .loc-sel { margin-bottom: 0; }
