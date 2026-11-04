@@ -4226,3 +4226,7 @@ span.ws-b-av { cursor: default; }
 @keyframes bb-stick { 0% { transform: translateX(0); } 36% { transform: translateX(-54px); } 42% { transform: translateX(10px); } 70% { transform: translateX(10px); opacity: 1; } 100% { transform: translateX(10px); opacity: 0; } }
 @keyframes bb-cueball { 0%, 38% { transform: translateX(0); } 42% { transform: translateX(8px); } 50% { transform: translateX(72px); } 100% { transform: translateX(64px); } }
 @keyframes bb-pop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+/* Bestaetigungs-Popup: beide Knoepfe gleich gross (430.18) */
+.confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
+.confirm-btns .btn { width: 100%; min-width: 0; box-sizing: border-box; height: 44px; min-height: 44px; margin: 0; padding-block: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
