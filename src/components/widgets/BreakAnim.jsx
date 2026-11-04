@@ -80,7 +80,7 @@ function Ball({ b, refFn }) {
 
 /* Queue: ein sehr lang gezogenes Dreieck (dick am Griff, spitz an der Kappe) mit heller Spitze, Zwinge, Gelenk und einer zufaelligen Verzierung am Griff. */
 const TIP = CUE_X - 12; // Spitze des Queues
-const half = (x) => Math.min(11, (2.2 + (TIP - x) * 0.13) / 2);
+const half = (x) => Math.min(7.5, (2.2 + (TIP - x) * 0.13) / 2);
 const quad = (x1, x2) => `M${x1} ${50 - half(x1)}L${x2} ${50 - half(x2)}L${x2} ${50 + half(x2)}L${x1} ${50 + half(x1)}Z`;
 const PALETTES = [["#d8392b", "#f2c230"], ["#2f9fd0", "#f6f2e8"], ["#1f8a4c", "#f2c230"], ["#a24bd0", "#f6f2e8"], ["#ee7d1d", "#1b1b1b"], ["#e04d8a", "#f6f2e8"]];
 const makeDeco = (prev) => { let n; do { n = { kind: Math.floor(Math.random() * 5), pal: Math.floor(Math.random() * PALETTES.length) }; } while (prev && n.kind === prev.kind && n.pal === prev.pal); return n; };
@@ -95,7 +95,7 @@ function stick({ kind, pal }) {
   return (
     <>
       <path d={`M40 ${50 - half(40)}L${TIP} ${50 - half(TIP)}L${TIP} ${50 + half(TIP)}L40 ${50 + half(40)}Z`} fill="#e8c78a" />
-      <path d={`M40 ${50 - half(40)}L-70 39L-1500 39L-1500 61L-70 61L40 ${50 + half(40)}Z`} fill="#3b2a1d" />
+      <path d={`M40 ${50 - half(40)}L-5 42.5L-1500 42.5L-1500 57.5L-5 57.5L40 ${50 + half(40)}Z`} fill="#3b2a1d" />
       <path d={quad(41, 38)} fill="#c9a24a" />
       {butt}
       <path d={quad(TIP - 6, TIP - 1)} fill="#f6f2e8" />
