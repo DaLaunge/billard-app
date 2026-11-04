@@ -15,13 +15,15 @@ const CUE_X = 100; // Weisse: Startpunkt
 const SIM_S = 1.5, FPS = 30; // simulierte Dauer nach dem Stoss, Bilder pro Sekunde
 const HIT_MS = 760; // so lange dauert es, bis die Weisse das Dreieck trifft
 
-/* Kleine Physik (einmal beim Laden): Scheiben gleicher Masse, elastische Stoesse zwischen allen Kugeln, Rollreibung, kurz nach dem Stoss bekommt jede
+/* Kleine Physik (bei jedem Klick neu, mit Zufall): Scheiben gleicher Masse, elastische Stoesse zwischen allen Kugeln, Rollreibung, kurz nach dem Stoss bekommt jede
    Kugel des Dreiecks einen kraeftigen Schub nach aussen (die schnellen verlassen den Knopf, der ihn abschneidet). So laufen Kugeln nie durcheinander durch und enden nie uebereinander. */
 function simulate(rack) {
   const hit = [AX - 2 * R, AY];
-  const B = rack.map((o, i) => {
-    const a = ((i * 137 + 29) % 100) / 100, j = ((i * 59 + 11) % 100) / 100;
-    const ang = Math.atan2(o.y - AY, o.x - (AX - 14)) + (j - 0.5) * 0.5, sp = 80 + a * 190;
+  // jedes Mal anders: Kraft, Grundrichtung und je Kugel Richtung/Tempo sind zufaellig
+  const power = 0.88 + Math.random() * 0.3, bias = (Math.random() - 0.5) * 0.3;
+  const B = rack.map((o) => {
+    const a = Math.random(), j = Math.random();
+    const ang = Math.atan2(o.y - AY, o.x - (AX - 14)) + bias + (j - 0.5) * 0.6, sp = (75 + a * 200) * power;
     return { x: o.x, y: o.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, roll: 0 };
   });
   B.push({ x: hit[0], y: hit[1], vx: -55, vy: 8, roll: 0 }); // die Weisse rollt nach dem Stoss langsam zurueck
@@ -51,19 +53,21 @@ function simulate(rack) {
 const RACK = (() => {
   const out = []; let i = 0;
   ROWS.forEach((row, r) => row.forEach((n, k) => { out.push({ n, x: AX + r * DX, y: AY + (k - r / 2) * DY, i }); i++; }));
-  const fr = simulate(out), N = fr.length - 1;
-  const tf = (x0, y0, f, idx) => `translate(${(f[idx][0] - x0).toFixed(2)}px, ${(f[idx][1] - y0).toFixed(2)}px) rotate(${(f[idx][2] * 57.3 * 0.6).toFixed(1)}deg)`;
-  out.forEach((o) => { o.frames = fr.map((f, s) => ({ transform: tf(o.x, o.y, f, o.i), offset: s / N })); });
-  // Weisse: erst in Ruhe (Queue holt aus), dann zum Stosspunkt, danach der simulierte Verlauf
-  const cueFrames = [], T = HIT_MS + SIM_S * 1000, hitX = AX - 2 * R - CUE_X;
-  cueFrames.push({ transform: "translate(0px, 0px)", offset: 0 });
-  cueFrames.push({ transform: "translate(0px, 0px)", offset: 700 / T });
-  cueFrames.push({ transform: `translate(${hitX}px, 0px)`, offset: HIT_MS / T });
-  fr.forEach((f, s) => { if (s > 0) cueFrames.push({ transform: `translate(${(f[15][0] - CUE_X).toFixed(2)}px, ${(f[15][1] - AY).toFixed(2)}px)`, offset: (HIT_MS + (s / N) * SIM_S * 1000) / T }); });
-  out.cue = { frames: cueFrames, total: T };
-  out.fin = fr[N];
   return out;
 })();
+
+// Ein Anstoss: Keyframes fuer jede Kugel des Dreiecks und fuer die Weisse (erst in Ruhe, dann zum Stosspunkt, danach der simulierte Verlauf)
+function planBreak() {
+  const fr = simulate(RACK), N = fr.length - 1;
+  const tf = (x0, y0, f, idx) => `translate(${(f[idx][0] - x0).toFixed(2)}px, ${(f[idx][1] - y0).toFixed(2)}px) rotate(${(f[idx][2] * 57.3 * 0.6).toFixed(1)}deg)`;
+  const balls = RACK.map((o) => fr.map((f, s) => ({ transform: tf(o.x, o.y, f, o.i), offset: s / N })));
+  const cue = [], T = HIT_MS + SIM_S * 1000, hitX = AX - 2 * R - CUE_X;
+  cue.push({ transform: "translate(0px, 0px)", offset: 0 });
+  cue.push({ transform: "translate(0px, 0px)", offset: 700 / T });
+  cue.push({ transform: `translate(${hitX}px, 0px)`, offset: HIT_MS / T });
+  fr.forEach((f, s) => { if (s > 0) cue.push({ transform: `translate(${(f[15][0] - CUE_X).toFixed(2)}px, ${(f[15][1] - AY).toFixed(2)}px)`, offset: (HIT_MS + (s / N) * SIM_S * 1000) / T }); });
+  return { balls, cue, total: T };
+}
 
 function Ball({ b, refFn }) {
   const base = b.n > 8 ? b.n - 8 : b.n, stripe = b.n > 8, h = R * 0.52, w = Math.sqrt(R * R - h * h);
@@ -80,7 +84,7 @@ function Ball({ b, refFn }) {
 
 /* Queue: ein sehr lang gezogenes Dreieck (dick am Griff, spitz an der Kappe) mit heller Spitze, Zwinge, Gelenk und einer zufaelligen Verzierung am Griff. */
 const TIP = CUE_X - 12; // Spitze des Queues
-const half = (x) => Math.min(7.5, (2.2 + (TIP - x) * 0.13) / 2);
+const half = (x) => Math.min(5, (2.2 + (TIP - x) * 0.065) / 2);
 const quad = (x1, x2) => `M${x1} ${50 - half(x1)}L${x2} ${50 - half(x2)}L${x2} ${50 + half(x2)}L${x1} ${50 + half(x1)}Z`;
 const PALETTES = [["#d8392b", "#f2c230"], ["#2f9fd0", "#f6f2e8"], ["#1f8a4c", "#f2c230"], ["#a24bd0", "#f6f2e8"], ["#ee7d1d", "#1b1b1b"], ["#e04d8a", "#f6f2e8"]];
 const makeDeco = (prev) => { let n; do { n = { kind: Math.floor(Math.random() * 5), pal: Math.floor(Math.random() * PALETTES.length) }; } while (prev && n.kind === prev.kind && n.pal === prev.pal); return n; };
@@ -95,7 +99,7 @@ function stick({ kind, pal }) {
   return (
     <>
       <path d={`M40 ${50 - half(40)}L${TIP} ${50 - half(TIP)}L${TIP} ${50 + half(TIP)}L40 ${50 + half(40)}Z`} fill="#e8c78a" />
-      <path d={`M40 ${50 - half(40)}L-5 42.5L-1500 42.5L-1500 57.5L-5 57.5L40 ${50 + half(40)}Z`} fill="#3b2a1d" />
+      <path d={`M40 ${50 - half(40)}L-35 45L-1500 45L-1500 55L-35 55L40 ${50 + half(40)}Z`} fill="#3b2a1d" />
       <path d={quad(41, 38)} fill="#c9a24a" />
       {butt}
       <path d={quad(TIP - 6, TIP - 1)} fill="#f6f2e8" />
@@ -118,8 +122,9 @@ export default function BreakButton({ onOpen }) {
     if (breaking) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { onOpen(); return; }
     setBreaking(true);
-    anims.current = els.current.map((el, i) => el?.animate?.(RACK[i].frames, { duration: SIM_S * 1000, delay: HIT_MS, easing: "linear", fill: "both" })).filter(Boolean);
-    if (cueEl.current?.animate) anims.current.push(cueEl.current.animate(RACK.cue.frames, { duration: RACK.cue.total, easing: "linear", fill: "both" }));
+    const plan = planBreak();
+    anims.current = els.current.map((el, i) => el?.animate?.(plan.balls[i], { duration: SIM_S * 1000, delay: HIT_MS, easing: "linear", fill: "both" })).filter(Boolean);
+    if (cueEl.current?.animate) anims.current.push(cueEl.current.animate(plan.cue, { duration: plan.total, easing: "linear", fill: "both" }));
     timer.current = setTimeout(() => {
       anims.current.forEach((a) => a.cancel()); anims.current = [];
       setBreaking(false); setDeco((d) => makeDeco(d)); onOpen();
