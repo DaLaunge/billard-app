@@ -4189,7 +4189,7 @@ span.ws-b-av { cursor: default; }
 .tw-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; min-height: 40px; margin: 0; padding: 6px 14px; font-size: calc(13.5px * var(--fs, 1)); }
 .tw-foot > span { display: none; }
 .tw-foot .btn.tw-btn { height: 42px; min-height: 42px; padding-block: 0; line-height: 1; align-self: flex-start; margin: 0; transform: none; }
-.tw-plays { flex: none; width: auto; max-width: 55%; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px; font-size: calc(13.5px * var(--fs, 1)); white-space: nowrap; }
+.tw-plays { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; white-space: nowrap; }
 .tw-body .planned-picker { flex-wrap: nowrap; align-items: stretch; }
 .tw-body .planned-picker input[type="date"] { flex: 1.7 1 0; min-width: 0; }
 .tw-body .planned-picker input[type="time"] { flex: 1 1 0; min-width: 0; padding-inline: 8px; }

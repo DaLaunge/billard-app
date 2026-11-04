@@ -930,7 +930,6 @@ const TRANSLATIONS = {
     "Turnierleitung spielt nicht mit": "Organizer does not play",
     "spielt mit": "plays along",
     "Spielt mit": "Plays along",
-    "Spielt nicht mit": "Not playing",
     "leitet nur": "organizes only",
     "Allgemeine Angaben bearbeiten": "Edit general details",
     "Name und Ort sind nach dem Anlegen fest.": "Name and place are fixed after creation.",

@@ -85,7 +85,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
   // spielt die Leitung mit?), 2 = Modus (Format und was dazugehoert). Der Zeitpunkt ist vorbelegt (heute/morgen 18:00).
   const [step, setStep] = useState(1);
   const [planned, setPlanned] = useState(() => defaultPlanned());
-  const [organizerPlays, setOrganizerPlays] = useState(false);
+  const [organizerPlays, setOrganizerPlays] = useState(true);
   const [format, setFormat] = useState("ko"); // "ko" | "double_ko" | "round_robin" | "winner_stays"
   const [discipline, setDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
   const [tableMode, setTableMode] = useState("range");
@@ -162,7 +162,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
 
   const resetForm = () => {
     setShowForm(false);
-    setStep(1); setPlanned(defaultPlanned()); setOrganizerPlays(false);
+    setStep(1); setPlanned(defaultPlanned()); setOrganizerPlays(true);
     setName(""); setTableFrom(""); setTableTo(""); setTableList(""); setWsTable(""); setWsDoubles(false); setBreakRule(DEFAULT_BREAK_RULE);
   };
 
@@ -315,10 +315,11 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                         <b>{me?.nickname}</b>
                         <span className="rank-meta">{t("Turnierleitung")}</span>
                       </div>
-                      <button type="button" className={"btn tw-plays" + (organizerPlays ? " primary" : " ghost")} aria-pressed={organizerPlays}
-                        onClick={() => setOrganizerPlays(!organizerPlays)}>
-                        {organizerPlays ? <Check size={14} /> : <X size={14} />} {organizerPlays ? t("Spielt mit") : t("Spielt nicht mit")}
-                      </button>
+                      <label className="settings-switch tw-plays">
+                        <input type="checkbox" checked={organizerPlays} onChange={(e) => setOrganizerPlays(e.target.checked)} />
+                        <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                        <span className="settings-switch-label">{t("Spielt mit")}</span>
+                      </label>
                     </div>
                   </>
                 )}
