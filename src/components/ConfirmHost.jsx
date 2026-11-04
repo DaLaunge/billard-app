@@ -22,7 +22,7 @@ export default function ConfirmHost() {
     <div className="modal-overlay confirm-overlay" onClick={() => finish(false)}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <p style={{ marginBottom: 16 }}>{state.message}</p>
-        <div className="sp-controls">
+        <div className="confirm-btns">
           <button className="btn ghost" onClick={() => finish(false)}>{t("Abbrechen")}</button>
           <button className="btn primary" onClick={() => finish(true)}>{t("Bestätigen")}</button>
         </div>

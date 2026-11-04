@@ -41,7 +41,10 @@ export function QuickAddPlayers({ players, matches, me, exclude = [], colorOf, b
   const [sel, setSel] = useState([]);
   const freq = useMemo(() => recentOpponentFreq(matches, me), [matches, me]);
   const q = query.trim().toLowerCase();
-  const pool = players.filter((p) => !p.is_ghost && !p.is_guest && !p.blocked && !exclude.includes(p.id));
+  // Im Doppel (team) legt "Gast hinzufuegen" noch nichts an, sondern liefert die Gast-Person zurueck: sie wird hier gemerkt und gleich
+  // als Teampartner gewaehlt (die Spielerliste der App kennt Gaeste nicht).
+  const [extra, setExtra] = useState([]);
+  const pool = [...players.filter((p) => !p.is_ghost && !p.is_guest && !p.blocked && !exclude.includes(p.id)), ...extra.filter((g) => !exclude.includes(g.id))];
   const rank = (a, b) => (freq[b.nickname] || 0) - (freq[a.nickname] || 0) || a.nickname.localeCompare(b.nickname);
   const found = q
     ? pool.filter((p) => p.nickname.toLowerCase().includes(q))
@@ -54,7 +57,15 @@ export function QuickAddPlayers({ players, matches, me, exclude = [], colorOf, b
   // team: genau zwei Personen bilden ein Team - eine dritte Wahl ersetzt die aeltere, so bleibt die Auswahl immer ein Paar.
   const toggle = (id) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : team ? [...s, id].slice(-2) : [...s, id]));
   const submit = async () => { if (sel.length && (await onAdd(sel))) { setSel([]); setQuery(""); } };
-  const submitGuest = async () => { if (await onAddGuest(query.trim())) setQuery(""); };
+  const submitGuest = async () => {
+    const r = await onAddGuest(query.trim());
+    if (!r) return;
+    if (team && r.id) {
+      setExtra((e) => [...e.filter((x) => x.id !== r.id), r]);
+      setSel((s) => (s.includes(r.id) ? s : [...s, r.id].slice(-2)));
+    }
+    setQuery("");
+  };
   const onKey = (e) => {
     if (e.key !== "Enter" || !q) return;
     e.preventDefault();
