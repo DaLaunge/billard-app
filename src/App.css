@@ -4163,3 +4163,29 @@ span.ws-b-av { cursor: default; }
 .tf-compact .form-go { white-space: nowrap; padding: 6px 11px; font-size: calc(13px * var(--fs, 1)); }
 .name-row .card-info-btn { margin: 0; flex: none; }
 .tf-compact .form-steps.s2 .form-step:not(.on) .fs-txt { display: none; }
+
+/* --- "Neues Turnier" als Wizard-Popup (430.3) --- */
+.tw-modal { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+.tw-head { display: flex; align-items: center; gap: 8px; color: var(--accent); }
+.tw-head b { flex: 1; font-size: calc(16px * var(--fs, 1)); }
+.tw-steps { display: flex; align-items: center; gap: 8px; }
+.tw-step { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; padding: 2px 0; font: inherit; font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--ivory-dim); cursor: pointer; }
+.tw-step b { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--felt-3); font-size: 11px; }
+.tw-step.on { color: var(--ivory); }
+.tw-step.on b { background: var(--accent); color: var(--accent-ink); }
+.tw-step.done b { background: var(--accent-soft); color: var(--accent); }
+.tw-step-line { flex: 0 0 28px; height: 2px; border-radius: 2px; background: var(--line); }
+.tw-steps .card-info-btn { margin: 0 0 0 auto; }
+.tw-body { gap: 10px; }
+.tw-name input { font-size: calc(22px * var(--fs, 1)); font-weight: 800; padding: 10px 12px; min-height: 52px; }
+.tw-name .icon-btn { flex: none; }
+.tw-body .disc-row { justify-content: flex-start; gap: 12px; }
+.tw-lead { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 14px; background: var(--surface-btn); }
+.tw-lead-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.tw-lead-txt b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tw-lead .card-info-btn { margin: 0; }
+.tw-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 4px; }
+.tw-btn { padding: 6px 14px; font-size: calc(13.5px * var(--fs, 1)); }
+.place-picker { display: flex; flex-direction: column; gap: 8px; }
+.place-picker .venue-here-row { align-items: center; }
+.place-picker .loc-sel { margin-bottom: 0; }

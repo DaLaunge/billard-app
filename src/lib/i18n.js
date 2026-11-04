@@ -1867,6 +1867,7 @@ const TRANSLATIONS = {
     "Gast hinzugefügt.": "Guest added.",
     "Gast konnte nicht hinzugefügt werden. Der Name gehört vielleicht einem Mitglied.": "Guest could not be added. The name may belong to a member.",
     "Anlegen": "Create",
+    "Der Ort steht im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel würfelt einen kreativen Namen.": "The place is part of the name, e.g. “Köö 7 Friday Tournament KW12”. The dice roll a creative name.",
     "Name und Ort": "Name and place",
     "Gast": "Guest",
     "Für Personen ohne App - Ergebnisse gegen Gäste zählen fürs Turnier, aber nicht fürs Rating.": "For people without the app - results against guests count for the tournament, but not for the rating.",

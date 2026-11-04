@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
-import LocationPicker from "./widgets/LocationPicker";
+import { createPortal } from "react-dom";
+import { Check, ChevronLeft, ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
+import PlacePicker from "./widgets/PlacePicker";
+import Ball from "./Ball";
 import PlaceLink from "./widgets/PlaceLink";
 import { PlannedPicker } from "./widgets/TurnierInfoBits";
 import { defaultPlanned, plannedToIso, fmtPlanned } from "../lib/turnierTime";
@@ -9,7 +11,7 @@ import { useLocations } from "../lib/locationStore";
 import { suggestNames, randomName } from "../lib/turnierNames";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
-import { fmtDate } from "../lib/format";
+import { fmtDate, initials } from "../lib/format";
 import { DEFAULT_DISCIPLINES, activeDisciplines } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
 import FieldLabel, { InlineField } from "./widgets/FieldLabel";
@@ -47,7 +49,7 @@ const statusLabel = (s) => (s === "finished" ? t("beendet") : s === "setup" ? t(
 // getoente Flaeche, beendet/abgebrochen = neutral.
 const statusTone = (s) => (s === "setup" ? "open" : s === "finished" || s === "cancelled" ? "done" : "live");
 
-export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinnerStays }) {
+export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinnerStays, colorOf, badgeOf, photoOf }) {
   const [tournaments, setTournaments] = useState(null);
   const [wsSessions, setWsSessions] = useState(null);
   // Default "running" statt "all" (Nutzer-Feedback) - beim Oeffnen der
@@ -61,8 +63,17 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
   const { list: locList } = useLocations();
   const [placeLocId, setPlaceLocId] = useState(() => { try { return localStorage.getItem("turnierPlaceLoc") || null; } catch { return null; } });
   const [placeText, setPlaceText] = useState(() => { try { return localStorage.getItem("turnierPlace") || ""; } catch { return ""; } });
-  const place = locList.find((l) => l.id === placeLocId)?.name || placeText;
+  const place = locList.find((l) => l.id === placeLocId)?.name || placeText.split(",")[0].trim();
   useEffect(() => { try { localStorage.setItem("turnierPlaceLoc", placeLocId || ""); localStorage.setItem("turnierPlace", placeText); } catch { /* */ } }, [placeLocId, placeText]);
+  // Popup: Seite dahinter nicht scrollen, Escape schliesst
+  useEffect(() => {
+    if (!showForm) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const esc = (e) => { if (e.key === "Escape") setShowForm(false); };
+    window.addEventListener("keydown", esc);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", esc); };
+  }, [showForm]);
   // Namen bestehender Turniere (klein geschrieben): Zufallsnamen und Vorschlaege vermeiden sie
   const takenNames = useMemo(() => new Set([...(tournaments || []), ...(wsSessions || [])].map((x) => (x.name || "").trim().toLowerCase())), [tournaments, wsSessions]);
   // Beim Oeffnen des Formulars gleich einen freien Zufallsnamen vorschlagen (nur wenn das Feld leer ist)
@@ -246,158 +257,147 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       <section className="stat-block">
         <div className="stat-block-head">
           <h3><Trophy size={17} /> {t("Turniere")}</h3>
-          {/* Offen: nur ein X (Abbrechen) - der Text kostete am Handy Platz und der Stepper zeigt ohnehin, wo man ist */}
-          {showForm
-            ? <button type="button" className="icon-btn small" onClick={() => setShowForm(false)} aria-label={t("Abbrechen")} title={t("Abbrechen")}><X size={16} /></button>
-            : <button className="btn ghost" onClick={() => setShowForm(true)}><Plus size={15} /> {t("Neues Turnier")}</button>}
+          <button className="btn ghost" onClick={() => setShowForm(true)}><Plus size={15} /> {t("Neues Turnier")}</button>
         </div>
 
-        {/* Auf- und Zuklappen ueber grid-template-rows 0fr/1fr - die einzige
-            Art, eine unbekannte Hoehe wirklich zu animieren, ohne sie vorher
-            zu messen. Unter prefers-reduced-motion schaltet das CSS die
-            Ueberblendung ab, der Inhalt erscheint dann sofort. */}
-        <div className={"collapsible" + (showForm ? " open" : "")} inert={showForm ? undefined : ""}>
-          <div className="collapsible-inner">
-          <div className="turnier-form tf-compact" style={{ marginBottom: 12 }}>
-            {/* Stepper UND Hauptaktion in EINER Zeile (Nutzer-Feedback 2026-11-04: "Weiter"/"Zurück" fraßen am Handy je eine ganze Zeile) */}
-            <div className={"form-steps" + (step === 2 ? " s2" : "")} role="tablist" aria-label={t("Schritte")}>
-              <button type="button" className={"form-step" + (step === 1 ? " on" : "")} onClick={() => setStep(1)}><b>1</b> <span className="fs-txt">{t("Allgemein")}</span></button>
-              <span className="form-step-sep" aria-hidden="true" />
-              <button type="button" className={"form-step" + (step === 2 ? " on" : "")} onClick={() => nextStep()}><b>2</b> {t("Modus")}</button>
-              {step === 2 && <InfoButton title={t("Format")}>{t("K.O.: eine Niederlage und du bist raus. Doppel-K.O.: erst die zweite Niederlage scheidet aus, bis dahin laeuft eine Verliererrunde mit. Jeder gegen jeden: alle spielen gegen alle, eine Tabelle entscheidet. Winner Stays: ein Tisch, mehrere Leute - der Sieger bleibt, der Verlierer geht ans Ende der Schlange; funktioniert mit 3 oder beliebig vielen Personen, auch im Doppel.")}</InfoButton>}
-              {step === 1
-                ? <button type="button" className="btn primary form-go" onClick={nextStep}>{t("Weiter")} <ChevronRight size={16} /></button>
-                : <button type="button" className="btn primary form-go" disabled={busy} onClick={create}>{busy ? t("Lege an …") : <><Trophy size={15} /> {t("Anlegen")}</>}</button>}
-            </div>
-            {step === 1 && (
-              <>
-            {/* Ganz oben: die Disziplin ist die eine Angabe, die IMMER gewaehlt
-                werden muss (Nutzer-Feedback 2026-09-30) - vorher stand sie
-                nach Name und Format, unterhalb der Falz. Sie hat einen
-                Vorgabewert, wird aber bei jedem Turnier bewusst entschieden. */}
-            {/* Der Anstoss-Schalter sitzt rechts in derselben Zeile (kostet keine Hoehe)
-                und entfaellt beim 14/1, wo es kein Rack-fuer-Rack-Anstossen gibt. */}
-            {/* Keine Zeilen-Ueberschriften mehr fuer Disziplin/Name/Ort/Zeitpunkt: die Kugeln, der Platzhalter und die Felder sagen es selbst;
-                der Anstoss-Schalter steht in derselben Zeile wie die Kugeln. */}
-            <div className="disc-row">
-              <div className="disc-picks">
-                {activeDisciplines().map((d) => (
-                  // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
-                  // Akzentfarbe, wie bei der Kugelauswahl im 14/1-Protokoll.
-                  <DiscPick key={d} disc={d} selected={discipline === d} onSelect={() => setDiscipline(d)} />
-                ))}
+        {/* "Neues Turnier" ist ein eigenes Fenster (Wizard, Nutzer 2026-11-04): nichts aus der Liste lenkt ab, oben steht wo man ist
+            (Allgemein > Modus), unten ein kleines Zurueck und Weiter/Anlegen. */}
+        {showForm && createPortal(
+          <div className="venue-modal-overlay" role="dialog" aria-modal="true" aria-label={t("Neues Turnier")}>
+            <div className="venue-modal tw-modal">
+              <div className="tw-head">
+                <Trophy size={18} />
+                <b>{t("Neues Turnier")}</b>
+                <button type="button" className="icon-btn small" onClick={() => setShowForm(false)} aria-label={t("Abbrechen")} title={t("Abbrechen")}><X size={16} /></button>
               </div>
-              {breakApplies(discipline) && <BreakSwitch value={breakRule} onChange={setBreakRule} />}
-            </div>
-
-            {/* Name: Ort (optional, wird gemerkt) + Wuerfel fuer einen kreativen Zufallsnamen + Vorschlaege zum Antippen */}
-            <div className="name-row">
-              <button type="button" className="icon-btn" onClick={() => setName(randomName({ place, exclude: name, taken: takenNames }))}
-                aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={18} /></button>
-              <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
-              <InfoButton title={t("Name und Ort")}>{t("Wie bei „Live gehen“: ein Lokal auswählen oder einen Ort eintippen. Der Ort steht dann im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel links würfelt einen kreativen Namen.")}</InfoButton>
-            </div>
-            <div className="chips small">
-              {suggestNames({ place, discipline, format, taken: takenNames }).map((s) => (
-                <button key={s} type="button" className={"chip" + (name === s ? " active" : "")} onClick={() => setName(s)}>{s}</button>
-              ))}
-            </div>
-            <LocationPicker value={placeLocId} toast={toast} me={me} placeholder={t("Lokal oder Ort suchen oder eingeben")}
-              onChange={(id) => { setPlaceLocId(id); if (id) { setPlaceText(""); } else { setPlaceText(""); } }}
-              onUseText={(txt) => { setPlaceLocId(null); setPlaceText(txt); }} />
-            {placeText && !placeLocId && (
-              <div className="loc-sel">
-                <MapPin size={18} className="loc-sel-ico" />
-                <div className="loc-sel-txt"><b>{placeText}</b></div>
-                <button type="button" className="icon-btn small" onClick={() => setPlaceText("")} aria-label={t("Anderes Lokal")} title={t("Anderes Lokal")}><X size={16} /></button>
+              <div className="tw-steps" role="tablist" aria-label={t("Schritte")}>
+                <button type="button" role="tab" aria-selected={step === 1} className={"tw-step" + (step === 1 ? " on" : " done")} onClick={() => setStep(1)}><b>{step === 2 ? <Check size={11} /> : 1}</b> {t("Allgemein")}</button>
+                <span className="tw-step-line" aria-hidden="true" />
+                <button type="button" role="tab" aria-selected={step === 2} className={"tw-step" + (step === 2 ? " on" : "")} onClick={nextStep}><b>2</b> {t("Modus")}</button>
+                {step === 2 && <InfoButton title={t("Format")}>{t("K.O.: eine Niederlage und du bist raus. Doppel-K.O.: erst die zweite Niederlage scheidet aus, bis dahin laeuft eine Verliererrunde mit. Jeder gegen jeden: alle spielen gegen alle, eine Tabelle entscheidet. Winner Stays: ein Tisch, mehrere Leute - der Sieger bleibt, der Verlierer geht ans Ende der Schlange; funktioniert mit 3 oder beliebig vielen Personen, auch im Doppel.")}</InfoButton>}
               </div>
-            )}
 
-            <PlannedPicker date={planned.date} time={planned.time} onChange={setPlanned} onClear={() => setPlanned({ date: "", time: "" })} />
+              <div className="turnier-form tf-compact tw-body">
+                {step === 1 && (
+                  <>
+                    {/* Der Name ist die wichtigste Angabe: ganz oben und so gross wie der Turniername in der Kopfzeile */}
+                    <div className="name-row tw-name">
+                      <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} aria-label={t("Turniername")} />
+                      <button type="button" className="icon-btn" onClick={() => setName(randomName({ place, exclude: name, taken: takenNames }))}
+                        aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={18} /></button>
+                      <InfoButton title={t("Name und Ort")}>{t("Der Ort steht im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel würfelt einen kreativen Namen.")}</InfoButton>
+                    </div>
+                    <div className="chips small">
+                      {suggestNames({ place, discipline, format, taken: takenNames }).map((s) => (
+                        <button key={s} type="button" className={"chip" + (name === s ? " active" : "")} onClick={() => setName(s)}>{s}</button>
+                      ))}
+                    </div>
 
-            {/* Spielt die Turnierleitung mit? Sofort in der Anmeldeliste bzw. Warteschlange; bei einem Winner-Stays-Doppel braucht ein Team zwei Personen */}
-            <FieldLabel label={t("Turnierleitung spielt mit")} info={t("Trägt dich nach dem Anlegen selbst in die Anmeldeliste ein. Das lässt sich später in den allgemeinen Angaben ändern.")}
-              actions={<span className="chips small">
-                <button type="button" className={"chip" + (organizerPlays ? " active" : "")} onClick={() => setOrganizerPlays(true)}>{t("Ja")}</button>
-                <button type="button" className={"chip" + (!organizerPlays ? " active" : "")} onClick={() => setOrganizerPlays(false)}>{t("Nein")}</button>
-              </span>} />
-              </>
-            )}
-            {step === 2 && (
-              <>
-            {/* Format als Kacheln mit Struktur-Zeichnung statt als Textchips
-                (Nutzer-Feedback: Erklaerungen lieber visuell). "Doppel-K.O."
-                sagt einem Neuling nichts, ein Baum mit zweitem Pfad darunter
-                schon - der ausgeschriebene Text dazu steckt im Info-Knopf
-                daneben, statt dauerhaft Platz zu kosten. */}
-<div className="fmt-grid">
-              {[["ko", t("K.O.")], ["double_ko", t("Doppel-K.O.")], ["round_robin", t("Jeder gegen jeden")], ["winner_stays", t("Winner Stays")]].map(([key, label]) => {
-                const Glyph = FORMAT_GLYPH[key];
-                return (
-                  <button key={key} type="button" className={"fmt-card" + (format === key ? " sel" : "")}
-                    aria-pressed={format === key} onClick={() => chooseFormat(key)}>
-                    <Glyph />
-                    <span>{label}</span>
-                  </button>
-                );
-              })}
-            </div>
+                    {/* Kugeln, direkt dahinter der Anstoss-Schalter (entfaellt beim 14/1) */}
+                    <div className="disc-row">
+                      <div className="disc-picks">
+                        {activeDisciplines().map((d) => (
+                          <DiscPick key={d} disc={d} selected={discipline === d} onSelect={() => setDiscipline(d)} />
+                        ))}
+                      </div>
+                      {breakApplies(discipline) && <BreakSwitch value={breakRule} onChange={setBreakRule} />}
+                    </div>
 
-            {format === "round_robin" && (
-              <>
-                <InlineField label={t("Spielrunden")} info={t("Einfach: jede Paarung spielt einmal. Hin & Rueck: jede Paarung spielt zweimal, einmal pro Seite - fairer, dauert aber doppelt so lang.")}>
-                  <button className={"chip" + (!doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(false)}>{t("Einfach")}</button>
-                  <button className={"chip" + (doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(true)}>{t("Hin & Rück")}</button>
-                </InlineField>
-              </>
-            )}
+                    {/* Ort wie bei "Live gehen"/"Planung": Lokal, Mein Standort, Karte, Adresse */}
+                    <PlacePicker locId={placeLocId} text={placeText} toast={toast} me={me}
+                      onChange={(id, txt) => { setPlaceLocId(id || null); setPlaceText(id ? "" : (txt || "")); }} />
 
-            {format !== "ko" && format !== "winner_stays" && (
-              <>
-                <InlineField label={format === "double_ko" ? t("Finalrunde") : t("Abschluss")} info={t("Wie viele der Bestplatzierten spielen den Sieger danach noch im K.O. aus. \"Nur Tabelle\" beendet das Turnier direkt mit dem Tabellenstand.")}>
-                  {format === "round_robin" && (
-                    <button className={"chip" + (playoffSize == null ? " active" : "")} onClick={() => setPlayoffSize(null)}>{t("Nur Tabelle")}</button>
-                  )}
-                  <button className={"chip" + (playoffSize === 2 ? " active" : "")} onClick={() => setPlayoffSize(2)}>{t("Finale (Top 2)")}</button>
-                  <button className={"chip" + (playoffSize === 4 ? " active" : "")} onClick={() => setPlayoffSize(4)}>{t("Halbfinale (Top 4)")}</button>
-                  <button className={"chip" + (playoffSize === 8 ? " active" : "")} onClick={() => setPlayoffSize(8)}>{t("Viertelfinale (Top 8)")}</button>
-                </InlineField>
-              </>
-            )}
+                    <PlannedPicker date={planned.date} time={planned.time} onChange={setPlanned} onClear={() => setPlanned({ date: "", time: "" })} />
 
-            {format === "winner_stays" && (
-              <>
-                {/* Dieselben Kacheln wie in "Neues Match" (ModeTiles). */}
-                <ModeTiles value={wsDoubles ? "double" : "single"} onChange={(m) => setWsDoubles(m === "double")} />
-              </>
-            )}
-
-            {format === "winner_stays" ? (
-              <InlineField label={t("Tisch (optional)")} info={t("Teilnehmer fuegst du danach direkt in der Runde hinzu.")}>
-                <input type="number" className="tf-narrow" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
-              </InlineField>
-            ) : (
-              <>
-                <InlineField label={t("Tische")} info={t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")}>
-                  <button className={"chip" + (tableMode === "range" ? " active" : "")} onClick={() => setTableMode("range")}>{t("Von–Bis")}</button>
-                  <button className={"chip" + (tableMode === "list" ? " active" : "")} onClick={() => setTableMode("list")}>{t("Liste")}</button>
-                </InlineField>
-                {tableMode === "range" ? (
-                  <div className="turnier-score-inputs">
-                    <input type="number" inputMode="numeric" min="1" placeholder={t("von")} value={tableFrom} onChange={(e) => setTableFrom(e.target.value)} />
-                    <span>–</span>
-                    <input type="number" inputMode="numeric" min="1" placeholder={t("bis")} value={tableTo} onChange={(e) => setTableTo(e.target.value)} />
-                  </div>
-                ) : (
-                  <input type="text" placeholder={t("z. B. 1, 3, 5")} value={tableList} onChange={(e) => setTableList(e.target.value)} />
+                    {/* Die Leitung ist, wer das Turnier anlegt - also du: Avatar statt Frage, dazu ein Schalter, ob du mitspielst */}
+                    <div className="tw-lead">
+                      {me && <Ball nick={me.nickname} color={colorOf?.(me.nickname)} label={initials(me.nickname)} badge={badgeOf?.(me.nickname)} photo={photoOf?.(me.nickname)} size={36} />}
+                      <div className="tw-lead-txt">
+                        <b>{me?.nickname}</b>
+                        <span className="rank-meta">{t("Turnierleitung")}</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input type="checkbox" checked={organizerPlays} onChange={(e) => setOrganizerPlays(e.target.checked)} />
+                        <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
+                        <span className="settings-switch-label">{t("spielt mit")}</span>
+                      </label>
+                      <InfoButton title={t("Turnierleitung spielt mit")}>{t("Trägt dich nach dem Anlegen selbst in die Anmeldeliste ein. Das lässt sich später in den allgemeinen Angaben ändern.")}</InfoButton>
+                    </div>
+                  </>
                 )}
-              </>
-            )}
-              </>
-            )}
-          </div>
-          </div>
-        </div>
+                {step === 2 && (
+                  <>
+                    {/* Format als Kacheln mit Struktur-Zeichnung; der Erklaertext steckt im Info-Knopf der Schrittzeile */}
+                    <div className="fmt-grid">
+                      {[["ko", t("K.O.")], ["double_ko", t("Doppel-K.O.")], ["round_robin", t("Jeder gegen jeden")], ["winner_stays", t("Winner Stays")]].map(([key, label]) => {
+                        const Glyph = FORMAT_GLYPH[key];
+                        return (
+                          <button key={key} type="button" className={"fmt-card" + (format === key ? " sel" : "")}
+                            aria-pressed={format === key} onClick={() => chooseFormat(key)}>
+                            <Glyph />
+                            <span>{label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {format === "round_robin" && (
+                      <InlineField label={t("Spielrunden")} info={t("Einfach: jede Paarung spielt einmal. Hin & Rueck: jede Paarung spielt zweimal, einmal pro Seite - fairer, dauert aber doppelt so lang.")}>
+                        <button className={"chip" + (!doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(false)}>{t("Einfach")}</button>
+                        <button className={"chip" + (doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(true)}>{t("Hin & Rück")}</button>
+                      </InlineField>
+                    )}
+
+                    {format !== "ko" && format !== "winner_stays" && (
+                      <InlineField label={format === "double_ko" ? t("Finalrunde") : t("Abschluss")} info={t("Wie viele der Bestplatzierten spielen den Sieger danach noch im K.O. aus. \"Nur Tabelle\" beendet das Turnier direkt mit dem Tabellenstand.")}>
+                        {format === "round_robin" && (
+                          <button className={"chip" + (playoffSize == null ? " active" : "")} onClick={() => setPlayoffSize(null)}>{t("Nur Tabelle")}</button>
+                        )}
+                        <button className={"chip" + (playoffSize === 2 ? " active" : "")} onClick={() => setPlayoffSize(2)}>{t("Finale (Top 2)")}</button>
+                        <button className={"chip" + (playoffSize === 4 ? " active" : "")} onClick={() => setPlayoffSize(4)}>{t("Halbfinale (Top 4)")}</button>
+                        <button className={"chip" + (playoffSize === 8 ? " active" : "")} onClick={() => setPlayoffSize(8)}>{t("Viertelfinale (Top 8)")}</button>
+                      </InlineField>
+                    )}
+
+                    {format === "winner_stays" && <ModeTiles value={wsDoubles ? "double" : "single"} onChange={(m) => setWsDoubles(m === "double")} />}
+
+                    {format === "winner_stays" ? (
+                      <InlineField label={t("Tisch (optional)")} info={t("Teilnehmer fuegst du danach direkt in der Runde hinzu.")}>
+                        <input type="number" className="tf-narrow" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
+                      </InlineField>
+                    ) : (
+                      <>
+                        <InlineField label={t("Tische")} info={t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")}>
+                          <button className={"chip" + (tableMode === "range" ? " active" : "")} onClick={() => setTableMode("range")}>{t("Von–Bis")}</button>
+                          <button className={"chip" + (tableMode === "list" ? " active" : "")} onClick={() => setTableMode("list")}>{t("Liste")}</button>
+                        </InlineField>
+                        {tableMode === "range" ? (
+                          <div className="turnier-score-inputs">
+                            <input type="number" inputMode="numeric" min="1" placeholder={t("von")} value={tableFrom} onChange={(e) => setTableFrom(e.target.value)} />
+                            <span>–</span>
+                            <input type="number" inputMode="numeric" min="1" placeholder={t("bis")} value={tableTo} onChange={(e) => setTableTo(e.target.value)} />
+                          </div>
+                        ) : (
+                          <input type="text" placeholder={t("z. B. 1, 3, 5")} value={tableList} onChange={(e) => setTableList(e.target.value)} />
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="tw-foot">
+                {step === 2
+                  ? <button type="button" className="btn ghost tw-btn" onClick={() => setStep(1)}><ChevronLeft size={15} /> {t("Zurück")}</button>
+                  : <span />}
+                {step === 1
+                  ? <button type="button" className="btn primary tw-btn" onClick={nextStep}>{t("Weiter")} <ChevronRight size={15} /></button>
+                  : <button type="button" className="btn primary tw-btn" disabled={busy} onClick={create}>{busy ? t("Lege an …") : <><Trophy size={14} /> {t("Anlegen")}</>}</button>}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
 
         {combined != null && combined.length > 0 && (
           <>
