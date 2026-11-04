@@ -4136,3 +4136,30 @@ span.ws-b-av { cursor: default; }
 .planned-picker input[type="date"], .planned-picker input[type="time"] {
   font-size: calc(15px * var(--fs, 1)); padding: 10px 12px; background: var(--felt); color: var(--ivory);
   border: 1px solid var(--line); border-radius: 12px; font-family: inherit; color-scheme: dark; }
+
+/* --- Turnier anlegen kompakt (430.2, Nutzer: am Handy sollen beide Schritte auf den Bildschirm passen) --- */
+.turnier-form.tf-compact { gap: 8px; }
+.tf-compact .field-label { margin: 0; }
+.tf-compact .chips.small { margin-bottom: 0; }
+.tf-compact .field-label-actions .chips.small { gap: 4px; }
+.tf-compact .disc-picks { margin-bottom: 0; gap: 8px; }
+.disc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.form-steps .form-go { margin-left: auto; padding: 7px 12px; }
+.form-steps .card-info-btn { margin: 0 0 0 auto; }
+.form-steps .card-info-btn + .form-go { margin-left: 0; }
+.form-steps .form-step-sep { max-width: 16px; }
+.inline-field { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.inline-field-label { display: inline-flex; align-items: center; font-size: calc(12.5px * var(--fs, 1)); font-weight: 700; color: var(--ivory-dim); letter-spacing: .02em; }
+.inline-field-label .card-info-btn { margin: 0; }
+.inline-field .tf-narrow { width: 90px; flex: 0 0 90px; }
+.tf-compact .fmt-grid { gap: 6px; }
+.tf-compact .fmt-card { flex-direction: row; justify-content: flex-start; gap: 8px; padding: 6px 10px; text-align: left; }
+.tf-compact .fmt-card .fmt-glyph { width: 40px; height: 24px; flex: 0 0 40px; }
+.tf-compact .turnier-score-inputs { margin: 0; }
+.tf-compact .form-steps { gap: 6px; flex-wrap: nowrap; margin-bottom: 0; }
+.tf-compact .form-step { padding: 5px 9px; gap: 5px; font-size: calc(13px * var(--fs, 1)); white-space: nowrap; }
+.tf-compact .form-step b { width: 18px; height: 18px; font-size: 11px; }
+.tf-compact .form-step-sep { display: none; }
+.tf-compact .form-go { white-space: nowrap; padding: 6px 11px; font-size: calc(13px * var(--fs, 1)); }
+.name-row .card-info-btn { margin: 0; flex: none; }
+.tf-compact .form-steps.s2 .form-step:not(.on) .fs-txt { display: none; }

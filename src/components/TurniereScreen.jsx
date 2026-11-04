@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
+import { ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
 import LocationPicker from "./widgets/LocationPicker";
 import PlaceLink from "./widgets/PlaceLink";
 import { PlannedPicker } from "./widgets/TurnierInfoBits";
@@ -12,7 +12,8 @@ import { t } from "../lib/i18n";
 import { fmtDate } from "../lib/format";
 import { DEFAULT_DISCIPLINES, activeDisciplines } from "../lib/constants";
 import ImprintFooter from "./widgets/ImprintFooter";
-import FieldLabel from "./widgets/FieldLabel";
+import FieldLabel, { InlineField } from "./widgets/FieldLabel";
+import InfoButton from "./widgets/InfoButton";
 import { ModeTiles } from "./widgets/ModePick";
 import DiscBall, { DiscPick } from "./widgets/DiscBall";
 import { BreakSwitch, DEFAULT_BREAK_RULE, breakApplies } from "./widgets/BreakRule";
@@ -245,9 +246,10 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       <section className="stat-block">
         <div className="stat-block-head">
           <h3><Trophy size={17} /> {t("Turniere")}</h3>
-          <button className="btn ghost" onClick={() => setShowForm((s) => !s)}>
-            {showForm ? <><X size={15} /> {t("Abbrechen")}</> : <><Plus size={15} /> {t("Neues Turnier")}</>}
-          </button>
+          {/* Offen: nur ein X (Abbrechen) - der Text kostete am Handy Platz und der Stepper zeigt ohnehin, wo man ist */}
+          {showForm
+            ? <button type="button" className="icon-btn small" onClick={() => setShowForm(false)} aria-label={t("Abbrechen")} title={t("Abbrechen")}><X size={16} /></button>
+            : <button className="btn ghost" onClick={() => setShowForm(true)}><Plus size={15} /> {t("Neues Turnier")}</button>}
         </div>
 
         {/* Auf- und Zuklappen ueber grid-template-rows 0fr/1fr - die einzige
@@ -256,11 +258,16 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
             Ueberblendung ab, der Inhalt erscheint dann sofort. */}
         <div className={"collapsible" + (showForm ? " open" : "")} inert={showForm ? undefined : ""}>
           <div className="collapsible-inner">
-          <div className="turnier-form" style={{ marginBottom: 16 }}>
-            <div className="form-steps" role="tablist" aria-label={t("Schritte")}>
-              <button type="button" className={"form-step" + (step === 1 ? " on" : "")} onClick={() => setStep(1)}><b>1</b> {t("Allgemein")}</button>
+          <div className="turnier-form tf-compact" style={{ marginBottom: 12 }}>
+            {/* Stepper UND Hauptaktion in EINER Zeile (Nutzer-Feedback 2026-11-04: "Weiter"/"Zurück" fraßen am Handy je eine ganze Zeile) */}
+            <div className={"form-steps" + (step === 2 ? " s2" : "")} role="tablist" aria-label={t("Schritte")}>
+              <button type="button" className={"form-step" + (step === 1 ? " on" : "")} onClick={() => setStep(1)}><b>1</b> <span className="fs-txt">{t("Allgemein")}</span></button>
               <span className="form-step-sep" aria-hidden="true" />
               <button type="button" className={"form-step" + (step === 2 ? " on" : "")} onClick={() => nextStep()}><b>2</b> {t("Modus")}</button>
+              {step === 2 && <InfoButton title={t("Format")}>{t("K.O.: eine Niederlage und du bist raus. Doppel-K.O.: erst die zweite Niederlage scheidet aus, bis dahin laeuft eine Verliererrunde mit. Jeder gegen jeden: alle spielen gegen alle, eine Tabelle entscheidet. Winner Stays: ein Tisch, mehrere Leute - der Sieger bleibt, der Verlierer geht ans Ende der Schlange; funktioniert mit 3 oder beliebig vielen Personen, auch im Doppel.")}</InfoButton>}
+              {step === 1
+                ? <button type="button" className="btn primary form-go" onClick={nextStep}>{t("Weiter")} <ChevronRight size={16} /></button>
+                : <button type="button" className="btn primary form-go" disabled={busy} onClick={create}>{busy ? t("Lege an …") : <><Trophy size={15} /> {t("Anlegen")}</>}</button>}
             </div>
             {step === 1 && (
               <>
@@ -270,28 +277,31 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 Vorgabewert, wird aber bei jedem Turnier bewusst entschieden. */}
             {/* Der Anstoss-Schalter sitzt rechts in derselben Zeile (kostet keine Hoehe)
                 und entfaellt beim 14/1, wo es kein Rack-fuer-Rack-Anstossen gibt. */}
-            <FieldLabel label={t("Disziplin")} actions={breakApplies(discipline) ? <BreakSwitch value={breakRule} onChange={setBreakRule} /> : null} />
-            <div className="disc-picks">
-              {activeDisciplines().map((d) => (
-                // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
-                // Akzentfarbe, wie bei der Kugelauswahl im 14/1-Protokoll.
-                <DiscPick key={d} disc={d} selected={discipline === d} onSelect={() => setDiscipline(d)} />
-              ))}
+            {/* Keine Zeilen-Ueberschriften mehr fuer Disziplin/Name/Ort/Zeitpunkt: die Kugeln, der Platzhalter und die Felder sagen es selbst;
+                der Anstoss-Schalter steht in derselben Zeile wie die Kugeln. */}
+            <div className="disc-row">
+              <div className="disc-picks">
+                {activeDisciplines().map((d) => (
+                  // Kugel statt Kuerzel (siehe DiscBall.jsx); gewaehlt = Ring in der
+                  // Akzentfarbe, wie bei der Kugelauswahl im 14/1-Protokoll.
+                  <DiscPick key={d} disc={d} selected={discipline === d} onSelect={() => setDiscipline(d)} />
+                ))}
+              </div>
+              {breakApplies(discipline) && <BreakSwitch value={breakRule} onChange={setBreakRule} />}
             </div>
 
             {/* Name: Ort (optional, wird gemerkt) + Wuerfel fuer einen kreativen Zufallsnamen + Vorschlaege zum Antippen */}
-            <FieldLabel label={t("Name")} />
             <div className="name-row">
               <button type="button" className="icon-btn" onClick={() => setName(randomName({ place, exclude: name, taken: takenNames }))}
                 aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={18} /></button>
               <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} />
+              <InfoButton title={t("Name und Ort")}>{t("Wie bei „Live gehen“: ein Lokal auswählen oder einen Ort eintippen. Der Ort steht dann im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel links würfelt einen kreativen Namen.")}</InfoButton>
             </div>
             <div className="chips small">
               {suggestNames({ place, discipline, format, taken: takenNames }).map((s) => (
                 <button key={s} type="button" className={"chip" + (name === s ? " active" : "")} onClick={() => setName(s)}>{s}</button>
               ))}
             </div>
-            <FieldLabel label={t("Ort (optional)")} info={t("Wie bei „Live gehen“: ein Lokal auswählen oder einen Ort eintippen. Der Ort steht dann im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel links würfelt einen kreativen Namen.")} />
             <LocationPicker value={placeLocId} toast={toast} me={me} placeholder={t("Lokal oder Ort suchen oder eingeben")}
               onChange={(id) => { setPlaceLocId(id); if (id) { setPlaceText(""); } else { setPlaceText(""); } }}
               onUseText={(txt) => { setPlaceLocId(null); setPlaceText(txt); }} />
@@ -303,18 +313,14 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
               </div>
             )}
 
-
-            <FieldLabel label={t("Zeitpunkt")} info={t("Wann das Turnier stattfindet. Die Turnierleitung kann ihn später ändern.")} />
             <PlannedPicker date={planned.date} time={planned.time} onChange={setPlanned} onClear={() => setPlanned({ date: "", time: "" })} />
 
             {/* Spielt die Turnierleitung mit? Sofort in der Anmeldeliste bzw. Warteschlange; bei einem Winner-Stays-Doppel braucht ein Team zwei Personen */}
-            <FieldLabel label={t("Turnierleitung spielt mit")} info={t("Trägt dich nach dem Anlegen selbst in die Anmeldeliste ein. Das lässt sich später in den allgemeinen Angaben ändern.")} />
-            <div className="chips small">
-              <button type="button" className={"chip" + (organizerPlays ? " active" : "")} onClick={() => setOrganizerPlays(true)}>{t("Ja")}</button>
-              <button type="button" className={"chip" + (!organizerPlays ? " active" : "")} onClick={() => setOrganizerPlays(false)}>{t("Nein")}</button>
-            </div>
-
-            <button type="button" className="btn primary" onClick={nextStep}>{t("Weiter")} <ChevronRight size={16} /></button>
+            <FieldLabel label={t("Turnierleitung spielt mit")} info={t("Trägt dich nach dem Anlegen selbst in die Anmeldeliste ein. Das lässt sich später in den allgemeinen Angaben ändern.")}
+              actions={<span className="chips small">
+                <button type="button" className={"chip" + (organizerPlays ? " active" : "")} onClick={() => setOrganizerPlays(true)}>{t("Ja")}</button>
+                <button type="button" className={"chip" + (!organizerPlays ? " active" : "")} onClick={() => setOrganizerPlays(false)}>{t("Nein")}</button>
+              </span>} />
               </>
             )}
             {step === 2 && (
@@ -324,8 +330,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 sagt einem Neuling nichts, ein Baum mit zweitem Pfad darunter
                 schon - der ausgeschriebene Text dazu steckt im Info-Knopf
                 daneben, statt dauerhaft Platz zu kosten. */}
-            <FieldLabel label={t("Format")} info={t("K.O.: eine Niederlage und du bist raus. Doppel-K.O.: erst die zweite Niederlage scheidet aus, bis dahin laeuft eine Verliererrunde mit. Jeder gegen jeden: alle spielen gegen alle, eine Tabelle entscheidet. Winner Stays: ein Tisch, mehrere Leute - der Sieger bleibt, der Verlierer geht ans Ende der Schlange; funktioniert mit 3 oder beliebig vielen Personen, auch im Doppel.")} />
-            <div className="fmt-grid">
+<div className="fmt-grid">
               {[["ko", t("K.O.")], ["double_ko", t("Doppel-K.O.")], ["round_robin", t("Jeder gegen jeden")], ["winner_stays", t("Winner Stays")]].map(([key, label]) => {
                 const Glyph = FORMAT_GLYPH[key];
                 return (
@@ -340,50 +345,43 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
 
             {format === "round_robin" && (
               <>
-                <FieldLabel label={t("Spielrunden")} info={t("Einfach: jede Paarung spielt einmal. Hin & Rueck: jede Paarung spielt zweimal, einmal pro Seite - fairer, dauert aber doppelt so lang.")} />
-                <div className="chips small">
+                <InlineField label={t("Spielrunden")} info={t("Einfach: jede Paarung spielt einmal. Hin & Rueck: jede Paarung spielt zweimal, einmal pro Seite - fairer, dauert aber doppelt so lang.")}>
                   <button className={"chip" + (!doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(false)}>{t("Einfach")}</button>
                   <button className={"chip" + (doubleRoundRobin ? " active" : "")} onClick={() => setDoubleRoundRobin(true)}>{t("Hin & Rück")}</button>
-                </div>
+                </InlineField>
               </>
             )}
 
             {format !== "ko" && format !== "winner_stays" && (
               <>
-                <FieldLabel label={format === "double_ko" ? t("Finalrunde") : t("Abschluss")} info={t("Wie viele der Bestplatzierten spielen den Sieger danach noch im K.O. aus. \"Nur Tabelle\" beendet das Turnier direkt mit dem Tabellenstand.")} />
-                <div className="chips small">
+                <InlineField label={format === "double_ko" ? t("Finalrunde") : t("Abschluss")} info={t("Wie viele der Bestplatzierten spielen den Sieger danach noch im K.O. aus. \"Nur Tabelle\" beendet das Turnier direkt mit dem Tabellenstand.")}>
                   {format === "round_robin" && (
                     <button className={"chip" + (playoffSize == null ? " active" : "")} onClick={() => setPlayoffSize(null)}>{t("Nur Tabelle")}</button>
                   )}
                   <button className={"chip" + (playoffSize === 2 ? " active" : "")} onClick={() => setPlayoffSize(2)}>{t("Finale (Top 2)")}</button>
                   <button className={"chip" + (playoffSize === 4 ? " active" : "")} onClick={() => setPlayoffSize(4)}>{t("Halbfinale (Top 4)")}</button>
                   <button className={"chip" + (playoffSize === 8 ? " active" : "")} onClick={() => setPlayoffSize(8)}>{t("Viertelfinale (Top 8)")}</button>
-                </div>
+                </InlineField>
               </>
             )}
 
             {format === "winner_stays" && (
               <>
                 {/* Dieselben Kacheln wie in "Neues Match" (ModeTiles). */}
-                <FieldLabel label={t("Modus")} />
                 <ModeTiles value={wsDoubles ? "double" : "single"} onChange={(m) => setWsDoubles(m === "double")} />
               </>
             )}
 
             {format === "winner_stays" ? (
-              <>
-                <FieldLabel label={t("Tisch (optional)")} info={t("Teilnehmer fuegst du danach direkt in der Runde hinzu.")} />
-                <div className="turnier-score-inputs">
-                  <input type="number" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
-                </div>
-              </>
+              <InlineField label={t("Tisch (optional)")} info={t("Teilnehmer fuegst du danach direkt in der Runde hinzu.")}>
+                <input type="number" className="tf-narrow" inputMode="numeric" min="1" placeholder={t("z. B. 3")} value={wsTable} onChange={(e) => setWsTable(e.target.value)} />
+              </InlineField>
             ) : (
               <>
-                <FieldLabel label={t("Tische")} info={t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")} />
-                <div className="chips small">
+                <InlineField label={t("Tische")} info={t("Nach dem Anlegen ist das Turnier offen zur Anmeldung - Spieler melden sich selbst an, du startest, sobald alle da sind.")}>
                   <button className={"chip" + (tableMode === "range" ? " active" : "")} onClick={() => setTableMode("range")}>{t("Von–Bis")}</button>
                   <button className={"chip" + (tableMode === "list" ? " active" : "")} onClick={() => setTableMode("list")}>{t("Liste")}</button>
-                </div>
+                </InlineField>
                 {tableMode === "range" ? (
                   <div className="turnier-score-inputs">
                     <input type="number" inputMode="numeric" min="1" placeholder={t("von")} value={tableFrom} onChange={(e) => setTableFrom(e.target.value)} />
@@ -395,11 +393,6 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 )}
               </>
             )}
-
-            <button className="btn primary" disabled={busy} onClick={create}>
-              {busy ? t("Lege an …") : <><Trophy size={16} /> {t("Turnier anlegen")}</>}
-            </button>
-            <button type="button" className="btn ghost" onClick={() => setStep(1)}><ChevronLeft size={16} /> {t("Zurück")}</button>
               </>
             )}
           </div>

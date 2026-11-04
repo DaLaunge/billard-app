@@ -347,13 +347,25 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // globalen App.jsx-Spielerliste ankommen muss.
   const addGuest = async (name) => {
     setBusy(true);
-    const { error } = await supabase.rpc("winner_stays_add_guest", { p_session_id: sessionId, p_nickname: name });
+    // Einen schon vorhandenen Gast gleichen Namens nimmt die Funktion wieder (2026-11-04b); NULL = nichts passiert (Name gehoert einem Mitglied, keine Berechtigung)
+    const { data, error } = await supabase.rpc("winner_stays_add_guest", { p_session_id: sessionId, p_nickname: name });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return false; }
+    if (!data) { toast(t("Gast konnte nicht hinzugefügt werden. Der Name gehört vielleicht einem Mitglied.")); return false; }
     toast(t("Gast hinzugefügt."));
     await load();
     onReload && onReload();
     return true;
+  };
+
+  // Doppel: ein Gast wird nur angelegt bzw. wiedergefunden (add_guest_player) und kommt als Teampartner in die Auswahl
+  const addGuestForTeam = async (name) => {
+    setBusy(true);
+    const { data, error } = await supabase.rpc("add_guest_player", { p_nickname: name });
+    setBusy(false);
+    if (error) { toast(t("Fehler: ") + error.message); return null; }
+    onReload && onReload();
+    return data || null;
   };
 
   // ids = die zwei gewaehlten Personen aus QuickAddPlayers (team); true bei Erfolg, damit die Auswahl geleert wird.
@@ -532,7 +544,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <ToolPanel open={showAdd}>
           <QuickAddPlayers players={players} matches={matches} me={me} exclude={existingPlayerIds}
             colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf} busy={busy}
-            team={session.is_doubles} onAdd={session.is_doubles ? addTeam : addSingles} onAddGuest={session.is_doubles ? undefined : addGuest} />
+            team={session.is_doubles} onAdd={session.is_doubles ? addTeam : addSingles} onAddGuest={session.is_doubles ? addGuestForTeam : addGuest} />
         </ToolPanel>
       )}
 

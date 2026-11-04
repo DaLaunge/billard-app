@@ -372,11 +372,12 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   const addGuest = async (nick) => {
     if (!nick) return false;
     setBusyId("addGuest");
-    const { error } = await supabase.rpc("tournament_organizer_add_guest", {
+    const { data, error } = await supabase.rpc("tournament_organizer_add_guest", {
       p_tournament_id: tournamentId, p_nickname: nick,
     });
     setBusyId(null);
     if (error) { toast(t("Fehler: ") + error.message); return false; }
+    if (!data) { toast(t("Gast konnte nicht hinzugefügt werden. Der Name gehört vielleicht einem Mitglied.")); return false; }
     toast(t("Gast hinzugefügt."));
     await load();
     if (onReload) await onReload();
