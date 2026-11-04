@@ -12,21 +12,20 @@ const ROWS = [[1], [11, 3], [7, 8, 13], [9, 2, 12, 5], [4, 14, 6, 10, 15]];
 const R = 8.6;
 const AX = 190, AY = 50, DX = 14.9, DY = 17.2; // Spitze des Dreiecks und Abstaende
 const CUE_X = 100; // Weisse: Startpunkt
-const X0 = R + 1, X1 = 359 - R, Y0 = R + 1, Y1 = 99 - R; // Mittelpunkte bleiben im Bild (unsichtbare Grenze, wird nur selten beruehrt)
 const SIM_S = 1.5, FPS = 30; // simulierte Dauer nach dem Stoss, Bilder pro Sekunde
-const HIT_MS = 840; // so lange dauert es, bis die Weisse das Dreieck trifft
+const HIT_MS = 760; // so lange dauert es, bis die Weisse das Dreieck trifft
 
 /* Kleine Physik (einmal beim Laden): Scheiben gleicher Masse, elastische Stoesse zwischen allen Kugeln, Rollreibung, kurz nach dem Stoss bekommt jede
-   Kugel des Dreiecks einen Schub nach aussen. So laufen Kugeln nie durcheinander durch und enden nie uebereinander. */
+   Kugel des Dreiecks einen kraeftigen Schub nach aussen (die schnellen verlassen den Knopf, der ihn abschneidet). So laufen Kugeln nie durcheinander durch und enden nie uebereinander. */
 function simulate(rack) {
   const hit = [AX - 2 * R, AY];
   const B = rack.map((o, i) => {
     const a = ((i * 137 + 29) % 100) / 100, j = ((i * 59 + 11) % 100) / 100;
-    const ang = Math.atan2(o.y - AY, o.x - (AX - 14)) + (j - 0.5) * 0.5, sp = 105 + a * 115;
+    const ang = Math.atan2(o.y - AY, o.x - (AX - 14)) + (j - 0.5) * 0.5, sp = 80 + a * 190;
     return { x: o.x, y: o.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, roll: 0 };
   });
-  B.push({ x: hit[0], y: hit[1], vx: -38, vy: 6, roll: 0 }); // die Weisse rollt nach dem Stoss langsam zurueck
-  const dt = 1 / 240, fr = 150, frames = [];
+  B.push({ x: hit[0], y: hit[1], vx: -55, vy: 8, roll: 0 }); // die Weisse rollt nach dem Stoss langsam zurueck
+  const dt = 1 / 240, fr = 140, frames = [];
   const snap = () => frames.push(B.map((b) => [b.x, b.y, b.roll]));
   snap();
   const steps = Math.round(SIM_S / dt), every = Math.round(1 / (FPS * dt));
@@ -35,8 +34,6 @@ function simulate(rack) {
       const v = Math.hypot(b.vx, b.vy);
       if (v > 0) { const nv = Math.max(0, v - fr * dt); b.vx *= nv / v; b.vy *= nv / v; }
       b.x += b.vx * dt; b.y += b.vy * dt; b.roll += (b.vx * dt) / R;
-      if (b.x < X0) { b.x = X0; b.vx = Math.abs(b.vx) * 0.6; } else if (b.x > X1) { b.x = X1; b.vx = -Math.abs(b.vx) * 0.6; }
-      if (b.y < Y0) { b.y = Y0; b.vy = Math.abs(b.vy) * 0.6; } else if (b.y > Y1) { b.y = Y1; b.vy = -Math.abs(b.vy) * 0.6; }
     });
     for (let it = 0; it < 3; it++) for (let p = 0; p < B.length; p++) for (let q = p + 1; q < B.length; q++) {
       const dx = B[q].x - B[p].x, dy = B[q].y - B[p].y, d = Math.hypot(dx, dy);
@@ -60,7 +57,7 @@ const RACK = (() => {
   // Weisse: erst in Ruhe (Queue holt aus), dann zum Stosspunkt, danach der simulierte Verlauf
   const cueFrames = [], T = HIT_MS + SIM_S * 1000, hitX = AX - 2 * R - CUE_X;
   cueFrames.push({ transform: "translate(0px, 0px)", offset: 0 });
-  cueFrames.push({ transform: "translate(0px, 0px)", offset: 680 / T });
+  cueFrames.push({ transform: "translate(0px, 0px)", offset: 700 / T });
   cueFrames.push({ transform: `translate(${hitX}px, 0px)`, offset: HIT_MS / T });
   fr.forEach((f, s) => { if (s > 0) cueFrames.push({ transform: `translate(${(f[15][0] - CUE_X).toFixed(2)}px, ${(f[15][1] - AY).toFixed(2)}px)`, offset: (HIT_MS + (s / N) * SIM_S * 1000) / T }); });
   out.cue = { frames: cueFrames, total: T };
@@ -81,6 +78,32 @@ function Ball({ b, refFn }) {
   );
 }
 
+/* Queue: ein sehr lang gezogenes Dreieck (dick am Griff, spitz an der Kappe) mit heller Spitze, Zwinge, Gelenk und einer zufaelligen Verzierung am Griff. */
+const TIP = CUE_X - 12; // Spitze des Queues
+const half = (x) => Math.min(11, (2.2 + (TIP - x) * 0.13) / 2);
+const quad = (x1, x2) => `M${x1} ${50 - half(x1)}L${x2} ${50 - half(x2)}L${x2} ${50 + half(x2)}L${x1} ${50 + half(x1)}Z`;
+const PALETTES = [["#d8392b", "#f2c230"], ["#2f9fd0", "#f6f2e8"], ["#1f8a4c", "#f2c230"], ["#a24bd0", "#f6f2e8"], ["#ee7d1d", "#1b1b1b"], ["#e04d8a", "#f6f2e8"]];
+const makeDeco = (prev) => { let n; do { n = { kind: Math.floor(Math.random() * 5), pal: Math.floor(Math.random() * PALETTES.length) }; } while (prev && n.kind === prev.kind && n.pal === prev.pal); return n; };
+function stick({ kind, pal }) {
+  const [c1, c2] = PALETTES[pal];
+  const butt = [];
+  if (kind === 0) { [[26, 20], [14, 11], [2, -1]].forEach(([x1, x2], i) => butt.push(<path key={i} d={quad(x1, x2)} fill={i % 2 ? c2 : c1} />)); } // Ringe
+  if (kind === 1) { [24, 8, -8].forEach((x, i) => butt.push(<path key={i} d={`M${x} ${50 - half(x) * 0.8}L${x + half(x) * 0.9} 50L${x} ${50 + half(x) * 0.8}L${x - half(x) * 0.9} 50Z`} fill={i % 2 ? c2 : c1} />)); } // Rauten
+  if (kind === 2) { for (let i = 0; i < 5; i++) { const x = 28 - i * 8; butt.push(<path key={i} d={`M${x} ${50 - half(x)}L${x - 7} ${50 - half(x - 7)}L${x - 3} ${50 + half(x - 3)}L${x + 4} ${50 + half(x + 4)}Z`} fill={i % 2 ? c2 : c1} />); } } // Wickel schraeg
+  if (kind === 3) { [26, 15, 4, -7].forEach((x, i) => butt.push(<circle key={i} cx={x} cy="50" r={half(x) * 0.5} fill={i % 2 ? c2 : c1} />)); } // Punkte
+  if (kind === 4) { butt.push(<path key="a" d={quad(28, -14)} fill={c1} />); butt.push(<path key="b" d={`M26 50L2 ${50 - half(2) * 0.7}L-12 50L2 ${50 + half(2) * 0.7}Z`} fill={c2} />); } // Band mit Raute
+  return (
+    <>
+      <path d={`M40 ${50 - half(40)}L${TIP} ${50 - half(TIP)}L${TIP} ${50 + half(TIP)}L40 ${50 + half(40)}Z`} fill="#e8c78a" />
+      <path d={`M40 ${50 - half(40)}L-70 39L-1500 39L-1500 61L-70 61L40 ${50 + half(40)}Z`} fill="#3b2a1d" />
+      <path d={quad(41, 38)} fill="#c9a24a" />
+      {butt}
+      <path d={quad(TIP - 6, TIP - 1)} fill="#f6f2e8" />
+      <rect x={TIP - 0.2} y={50 - half(TIP)} width="2.2" height={half(TIP) * 2} rx="0.8" fill="#6fb1d6" />
+    </>
+  );
+}
+
 export const BREAK_MS = 2500;
 
 export default function BreakButton({ onOpen }) {
@@ -89,6 +112,7 @@ export default function BreakButton({ onOpen }) {
   const els = useRef([]);
   const anims = useRef([]);
   const cueEl = useRef(null);
+  const [deco, setDeco] = useState(() => makeDeco());
   useEffect(() => () => { clearTimeout(timer.current); anims.current.forEach((a) => a.cancel()); }, []);
   const go = () => {
     if (breaking) return;
@@ -98,7 +122,7 @@ export default function BreakButton({ onOpen }) {
     if (cueEl.current?.animate) anims.current.push(cueEl.current.animate(RACK.cue.frames, { duration: RACK.cue.total, easing: "linear", fill: "both" }));
     timer.current = setTimeout(() => {
       anims.current.forEach((a) => a.cancel()); anims.current = [];
-      setBreaking(false); onOpen();
+      setBreaking(false); setDeco((d) => makeDeco(d)); onOpen();
     }, BREAK_MS);
   };
   return (
@@ -109,10 +133,7 @@ export default function BreakButton({ onOpen }) {
           <circle cx={CUE_X} cy="50" r={R} fill="#f6f2e8" />
           <circle cx={CUE_X - 3} cy="46.7" r="1.9" fill="#fff" opacity=".8" />
         </g>
-        <g className="bb-stick">
-          <path d={`M-1500 47 L${CUE_X - 12} 49.2 L${CUE_X - 12} 50.8 L-1500 53 Z`} className="bb-stick-body" />
-          <rect x={CUE_X - 13} y="49" width="4.6" height="2" rx="1" className="bb-stick-tip" />
-        </g>
+        <g className="bb-stick">{stick(deco)}</g>
       </svg>
       <span className="break-label">{t("Neues Turnier")}</span>
     </button>
