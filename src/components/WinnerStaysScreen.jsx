@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import { ChevronLeft, QrCode, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, FileText, Loader2, ScrollText } from "lucide-react";
+import { ChevronLeft, QrCode, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, FileText, Loader2, ScrollText, Pencil } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDateTime } from "../lib/format";
@@ -16,6 +16,7 @@ import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
 import PlaceLink from "./widgets/PlaceLink";
+import { PlannedPill, OrganizerPlays, TurnierInfoEditor } from "./widgets/TurnierInfoBits";
 import { TurnierQrPanel } from "./widgets/TurnierQr";
 import { RefereeIcon, StatusIcon, FormatInfoIcon } from "./widgets/TurnierInfoIcons";
 import { ModeGlyph } from "./widgets/ModePick";
@@ -190,6 +191,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   }, [session, lastGameNo]);
   const [showAdd, setShowAdd] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   // Nutzer-Feedback: nach dem Anlegen einer Runde ist der leere Zwischen-
   // Screen ("Hinzufügen" erst extra antippen) unnoetig - beim allerersten
   // Laden ohne Teilnehmer gleich direkt die Auswahl aufklappen. Nur EINMAL
@@ -425,6 +427,18 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   );
 
   const myEntry = entries.find((e) => e.player1_id === me.id || e.player2_id === me.id);
+  // Spielt die Leitung mit? (steht sie selbst in der Warteschlange) - Teil der allgemeinen Angaben, gleich wie bei den Turnieren
+  const organizerEntry = entries.find((e) => e.player1_id === session.organizer_id || e.player2_id === session.organizer_id);
+  const organizerPlays = !!organizerEntry;
+  const toggleOrganizerPlays = async (on) => {
+    setBusy(true);
+    const { error } = on
+      ? await supabase.rpc("winner_stays_join_self", { p_session_id: sessionId })
+      : await supabase.rpc("winner_stays_remove_entry", { p_session_id: sessionId, p_entry_id: organizerEntry?.id });
+    setBusy(false);
+    if (error) { toast(t("Fehler: ") + error.message); return; }
+    await load();
+  };
   const rankOf = (e) => ranked.findIndex((x) => x.id === e.id) + 1;
 
   // Siege / Niederlagen / Serie / Platz in EINER Zeile, ueberall gleich (Am
@@ -473,6 +487,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <TurnierToolbar>
           <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />
           {session.status === "running" && !session.is_doubles && <ToolBtn icon={QrCode} label={t("Einladungslink / QR-Code")} active={showQr} onClick={() => setShowQr((s) => !s)} />}
+          {isOrganizer && session.status === "running" && <ToolBtn icon={Pencil} label={t("Allgemeine Angaben bearbeiten")} active={showInfo} onClick={() => setShowInfo((s) => !s)} />}
           {isOrganizer && session.status === "running" && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAdd} onClick={() => setShowAdd((s) => !s)} />}
           {isOrganizer && session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
           {session.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => document.getElementById("ws-protocol")?.scrollIntoView({ behavior: "smooth", block: "start" })} />}
@@ -484,6 +499,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <FormatInfoIcon format="winner_stays" /> · <span className="info-ico" title={t(session.is_doubles ? "Doppel" : "Einzel")} role="img" aria-label={t(session.is_doubles ? "Doppel" : "Einzel")}><ModeGlyph mode={session.is_doubles ? "double" : "single"} size={22} /></span> · <DiscBall disc={session.discipline} size={15} />
         {session.table_number != null && ` · ${t("Tisch")} ${session.table_number}`}
         {" · "}<StatusIcon status={session.status === "finished" ? "finished" : "running"} />
+        <PlannedPill iso={session.planned_at} />
         {breakApplies(session.discipline) && (
           <> · <BreakPill rule={session.break_rule} onClick={isOrganizer && session.status !== "finished" ? toggleBreakRule : undefined} /></>
         )}
@@ -492,10 +508,21 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <RefereeIcon />
         <Ball nick={session.organizer?.nickname} color={colorOf(session.organizer?.nickname)} label={initials(session.organizer?.nickname)} badge={badgeOf(session.organizer?.nickname)} photo={photoOf(session.organizer?.nickname)} size={22} />
         <b>{session.organizer?.nickname || "?"}</b>
+        <OrganizerPlays plays={organizerPlays} />
         <PlaceLink locationId={session.location_id} text={session.location_text} />
       </div>
         </div>
       </header>
+
+      {isOrganizer && session.status === "running" && (
+        <ToolPanel open={showInfo}>
+          <TurnierInfoEditor kind="ws" tour={session} name={session.name} placeName={session.location_text || null}
+            canChangeDiscipline={(games || []).length === 0}
+            plays={organizerPlays} canTogglePlays={me.id === session.organizer_id && !session.is_doubles}
+            playsHint={t("Reiht dich selbst in die Warteschlange ein oder nimmt dich heraus (nicht, solange du am Tisch stehst).")}
+            onTogglePlays={toggleOrganizerPlays} onChanged={load} toast={toast} />
+        </ToolPanel>
+      )}
 
       {session.status === "running" && !session.is_doubles && (
         <ToolPanel open={showQr}><TurnierQrPanel tour={session} toast={toast} kind="ws" /></ToolPanel>

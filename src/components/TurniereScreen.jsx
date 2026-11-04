@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
 import LocationPicker from "./widgets/LocationPicker";
 import PlaceLink from "./widgets/PlaceLink";
+import { PlannedPicker } from "./widgets/TurnierInfoBits";
+import { defaultPlanned, plannedToIso, fmtPlanned } from "../lib/turnierTime";
 import TurnierQrButton from "./widgets/TurnierQr";
 import { useLocations } from "../lib/locationStore";
 import { suggestNames, randomName } from "../lib/turnierNames";
@@ -67,6 +69,11 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     if (showForm && !name && tournaments != null && wsSessions != null) setName(randomName({ place, taken: takenNames }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showForm, tournaments, wsSessions]);
+  // Anlegen in zwei Schritten (Nutzer-Wunsch 2026-11-04): 1 = Allgemein (fuer ALLE Modi gleich: Disziplin, Anstoss, Name, Ort, Zeitpunkt,
+  // spielt die Leitung mit?), 2 = Modus (Format und was dazugehoert). Der Zeitpunkt ist vorbelegt (heute/morgen 18:00).
+  const [step, setStep] = useState(1);
+  const [planned, setPlanned] = useState(() => defaultPlanned());
+  const [organizerPlays, setOrganizerPlays] = useState(false);
   const [format, setFormat] = useState("ko"); // "ko" | "double_ko" | "round_robin" | "winner_stays"
   const [discipline, setDiscipline] = useState(DEFAULT_DISCIPLINES[0]);
   const [tableMode, setTableMode] = useState("range");
@@ -93,7 +100,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     // Screen laedt sonst keine Spielerliste, ein Join spart eine zusaetzliche
     // Anfrage/Prop-Kette.
     const { data, error } = await supabase.from("tournaments")
-      .select("id, name, format, discipline, status, created_at, location_id, location_text, organizer:players!tournaments_organizer_id_fkey(nickname)")
+      .select("id, name, format, discipline, status, created_at, planned_at, location_id, location_text, organizer:players!tournaments_organizer_id_fkey(nickname)")
       .order("created_at", { ascending: false })
       // Spalten Ort fehlen vor der Migration 2026-10-30: dann ohne sie laden
       .then((r) => (r.error ? supabase.from("tournaments").select("id, name, format, discipline, status, created_at, organizer:players!tournaments_organizer_id_fkey(nickname)").order("created_at", { ascending: false }) : r));
@@ -101,7 +108,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
   };
   const loadWs = async () => {
     const { data, error } = await supabase.from("winner_stays_sessions")
-      .select("id, name, discipline, is_doubles, table_number, status, created_at, location_id, location_text, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
+      .select("id, name, discipline, is_doubles, table_number, status, created_at, planned_at, location_id, location_text, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
       .order("created_at", { ascending: false })
       .then((r) => (r.error ? supabase.from("winner_stays_sessions").select("id, name, discipline, is_doubles, table_number, status, created_at, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)").order("created_at", { ascending: false }) : r));
     if (!error) setWsSessions(data || []);
@@ -143,6 +150,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
 
   const resetForm = () => {
     setShowForm(false);
+    setStep(1); setPlanned(defaultPlanned()); setOrganizerPlays(false);
     setName(""); setTableFrom(""); setTableTo(""); setTableList(""); setWsTable(""); setWsDoubles(false); setBreakRule(DEFAULT_BREAK_RULE);
   };
 
@@ -161,6 +169,27 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     const { error } = await supabase.rpc("set_tournament_location", { p_kind: kind, p_id: id, p_location_id: placeLocId, p_text: placeText.trim() || null });
     if (error) console.warn("Ort konnte nicht gespeichert werden:", error.message);
   };
+  // Zeitpunkt am neuen Turnier speichern und, falls gewuenscht, die Leitung selbst eintragen (Turnier: Anmeldeliste, Winner Stays: Warteschlange).
+  // Scheitert einer der Schritte, ist das Turnier trotzdem angelegt (beides laesst sich danach in der Kopfzeile aendern).
+  const saveGeneral = async (kind, id) => {
+    const iso = plannedToIso(planned.date, planned.time);
+    if (iso) {
+      const { error } = await supabase.rpc("set_tournament_info", { p_kind: kind, p_id: id, p_discipline: null, p_planned_at: iso, p_clear_time: false });
+      if (error) console.warn("Zeitpunkt konnte nicht gespeichert werden:", error.message);
+    }
+    if (organizerPlays && kind === "winner_stays" && wsDoubles) {
+      toast(t("Bei einem Doppel meldest du dein Team danach in der Runde an."));
+    } else if (organizerPlays) {
+      const { error } = kind === "winner_stays"
+        ? await supabase.rpc("winner_stays_join_self", { p_session_id: id })
+        : await supabase.rpc("tournament_register", { p_tournament_id: id });
+      if (error) toast(t("Fehler: ") + error.message);
+    }
+  };
+  const nextStep = () => {
+    if (!name.trim()) { toast(t("Turniername fehlt.")); setStep(1); return; }
+    setStep(2);
+  };
   const create = async () => {
     if (!name.trim()) { toast(t("Turniername fehlt.")); return; }
 
@@ -176,6 +205,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       if (error) { toast(t("Fehler: ") + error.message); return; }
       await applyBreakRule("winner_stays", data.id);
       await saveLocation("winner_stays", data.id);
+      await saveGeneral("winner_stays", data.id);
       toast(t("Winner-Stays-Runde erstellt."));
       resetForm();
       await loadWs();
@@ -195,6 +225,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await applyBreakRule("tournament", data.id);
     await saveLocation("tournament", data.id);
+    await saveGeneral("tournament", data.id);
     toast(t("Turnier erstellt – Anmeldung ist jetzt offen."));
     resetForm();
     await load();
@@ -226,6 +257,13 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
         <div className={"collapsible" + (showForm ? " open" : "")} inert={showForm ? undefined : ""}>
           <div className="collapsible-inner">
           <div className="turnier-form" style={{ marginBottom: 16 }}>
+            <div className="form-steps" role="tablist" aria-label={t("Schritte")}>
+              <button type="button" className={"form-step" + (step === 1 ? " on" : "")} onClick={() => setStep(1)}><b>1</b> {t("Allgemein")}</button>
+              <span className="form-step-sep" aria-hidden="true" />
+              <button type="button" className={"form-step" + (step === 2 ? " on" : "")} onClick={() => nextStep()}><b>2</b> {t("Modus")}</button>
+            </div>
+            {step === 1 && (
+              <>
             {/* Ganz oben: die Disziplin ist die eine Angabe, die IMMER gewaehlt
                 werden muss (Nutzer-Feedback 2026-09-30) - vorher stand sie
                 nach Name und Format, unterhalb der Falz. Sie hat einen
@@ -265,6 +303,22 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
               </div>
             )}
 
+
+            <FieldLabel label={t("Zeitpunkt")} info={t("Wann das Turnier stattfindet. Die Turnierleitung kann ihn später ändern.")} />
+            <PlannedPicker date={planned.date} time={planned.time} onChange={setPlanned} onClear={() => setPlanned({ date: "", time: "" })} />
+
+            {/* Spielt die Turnierleitung mit? Sofort in der Anmeldeliste bzw. Warteschlange; bei einem Winner-Stays-Doppel braucht ein Team zwei Personen */}
+            <FieldLabel label={t("Turnierleitung spielt mit")} info={t("Trägt dich nach dem Anlegen selbst in die Anmeldeliste ein. Das lässt sich später in den allgemeinen Angaben ändern.")} />
+            <div className="chips small">
+              <button type="button" className={"chip" + (organizerPlays ? " active" : "")} onClick={() => setOrganizerPlays(true)}>{t("Ja")}</button>
+              <button type="button" className={"chip" + (!organizerPlays ? " active" : "")} onClick={() => setOrganizerPlays(false)}>{t("Nein")}</button>
+            </div>
+
+            <button type="button" className="btn primary" onClick={nextStep}>{t("Weiter")} <ChevronRight size={16} /></button>
+              </>
+            )}
+            {step === 2 && (
+              <>
             {/* Format als Kacheln mit Struktur-Zeichnung statt als Textchips
                 (Nutzer-Feedback: Erklaerungen lieber visuell). "Doppel-K.O."
                 sagt einem Neuling nichts, ein Baum mit zweitem Pfad darunter
@@ -345,6 +399,9 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
             <button className="btn primary" disabled={busy} onClick={create}>
               {busy ? t("Lege an …") : <><Trophy size={16} /> {t("Turnier anlegen")}</>}
             </button>
+            <button type="button" className="btn ghost" onClick={() => setStep(1)}><ChevronLeft size={16} /> {t("Zurück")}</button>
+              </>
+            )}
           </div>
           </div>
         </div>
@@ -393,7 +450,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                   <span className="turnier-list-row-meta">
                     {formatLabel(it)} · <DiscBall disc={it.discipline} size={15} />
                     {it._kind === "winnerstays" && it.table_number != null && ` · ${t("Tisch")} ${it.table_number}`}
-                    {" · "}{fmtDate(it.created_at)}
+                    {" · "}{it.planned_at ? fmtPlanned(it.planned_at) : fmtDate(it.created_at)}
                   </span>
                   <span className="turnier-list-row-meta turnier-list-row-ref"><RefereeIcon size={16} /> {it.organizer?.nickname || "?"}</span>
                   <PlaceLink locationId={it.location_id} text={it.location_text} className="place-link turnier-list-row-meta" />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DiscBall from "./widgets/DiscBall";
 import { BreakPill, breakApplies, normalizeBreakRule } from "./widgets/BreakRule";
-import { ChevronLeft, QrCode, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, Lock, FileText, Play, Undo2 } from "lucide-react";
+import { ChevronLeft, QrCode, Trophy, Flag, Trash2, List, GitBranch, Users, UserPlus, UserCheck, Check, X, Timer, ScrollText, Download, Maximize2, Minimize2, Lock, FileText, Play, Undo2, Pencil } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDuration, fmtListDateTime } from "../lib/format";
@@ -18,6 +18,7 @@ import { rpcRetry } from "../lib/rpcRetry";
 import Emoji from "./Emoji";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import PlaceLink from "./widgets/PlaceLink";
+import { PlannedPill, OrganizerPlays, TurnierInfoEditor } from "./widgets/TurnierInfoBits";
 import { TurnierQrPanel } from "./widgets/TurnierQr";
 import { RefereeIcon, StatusIcon, FormatInfoIcon, ResultsLockIcon } from "./widgets/TurnierInfoIcons";
 import ImprintFooter from "./widgets/ImprintFooter";
@@ -80,6 +81,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // tournament_organizer_add_players()/_remove_player()).
   const [showAddPlayers, setShowAddPlayers] = useState(true);
   const [showQr, setShowQr] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);   // Bearbeiten-Panel der allgemeinen Angaben (Leitung)
   const playersRef = useRef(players);
   const onReloadRef = useRef(onReload);
   const reloadedFor = useRef("");
@@ -468,6 +470,18 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // Rechten (isOrganizer) zu erahnen. tour.organizer_id ist ueber select("*")
   // in load() bereits geladen, hier nur eine Namens-/Avatar-Anzeige.
   const organizerName = nameOf(tour.organizer_id);
+  const organizerPlays = (roster || []).some((r) => r.player_id === tour.organizer_id);
+  const canChangeDiscipline = !tms.some((tm) => tm.match_id);
+  const placeName = tour.location_text || null;
+  // Panel mit den allgemeinen Angaben (Name/Ort fest; Disziplin, Anstoss, Zeitpunkt, "Leitung spielt mit" aenderbar)
+  const infoPanel = isOrganizer && (
+    <ToolPanel open={showInfo}>
+      <TurnierInfoEditor kind="tournament" tour={tour} name={tour.name} placeName={placeName} canChangeDiscipline={canChangeDiscipline}
+        plays={organizerPlays} canTogglePlays={me.id === tour.organizer_id && tour.status === "setup"}
+        playsHint={t("Trägt dich selbst in die Anmeldeliste ein oder nimmt dich wieder heraus.")}
+        onTogglePlays={(on) => (on ? register() : unregister())} onChanged={load} toast={toast} />
+    </ToolPanel>
+  );
 
   if (tour.status === "setup") {
     const isRegistered = (roster || []).some((r) => r.player_id === me.id);
@@ -481,6 +495,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <TurnierToolbar>
             {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
             <ToolBtn icon={QrCode} label={t("Einladungslink / QR-Code")} active={showQr} onClick={() => setShowQr((s) => !s)} />
+            {isOrganizer && <ToolBtn icon={Pencil} label={t("Allgemeine Angaben bearbeiten")} active={showInfo} onClick={() => setShowInfo((s) => !s)} />}
             {isOrganizer && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAddPlayers} onClick={() => setShowAddPlayers((s) => !s)} />}
             {isOrganizer && <ToolBtn icon={Play} label={t("Turnier starten")} disabled={busyId === "start" || missingPlayers > 0} onClick={startTournament} />}
             {isOrganizer && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busyId === "delete"} onClick={deleteTournament} />}
@@ -488,6 +503,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <div className="head-info">
         <p className="hint">
           <FormatInfoIcon format={tour.format} /> · <DiscBall disc={tour.discipline} size={15} /> · <StatusIcon status="setup" />
+          <PlannedPill iso={tour.planned_at} />
           {breakApplies(tour.discipline) && (
             <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer ? toggleBreakRule : undefined} /></>
           )}
@@ -496,12 +512,14 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           <RefereeIcon />
           <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
           <b>{organizerName || "?"}</b>
+          <OrganizerPlays plays={organizerPlays} />
           <PlaceLink locationId={tour.location_id} text={tour.location_text} />
         </div>
           </div>
         </header>
 
         <ToolPanel open={showQr}><TurnierQrPanel tour={tour} toast={toast} /></ToolPanel>
+        {infoPanel}
 
         {isOrganizer && (
           <ToolPanel open={showAddPlayers}>
@@ -613,6 +631,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         <h2>{tour.name}</h2>
         <TurnierToolbar>
           {onSetKeepAwake && <KeepAwakeButton on={keepAwake} onChange={onSetKeepAwake} toast={toast} />}
+          {isOrganizer && tour.status !== "finished" && <ToolBtn icon={Pencil} label={t("Allgemeine Angaben bearbeiten")} active={showInfo} onClick={() => setShowInfo((s) => !s)} />}
           {isOrganizer && tour.status === "running" && canDeleteTournament && <ToolBtn icon={Undo2} label={t("Start rückgängig machen")} disabled={busyId === "cancelStart"} onClick={cancelStart} />}
           {isOrganizer && (tour.status === "running" || canConfirmResults) && <EndTournamentButton disabled={busyId === "end"} onClick={endTournament} />}
           {tour.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => setShowReport(true)} />}
@@ -622,6 +641,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
       <p className="hint">
         <FormatInfoIcon format={tour.format} /> · <DiscBall disc={tour.discipline} size={15} /> · <StatusIcon status={tour.status === "finished" ? "finished" : "running"} />
         {tour.status === "finished" && <> · <ResultsLockIcon locked={resultsLocked} /></>}
+        <PlannedPill iso={tour.planned_at} />
         {breakApplies(tour.discipline) && (
           <> · <BreakPill rule={tour.break_rule} onClick={isOrganizer && tour.status !== "finished" ? toggleBreakRule : undefined} /></>
         )}
@@ -630,10 +650,13 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         <RefereeIcon />
         <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
         <b>{organizerName || "?"}</b>
+        <OrganizerPlays plays={organizerPlays} />
         <PlaceLink locationId={tour.location_id} text={tour.location_text} />
       </div>
         </div>
       </header>
+
+      {tour.status !== "finished" && infoPanel}
 
       {finalStandingsGrouped && (
         <section className="stat-block">

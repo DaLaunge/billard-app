@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "430.1", icon: "🗂️",
+    items: ["Neues Turnier in zwei Schritten, für jeden Modus gleich: erst Allgemein (Disziplin, Anstoß, Name, Ort, Zeitpunkt, spielt die Leitung mit?), dann der Modus. Die Angaben stehen in jedem Turnier oben; die Leitung ändert Disziplin, Anstoß und Zeitpunkt, Name und Ort bleiben fest."],
+    en: ["New tournament in two steps, the same for every mode: first General (discipline, break rule, name, place, time, does the organizer play along?), then the mode. The details are shown at the top of every tournament; the organizer can change discipline, break rule and time, name and place stay fixed."] },
   { version: "430", icon: "📍",
     items: ["„Online gehen“ und „Planung erstellen“ öffnen als Popup mit großem Haken. Dein Standort wird automatisch übernommen, dazu gibt es Karte und Suche nach Lokal oder Adresse. Auch Planungen können einen eigenen Ort tragen.",
       "Live-Einträge zeigen „seit <Uhrzeit>“, Planungen ihre Uhrzeit (vorgegeben 18:00) – beide mit der Gruppengröße (Alleine, zu zweit, zu dritt …)."],
