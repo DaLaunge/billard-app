@@ -59,7 +59,7 @@ const TRANSLATIONS = {
     "Dieses Match endgültig löschen?": "Delete this match permanently?",
     "Rating und Erfolge werden neu berechnet. Das kann nicht rückgängig gemacht werden.": "Ratings and achievements will be recalculated. This cannot be undone.",
     "Match gelöscht.": "Match deleted.",
-    "Match mit Protokoll: Ergebnis und Disziplin sind gesperrt, nur das Datum ist änderbar.": "Match with a log: result and discipline are locked, only the date can be changed.",
+    "Match mit Protokoll: Das Ergebnis ist gesperrt, Disziplin und Datum sind änderbar.": "Match with a log: the result is locked, discipline and date can be changed.",
     "Als Admin ein bereits gespieltes Match eintragen – gilt sofort als bestätigt.": "As admin, enter an already-played match – counts as confirmed immediately.",
     "Spieler 1": "Player 1",
     "Spieler 2": "Player 2",

@@ -95,14 +95,14 @@ export default function AdminMatchEditor({ matches, toast, onReload }) {
           </div>
           {editId === m.id && (
             <div className="add-match" style={{ marginTop: 8 }}>
-              {hasLog(m) && <p className="hint" style={{ margin: 0 }}>{t("Match mit Protokoll: Ergebnis und Disziplin sind gesperrt, nur das Datum ist änderbar.")}</p>}
+              {hasLog(m) && <p className="hint" style={{ margin: 0 }}>{t("Match mit Protokoll: Das Ergebnis ist gesperrt, Disziplin und Datum sind änderbar.")}</p>}
               <div className="am-scores">
                 <input type="number" inputMode="numeric" min="0" value={ed.s1} disabled={hasLog(m)} onChange={(e) => setEd({ ...ed, s1: e.target.value })} />
                 <span>:</span>
                 <input type="number" inputMode="numeric" min="0" value={ed.s2} disabled={hasLog(m)} onChange={(e) => setEd({ ...ed, s2: e.target.value })} />
               </div>
               <div className="am-row">
-                <select value={ed.disc} disabled={hasLog(m)} onChange={(e) => setEd({ ...ed, disc: e.target.value })}>
+                <select value={ed.disc} onChange={(e) => setEd({ ...ed, disc: e.target.value })}>
                   {[...new Set([...activeDisciplines(), m.discipline])].map((d) => <option key={d} value={d}>{t(d)}</option>)}
                 </select>
                 <input type="date" value={ed.date} onChange={(e) => setEd({ ...ed, date: e.target.value })} />
