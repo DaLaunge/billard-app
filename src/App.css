@@ -4221,11 +4221,9 @@ span.ws-b-av { cursor: default; }
   .break-btn:not(.breaking) .bb-stick { animation: bb-idle 2.8s ease-in-out infinite; }
   .break-btn.breaking .bb-stick { animation: bb-stick 1.7s ease-in-out both; }
   .break-btn.breaking .bb-cue { animation: bb-cueball 1.7s ease-out both; }
-  .break-btn.breaking .bb-ball { animation: bb-ball 1.3s cubic-bezier(.1, .6, .25, 1) .84s both; }
   .break-btn.breaking .break-label { animation: bb-pop .5s ease-out .9s both; }
 }
 @keyframes bb-idle { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-9px); } }
-@keyframes bb-stick { 0% { transform: translateX(0); } 30% { transform: translateX(-42px); } 40% { transform: translateX(8px); } 70% { transform: translateX(8px); opacity: 1; } 100% { transform: translateX(8px); opacity: 0; } }
-@keyframes bb-cueball { 0%, 39% { transform: translateX(0); } 50% { transform: translateX(63px); } 100% { transform: translateX(50px); } }
-@keyframes bb-ball { from { transform: translate(0, 0) rotate(0); } to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); } }
+@keyframes bb-stick { 0% { transform: translateX(0); } 30% { transform: translateX(-46px); } 40% { transform: translateX(9px); } 70% { transform: translateX(9px); opacity: 1; } 100% { transform: translateX(9px); opacity: 0; } }
+@keyframes bb-cueball { 0%, 38% { transform: translateX(0); } 42% { transform: translateX(8px); } 50% { transform: translateX(72px); } 100% { transform: translateX(64px); } }
 @keyframes bb-pop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
