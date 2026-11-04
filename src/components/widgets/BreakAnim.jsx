@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { t } from "../../lib/i18n";
 
 /* "Neues Turnier"-Knopf wie der Ping-Knopf im Live-Tab (Nutzer 2026-11-04): in Ruhe bewegt sich nur der Queue leicht, ein Klick loest den Anstoss aus
-   (Queue holt aus, stoesst die weisse Kugel, diese sprengt das richtig aufgebaute 15er-Dreieck - bewusst uebertrieben, comichaft), danach oeffnet sich
+   (Queue holt aus, stoesst die weisse Kugel, diese sprengt das richtig aufgebaute 15er-Dreieck - realistisch: Queue stoesst, Kugeln rollen aus), danach oeffnet sich
    das Anlege-Fenster. Die Zeichnung waechst mit der Breite (viewBox), der Queue ist sehr lang und fuellt den Knopf. Ohne "Bewegung reduzieren" ist es
    ein ruhiges Bild und das Fenster oeffnet sofort. Reine SVG-Zeichnung, die Bewegung steckt in App.css. */
 const COL = { 1: "#f2c230", 2: "#2f5fd0", 3: "#d8392b", 4: "#6a3fa0", 5: "#ee7d1d", 6: "#1f8a4c", 7: "#8a2a2a", 8: "#1b1b1b" };
@@ -15,14 +15,24 @@ const RACK = (() => {
   ROWS.forEach((row, r) => row.forEach((n, k) => {
     const x = AX + r * DX, y = AY + (k - r / 2) * DY;
     const a = ((i * 137 + 29) % 100) / 100, b = ((i * 59 + 11) % 100) / 100;
-    out.push({
-      n, x, y, i,
-      dx: Math.round(Math.min(354 - R - x, 20 + a * 70 + r * 7)),
-      dy: Math.round(Math.max(6 + R - y, Math.min(94 - R - y, (b - 0.5) * 120))),
-      rot: Math.round((a - 0.5) * 900),
-    });
+    out.push({ n, x, y, i, ex: x + 6 + a * 30 + r * 6, ey: y + (b - 0.5) * 50 + (y - AY) * 0.8, rot: Math.round((a - 0.5) * 160) });
     i++;
   }));
+  // Endlagen: Kugeln liegen nie uebereinander (und nicht auf der weissen, die bei x = 220 stehen bleibt) und bleiben auf dem Tisch
+  for (let it = 0; it < 400; it++) {
+    const pts = [...out, { ex: 220, ey: 50, fixed: true }];
+    for (let p = 0; p < pts.length; p++) for (let q = p + 1; q < pts.length; q++) {
+      let dx = pts[q].ex - pts[p].ex, dy = pts[q].ey - pts[p].ey, d = Math.hypot(dx, dy);
+      if (d < 0.5) { dx = Math.cos(p * 2.4 + q); dy = Math.sin(p * 2.4 + q); d = 1; }
+      const gap = 2 * R + 0.4 - d;
+      if (gap <= 0) continue;
+      const ux = dx / d, uy = dy / d, mp = pts[p].fixed ? 0 : 1, mq = pts[q].fixed ? 0 : 1, m = mp + mq;
+      pts[p].ex -= ux * gap * mp / m; pts[p].ey -= uy * gap * mp / m;
+      pts[q].ex += ux * gap * mq / m; pts[q].ey += uy * gap * mq / m;
+    }
+    out.forEach((o) => { o.ex = Math.min(354 - R, Math.max(238, o.ex)); o.ey = Math.min(94 - R, Math.max(6 + R, o.ey)); });
+  }
+  out.forEach((o) => { o.dx = Math.round(o.ex - o.x); o.dy = Math.round(o.ey - o.y); });
   return out;
 })();
 
@@ -39,7 +49,7 @@ function Ball({ b }) {
   );
 }
 
-export const BREAK_MS = 1800;
+export const BREAK_MS = 2000;
 
 export default function BreakButton({ onOpen }) {
   const [breaking, setBreaking] = useState(false);
@@ -55,10 +65,6 @@ export default function BreakButton({ onOpen }) {
     <button type="button" className={"break-btn" + (breaking ? " breaking" : "")} onClick={go} aria-label={t("Neues Turnier")}>
       <svg viewBox="0 0 360 100" className="break-svg" aria-hidden="true" focusable="false">
         {RACK.map((b) => <Ball key={b.i} b={b} />)}
-        <g className="bb-burst">
-          <polygon points="0,-24 6,-9 21,-13 11,-1 24,8 8,9 6,24 -3,10 -18,17 -10,3 -24,-6 -8,-7" transform={`translate(${AX - 6} ${AY})`} />
-        </g>
-        <text x="300" y="19" textAnchor="middle" className="bb-crack">{t("KRACH!")}</text>
         <g className="bb-cue">
           <circle cx="170" cy="50" r={R} fill="#f6f2e8" />
           <circle cx="167" cy="46.7" r="1.9" fill="#fff" opacity=".8" />

@@ -1532,7 +1532,6 @@ const TRANSLATIONS = {
     // Turniermodus
     "Turniere": "Tournaments",
     "Neues Turnier": "New tournament",
-    "KRACH!": "CRACK!",
     "Turniername": "Tournament name",
     "K.O.": "Knockout",
     "Doppel-K.O.": "Double elimination",
