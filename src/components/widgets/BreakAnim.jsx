@@ -11,69 +11,60 @@ const COL = { 1: "#f2c230", 2: "#2f5fd0", 3: "#d8392b", 4: "#6a3fa0", 5: "#ee7d1
 const ROWS = [[1], [11, 3], [7, 8, 13], [9, 2, 12, 5], [4, 14, 6, 10, 15]];
 const R = 8.6;
 const AX = 190, AY = 50, DX = 14.9, DY = 17.2; // Spitze des Dreiecks und Abstaende
-const CUE_X = 100, CUE_END = 164; // Weisse: Start und Endlage (nach dem Stoss rollt sie ein Stueck zurueck)
-const X0 = 8 + R, X1 = 352 - R, Y0 = 8 + R, Y1 = 92 - R; // Mittelpunkte der Kugeln bleiben innerhalb der Banden
+const CUE_X = 100; // Weisse: Startpunkt
+const X0 = R + 1, X1 = 359 - R, Y0 = R + 1, Y1 = 99 - R; // Mittelpunkte bleiben im Bild (unsichtbare Grenze, wird nur selten beruehrt)
+const SIM_S = 1.5, FPS = 30; // simulierte Dauer nach dem Stoss, Bilder pro Sekunde
+const HIT_MS = 840; // so lange dauert es, bis die Weisse das Dreieck trifft
 
-// Bahn einer Kugel: Start, Richtung, Laenge; an den Banden wird gespiegelt (mit Verlust)
-function route(x, y, ang, len) {
-  const pts = [[x, y]]; let dx = Math.cos(ang), dy = Math.sin(ang), left = len;
-  for (let n = 0; n < 4 && left > 0.5; n++) {
-    const [cx, cy] = pts[pts.length - 1];
-    const tx = dx > 0 ? (X1 - cx) / dx : dx < 0 ? (X0 - cx) / dx : Infinity;
-    const ty = dy > 0 ? (Y1 - cy) / dy : dy < 0 ? (Y0 - cy) / dy : Infinity;
-    const s = Math.min(tx, ty, left);
-    pts.push([cx + dx * s, cy + dy * s]);
-    left = (left - s) * 0.78;
-    if (s === tx) dx = -dx;
-    if (s === ty) dy = -dy;
+/* Kleine Physik (einmal beim Laden): Scheiben gleicher Masse, elastische Stoesse zwischen allen Kugeln, Rollreibung, kurz nach dem Stoss bekommt jede
+   Kugel des Dreiecks einen Schub nach aussen. So laufen Kugeln nie durcheinander durch und enden nie uebereinander. */
+function simulate(rack) {
+  const hit = [AX - 2 * R, AY];
+  const B = rack.map((o, i) => {
+    const a = ((i * 137 + 29) % 100) / 100, j = ((i * 59 + 11) % 100) / 100;
+    const ang = Math.atan2(o.y - AY, o.x - (AX - 14)) + (j - 0.5) * 0.5, sp = 105 + a * 115;
+    return { x: o.x, y: o.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, roll: 0 };
+  });
+  B.push({ x: hit[0], y: hit[1], vx: -38, vy: 6, roll: 0 }); // die Weisse rollt nach dem Stoss langsam zurueck
+  const dt = 1 / 240, fr = 150, frames = [];
+  const snap = () => frames.push(B.map((b) => [b.x, b.y, b.roll]));
+  snap();
+  const steps = Math.round(SIM_S / dt), every = Math.round(1 / (FPS * dt));
+  for (let st = 1; st <= steps; st++) {
+    B.forEach((b) => {
+      const v = Math.hypot(b.vx, b.vy);
+      if (v > 0) { const nv = Math.max(0, v - fr * dt); b.vx *= nv / v; b.vy *= nv / v; }
+      b.x += b.vx * dt; b.y += b.vy * dt; b.roll += (b.vx * dt) / R;
+      if (b.x < X0) { b.x = X0; b.vx = Math.abs(b.vx) * 0.6; } else if (b.x > X1) { b.x = X1; b.vx = -Math.abs(b.vx) * 0.6; }
+      if (b.y < Y0) { b.y = Y0; b.vy = Math.abs(b.vy) * 0.6; } else if (b.y > Y1) { b.y = Y1; b.vy = -Math.abs(b.vy) * 0.6; }
+    });
+    for (let it = 0; it < 3; it++) for (let p = 0; p < B.length; p++) for (let q = p + 1; q < B.length; q++) {
+      const dx = B[q].x - B[p].x, dy = B[q].y - B[p].y, d = Math.hypot(dx, dy);
+      if (d >= 2 * R || d < 1e-6) continue;
+      const nx = dx / d, ny = dy / d, over = (2 * R - d) / 2;
+      B[p].x -= nx * over; B[p].y -= ny * over; B[q].x += nx * over; B[q].y += ny * over;
+      const rv = (B[q].vx - B[p].vx) * nx + (B[q].vy - B[p].vy) * ny;
+      if (rv < 0) { const j = -(1 + 0.93) * rv / 2; B[p].vx -= j * nx; B[p].vy -= j * ny; B[q].vx += j * nx; B[q].vy += j * ny; }
+    }
+    if (st % every === 0) snap();
   }
-  return pts;
+  return frames;
 }
-const at = (pts, d) => { // Punkt in Entfernung d entlang der Bahn
-  for (let i = 1; i < pts.length; i++) {
-    const seg = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    if (d <= seg || i === pts.length - 1) { const f = seg ? Math.min(1, d / seg) : 1; return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f]; }
-    d -= seg;
-  }
-  return pts[pts.length - 1];
-};
 
 const RACK = (() => {
   const out = []; let i = 0;
-  ROWS.forEach((row, r) => row.forEach((n, k) => {
-    const x = AX + r * DX, y = AY + (k - r / 2) * DY;
-    const a = ((i * 137 + 29) % 100) / 100, b = ((i * 59 + 11) % 100) / 100;
-    // Richtung: vom Stosspunkt nach aussen, mit Streuung; Laenge: weit (Powerbreak)
-    const ang = Math.atan2(y - AY, x - (AX - 12)) + (b - 0.5) * 0.9;
-    const len = 110 + a * 230 + r * 14;
-    out.push({ n, x, y, i, route: route(x, y, ang, len), rot: Math.round((a - 0.5) * 420) });
-    i++;
-  }));
-  // Endlagen: nie uebereinander (und nicht auf der Weissen) - das Bahnende wird dafuer leicht verschoben
-  const ends = out.map((o) => [...o.route[o.route.length - 1]]);
-  for (let it = 0; it < 400; it++) {
-    const pts = [...ends.map((e) => ({ e })), { e: [CUE_END, 50], fixed: true }];
-    for (let p = 0; p < pts.length; p++) for (let q = p + 1; q < pts.length; q++) {
-      let dx = pts[q].e[0] - pts[p].e[0], dy = pts[q].e[1] - pts[p].e[1], d = Math.hypot(dx, dy);
-      if (d < 0.5) { dx = Math.cos(p * 2.4 + q); dy = Math.sin(p * 2.4 + q); d = 1; }
-      const gap = 2 * R + 0.4 - d;
-      if (gap <= 0) continue;
-      const ux = dx / d, uy = dy / d, mp = pts[p].fixed ? 0 : 1, mq = pts[q].fixed ? 0 : 1, m = mp + mq;
-      pts[p].e[0] -= ux * gap * mp / m; pts[p].e[1] -= uy * gap * mp / m;
-      pts[q].e[0] += ux * gap * mq / m; pts[q].e[1] += uy * gap * mq / m;
-    }
-    ends.forEach((e) => { e[0] = Math.min(X1, Math.max(CUE_END + 2 * R + 1, e[0])); e[1] = Math.min(Y1, Math.max(Y0, e[1])); });
-  }
-  out.forEach((o, j) => { o.route[o.route.length - 1] = ends[j]; });
-  // Keyframes (relativ zur Ausgangslage), Abbremsung baked: schnell am Anfang, ausrollend
-  const total = (rt) => rt.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - rt[i][0], p[1] - rt[i][1]), 0);
-  out.forEach((o) => {
-    const L = total(o.route), N = 30;
-    o.frames = Array.from({ length: N + 1 }, (_, s) => {
-      const f = s / N, p = at(o.route, L * (1 - Math.pow(1 - f, 2.6)));
-      return { transform: `translate(${(p[0] - o.x).toFixed(2)}px, ${(p[1] - o.y).toFixed(2)}px) rotate(${(o.rot * f).toFixed(1)}deg)`, offset: f };
-    });
-  });
+  ROWS.forEach((row, r) => row.forEach((n, k) => { out.push({ n, x: AX + r * DX, y: AY + (k - r / 2) * DY, i }); i++; }));
+  const fr = simulate(out), N = fr.length - 1;
+  const tf = (x0, y0, f, idx) => `translate(${(f[idx][0] - x0).toFixed(2)}px, ${(f[idx][1] - y0).toFixed(2)}px) rotate(${(f[idx][2] * 57.3 * 0.6).toFixed(1)}deg)`;
+  out.forEach((o) => { o.frames = fr.map((f, s) => ({ transform: tf(o.x, o.y, f, o.i), offset: s / N })); });
+  // Weisse: erst in Ruhe (Queue holt aus), dann zum Stosspunkt, danach der simulierte Verlauf
+  const cueFrames = [], T = HIT_MS + SIM_S * 1000, hitX = AX - 2 * R - CUE_X;
+  cueFrames.push({ transform: "translate(0px, 0px)", offset: 0 });
+  cueFrames.push({ transform: "translate(0px, 0px)", offset: 680 / T });
+  cueFrames.push({ transform: `translate(${hitX}px, 0px)`, offset: HIT_MS / T });
+  fr.forEach((f, s) => { if (s > 0) cueFrames.push({ transform: `translate(${(f[15][0] - CUE_X).toFixed(2)}px, ${(f[15][1] - AY).toFixed(2)}px)`, offset: (HIT_MS + (s / N) * SIM_S * 1000) / T }); });
+  out.cue = { frames: cueFrames, total: T };
+  out.fin = fr[N];
   return out;
 })();
 
@@ -90,20 +81,21 @@ function Ball({ b, refFn }) {
   );
 }
 
-export const BREAK_MS = 2300;
-const HIT_MS = 840; // so lange dauert es, bis die Weisse das Dreieck trifft
+export const BREAK_MS = 2500;
 
 export default function BreakButton({ onOpen }) {
   const [breaking, setBreaking] = useState(false);
   const timer = useRef(null);
   const els = useRef([]);
   const anims = useRef([]);
+  const cueEl = useRef(null);
   useEffect(() => () => { clearTimeout(timer.current); anims.current.forEach((a) => a.cancel()); }, []);
   const go = () => {
     if (breaking) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { onOpen(); return; }
     setBreaking(true);
-    anims.current = els.current.map((el, i) => el?.animate?.(RACK[i].frames, { duration: 1400, delay: HIT_MS, easing: "linear", fill: "both" })).filter(Boolean);
+    anims.current = els.current.map((el, i) => el?.animate?.(RACK[i].frames, { duration: SIM_S * 1000, delay: HIT_MS, easing: "linear", fill: "both" })).filter(Boolean);
+    if (cueEl.current?.animate) anims.current.push(cueEl.current.animate(RACK.cue.frames, { duration: RACK.cue.total, easing: "linear", fill: "both" }));
     timer.current = setTimeout(() => {
       anims.current.forEach((a) => a.cancel()); anims.current = [];
       setBreaking(false); onOpen();
@@ -113,7 +105,7 @@ export default function BreakButton({ onOpen }) {
     <button type="button" className={"break-btn" + (breaking ? " breaking" : "")} onClick={go} aria-label={t("Neues Turnier")}>
       <svg viewBox="0 0 360 100" className="break-svg" aria-hidden="true" focusable="false">
         {RACK.map((b) => <Ball key={b.i} b={b} refFn={(el) => { els.current[b.i] = el; }} />)}
-        <g className="bb-cue">
+        <g className="bb-cue" ref={cueEl}>
           <circle cx={CUE_X} cy="50" r={R} fill="#f6f2e8" />
           <circle cx={CUE_X - 3} cy="46.7" r="1.9" fill="#fff" opacity=".8" />
         </g>

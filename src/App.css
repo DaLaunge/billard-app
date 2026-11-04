@@ -4220,7 +4220,6 @@ span.ws-b-av { cursor: default; }
 @media (prefers-reduced-motion: no-preference) {
   .break-btn:not(.breaking) .bb-stick { animation: bb-idle 2.8s ease-in-out infinite; }
   .break-btn.breaking .bb-stick { animation: bb-stick 1.7s ease-in-out both; }
-  .break-btn.breaking .bb-cue { animation: bb-cueball 1.7s ease-out both; }
   .break-btn.breaking .break-label { animation: bb-pop .5s ease-out .9s both; }
 }
 @keyframes bb-idle { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-9px); } }
