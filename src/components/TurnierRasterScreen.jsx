@@ -18,7 +18,7 @@ import { rpcRetry } from "../lib/rpcRetry";
 import Emoji from "./Emoji";
 import KeepAwakeButton from "./widgets/KeepAwakeButton";
 import PlaceLink from "./widgets/PlaceLink";
-import { PlannedPill, OrganizerPlays, TurnierInfoEditor } from "./widgets/TurnierInfoBits";
+import { PlannedPill, OrganizerBadge, TurnierInfoEditor } from "./widgets/TurnierInfoBits";
 import { TurnierQrPanel } from "./widgets/TurnierQr";
 import { RefereeIcon, StatusIcon, FormatInfoIcon, ResultsLockIcon } from "./widgets/TurnierInfoIcons";
 import ImprintFooter from "./widgets/ImprintFooter";
@@ -510,10 +510,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
           )}
         </p>
         <div className="turnier-organizer-line">
-          <RefereeIcon />
-          <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
-          <b>{organizerName || "?"}</b>
-          <OrganizerPlays plays={organizerPlays} />
+          <OrganizerBadge ball={<Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={30} />} name={organizerName} plays={organizerPlays} />
           <PlaceLink locationId={tour.location_id} text={tour.location_text} />
         </div>
           </div>
@@ -648,10 +645,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
         )}
       </p>
       <div className="turnier-organizer-line">
-        <RefereeIcon />
-        <Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={22} />
-        <b>{organizerName || "?"}</b>
-        <OrganizerPlays plays={organizerPlays} />
+        <OrganizerBadge ball={<Ball nick={organizerName} color={colorOf(organizerName)} label={initials(organizerName)} badge={badgeOf(organizerName)} photo={photoOf(organizerName)} size={30} />} name={organizerName} plays={organizerPlays} />
         <PlaceLink locationId={tour.location_id} text={tour.location_text} />
       </div>
         </div>

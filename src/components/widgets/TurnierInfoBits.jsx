@@ -19,6 +19,17 @@ export function PlannedPill({ iso }) {
   return <span className="info-ico planned-pill" title={t("Zeitpunkt")}><Clock size={14} /> {txt}</span>;
 }
 
+// Turnierleitung gut sichtbar: Avatar, "Turnierleitung" + Name und daneben deutlich, ob sie mitspielt (Nutzer 2026-11-04: das ist wichtig).
+export function OrganizerBadge({ ball, name, plays }) {
+  return (
+    <span className="org-badge">
+      {ball}
+      <span className="org-badge-txt"><span className="org-badge-role">{t("Turnierleitung")}</span><b>{name || "?"}</b></span>
+      <OrganizerPlays plays={plays} />
+    </span>
+  );
+}
+
 // Spielt die Turnierleitung mit? Immer sichtbar (an oder aus), damit man es auf einen Blick sieht.
 export function OrganizerPlays({ plays }) {
   const label = plays ? t("Turnierleitung spielt mit") : t("Turnierleitung spielt nicht mit");

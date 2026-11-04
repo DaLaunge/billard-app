@@ -16,7 +16,7 @@ import { loadWsDraft, saveWsDraft } from "../lib/matchDraft";
 import { rpcRetry } from "../lib/rpcRetry";
 import DiscBall from "./widgets/DiscBall";
 import PlaceLink from "./widgets/PlaceLink";
-import { PlannedPill, OrganizerPlays, TurnierInfoEditor } from "./widgets/TurnierInfoBits";
+import { PlannedPill, OrganizerBadge, TurnierInfoEditor } from "./widgets/TurnierInfoBits";
 import { TurnierQrPanel } from "./widgets/TurnierQr";
 import { RefereeIcon, StatusIcon, FormatInfoIcon } from "./widgets/TurnierInfoIcons";
 import { ModeGlyph } from "./widgets/ModePick";
@@ -517,10 +517,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         )}
       </p>
       <div className="turnier-organizer-line">
-        <RefereeIcon />
-        <Ball nick={session.organizer?.nickname} color={colorOf(session.organizer?.nickname)} label={initials(session.organizer?.nickname)} badge={badgeOf(session.organizer?.nickname)} photo={photoOf(session.organizer?.nickname)} size={22} />
-        <b>{session.organizer?.nickname || "?"}</b>
-        <OrganizerPlays plays={organizerPlays} />
+        <OrganizerBadge ball={<Ball nick={session.organizer?.nickname} color={colorOf(session.organizer?.nickname)} label={initials(session.organizer?.nickname)} badge={badgeOf(session.organizer?.nickname)} photo={photoOf(session.organizer?.nickname)} size={30} />} name={session.organizer?.nickname} plays={organizerPlays} />
         <PlaceLink locationId={session.location_id} text={session.location_text} />
       </div>
         </div>

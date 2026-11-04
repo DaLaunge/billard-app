@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
+import BreakAnim from "./widgets/BreakAnim";
 import PlacePicker from "./widgets/PlacePicker";
 import Ball from "./Ball";
 import PlaceLink from "./widgets/PlaceLink";
@@ -93,6 +94,12 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
   const [tableTo, setTableTo] = useState("");
   const [tableList, setTableList] = useState("");
   const [busy, setBusy] = useState(false);
+  const [breaking, setBreaking] = useState(false); // Anstoss-Animation nach dem Anlegen
+  const playBreak = async () => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    setBreaking(true);
+    await new Promise((r) => setTimeout(r, 2000));
+  };
   // Playoff-Groesse: bei round_robin optional (null = wie bisher nur
   // Tabelle, kein Finale), bei double_ko immer gesetzt (2 = heutiges
   // Standardverhalten: Gewinner-/Verliererbaum laufen komplett durch).
@@ -219,7 +226,8 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       await saveLocation("winner_stays", data.id);
       await saveGeneral("winner_stays", data.id);
       toast(t("Winner-Stays-Runde erstellt."));
-      resetForm();
+      await playBreak();
+      resetForm(); setBreaking(false);
       await loadWs();
       onOpenWinnerStays(data.id);
       return;
@@ -239,7 +247,8 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     await saveLocation("tournament", data.id);
     await saveGeneral("tournament", data.id);
     toast(t("Turnier erstellt – Anmeldung ist jetzt offen."));
-    resetForm();
+    await playBreak();
+    resetForm(); setBreaking(false);
     await load();
     onOpenTournament(data.id);
   };
@@ -384,6 +393,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 )}
               </div>
 
+              {breaking && <BreakAnim />}
               <div className="tw-foot">
                 {step === 2
                   ? <button type="button" className="btn ghost tw-btn" onClick={() => setStep(1)}><ChevronLeft size={15} /> {t("Zurück")}</button>
