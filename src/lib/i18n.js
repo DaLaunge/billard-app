@@ -747,7 +747,6 @@ const TRANSLATIONS = {
     "14/1": "14/1",
     "Du bist in dieser Liste nicht vertreten.": "You're not on this list.",
     "Turnierleitung": "Tournament organizer",
-    "Turnier angelegt": "Tournament created",
     "Live": "Live",
     "Statistik": "Statistics",
     "Profil": "Profile",

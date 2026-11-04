@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Dices, MapPin, Plus, Search, Trophy, X } from "lucide-react";
-import BreakAnim, { MiniBreak } from "./widgets/BreakAnim";
+import BreakButton from "./widgets/BreakAnim";
 import PlacePicker from "./widgets/PlacePicker";
 import Ball from "./Ball";
 import PlaceLink from "./widgets/PlaceLink";
@@ -94,12 +94,6 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
   const [tableTo, setTableTo] = useState("");
   const [tableList, setTableList] = useState("");
   const [busy, setBusy] = useState(false);
-  const [breaking, setBreaking] = useState(false); // Anstoss-Animation nach dem Anlegen
-  const playBreak = async () => {
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-    setBreaking(true);
-    await new Promise((r) => setTimeout(r, 2000));
-  };
   // Playoff-Groesse: bei round_robin optional (null = wie bisher nur
   // Tabelle, kein Finale), bei double_ko immer gesetzt (2 = heutiges
   // Standardverhalten: Gewinner-/Verliererbaum laufen komplett durch).
@@ -226,8 +220,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       await saveLocation("winner_stays", data.id);
       await saveGeneral("winner_stays", data.id);
       toast(t("Winner-Stays-Runde erstellt."));
-      await playBreak();
-      resetForm(); setBreaking(false);
+      resetForm();
       await loadWs();
       onOpenWinnerStays(data.id);
       return;
@@ -247,8 +240,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     await saveLocation("tournament", data.id);
     await saveGeneral("tournament", data.id);
     toast(t("Turnier erstellt – Anmeldung ist jetzt offen."));
-    await playBreak();
-    resetForm(); setBreaking(false);
+    resetForm();
     await load();
     onOpenTournament(data.id);
   };
@@ -266,7 +258,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       <section className="stat-block">
         <div className="stat-block-head">
           <h3><Trophy size={17} /> {t("Turniere")}</h3>
-          <button className="btn ghost new-tourney-btn" onClick={() => { setStep(1); setShowForm(true); }}><MiniBreak /> {t("Neues Turnier")}</button>
+          <BreakButton onOpen={() => { setStep(1); setShowForm(true); }} />
         </div>
 
         {/* "Neues Turnier" ist ein eigenes Fenster (Wizard, Nutzer 2026-11-04): nichts aus der Liste lenkt ab, oben steht wo man ist
@@ -393,7 +385,6 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 )}
               </div>
 
-              {breaking && <BreakAnim />}
               <div className="tw-foot">
                 {step === 2
                   ? <button type="button" className="btn ghost tw-btn" onClick={() => setStep(1)}><ChevronLeft size={15} /> {t("Zurück")}</button>

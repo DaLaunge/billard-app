@@ -4209,32 +4209,22 @@ span.ws-b-av { cursor: default; }
 .org-badge .plays-chip { padding: 3px 9px; font-weight: 700; }
 .org-badge .plays-chip.on { background: var(--accent); color: var(--accent-ink); }
 
-/* --- Anstoss-Animation beim Anlegen (430.8) --- */
-.break-anim { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 18px; background: var(--felt-2); border-radius: inherit; }
-.break-svg { width: min(100%, 340px); height: auto; }
-.brk-rail { fill: #4a2d1c; }
-.brk-cloth { fill: #1f6b4a; }
-.brk-pocket { fill: #0b0b0b; }
-.break-msg { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: calc(17px * var(--fs, 1)); color: var(--accent); }
-@media (prefers-reduced-motion: no-preference) {
-  .brk-cue { animation: brk-cue 1.9s cubic-bezier(.3, 0, .5, 1) both; }
-  .brk-ball { animation: brk-ball 1.3s cubic-bezier(.12, .7, .3, 1) .62s both; }
-  .break-msg { animation: brk-msg .5s ease-out 1.2s both; }
-  .break-anim { animation: brk-fade .2s ease-out both; }
-}
-@keyframes brk-cue { 0% { transform: translateX(-150px); } 32% { transform: translateX(0); } 60% { transform: translateX(-26px); } 100% { transform: translateX(-70px); } }
-@keyframes brk-ball { from { transform: translate(0, 0); } to { transform: translate(var(--dx), var(--dy)); } }
-@keyframes brk-msg { from { opacity: 0; transform: translateY(6px) scale(.96); } to { opacity: 1; transform: none; } }
-@keyframes brk-fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* --- Mini-Anstoss im "Neues Turnier"-Knopf (430.9) --- */
-.new-tourney-btn { gap: 8px; }
-.mini-break { flex: none; overflow: visible; }
-.mini-break .mb-ball { fill: currentColor; opacity: .85; }
-.mini-break .mb-cue { fill: var(--accent); }
+/* --- "Neues Turnier"-Knopf mit Anstoss (430.10): ruhig in Ruhe, Anstoss erst beim Klick, wie der Ping-Knopf im Live-Tab --- */
+.break-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; padding: 10px 14px 12px; border-radius: 16px; border: 1.5px solid var(--accent-line); background: var(--accent-soft); color: var(--ivory); font: inherit; cursor: pointer; overflow: hidden; }
+.break-svg { width: min(100%, 230px); height: auto; overflow: visible; }
+.bb-stick-body { fill: #c99a5b; }
+.bb-stick-tip { fill: #6fa8c8; }
+.break-label { font-weight: 800; font-size: calc(16px * var(--fs, 1)); color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
-  .mini-break .mb-cue { animation: mb-cue 3.6s ease-in-out infinite; }
-  .mini-break .mb-ball { animation: mb-ball 3.6s ease-out infinite; }
+  .break-btn:not(.breaking) .bb-stick { animation: bb-idle 2.8s ease-in-out infinite; }
+  .break-btn.breaking .bb-stick { animation: bb-stick 1.6s ease-in-out both; }
+  .break-btn.breaking .bb-cue { animation: bb-cueball 1.6s ease-out both; }
+  .break-btn.breaking .bb-ball { animation: bb-ball .8s cubic-bezier(.12, .7, .3, 1) .83s both; }
+  .break-btn.breaking .break-label { animation: bb-pop .5s ease-out both; }
 }
-@keyframes mb-cue { 0% { transform: translateX(-9px); opacity: 0; } 8% { opacity: 1; } 22% { transform: translateX(0); } 40% { transform: translateX(-2px); } 70% { transform: translateX(-2px); opacity: 1; } 85%, 100% { transform: translateX(-9px); opacity: 0; } }
-@keyframes mb-ball { 0%, 21% { transform: none; } 36% { transform: translate(var(--mx), var(--my)); } 66% { transform: translate(var(--mx), var(--my)); } 82%, 100% { transform: none; } }
+@keyframes bb-idle { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-6px); } }
+@keyframes bb-stick { 0% { transform: translateX(0); } 28% { transform: translateX(-24px); } 40% { transform: translateX(11px); } 75% { transform: translateX(11px); opacity: 1; } 100% { transform: translateX(11px); opacity: 0; } }
+@keyframes bb-cueball { 0%, 38% { transform: translateX(0); } 52% { transform: translateX(29px); } 64% { transform: translateX(24px); } 100% { transform: translateX(24px); } }
+@keyframes bb-ball { from { transform: translate(0, 0); } to { transform: translate(var(--dx), var(--dy)); } }
+@keyframes bb-pop { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
