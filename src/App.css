@@ -4184,8 +4184,16 @@ span.ws-b-av { cursor: default; }
 .tw-lead-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .tw-lead-txt b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tw-lead .card-info-btn { margin: 0; }
-.tw-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 4px; }
-.tw-btn { padding: 6px 14px; font-size: calc(13.5px * var(--fs, 1)); }
+.tw-foot { display: flex; align-items: stretch; gap: 8px; padding-top: 4px; }
+.tw-foot > * { flex: 1 1 0; }
+.tw-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; min-height: 40px; margin: 0; padding: 6px 14px; font-size: calc(13.5px * var(--fs, 1)); }
+.tw-foot > span { display: none; }
+.tw-foot .btn.tw-btn { height: 42px; min-height: 42px; padding-block: 0; line-height: 1; align-self: flex-start; margin: 0; transform: none; }
+.tw-plays { flex: none; width: auto; max-width: 55%; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px; font-size: calc(13.5px * var(--fs, 1)); white-space: nowrap; }
+.tw-body .planned-picker { flex-wrap: nowrap; align-items: stretch; }
+.tw-body .planned-picker input[type="date"] { flex: 1.7 1 0; min-width: 0; }
+.tw-body .planned-picker input[type="time"] { flex: 1 1 0; min-width: 0; padding-inline: 8px; }
+.tw-body .planned-picker .icon-btn { flex: none; align-self: center; }
 .place-picker { display: flex; flex-direction: column; gap: 8px; }
 .place-picker .venue-here-row { align-items: center; }
 .place-picker .loc-sel { margin-bottom: 0; }

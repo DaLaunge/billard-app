@@ -257,7 +257,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
       <section className="stat-block">
         <div className="stat-block-head">
           <h3><Trophy size={17} /> {t("Turniere")}</h3>
-          <button className="btn ghost" onClick={() => setShowForm(true)}><Plus size={15} /> {t("Neues Turnier")}</button>
+          <button className="btn ghost" onClick={() => { setStep(1); setShowForm(true); }}><Plus size={15} /> {t("Neues Turnier")}</button>
         </div>
 
         {/* "Neues Turnier" ist ein eigenes Fenster (Wizard, Nutzer 2026-11-04): nichts aus der Liste lenkt ab, oben steht wo man ist
@@ -285,7 +285,6 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                       <input type="text" placeholder={t("Turniername")} value={name} onChange={(e) => setName(e.target.value)} aria-label={t("Turniername")} />
                       <button type="button" className="icon-btn" onClick={() => setName(randomName({ place, exclude: name, taken: takenNames }))}
                         aria-label={t("Zufallsname")} title={t("Zufallsname")}><Dices size={18} /></button>
-                      <InfoButton title={t("Name und Ort")}>{t("Der Ort steht im Namen, z. B. „Köö 7 Freitagsturnier KW12“. Der Würfel würfelt einen kreativen Namen.")}</InfoButton>
                     </div>
                     <div className="chips small">
                       {suggestNames({ place, discipline, format, taken: takenNames }).map((s) => (
@@ -316,12 +315,10 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                         <b>{me?.nickname}</b>
                         <span className="rank-meta">{t("Turnierleitung")}</span>
                       </div>
-                      <label className="settings-switch">
-                        <input type="checkbox" checked={organizerPlays} onChange={(e) => setOrganizerPlays(e.target.checked)} />
-                        <span className="settings-switch-track" aria-hidden="true"><span className="settings-switch-knob" /></span>
-                        <span className="settings-switch-label">{t("spielt mit")}</span>
-                      </label>
-                      <InfoButton title={t("Turnierleitung spielt mit")}>{t("Trägt dich nach dem Anlegen selbst in die Anmeldeliste ein. Das lässt sich später in den allgemeinen Angaben ändern.")}</InfoButton>
+                      <button type="button" className={"btn tw-plays" + (organizerPlays ? " primary" : " ghost")} aria-pressed={organizerPlays}
+                        onClick={() => setOrganizerPlays(!organizerPlays)}>
+                        {organizerPlays ? <Check size={14} /> : <X size={14} />} {organizerPlays ? t("Spielt mit") : t("Spielt nicht mit")}
+                      </button>
                     </div>
                   </>
                 )}
