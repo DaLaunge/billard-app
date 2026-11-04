@@ -16,6 +16,7 @@ import { useClubData, reloadClubs } from "../lib/clubStore";
 import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
 import ImprintFooter from "./widgets/ImprintFooter";
 import AdminLocations from "./widgets/AdminLocations";
+import AdminMatchEditor from "./widgets/AdminMatchEditor";
 import { useLocations } from "../lib/locationStore";
 
 
@@ -450,6 +451,12 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           </button>
         </div>
       </section></Chap>
+
+      {me?.role === "admin" && (
+        <Chap id="matches" c={adminChap}>
+          <AdminMatchEditor matches={matches} toast={toast} onReload={onReload} />
+        </Chap>
+      )}
 
       <Chap id="system" c={adminChap}><section className="stat-block">
         <div className="stat-block-head"><h3><RotateCcw size={17} /> {t("Statistik & Erfolge")}</h3></div>
