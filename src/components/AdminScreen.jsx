@@ -499,16 +499,9 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         )}
       </AdminFold></Chap>
 
-      <Chap id="mitglieder" c={adminChap}><section className="stat-block">
-        <div className="mem-head-row">
-          <h3><User size={17} /> {t("Mitglieder")} ({logins ? memberLogins.length : players.length - guestIds.size})</h3>
-          <span className="stat-block-head-actions">
-            {logins && memberLogins.length > 0 && (
-              <button className="csv-btn" onClick={downloadCsv}><Download size={14} /> CSV</button>
-            )}
-            <InfoButton title={t("Mitglieder")}>{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</InfoButton>
-          </span>
-        </div>
+      <Chap id="mitglieder" c={adminChap}><AdminFold id="members" defaultOpen icon={<User size={17} />} title={t("Mitglieder")} count={logins ? memberLogins.length : players.length - guestIds.size}
+        info={t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}
+        actions={logins && memberLogins.length > 0 ? <button className="csv-btn" onClick={downloadCsv}><Download size={14} /> CSV</button> : null}>
         {logins && memberLogins.length > 0 && (
           <div className="mem-tools">
             <div className="search-row">
@@ -662,7 +655,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           </p>
         )}
         {logins && memberLogins.length > 0 && visibleLogins.length === 0 && <p className="hint">{t("Keine Treffer.")}</p>}
-      </section></Chap>
+      </AdminFold></Chap>
 
       {clubData.loaded && (
         <Chap id="clubs" c={adminChap}><section className="stat-block">

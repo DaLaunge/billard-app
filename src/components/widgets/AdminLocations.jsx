@@ -136,7 +136,7 @@ export default function AdminLocations({ players, toast }) {
         <button type="button" className="btn ghost small" onClick={() => setEditId("new")}><Plus size={15} /> {t("Neuer Standort")}</button>
       )}
 
-      <AdminFold id="locmerge" icon={<Merge size={17} />} title={t("Lokale zusammenführen")} count={clusters.length}
+      <AdminFold id="locmerge" nested icon={<Merge size={17} />} title={t("Lokale zusammenführen")} count={clusters.length}
         info={t("Lokale, die sehr eng beieinander liegen, lassen sich zu einem zusammenfassen: Das gewählte bleibt, die anderen werden gelöscht, alles was auf sie zeigt (Planungen, Turniere, Herausforderungen, Winner-Stays-Runden) zeigt danach auf das behaltene.")}>
         <div className="admin-loc-merge">
         <div className="chips small" role="group" aria-label={t("Umkreis")}>
