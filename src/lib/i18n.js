@@ -1355,6 +1355,8 @@ const TRANSLATIONS = {
     "Hier gibt es schon ein Lokal: {name}. Meinst du das?": "There is already a venue here: {name}. Do you mean that one?",
     "Dieses nehmen": "Use this one",
     "Exakte Koordinaten eingeben": "Enter exact coordinates",
+    "Als neues Lokal speichern": "Save as new venue",
+    "Gewählter Punkt": "Selected point",
     "Exakte Koordinaten, z. B. 48.2082, 16.3738": "Exact coordinates, e.g. 48.2082, 16.3738",
     "Neue Lokale sind für andere erst nach Freigabe durch einen Admin sichtbar.": "New venues are only visible to others after an admin approves them.",
     "Anderes Lokal": "Other venue",

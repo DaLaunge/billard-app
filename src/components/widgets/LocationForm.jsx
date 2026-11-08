@@ -68,7 +68,7 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await loadLocations(true);
-    toast(initial ? t("Standort geändert.") : t("Standort gespeichert."));
+    toast(initial?.id ? t("Standort geändert.") : t("Standort gespeichert."));
     onSaved?.(data);
   };
 
@@ -145,7 +145,7 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
           <Check size={16} /> {t("Speichern")}
         </button>
       </div>
-      {!initial && <p className="hint">{t("Neue Lokale sind für andere erst nach Freigabe durch einen Admin sichtbar.")}</p>}
+      {!initial?.id && <p className="hint">{t("Neue Lokale sind für andere erst nach Freigabe durch einen Admin sichtbar.")}</p>}
     </div>
   );
 }
