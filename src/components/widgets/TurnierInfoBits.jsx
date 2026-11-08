@@ -7,6 +7,7 @@ import { fmtPlanned, isoToParts, plannedToIso } from "../../lib/turnierTime";
 import { DiscPick } from "./DiscBall";
 import { BreakSwitch, breakApplies, normalizeBreakRule } from "./BreakRule";
 import FieldLabel from "./FieldLabel";
+import PlacePicker from "./PlacePicker";
 
 /* Gemeinsame Bausteine der "Allgemein"-Angaben ALLER Turniermodi (Nutzer-Wunsch 2026-11-04): dieselben Felder beim Anlegen und in der
    Kopfzeile jedes Turniers - Name, Ort, Disziplin, Anstoss, Zeitpunkt, Leitung (spielt mit oder nicht). Name und Ort sind nach dem Anlegen
@@ -54,8 +55,8 @@ export function PlannedPicker({ date, time, onChange, onClear }) {
 }
 
 /* Inhalt des Bearbeiten-Panels (ToolPanel) in der Kopfzeile jedes Turniers. Aenderungen gelten sofort (wie bei den Filtern): Disziplin
-   (nur bis zum ersten Ergebnis), Anstoss-Regel, Zeitpunkt, und - nur fuer die Leitung selbst - ob sie mitspielt. */
-export function TurnierInfoEditor({ kind, tour, name, placeName, canChangeDiscipline, plays, canTogglePlays, playsHint, onTogglePlays, onChanged, toast }) {
+   (nur bis zum ersten Ergebnis), Anstoss-Regel, Zeitpunkt, Ort (jederzeit, auch ein neuer: Lokal, Standort, Karte) und - nur fuer die Leitung selbst - ob sie mitspielt. Nur der Name bleibt fest. */
+export function TurnierInfoEditor({ kind, tour, name, me, canChangeDiscipline, plays, canTogglePlays, playsHint, onTogglePlays, onChanged, toast }) {
   const k = kind === "ws" ? "winner_stays" : "tournament";
   const [parts, setParts] = useState(() => isoToParts(tour.planned_at));
   const [busy, setBusy] = useState(false);
@@ -77,14 +78,27 @@ export function TurnierInfoEditor({ kind, tour, name, placeName, canChangeDiscip
     const iso = plannedToIso(p.date, p.time);
     if (iso) run("set_tournament_info", { p_kind: k, p_id: tour.id, p_discipline: null, p_planned_at: iso, p_clear_time: false });
   };
+  // Ort: ein Lokal oder ein Text (Standort/Karte/Adresse) - leere Meldungen des Pickers (beim Suchen/Loeschen) aendern nichts, der alte Ort bleibt bis ein neuer gewaehlt ist
+  const [pl, setPl] = useState({ id: tour.location_id || null, text: tour.location_text || "" });
+  useEffect(() => { setPl({ id: tour.location_id || null, text: tour.location_text || "" }); }, [tour.location_id, tour.location_text]);
+  const savePlace = (id, txt) => {
+    setPl({ id: id || null, text: id ? "" : String(txt || "") }); // Anzeige folgt sofort (auch "anderen Ort waehlen"); gespeichert wird erst eine echte Wahl
+    if (!id && !String(txt || "").trim()) return;
+    if (id && id === tour.location_id) return;
+    if (!id && String(txt).trim().split(",")[0].trim() === (tour.location_text || "")) return;
+    run("set_tournament_location", { p_kind: k, p_id: tour.id, p_location_id: id || null, p_text: id ? null : String(txt).trim().split(",")[0].trim() });
+  };
   const clearTime = () => { setParts({ date: "", time: "" }); run("set_tournament_info", { p_kind: k, p_id: tour.id, p_discipline: null, p_planned_at: null, p_clear_time: true }); };
 
   return (
     <div className="tinfo-editor">
       <div className="tinfo-locked">
-        <Lock size={14} /> <b>{name}</b>{placeName && <span className="rank-meta"> · {placeName}</span>}
-        <span className="rank-meta tinfo-locked-note">{t("Name und Ort sind nach dem Anlegen fest.")}</span>
+        <Lock size={14} /> <b>{name}</b>
+        <span className="rank-meta tinfo-locked-note">{t("Der Name ist nach dem Anlegen fest.")}</span>
       </div>
+
+      <FieldLabel label={t("Ort")} />
+      <PlacePicker locId={pl.id} text={pl.text} onChange={savePlace} toast={toast} me={me} />
 
       <FieldLabel label={t("Disziplin")} info={canChangeDiscipline ? undefined : t("Die Disziplin lässt sich nach dem ersten gemeldeten Ergebnis nicht mehr ändern.")}
         actions={breakApplies(tour.discipline) ? <BreakSwitch value={normalizeBreakRule(tour.break_rule)} onChange={setBreak} /> : null} />

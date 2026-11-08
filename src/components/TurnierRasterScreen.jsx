@@ -477,7 +477,7 @@ export default function TurnierRasterScreen({ tournamentId, me, players, matches
   // Panel mit den allgemeinen Angaben (Name/Ort fest; Disziplin, Anstoss, Zeitpunkt, "Leitung spielt mit" aenderbar)
   const infoPanel = isOrganizer && (
     <ToolPanel open={showInfo}>
-      <TurnierInfoEditor kind="tournament" tour={tour} name={tour.name} placeName={placeName} canChangeDiscipline={canChangeDiscipline}
+      <TurnierInfoEditor kind="tournament" tour={tour} name={tour.name} me={me} canChangeDiscipline={canChangeDiscipline}
         plays={organizerPlays} canTogglePlays={me.id === tour.organizer_id && tour.status === "setup"}
         playsHint={t("Trägt dich selbst in die Anmeldeliste ein oder nimmt dich wieder heraus.")}
         onTogglePlays={(on) => (on ? register() : unregister())} onChanged={load} toast={toast} />

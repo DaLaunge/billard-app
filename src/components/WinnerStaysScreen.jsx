@@ -525,7 +525,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
       {isOrganizer && session.status === "running" && (
         <ToolPanel open={showInfo}>
-          <TurnierInfoEditor kind="ws" tour={session} name={session.name} placeName={session.location_text || null}
+          <TurnierInfoEditor kind="ws" tour={session} name={session.name} me={me}
             canChangeDiscipline={(games || []).length === 0}
             plays={organizerPlays} canTogglePlays={me.id === session.organizer_id && !session.is_doubles}
             playsHint={t("Reiht dich selbst in die Warteschlange ein oder nimmt dich heraus (nicht, solange du am Tisch stehst).")}
