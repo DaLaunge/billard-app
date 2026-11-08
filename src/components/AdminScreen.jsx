@@ -35,7 +35,6 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
     { id: "system", label: t("System") },
   ]);
   // Gaeste: Name, Matches, zuletzt gespielt, angelegt - plus Loeschen. Nur Anzeige und Aufraeumen; Gaeste zaehlen nicht fuers Rating.
-  const [showAllGuests, setShowAllGuests] = useState(false);
   const guestRows = (() => {
     const stat = {};
     (matches || []).forEach((m) => {
@@ -50,12 +49,28 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
       .map((p) => ({ p, n: stat[p.nickname]?.n || 0, last: stat[p.nickname]?.last || null }))
       .sort((a, b) => (new Date(b.last || b.p.created_at)) - (new Date(a.last || a.p.created_at)));
   })();
-  const deleteGuest = async ({ p, n }) => {
-    if (!(await appConfirm(t("Gast „{name}“ mit {n} Matches löschen? Die Matches des Gastes werden mit gelöscht.", { name: p.nickname, n })))) return;
-    const { error } = await supabase.rpc("admin_delete_player", { p_player: p.id, p_confirm_nickname: p.nickname });
-    if (error) { toast(t("Fehler: ") + error.message); return; }
+  // Gaeste loeschen: mehrere auswaehlen (einzeln, "Alle", "Ohne Matches") und gemeinsam mit EINER Rueckfrage loeschen
+  const [selGuests, setSelGuests] = useState(() => new Set());
+  const [busyGuests, setBusyGuests] = useState(false);
+  const toggleGuest = (id) => setSelGuests((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const allGuestsSel = guestRows.length > 0 && guestRows.every((g) => selGuests.has(g.p.id));
+  const selectAllGuests = () => setSelGuests(allGuestsSel ? new Set() : new Set(guestRows.map((g) => g.p.id)));
+  const selectEmptyGuests = () => setSelGuests(new Set(guestRows.filter((g) => g.n === 0).map((g) => g.p.id)));
+  const deleteSelectedGuests = async () => {
+    const sel = guestRows.filter((g) => selGuests.has(g.p.id));
+    if (sel.length === 0) return;
+    const matchesN = sel.reduce((a, g) => a + g.n, 0);
+    if (!(await appConfirm(t("{n} Gäste mit {m} Matches löschen? Die Matches der Gäste werden mit gelöscht.", { n: sel.length, m: matchesN })))) return;
+    setBusyGuests(true);
+    let ok = 0, fail = null;
+    for (const g of sel) {
+      const { error } = await supabase.rpc("admin_delete_player", { p_player: g.p.id, p_confirm_nickname: g.p.nickname });
+      if (error) fail = error.message; else ok++;
+    }
+    setBusyGuests(false);
+    setSelGuests(new Set());
     await onReload();
-    toast(t("Gast gelöscht."));
+    toast(fail ? t("{n} gelöscht, Fehler: {e}", { n: ok, e: fail }) : t("{n} Gäste gelöscht.", { n: ok }));
   };
   const deleteClub = async (c) => {
     if (!(await appConfirm(t("Den Club „{name}“ endgültig löschen? Alle Mitglieder verlieren den Tag.", { name: c.name })))) return;
@@ -689,18 +704,23 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
       <Chap id="mitglieder" c={adminChap}><AdminFold id="guests" icon={<User size={17} />} title={t("Gäste")} count={guestRows.length}
         info={t("Gäste sind Platzhalter ohne Login, werden im Match immer von Hand eingetippt und zählen nicht fürs Rating.")}>
         {guestRows.length === 0 && <p className="hint">{t("Noch keine Gäste.")}</p>}
+        {guestRows.length > 0 && (
+          <div className="admin-guest-tools">
+            <label className="admin-guest-all"><input type="checkbox" checked={allGuestsSel} onChange={selectAllGuests} /> {t("Alle")}</label>
+            <button type="button" className="chip" onClick={selectEmptyGuests}>{t("Ohne Matches")}</button>
+            <span className="rank-meta admin-guest-count">{selGuests.size} {t("ausgewählt")}</span>
+            <button type="button" className="btn danger small" disabled={selGuests.size === 0 || busyGuests} onClick={deleteSelectedGuests}><Trash2 size={14} /> {t("Löschen")}</button>
+          </div>
+        )}
         <div className="admin-guests">
-          {(showAllGuests ? guestRows : guestRows.slice(0, 12)).map((g) => (
-            <div key={g.p.id} className="admin-guest-row">
+          {guestRows.map((g) => (
+            <label key={g.p.id} className={"admin-guest-row" + (selGuests.has(g.p.id) ? " on" : "")}>
+              <input type="checkbox" checked={selGuests.has(g.p.id)} onChange={() => toggleGuest(g.p.id)} />
               <span className="admin-guest-name">{g.p.nickname}</span>
               <span className="admin-guest-meta">{g.n} {t("Matches")}{g.last ? ` · ${fmtDate(g.last)}` : ` · ${t("angelegt")} ${fmtDate(g.p.created_at)}`}</span>
-              <button className="icon-btn small warn" title={t("Gast löschen")} aria-label={t("Gast löschen")} onClick={() => deleteGuest(g)}><Trash2 size={15} /></button>
-            </div>
+            </label>
           ))}
         </div>
-        {guestRows.length > 12 && (
-          <button className="btn ghost small" onClick={() => setShowAllGuests((v) => !v)}>{showAllGuests ? t("Weniger anzeigen") : t("Alle {n} anzeigen", { n: guestRows.length })}</button>
-        )}
       </AdminFold></Chap>
 
       <Chap id="mitglieder" c={adminChap}><AdminFold id="newuser" icon={<User size={17} />} title={t("Neuen Nutzer anlegen")}

@@ -4274,3 +4274,12 @@ span.ws-b-av { cursor: default; }
 .admin-locs > .admin-fold.nested { margin: 4px 0 0; }
 .admin-fold.nested .stat-block-head { margin: 0 !important; padding-inline: 0 !important; background: none !important; border-radius: 0 !important; }
 .admin-fold.nested .stat-block-head { border: 0 !important; border-top: 1px solid var(--line) !important; box-shadow: none !important; }
+
+/* Gaeste: Mehrfachauswahl (433.4) */
+.admin-guest-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-guest-all { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; cursor: pointer; }
+.admin-guest-count { margin-left: auto; }
+.admin-guests { max-height: 340px; overflow-y: auto; margin: 4px 0 0; }
+.admin-guest-row { cursor: pointer; }
+.admin-guest-row.on { background: var(--accent-soft); border-radius: 8px; }
+.admin-guest-row input[type="checkbox"], .admin-guest-all input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
