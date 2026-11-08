@@ -4230,3 +4230,14 @@ span.ws-b-av { cursor: default; }
 /* Bestaetigungs-Popup: beide Knoepfe gleich gross (430.18) */
 .confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
 .confirm-btns .btn { width: 100%; min-width: 0; box-sizing: border-box; height: 44px; min-height: 44px; margin: 0; padding-block: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+
+/* --- Lokale: Pruefliste und Zusammenfuehren in der Verwaltung (431.3) --- */
+.admin-loc-row.flagged { background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 10px; padding-inline: 8px; }
+.admin-loc-note { display: inline-flex; align-items: flex-start; gap: 4px; color: var(--warn); font-size: calc(13px * var(--fs, 1)); font-weight: 600; }
+.admin-loc-flagcount { display: inline-flex; align-items: center; gap: 6px; color: var(--warn); font-weight: 700; margin: 0 0 6px; }
+.admin-loc-merge { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.admin-loc-merge h4 { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--accent); }
+.admin-loc-cluster { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: var(--surface-btn); }
+.admin-loc-pick { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; border: 1.5px solid transparent; cursor: pointer; }
+.admin-loc-pick.on { border-color: var(--accent-line); background: var(--accent-soft); }
+.admin-loc-pick .loc-sel-txt { flex: 1 1 auto; min-width: 0; }

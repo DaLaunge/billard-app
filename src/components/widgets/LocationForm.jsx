@@ -68,7 +68,13 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
     await loadLocations(true);
-    toast(initial?.id ? t("Standort geändert.") : t("Standort gespeichert."));
+    // Neue Lokale sind sofort frei; hat die Pruefung etwas Auffaelliges gefunden (zu nah an einem anderen, weit weg, aehnlicher Name ...),
+    // ist es den Admins gemeldet - das sagen wir dem Eintragenden gleich, damit er es ggf. korrigieren kann.
+    let note = null;
+    if (!initial?.id || name.trim().toLowerCase() !== String(initial.name || "").trim().toLowerCase() || pos.lat !== initial.lat || pos.lng !== initial.lng) {
+      try { const { data: row } = await supabase.from("locations").select("check_note").eq("id", data).maybeSingle(); note = row?.check_note || null; } catch { /* Spalte fehlt noch: keine Meldung */ }
+    }
+    toast(note ? t("Gespeichert – den Admins zur Kontrolle gemeldet: {note}", { note }) : initial?.id ? t("Standort geändert.") : t("Standort gespeichert."));
     onSaved?.(data);
   };
 
@@ -145,7 +151,7 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
           <Check size={16} /> {t("Speichern")}
         </button>
       </div>
-      {!initial?.id && <p className="hint">{t("Neue Lokale sind für andere erst nach Freigabe durch einen Admin sichtbar.")}</p>}
+      {!initial?.id && <p className="hint">{t("Neue Lokale sind sofort für alle da. Auffälliges (z. B. sehr nah an einem bekannten Lokal) melden wir den Admins.")}</p>}
     </div>
   );
 }
