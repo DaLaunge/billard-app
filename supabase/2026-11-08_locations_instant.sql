@@ -9,20 +9,44 @@
 --   er kann es mit "In Ordnung" abhaken (check_ok_at), korrigieren, loeschen oder mit einem Nachbarn zusammenfuehren.
 -- * merge_locations(keep, drop[]) (nur Admins): haengt Planungen, Herausforderungen, Turniere und Winner-Stays-Runden der doppelten Lokale
 --   an das behaltene um und loescht die doppelten.
+-- * Ausnahmen: Lokale, die wirklich eng beieinander liegen (z. B. zwei Filialen am Schwedenplatz und in der Dorotheergasse), markiert ein Admin als
+--   "bewusst getrennt" (location_distinct, Paare). Solche Paare tauchen weder in der Zusammenfuehren-Liste noch bei der Pruefung wieder auf.
+--   "In Ordnung" bei einer Meldung "liegt nur x m von ... entfernt" legt die Ausnahme fuer alle Lokale im Umkreis von 150 m gleich mit an.
 -- Die plpgsql-Funktionen sind mit $function$ begrenzt (wie 27d), damit der SQL-Editor des Dashboards sie nicht an Semikolons zerlegt.
 
 alter table public.locations add column if not exists check_note text;
 alter table public.locations add column if not exists check_ok_at timestamptz;
 
+create table if not exists public.location_distinct (
+  a uuid not null references public.locations(id) on delete cascade,
+  b uuid not null references public.locations(id) on delete cascade,
+  created_by uuid references public.players(id) on delete set null,
+  created_at timestamptz not null default now(),
+  primary key (a, b),
+  check (a < b)
+);
+alter table public.location_distinct enable row level security;
+drop policy if exists location_distinct_lesen on public.location_distinct;
+create policy location_distinct_lesen on public.location_distinct for select to authenticated using (true);
+grant select on public.location_distinct to authenticated;
+grant select, insert, update, delete on public.location_distinct to service_role;
+
+-- Abstand in Metern (Haversine)
+create or replace function public.loc_dist(p_lat1 double precision, p_lng1 double precision, p_lat2 double precision, p_lng2 double precision)
+returns double precision
+language sql immutable as $function$
+  select 2 * 6371000 * asin(least(1, sqrt(power(sin(radians(p_lat2 - p_lat1) / 2), 2)
+    + cos(radians(p_lat1)) * cos(radians(p_lat2)) * power(sin(radians(p_lng2 - p_lng1) / 2), 2))))
+$function$;
+
 create or replace function public.loc_check(p_name text, p_address text, p_lat double precision, p_lng double precision, p_self uuid)
 returns text
 language sql stable security definer set search_path = public as $function$
   with d as (
-    select o.name,
-           2 * 6371000 * asin(least(1, sqrt(power(sin(radians(o.lat - p_lat) / 2), 2)
-             + cos(radians(p_lat)) * cos(radians(o.lat)) * power(sin(radians(o.lng - p_lng) / 2), 2)))) as m
+    select o.name, loc_dist(p_lat, p_lng, o.lat, o.lng) as m
       from locations o
      where o.id is distinct from p_self
+       and not exists (select 1 from location_distinct x where x.a = least(o.id, p_self) and x.b = greatest(o.id, p_self))
   ), nearest as (
     select name, m from d order by m limit 1
   )
@@ -31,6 +55,7 @@ language sql stable security definer set search_path = public as $function$
     (select 'liegt ' || round(m / 1000)::int || ' km vom nächsten bekannten Lokal entfernt (Koordinaten vertippt oder vertauscht?)' from nearest where m > 150000),
     (select 'Name ähnlich wie „' || o.name || '“' from locations o
       where o.id is distinct from p_self and char_length(trim(coalesce(p_name, ''))) >= 4
+        and not exists (select 1 from location_distinct x where x.a = least(o.id, p_self) and x.b = greatest(o.id, p_self))
         and (lower(o.name) like '%' || lower(trim(p_name)) || '%' or lower(trim(p_name)) like '%' || lower(o.name) || '%') limit 1),
     case when coalesce(trim(p_address), '') = '' then 'keine Adresse angegeben' end,
     case when trim(coalesce(p_name, '')) !~ '[[:alpha:]]' or char_length(trim(coalesce(p_name, ''))) < 3 then 'Name wirkt unvollständig' end
@@ -101,12 +126,37 @@ begin
 end;
 $function$;
 
--- Admin: "In Ordnung" - die Meldung ist erledigt
+-- Admin: "In Ordnung" - die Meldung ist erledigt; liegen Lokale im Umkreis von 150 m, gelten sie als bewusst getrennt (kommen nicht wieder)
 create or replace function public.review_location(p_id uuid)
 returns void language plpgsql security definer set search_path = public as $function$
 begin
   if not is_admin() then raise exception 'Nur für Admins.'; end if;
   update locations set check_ok_at = now() where id = p_id;
+  insert into location_distinct (a, b, created_by)
+  select least(l.id, o.id), greatest(l.id, o.id), current_player_id()
+    from locations l join locations o on o.id <> l.id and loc_dist(l.lat, l.lng, o.lat, o.lng) < 150
+   where l.id = p_id
+  on conflict do nothing;
+end;
+$function$;
+
+-- Admin: Lokale (alle Paare untereinander) als bewusst getrennt markieren bzw. wieder aufheben
+create or replace function public.mark_locations_distinct(p_ids uuid[])
+returns void language plpgsql security definer set search_path = public as $function$
+begin
+  if not is_admin() then raise exception 'Nur für Admins.'; end if;
+  insert into location_distinct (a, b, created_by)
+  select least(x.id, y.id), greatest(x.id, y.id), current_player_id()
+    from unnest(p_ids) as x(id) join unnest(p_ids) as y(id) on x.id < y.id
+  on conflict do nothing;
+end;
+$function$;
+
+create or replace function public.unmark_locations_distinct(p_a uuid, p_b uuid)
+returns void language plpgsql security definer set search_path = public as $function$
+begin
+  if not is_admin() then raise exception 'Nur für Admins.'; end if;
+  delete from location_distinct where a = least(p_a, p_b) and b = greatest(p_a, p_b);
 end;
 $function$;
 
@@ -135,9 +185,13 @@ $function$;
 revoke all on function public.save_location(uuid, text, text, double precision, double precision) from public, anon;
 revoke all on function public.review_location(uuid) from public, anon;
 revoke all on function public.merge_locations(uuid, uuid[]) from public, anon;
+revoke all on function public.mark_locations_distinct(uuid[]) from public, anon;
+revoke all on function public.unmark_locations_distinct(uuid, uuid) from public, anon;
 grant execute on function public.save_location(uuid, text, text, double precision, double precision) to authenticated;
 grant execute on function public.review_location(uuid) to authenticated;
 grant execute on function public.merge_locations(uuid, uuid[]) to authenticated;
+grant execute on function public.mark_locations_distinct(uuid[]) to authenticated;
+grant execute on function public.unmark_locations_distinct(uuid, uuid) to authenticated;
 
 -- Bisher noch nicht freigegebene Lokale werden freigegeben; auffaellige davon landen in der Pruefliste der Admins
 update public.locations l

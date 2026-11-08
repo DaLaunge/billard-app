@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Check, Pencil, Trash2, Plus, AlertTriangle, Merge } from "lucide-react";
+import { MapPin, Check, Pencil, Trash2, Plus, AlertTriangle, Merge, Split } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
 import { appConfirm } from "../../lib/confirmDialog";
@@ -19,6 +19,8 @@ export default function AdminLocations({ players, toast }) {
   const [radius, setRadius] = useState(150);
   const [keep, setKeep] = useState({}); // Cluster-Schluessel -> id des behaltenen Lokals
   const [busy, setBusy] = useState(false);
+  const [distinct, setDistinct] = useState([]); // Ausnahmen: Paare {a, b}, die bewusst getrennte Lokale sind (eng beieinander, aber zwei Orte)
+  const [showDistinct, setShowDistinct] = useState(false);
   const nick = (id) => players.find((p) => p.id === id)?.nickname;
 
   const loadExtra = async () => {
@@ -26,6 +28,8 @@ export default function AdminLocations({ players, toast }) {
     const m = {};
     (data || []).forEach((r) => { m[r.id] = r; });
     setExtra(m);
+    const { data: dp } = await supabase.from("location_distinct").select("a, b"); // fehlt die Migration: leer
+    setDistinct(dp || []);
   };
   useEffect(() => { loadExtra(); }, [list.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -45,12 +49,15 @@ export default function AdminLocations({ players, toast }) {
     }
   };
 
+  const pairKey = (x, y) => (x < y ? x + "|" + y : y + "|" + x);
+  const distinctSet = new Set(distinct.map((d) => pairKey(d.a, d.b)));
+  const isDistinct = (x, y) => distinctSet.has(pairKey(x, y));
   // Cluster: Lokale, die (ueber Ketten) hoechstens `radius` Meter auseinander liegen
   const clusters = (() => {
     const parent = list.map((_, i) => i);
     const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
-      if (distanceM(list[i], list[j]) <= radius) parent[find(i)] = find(j);
+      if (distanceM(list[i], list[j]) <= radius && !isDistinct(list[i].id, list[j].id)) parent[find(i)] = find(j);
     }
     const g = {};
     list.forEach((l, i) => { (g[find(i)] ||= []).push(l); });
@@ -68,6 +75,13 @@ export default function AdminLocations({ players, toast }) {
     await call("merge_locations", { p_keep: keepId, p_drop: drops.map((d) => d.id) }, t("Lokale zusammengeführt."));
     setBusy(false);
   };
+
+  const keepApart = async (c) => {
+    setBusy(true);
+    await call("mark_locations_distinct", { p_ids: c.members.map((m) => m.id) }, t("Als getrennte Lokale gemerkt."));
+    setBusy(false);
+  };
+  const name = (id) => list.find((l) => l.id === id)?.name || "?";
 
   return (
     <div className="admin-locs">
@@ -135,10 +149,24 @@ export default function AdminLocations({ players, toast }) {
                   <span className="rank-meta">{m.id === keepId ? t("behalten") : `${Math.round(distanceM(keeper, m))} m`}</span>
                 </label>
               ))}
-              <button type="button" className="btn primary small" disabled={busy} onClick={() => merge(c)}><Merge size={15} /> {t("{n} Lokale zusammenführen", { n: c.members.length })}</button>
+              <div className="admin-loc-cluster-actions">
+                <button type="button" className="btn primary small" disabled={busy} onClick={() => merge(c)}><Merge size={15} /> {t("{n} Lokale zusammenführen", { n: c.members.length })}</button>
+                <button type="button" className="btn ghost small" disabled={busy} onClick={() => keepApart(c)} title={t("Sind wirklich verschiedene Orte – nicht wieder vorschlagen")}><Split size={15} /> {t("Getrennt lassen")}</button>
+              </div>
             </div>
           );
         })}
+        {distinct.length > 0 && (
+          <>
+            <button type="button" className="loc-linkbtn" onClick={() => setShowDistinct((v) => !v)}>{t("Bewusst getrennt")} ({distinct.length})</button>
+            {showDistinct && distinct.map((d) => (
+              <div key={pairKey(d.a, d.b)} className="admin-loc-pick">
+                <span className="loc-sel-txt"><b>{name(d.a)}</b><span className="rank-meta">{name(d.b)}</span></span>
+                <button type="button" className="btn ghost small" onClick={() => call("unmark_locations_distinct", { p_a: d.a, p_b: d.b }, t("Ausnahme aufgehoben."))}>{t("Aufheben")}</button>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );

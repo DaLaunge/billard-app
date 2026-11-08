@@ -4241,3 +4241,5 @@ span.ws-b-av { cursor: default; }
 .admin-loc-pick { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; border: 1.5px solid transparent; cursor: pointer; }
 .admin-loc-pick.on { border-color: var(--accent-line); background: var(--accent-soft); }
 .admin-loc-pick .loc-sel-txt { flex: 1 1 auto; min-width: 0; }
+.admin-loc-cluster-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-loc-cluster-actions .btn { flex: 1 1 auto; justify-content: center; }
