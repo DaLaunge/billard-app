@@ -6,6 +6,7 @@ import { appConfirm } from "../../lib/confirmDialog";
 import { useLocations, loadLocations, distanceM } from "../../lib/locationStore";
 import RouteButton from "./RouteButton";
 import LocationForm from "./LocationForm";
+import AdminFold from "./AdminFold";
 
 const RADII = [50, 100, 150, 300];
 
@@ -135,9 +136,9 @@ export default function AdminLocations({ players, toast }) {
         <button type="button" className="btn ghost small" onClick={() => setEditId("new")}><Plus size={15} /> {t("Neuer Standort")}</button>
       )}
 
-      <div className="admin-loc-merge">
-        <h4><Merge size={16} /> {t("Lokale zusammenführen")}</h4>
-        <p className="hint">{t("Lokale, die sehr eng beieinander liegen, lassen sich zu einem zusammenfassen: Das gewählte bleibt, die anderen werden gelöscht, alles was auf sie zeigt (Planungen, Turniere, Herausforderungen, Winner-Stays-Runden) zeigt danach auf das behaltene.")}</p>
+      <AdminFold id="locmerge" icon={<Merge size={17} />} title={t("Lokale zusammenführen")} count={clusters.length}
+        info={t("Lokale, die sehr eng beieinander liegen, lassen sich zu einem zusammenfassen: Das gewählte bleibt, die anderen werden gelöscht, alles was auf sie zeigt (Planungen, Turniere, Herausforderungen, Winner-Stays-Runden) zeigt danach auf das behaltene.")}>
+        <div className="admin-loc-merge">
         <div className="chips small" role="group" aria-label={t("Umkreis")}>
           <span className="rank-meta">{t("Umkreis")}</span>
           {RADII.map((r) => <button key={r} type="button" className={"chip" + (radius === r ? " active" : "")} onClick={() => setRadius(r)}>{r} m</button>)}
@@ -176,7 +177,8 @@ export default function AdminLocations({ players, toast }) {
             ))}
           </>
         )}
-      </div>
+        </div>
+      </AdminFold>
     </div>
   );
 }

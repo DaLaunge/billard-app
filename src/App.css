@@ -4243,3 +4243,23 @@ span.ws-b-av { cursor: default; }
 .admin-loc-pick .loc-sel-txt { flex: 1 1 auto; min-width: 0; }
 .admin-loc-cluster-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .admin-loc-cluster-actions .btn { flex: 1 1 auto; justify-content: center; }
+
+/* --- Verwaltung aufgeraeumt (431.6): einklappbare Karten, kleine Knoepfe, wenig Leerraum --- */
+.admin-grid .btn { width: auto; min-height: 36px; padding: 7px 14px; border-radius: 12px; font-size: calc(14px * var(--fs, 1)); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.admin-grid .btn.small { padding: 6px 12px; min-height: 34px; font-size: calc(13.5px * var(--fs, 1)); }
+.admin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-grid .pw-box, .admin-grid .add-match { gap: 8px; align-items: stretch; }
+.admin-grid .pw-box > .btn, .admin-grid .add-match > .btn { align-self: flex-start; }
+.admin-grid .pw-box input, .admin-grid .add-match select, .admin-grid .add-match input[type="date"] { padding: 9px 12px; }
+.admin-grid .hint { margin: 4px 0; }
+.admin-grid .stat-block { padding-block: 10px; }
+.admin-fold-btn { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; background: none; border: 0; padding: 4px 0; color: var(--accent); font: inherit; text-align: left; cursor: pointer; }
+.admin-fold-title { font-size: calc(15px * var(--fs, 1)); font-weight: 800; letter-spacing: -.01em; }
+.admin-fold-btn .duel-chev { margin-left: auto; color: var(--ivory-dim); }
+.admin-fold:not(.is-open) .stat-block-head { margin-bottom: 0; }
+.admin-fold-body { padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.admin-fold-body .admin-loc-merge { margin: 0; padding: 0; border: 0; }
+.admin-fold-body .am-scores { justify-content: flex-start; }
+.admin-fold:not(.is-open) { padding-bottom: 8px; }
+.admin-fold:not(.is-open) .stat-block-head { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+.admin-fold:not(.is-open) .collapsible { display: none; }

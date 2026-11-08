@@ -17,6 +17,8 @@ import { useChapters, ChapterBar, Chap } from "../lib/useChapters";
 import ImprintFooter from "./widgets/ImprintFooter";
 import AdminLocations from "./widgets/AdminLocations";
 import AdminMatchEditor from "./widgets/AdminMatchEditor";
+import AdminFold from "./widgets/AdminFold";
+import InfoButton from "./widgets/InfoButton";
 import { useLocations } from "../lib/locationStore";
 
 
@@ -425,9 +427,8 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         )}
       </section></Chap>
 
-      <Chap id="matches" c={adminChap}><section className="stat-block">
-        <div className="stat-block-head"><h3><Plus size={17} /> {t("Match nachtragen")}</h3></div>
-        <p className="hint" style={{ marginTop: 0 }}>{t("Als Admin ein bereits gespieltes Match eintragen – gilt sofort als bestätigt.")}</p>
+      <Chap id="matches" c={adminChap}><AdminFold id="addmatch" icon={<Plus size={17} />} title={t("Match nachtragen")}
+        info={t("Als Admin ein bereits gespieltes Match eintragen – gilt sofort als bestätigt.")}>
         <div className="add-match">
           <PlayerPicker players={players} matches={matches} me={me} getKey={(p) => p.id}
             value={am.p1} exclude={am.p2 ? [am.p2] : []} placeholder={t("Spieler 1")}
@@ -446,11 +447,11 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             </select>
             <input type="date" value={am.date} onChange={(e) => setAm({ ...am, date: e.target.value })} />
           </div>
-          <button className="btn primary" disabled={busyAdd} onClick={addMatch}>
+          <button className="btn primary small" disabled={busyAdd} onClick={addMatch}>
             {busyAdd ? t("Speichere ...") : <>{t("Match nachtragen")} <Check size={16} /></>}
           </button>
         </div>
-      </section></Chap>
+      </AdminFold></Chap>
 
       {me?.role === "admin" && (
         <Chap id="matches" c={adminChap}>
@@ -459,19 +460,22 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
       )}
 
       <Chap id="system" c={adminChap}><section className="stat-block">
-        <div className="stat-block-head"><h3><RotateCcw size={17} /> {t("Statistik & Erfolge")}</h3></div>
-        <p className="hint" style={{ marginTop: 0 }}>{t("Rechnet Ratings, Verlauf und Erfolge sofort neu – nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.")}</p>
-        <button className="btn primary" disabled={busy} onClick={refresh}>
-          {busy ? "Rechne neu …" : <><RotateCcw size={16} /> {t("Statistik jetzt aktualisieren")}</>}
-        </button>
-        <button className="btn ghost" disabled={busyBadges} onClick={recomputeBadges}>
-          {busyBadges ? "Rechne neu …" : <><Award size={16} /> {t("Nur Erfolge neu berechnen")}</>}
-        </button>
+        <div className="stat-block-head">
+          <h3><RotateCcw size={17} /> {t("Statistik & Erfolge")}</h3>
+          <InfoButton title={t("Statistik & Erfolge")}>{t("Rechnet Ratings, Verlauf und Erfolge sofort neu – nützlich nach nachträglich eingetragenen Matches. Kann ein paar Sekunden dauern.")}</InfoButton>
+        </div>
+        <div className="admin-actions">
+          <button className="btn primary small" disabled={busy} onClick={refresh}>
+            {busy ? "Rechne neu …" : <><RotateCcw size={15} /> {t("Statistik jetzt aktualisieren")}</>}
+          </button>
+          <button className="btn ghost small" disabled={busyBadges} onClick={recomputeBadges}>
+            {busyBadges ? "Rechne neu …" : <><Award size={15} /> {t("Nur Erfolge neu berechnen")}</>}
+          </button>
+        </div>
       </section></Chap>
 
-      <Chap id="system" c={adminChap}><section className="stat-block">
-        <div className="stat-block-head"><h3><Send size={17} /> {t("SMTP-Testmail")}</h3></div>
-        <p className="hint" style={{ marginTop: 0 }}>{t("Verschickt eine einzelne Mail direkt über das konfigurierte SMTP-Konto (unabhängig von den Supabase-Auth-Mails) – zum gezielten Testen von Zustellung und Sendekapazität. Betreff/Text leer lassen für automatische Werte.")}</p>
+      <Chap id="system" c={adminChap}><AdminFold id="smtp" icon={<Send size={17} />} title={t("SMTP-Testmail")}
+        info={t("Verschickt eine einzelne Mail direkt über das konfigurierte SMTP-Konto (unabhängig von den Supabase-Auth-Mails) – zum gezielten Testen von Zustellung und Sendekapazität. Betreff/Text leer lassen für automatische Werte.")}>
         <div className="pw-box">
           <input type="email" placeholder={t("Empfänger-Adresse")} value={testMailTo} autoComplete="off"
             onChange={(e) => setTestMailTo(e.target.value)} />
@@ -479,7 +483,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             onChange={(e) => setTestMailSubject(e.target.value)} />
           <input type="text" placeholder={t("Mailtext (optional)")} value={testMailText} autoComplete="off"
             onChange={(e) => setTestMailText(e.target.value)} />
-          <button className="btn primary" disabled={busyTestMail} onClick={sendTestMail}>
+          <button className="btn primary small" disabled={busyTestMail} onClick={sendTestMail}>
             {busyTestMail ? t("Sende ...") : <><Send size={16} /> {t("Testmail versenden")}</>}
           </button>
         </div>
@@ -493,30 +497,17 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
             ))}
           </div>
         )}
-      </section></Chap>
-
-      <Chap id="mitglieder" c={adminChap}><section className="stat-block">
-        <div className="stat-block-head"><h3><User size={17} /> {t("Neuen Nutzer anlegen")}</h3></div>
-        <p className="hint" style={{ marginTop: 0 }}>{t("Legt einen Login mit E-Mail, Passwort und Spielername an – sofort nutzbar, ohne dass eine Mail verschickt wird. Muss beim ersten Login das Passwort ändern.")}</p>
-        <div className="pw-box">
-          <input type="email" placeholder="E-Mail" value={nu.email} autoComplete="off"
-            onChange={(e) => setNu({ ...nu, email: e.target.value })} />
-          <input type="text" placeholder={t("Passwort (min. 6 Zeichen)")} value={nu.password} autoComplete="off"
-            onChange={(e) => setNu({ ...nu, password: e.target.value })} />
-          <input type="text" placeholder={t("Spielername")} value={nu.nickname} autoComplete="off"
-            onChange={(e) => setNu({ ...nu, nickname: e.target.value })} />
-          <button className="btn primary" disabled={busyUser} onClick={createUser}>
-            {busyUser ? t("Lege an …") : t("Nutzer anlegen")}
-          </button>
-        </div>
-      </section></Chap>
+      </AdminFold></Chap>
 
       <Chap id="mitglieder" c={adminChap}><section className="stat-block">
         <div className="mem-head-row">
           <h3><User size={17} /> {t("Mitglieder")} ({logins ? memberLogins.length : players.length - guestIds.size})</h3>
-          {logins && memberLogins.length > 0 && (
-            <button className="csv-btn" onClick={downloadCsv}><Download size={14} /> CSV</button>
-          )}
+          <span className="stat-block-head-actions">
+            {logins && memberLogins.length > 0 && (
+              <button className="csv-btn" onClick={downloadCsv}><Download size={14} /> CSV</button>
+            )}
+            <InfoButton title={t("Mitglieder")}>{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</InfoButton>
+          </span>
         </div>
         {logins && memberLogins.length > 0 && (
           <div className="mem-tools">
@@ -610,7 +601,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                             <div className="pw-box">
                               <input type="text" placeholder={t("Neues Passwort (min. 6 Zeichen)")} value={newPw} autoComplete="off"
                                 onChange={(e) => setNewPw(e.target.value)} />
-                              <button className="btn primary" disabled={busyPw} onClick={() => setPlayerPassword(p)}>
+                              <button className="btn primary small" disabled={busyPw} onClick={() => setPlayerPassword(p)}>
                                 {busyPw ? t("Speichere ...") : t("Passwort speichern")}
                               </button>
                               <p className="hint">{t("Der Spieler muss dieses Passwort beim nächsten Login sofort durch ein eigenes ersetzen.")}</p>
@@ -622,7 +613,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                                 onChange={(e) => setNewLoginEmail(e.target.value)} />
                               <input type="text" placeholder={t("Passwort (min. 6 Zeichen)")} value={newLoginPw} autoComplete="off"
                                 onChange={(e) => setNewLoginPw(e.target.value)} />
-                              <button className="btn primary" disabled={busyLogin} onClick={() => createLogin(p)}>
+                              <button className="btn primary small" disabled={busyLogin} onClick={() => createLogin(p)}>
                                 {busyLogin ? t("Lege an …") : t("Login anlegen")}
                               </button>
                               <p className="hint">{t("Übersteuert bewusst \"ohne Login\" – der Spieler muss dieses Passwort beim ersten Login sofort durch ein eigenes ersetzen.")}</p>
@@ -632,7 +623,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                             <div className="pw-box">
                               <input type="email" placeholder="E-Mail" value={newEmail} autoComplete="off"
                                 onChange={(e) => setNewEmail(e.target.value)} />
-                              <button className="btn primary" disabled={busyEmail} onClick={() => setPlayerEmail(p)}>
+                              <button className="btn primary small" disabled={busyEmail} onClick={() => setPlayerEmail(p)}>
                                 {busyEmail ? t("Speichere ...") : t("E-Mail speichern")}
                               </button>
                               <p className="hint">{t("Der Spieler muss sich künftig mit dieser E-Mail anmelden. Muss nicht echt/erreichbar sein.")}</p>
@@ -649,7 +640,7 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
                               <label className="field-label">{t("Zum Bestätigen Spielername eintippen: {name}", { name: p.nickname })}</label>
                               <input type="text" placeholder={p.nickname} value={deleteConfirmText} autoComplete="off"
                                 onChange={(e) => setDeleteConfirmText(e.target.value)} />
-                              <button className="btn danger" disabled={busyDelete || deleteConfirmText.trim() !== p.nickname}
+                              <button className="btn danger small" disabled={busyDelete || deleteConfirmText.trim() !== p.nickname}
                                 onClick={() => deletePlayer(p)}>
                                 {busyDelete ? t("Lösche ...") : t("Endgültig löschen")}
                               </button>
@@ -671,12 +662,14 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
           </p>
         )}
         {logins && memberLogins.length > 0 && visibleLogins.length === 0 && <p className="hint">{t("Keine Treffer.")}</p>}
-        <p className="hint">{t("Neue Mitglieder registrieren sich selbst: einfach den App-Link teilen.")}</p>
       </section></Chap>
 
       {clubData.loaded && (
         <Chap id="clubs" c={adminChap}><section className="stat-block">
-          <div className="stat-block-head"><h3><Users size={17} /> {t("Clubs")} ({clubData.clubs.length})</h3></div>
+          <div className="stat-block-head">
+            <h3><Users size={17} /> {t("Clubs")} ({clubData.clubs.length})</h3>
+            <InfoButton title={t("Clubs")}>{t("Moderation: Clubs gründet jeder selbst (Profil bearbeiten → Clubs). Hier lassen sich Clubs bei Missbrauch löschen.")}</InfoButton>
+          </div>
           {clubData.clubs.length === 0 && <p className="hint">{t("Noch keine Clubs.")}</p>}
           {clubData.clubs.map((c) => {
             const members = clubData.members.filter((m) => m.club_id === c.id);
@@ -690,7 +683,6 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
               </div>
             );
           })}
-          <p className="hint">{t("Moderation: Clubs gründet jeder selbst (Profil bearbeiten → Clubs). Hier lassen sich Clubs bei Missbrauch löschen.")}</p>
         </section></Chap>
       )}
 
@@ -701,8 +693,8 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         </section></Chap>
       )}
 
-      <Chap id="mitglieder" c={adminChap}><section className="stat-block">
-        <div className="stat-block-head"><h3><User size={17} /> {t("Gäste")} ({guestRows.length})</h3></div>
+      <Chap id="mitglieder" c={adminChap}><AdminFold id="guests" icon={<User size={17} />} title={t("Gäste")} count={guestRows.length}
+        info={t("Gäste sind Platzhalter ohne Login, werden im Match immer von Hand eingetippt und zählen nicht fürs Rating.")}>
         {guestRows.length === 0 && <p className="hint">{t("Noch keine Gäste.")}</p>}
         <div className="admin-guests">
           {(showAllGuests ? guestRows : guestRows.slice(0, 12)).map((g) => (
@@ -716,13 +708,29 @@ export default function AdminScreen({ allPending, players, onConfirm, me, onBack
         {guestRows.length > 12 && (
           <button className="btn ghost small" onClick={() => setShowAllGuests((v) => !v)}>{showAllGuests ? t("Weniger anzeigen") : t("Alle {n} anzeigen", { n: guestRows.length })}</button>
         )}
-        <p className="hint">{t("Gäste sind Platzhalter ohne Login, werden im Match immer von Hand eingetippt und zählen nicht fürs Rating.")}</p>
-      </section></Chap>
+      </AdminFold></Chap>
+
+      <Chap id="mitglieder" c={adminChap}><AdminFold id="newuser" icon={<User size={17} />} title={t("Neuen Nutzer anlegen")}
+        info={t("Legt einen Login mit E-Mail, Passwort und Spielername an – sofort nutzbar, ohne dass eine Mail verschickt wird. Muss beim ersten Login das Passwort ändern.")}>
+        <div className="pw-box">
+          <input type="email" placeholder="E-Mail" value={nu.email} autoComplete="off"
+            onChange={(e) => setNu({ ...nu, email: e.target.value })} />
+          <input type="text" placeholder={t("Passwort (min. 6 Zeichen)")} value={nu.password} autoComplete="off"
+            onChange={(e) => setNu({ ...nu, password: e.target.value })} />
+          <input type="text" placeholder={t("Spielername")} value={nu.nickname} autoComplete="off"
+            onChange={(e) => setNu({ ...nu, nickname: e.target.value })} />
+          <button className="btn primary small" disabled={busyUser} onClick={createUser}>
+            {busyUser ? t("Lege an …") : t("Nutzer anlegen")}
+          </button>
+        </div>
+      </AdminFold></Chap>
 
       <Chap id="system" c={adminChap}><section className="stat-block">
-        <div className="stat-block-head"><h3><Shield size={17} /> {t("Diagnose")}</h3></div>
+        <div className="stat-block-head">
+          <h3><Shield size={17} /> {t("Diagnose")}</h3>
+          <InfoButton title={t("Diagnose")}>{t("Diese Kennung muss sich zwischen Test und Produktion unterscheiden. Ist sie gleich, greifen beide auf dieselbe Datenbank zu.")}</InfoButton>
+        </div>
         <div className="diag-row"><span>{t("Datenbank")}</span><code>{DB_REF}</code></div>
-        <p className="hint" style={{ marginTop: 6 }}>{t("Diese Kennung muss sich zwischen Test und Produktion unterscheiden. Ist sie gleich, greifen beide auf dieselbe Datenbank zu.")}</p>
       </section></Chap>
       </div>
 

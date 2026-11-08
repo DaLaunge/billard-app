@@ -6,6 +6,7 @@ import { appConfirm } from "../../lib/confirmDialog";
 import { fmtDate, mSide } from "../../lib/format";
 import { activeDisciplines } from "../../lib/constants";
 import { rpcRetry } from "../../lib/rpcRetry";
+import AdminFold from "./AdminFold";
 
 // Admin: bereits gespeicherte Matches im Nachhinein aendern (Ergebnis, Disziplin, Datum) oder loeschen.
 // Die eigentliche Pruefung "nur Admin" passiert serverseitig (admin_update_match/admin_delete_match,
@@ -67,9 +68,8 @@ export default function AdminMatchEditor({ matches, toast, onReload }) {
   };
 
   return (
-    <section className="stat-block">
-      <div className="stat-block-head"><h3><Pencil size={17} /> {t("Matches ändern / löschen")}</h3></div>
-      <p className="hint" style={{ marginTop: 0 }}>{t("Nur für Admins. Jede Änderung wird protokolliert. Turnier- und Winner-Stays-Matches sind gesperrt.")}</p>
+    <AdminFold id="editmatch" icon={<Pencil size={17} />} title={t("Matches ändern / löschen")}
+      info={t("Nur für Admins. Jede Änderung wird protokolliert. Turnier- und Winner-Stays-Matches sind gesperrt.")}>
       <label className="search-field" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <Search size={16} />
         <input type="search" value={q} placeholder={t("Spieler oder Disziplin suchen")}
@@ -108,16 +108,16 @@ export default function AdminMatchEditor({ matches, toast, onReload }) {
                 <input type="date" value={ed.date} onChange={(e) => setEd({ ...ed, date: e.target.value })} />
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn primary" disabled={busy} onClick={() => save(m)}>{t("Speichern")} <Check size={16} /></button>
-                <button className="btn" disabled={busy} onClick={() => setEditId(null)}>{t("Abbrechen")} <X size={16} /></button>
+                <button className="btn primary small" disabled={busy} onClick={() => save(m)}>{t("Speichern")} <Check size={16} /></button>
+                <button className="btn ghost small" disabled={busy} onClick={() => setEditId(null)}>{t("Abbrechen")} <X size={16} /></button>
               </div>
             </div>
           )}
         </div>
       ))}
       {rows.length > shown && (
-        <button className="btn" onClick={() => setShown(shown + PAGE)}>{t("Mehr anzeigen")}</button>
+        <button className="btn ghost small" onClick={() => setShown(shown + PAGE)}>{t("Mehr anzeigen")}</button>
       )}
-    </section>
+    </AdminFold>
   );
 }
