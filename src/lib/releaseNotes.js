@@ -18,6 +18,17 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "434", icon: "🎱",
+    items: ["„Neues Turnier“ ist ein großer Knopf: ein Klick löst einen Anstoß aus, dann öffnet sich das Anlege-Fenster mit Name, Disziplin, Ort und Zeitpunkt, danach der Modus.",
+      "Die Turnierleitung steht gut sichtbar im Turnier-Kopf, mit Name und ob sie mitspielt (beim Anlegen standardmäßig).",
+      "Den Ort eines Turniers kannst du jederzeit ändern – Lokal, Standort, Karte oder Text.",
+      "Neues Lokal: Dein bestimmter Standort wird direkt übernommen, als Name schlägt die App Orte in der Nähe vor. Auch aus getippten Koordinaten oder einem Kartenpunkt lässt sich ein Lokal speichern.",
+      "Bereits vorhandene Gäste lassen sich in Turniere und Winner Stays (auch im Doppel) hinzufügen."],
+    en: ["“New tournament” is a big button: one tap triggers a break shot, then the creation window opens with name, discipline, place and time, then the mode.",
+      "The organizer is clearly shown in the tournament header, with name and whether they play along (by default when creating).",
+      "You can change a tournament's place at any time – venue, location, map or text.",
+      "New venue: your determined location is taken over directly, and the app suggests nearby places as the name. A venue can also be saved from typed coordinates or a map point.",
+      "Existing guests can be added to tournaments and Winner Stays (also in doubles)."] },
   { version: "430.1", icon: "🗂️",
     items: ["Neues Turnier in zwei Schritten, für jeden Modus gleich: erst Allgemein (Disziplin, Anstoß, Name, Ort, Zeitpunkt, spielt die Leitung mit?), dann der Modus. Die Angaben stehen in jedem Turnier oben; die Leitung ändert Disziplin, Anstoß und Zeitpunkt, Name und Ort bleiben fest."],
     en: ["New tournament in two steps, the same for every mode: first General (discipline, break rule, name, place, time, does the organizer play along?), then the mode. The details are shown at the top of every tournament; the organizer can change discipline, break rule and time, name and place stay fixed."] },
