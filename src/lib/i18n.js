@@ -1361,6 +1361,8 @@ const TRANSLATIONS = {
     "Neue Lokale sind sofort für alle da. Auffälliges (z. B. sehr nah an einem bekannten Lokal) melden wir den Admins.": "New venues are available to everyone right away. Anything odd (e.g. very close to a known venue) is reported to the admins.",
     "Gespeichert – den Admins zur Kontrolle gemeldet: {note}": "Saved – reported to the admins for a check: {note}",
     "Zu prüfen": "To check",
+    "Konnte nicht gespeichert werden – gibt es den Namen schon?": "Could not be saved – does the name already exist?",
+    "Zusammenführen nicht möglich.": "Merging is not possible.",
     "Getrennt lassen": "Keep apart",
     "Aufheben": "Undo",
     "Sind wirklich verschiedene Orte – nicht wieder vorschlagen": "These really are different places – don't suggest again",

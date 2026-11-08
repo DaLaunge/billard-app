@@ -1,4 +1,4 @@
--- Lokale: neue Eintraege sofort freigeben, Plausibilitaetspruefung mit Meldung an die Admins, Zusammenfuehren naher Lokale.
+-- Lokale: neue Eintraege sofort freigeben, Plausibilitaetspruefung mit Meldung an die Admins, Zusammenfuehren naher Lokale, Ausnahmen.
 -- Voraussetzung: 2026-10-27b_locations.sql (und 2026-10-27d_location_confirmations.sql). Test, dann Produktion. Idempotent.
 --
 -- * Neue Lokale sind SOFORT fuer alle freigegeben (status 'approved'); die Bestaetigung durch andere Spieler (27d) wird nicht mehr gebraucht,
@@ -7,12 +7,14 @@
 --   Hunderte km vom naechsten bekannten Lokal entfernt (Koordinaten vertippt oder vertauscht?), aehnlicher Name, keine Adresse, Name wirkt
 --   unvollstaendig. Auffaelliges steht in locations.check_note und geht als Meldung an alle Admins - freigeben muss der Admin nichts,
 --   er kann es mit "In Ordnung" abhaken (check_ok_at), korrigieren, loeschen oder mit einem Nachbarn zusammenfuehren.
--- * merge_locations(keep, drop[]) (nur Admins): haengt Planungen, Herausforderungen, Turniere und Winner-Stays-Runden der doppelten Lokale
---   an das behaltene um und loescht die doppelten.
 -- * Ausnahmen: Lokale, die wirklich eng beieinander liegen (z. B. zwei Filialen am Schwedenplatz und in der Dorotheergasse), markiert ein Admin als
 --   "bewusst getrennt" (location_distinct, Paare). Solche Paare tauchen weder in der Zusammenfuehren-Liste noch bei der Pruefung wieder auf.
 --   "In Ordnung" bei einer Meldung "liegt nur x m von ... entfernt" legt die Ausnahme fuer alle Lokale im Umkreis von 150 m gleich mit an.
--- Die plpgsql-Funktionen sind mit $function$ begrenzt (wie 27d), damit der SQL-Editor des Dashboards sie nicht an Semikolons zerlegt.
+-- * merge_locations(keep, drop[]) (nur Admins): haengt Planungen, Herausforderungen, Turniere und Winner-Stays-Runden der doppelten Lokale an das
+--   behaltene um; die App loescht die doppelten danach mit delete_location.
+-- WICHTIG: Der SQL-Editor des Dashboards zerlegt plpgsql-Rumpf an den Semikolons ("relation v_row does not exist"). Deshalb ist JEDE Funktion hier
+-- EINE SQL-Anweisung (language sql, Verzweigungen ueber WITH-Klauseln, kein Semikolon im Rumpf). Ungueltige Eingaben werden still ignoriert
+-- (Rueckgabe null) statt eine Ausnahme zu werfen; die App prueft vorher und zeigt eine Meldung.
 
 alter table public.locations add column if not exists check_note text;
 alter table public.locations add column if not exists check_ok_at timestamptz;
@@ -50,7 +52,7 @@ language sql stable security definer set search_path = public as $function$
   ), nearest as (
     select name, m from d order by m limit 1
   )
-  select nullif(concat_ws('; ',
+  select nullif(concat_ws(chr(59) || ' ',
     (select 'liegt nur ' || round(m)::int || ' m von „' || name || '“ entfernt (doppelt?)' from nearest where m < 150),
     (select 'liegt ' || round(m / 1000)::int || ' km vom nächsten bekannten Lokal entfernt (Koordinaten vertippt oder vertauscht?)' from nearest where m > 150000),
     (select 'Name ähnlich wie „' || o.name || '“' from locations o
@@ -64,122 +66,98 @@ $function$;
 
 revoke all on function public.loc_check(text, text, double precision, double precision, uuid) from public, anon, authenticated;
 
+-- Anlegen (p_id null) oder Aendern. Neue Lokale sind sofort 'approved'. Gibt die id zurueck, bei ungueltiger Eingabe/fehlender Berechtigung null.
 create or replace function public.save_location(
   p_id uuid, p_name text, p_address text, p_lat double precision, p_lng double precision
 ) returns uuid
-language plpgsql security definer set search_path = public as $function$
-declare
-  me uuid := current_player_id();
-  v_name text := trim(coalesce(p_name, ''));
-  v_row public.locations;
-  v_note text;
-begin
-  if me is null then raise exception 'Kein Spielerprofil zu diesem Login.'; end if;
-  if char_length(v_name) < 2 or char_length(v_name) > 60 then raise exception 'Der Name braucht 2 bis 60 Zeichen.'; end if;
-  if p_lat is null or p_lng is null or p_lat not between -90 and 90 or p_lng not between -180 and 180 then
-    raise exception 'Ungültige Koordinaten.';
-  end if;
-  if char_length(coalesce(p_address, '')) > 200 then raise exception 'Die Adresse darf höchstens 200 Zeichen haben.'; end if;
-  if exists (select 1 from locations where lower(name) = lower(v_name) and id is distinct from p_id) then
-    raise exception 'Einen Standort mit diesem Namen gibt es schon.';
-  end if;
-
-  if p_id is null then
-    v_note := loc_check(v_name, p_address, p_lat, p_lng, null);
+language sql security definer set search_path = public as $function$
+  with ok as (
+    select current_player_id() as me, trim(coalesce(p_name, '')) as nm, nullif(trim(coalesce(p_address, '')), '') as ad
+     where current_player_id() is not null
+       and char_length(trim(coalesce(p_name, ''))) between 2 and 60
+       and p_lat between -90 and 90 and p_lng between -180 and 180
+       and char_length(coalesce(p_address, '')) <= 200
+       and not exists (select 1 from locations where lower(name) = lower(trim(coalesce(p_name, ''))) and id is distinct from p_id)
+  ), note as (
+    select ok.me, ok.nm, ok.ad, loc_check(ok.nm, ok.ad, p_lat, p_lng, p_id) as n from ok
+  ), old as (
+    select * from locations where id = p_id
+  ), changed as (
+    select (p_id is null or exists (select 1 from old where lower(old.name) is distinct from lower((select nm from note))
+                                      or old.lat is distinct from p_lat or old.lng is distinct from p_lng)) as c
+  ), ins as (
     insert into locations (name, address, lat, lng, status, created_by, updated_by, check_note, check_ok_at)
-    values (v_name, nullif(trim(coalesce(p_address, '')), ''), p_lat, p_lng, 'approved', me, me,
-            case when is_admin() then null else v_note end, case when is_admin() then now() end)
-    returning * into v_row;
-    if v_note is not null and not is_admin() then
-      perform notify_players(
-        array(select id from players where role = 'admin'), 'location_check',
-        'Neues Lokal prüfen', v_name || ': ' || v_note,
-        'Check new venue', v_name || ': ' || v_note,
-        jsonb_build_object('tab', 'admin'), me);
-    end if;
-    return v_row.id;
-  end if;
-
-  select * into v_row from locations where id = p_id;
-  if not found then raise exception 'Standort nicht gefunden.'; end if;
-  if not (is_admin() or v_row.status = 'approved' or v_row.created_by = me) then
-    raise exception 'Diesen Standort darfst du nicht ändern.';
-  end if;
-  -- geaendert wird nur bei Namens-/Ortswechsel neu geprueft (reine Adresskorrekturen bleiben ruhig)
-  if lower(v_name) is distinct from lower(v_row.name) or p_lat is distinct from v_row.lat or p_lng is distinct from v_row.lng then
-    v_note := loc_check(v_name, p_address, p_lat, p_lng, p_id);
-  end if;
-  update locations
-     set name = v_name, address = nullif(trim(coalesce(p_address, '')), ''), lat = p_lat, lng = p_lng,
-         updated_by = me, updated_at = now(),
-         check_note = case when is_admin() then null when v_note is not null then v_note else check_note end,
-         check_ok_at = case when is_admin() then now() when v_note is not null then null else check_ok_at end
-   where id = p_id;
-  if v_note is not null and not is_admin() then
-    perform notify_players(
-      array(select id from players where role = 'admin'), 'location_check',
-      'Lokal geändert – bitte prüfen', v_name || ': ' || v_note,
-      'Venue changed – please check', v_name || ': ' || v_note,
-      jsonb_build_object('tab', 'admin'), me);
-  end if;
-  return p_id;
-end;
+    select nm, ad, p_lat, p_lng, 'approved', me, me, case when is_admin() then null else n end, case when is_admin() then now() end
+      from note where p_id is null
+    returning id
+  ), upd as (
+    update locations l
+       set name = note.nm, address = note.ad, lat = p_lat, lng = p_lng, updated_by = note.me, updated_at = now(),
+           check_note = case when is_admin() then null when (select c from changed) and note.n is not null then note.n else l.check_note end,
+           check_ok_at = case when is_admin() then now() when (select c from changed) and note.n is not null then null else l.check_ok_at end
+      from note
+     where l.id = p_id and (is_admin() or l.status = 'approved' or l.created_by = note.me)
+    returning l.id
+  ), ntf as (
+    select notify_players(
+             array(select id from players where role = 'admin'), 'location_check',
+             case when p_id is null then 'Neues Lokal prüfen' else 'Lokal geändert – bitte prüfen' end, note.nm || ': ' || note.n,
+             case when p_id is null then 'Check new venue' else 'Venue changed – please check' end, note.nm || ': ' || note.n,
+             jsonb_build_object('tab', 'admin'), note.me)
+      from note
+     where note.n is not null and not is_admin() and (select c from changed)
+       and (exists (select 1 from ins) or exists (select 1 from upd))
+  )
+  select coalesce((select id from ins), (select id from upd))
+   where (select count(*) from ntf) >= 0
 $function$;
 
 -- Admin: "In Ordnung" - die Meldung ist erledigt; liegen Lokale im Umkreis von 150 m, gelten sie als bewusst getrennt (kommen nicht wieder)
 create or replace function public.review_location(p_id uuid)
-returns void language plpgsql security definer set search_path = public as $function$
-begin
-  if not is_admin() then raise exception 'Nur für Admins.'; end if;
-  update locations set check_ok_at = now() where id = p_id;
+returns void language sql security definer set search_path = public as $function$
+  with r as (
+    update locations set check_ok_at = now() where id = p_id and is_admin() returning id, lat, lng
+  )
   insert into location_distinct (a, b, created_by)
-  select least(l.id, o.id), greatest(l.id, o.id), current_player_id()
-    from locations l join locations o on o.id <> l.id and loc_dist(l.lat, l.lng, o.lat, o.lng) < 150
-   where l.id = p_id
-  on conflict do nothing;
-end;
+  select least(r.id, o.id), greatest(r.id, o.id), current_player_id()
+    from r join locations o on o.id <> r.id and loc_dist(r.lat, r.lng, o.lat, o.lng) < 150
+  on conflict do nothing
 $function$;
 
 -- Admin: Lokale (alle Paare untereinander) als bewusst getrennt markieren bzw. wieder aufheben
 create or replace function public.mark_locations_distinct(p_ids uuid[])
-returns void language plpgsql security definer set search_path = public as $function$
-begin
-  if not is_admin() then raise exception 'Nur für Admins.'; end if;
+returns void language sql security definer set search_path = public as $function$
   insert into location_distinct (a, b, created_by)
   select least(x.id, y.id), greatest(x.id, y.id), current_player_id()
     from unnest(p_ids) as x(id) join unnest(p_ids) as y(id) on x.id < y.id
-  on conflict do nothing;
-end;
+   where is_admin()
+  on conflict do nothing
 $function$;
 
 create or replace function public.unmark_locations_distinct(p_a uuid, p_b uuid)
-returns void language plpgsql security definer set search_path = public as $function$
-begin
-  if not is_admin() then raise exception 'Nur für Admins.'; end if;
-  delete from location_distinct where a = least(p_a, p_b) and b = greatest(p_a, p_b);
-end;
+returns void language sql security definer set search_path = public as $function$
+  delete from location_distinct where a = least(p_a, p_b) and b = greatest(p_a, p_b) and is_admin()
 $function$;
 
--- Admin: doppelte Lokale zusammenfuehren (alles, was auf ein doppeltes Lokal zeigt, zeigt danach auf das behaltene)
+-- Admin: alles, was auf ein doppeltes Lokal zeigt, zeigt danach auf das behaltene. Rueckgabe = Zahl der umgehaengten Zeilen + 1 (0 = nicht erlaubt).
+-- Die doppelten Lokale loescht die App danach einzeln mit delete_location.
 create or replace function public.merge_locations(p_keep uuid, p_drop uuid[])
 returns integer
-language plpgsql security definer set search_path = public as $function$
-declare
-  v_ids uuid[] := array_remove(p_drop, p_keep);
-  v_n integer;
-begin
-  if not is_admin() then raise exception 'Nur für Admins.'; end if;
-  if not exists (select 1 from locations where id = p_keep) then raise exception 'Das zu behaltende Lokal gibt es nicht.'; end if;
-  if coalesce(array_length(v_ids, 1), 0) = 0 then return 0; end if;
-  update plannings set location_id = p_keep where location_id = any(v_ids);
-  update challenges set location_id = p_keep where location_id = any(v_ids);
-  update tournaments set location_id = p_keep where location_id = any(v_ids);
-  update winner_stays_sessions set location_id = p_keep where location_id = any(v_ids);
-  delete from locations where id = any(v_ids);
-  get diagnostics v_n = row_count;
-  update locations set check_ok_at = now() where id = p_keep;
-  return v_n;
-end;
+language sql security definer set search_path = public as $function$
+  with ok as (
+    select 1 as x where is_admin() and exists (select 1 from locations where id = p_keep)
+  ), u1 as (
+    update plannings set location_id = p_keep where location_id = any(array_remove(p_drop, p_keep)) and exists (select 1 from ok) returning 1
+  ), u2 as (
+    update challenges set location_id = p_keep where location_id = any(array_remove(p_drop, p_keep)) and exists (select 1 from ok) returning 1
+  ), u3 as (
+    update tournaments set location_id = p_keep where location_id = any(array_remove(p_drop, p_keep)) and exists (select 1 from ok) returning 1
+  ), u4 as (
+    update winner_stays_sessions set location_id = p_keep where location_id = any(array_remove(p_drop, p_keep)) and exists (select 1 from ok) returning 1
+  ), u5 as (
+    update locations set check_ok_at = now() where id = p_keep and exists (select 1 from ok) returning 1
+  )
+  select ((select count(*) from u1) + (select count(*) from u2) + (select count(*) from u3) + (select count(*) from u4) + (select count(*) from u5))::integer
 $function$;
 
 revoke all on function public.save_location(uuid, text, text, double precision, double precision) from public, anon;

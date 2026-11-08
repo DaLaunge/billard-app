@@ -72,7 +72,16 @@ export default function AdminLocations({ players, toast }) {
     const drops = c.members.filter((m) => m.id !== keepId);
     if (!(await appConfirm(t("„{keep}“ behalten und {drop} hineinfassen? Planungen, Turniere und Herausforderungen werden umgehängt, die anderen Lokale gelöscht.", { keep: keeper.name, drop: drops.map((d) => `„${d.name}“`).join(", ") })))) return;
     setBusy(true);
-    await call("merge_locations", { p_keep: keepId, p_drop: drops.map((d) => d.id) }, t("Lokale zusammengeführt."));
+    // erst alles auf das behaltene Lokal umhaengen, dann die doppelten loeschen (zwei getrennte Schritte: die SQL-Funktion ist eine einzelne Anweisung)
+    const { data, error } = await supabase.rpc("merge_locations", { p_keep: keepId, p_drop: drops.map((d) => d.id) });
+    if (error || !data) { toast(t("Fehler: ") + (error?.message || t("Zusammenführen nicht möglich."))); setBusy(false); return; }
+    for (const d of drops) {
+      const { error: e2 } = await supabase.rpc("delete_location", { p_id: d.id });
+      if (e2) { toast(t("Fehler: ") + e2.message); break; }
+    }
+    toast(t("Lokale zusammengeführt."));
+    await loadLocations(true);
+    loadExtra();
     setBusy(false);
   };
 

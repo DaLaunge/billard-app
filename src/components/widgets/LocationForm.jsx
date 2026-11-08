@@ -67,6 +67,7 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
     });
     setBusy(false);
     if (error) { toast(t("Fehler: ") + error.message); return; }
+    if (!data) { toast(t("Konnte nicht gespeichert werden – gibt es den Namen schon?")); return; }
     await loadLocations(true);
     // Neue Lokale sind sofort frei; hat die Pruefung etwas Auffaelliges gefunden (zu nah an einem anderen, weit weg, aehnlicher Name ...),
     // ist es den Admins gemeldet - das sagen wir dem Eintragenden gleich, damit er es ggf. korrigieren kann.
