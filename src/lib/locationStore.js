@@ -80,3 +80,39 @@ export async function reverseAddress(lat, lng) {
     return r.display_name ? r.display_name.split(", ").slice(0, 4).join(", ") : null;
   } catch { return null; }
 }
+
+// Namen von Orten in der Naehe einer Position (fuer "neues Lokal": der Name muss nicht getippt werden). Quelle: OpenStreetMap (Overpass: benannte
+// Bars, Cafes, Vereine, Billard ... im Umkreis von 80 m, nach Art und Abstand sortiert) plus der Name der Stelle laut Nominatim. Fehler/Offline: leere Liste.
+export async function nearbyNames(lat, lng) {
+  const found = []; // { name, rank, d }
+  const add = (n, rank, d) => {
+    const name = String(n || "").trim();
+    if (name.length < 2 || name.length > 60 || found.some((f) => f.name.toLowerCase() === name.toLowerCase())) return;
+    found.push({ name, rank, d });
+  };
+  const withTimeout = (ms) => { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; }; // nie laenger als ein paar Sekunden warten
+  await Promise.all([
+    (async () => {
+      try {
+        const q = `[out:json][timeout:6];nwr(around:80,${lat},${lng})[name][~"^(amenity|leisure|shop|sport|tourism)$"~"."];out tags center 25;`;
+        const res = await fetch("https://overpass-api.de/api/interpreter", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(q), signal: withTimeout(7000) });
+        if (!res.ok) return;
+        const j = await res.json();
+        (j.elements || []).forEach((e) => {
+          const tg = e.tags || {};
+          const la = e.lat ?? e.center?.lat, lo = e.lon ?? e.center?.lon;
+          const d = la != null && lo != null ? distanceM({ lat, lng }, { lat: la, lng: lo }) : 999;
+          const rank = tg.sport === "billiards" || /billiard|pool|snooker/i.test(tg.name || "") ? 0 : /^(bar|pub|cafe|restaurant|nightclub|biergarten|fast_food|community_centre|social_centre|club)$/.test(tg.amenity || "") || tg.leisure === "sports_centre" ? 1 : 2;
+          add(tg.name, rank, d);
+        });
+      } catch { /* offline/Overpass nicht erreichbar: dann eben nur der Nominatim-Name */ }
+    })(),
+    (async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&namedetails=1&zoom=18&accept-language=de&lat=${lat}&lon=${lng}`, { headers: { Accept: "application/json" }, signal: withTimeout(5000) });
+        if (res.ok) { const r = await res.json(); add(r.namedetails?.name || r.name, 1, 0); }
+      } catch { /* egal */ }
+    })(),
+  ]);
+  return found.sort((a, b) => a.rank - b.rank || a.d - b.d).slice(0, 8).map((f) => f.name);
+}

@@ -178,6 +178,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const [locating, setLocating] = useState(false);
   const [acc, setAcc] = useState(null); // GPS-Genauigkeit in Metern
   const [showMap, setShowMap] = useState(false);
+  const [newVenue, setNewVenue] = useState(false); // eigene Position als neues Lokal speichern (Position wird direkt uebernommen)
   // Position setzen (GPS, Adresse oder Karte): bekannte Lokale bis 300 m anbieten, genau eines vorwaehlen, sonst nur der Standort.
   // Ein Lokal ist NIE Pflicht - der Standort allein genuegt (z. B. privater Tisch).
   const applyPos = (p, address, keepVenue) => {
@@ -190,7 +191,7 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
     setNear(found); if (!keepVenue) setLocId(null);
   };
   // Standort/getippten Ort wieder loswerden (dann kann bewusst neu gewaehlt werden)
-  const clearOwn = () => { setHere(null); setPlaceText(""); setAddr(null); setNear(null); setAcc(null); setShowMap(false); };
+  const clearOwn = () => { setNewVenue(false); setHere(null); setPlaceText(""); setAddr(null); setNear(null); setAcc(null); setShowMap(false); };
   // "Ort verwenden": der getippte Text wird als Ort genommen, ohne Lokal. Die App sucht dazu eine Position; gehoert sie zu einem bekannten
   // Lokal (bis 100 m), wird stattdessen gleich dieses Lokal gewaehlt.
   const useText = async (text) => {
@@ -222,7 +223,8 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
   const onMapPick = (p) => { setPlaceText(""); setAcc(null); applyPos(p); };
   const venue = list.find((l) => l.id === locId) || null;
   const picker = (
-    <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setPlaceText(""); setHere(null); setAddr(null); setNear(null); } }} toast={toast} me={me} onUseText={useText}
+    <LocationPicker value={locId} onChange={(id) => { setLocId(id); if (id) { setNewVenue(false); setPlaceText(""); setHere(null); setAddr(null); setNear(null); } }} toast={toast} me={me} onUseText={useText}
+        pos={here ? { lat: here.lat, lng: here.lng, address: addr || "" } : null}
         placeholder={t("Lokal oder Adresse suchen oder eingeben")} />
   );
   // Popup statt Einschub in die Liste: das Formular steht allein im Blick, nichts lenkt ab (Nutzer 429.9)
@@ -264,7 +266,14 @@ function VenueMask({ kind, initial, venueId, label, onSubmit, onDone }) {
             <b>{placeText && !here ? placeText : t("Mein Standort")}</b>
             <span className="rank-meta">{!here ? "" : addr === null ? t("Adresse wird gesucht …") : addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`}</span>
           </div>
+          {here && <button type="button" className={"icon-btn small" + (newVenue ? " primary" : "")} onClick={() => setNewVenue((v) => !v)} aria-label={t("Als neues Lokal speichern")} title={t("Als neues Lokal speichern")}><Plus size={16} /></button>}
           <button type="button" className="icon-btn small" onClick={clearOwn} aria-label={t("Anderer Ort")} title={t("Anderer Ort")}><X size={16} /></button>
+        </div>
+      )}
+      {!venue && here && newVenue && (
+        <div className="loc-panel">
+          <LocationForm initialPos={{ lat: here.lat, lng: here.lng, address: addr || "" }} toast={toast}
+            onCancel={() => setNewVenue(false)} onSaved={(id) => { setNewVenue(false); if (id) { setLocId(id); setPlaceText(""); setHere(null); setAddr(null); setNear(null); } }} />
         </div>
       )}
       {showMap && (
