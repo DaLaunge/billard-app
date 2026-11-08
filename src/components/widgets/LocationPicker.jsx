@@ -10,7 +10,7 @@ import LocationForm from "./LocationForm";
    Routen-Knopf und einen Stift zum Korrigieren; das X hebt die Auswahl auf. */
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 
-export default function LocationPicker({ value, onChange, toast, me, onUseText, placeholder }) {
+export default function LocationPicker({ value, onChange, toast, me, onUseText, placeholder, pos }) {
   const { list } = useLocations();
   const [mode, setMode] = useState(null); // null | "new" | "edit"
   const [q, setQ] = useState("");
@@ -33,7 +33,7 @@ export default function LocationPicker({ value, onChange, toast, me, onUseText, 
       <div className="collapsible-inner">
         <div className="loc-panel">
           {formMounted && (
-            <LocationForm key={formKey} initial={formMode === "edit" ? sel : null} fixedName={formMode === "new" ? q : undefined} toast={toast}
+            <LocationForm key={formKey} initial={formMode === "edit" ? sel : null} initialPos={formMode === "new" ? pos : undefined} fixedName={formMode === "new" ? q : undefined} toast={toast}
               onCancel={() => setMode(null)} onSaved={(id) => { setMode(null); setQ(""); if (id) onChange(id); }} />
           )}
         </div>

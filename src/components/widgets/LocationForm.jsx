@@ -1,8 +1,8 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Search, Check, X, ExternalLink, MapPin, Map as MapIcon, AlertTriangle } from "lucide-react";
 import { supabase } from "../../supabase";
 import { t } from "../../lib/i18n";
-import { loadLocations, useLocations, distanceM, parseCoords, searchAddress, reverseAddress, mapUrl } from "../../lib/locationStore";
+import { loadLocations, useLocations, distanceM, parseCoords, searchAddress, reverseAddress, mapUrl, nearbyNames } from "../../lib/locationStore";
 
 const LocationMap = lazy(() => import("./LocationMap"));
 
@@ -10,12 +10,17 @@ const LocationMap = lazy(() => import("./LocationMap"));
    dann ueber "Mein Standort" (GPS), Adresse oder Karte bestimmt - Koordinaten tippen ist nur der letzte Ausweg.
    Ohne Ortsangabe laesst sich kein Lokal anlegen (ohne Position gibt es auch keine Route). Mit Position wird gegengeprueft,
    ob im Umkreis von 100 m schon ein Lokal existiert. */
-export default function LocationForm({ initial, fixedName, onSaved, onCancel, toast }) {
+export default function LocationForm({ initial, initialPos, fixedName, onSaved, onCancel, toast }) {
+  // initialPos { lat, lng, address }: die Position ist schon bestimmt (z. B. "Mein Standort" beim Online gehen) - sie wird direkt uebernommen, ohne Karte;
+  // "Position aendern" bringt die Auswahl (Standort, Adresse, Karte) zurueck. Namensvorschlaege kommen aus den Ortsnamen in der Naehe.
   const { list } = useLocations();
   const [ownName, setName] = useState(initial?.name || "");
   const name = fixedName !== undefined ? fixedName : ownName; // beim neuen Lokal steht der Name im Feld darueber
-  const [address, setAddress] = useState(initial?.address || "");
-  const [pos, setPos] = useState(initial ? { lat: initial.lat, lng: initial.lng } : null);
+  const [address, setAddress] = useState(initial?.address || initialPos?.address || "");
+  const [pos, setPos] = useState(initial ? { lat: initial.lat, lng: initial.lng } : initialPos ? { lat: initialPos.lat, lng: initialPos.lng } : null);
+  const [changePos, setChangePos] = useState(false);
+  const posLocked = !!initialPos && !initial && !changePos;
+  const [names, setNames] = useState([]);
   const [coordText, setCoordText] = useState("");
   const [results, setResults] = useState(null);
   const [showAddr, setShowAddr] = useState(false);
@@ -23,6 +28,15 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
   const [showCoords, setShowCoords] = useState(false);
   const [gpsDenied, setGpsDenied] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Ortsnamen in der Naehe als Namensvorschlaege (nur beim Neuanlegen, solange noch kein Name steht)
+  const posKey = pos ? `${pos.lat.toFixed(4)},${pos.lng.toFixed(4)}` : "";
+  useEffect(() => {
+    if (!pos || initial?.id) { setNames([]); return undefined; }
+    let live = true;
+    nearbyNames(pos.lat, pos.lng).then((n) => { if (live) setNames(n); });
+    return () => { live = false; };
+  }, [posKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const nearby = pos ? list.find((l) => l.id !== initial?.id && distanceM(l, pos) < 100) : null;
 
@@ -85,7 +99,14 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
         <MapPin size={16} className="mail-ico" />
         <input autoFocus={!name} placeholder={t("Name des Lokals, z. B. Billardcafe Mitte")} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
       </div>}
+      {fixedName === undefined && !initial?.id && names.length > 0 && (
+        <div className="chips small loc-names" role="group" aria-label={t("Ortsnamen in der Nähe")}>
+          <span className="rank-meta">{t("In der Nähe")}</span>
+          {names.map((n) => <button key={n} type="button" className={"chip" + (name.trim().toLowerCase() === n.toLowerCase() ? " active" : "")} onClick={() => setName(n)}>{n}</button>)}
+        </div>
+      )}
 
+      {!posLocked && (<>
       <p className="loc-q">{t("Wo liegt das Lokal?")}</p>
       <div className="loc-how">
         <button type="button" className={"chip" + (pos && !showAddr ? " active" : "")} onClick={gps} disabled={busy}><MapPin size={14} /> {t("Mein Standort")}</button>
@@ -125,10 +146,12 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
       {!pos && !gpsDenied && (
         <p className="hint" style={{ margin: 0 }}>{t("Ohne Standortdaten (Standort, Adresse oder Karte) ist das Lokal nicht verfügbar.")}</p>
       )}
+      </>)}
       {pos && (
         <p className="hint loc-pos">
           <Check size={14} /> {address || `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`}{" "}
           <a href={mapUrl(pos.lat, pos.lng)} target="_blank" rel="noreferrer"><MapPin size={13} /> {t("Auf der Karte prüfen")}</a>
+          {posLocked && <> <button type="button" className="loc-linkbtn" onClick={() => setChangePos(true)}>{t("Position ändern")}</button></>}
         </p>
       )}
       {nearby && (
@@ -138,13 +161,13 @@ export default function LocationForm({ initial, fixedName, onSaved, onCancel, to
         </div>
       )}
 
-      {showCoords ? (
+      {!posLocked && (showCoords ? (
         <div className="search-row">
           <input placeholder={t("Exakte Koordinaten, z. B. 48.2082, 16.3738")} value={coordText} onChange={(e) => onCoords(e.target.value)} />
         </div>
       ) : (
         <button type="button" className="loc-linkbtn" onClick={() => setShowCoords(true)}>{t("Exakte Koordinaten eingeben")}</button>
-      )}
+      ))}
 
       <div className="sp-controls">
         <button type="button" className="btn ghost" onClick={onCancel}><X size={15} /> {t("Abbrechen")}</button>

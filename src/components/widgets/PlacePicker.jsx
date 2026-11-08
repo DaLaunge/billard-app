@@ -70,7 +70,7 @@ export default function PlacePicker({ locId, text, onChange, toast, me }) {
         <button type="button" className="icon-btn small" onClick={findMe} disabled={locating} aria-label={t("Mein Standort")} title={t("Mein Standort")}><Crosshair size={16} /></button>
         <button type="button" className={"icon-btn small" + (showMap ? " primary" : "")} onClick={() => setShowMap((v) => !v)} aria-label={t("Karte")} title={t("Karte")}><MapIcon size={16} /></button>
         <div className="venue-picker-inline">
-          <LocationPicker value={locId} onChange={pickVenue} toast={toast} me={me} onUseText={useText} placeholder={t("Lokal oder Adresse suchen oder eingeben")} />
+          <LocationPicker value={locId} onChange={pickVenue} toast={toast} me={me} onUseText={useText} pos={here ? { lat: here.lat, lng: here.lng, address: addr || "" } : null} placeholder={t("Lokal oder Adresse suchen oder eingeben")} />
         </div>
       </div>
       {locating && !here && <span className="rank-meta">{t("Standort wird gesucht …")}</span>}
@@ -96,7 +96,7 @@ export default function PlacePicker({ locId, text, onChange, toast, me }) {
       )}
       {here && newVenue && (
         <div className="loc-panel">
-          <LocationForm initial={{ name: "", address: addr || "", lat: here.lat, lng: here.lng }} toast={toast}
+          <LocationForm initialPos={{ lat: here.lat, lng: here.lng, address: addr || "" }} toast={toast}
             onCancel={() => setNewVenue(false)} onSaved={(id) => { setNewVenue(false); if (id) pickVenue(id); }} />
         </div>
       )}
