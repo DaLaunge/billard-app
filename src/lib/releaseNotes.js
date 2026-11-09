@@ -18,6 +18,11 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "434.10", icon: "🙋",
+    items: ["Gäste: Wer als Gast gespielt hat, kann sich danach registrieren und behält alle seine Matches – sie zählen für Rangliste und Erfolge. Nach dem Speichern eines Matches zeigt die App dem Gast dafür einen QR-Code.",
+      "Gäste sind keine festen Personen mehr: Jeder Auftritt ist ein neuer Gast, bei gleichem Namen heißt er automatisch „David 2“."],
+    en: ["Guests: after playing as a guest you can register and keep all your matches – they count for the ranking and achievements. After saving a match the app shows the guest a QR code for this.",
+      "Guests are no longer fixed persons: every appearance is a new guest, with the same name it is automatically called “David 2”."] },
   { version: "434", icon: "🎱",
     items: ["„Neues Turnier“ ist ein großer Knopf: ein Klick löst einen Anstoß aus, dann öffnet sich das Anlege-Fenster mit Name, Disziplin, Ort und Zeitpunkt, danach der Modus.",
       "Die Turnierleitung steht gut sichtbar im Turnier-Kopf, mit Name und ob sie mitspielt (beim Anlegen standardmäßig).",

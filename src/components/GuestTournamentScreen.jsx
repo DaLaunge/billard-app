@@ -5,7 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { formatLabel } from "../lib/turnierLayout";
-import { setRef } from "../lib/session";
+import { setRef, setClaimCode } from "../lib/session";
 import DiscBall from "./widgets/DiscBall";
 import Ball from "./Ball";
 
@@ -82,6 +82,9 @@ export default function GuestTournamentScreen({ session, onLogin, onForget, onSe
   const register = async () => {
     const { data } = await supabase.rpc("tournament_invite_info", { p_tournament_id: tournamentId });
     setRef(data?.ref);
+    // Uebernahme-Code merken: nach der Registrierung wandern alle Matches dieses Gast-Zugangs ins neue Konto (claim_guest in App.jsx)
+    const c = await supabase.rpc("guest_claim_code_token", { p_token: token });
+    if (!c.error && c.data) setClaimCode(c.data);
     onLogin();
   };
   const confirm = () => call("guest_confirm_match", { p_tournament_match_id: st.confirm.id });
@@ -215,7 +218,8 @@ export default function GuestTournamentScreen({ session, onLogin, onForget, onSe
           </>
         )}
 
-        <button className="btn ghost" onClick={register}><UserPlus size={16} /> {t("Doch lieber registrieren")}</button>
+        <p className="hint center">{t("Mit einem Konto bleiben deine Matches erhalten und zählen für Rangliste und Erfolge.")}</p>
+        <button className="btn primary" onClick={register}><UserPlus size={16} /> {t("Konto anlegen – Matches behalten")}</button>
       </div>
     </div>
   );
