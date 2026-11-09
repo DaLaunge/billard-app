@@ -3663,20 +3663,22 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 
 /* Ping: Radarschirm im Stil alter Radargeraete (Ringe, Fadenkreuz, Suchstrahl, Echos) */
 .ping-orb { width: 92px; height: 92px; background: var(--felt); border: 2px solid var(--accent); box-shadow: inset 0 0 14px var(--accent-soft); overflow: visible; }
-.ping-sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0deg 250deg, var(--accent) 360deg); opacity: .5; transform: rotate(40deg); pointer-events: none; }
-.ping-sweep.fast { opacity: 0; }
+.ping-sweep { position: absolute; inset: 0; border-radius: 50%; opacity: .5; transform: rotate(40deg); pointer-events: none; }
+.ping-sweep::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0deg 250deg, var(--accent) 360deg); }
 .ping-scope { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .85; }
 .ping-scope .ping-blip { fill: var(--accent); stroke: none; }
 @media (prefers-reduced-motion: no-preference) {
-  /* Zwei Suchstrahlen drehen immer; beim Ping blendet der schnelle den langsamen ueber (kein Phasensprung durch geaenderte Dauer) */
-  .ping-sweep { animation: ping-sweep 3.2s linear infinite; transition: opacity .5s ease; }
-  .ping-sweep.fast { animation-duration: .9s; }
-  .ping-btn.pinging .ping-sweep.fast { opacity: .5; }
-  .ping-btn.pinging .ping-sweep.slow { opacity: 0; }
-  .ping-scope .ping-blip { animation: ping-blip 3.2s ease-in-out infinite; }
-  .ping-scope .ping-blip:nth-of-type(2) { animation-delay: 1.4s; }
+  /* Der Suchstrahl dreht mit konstanter Ruhe-Geschwindigkeit immer weiter; beim Ping dreht die Spitze (::before) zusaetzlich
+     zwei volle Runden mit weichem Anlauf/Auslauf (Endlage = 0 Grad) - kein Wechsel von Dauer oder Phase, also kein Sprung */
+  .ping-sweep { animation: ping-sweep 3.2s linear infinite; }
+  .ping-btn.pinging .ping-sweep::before { animation: ping-sweep-extra 1.8s ease-in-out 1; }
+  /* Echos leuchten nur auf, wenn der Strahl vorbeikommt (Winkel von oben im Uhrzeigersinn: 45 Grad bzw. 229 Grad bei 3.2 s je Runde), und verblassen langsam bis zum naechsten Mal */
+  .ping-scope .ping-blip { animation: ping-blip 3.2s linear infinite; }
+  .ping-scope .ping-blip.b1 { animation-delay: -2.8s; }
+  .ping-scope .ping-blip.b2 { animation-delay: -1.16s; }
+  @keyframes ping-sweep-extra { from { transform: rotate(0deg); } to { transform: rotate(720deg); } }
   @keyframes ping-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  @keyframes ping-blip { 0%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  @keyframes ping-blip { 0% { opacity: 1; } 100% { opacity: .1; } }
 }
 
 /* Ping-Ringe bleiben im Knopf: sie werden am Rand sauber abgeschnitten statt von der Karte angeschnitten */
