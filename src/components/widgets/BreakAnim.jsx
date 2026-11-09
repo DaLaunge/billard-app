@@ -82,25 +82,25 @@ function Ball({ b, refFn }) {
   );
 }
 
-/* Queue (435.0): EIN Stueck mit stetiger Verjuengung wie ein echter Queue, massstabsgetreu zur Kugel (Kugel 17,2 Einheiten = 57 mm, also 1 Einheit ~ 3,3 mm):
-   Laenge 440 Einheiten (~1,45 m), Spitze ~13 mm, Schaft verdickt sich leicht bis zum Gelenk, Griff bis ~30 mm, hinten Gummipuffer. Er hat ein echtes Ende;
+/* Queue (435.0): EIN Stueck mit stetiger Verjuengung wie ein echter Queue, massstabsgetreu zur Kugel (Kugel 17,2 Einheiten = 57 mm):
+   Laenge 224 Einheiten (stilisiert, ca. 1 m), Oberteil (Schaft) und Unterteil (Griff) gleich lang, Spitze ~13 mm, Schaft bis ~20 mm am Gelenk, Griff bis ~30 mm, hinten Gummipuffer. Er hat ein echtes Ende;
    was links ueber den Rand der Zeichnung ragt, ist einfach der Rest des Queues (er wird am Rand des Knopfes abgeschnitten, nie mit einem Rechteck verlaengert). */
 const TIP = CUE_X - 12; // Spitze des Queues
-const CUE_LEN = 440, JOINT_D = 255; // Gesamtlaenge, Abstand des Gelenks von der Spitze
+const CUE_LEN = 224, JOINT_D = 112; // Gesamtlaenge, Abstand des Gelenks von der Spitze
 const END = TIP - CUE_LEN, JOINT = TIP - JOINT_D;
-const wid = (x) => { const d = TIP - x; return d <= JOINT_D ? 3.9 + d * 0.01 : 6.45 + (d - JOINT_D) * (2.65 / (CUE_LEN - JOINT_D)); };
+const wid = (x) => { const d = TIP - x; return d <= JOINT_D ? 3.9 + d * (2.2 / JOINT_D) : 6.1 + (d - JOINT_D) * (3 / (CUE_LEN - JOINT_D)); };
 const half = (x) => wid(x) / 2;
 const quad = (x1, x2) => `M${x1} ${50 - half(x1)}L${x2} ${50 - half(x2)}L${x2} ${50 + half(x2)}L${x1} ${50 + half(x1)}Z`;
 const PALETTES = [["#d8392b", "#f2c230"], ["#2f9fd0", "#f6f2e8"], ["#1f8a4c", "#f2c230"], ["#a24bd0", "#f6f2e8"], ["#ee7d1d", "#1b1b1b"], ["#e04d8a", "#f6f2e8"]];
 const makeDeco = (prev) => { let n; do { n = { kind: Math.floor(Math.random() * 5), pal: Math.floor(Math.random() * PALETTES.length) }; } while (prev && n.kind === prev.kind && n.pal === prev.pal); return n; };
 function stick({ kind, pal }) {
   const [c1, c2] = PALETTES[pal];
-  const butt = [];
-  if (kind === 0) { [[26, 20], [14, 11], [2, -1]].forEach(([x1, x2], i) => butt.push(<path key={i} d={quad(x1, x2)} fill={i % 2 ? c2 : c1} />)); } // Ringe
-  if (kind === 1) { [24, 8, -8].forEach((x, i) => butt.push(<path key={i} d={`M${x} ${50 - half(x) * 0.8}L${x + half(x) * 0.9} 50L${x} ${50 + half(x) * 0.8}L${x - half(x) * 0.9} 50Z`} fill={i % 2 ? c2 : c1} />)); } // Rauten
-  if (kind === 2) { for (let i = 0; i < 5; i++) { const x = 28 - i * 8; butt.push(<path key={i} d={`M${x} ${50 - half(x)}L${x - 7} ${50 - half(x - 7)}L${x - 3} ${50 + half(x - 3)}L${x + 4} ${50 + half(x + 4)}Z`} fill={i % 2 ? c2 : c1} />); } } // Wickel schraeg
-  if (kind === 3) { [26, 15, 4, -7].forEach((x, i) => butt.push(<circle key={i} cx={x} cy="50" r={half(x) * 0.5} fill={i % 2 ? c2 : c1} />)); } // Punkte
-  if (kind === 4) { butt.push(<path key="a" d={quad(28, -14)} fill={c1} />); butt.push(<path key="b" d={`M26 50L2 ${50 - half(2) * 0.7}L-12 50L2 ${50 + half(2) * 0.7}Z`} fill={c2} />); } // Band mit Raute
+  const butt = [], o = -52, X = (x) => x + o;
+  if (kind === 0) { [[26, 20], [14, 11], [2, -1]].forEach(([x1, x2], i) => butt.push(<path key={i} d={quad(X(x1), X(x2))} fill={i % 2 ? c2 : c1} />)); } // Ringe
+  if (kind === 1) { [24, 8, -8].map(X).forEach((x, i) => butt.push(<path key={i} d={`M${x} ${50 - half(x) * 0.8}L${x + half(x) * 0.9} 50L${x} ${50 + half(x) * 0.8}L${x - half(x) * 0.9} 50Z`} fill={i % 2 ? c2 : c1} />)); } // Rauten
+  if (kind === 2) { for (let i = 0; i < 5; i++) { const x = X(28 - i * 8); butt.push(<path key={i} d={`M${x} ${50 - half(x)}L${x - 7} ${50 - half(x - 7)}L${x - 3} ${50 + half(x - 3)}L${x + 4} ${50 + half(x + 4)}Z`} fill={i % 2 ? c2 : c1} />); } } // Wickel schraeg
+  if (kind === 3) { [26, 15, 4, -7].map(X).forEach((x, i) => butt.push(<circle key={i} cx={x} cy="50" r={half(x) * 0.5} fill={i % 2 ? c2 : c1} />)); } // Punkte
+  if (kind === 4) { butt.push(<path key="a" d={quad(X(28), X(-14))} fill={c1} />); butt.push(<path key="b" d={`M${X(26)} 50L${X(2)} ${50 - half(X(2)) * 0.7}L${X(-12)} 50L${X(2)} ${50 + half(X(2)) * 0.7}Z`} fill={c2} />); } // Band mit Raute
   return (
     <>
       <path d={quad(TIP, JOINT)} fill="#e8c78a" />
@@ -138,7 +138,7 @@ export default function BreakButton({ onOpen }) {
   };
   return (
     <button type="button" className={"break-btn" + (breaking ? " breaking" : "")} onClick={go} aria-label={t("Neues Turnier")}>
-      <svg viewBox="0 0 360 100" className="break-svg" aria-hidden="true" focusable="false">
+      <svg viewBox="-70 0 430 100" className="break-svg" aria-hidden="true" focusable="false">
         {RACK.map((b) => <Ball key={b.i} b={b} refFn={(el) => { els.current[b.i] = el; }} />)}
         <g className="bb-cue" ref={cueEl}>
           <circle cx={CUE_X} cy="50" r={R} fill="#f6f2e8" />
