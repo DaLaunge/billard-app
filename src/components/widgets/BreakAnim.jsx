@@ -88,7 +88,8 @@ function Ball({ b, refFn }) {
 const TIP = CUE_X - 12; // Spitze des Queues
 const CUE_LEN = 224, JOINT_D = 112; // Gesamtlaenge, Abstand des Gelenks von der Spitze
 const END = TIP - CUE_LEN, JOINT = TIP - JOINT_D;
-const wid = (x) => { const d = TIP - x; return d <= JOINT_D ? 3.9 + d * (2.2 / JOINT_D) : 6.1 + (d - JOINT_D) * (3 / (CUE_LEN - JOINT_D)); };
+const THICK = 1.5; // optisch etwas kraeftiger als massstabsgetreu, damit Gelenk und Muster am Handy erkennbar bleiben
+const wid = (x) => { const d = TIP - x; return THICK * (d <= JOINT_D ? 3.9 + d * (2.2 / JOINT_D) : 6.1 + (d - JOINT_D) * (3 / (CUE_LEN - JOINT_D))); };
 const half = (x) => wid(x) / 2;
 const quad = (x1, x2) => `M${x1} ${50 - half(x1)}L${x2} ${50 - half(x2)}L${x2} ${50 + half(x2)}L${x1} ${50 + half(x1)}Z`;
 const PALETTES = [["#d8392b", "#f2c230"], ["#2f9fd0", "#f6f2e8"], ["#1f8a4c", "#f2c230"], ["#a24bd0", "#f6f2e8"], ["#ee7d1d", "#1b1b1b"], ["#e04d8a", "#f6f2e8"]];
