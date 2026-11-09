@@ -3644,14 +3644,15 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .ping-result { display: flex; flex-direction: column; gap: 8px; }
 .venue-chap { display: flex; flex-direction: column; gap: 6px; }
 @media (prefers-reduced-motion: no-preference) {
-  .ping-btn:not(.pinging) .ping-ring { animation: ping-idle 2.8s ease-out infinite; }
-  .ping-btn:not(.pinging) .ping-ring.r2, .ping-btn:not(.pinging) .ping-ring.r3 { animation: none; }
-  .ping-btn.pinging .ping-ring { animation: ping-burst 1.6s ease-out 1; }
+  /* Durchgaengig (435.0): der Ruhering laeuft immer weiter, die Such-Ringe kommen als eigene Ringe DAZU
+     und blenden sanft ein/aus - nichts wird beim Wechsel Ruhe <-> Suche abgebrochen oder neu gestartet */
+  .ping-ring.r1 { animation: ping-idle 2.8s ease-out infinite; }
+  .ping-btn.pinging .ping-ring.r2, .ping-btn.pinging .ping-ring.r3, .ping-btn.pinging .ping-ring.r4 { animation: ping-burst 1.6s ease-out 1 both; }
   .ping-btn.pinging .ping-ring.r2 { animation-delay: .3s; }
   .ping-btn.pinging .ping-ring.r3 { animation-delay: .6s; }
   .ping-btn.pinging .ping-orb { animation: ping-pop .5s ease-out; }
-  @keyframes ping-idle { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.5); opacity: 0; } }
-  @keyframes ping-burst { 0% { transform: scale(1); opacity: .9; } 70% { opacity: .18; } 100% { transform: scale(3.1); opacity: 0; } }
+  @keyframes ping-idle { 0% { transform: scale(1); opacity: 0; } 12% { opacity: .45; } 100% { transform: scale(1.5); opacity: 0; } }
+  @keyframes ping-burst { 0% { transform: scale(1); opacity: 0; } 12% { opacity: .9; } 70% { opacity: .18; } 100% { transform: scale(3.1); opacity: 0; } }
   @keyframes ping-pop { 0% { transform: scale(1); } 40% { transform: scale(.88); } 100% { transform: scale(1); } }
 }
 
@@ -3663,11 +3664,15 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 /* Ping: Radarschirm im Stil alter Radargeraete (Ringe, Fadenkreuz, Suchstrahl, Echos) */
 .ping-orb { width: 92px; height: 92px; background: var(--felt); border: 2px solid var(--accent); box-shadow: inset 0 0 14px var(--accent-soft); overflow: visible; }
 .ping-sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0deg 250deg, var(--accent) 360deg); opacity: .5; transform: rotate(40deg); pointer-events: none; }
+.ping-sweep.fast { opacity: 0; }
 .ping-scope { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .85; }
 .ping-scope .ping-blip { fill: var(--accent); stroke: none; }
 @media (prefers-reduced-motion: no-preference) {
-  .ping-sweep { animation: ping-sweep 3.2s linear infinite; }
-  .ping-btn.pinging .ping-sweep { animation-duration: .9s; }
+  /* Zwei Suchstrahlen drehen immer; beim Ping blendet der schnelle den langsamen ueber (kein Phasensprung durch geaenderte Dauer) */
+  .ping-sweep { animation: ping-sweep 3.2s linear infinite; transition: opacity .5s ease; }
+  .ping-sweep.fast { animation-duration: .9s; }
+  .ping-btn.pinging .ping-sweep.fast { opacity: .5; }
+  .ping-btn.pinging .ping-sweep.slow { opacity: 0; }
   .ping-scope .ping-blip { animation: ping-blip 3.2s ease-in-out infinite; }
   .ping-scope .ping-blip:nth-of-type(2) { animation-delay: 1.4s; }
   @keyframes ping-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -3709,10 +3714,11 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
 .ping-word i:nth-child(even) { font-size: .86em; align-self: flex-end; }
 @media (max-width: 520px) { .ping-word { font-size: calc(22px * var(--fs, 1)); } .ping-btn { gap: 8px; } }
 @media (prefers-reduced-motion: no-preference) {
-  .ping-btn:not(.pinging) .ping-word i { animation: ping-bob 2.8s ease-in-out infinite; animation-delay: calc(var(--d) * .18s); }
-  .ping-btn.pinging .ping-word i { animation: ping-hop .9s cubic-bezier(.3, 1.6, .5, 1) 1; animation-delay: calc(var(--d) * .14s); }
+  /* Das Wippen laeuft immer; der Huepfer legt sich ueber die einzelnen Eigenschaften translate/scale darueber und setzt es nicht ab */
+  .ping-word i { animation: ping-bob 2.8s ease-in-out infinite; animation-delay: calc(var(--d) * .18s); }
+  .ping-btn.pinging .ping-word i { animation: ping-bob 2.8s ease-in-out infinite calc(var(--d) * .18s), ping-hop .9s cubic-bezier(.3, 1.6, .5, 1) calc(var(--d) * .14s) 1; }
   @keyframes ping-bob { 0%, 100% { transform: translateY(0); opacity: .75; } 50% { transform: translateY(-4px); opacity: 1; } }
-  @keyframes ping-hop { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-16px) scale(1.35); text-shadow: 0 0 18px var(--accent); } 100% { transform: translateY(0) scale(1); } }
+  @keyframes ping-hop { 0% { translate: 0 0; scale: 1; text-shadow: 0 0 0 transparent; } 35% { translate: 0 -16px; scale: 1.35; text-shadow: 0 0 18px var(--accent); } 100% { translate: 0 0; scale: 1; text-shadow: 0 0 0 transparent; } }
 }
 
 /* Ping steht frei, ohne Karte: kein Hintergrund/Rand, Ringe duerfen ueber den Knopf hinauslaufen (verblassen vor dem Rand) */
