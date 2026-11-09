@@ -82,9 +82,14 @@ function Ball({ b, refFn }) {
   );
 }
 
-/* Queue: ein sehr lang gezogenes Dreieck (dick am Griff, spitz an der Kappe) mit heller Spitze, Zwinge, Gelenk und einer zufaelligen Verzierung am Griff. */
+/* Queue (435.0): EIN Stueck mit stetiger Verjuengung wie ein echter Queue, massstabsgetreu zur Kugel (Kugel 17,2 Einheiten = 57 mm, also 1 Einheit ~ 3,3 mm):
+   Laenge 440 Einheiten (~1,45 m), Spitze ~13 mm, Schaft verdickt sich leicht bis zum Gelenk, Griff bis ~30 mm, hinten Gummipuffer. Er hat ein echtes Ende;
+   was links ueber den Rand der Zeichnung ragt, ist einfach der Rest des Queues (er wird am Rand des Knopfes abgeschnitten, nie mit einem Rechteck verlaengert). */
 const TIP = CUE_X - 12; // Spitze des Queues
-const half = (x) => Math.min(5, (2.2 + (TIP - x) * 0.065) / 2);
+const CUE_LEN = 440, JOINT_D = 255; // Gesamtlaenge, Abstand des Gelenks von der Spitze
+const END = TIP - CUE_LEN, JOINT = TIP - JOINT_D;
+const wid = (x) => { const d = TIP - x; return d <= JOINT_D ? 3.9 + d * 0.01 : 6.45 + (d - JOINT_D) * (2.65 / (CUE_LEN - JOINT_D)); };
+const half = (x) => wid(x) / 2;
 const quad = (x1, x2) => `M${x1} ${50 - half(x1)}L${x2} ${50 - half(x2)}L${x2} ${50 + half(x2)}L${x1} ${50 + half(x1)}Z`;
 const PALETTES = [["#d8392b", "#f2c230"], ["#2f9fd0", "#f6f2e8"], ["#1f8a4c", "#f2c230"], ["#a24bd0", "#f6f2e8"], ["#ee7d1d", "#1b1b1b"], ["#e04d8a", "#f6f2e8"]];
 const makeDeco = (prev) => { let n; do { n = { kind: Math.floor(Math.random() * 5), pal: Math.floor(Math.random() * PALETTES.length) }; } while (prev && n.kind === prev.kind && n.pal === prev.pal); return n; };
@@ -98,12 +103,13 @@ function stick({ kind, pal }) {
   if (kind === 4) { butt.push(<path key="a" d={quad(28, -14)} fill={c1} />); butt.push(<path key="b" d={`M26 50L2 ${50 - half(2) * 0.7}L-12 50L2 ${50 + half(2) * 0.7}Z`} fill={c2} />); } // Band mit Raute
   return (
     <>
-      <path d={`M40 ${50 - half(40)}L${TIP} ${50 - half(TIP)}L${TIP} ${50 + half(TIP)}L40 ${50 + half(40)}Z`} fill="#e8c78a" />
-      <path d={`M40 ${50 - half(40)}L-35 45L-1500 45L-1500 55L-35 55L40 ${50 + half(40)}Z`} fill="#3b2a1d" />
-      <path d={quad(41, 38)} fill="#c9a24a" />
+      <path d={quad(TIP, JOINT)} fill="#e8c78a" />
+      <path d={quad(JOINT, END + 4)} fill="#3b2a1d" />
+      <path d={quad(JOINT + 1.5, JOINT - 1.5)} fill="#c9a24a" />
       {butt}
-      <path d={quad(TIP - 6, TIP - 1)} fill="#f6f2e8" />
-      <rect x={TIP - 0.2} y={50 - half(TIP)} width="2.2" height={half(TIP) * 2} rx="0.8" fill="#6fb1d6" />
+      <rect x={END} y={50 - half(END)} width="5" height={wid(END)} rx="2" fill="#141414" />
+      <path d={quad(TIP - 8, TIP - 1)} fill="#f6f2e8" />
+      <rect x={TIP - 0.2} y={50 - half(TIP)} width="2.2" height={wid(TIP)} rx="0.8" fill="#6fb1d6" />
     </>
   );
 }
