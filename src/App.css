@@ -3673,9 +3673,12 @@ button.route-link { background: none; border: 0; padding: 0; font: inherit; curs
   .ping-sweep { animation: ping-sweep 3.2s linear infinite; }
   .ping-btn.pinging .ping-sweep::before { animation: ping-sweep-extra 1.8s ease-in-out 1; }
   /* Echos leuchten nur auf, wenn der Strahl vorbeikommt (Winkel von oben im Uhrzeigersinn: 45 Grad bzw. 229 Grad bei 3.2 s je Runde), und verblassen langsam bis zum naechsten Mal */
-  .ping-scope .ping-blip { animation: ping-blip 3.2s linear infinite; }
-  .ping-scope .ping-blip.b1 { animation-delay: -2.8s; }
-  .ping-scope .ping-blip.b2 { animation-delay: -1.16s; }
+  .ping-scope .ping-blip { animation: ping-blip 3.2s linear infinite, ping-drift-a 13s ease-in-out infinite; }
+  .ping-scope .ping-blip.b1 { animation-delay: -2.8s, -4s; }
+  /* Die Echos wandern ganz leicht (wie Spieler, die sich bewegen); unterschiedliche Dauern, damit sich der Weg nie sichtbar wiederholt */
+  .ping-scope .ping-blip.b2 { animation-delay: -1.16s, -9s; animation-name: ping-blip, ping-drift-b; animation-duration: 3.2s, 17s; }
+  @keyframes ping-drift-a { 0%, 100% { translate: 0 0; } 20% { translate: 3px 2px; } 45% { translate: 1px 5px; } 70% { translate: -3px 2px; } 85% { translate: -2px -2px; } }
+  @keyframes ping-drift-b { 0%, 100% { translate: 0 0; } 25% { translate: -4px -2px; } 50% { translate: -1px -5px; } 75% { translate: 3px -3px; } }
   @keyframes ping-sweep-extra { from { transform: rotate(0deg); } to { transform: rotate(720deg); } }
   @keyframes ping-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @keyframes ping-blip { 0% { opacity: 1; } 100% { opacity: .1; } }
