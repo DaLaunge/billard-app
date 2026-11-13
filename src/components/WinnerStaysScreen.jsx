@@ -35,7 +35,7 @@ const POLL_MS = 8000;
 // eigener, viel einfacherer Screen statt einer Erweiterung dort.
 export default function WinnerStaysScreen({ sessionId, me, players, matches, toast, colorOf, badgeOf, photoOf, onReload, onBack, keepAwake, onSetKeepAwake }) {
   const [session, setSession] = useState(null);
-  const [entries, setEntries] = useState(null); // AKTIVE Teilnehmer (queue_position >= 0)
+  const [entries, setEntries] = useState(null); // AKTIVE Teilnehmer dieser Runde
   const [leftEntries, setLeftEntries] = useState([]); // wer die Runde verlassen hat: bleibt in Wertung und Protokoll, steht aber nicht mehr am Tisch/in der Schlange
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -109,7 +109,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           .eq("id", sessionId).maybeSingle(),
         supabase.from("winner_stays_entries")
           .select("*, player1:players!winner_stays_entries_player1_id_fkey(nickname), player2:players!winner_stays_entries_player2_id_fkey(nickname)")
-          .eq("session_id", sessionId).order("queue_position"),
+          .or(`session_id.eq.${sessionId},origin_session_id.eq.${sessionId}`).order("queue_position") // inkl. derer, die die Runde verlassen haben (Archiv-Runde)
+          // fehlt die Migration 2026-11-13 noch (Spalte origin_session_id), geht es wie bisher nur mit den aktiven Teilnehmern
+          .then((r) => (r.error ? supabase.from("winner_stays_entries")
+            .select("*, player1:players!winner_stays_entries_player1_id_fkey(nickname), player2:players!winner_stays_entries_player2_id_fkey(nickname)")
+            .eq("session_id", sessionId).order("queue_position") : r)),
         supabase.from("winner_stays_games")
           .select(GAME_COLS)
           .eq("session_id", sessionId).order("game_no", { ascending: false }).limit(20),
@@ -129,8 +133,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       if (!all.error && all.data) list = all.data;
     }
     setSession(sess);
-    setEntries((ents || []).filter((e) => e.queue_position >= 0));
-    setLeftEntries((ents || []).filter((e) => e.queue_position < 0));
+    setEntries((ents || []).filter((e) => e.session_id === sessionId));
+    setLeftEntries((ents || []).filter((e) => e.session_id !== sessionId));
     setGames(list);
     return list;
   }, [sessionId]);
@@ -265,8 +269,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // Entfernen jederzeit - auch wer am Tisch steht oder schon gespielt hat (die Spiele bleiben in der Wertung) - bis nur noch zwei uebrig sind.
   // Die Leitung entfernt jeden, jeder Teilnehmer sich selbst. Mit zwei Teilnehmern laeuft die Runde weiter, bis jemand dazukommt oder sie beendet wird.
   const canRemove = (e) => session.status === "running" && entries.length > 2 && (isOrganizer || e.player1_id === me.id || e.player2_id === me.id);
-  // Beenden: die Leitung immer, ein verbliebener Teilnehmer, wenn nur noch zwei in der Runde sind
-  const canFinish = session.status === "running" && (isOrganizer || (entries.length <= 2 && isParticipant));
+  // Beenden: die Leitung (auch wenn nur noch zwei in der Runde sind)
+  const canFinish = session.status === "running" && isOrganizer;
   const existingPlayerIds = entries.flatMap((e) => [e.player1_id, e.player2_id]).filter(Boolean);
 
   const entryName = (e) => (e?.player2_id ? `${e.player1?.nickname} & ${e.player2?.nickname}` : e?.player1?.nickname);
@@ -426,8 +430,10 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     if (!(await appConfirm(t("{name} aus der Runde nehmen? Bisherige Spiele bleiben in der Wertung.", { name: ent ? entryName(ent) : "?" })))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_remove_entry", { p_session_id: sessionId, p_entry_id: entryId });
+    if (error) { setBusy(false); toast(t("Fehler: ") + error.message); return; }
+    // Wer jetzt am Tisch steht, aber pausiert hat, rutscht weiter (die Funktion von set_paused/report_game, hier nach dem Verlassen)
+    await supabase.rpc("winner_stays_skip_paused", { p_session_id: sessionId });
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
     await load();
   };
 
@@ -706,7 +712,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
             </div>
             {rankedAll.map((e, i) => {
               const alt = i % 2 === 1 ? " ws-row-alt" : "";
-              const gone = e.queue_position < 0;
+              const gone = e.session_id !== sessionId;
               return (
                 <div key={e.id} className={"ws-rank-row" + (gone ? " is-left" : "")}>
                   <span className={"ws-rank-pos" + alt}>{i + 1}.</span>
