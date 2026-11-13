@@ -727,12 +727,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   </span>
                   <span className={"ws-rank-num" + alt}>{e.wins}</span>
                   <span className={"ws-rank-num" + alt}>{e.losses}</span>
-                  <span className={"ws-rank-streak" + alt} title={e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : undefined}>{e.streak > 1 ? <><Emoji e="🔥" />{e.streak}</> : ""}</span>
-                  {!gone && e.queue_position <= 1 && canRemove(e) && (
-                    <button type="button" className="ws-act ws-rank-remove" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
-                      <X size={16} />
-                    </button>
-                  )}
+                  <span className={"ws-rank-streak" + alt} title={e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : undefined}>
+                    {e.streak > 1 ? <><Emoji e="🔥" />{e.streak}</> : ""}
+                    {!gone && e.queue_position <= 1 && canRemove(e) && (
+                      <button type="button" className="ws-act ws-rank-remove" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
+                        <X size={16} />
+                      </button>
+                    )}
+                  </span>
                 </div>
               );
             })}
