@@ -4300,3 +4300,7 @@ span.ws-b-av { cursor: default; }
 .ws-rank-remove { margin-left: 4px; flex: none; padding: 2px; min-width: 0; min-height: 0; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
 .ws-rank-streak { gap: 2px; overflow: visible; }
 .ws-two-hint { margin: 2px 0 6px; }
+
+/* Avatar + Name oben im Menue oeffnen das eigene Profil (435.2) */
+.app-drawer-me { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 4px 6px; margin: -4px -6px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.app-drawer-me:hover { background: var(--surface-btn); }
