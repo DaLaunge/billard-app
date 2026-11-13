@@ -18,6 +18,9 @@ const BASELINE = "410.2";
 const KEY = "releaseNotesSeen";
 
 export const RELEASE_NOTES = [
+  { version: "435", icon: "🚪",
+    items: ["Winner Stays: Teilnehmer lassen sich jederzeit aus der Runde nehmen – auch wer am Tisch steht oder schon gespielt hat, und jeder selbst für sich. Seine bisherigen Spiele bleiben in der Wertung. Sind nur noch zwei übrig, läuft die Runde weiter, bis jemand dazukommt oder sie beendet wird."],
+    en: ["Winner Stays: participants can be taken out of the round at any time – even someone at the table or who has already played, and everyone for themselves. Their games so far stay in the results. With only two left the round keeps going until someone joins or it is ended."] },
   { version: "434.10", icon: "🙋",
     items: ["Gäste: Wer als Gast gespielt hat, kann sich danach registrieren und behält alle seine Matches – sie zählen für Rangliste und Erfolge. Nach dem Speichern eines Matches zeigt die App dem Gast dafür einen QR-Code.",
       "Gäste sind keine festen Personen mehr: Jeder Auftritt ist ein neuer Gast, bei gleichem Namen heißt er automatisch „David 2“."],
