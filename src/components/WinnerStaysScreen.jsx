@@ -170,6 +170,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     if (na === sA && nb === sB) return;
     setSA(na); setSB(nb);
     setRackLog((l) => [...l, [na, nb, Date.now()]]);
+    // Wer pausiert hat, aber am Tisch steht und Punkte zaehlt, spielt offensichtlich: die Pause wird aufgehoben (Nutzer 2026-11-14)
+    const ent = side === "a" ? posA : posB;
+    if (d > 0 && ent?.is_paused) {
+      supabase.rpc("winner_stays_set_paused", { p_session_id: sessionId, p_entry_id: ent.id, p_paused: false }).then(() => load());
+    }
   };
   // Spielstand der laufenden Partie gegen ein unfreiwilliges Neuladen sichern
   // (siehe lib/matchDraft.js). Gebunden an die Nummer des letzten gemeldeten
@@ -497,6 +502,15 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // gefuellt: "Dabei" gruen, "Pause" gelb (--warn). compact = unter der Person
   // am Tisch, icon = nur Symbol in der Warteschlangen-Zeile (Pause/Play, nie
   // eine Tasse).
+  // Das rote "pausiert" ist selbst der Schalter: ein Tipp darauf macht die Person wieder aktiv (Nutzer 2026-11-14: "intuitiv waere ein Klick auf den roten Pause-Knopf")
+  const pausedPill = (e, size = 13) => (canTogglePaused(e)
+    ? (
+      <button type="button" className="ws-paused-pill clickable" disabled={busy} onClick={(ev) => { ev.stopPropagation(); togglePaused(e); }}
+        title={t("Pausiert - antippen: wieder dabei")} aria-label={t("Pausiert - antippen: wieder dabei")}>
+        <Pause size={size} /> {t("pausiert")}
+      </button>
+    )
+    : <span className="ws-paused-pill"><Pause size={size} /> {t("pausiert")}</span>);
   const pauseSwitch = (entry, { small, icon } = {}) => {
     const paused = !!entry.is_paused;
     // Ein runder Knopf wie bei einem Musikplayer: gruen mit Play = dabei, rot mit Pause = pausiert. Antippen wechselt.
@@ -633,7 +647,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                       <span>{e.wins} {t("S")}</span><span>{e.losses} {t("N")}</span>
                       {e.streak > 1 && <span><Emoji e="🔥" /> {e.streak}</span>}
                     </span>
-                    {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
+                    {e.is_paused && pausedPill(e)}
                   </span>
                 </>
               ),
@@ -669,7 +683,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   <span className="ws-queue-name">{entryName(e)}</span>
                   {statLine(e, rankOf(e))}
                 </span>
-                {e.is_paused && <span className="ws-paused-pill"><Pause size={13} /> {t("pausiert")}</span>}
+                {e.is_paused && pausedPill(e)}
                 <span className="ws-queue-actions">
                   {canManageQueue && (
                     <span className="ws-queue-move">
@@ -722,7 +736,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                       {entryName(e)}
                       {!finished && !gone && e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
                       {gone && <span className="ws-paused-pill"><LogOut size={12} /> {t("hat die Runde verlassen")}</span>}
-                      {!finished && !gone && e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
+                      {!finished && !gone && e.is_paused && pausedPill(e, 12)}
                     </span>
                   </span>
                   <span className={"ws-rank-num" + alt}>{e.wins}</span>

@@ -4304,3 +4304,7 @@ span.ws-b-av { cursor: default; }
 /* Avatar + Name oben im Menue oeffnen das eigene Profil (435.2) */
 .app-drawer-me { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 4px 6px; margin: -4px -6px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .app-drawer-me:hover { background: var(--surface-btn); }
+
+/* "pausiert" ist antippbar: wieder dabei (436.1) */
+.ws-paused-pill.clickable { border: 0; font: inherit; cursor: pointer; }
+.ws-paused-pill.clickable:hover:not(:disabled) { filter: brightness(1.12); }
