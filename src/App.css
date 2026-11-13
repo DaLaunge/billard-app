@@ -4294,3 +4294,8 @@ span.ws-b-av { cursor: default; }
 .admin-guest-row { cursor: pointer; }
 .admin-guest-row.on { background: var(--accent-soft); border-radius: 8px; }
 .admin-guest-row input[type="checkbox"], .admin-guest-all input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+
+/* Winner Stays: wer die Runde verlassen hat (434.11) */
+.ws-rank-row.is-left { opacity: .6; }
+.ws-rank-remove { margin-left: 4px; flex: none; }
+.ws-two-hint { margin: 2px 0 6px; }
