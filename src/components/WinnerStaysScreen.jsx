@@ -510,9 +510,13 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
         <Pause size={size} /> {t("pausiert")}
       </button>
     )
-    : <span className="ws-paused-pill"><Pause size={size} /> {t("pausiert")}</span>);
+    : <span className="ws-paused-pill static"><Pause size={size} /> {t("pausiert")}</span>);
+  // Rein anzeigend (Rangliste): ein rotes Etikett wirkt wie ein Knopf ("klick mich") - deshalb dort gedaempft und nicht antippbar
+  const pausedLabel = (size = 12) => <span className="ws-paused-pill static"><Pause size={size} /> {t("pausiert")}</span>;
   const pauseSwitch = (entry, { small, icon } = {}) => {
     const paused = !!entry.is_paused;
+    // Pausiert: das rote "pausiert" IST der Schalter (ein einziger Knopf je Person, kein zweiter runder daneben); sonst der gruene Play-Knopf zum Pausieren
+    if (paused) return pausedPill(entry);
     // Ein runder Knopf wie bei einem Musikplayer: gruen mit Play = dabei, rot mit Pause = pausiert. Antippen wechselt.
     const label = paused ? t("Pausiert - antippen: wieder dabei") : t("Dabei - antippen: Pause setzen");
     return (
@@ -602,7 +606,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               </b>
               {statLine(myEntry, rankOf(myEntry))}
             </div>
-            {pauseSwitch(myEntry)}
           </div>
         </section>
       )}
@@ -683,7 +686,6 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                   <span className="ws-queue-name">{entryName(e)}</span>
                   {statLine(e, rankOf(e))}
                 </span>
-                {e.is_paused && pausedPill(e)}
                 <span className="ws-queue-actions">
                   {canManageQueue && (
                     <span className="ws-queue-move">
@@ -695,7 +697,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                       </button>
                     </span>
                   )}
-                  {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { icon: true })}
+                  {canTogglePaused(e) ? pauseSwitch(e, { icon: true }) : (e.is_paused && pausedLabel(13))}
                   {canRemove(e) && (
                     <button type="button" className="ws-act" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
                       <X size={20} />
@@ -736,7 +738,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                       {entryName(e)}
                       {!finished && !gone && e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
                       {gone && <span className="ws-paused-pill"><LogOut size={12} /> {t("hat die Runde verlassen")}</span>}
-                      {!finished && !gone && e.is_paused && pausedPill(e, 12)}
+                      {!finished && !gone && e.is_paused && pausedLabel(12)}
                     </span>
                   </span>
                   <span className={"ws-rank-num" + alt}>{e.wins}</span>

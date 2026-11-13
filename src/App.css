@@ -4308,3 +4308,4 @@ span.ws-b-av { cursor: default; }
 /* "pausiert" ist antippbar: wieder dabei (436.1) */
 .ws-paused-pill.clickable { border: 0; font: inherit; cursor: pointer; }
 .ws-paused-pill.clickable:hover:not(:disabled) { filter: brightness(1.12); }
+.ws-paused-pill.static { background: var(--surface-btn); color: var(--ivory-dim); }
