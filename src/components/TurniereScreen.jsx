@@ -122,6 +122,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
   const loadWs = async () => {
     const { data, error } = await supabase.from("winner_stays_sessions")
       .select("id, name, discipline, is_doubles, table_number, status, created_at, planned_at, location_id, location_text, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)")
+      .neq("status", "archive") // Archiv-Runden (wer eine Runde verlassen hat) sind keine eigenen Turniere
       .order("created_at", { ascending: false })
       .then((r) => (r.error ? supabase.from("winner_stays_sessions").select("id, name, discipline, is_doubles, table_number, status, created_at, organizer:players!winner_stays_sessions_organizer_id_fkey(nickname)").order("created_at", { ascending: false }) : r));
     if (!error) setWsSessions(data || []);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trophy, UserCheck, ArrowRight, X } from "lucide-react";
+import { Trophy, UserCheck, ArrowRight, X, Dices } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { setRef } from "../lib/session";
@@ -83,10 +83,16 @@ export default function TurnierInviteScreen({ tournamentId, onLogin, onDone, onG
             <label className="field-label" htmlFor="guestname">{t("Dein Name")}</label>
             <div className="mail-row">
               <Ball nick={name || "?"} color="#2B5DA8" label={(name.trim()[0] || "?").toUpperCase()} size={28} />
-              <input id="guestname" type="text" maxLength={30} placeholder={t("Name eingeben")} value={name} autoFocus
+              <input id="guestname" type="text" maxLength={30} placeholder={t("Dein Vorname")} value={name} autoFocus
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && name.trim().length >= 2 && joinAsGuest()} />
             </div>
+            <p className="hint center">{t("Am besten dein echter Vorname – so erkennen dich die anderen.")}</p>
+            {!name.trim() && (
+              <button type="button" className="btn ghost small" onClick={() => setName(`${t("Gast")} ${100 + Math.floor(Math.random() * 900)}`)}>
+                <Dices size={16} /> {t("Namen vorschlagen")}
+              </button>
+            )}
             {error && <p className="nick-status err"><X size={14} /> {error}</p>}
             <button className="btn primary" disabled={busy || name.trim().length < 2} onClick={joinAsGuest}>
               {busy ? "..." : <>{t("Mitspielen")} <ArrowRight size={18} /></>}

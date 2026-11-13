@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
 import "./App.css";
 
 import { t, setLangGlobal, getLang } from "./lib/i18n";
-import { getVs, clearVs, clearRef, getClubCode, clearClubCode, getTurnierInvite, clearTurnierInvite, getGuestSession, setGuestSession, clearGuestSession, getWsInvite, clearWsInvite } from "./lib/session";
+import { getVs, clearVs, clearRef, getClubCode, clearClubCode, getClaimCode, clearClaimCode, getTurnierInvite, clearTurnierInvite, getGuestSession, setGuestSession, clearGuestSession, getWsInvite, clearWsInvite } from "./lib/session";
 import { setClubData, setClubLoader, reloadClubs, useClubData, roleIn } from "./lib/clubStore";
 import ClubMembersHost from "./components/widgets/ClubMembersHost";
 import { loadSnapshots } from "./lib/snapshotCache";
@@ -1254,6 +1254,18 @@ export default function App() {
     supabase.rpc("join_club", { p_code: code }).then(({ data, error }) => {
       if (error) toast(error.message);
       else { toast(t("Du bist dem Club „{name}“ beigetreten.", { name: data?.name || "" })); reloadClubs(); }
+    });
+  }, [player]);
+  // Gast-Uebernahme /?claim=CODE (oder Knopf im Gast-Dashboard): sobald ein echtes Konto da ist, alle Matches des Gastes uebernehmen
+  useEffect(() => {
+    const code = getClaimCode();
+    if (!code || !player || player.is_guest || player.must_change_password) return;
+    clearClaimCode();
+    supabase.rpc("claim_guest", { p_claim: code }).then(({ data, error }) => {
+      if (error) { toast(error.message); return; }
+      try { clearGuestSession(); setGuestSess(null); } catch { /* ignore */ }
+      toast(t("{n} Matches aus deiner Gast-Zeit wurden in dein Konto übernommen.", { n: data?.matches ?? 0 }));
+      loadData();
     });
   }, [player]);
   // Turnier-Einladung /?turnier=ID: wer angemeldet ist (auch frisch registriert), wird sofort fuer das Turnier angemeldet und landet dort.

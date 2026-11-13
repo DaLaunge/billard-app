@@ -15,3 +15,10 @@ export function myCodeLink(code, meId) {
   if (meId) u.searchParams.set("vs", meId);
   return u.toString();
 }
+
+/* Link zur Gast-Uebernahme: wer ihn oeffnet, meldet sich an und bekommt die Matches seines Gast-Zugangs ins neue Konto (App.jsx, claim_guest). */
+export function claimLink(code) {
+  const u = new URL("/", window.location.origin);
+  u.searchParams.set("claim", code);
+  return u.toString();
+}

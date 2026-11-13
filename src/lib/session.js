@@ -168,3 +168,31 @@ export const getClubCode = () => {
   return null;
 };
 export const clearClubCode = () => { try { localStorage.removeItem(CLUB_KEY); } catch { /* */ } };
+
+/* Gast-Uebernahme (?claim=CODE, supabase/2026-11-09c_guest_claim.sql): wer als Gast gespielt hat und sich jetzt registriert, bekommt seine Matches
+   ins neue Konto. Wie ?ref= in localStorage (der Magic-Link oeffnet oft einen neuen Tab), 30 Tage; App.jsx loest ihn mit claim_guest() ein. */
+const CLAIM_KEY = "guest_claim";
+export const setClaimCode = (code) => { try { localStorage.setItem(CLAIM_KEY, JSON.stringify({ code, at: Date.now() })); } catch { /* */ } };
+function captureClaim() {
+  try {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("claim");
+    if (code) {
+      setClaimCode(code.trim());
+      url.searchParams.delete("claim");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
+  } catch { /* ignore */ }
+}
+captureClaim();
+export const getClaimCode = () => {
+  try {
+    const raw = localStorage.getItem(CLAIM_KEY);
+    if (!raw) return null;
+    const { code, at } = JSON.parse(raw);
+    if (code && Date.now() - at < 30 * 24 * 60 * 60 * 1000) return code;
+    localStorage.removeItem(CLAIM_KEY);
+  } catch { /* ignore */ }
+  return null;
+};
+export const clearClaimCode = () => { try { localStorage.removeItem(CLAIM_KEY); } catch { /* */ } };

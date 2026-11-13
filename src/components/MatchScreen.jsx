@@ -23,6 +23,7 @@ import { useFunnel, FunnelButton, FunnelPanel } from "./widgets/FilterFunnel";
 import DiscBall, { DiscPick, sortDisciplines } from "./widgets/DiscBall";
 import { ModeTiles } from "./widgets/ModePick";
 import ExtraCounters, { CountersSummary } from "./widgets/ExtraCounters";
+import GuestClaimCard from "./widgets/GuestClaimCard";
 import { poolBallStyle } from "../lib/pool";
 import { BreakGlyph, BreakPill, BreakSwitch, breakApplies, normalizeBreakRule, nextBreaker } from "./widgets/BreakRule";
 import { emptyCounters, normalizeCounters, bumpCounter, hasCounters, saveMatchCounters } from "../lib/matchCounters";
@@ -1140,6 +1141,8 @@ export default function MatchScreen({ me, players, matches, disciplines, ratingO
           {savedMatch?.run_log?.length > 0 && (
             <button className="btn ghost" onClick={() => onOpenProtokoll(savedMatch)}>{t("Protokoll ansehen")}</button>
           )}
+          {/* Gast-Mitspieler koennen sich jetzt registrieren und behalten das Match (und alle anderen) im neuen Konto */}
+          {!offlineQueued && !isGhost && isGuestMatch && <GuestClaimCard guests={mode === "double" ? [opp, partner, opp2] : [opp]} toast={toast} />}
           <button className={"btn " + (tournamentCtx && !offlineQueued && !confirmedNow && mode !== "double" ? "ghost" : "primary")} onClick={onDone}>
             {t(tournamentCtx ? "Zurück zum Turnier" : "Zur Rangliste")}
           </button>

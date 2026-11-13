@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import { ChevronLeft, QrCode, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, FileText, Loader2, ScrollText, Pencil } from "lucide-react";
+import { ChevronLeft, QrCode, Repeat, UserPlus, X, Check, Trash2, Flag, Crown, ChevronUp, ChevronDown, Pause, Play, Plus, Minus, WifiOff, RefreshCw, FileDown, FileText, Loader2, ScrollText, Pencil, LogOut } from "lucide-react";
 import { supabase } from "../supabase";
 import { t } from "../lib/i18n";
 import { initials, fmtDateTime } from "../lib/format";
@@ -35,7 +35,8 @@ const POLL_MS = 8000;
 // eigener, viel einfacherer Screen statt einer Erweiterung dort.
 export default function WinnerStaysScreen({ sessionId, me, players, matches, toast, colorOf, badgeOf, photoOf, onReload, onBack, keepAwake, onSetKeepAwake }) {
   const [session, setSession] = useState(null);
-  const [entries, setEntries] = useState(null);
+  const [entries, setEntries] = useState(null); // AKTIVE Teilnehmer dieser Runde
+  const [leftEntries, setLeftEntries] = useState([]); // wer die Runde verlassen hat: bleibt in Wertung und Protokoll, steht aber nicht mehr am Tisch/in der Schlange
   const [games, setGames] = useState([]);
   const [busy, setBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -108,7 +109,11 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           .eq("id", sessionId).maybeSingle(),
         supabase.from("winner_stays_entries")
           .select("*, player1:players!winner_stays_entries_player1_id_fkey(nickname), player2:players!winner_stays_entries_player2_id_fkey(nickname)")
-          .eq("session_id", sessionId).order("queue_position"),
+          .or(`session_id.eq.${sessionId},origin_session_id.eq.${sessionId}`).order("queue_position") // inkl. derer, die die Runde verlassen haben (Archiv-Runde)
+          // fehlt die Migration 2026-11-13 noch (Spalte origin_session_id), geht es wie bisher nur mit den aktiven Teilnehmern
+          .then((r) => (r.error ? supabase.from("winner_stays_entries")
+            .select("*, player1:players!winner_stays_entries_player1_id_fkey(nickname), player2:players!winner_stays_entries_player2_id_fkey(nickname)")
+            .eq("session_id", sessionId).order("queue_position") : r)),
         supabase.from("winner_stays_games")
           .select(GAME_COLS)
           .eq("session_id", sessionId).order("game_no", { ascending: false }).limit(20),
@@ -128,7 +133,8 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
       if (!all.error && all.data) list = all.data;
     }
     setSession(sess);
-    setEntries(ents || []);
+    setEntries((ents || []).filter((e) => e.session_id === sessionId));
+    setLeftEntries((ents || []).filter((e) => e.session_id !== sessionId));
     setGames(list);
     return list;
   }, [sessionId]);
@@ -189,6 +195,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
     if (prevGameNoRef.current !== null && prevGameNoRef.current !== lastGameNo) { setSA(0); setSB(0); setRackLog([]); }
     prevGameNoRef.current = lastGameNo;
   }, [session, lastGameNo]);
+  // Wird jemand am Tisch entfernt (oder pausiert), steht eine neue Paarung am Tisch: der angefangene Stand gehoert zur alten und darf nicht bleiben.
+  const tableKey = entries ? `${entries.find((e) => e.queue_position === 0)?.id || ""}|${entries.find((e) => e.queue_position === 1)?.id || ""}` : null;
+  const prevTableKeyRef = useRef(null);
+  useEffect(() => {
+    if (tableKey === null) return;
+    if (prevTableKeyRef.current !== null && prevTableKeyRef.current !== tableKey) { setSA(0); setSB(0); setRackLog([]); }
+    prevTableKeyRef.current = tableKey;
+  }, [tableKey]);
   const [showAdd, setShowAdd] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -225,6 +239,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   const posB = entries.find((e) => e.queue_position === 1);
   const waiting = entries.filter((e) => e.queue_position >= 2).sort((a, b) => a.queue_position - b.queue_position);
   const ranked = [...entries].sort((a, b) => b.wins - a.wins || b.streak - a.streak || a.queue_position - b.queue_position);
+  // Wertung inkl. derer, die die Runde verlassen haben (nach dem Ende gemeinsam nach Siegen, vorher unter den Aktiven)
+  const leftRanked = [...leftEntries].sort((a, b) => b.wins - a.wins || b.streak - a.streak);
+  const rankedAll = session.status === "finished" ? [...entries, ...leftEntries].sort((a, b) => b.wins - a.wins || b.streak - a.streak || a.queue_position - b.queue_position) : [...ranked, ...leftRanked];
   // Nutzer-Feedback: nicht nur die Turnierleitung, auch die beiden gerade
   // am Tisch stehenden Personen sollen selbst ein Ergebnis eintragen
   // koennen (bei Doppel beide Team-Mitglieder) - serverseitig identisch in
@@ -247,18 +264,24 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   // Nutzer-Feedback: "Es kann jederzeit einer der Spieler ausfallen. Diese
   // Moeglichkeit sollte jeder haben." - Selbstbedienung, unabhaengig von
   // Position (auch am Tisch), siehe winner_stays_set_paused().
-  const canTogglePaused = (e) => session.status === "running" && (isOrganizer || e.player1_id === me.id || e.player2_id === me.id);
+  // Pausieren nur, solange es mehr als zwei Teilnehmer gibt (bei zweien liefe die Runde ohnehin weiter); "wieder dabei" immer
+  const canTogglePaused = (e) => session.status === "running" && (isOrganizer || e.player1_id === me.id || e.player2_id === me.id) && (e.is_paused || entries.length > 2);
+  // Entfernen jederzeit - auch wer am Tisch steht oder schon gespielt hat (die Spiele bleiben in der Wertung) - bis nur noch zwei uebrig sind.
+  // Die Leitung entfernt jeden, jeder Teilnehmer sich selbst. Mit zwei Teilnehmern laeuft die Runde weiter, bis jemand dazukommt oder sie beendet wird.
+  const canRemove = (e) => session.status === "running" && entries.length > 2 && (isOrganizer || e.player1_id === me.id || e.player2_id === me.id);
+  // Beenden: die Leitung (auch wenn nur noch zwei in der Runde sind)
+  const canFinish = session.status === "running" && isOrganizer;
   const existingPlayerIds = entries.flatMap((e) => [e.player1_id, e.player2_id]).filter(Boolean);
 
   const entryName = (e) => (e?.player2_id ? `${e.player1?.nickname} & ${e.player2?.nickname}` : e?.player1?.nickname);
-  const entryById = (id) => entries.find((e) => e.id === id);
+  const entryById = (id) => entries.find((e) => e.id === id) || leftEntries.find((e) => e.id === id);
   const finished = session.status === "finished";
   // Ergebnis + Protokoll als PDF (jsPDF wird erst hier nachgeladen)
   const downloadPdf = async () => {
     setPdfBusy(true);
     try {
       const chrono = [...games].sort((a, b) => a.game_no - b.game_no).map((g) => ({ ...g, a: entryById(g.entry_a_id), b: entryById(g.entry_b_id) }));
-      await exportWinnerStaysPdf({ session, ranked, games: chrono, nameOfEntry: entryName });
+      await exportWinnerStaysPdf({ session, ranked: rankedAll, games: chrono, nameOfEntry: entryName });
     } catch (e) {
       console.warn("PDF-Export fehlgeschlagen", e);
       toast(t("PDF konnte nicht erstellt werden."));
@@ -403,11 +426,14 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
   };
 
   const removeEntry = async (entryId) => {
-    if (!(await appConfirm(t("Diese Person/dieses Team aus der Runde nehmen?")))) return;
+    const ent = entries.find((x) => x.id === entryId);
+    if (!(await appConfirm(t("{name} aus der Runde nehmen? Bisherige Spiele bleiben in der Wertung.", { name: ent ? entryName(ent) : "?" })))) return;
     setBusy(true);
     const { error } = await supabase.rpc("winner_stays_remove_entry", { p_session_id: sessionId, p_entry_id: entryId });
+    if (error) { setBusy(false); toast(t("Fehler: ") + error.message); return; }
+    // Wer jetzt am Tisch steht, aber pausiert hat, rutscht weiter (die Funktion von set_paused/report_game, hier nach dem Verlassen)
+    await supabase.rpc("winner_stays_skip_paused", { p_session_id: sessionId });
     setBusy(false);
-    if (error) { toast(t("Fehler: ") + error.message); return; }
     await load();
   };
 
@@ -501,7 +527,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
           {session.status === "running" && !session.is_doubles && <ToolBtn icon={QrCode} label={t("Einladungslink / QR-Code")} active={showQr} onClick={() => setShowQr((s) => !s)} />}
           {isOrganizer && session.status === "running" && <ToolBtn icon={Pencil} label={t("Allgemeine Angaben bearbeiten")} active={showInfo} onClick={() => setShowInfo((s) => !s)} />}
           {isOrganizer && session.status === "running" && <ToolBtn icon={UserPlus} label={t("Spieler hinzufügen")} active={showAdd} onClick={() => setShowAdd((s) => !s)} />}
-          {isOrganizer && session.status === "running" && <EndTournamentButton disabled={busy} onClick={finishSession} />}
+          {canFinish && <EndTournamentButton disabled={busy} onClick={finishSession} />}
           {session.status === "finished" && <ToolBtn icon={FileText} label={t("Kompletter Turnierbericht")} onClick={() => document.getElementById("ws-protocol")?.scrollIntoView({ behavior: "smooth", block: "start" })} />}
           {isOrganizer && canDelete && <ToolBtn icon={Trash2} label={t("Turnier löschen")} disabled={busy} onClick={deleteSession} />}
         </TurnierToolbar>
@@ -625,7 +651,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               : (canReport && sA === sB && sA + sB > 0 ? <span className="ws-b-tie">{t("Unentschieden gibt's beim Billard nicht ;-)")}</span> : null)}
             action={{ onClick: reportGame, busy }}
             /* Bei 0:0 steht statt des Hakens die Fahne - nur fuer den, der das Turnier beenden darf; alle anderen sehen den gesperrten Haken. */
-            emptyAction={isOrganizer && session.status === "running" ? { onClick: finishSession, label: t("Turnier beenden"), disabled: busy } : null} />
+            emptyAction={canFinish ? { onClick: finishSession, label: t("Turnier beenden"), disabled: busy } : null} />
         </>
       )}
 
@@ -656,7 +682,7 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
                     </span>
                   )}
                   {canTogglePaused(e) && e.id !== myEntry?.id && pauseSwitch(e, { icon: true })}
-                  {isOrganizer && session.status === "running" && (
+                  {canRemove(e) && (
                     <button type="button" className="ws-act" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
                       <X size={20} />
                     </button>
@@ -670,6 +696,9 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
 
       <section className="stat-block ws-rank-card">
         <div className="stat-block-head"><h3><Crown size={17} /> {finished ? t("Ergebnis") : t("Live-Rangliste")}</h3></div>
+        {!finished && session.status === "running" && entries.length === 2 && (
+          <p className="hint ws-two-hint">{t("Nur noch zwei Teilnehmer: Die Runde läuft weiter, bis jemand dazukommt oder sie beendet wird.")}</p>
+        )}
         {ranked.length === 0 ? (
           <p className="hint">{t("Noch keine Teilnehmer.")}</p>
         ) : (
@@ -681,22 +710,29 @@ export default function WinnerStaysScreen({ sessionId, me, players, matches, toa
               <span className="ws-rank-num" title={t("Niederlagen")}>{t("N")}</span>
               <span className="ws-rank-streak"></span>
             </div>
-            {ranked.map((e, i) => {
+            {rankedAll.map((e, i) => {
               const alt = i % 2 === 1 ? " ws-row-alt" : "";
+              const gone = e.session_id !== sessionId;
               return (
-                <div key={e.id} className="ws-rank-row">
+                <div key={e.id} className={"ws-rank-row" + (gone ? " is-left" : "")}>
                   <span className={"ws-rank-pos" + alt}>{i + 1}.</span>
                   <span className={"ws-rank-name" + alt}>
                     {renderEntryAvatars(e, 28)}
                     <span className="stat-name">
                       {entryName(e)}
-                      {!finished && e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
-                      {!finished && e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
+                      {!finished && !gone && e.queue_position <= 1 && <span className="ws-live-tag"><Emoji e="🎱" /> {t("Am Tisch")}</span>}
+                      {gone && <span className="ws-paused-pill"><LogOut size={12} /> {t("hat die Runde verlassen")}</span>}
+                      {!finished && !gone && e.is_paused && <span className="ws-paused-pill"><Pause size={12} /> {t("pausiert")}</span>}
                     </span>
                   </span>
                   <span className={"ws-rank-num" + alt}>{e.wins}</span>
                   <span className={"ws-rank-num" + alt}>{e.losses}</span>
                   <span className={"ws-rank-streak" + alt} title={e.streak > 1 ? t("{n} in Folge", { n: e.streak }) : undefined}>{e.streak > 1 ? <><Emoji e="🔥" />{e.streak}</> : ""}</span>
+                  {!gone && e.queue_position <= 1 && canRemove(e) && (
+                    <button type="button" className="ws-act ws-rank-remove" disabled={busy} onClick={() => removeEntry(e.id)} aria-label={t("Entfernen")} title={t("Entfernen")}>
+                      <X size={16} />
+                    </button>
+                  )}
                 </div>
               );
             })}

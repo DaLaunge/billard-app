@@ -14,12 +14,12 @@ export default function PingButton({ pinging, onClick, hint, compact }) {
     <button type="button" className={"ping-btn" + (pinging ? " pinging" : "") + (compact ? " compact" : "")} onClick={onClick} aria-label={t("Ping – wer spielt in meiner Nähe?")}>
       <PingWord side="l" />
       <span className="ping-orb">
-        <i className="ping-ring" /><i className="ping-ring r2" /><i className="ping-ring r3" />
+        <i className="ping-ring r1" /><i className="ping-ring r4" /><i className="ping-ring r2" /><i className="ping-ring r3" />
         <i className="ping-sweep" />
         <svg viewBox="0 0 100 100" className="ping-scope" aria-hidden="true">
           <circle cx="50" cy="50" r="46" /><circle cx="50" cy="50" r="31" /><circle cx="50" cy="50" r="16" />
           <path d="M50 4V96M4 50H96" />
-          <circle cx="67" cy="33" r="4" className="ping-blip" /><circle cx="36" cy="62" r="3" className="ping-blip" />
+          <circle cx="67" cy="33" r="4" className="ping-blip b1" /><circle cx="36" cy="62" r="3" className="ping-blip b2" />
         </svg>
       </span>
       <PingWord side="r" />
