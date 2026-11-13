@@ -1954,7 +1954,7 @@ export default function App() {
             )}
             {tab !== "match" && (
               <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} player={player}
-                onNewMatch={() => navPush({ tab: "match" })} onTutorial={startTutorial} onCheckUpdate={requestUpdateNow}
+                onNewMatch={() => navPush({ tab: "match" })} onOpenProfile={() => navPush({ tab: "profil" })} onTutorial={startTutorial} onCheckUpdate={requestUpdateNow}
                 colorOf={colorOf} badgeOf={badgeOf} photoOf={photoOf}
                 entries={orderedEntries} maxPinned={MAX_PINNED}
                 onReorder={(ids) => {

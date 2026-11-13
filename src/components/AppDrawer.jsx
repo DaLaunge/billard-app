@@ -42,7 +42,7 @@ function Row({ e, pinned, slot, go, tourOpen, onToggleTour, onTutorial }) {
 }
 
 export default function AppDrawer({
-  open, onClose, player, onNewMatch, onTutorial, onCheckUpdate, colorOf, badgeOf, photoOf,
+  open, onClose, player, onNewMatch, onOpenProfile, onTutorial, onCheckUpdate, colorOf, badgeOf, photoOf,
   entries, maxPinned, onReorder,
 }) {
   const [tourOpen, setTourOpen] = useState(false);
@@ -101,11 +101,14 @@ export default function AppDrawer({
       {open && <div className="app-drawer-scrim" onClick={onClose} aria-hidden="true" />}
       <aside data-tour="burger" className={"app-drawer" + (open ? " open" : "")} aria-label={t("Menü")} aria-hidden={!open ? undefined : false}>
         <div className="app-drawer-top">
-          <Ball nick={player?.nickname} color={colorOf(player?.nickname)} label={initials(player?.nickname)} badge={badgeOf(player?.nickname)}
-            photo={photoOf(player?.nickname)} size={40} />
-          <div className="app-drawer-who">
-            <strong>{player?.nickname}</strong>
-          </div>
+          {/* Avatar + Name sind der erste Einstieg ins eigene Profil (Nutzer 2026-11-13) */}
+          <button type="button" className="app-drawer-me" onClick={go(onOpenProfile)} aria-label={t("Mein Profil")} title={t("Mein Profil")}>
+            <Ball nick={player?.nickname} color={colorOf(player?.nickname)} label={initials(player?.nickname)} badge={badgeOf(player?.nickname)}
+              photo={photoOf(player?.nickname)} size={40} />
+            <span className="app-drawer-who">
+              <strong>{player?.nickname}</strong>
+            </span>
+          </button>
           <button className="app-drawer-close" onClick={onClose} aria-label={t("Schließen")}><X size={18} /></button>
         </div>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>

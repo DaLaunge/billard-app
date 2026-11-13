@@ -23,18 +23,20 @@ export default function DevChart({ dates, lines, onActiveChange }) {
   // App.css) - dieser Hook kennt keinen dieser Faelle, er misst nur, was CSS
   // gerade entschieden hat, und der Graph passt sich dadurch automatisch an
   // jede neue Bedingung an, ohne dass hier neue Faelle ergaenzt werden muessten.
-  const plotRef = useRef(null);
+  // Das Element als State (Callback-Ref), nicht als useRef: kommen die Daten erst nach dem ersten Rendern (Komponente zeigte dann zuerst "Keine Daten"),
+  // gab es beim Einhaengen des Effekts noch keine .dev-plot-Box - der Beobachter blieb ab und der Graph auf der Startbreite 300 stehen, bis man neu lud.
+  const [plotEl, setPlotEl] = useState(null);
   const [box, setBox] = useState({ w: 300, h: 210 });
   useEffect(() => {
-    const el = plotRef.current;
-    if (!el) return;
+    const el = plotEl;
+    if (!el) return undefined;
     const ro = new ResizeObserver((entries) => {
       const r = entries[0]?.contentRect;
       if (r && r.width && r.height) setBox({ w: r.width, h: r.height });
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [plotEl]);
 
   const W = box.w, H = box.h, padL = 40, padR = 12, padT = 10, padB = 32;
   const plotW = W - padL - padR, plotH = H - padT - padB;
@@ -95,7 +97,7 @@ export default function DevChart({ dates, lines, onActiveChange }) {
           <b>{fmtDate(new Date(dates[active] + "T00:00:00"))}</b>
         )}
       </div>
-      <div className="dev-plot" ref={plotRef}>
+      <div className="dev-plot" ref={setPlotEl}>
       <svg viewBox={`0 0 ${W} ${H}`} className="dev-chart" role="img" aria-label={t("Rating-Verlauf")}
         onPointerDown={down} onPointerMove={onMove} onPointerUp={up} onPointerLeave={() => setActive(null)} onPointerCancel={up}>
         {yticks.map((val) => (
@@ -105,7 +107,7 @@ export default function DevChart({ dates, lines, onActiveChange }) {
           </g>
         ))}
         {xTicks.map((t, k) => (
-          <text key={k} x={t.x} y={H - 6} className="xlabel">{t.label}</text>
+          <text key={k} x={t.x} y={H - 6} className="xlabel" style={xTicks.length > 1 && k === xTicks.length - 1 ? { textAnchor: "end" } : undefined}>{t.label}</text>
         ))}
         {active != null && (
           <line x1={xFor(active)} y1={padT} x2={xFor(active)} y2={padT + plotH} className="crosshair" />

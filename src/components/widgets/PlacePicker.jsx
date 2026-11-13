@@ -13,7 +13,7 @@ const fmtDist = (m) => (m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` 
    ein Lokal suchen/eintippen, "Mein Standort" (GPS) mit bekannten Lokalen in der Naehe (bis 300 m), die Karte zum Setzen per Tipp, eine
    getippte Adresse. Das Ergebnis geht als onChange(locId, text) an den Aufrufer: ein Lokal -> (id, null); Standort/Karte/Adresse -> (null, Adresse).
    Ein Lokal wird nie heimlich vorgewaehlt, der Standort allein genuegt. */
-export default function PlacePicker({ locId, text, onChange, toast, me }) {
+export default function PlacePicker({ locId, text, onChange, toast, me, autoLocate }) {
   const { list } = useLocations();
   const [near, setNear] = useState(null); // null = noch nicht abgefragt, sonst [{ l, d }]
   const [here, setHere] = useState(null); // eigene Position { lat, lng }
@@ -31,6 +31,8 @@ export default function PlacePicker({ locId, text, onChange, toast, me }) {
     onChange(null, addr || `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`);
   }, [here, addr]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Beim Oeffnen (Neues Turnier) den Standort automatisch bestimmen - ohne ein Lokal vorzuwaehlen; Lokale in der Naehe erscheinen als Knoepfe.
+  useEffect(() => { if (autoLocate && !locId && !text) findMe(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const applyPos = (p, address) => {
     setHere(p);
     if (address !== undefined) setAddr(address);
@@ -39,12 +41,12 @@ export default function PlacePicker({ locId, text, onChange, toast, me }) {
     onChange(null, "");
   };
   const clearOwn = () => { setNewVenue(false); setHere(null); setAddr(null); setNear(null); setAcc(null); setShowMap(false); onChange(null, ""); };
-  const findMe = () => {
-    if (!navigator.geolocation) { toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
+  const findMe = (quiet) => {
+    if (!navigator.geolocation) { if (quiet !== true) toast?.(t("Dein Gerät kann den Standort nicht bestimmen.")); return; }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (p) => { setGps(true); setAcc(Math.round(p.coords.accuracy || 0)); applyPos({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); },
-      () => { setLocating(false); toast?.(t("Standort nicht verfügbar – gib unten eine Adresse oder ein Lokal ein.")); },
+      () => { setLocating(false); if (quiet !== true) toast?.(t("Standort nicht verfügbar – gib unten eine Adresse oder ein Lokal ein.")); },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
   };
@@ -67,7 +69,7 @@ export default function PlacePicker({ locId, text, onChange, toast, me }) {
   return (
     <div className="place-picker">
       <div className="venue-here-row">
-        <button type="button" className="icon-btn small" onClick={findMe} disabled={locating} aria-label={t("Mein Standort")} title={t("Mein Standort")}><Crosshair size={16} /></button>
+        <button type="button" className="icon-btn small" onClick={() => findMe()} disabled={locating} aria-label={t("Mein Standort")} title={t("Mein Standort")}><Crosshair size={16} /></button>
         <button type="button" className={"icon-btn small" + (showMap ? " primary" : "")} onClick={() => setShowMap((v) => !v)} aria-label={t("Karte")} title={t("Karte")}><MapIcon size={16} /></button>
         <div className="venue-picker-inline">
           <LocationPicker value={locId} onChange={pickVenue} toast={toast} me={me} onUseText={useText} pos={here ? { lat: here.lat, lng: here.lng, address: addr || "" } : null} placeholder={t("Lokal oder Adresse suchen oder eingeben")} />

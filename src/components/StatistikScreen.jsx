@@ -438,23 +438,12 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
     cards.setLayout(arrayMove(cardOrder, oldIndex, newIndex));
   };
 
-  // Globale Auswahl (Disziplin + Top-N/Meine Umgebung): letzte Wahl wird
-  // geraeteweise gemerkt, wie bei den Live-Bereichen (siehe LiveScreen).
-  // Disziplin und Einzel/Doppel sind zwei getrennte Achsen. Bis 2026-09-30 war
-  // "Doppel" ein Eintrag in der Disziplin-Reihe (statGlobalDisc = "Doppel") -
-  // ein solcher Altwert wird zu Disziplin "Gesamt" + Modus "double".
-  const [globalDisc, setGlobalDisc] = useState(() => {
-    try { const v = localStorage.getItem("statGlobalDisc"); return v && v !== "Doppel" ? v : "Gesamt"; } catch { return "Gesamt"; }
-  });
-  const [globalMode, setGlobalMode] = useState(() => {
-    try {
-      const m = localStorage.getItem("statGlobalMode");
-      if (m === "single" || m === "double" || m === "both") return m;
-      return localStorage.getItem("statGlobalDisc") === "Doppel" ? "double" : "both";
-    } catch { return "both"; }
-  });
-  useEffect(() => { try { localStorage.setItem("statGlobalDisc", globalDisc); } catch { /* ignore */ } }, [globalDisc]);
-  useEffect(() => { try { localStorage.setItem("statGlobalMode", globalMode); } catch { /* ignore */ } }, [globalMode]);
+  // Globale Auswahl (Disziplin, Einzel/Doppel, Meine Umgebung): beim Oeffnen der Statistik IMMER ungefiltert - alle Disziplinen, Einzel und
+  // Doppel zusammen (Nutzer 2026-11-13: "beim Klick immer alles ungefiltert"). Die Wahl gilt nur, solange der Bildschirm offen ist und wird
+  // nicht mehr gemerkt (frueher statGlobalDisc/-Mode/-Nearby in localStorage). Disziplin und Einzel/Doppel sind zwei getrennte Achsen.
+  const [globalDisc, setGlobalDisc] = useState("Gesamt");
+  const [globalMode, setGlobalMode] = useState("both");
+  useEffect(() => { try { localStorage.removeItem("statGlobalDisc"); localStorage.removeItem("statGlobalMode"); localStorage.removeItem("statGlobalNearby"); } catch { /* ignore */ } }, []);
   // Welche Rating-"Disziplin" die Auswahl trifft. Seit supabase/2026-10-24_discipline_ratings.sql gibt es je
   // Disziplin D drei Staende: 'D' (nur Einzel), 'Doppel:D' (nur Doppel), 'Gesamt:D' (Einzel + Doppel); ueber alle
   // Disziplinen 'Einzel', 'Doppel', 'Gesamt'. Fehlen die Zeilen (Migration noch nicht eingespielt), greift der
@@ -717,8 +706,7 @@ export default function StatistikScreen({ matches, onOpenProfile, onOpenProtokol
   // Registry aller per Drag & Drop sortierbaren Karten dieser Seite - IDs muessen zu cardLayout.js passen.
   // Es gibt nur EINE Spalte, die Reihenfolge ist cards.visibleOrder.
   const [leaderboardTab, setLeaderboardTab] = useState(readTabPref);
-  const [globalNearby, setGlobalNearby] = useState(() => { try { return localStorage.getItem("statGlobalNearby") === "1"; } catch { return false; } });
-  useEffect(() => { try { localStorage.setItem("statGlobalNearby", globalNearby ? "1" : "0"); } catch { /* ignore */ } }, [globalNearby]);
+  const [globalNearby, setGlobalNearby] = useState(false);
   // Sortierung der Siege-Tabelle (Siege / Quote / Serie) - EIN Reiter statt drei.
   const [siegeSort, setSiegeSort] = useState("siege");
   const siegeRows = useMemo(() => {

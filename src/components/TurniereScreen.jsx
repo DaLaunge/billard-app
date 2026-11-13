@@ -62,10 +62,12 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
   const [name, setName] = useState("");
   // Ort wie bei "Live gehen": ein Lokal aus dem Katalog (LocationPicker) oder ein getippter Ort; im Namen steht dessen Text. Wird gemerkt.
   const { list: locList } = useLocations();
-  const [placeLocId, setPlaceLocId] = useState(() => { try { return localStorage.getItem("turnierPlaceLoc") || null; } catch { return null; } });
-  const [placeText, setPlaceText] = useState(() => { try { return localStorage.getItem("turnierPlace") || ""; } catch { return ""; } });
+  // Der Ort wird NICHT mehr vom letzten Turnier uebernommen (bis 435.4 merkte sich das Formular das zuletzt gewaehlte Lokal und setzte es beim naechsten
+  // Anlegen ungefragt wieder ein - "Lugner City" statt des Ortes, an dem man gerade ist). Stattdessen bestimmt das Fenster beim Oeffnen den Standort (PlacePicker autoLocate).
+  const [placeLocId, setPlaceLocId] = useState(null);
+  const [placeText, setPlaceText] = useState("");
   const place = locList.find((l) => l.id === placeLocId)?.name || placeText.split(",")[0].trim();
-  useEffect(() => { try { localStorage.setItem("turnierPlaceLoc", placeLocId || ""); localStorage.setItem("turnierPlace", placeText); } catch { /* */ } }, [placeLocId, placeText]);
+  useEffect(() => { try { localStorage.removeItem("turnierPlaceLoc"); localStorage.removeItem("turnierPlace"); } catch { /* */ } }, []); // Altlast: gemerkter Ort
   // Popup: Seite dahinter nicht scrollen, Escape schliesst
   useEffect(() => {
     if (!showForm) return undefined;
@@ -305,7 +307,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                     </div>
 
                     {/* Ort wie bei "Live gehen"/"Planung": Lokal, Mein Standort, Karte, Adresse */}
-                    <PlacePicker locId={placeLocId} text={placeText} toast={toast} me={me}
+                    <PlacePicker autoLocate locId={placeLocId} text={placeText} toast={toast} me={me}
                       onChange={(id, txt) => { setPlaceLocId(id || null); setPlaceText(id ? "" : (txt || "")); }} />
 
                     <PlannedPicker date={planned.date} time={planned.time} onChange={setPlanned} onClear={() => setPlanned({ date: "", time: "" })} />
