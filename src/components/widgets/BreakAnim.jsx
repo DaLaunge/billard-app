@@ -117,7 +117,8 @@ function stick({ kind, pal }) {
 
 export const BREAK_MS = 2500;
 
-export default function BreakButton({ onOpen }) {
+// label: Beschriftung (Standard "Neues Turnier"); beforeStart: pruefen, ob es losgehen darf (false = kein Anstoss, z. B. weil eine Angabe fehlt); disabled: gesperrt
+export default function BreakButton({ onOpen, label, disabled, beforeStart }) {
   const [breaking, setBreaking] = useState(false);
   const timer = useRef(null);
   const els = useRef([]);
@@ -126,7 +127,8 @@ export default function BreakButton({ onOpen }) {
   const [deco, setDeco] = useState(() => makeDeco());
   useEffect(() => () => { clearTimeout(timer.current); anims.current.forEach((a) => a.cancel()); }, []);
   const go = () => {
-    if (breaking) return;
+    if (breaking || disabled) return;
+    if (beforeStart && beforeStart() === false) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { onOpen(); return; }
     setBreaking(true);
     const plan = planBreak();
@@ -138,7 +140,7 @@ export default function BreakButton({ onOpen }) {
     }, BREAK_MS);
   };
   return (
-    <button type="button" className={"break-btn" + (breaking ? " breaking" : "")} onClick={go} aria-label={t("Neues Turnier")}>
+    <button type="button" className={"break-btn" + (breaking ? " breaking" : "")} onClick={go} disabled={disabled} aria-label={label || t("Neues Turnier")}>
       <svg viewBox="-70 0 430 100" className="break-svg" aria-hidden="true" focusable="false">
         {RACK.map((b) => <Ball key={b.i} b={b} refFn={(el) => { els.current[b.i] = el; }} />)}
         <g className="bb-cue" ref={cueEl}>
@@ -147,7 +149,7 @@ export default function BreakButton({ onOpen }) {
         </g>
         <g className="bb-stick">{stick(deco)}</g>
       </svg>
-      <span className="break-label">{t("Neues Turnier")}</span>
+      <span className="break-label">{label || t("Neues Turnier")}</span>
     </button>
   );
 }

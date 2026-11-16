@@ -206,6 +206,16 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
     if (!name.trim()) { toast(t("Turniername fehlt.")); setStep(1); return; }
     setStep(2);
   };
+  // Pruefung vor dem Anstoss des "Anlegen"-Knopfs (dieselben Bedingungen wie in create(), damit keine Animation fuer ein ungueltiges Formular laeuft)
+  const validateCreate = () => {
+    if (!name.trim()) { toast(t("Turniername fehlt.")); return false; }
+    if (format === "winner_stays") {
+      if (wsTable.trim() && !Number.isFinite(parseInt(wsTable.trim(), 10))) { toast(t("Bitte gültige Tischnummern angeben.")); return false; }
+      return true;
+    }
+    if (!parseTables()) { toast(t("Bitte gültige Tischnummern angeben.")); return false; }
+    return true;
+  };
   const create = async () => {
     if (!name.trim()) { toast(t("Turniername fehlt.")); return; }
 
@@ -388,14 +398,16 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 )}
               </div>
 
+              {step === 2 && <BreakButton label={busy ? t("Lege an …") : t("Turnier anlegen")} disabled={busy} beforeStart={validateCreate} onOpen={create} />}
               <div className="tw-foot">
                 {step === 2
                   ? <button type="button" className="btn ghost tw-btn" onClick={() => setStep(1)}><ChevronLeft size={15} /> {t("Zurück")}</button>
                   : <span />}
                 {step === 1
                   ? <button type="button" className="btn primary tw-btn" onClick={nextStep}>{t("Weiter")} <ChevronRight size={15} /></button>
-                  : <button type="button" className="btn primary tw-btn" disabled={busy} onClick={create}>{busy ? t("Lege an …") : <><Trophy size={14} /> {t("Anlegen")}</>}</button>}
+                  : null}
               </div>
+              {/* Schritt 2: derselbe Anstoss-Knopf wie am Anfang der Turnierliste startet das Anlegen (Nutzer 2026-11-16) */}
             </div>
           </div>,
           document.body,
