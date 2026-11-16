@@ -398,7 +398,7 @@ export default function TurniereScreen({ toast, me, onOpenTournament, onOpenWinn
                 )}
               </div>
 
-              {step === 2 && <BreakButton label={busy ? t("Lege an …") : t("Turnier anlegen")} disabled={busy} beforeStart={validateCreate} onOpen={create} />}
+              {step === 2 && <BreakButton discipline={discipline} label={busy ? t("Lege an …") : t("Turnier anlegen")} disabled={busy} beforeStart={validateCreate} onOpen={create} />}
               <div className="tw-foot">
                 {step === 2
                   ? <button type="button" className="btn ghost tw-btn" onClick={() => setStep(1)}><ChevronLeft size={15} /> {t("Zurück")}</button>

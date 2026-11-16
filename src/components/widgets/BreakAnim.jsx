@@ -7,8 +7,14 @@ import { t } from "../../lib/i18n";
    Ohne "Bewegung reduzieren" ist es ein ruhiges Bild und das Fenster oeffnet sofort. Der Weg jeder Kugel wird einmal berechnet (Bahn mit Bandenreflexion,
    Ausrollen als Abbremsung) und per Web Animations API abgespielt; die Weisse und der Queue laufen ueber CSS (App.css). */
 const COL = { 1: "#f2c230", 2: "#2f5fd0", 3: "#d8392b", 4: "#6a3fa0", 5: "#ee7d1d", 6: "#1f8a4c", 7: "#8a2a2a", 8: "#1b1b1b" };
-// Zeilen von der Spitze: 8 in der Mitte der 3. Reihe, in den hinteren Ecken eine volle und eine halbe, 7 Volle und 7 Halbe
-const ROWS = [[1], [11, 3], [7, 8, 13], [9, 2, 12, 5], [4, 14, 6, 10, 15]];
+// Aufbau je Disziplin (Zeilen von der Spitze): 8 Ball / 14/1 / Heyball = 15er-Dreieck (8 in der Mitte der 3. Reihe, hinten je eine Volle und eine Halbe),
+// 9 Ball = Raute mit der 9 in der Mitte, 10 Ball = Dreieck aus 10 Kugeln mit der 10 in der Mitte; vorne immer die 1.
+const ROWS_BY_KIND = {
+  "15": [[1], [11, 3], [7, 8, 13], [9, 2, 12, 5], [4, 14, 6, 10, 15]],
+  "9": [[1], [2, 3], [4, 9, 5], [6, 7], [8]],
+  "10": [[1], [2, 3], [4, 10, 5], [6, 7, 8, 9]],
+};
+export const rackKindOf = (disc) => (disc === "9 Ball" ? "9" : disc === "10 Ball" ? "10" : "15");
 const R = 8.6;
 const AX = 190, AY = 50, DX = 14.9, DY = 17.2; // Spitze des Dreiecks und Abstaende
 const CUE_X = 100; // Weisse: Startpunkt
@@ -50,22 +56,22 @@ function simulate(rack) {
   return frames;
 }
 
-const RACK = (() => {
+const RACKS = Object.fromEntries(Object.entries(ROWS_BY_KIND).map(([kind, rows]) => {
   const out = []; let i = 0;
-  ROWS.forEach((row, r) => row.forEach((n, k) => { out.push({ n, x: AX + r * DX, y: AY + (k - r / 2) * DY, i }); i++; }));
-  return out;
-})();
+  rows.forEach((row, r) => row.forEach((n, k) => { out.push({ n, x: AX + r * DX, y: AY + (k - (row.length - 1) / 2) * DY, i }); i++; }));
+  return [kind, out];
+}));
 
 // Ein Anstoss: Keyframes fuer jede Kugel des Dreiecks und fuer die Weisse (erst in Ruhe, dann zum Stosspunkt, danach der simulierte Verlauf)
-function planBreak() {
-  const fr = simulate(RACK), N = fr.length - 1;
+function planBreak(RACK) {
+  const fr = simulate(RACK), N = fr.length - 1, ci = RACK.length; // Index der Weissen = nach den Kugeln des Aufbaus
   const tf = (x0, y0, f, idx) => `translate(${(f[idx][0] - x0).toFixed(2)}px, ${(f[idx][1] - y0).toFixed(2)}px) rotate(${(f[idx][2] * 57.3 * 0.6).toFixed(1)}deg)`;
   const balls = RACK.map((o) => fr.map((f, s) => ({ transform: tf(o.x, o.y, f, o.i), offset: s / N })));
   const cue = [], T = HIT_MS + SIM_S * 1000, hitX = AX - 2 * R - CUE_X;
   cue.push({ transform: "translate(0px, 0px)", offset: 0 });
   cue.push({ transform: "translate(0px, 0px)", offset: 700 / T });
   cue.push({ transform: `translate(${hitX}px, 0px)`, offset: HIT_MS / T });
-  fr.forEach((f, s) => { if (s > 0) cue.push({ transform: `translate(${(f[15][0] - CUE_X).toFixed(2)}px, ${(f[15][1] - AY).toFixed(2)}px)`, offset: (HIT_MS + (s / N) * SIM_S * 1000) / T }); });
+  fr.forEach((f, s) => { if (s > 0) cue.push({ transform: `translate(${(f[ci][0] - CUE_X).toFixed(2)}px, ${(f[ci][1] - AY).toFixed(2)}px)`, offset: (HIT_MS + (s / N) * SIM_S * 1000) / T }); });
   return { balls, cue, total: T };
 }
 
@@ -118,25 +124,30 @@ function stick({ kind, pal }) {
 export const BREAK_MS = 2500;
 
 // label: Beschriftung (Standard "Neues Turnier"); beforeStart: pruefen, ob es losgehen darf (false = kein Anstoss, z. B. weil eine Angabe fehlt); disabled: gesperrt
-export default function BreakButton({ onOpen, label, disabled, beforeStart }) {
+export default function BreakButton({ onOpen, label, disabled, beforeStart, discipline }) {
   const [breaking, setBreaking] = useState(false);
   const timer = useRef(null);
   const els = useRef([]);
   const anims = useRef([]);
   const cueEl = useRef(null);
   const [deco, setDeco] = useState(() => makeDeco());
+  // Mit Disziplin (Anlegen-Fenster) der passende Aufbau; ohne (Knopf am Listenanfang) ein zufaelliger, bei jedem Anstoss ein anderer - als Gag
+  const randomKind = () => ["15", "9", "10"][Math.floor(Math.random() * 3)];
+  const [rndKind, setRndKind] = useState(randomKind);
+  const kind = discipline ? rackKindOf(discipline) : rndKind;
+  const RACK = RACKS[kind];
   useEffect(() => () => { clearTimeout(timer.current); anims.current.forEach((a) => a.cancel()); }, []);
   const go = () => {
     if (breaking || disabled) return;
     if (beforeStart && beforeStart() === false) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { onOpen(); return; }
     setBreaking(true);
-    const plan = planBreak();
+    const plan = planBreak(RACK);
     anims.current = els.current.map((el, i) => el?.animate?.(plan.balls[i], { duration: SIM_S * 1000, delay: HIT_MS, easing: "linear", fill: "both" })).filter(Boolean);
     if (cueEl.current?.animate) anims.current.push(cueEl.current.animate(plan.cue, { duration: plan.total, easing: "linear", fill: "both" }));
     timer.current = setTimeout(() => {
       anims.current.forEach((a) => a.cancel()); anims.current = [];
-      setBreaking(false); setDeco((d) => makeDeco(d)); onOpen();
+      setBreaking(false); setDeco((d) => makeDeco(d)); if (!discipline) setRndKind(randomKind()); onOpen();
     }, BREAK_MS);
   };
   return (
