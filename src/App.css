@@ -3566,6 +3566,8 @@ html[data-sticky-heads="off"] .deck-sub-head { position: static; }
 .loc-how { display: flex; flex-wrap: wrap; gap: 6px; }
 .loc-how .chip { display: inline-flex; align-items: center; gap: 5px; }
 .loc-warn { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: var(--surface-btn); color: var(--warn); font-size: calc(13px * var(--fs, 1)); }
+.loc-here { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: calc(13px * var(--fs, 1)); color: var(--ivory-dim); }
+.loc-here .chip { display: inline-flex; align-items: center; gap: 5px; }
 .loc-linkbtn { align-self: flex-start; background: none; border: 0; padding: 2px 0; color: var(--ivory-dim); font: inherit; font-size: calc(12px * var(--fs, 1)); text-decoration: underline; cursor: pointer; }
 .loc-sel-ico { color: var(--accent); flex: none; }
 

@@ -23,8 +23,7 @@ export default function LocationForm({ initial, initialPos, fixedName, onSaved, 
   const [names, setNames] = useState([]);
   const [coordText, setCoordText] = useState("");
   const [results, setResults] = useState(null);
-  const [showAddr, setShowAddr] = useState(false);
-  const [showMap, setShowMap] = useState(!!initial);
+  const [q, setQ] = useState("");                    // Suchfeld (Adresse ODER Lokalname) - getrennt von der gespeicherten Adresse
   const [showCoords, setShowCoords] = useState(false);
   const [gpsDenied, setGpsDenied] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -41,16 +40,18 @@ export default function LocationForm({ initial, initialPos, fixedName, onSaved, 
   const nearby = pos ? list.find((l) => l.id !== initial?.id && distanceM(l, pos) < 100) : null;
 
   const search = async () => {
-    const q = address.trim();
-    if (q.length < 3) return;
+    const query = q.trim();
+    if (query.length < 3) return;
     setBusy(true);
-    try { setResults(await searchAddress(q)); } catch { toast(t("Adresssuche gerade nicht erreichbar.")); setResults([]); }
+    try { setResults(await searchAddress(query)); } catch { toast(t("Adresssuche gerade nicht erreichbar.")); setResults([]); }
     setBusy(false);
   };
   const pick = (r) => {
     setPos({ lat: r.lat, lng: r.lng });
     setAddress(r.label.split(", ").slice(0, 4).join(", "));
-    setResults(null); setShowMap(true); setGpsDenied(false);
+    setResults(null); setGpsDenied(false);
+    // Ein Treffer, der selbst ein Lokal ist (Bar, Cafe, Verein ...), liefert gleich den Namen - Strassen und Orte nicht
+    if (fixedName === undefined && !initial?.id && !ownName.trim() && r.name && !["highway", "place", "boundary", "building", "landuse"].includes(r.category)) setName(r.name.slice(0, 60));
   };
   const gps = () => {
     if (!navigator.geolocation) { setGpsDenied(true); return; }
@@ -58,7 +59,7 @@ export default function LocationForm({ initial, initialPos, fixedName, onSaved, 
     navigator.geolocation.getCurrentPosition(
       async (p) => {
         const np = { lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6) };
-        setPos(np); setShowMap(true); setGpsDenied(false); setBusy(false);
+        setPos(np); setGpsDenied(false); setBusy(false);
         const a = await reverseAddress(np.lat, np.lng);
         if (a) setAddress(a);
       },
@@ -72,7 +73,7 @@ export default function LocationForm({ initial, initialPos, fixedName, onSaved, 
     const a = await reverseAddress(p.lat, p.lng);
     if (a) setAddress(a);
   };
-  const onCoords = (v) => { setCoordText(v); const c = parseCoords(v); if (c) { setPos(c); setShowMap(true); setGpsDenied(false); } };
+  const onCoords = (v) => { setCoordText(v); const c = parseCoords(v); if (c) { setPos(c); setGpsDenied(false); } };
 
   const save = async () => {
     setBusy(true);
@@ -95,56 +96,35 @@ export default function LocationForm({ initial, initialPos, fixedName, onSaved, 
 
   return (
     <div className="loc-form">
-      {fixedName === undefined && <div className="search-row">
-        <MapPin size={16} className="mail-ico" />
-        <input autoFocus={!name} placeholder={t("Name des Lokals, z. B. Billardcafe Mitte")} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
-      </div>}
-      {fixedName === undefined && !initial?.id && names.length > 0 && (
-        <div className="chips small loc-names" role="group" aria-label={t("Ortsnamen in der Nähe")}>
-          <span className="rank-meta">{t("In der Nähe")}</span>
-          {names.map((n) => <button key={n} type="button" className={"chip" + (name.trim().toLowerCase() === n.toLowerCase() ? " active" : "")} onClick={() => setName(n)}>{n}</button>)}
-        </div>
-      )}
-
       {!posLocked && (<>
+      {/* 1. Wo liegt das Lokal? - EIN Suchfeld (Adresse oder Lokalname) und die Karte; der Standort ist nur die Frage "Bist du gerade dort?" */}
       <p className="loc-q">{t("Wo liegt das Lokal?")}</p>
-      <div className="loc-how">
-        <button type="button" className={"chip" + (pos && !showAddr ? " active" : "")} onClick={gps} disabled={busy}><MapPin size={14} /> {t("Mein Standort")}</button>
-        <button type="button" className={"chip" + (showAddr ? " active" : "")} onClick={() => setShowAddr((v) => !v)}><Search size={14} /> {t("Adresse")}</button>
-        <button type="button" className={"chip" + (showMap ? " active" : "")} onClick={() => setShowMap((v) => !v)}><MapIcon size={14} /> {t("Karte")}</button>
+      <div className="search-row">
+        <Search size={16} className="mail-ico" />
+        <input autoFocus={!initial?.id && !pos} placeholder={t("Adresse oder Lokalname suchen")} value={q} maxLength={200}
+          onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") search(); }} />
+        <button type="button" className="icon-btn small" onClick={search} disabled={busy || q.trim().length < 3}
+          aria-label={t("Suchen")} title={t("Suchen")}><Search size={16} /></button>
       </div>
-
-      {showAddr && (
-        <div className="search-row">
-          <Search size={16} className="mail-ico" />
-          <input autoFocus placeholder={t("Adresse, z. B. Praterstraße 1, Wien")} value={address} maxLength={200}
-            onChange={(e) => setAddress(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") search(); }} />
-          <button type="button" className="icon-btn small" onClick={search} disabled={busy || address.trim().length < 3}
-            aria-label={t("Adresse suchen")} title={t("Adresse suchen")}><Search size={16} /></button>
-        </div>
-      )}
       {results && (
         <div className="loc-results">
-          {results.length === 0 && <p className="hint">{t("Nichts gefunden – Adresse genauer eingeben oder auf der Karte wählen.")}</p>}
+          {results.length === 0 && <p className="hint">{t("Nichts gefunden – anders suchen oder auf der Karte wählen.")}</p>}
           {results.map((r, i) => (
             <button key={i} type="button" className="loc-result" onClick={() => pick(r)}>{r.label}</button>
           ))}
         </div>
       )}
-      {showMap && (
-        <>
-          <Suspense fallback={<div className="loc-map" />}>
-            <LocationMap pos={pos} onPick={onMapPick} />
-          </Suspense>
-          <p className="hint" style={{ margin: 0 }}>{t("Karte antippen, um den Standort zu setzen – der Marker lässt sich ziehen.")}</p>
-        </>
-      )}
+      <Suspense fallback={<div className="loc-map" />}>
+        <LocationMap pos={pos} onPick={onMapPick} />
+      </Suspense>
+      <p className="hint" style={{ margin: 0 }}>{t("Karte antippen, um den Standort zu setzen – der Marker lässt sich ziehen.")}</p>
+      <div className="loc-here">
+        <span>{t("Bist du gerade im Lokal?")}</span>
+        <button type="button" className="chip" onClick={gps} disabled={busy}><MapPin size={14} /> {t("Ja, hier setzen")}</button>
+      </div>
 
       {gpsDenied && (
-        <div className="loc-warn"><AlertTriangle size={15} /> {t("Dein Standort wird nicht freigegeben. Ohne Standortdaten kann das Lokal nicht angelegt werden und wir können nicht prüfen, ob es schon existiert – gib die Adresse ein oder wähle den Ort auf der Karte.")}</div>
-      )}
-      {!pos && !gpsDenied && (
-        <p className="hint" style={{ margin: 0 }}>{t("Ohne Standortdaten (Standort, Adresse oder Karte) ist das Lokal nicht verfügbar.")}</p>
+        <div className="loc-warn"><AlertTriangle size={15} /> {t("Dein Standort wird nicht freigegeben. Ohne Standortdaten kann das Lokal nicht angelegt werden und wir können nicht prüfen, ob es schon existiert – suche die Adresse oder wähle den Ort auf der Karte.")}</div>
       )}
       </>)}
       {pos && (
@@ -154,6 +134,19 @@ export default function LocationForm({ initial, initialPos, fixedName, onSaved, 
           {posLocked && <> <button type="button" className="loc-linkbtn" onClick={() => setChangePos(true)}>{t("Position ändern")}</button></>}
         </p>
       )}
+      {fixedName === undefined && (<>
+        <p className="loc-q">{t("Wie heißt das Lokal?")}</p>
+        <div className="search-row">
+          <MapPin size={16} className="mail-ico" />
+          <input autoFocus={!!pos && !name} placeholder={t("Name des Lokals, z. B. Billardcafe Mitte")} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+        </div>
+        {!initial?.id && names.length > 0 && (
+          <div className="chips small loc-names" role="group" aria-label={t("Ortsnamen in der Nähe")}>
+            <span className="rank-meta">{t("In der Nähe")}</span>
+            {names.map((n) => <button key={n} type="button" className={"chip" + (name.trim().toLowerCase() === n.toLowerCase() ? " active" : "")} onClick={() => setName(n)}>{n}</button>)}
+          </div>
+        )}
+      </>)}
       {nearby && (
         <div className="loc-near">
           {t("Hier gibt es schon ein Lokal: {name}. Meinst du das?", { name: nearby.name })}

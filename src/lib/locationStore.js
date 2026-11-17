@@ -68,7 +68,7 @@ export async function searchAddress(q) {
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) throw new Error("search");
   const rows = await res.json();
-  return rows.map((r) => ({ label: r.display_name, name: r.name || "", lat: parseFloat(r.lat), lng: parseFloat(r.lon) }));
+  return rows.map((r) => ({ label: r.display_name, name: r.name || "", category: r.category || r.class || "", lat: parseFloat(r.lat), lng: parseFloat(r.lon) }));
 }
 
 // Koordinaten -> Adresse (Nominatim), fuer den Klick auf die Karte; null bei Fehler
