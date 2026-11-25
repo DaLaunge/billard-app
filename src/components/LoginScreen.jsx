@@ -181,8 +181,12 @@ export default function LoginScreen() {
             </p>
           ) : mailWarn ? (
             <p className="nick-status warn">{t("Das ist noch keine vollständige E-Mail-Adresse, z. B. du@beispiel.at.")}</p>
-          ) : mode === "magic" && !mailOk ? (
-            <p className="nick-status dim">{t("Gib deine E-Mail-Adresse ein – dann bekommst du deinen Login-Link.")}</p>
+          ) : !mailOk ? (
+            <p className="nick-status warn"><Mail size={14} style={{ flex: "none", marginTop: 2 }} />
+              {mode === "magic"
+                ? t("Gib zuerst deine E-Mail-Adresse ein – dann erscheint der Knopf für den Login-Link.")
+                : t("Gib zuerst deine E-Mail-Adresse und dein Passwort ein.")}
+            </p>
           ) : null}
 
           {mode === "password" ? (
