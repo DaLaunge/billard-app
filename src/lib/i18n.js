@@ -772,7 +772,7 @@ const TRANSLATIONS = {
     "E-Mail-Adresse": "Email address",
     "Login-Link senden": "Send login link",
     "Meintest du": "Did you mean",
-    "Lieber mit Passwort anmelden": "Sign in with a password instead",
+    "Stattdessen Passwort verwenden": "Use a password instead",
     "Das ist noch keine vollständige E-Mail-Adresse, z. B. du@beispiel.at.": "That isn't a complete email address yet, e.g. you@example.com.",
     "Gib zuerst deine E-Mail-Adresse ein – dann erscheint der Knopf für den Login-Link.": "Enter your email address first – then the login link button appears.",
     "Gib zuerst deine E-Mail-Adresse und dein Passwort ein.": "Enter your email address and password first.",

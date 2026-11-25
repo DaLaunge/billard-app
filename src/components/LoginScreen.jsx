@@ -220,9 +220,10 @@ export default function LoginScreen() {
                 </div>
               </div>
               <p className="hint">{t("Kein Passwort noetig – du bekommst einen Link per Mail und bist drin. Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.")}</p>
-              <p className="hint center">
-                <button type="button" className="legal-link" onClick={() => { setMode("password"); setError(""); }}>{t("Lieber mit Passwort anmelden")}</button>
-              </p>
+              {/* Bleibt immer sichtbar: fuer manche Leute ist das Passwort der einzige Weg hinein. */}
+              <button className="btn ghost" style={{ marginTop: 12 }} onClick={() => { setMode("password"); setError(""); }}>
+                {t("Stattdessen Passwort verwenden")}
+              </button>
             </>
           )}
         </div>
