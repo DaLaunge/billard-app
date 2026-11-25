@@ -166,13 +166,6 @@ export default function LoginScreen() {
         </div>
       ) : (
         <div className="login-card">
-          <div className="auth-tabs">
-            <button className={"auth-tab" + (mode === "magic" ? " on" : "")}
-              onClick={() => { setMode("magic"); setError(""); }}>{t("Magic-Link")}</button>
-            <button className={"auth-tab" + (mode === "password" ? " on" : "")}
-              onClick={() => { setMode("password"); setError(""); }}>{t("Passwort")}</button>
-          </div>
-
           <label className="field-label" htmlFor="mail">{t("E-Mail-Adresse")}</label>
           <div className="mail-row">
             <Mail size={18} className="mail-ico" />
@@ -206,7 +199,7 @@ export default function LoginScreen() {
                 {busy ? "..." : <>{t("Anmelden")} <ArrowRight size={18} /></>}
               </button>
               <button className="btn ghost" onClick={() => { setMode("magic"); setError(""); }}>
-                {t("Passwort vergessen? Per Magic-Link anmelden")}
+                {t("Passwort vergessen? Per Login-Link anmelden")}
               </button>
               <p className="hint">{t("Neu hier? Einmal per Magic-Link anmelden und danach im Profil ein Passwort festlegen.")}</p>
             </>
@@ -223,6 +216,9 @@ export default function LoginScreen() {
                 </div>
               </div>
               <p className="hint">{t("Kein Passwort noetig – du bekommst einen Link per Mail und bist drin. Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.")}</p>
+              <p className="hint center">
+                <button type="button" className="legal-link" onClick={() => { setMode("password"); setError(""); }}>{t("Lieber mit Passwort anmelden")}</button>
+              </p>
             </>
           )}
         </div>
