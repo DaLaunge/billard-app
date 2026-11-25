@@ -10,6 +10,22 @@ import LegalModal from "./LegalModal";
 const OTP_MIN = 6;
 const OTP_MAX = 10;
 
+// Schlichte Formpruefung: etwas@domain.endung - ein bloesses "@" reicht nicht,
+// sonst erscheint der Knopf schon bei "a@" und Supabase lehnt die Adresse ab.
+const validEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+
+// Haeufige Tippfehler in der Domain; der Vorschlag ist ein Tipp, kein Zwang.
+const DOMAIN_FIX = {
+  "gmial.com": "gmail.com", "gmai.com": "gmail.com", "gmail.co": "gmail.com", "gamil.com": "gmail.com",
+  "gmx.at.com": "gmx.at", "gmx.de.com": "gmx.de", "hotmal.com": "hotmail.com", "hotmail.co": "hotmail.com",
+  "outlok.com": "outlook.com", "yahho.com": "yahoo.com", "yaho.com": "yahoo.com", "icloud.co": "icloud.com",
+};
+const suggestMail = (v) => {
+  const m = v.trim().match(/^([^\s@]+)@([^\s@]+)$/);
+  const fix = m && DOMAIN_FIX[m[2].toLowerCase()];
+  return fix ? m[1] + "@" + fix : null;
+};
+
 export default function LoginScreen() {
   const [mode, setMode] = useState("magic"); // Standard: gewohnter Magic-Link; Passwort ist ein Tipp entfernt
   const [email, setEmail] = useState("");
@@ -21,6 +37,13 @@ export default function LoginScreen() {
   const [code, setCode] = useState("");
   const [codeBusy, setCodeBusy] = useState(false);
   const [codeError, setCodeError] = useState("");
+  const [mailTouched, setMailTouched] = useState(false);
+
+  const mailOk = validEmail(email);
+  const mailFix = suggestMail(email);
+  // Hinweis erst, wenn die Eingabe nach einer Adresse aussieht oder das Feld verlassen wurde -
+  // wer gerade erst tippt, soll nicht schon beim ersten Buchstaben eine Fehlermeldung sehen.
+  const mailWarn = !mailOk && email.trim() !== "" && (mailTouched || email.includes("@"));
 
   const sendLink = async () => {
     setBusy(true); setError("");
@@ -154,8 +177,20 @@ export default function LoginScreen() {
           <div className="mail-row">
             <Mail size={18} className="mail-ico" />
             <input id="mail" type="email" placeholder="du@beispiel.at" value={email} autoComplete="email"
-              onChange={(e) => setEmail(e.target.value)} />
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setMailTouched(true)}
+              onKeyDown={(e) => e.key === "Enter" && mode === "magic" && mailOk && !busy && sendLink()} />
           </div>
+          {mailFix ? (
+            <p className="nick-status warn">
+              {t("Meintest du")}{" "}
+              <button type="button" className="legal-link" onClick={() => setEmail(mailFix)}>{mailFix}</button>?
+            </p>
+          ) : mailWarn ? (
+            <p className="nick-status warn">{t("Das ist noch keine vollständige E-Mail-Adresse, z. B. du@beispiel.at.")}</p>
+          ) : mode === "magic" && !mailOk ? (
+            <p className="nick-status dim">{t("Gib deine E-Mail-Adresse ein – dann bekommst du deinen Login-Link.")}</p>
+          ) : null}
 
           {mode === "password" ? (
             <>
@@ -164,10 +199,10 @@ export default function LoginScreen() {
                 <Lock size={18} className="mail-ico" />
                 <input id="pw" type="password" placeholder={t("Dein Passwort")} value={password} autoComplete="current-password"
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && email.includes("@") && password && signInPw()} />
+                  onKeyDown={(e) => e.key === "Enter" && mailOk && password && signInPw()} />
               </div>
               {error && <p className="nick-status err"><X size={14} /> {error}</p>}
-              <button className="btn primary" disabled={busy || !email.includes("@") || !password} onClick={signInPw}>
+              <button className="btn primary" disabled={busy || !mailOk || !password} onClick={signInPw}>
                 {busy ? "..." : <>{t("Anmelden")} <ArrowRight size={18} /></>}
               </button>
               <button className="btn ghost" onClick={() => { setMode("magic"); setError(""); }}>
@@ -178,9 +213,15 @@ export default function LoginScreen() {
           ) : (
             <>
               {error && <p className="nick-status err"><X size={14} /> {error}</p>}
-              <button className="btn primary" disabled={busy || !email.includes("@")} onClick={sendLink}>
-                {busy ? "Sende ..." : <>{t("Login-Link senden")} <ArrowRight size={18} /></>}
-              </button>
+              {/* Der Knopf erscheint erst, wenn die Adresse stimmt: vorher gibt es nichts
+                  zu senden, und ein ausgegrauter Knopf am Anfang liest sich wie ein Fehler. */}
+              <div className={"collapsible" + (mailOk ? " open" : "")} inert={mailOk ? undefined : ""}>
+                <div className="collapsible-inner">
+                  <button className="btn primary" disabled={busy || !mailOk} onClick={sendLink} style={{ width: "100%" }}>
+                    {busy ? "Sende ..." : <>{t("Login-Link senden")} <ArrowRight size={18} /></>}
+                  </button>
+                </div>
+              </div>
               <p className="hint">{t("Kein Passwort noetig – du bekommst einen Link per Mail und bist drin. Ideal beim ersten Mal oder wenn du dein Passwort vergessen hast.")}</p>
             </>
           )}
